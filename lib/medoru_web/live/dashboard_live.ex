@@ -55,7 +55,7 @@ defmodule MedoruWeb.DashboardLive do
         </div>
 
         <%!-- Quick Actions --%>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <.action_card
             title="Daily Review"
             description="Review kanji due for today and keep your streak going."
@@ -69,6 +69,13 @@ defmodule MedoruWeb.DashboardLive do
             button_text="View Lessons"
             button_link={~p"/lessons"}
             icon="academic-cap"
+          />
+          <.action_card
+            title="Browse Kanji"
+            description="Explore the kanji database organized by JLPT level."
+            button_text="Browse Kanji"
+            button_link={~p"/kanji"}
+            icon="book-open"
           />
         </div>
       </div>

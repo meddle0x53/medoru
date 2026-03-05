@@ -55,6 +55,11 @@ defmodule MedoruWeb.Layouts do
                 Lessons
               </.link>
             </li>
+            <li>
+              <.link navigate={~p"/kanji"} class="btn btn-ghost text-gray-700">
+                Kanji
+              </.link>
+            </li>
             <li class="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
               <%= if @current_scope.current_user.avatar_url do %>
                 <img

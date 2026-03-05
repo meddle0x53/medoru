@@ -4,17 +4,17 @@
 | # | Title | Status | Date |
 |---|-------|--------|------|
 | 1 | OAuth & Accounts | ✅ APPROVED | 2026-03-05 |
-| 2 | Kanji & Readings | 🔄 READY TO START | - |
-| 3 | Words with Reading Links | ⏳ PENDING | - |
+| 2 | Kanji & Readings | ✅ APPROVED | 2026-03-05 |
+| 3 | Words with Reading Links | 🔄 IN PROGRESS | 2026-03-05 |
 | 4 | Lessons | ⏳ PENDING | - |
 | 5 | Learning Core | ⏳ PENDING | - |
 | 6 | Daily Reviews & Streaks | ⏳ PENDING | - |
 | 7 | Polish & Integration | ⏳ PENDING | - |
 
 ## Current State
-- **Phase**: Iteration 1 COMPLETE → Ready for Iteration 2
-- **Last completed**: OAuth & Accounts (fully tested, approved)
-- **Next**: Iteration 2 - Kanji & Readings
+- **Phase**: Iteration 3 IN PROGRESS
+- **Last completed**: Iteration 2 - Kanji & Readings
+- **Current**: Iteration 3 - Words with Reading Links
 
 ## Project Status
 
@@ -28,14 +28,28 @@
 - Database migrated and functional
 - Local dev server running
 
-### 🔄 Ready to Start (Iteration 2)
+### ✅ Completed (Iteration 2)
 **Kanji & Readings**
 - Kanji schema (character, meanings, stroke_count, jlpt_level, stroke_data JSONB)
 - KanjiReading schema (reading_type, reading, romaji, usage_notes)
-- Content context
-- N5-N4 kanji seed data
-- Browse UI (filter by JLPT level)
-- Kanji detail view
+- Content context with full CRUD
+- 30 N5 kanji seeded with readings
+- Browse UI (filter by JLPT level N1-N5)
+- Kanji detail view with readings display
+- Navigation links and dashboard integration
+- 45 new tests, all passing (76 total)
+
+### ✅ Completed (Iteration 2)
+- Kanji & Readings system
+- 76 tests passing
+- Approved by meddle
+
+### ⏳ Pending (Iterations 3-7)
+- Words with Reading Links
+- Lessons
+- Learning progress & tests
+- Daily reviews & streaks
+- Polish & integration
 
 ### ⏳ Pending (Iterations 3-7)
 - Words with reading links
@@ -84,9 +98,9 @@ mix ecto.reset
 ## Notes for Next Instance
 
 1. **Always read this INDEX first** to understand current state
-2. **Check ITERATION-01-oauth-accounts.md** for detailed implementation notes
+2. **Check ITERATION-02-kanji-readings.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 2)
+4. **Ask meddle** which iteration to work on (currently: Iteration 3)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
@@ -102,4 +116,4 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-05  
-**Status**: Ready for Iteration 2
+**Status**: Iteration 3 IN PROGRESS

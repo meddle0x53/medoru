@@ -1,0 +1,107 @@
+defmodule MedoruWeb.KanjiLive.Index do
+  use MedoruWeb, :live_view
+
+  alias Medoru.Content
+
+  @impl true
+  def mount(_params, _session, socket) do
+    {:ok, assign(socket, :jlpt_level, 5)}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    level = parse_level(params["level"])
+    kanji_list = Content.list_kanji_by_level(level)
+
+    {:noreply,
+     socket
+     |> assign(:jlpt_level, level)
+     |> assign(:kanji_list, kanji_list)
+     |> assign(:page_title, "JLPT N#{level} Kanji")}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <div class="max-w-6xl mx-auto px-4 py-8">
+        <%!-- Header --%>
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-slate-900 mb-2">Kanji Browser</h1>
+          <p class="text-slate-600">Browse and learn Japanese kanji organized by JLPT level</p>
+        </div>
+
+        <%!-- Level Selector --%>
+        <div class="flex flex-wrap gap-2 mb-8">
+          <%= for level <- [5, 4, 3, 2, 1] do %>
+            <.link
+              patch={~p"/kanji?level=#{level}"}
+              class={[
+                "px-4 py-2 rounded-lg font-medium transition-colors",
+                if(@jlpt_level == level,
+                  do: "bg-indigo-600 text-white",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              N{level}
+            </.link>
+          <% end %>
+        </div>
+
+        <%!-- Stats --%>
+        <div class="mb-6 flex items-center gap-4 text-sm text-slate-600">
+          <span class="bg-slate-100 px-3 py-1 rounded-full">
+            {length(@kanji_list)} characters
+          </span>
+          <span class="bg-slate-100 px-3 py-1 rounded-full">
+            JLPT N{@jlpt_level}
+          </span>
+        </div>
+
+        <%!-- Kanji Grid --%>
+        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+          <%= for kanji <- @kanji_list do %>
+            <.link
+              navigate={~p"/kanji/#{kanji.id}"}
+              class="group"
+            >
+              <div class="aspect-square bg-white border border-slate-200 rounded-xl flex items-center justify-center
+                          shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200">
+                <span class="text-3xl font-medium text-slate-800 group-hover:text-indigo-600 transition-colors">
+                  {kanji.character}
+                </span>
+              </div>
+              <div class="mt-1 text-center">
+                <span class="text-xs text-slate-500">
+                  {List.first(kanji.meanings, "")}
+                </span>
+              </div>
+            </.link>
+          <% end %>
+        </div>
+
+        <%= if @kanji_list == [] do %>
+          <div class="text-center py-16">
+            <div class="text-6xl mb-4">📚</div>
+            <h3 class="text-lg font-medium text-slate-900 mb-2">No kanji found</h3>
+            <p class="text-slate-600">This JLPT level doesn't have any kanji data yet.</p>
+          </div>
+        <% end %>
+      </div>
+    </Layouts.app>
+    """
+  end
+
+  defp parse_level(nil), do: 5
+
+  defp parse_level(level) when is_binary(level) do
+    case Integer.parse(level) do
+      {n, _} when n in 1..5 -> n
+      _ -> 5
+    end
+  end
+
+  defp parse_level(level) when is_integer(level) and level in 1..5, do: level
+  defp parse_level(_), do: 5
+end

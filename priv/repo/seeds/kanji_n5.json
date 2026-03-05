@@ -1,0 +1,397 @@
+[
+  {
+    "character": "日",
+    "meanings": ["day", "sun", "Japan", "counter for days"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 1,
+    "radicals": ["日"],
+    "readings": [
+      {"reading_type": "on", "reading": "ニチ", "romaji": "nichi", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ジツ", "romaji": "jitsu", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "ひ", "romaji": "hi", "usage_notes": "Standalone or with okurigana"},
+      {"reading_type": "kun", "reading": "か", "romaji": "ka", "usage_notes": "Used in 日々, 毎日"}
+    ]
+  },
+  {
+    "character": "一",
+    "meanings": ["one"],
+    "stroke_count": 1,
+    "jlpt_level": 5,
+    "frequency": 2,
+    "radicals": ["一"],
+    "readings": [
+      {"reading_type": "on", "reading": "イチ", "romaji": "ichi", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "ひと", "romaji": "hito", "usage_notes": "Standalone, with つ or り suffix"}
+    ]
+  },
+  {
+    "character": "国",
+    "meanings": ["country"],
+    "stroke_count": 8,
+    "jlpt_level": 5,
+    "frequency": 3,
+    "radicals": ["囗", "玉"],
+    "readings": [
+      {"reading_type": "on", "reading": "コク", "romaji": "koku", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "くに", "romaji": "kuni", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "人",
+    "meanings": ["person"],
+    "stroke_count": 2,
+    "jlpt_level": 5,
+    "frequency": 4,
+    "radicals": ["人"],
+    "readings": [
+      {"reading_type": "on", "reading": "ジン", "romaji": "jin", "usage_notes": "Used in compound words (nationality)"},
+      {"reading_type": "on", "reading": "ニン", "romaji": "nin", "usage_notes": "Counter for people"},
+      {"reading_type": "kun", "reading": "ひと", "romaji": "hito", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "年",
+    "meanings": ["year", "counter for years"],
+    "stroke_count": 6,
+    "jlpt_level": 5,
+    "frequency": 5,
+    "radicals": ["干"],
+    "readings": [
+      {"reading_type": "on", "reading": "ネン", "romaji": "nen", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "とし", "romaji": "toshi", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "大",
+    "meanings": ["large", "big"],
+    "stroke_count": 3,
+    "jlpt_level": 5,
+    "frequency": 6,
+    "radicals": ["大"],
+    "readings": [
+      {"reading_type": "on", "reading": "ダイ", "romaji": "dai", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "タイ", "romaji": "tai", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "おお", "romaji": "oo", "usage_notes": "Prefix for big/large"}
+    ]
+  },
+  {
+    "character": "十",
+    "meanings": ["ten"],
+    "stroke_count": 2,
+    "jlpt_level": 5,
+    "frequency": 7,
+    "radicals": ["十"],
+    "readings": [
+      {"reading_type": "on", "reading": "ジュウ", "romaji": "juu", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ジッ", "romaji": "ji", "usage_notes": "Before counter 歳"},
+      {"reading_type": "kun", "reading": "とお", "romaji": "too", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "二",
+    "meanings": ["two"],
+    "stroke_count": 2,
+    "jlpt_level": 5,
+    "frequency": 8,
+    "radicals": ["二"],
+    "readings": [
+      {"reading_type": "on", "reading": "ニ", "romaji": "ni", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "ふた", "romaji": "futa", "usage_notes": "Standalone, with つ suffix"}
+    ]
+  },
+  {
+    "character": "本",
+    "meanings": ["book", "present", "main", "origin", "true"],
+    "stroke_count": 5,
+    "jlpt_level": 5,
+    "frequency": 9,
+    "radicals": ["木", "一"],
+    "readings": [
+      {"reading_type": "on", "reading": "ホン", "romaji": "hon", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "もと", "romaji": "moto", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "中",
+    "meanings": ["in", "inside", "middle", "mean", "center"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 10,
+    "radicals": ["丨", "口"],
+    "readings": [
+      {"reading_type": "on", "reading": "チュウ", "romaji": "chuu", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "なか", "romaji": "naka", "usage_notes": "Standalone"},
+      {"reading_type": "kun", "reading": "うち", "romaji": "uchi", "usage_notes": "Among, during"}
+    ]
+  },
+  {
+    "character": "長",
+    "meanings": ["long", "leader"],
+    "stroke_count": 8,
+    "jlpt_level": 5,
+    "frequency": 11,
+    "radicals": ["長"],
+    "readings": [
+      {"reading_type": "on", "reading": "チョウ", "romaji": "chou", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "なが", "romaji": "naga", "usage_notes": "With okurigana"}
+    ]
+  },
+  {
+    "character": "出",
+    "meanings": ["exit", "leave", "go out"],
+    "stroke_count": 5,
+    "jlpt_level": 5,
+    "frequency": 12,
+    "radicals": ["凵", "山"],
+    "readings": [
+      {"reading_type": "on", "reading": "シュツ", "romaji": "shutsu", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "スイ", "romaji": "sui", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "で", "romaji": "de", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "だ", "romaji": "da", "usage_notes": "With okurigana"}
+    ]
+  },
+  {
+    "character": "三",
+    "meanings": ["three"],
+    "stroke_count": 3,
+    "jlpt_level": 5,
+    "frequency": 13,
+    "radicals": ["三"],
+    "readings": [
+      {"reading_type": "on", "reading": "サン", "romaji": "san", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "み", "romaji": "mi", "usage_notes": "Standalone, with つ or っ suffix"}
+    ]
+  },
+  {
+    "character": "時",
+    "meanings": ["time", "hour"],
+    "stroke_count": 10,
+    "jlpt_level": 5,
+    "frequency": 14,
+    "radicals": ["日", "寺"],
+    "readings": [
+      {"reading_type": "on", "reading": "ジ", "romaji": "ji", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "とき", "romaji": "toki", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "行",
+    "meanings": ["go", "do", "going", "journey"],
+    "stroke_count": 6,
+    "jlpt_level": 5,
+    "frequency": 15,
+    "radicals": ["行"],
+    "readings": [
+      {"reading_type": "on", "reading": "コウ", "romaji": "kou", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ギョウ", "romaji": "gyou", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "アン", "romaji": "an", "usage_notes": "Rare reading"},
+      {"reading_type": "kun", "reading": "い", "romaji": "i", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "ゆ", "romaji": "yu", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "おこな", "romaji": "okona", "usage_notes": "With okurigana"}
+    ]
+  },
+  {
+    "character": "見",
+    "meanings": ["see", "hopes", "chances", "idea", "opinion", "look at", "visible"],
+    "stroke_count": 7,
+    "jlpt_level": 5,
+    "frequency": 16,
+    "radicals": ["見"],
+    "readings": [
+      {"reading_type": "on", "reading": "ケン", "romaji": "ken", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "み", "romaji": "mi", "usage_notes": "With okurigana"}
+    ]
+  },
+  {
+    "character": "月",
+    "meanings": ["month", "moon"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 17,
+    "radicals": ["月"],
+    "readings": [
+      {"reading_type": "on", "reading": "ゲツ", "romaji": "getsu", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ガツ", "romaji": "gatsu", "usage_notes": "Used for month names"},
+      {"reading_type": "kun", "reading": "つき", "romaji": "tsuki", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "分",
+    "meanings": ["part", "minute of time", "segment", "share", "degree", "one's lot", "duty", "understand", "know", "rate", "1%", "chances", "shaku/100"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 18,
+    "radicals": ["八", "刀"],
+    "readings": [
+      {"reading_type": "on", "reading": "ブン", "romaji": "bun", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "フン", "romaji": "fun", "usage_notes": "Used for minutes"},
+      {"reading_type": "on", "reading": "ブ", "romaji": "bu", "usage_notes": "Part of 分かる"},
+      {"reading_type": "kun", "reading": "わ", "romaji": "wa", "usage_notes": "With okurigana"}
+    ]
+  },
+  {
+    "character": "後",
+    "meanings": ["behind", "back", "later"],
+    "stroke_count": 9,
+    "jlpt_level": 5,
+    "frequency": 19,
+    "radicals": ["彳", "夂"],
+    "readings": [
+      {"reading_type": "on", "reading": "ゴ", "romaji": "go", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "コウ", "romaji": "kou", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "のち", "romaji": "nochi", "usage_notes": "Afterwards"},
+      {"reading_type": "kun", "reading": "うし", "romaji": "ushi", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "あと", "romaji": "ato", "usage_notes": "After"},
+      {"reading_type": "kun", "reading": "おく", "romaji": "oku", "usage_notes": "Rare"}
+    ]
+  },
+  {
+    "character": "前",
+    "meanings": ["in front", "before"],
+    "stroke_count": 9,
+    "jlpt_level": 5,
+    "frequency": 20,
+    "radicals": ["刂"],
+    "readings": [
+      {"reading_type": "on", "reading": "ゼン", "romaji": "zen", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "まえ", "romaji": "mae", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "生",
+    "meanings": ["life", "genuine", "birth"],
+    "stroke_count": 5,
+    "jlpt_level": 5,
+    "frequency": 21,
+    "radicals": ["生"],
+    "readings": [
+      {"reading_type": "on", "reading": "セイ", "romaji": "sei", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ショウ", "romaji": "shou", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "い", "romaji": "i", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "なま", "romaji": "nama", "usage_notes": "Raw, living"},
+      {"reading_type": "kun", "reading": "な", "romaji": "na", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "む", "romaji": "mu", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "き", "romaji": "ki", "usage_notes": "Pure"}
+    ]
+  },
+  {
+    "character": "五",
+    "meanings": ["five"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 22,
+    "radicals": ["五"],
+    "readings": [
+      {"reading_type": "on", "reading": "ゴ", "romaji": "go", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "いつ", "romaji": "itsu", "usage_notes": "Standalone, with つ suffix"}
+    ]
+  },
+  {
+    "character": "間",
+    "meanings": ["interval", "space"],
+    "stroke_count": 12,
+    "jlpt_level": 5,
+    "frequency": 23,
+    "radicals": ["門", "日"],
+    "readings": [
+      {"reading_type": "on", "reading": "カン", "romaji": "kan", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ケン", "romaji": "ken", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "あいだ", "romaji": "aida", "usage_notes": "Between"},
+      {"reading_type": "kun", "reading": "ま", "romaji": "ma", "usage_notes": "Space, room"}
+    ]
+  },
+  {
+    "character": "上",
+    "meanings": ["above", "up"],
+    "stroke_count": 3,
+    "jlpt_level": 5,
+    "frequency": 24,
+    "radicals": ["一", "卜"],
+    "readings": [
+      {"reading_type": "on", "reading": "ジョウ", "romaji": "jou", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ショウ", "romaji": "shou", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "うえ", "romaji": "ue", "usage_notes": "Above"},
+      {"reading_type": "kun", "reading": "あ", "romaji": "a", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "のぼ", "romaji": "nobo", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "かみ", "romaji": "kami", "usage_notes": "Upper, first"}
+    ]
+  },
+  {
+    "character": "東",
+    "meanings": ["east"],
+    "stroke_count": 8,
+    "jlpt_level": 5,
+    "frequency": 25,
+    "radicals": ["木", "日"],
+    "readings": [
+      {"reading_type": "on", "reading": "トウ", "romaji": "tou", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "ひがし", "romaji": "higashi", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "四",
+    "meanings": ["four"],
+    "stroke_count": 5,
+    "jlpt_level": 5,
+    "frequency": 26,
+    "radicals": ["囗", "儿"],
+    "readings": [
+      {"reading_type": "on", "reading": "シ", "romaji": "shi", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "よ", "romaji": "yo", "usage_notes": "Standalone, with ん, つ, or っ suffix"}
+    ]
+  },
+  {
+    "character": "今",
+    "meanings": ["now"],
+    "stroke_count": 4,
+    "jlpt_level": 5,
+    "frequency": 27,
+    "radicals": ["人"],
+    "readings": [
+      {"reading_type": "on", "reading": "コン", "romaji": "kon", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "キン", "romaji": "kin", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "いま", "romaji": "ima", "usage_notes": "Standalone"}
+    ]
+  },
+  {
+    "character": "金",
+    "meanings": ["gold", "money"],
+    "stroke_count": 8,
+    "jlpt_level": 5,
+    "frequency": 28,
+    "radicals": ["金"],
+    "readings": [
+      {"reading_type": "on", "reading": "キン", "romaji": "kin", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "コン", "romaji": "kon", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "かね", "romaji": "kane", "usage_notes": "Metal, money"},
+      {"reading_type": "kun", "reading": "かな", "romaji": "kana", "usage_notes": "Prefix"}
+    ]
+  },
+  {
+    "character": "九",
+    "meanings": ["nine"],
+    "stroke_count": 2,
+    "jlpt_level": 5,
+    "frequency": 29,
+    "radicals": ["乙"],
+    "readings": [
+      {"reading_type": "on", "reading": "キュウ", "romaji": "kyuu", "usage_notes": "Used in compound words"},
+      {"reading_type": "on", "reading": "ク", "romaji": "ku", "usage_notes": "Alternative reading"},
+      {"reading_type": "kun", "reading": "ここの", "romaji": "kokono", "usage_notes": "Standalone, with つ suffix"}
+    ]
+  },
+  {
+    "character": "入",
+    "meanings": ["enter", "insert"],
+    "stroke_count": 2,
+    "jlpt_level": 5,
+    "frequency": 30,
+    "radicals": ["入"],
+    "readings": [
+      {"reading_type": "on", "reading": "ニュウ", "romaji": "nyuu", "usage_notes": "Used in compound words"},
+      {"reading_type": "kun", "reading": "い", "romaji": "i", "usage_notes": "With okurigana"},
+      {"reading_type": "kun", "reading": "はい", "romaji": "hai", "usage_notes": "With okurigana"}
+    ]
+  }
+]

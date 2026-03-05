@@ -24,6 +24,12 @@ defmodule MedoruWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live_session :public,
+      on_mount: [{MedoruWeb.UserAuth, :default}] do
+      live "/kanji", KanjiLive.Index
+      live "/kanji/:id", KanjiLive.Show
+    end
   end
 
   # OAuth routes
