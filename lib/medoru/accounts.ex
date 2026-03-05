@@ -1,0 +1,210 @@
+defmodule Medoru.Accounts do
+  @moduledoc """
+  The Accounts context handles user management, authentication, and profiles.
+  """
+
+  import Ecto.Query, warn: false
+  alias Medoru.Repo
+  alias Medoru.Accounts.{User, UserProfile, UserStats}
+
+  @doc """
+  Returns the list of users.
+  """
+  def list_users do
+    Repo.all(User)
+  end
+
+  @doc """
+  Gets a single user.
+
+  Raises `Ecto.NoResultsError` if the User does not exist.
+  """
+  def get_user!(id), do: Repo.get!(User, id)
+
+  @doc """
+  Gets a single user by id.
+
+  Returns nil if the User does not exist.
+  """
+  def get_user(id), do: Repo.get(User, id)
+
+  @doc """
+  Gets a single user with preloaded profile and stats.
+  """
+  def get_user_with_profile_and_stats!(id) do
+    User
+    |> where(id: ^id)
+    |> preload([:profile, :stats])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a user by email.
+  """
+  def get_user_by_email(email) when is_binary(email) do
+    Repo.get_by(User, email: email)
+  end
+
+  @doc """
+  Gets a user by provider and provider_uid.
+  """
+  def get_user_by_provider_uid(provider, provider_uid) do
+    Repo.get_by(User, provider: provider, provider_uid: provider_uid)
+  end
+
+  @doc """
+  Registers a new user from OAuth data.
+
+  ## Examples
+
+      iex> register_user_with_oauth(%{email: "user@example.com", provider: "google", ...})
+      {:ok, %User{}}
+
+      iex> register_user_with_oauth(%{email: nil})
+      {:error, %Ecto.Changeset{}}
+  """
+  def register_user_with_oauth(attrs) do
+    Repo.transaction(fn ->
+      user_attrs = %{
+        email: attrs[:email] || attrs["email"],
+        provider: attrs[:provider] || attrs["provider"],
+        provider_uid: attrs[:provider_uid] || attrs["provider_uid"],
+        name: attrs[:name] || attrs["name"],
+        avatar_url: attrs[:avatar_url] || attrs["avatar_url"]
+      }
+
+      with {:ok, user} <- create_user(user_attrs),
+           {:ok, _profile} <- create_user_profile(user),
+           {:ok, _stats} <- create_user_stats(user) do
+        user |> Repo.preload([:profile, :stats])
+      else
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  @doc """
+  Creates a user.
+  """
+  def create_user(attrs \\ %{}) do
+    %User{}
+    |> User.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a user.
+  """
+  def update_user(%User{} = user, attrs) do
+    user
+    |> User.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a user and all associated data.
+  """
+  def delete_user(%User{} = user) do
+    Repo.delete(user)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking user changes.
+  """
+  def change_user(%User{} = user, attrs \\ %{}) do
+    User.changeset(user, attrs)
+  end
+
+  @doc """
+  Gets a user profile by user id.
+  """
+  def get_profile_by_user!(user_id) do
+    UserProfile
+    |> where(user_id: ^user_id)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Creates a user profile for a user.
+  """
+  def create_user_profile(%User{} = user, attrs \\ %{}) do
+    %UserProfile{user_id: user.id}
+    |> UserProfile.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a user profile.
+  """
+  def update_profile(%UserProfile{} = profile, attrs) do
+    profile
+    |> UserProfile.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking profile changes.
+  """
+  def change_profile(%UserProfile{} = profile, attrs \\ %{}) do
+    UserProfile.changeset(profile, attrs)
+  end
+
+  @doc """
+  Updates user settings (stored in profile).
+  """
+  def update_settings(%User{} = user, settings_attrs) do
+    profile = get_profile_by_user!(user.id)
+    update_profile(profile, settings_attrs)
+  end
+
+  @doc """
+  Gets user stats by user id.
+  """
+  def get_stats_by_user!(user_id) do
+    UserStats
+    |> where(user_id: ^user_id)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Creates user stats for a user.
+  """
+  def create_user_stats(%User{} = user, attrs \\ %{}) do
+    %UserStats{user_id: user.id}
+    |> UserStats.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates user stats.
+  """
+  def update_stats(%UserStats{} = stats, attrs) do
+    stats
+    |> UserStats.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Adds XP to a user and potentially levels them up.
+  """
+  def add_xp(%User{} = user, amount) when is_integer(amount) and amount > 0 do
+    stats = get_stats_by_user!(user.id)
+    new_xp = stats.xp + amount
+    new_level = calculate_level(new_xp)
+
+    update_stats(stats, %{
+      xp: new_xp,
+      level: new_level
+    })
+  end
+
+  defp calculate_level(xp) do
+    # Simple level formula: level = floor(sqrt(xp / 100)) + 1
+    # Level 1: 0 XP
+    # Level 2: 100 XP
+    # Level 3: 400 XP
+    # Level 4: 900 XP
+    trunc(:math.sqrt(xp / 100)) + 1
+  end
+end
