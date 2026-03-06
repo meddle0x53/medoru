@@ -3,15 +3,15 @@
     <%!-- Back Link --%>
     <.link
       navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
-      class="inline-flex items-center gap-2 text-secondary/80 hover:text-accent mb-6 transition-colors"
+      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
       <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@lesson.difficulty} Lessons
     </.link>
 
     <%!-- Header --%>
     <div class="mb-8">
-      <div class="flex items-center gap-3 mb-2 flex-wrap">
-        <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
+      <div class="flex items-center gap-3 mb-3 flex-wrap">
+        <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
           Lesson {@lesson.order_index}
         </span>
         <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
@@ -20,53 +20,69 @@
         <span class={[
           "px-3 py-1 rounded-full text-sm font-medium capitalize flex items-center gap-1.5",
           case @lesson.lesson_type do
-            :reading -> "bg-accent/20 text-accent/80"
-            :writing -> "bg-purple-100 text-purple-700"
-            :listening -> "bg-orange-100 text-orange-700"
-            :speaking -> "bg-pink-100 text-pink-700"
-            :grammar -> "bg-teal-100 text-teal-700"
-            _ -> "bg-base-200 text-secondary"
+            :reading ->
+              "bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+
+            :writing ->
+              "bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+
+            :listening ->
+              "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+            :speaking ->
+              "bg-pink-100/80 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+
+            :grammar ->
+              "bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+
+            _ ->
+              "bg-base-200 text-secondary"
           end
         ]}>
-          <.icon name={case @lesson.lesson_type do
-            :reading -> "hero-book-open"
-            :writing -> "hero-pencil"
-            :listening -> "hero-speaker-wave"
-            :speaking -> "hero-chat-bubble-left-right"
-            :grammar -> "hero-wrench"
-            _ -> "hero-academic-cap"
-          end} class="w-4 h-4" />
+          <.icon
+            name={
+              case @lesson.lesson_type do
+                :reading -> "hero-book-open"
+                :writing -> "hero-pencil"
+                :listening -> "hero-speaker-wave"
+                :speaking -> "hero-chat-bubble-left-right"
+                :grammar -> "hero-wrench"
+                _ -> "hero-academic-cap"
+              end
+            }
+            class="w-4 h-4"
+          />
           {@lesson.lesson_type}
         </span>
       </div>
       <h1 class="text-3xl font-bold text-base-content mb-3">
         {@lesson.title}
       </h1>
-      <p class="text-lg text-secondary/80">
+      <p class="text-lg text-secondary">
         {@lesson.description}
       </p>
     </div>
 
     <%!-- Progress Bar --%>
     <%= if @current_scope && @current_scope.current_user do %>
-      <div class="bg-white border border-base-300 rounded-xl p-6 mb-8">
+      <div class="bg-base-100 border border-base-300 rounded-xl p-6 mb-8">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm font-medium text-secondary">Your Progress</span>
           <%= if @lesson_progress && @lesson_progress.status == :completed do %>
             <span class="text-sm text-primary font-medium">Completed!</span>
           <% else %>
-            <span class="text-sm text-secondary/60">
+            <span class="text-sm text-secondary/70">
               {@learned_count}/{length(@lesson.lesson_words)} words learned
             </span>
           <% end %>
         </div>
-        <div class="w-full bg-base-200 rounded-full h-2">
+        <div class="w-full bg-base-200 rounded-full h-2.5">
           <div
             class={[
-              "h-2 rounded-full transition-all duration-300",
+              "h-2.5 rounded-full transition-all duration-300",
               if(@lesson_progress && @lesson_progress.status == :completed,
                 do: "bg-primary",
-                else: "bg-accent"
+                else: "bg-primary/70"
               )
             ]}
             style={"width: #{@progress_percentage}%"}
@@ -76,7 +92,10 @@
         <%= if @lesson_progress && @lesson_progress.status == :completed do %>
           <div class="mt-3 text-sm text-primary flex items-center gap-2">
             <.icon name="hero-check-circle" class="w-4 h-4" />
-            <span>You completed this lesson on {@lesson_progress.completed_at |> Calendar.strftime("%B %d, %Y")}</span>
+            <span>
+              You completed this lesson on {@lesson_progress.completed_at
+              |> Calendar.strftime("%B %d, %Y")}
+            </span>
           </div>
         <% end %>
       </div>
@@ -93,20 +112,23 @@
             navigate={~p"/words/#{lesson_word.word.id}"}
             class="group block"
           >
-            <div class="bg-white border border-base-300 rounded-xl p-4
-                        hover:border-accent/30 hover:shadow-sm transition-all">
+            <div class="bg-base-100 border border-base-300 rounded-xl p-4
+                        hover:border-primary/30 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-baseline gap-4">
-                  <span class="text-2xl font-medium text-base-content group-hover:text-accent transition-colors">
+                  <span class="text-2xl font-medium text-base-content group-hover:text-primary transition-colors">
                     {lesson_word.word.text}
                   </span>
-                  <span class="text-secondary/60">
+                  <span class="text-secondary/70">
                     {lesson_word.word.reading}
                   </span>
                 </div>
-                <.icon name="hero-chevron-right" class="w-5 h-5 text-secondary/50 group-hover:text-accent transition-colors" />
+                <.icon
+                  name="hero-chevron-right"
+                  class="w-5 h-5 text-secondary/50 group-hover:text-primary transition-colors"
+                />
               </div>
-              <p class="text-secondary/80 text-sm mt-1">
+              <p class="text-secondary text-sm mt-1">
                 {lesson_word.word.meaning}
               </p>
             </div>
@@ -120,10 +142,10 @@
       <.link
         navigate={~p"/lessons/#{@lesson.id}/learn"}
         class={[
-          "flex-1 px-6 py-4 rounded-xl font-medium transition-colors shadow-sm hover:shadow-md text-center",
+          "flex-1 px-6 py-4 rounded-xl font-medium transition-all shadow-sm hover:shadow-md text-center active:scale-[0.98]",
           if(@lesson_progress && @lesson_progress.status == :completed,
-            do: "bg-primary hover:bg-primary/80 text-white",
-            else: "bg-accent hover:bg-accent/80 text-white"
+            do: "bg-primary hover:bg-primary/90 text-primary-content",
+            else: "bg-primary hover:bg-primary/90 text-primary-content"
           )
         ]}
       >
@@ -132,8 +154,7 @@
             Preview Lesson (Sign in to Track Progress)
           <% @lesson_progress && @lesson_progress.status == :completed -> %>
             <span class="flex items-center justify-center gap-2">
-              <.icon name="hero-check-circle" class="w-5 h-5" />
-              Review Lesson
+              <.icon name="hero-check-circle" class="w-5 h-5" /> Review Lesson
             </span>
           <% @lesson_progress -> %>
             Continue Learning

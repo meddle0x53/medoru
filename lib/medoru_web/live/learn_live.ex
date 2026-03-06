@@ -16,21 +16,21 @@ defmodule MedoruWeb.LearnLive do
         <%= if @completed do %>
           <%!-- Completion Screen --%>
           <div class="text-center py-12">
-            <div class="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div class="w-24 h-24 bg-primary/15 rounded-full flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-check-badge" class="w-12 h-12 text-primary" />
             </div>
             <h1 class="text-3xl font-bold text-base-content mb-3">Lesson Complete!</h1>
             <p class="text-lg text-secondary mb-2">
               You've finished learning <strong>{@lesson.title}</strong>
             </p>
-            <p class="text-secondary/90 mb-8">
+            <p class="text-secondary mb-8">
               You've studied {length(@words)} words
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 phx-click="finish"
-                class="bg-primary hover:bg-primary/80 text-white px-8 py-3 rounded-xl font-medium
-                       transition-colors shadow-sm hover:shadow-md"
+                class="bg-primary hover:bg-primary/90 text-primary-content px-8 py-3 rounded-xl font-medium
+                       transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
               >
                 Back to Lesson
               </button>
@@ -51,20 +51,20 @@ defmodule MedoruWeb.LearnLive do
                 <span class="text-sm font-medium text-secondary">
                   Word {@current_index + 1} of {length(@words)}
                 </span>
-                <span class="text-sm text-secondary/90">
+                <span class="text-sm text-secondary/70">
                   {@lesson.title}
                 </span>
               </div>
               <button
                 phx-click="complete_lesson"
-                class="text-sm text-secondary/90 hover:text-primary transition-colors"
+                class="text-sm text-secondary/70 hover:text-primary transition-colors"
               >
                 Finish Early
               </button>
             </div>
-            <div class="w-full bg-base-200 rounded-full h-2">
+            <div class="w-full bg-base-200 rounded-full h-2.5">
               <div
-                class="bg-primary h-2 rounded-full transition-all duration-300"
+                class="bg-primary h-2.5 rounded-full transition-all duration-300"
                 style={"width: #{@progress_percentage}%"}
               >
               </div>
@@ -72,13 +72,13 @@ defmodule MedoruWeb.LearnLive do
           </div>
 
           <%!-- Main Word Card --%>
-          <div class="bg-white border border-base-300 rounded-2xl p-8 mb-6 shadow-sm">
+          <div class="bg-base-100 border border-base-300 rounded-2xl p-8 mb-6 shadow-sm">
             <%!-- Word Display --%>
             <div class="text-center mb-8">
               <div class="text-6xl font-medium text-base-content mb-4">
                 {@current_word.text}
               </div>
-              <div class="text-2xl text-secondary/90 mb-2">
+              <div class="text-2xl text-secondary/80 mb-2">
                 {@current_word.reading}
               </div>
               <div class="text-xl text-secondary">
@@ -88,15 +88,15 @@ defmodule MedoruWeb.LearnLive do
 
             <%!-- Kanji Breakdown --%>
             <div class="border-t border-base-200 pt-6 mb-6">
-              <h3 class="text-sm font-semibold text-secondary/90 uppercase tracking-wider mb-4">
+              <h3 class="text-sm font-semibold text-secondary/80 uppercase tracking-wider mb-4">
                 Kanji Breakdown
               </h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for word_kanji <- @current_word.word_kanjis do %>
                   <div class="bg-base-200/50 rounded-xl p-4">
                     <div class="flex items-start gap-3">
-                      <div class="w-14 h-14 bg-white border border-base-300 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <span class="text-2xl font-medium text-secondary">
+                      <div class="w-14 h-14 bg-base-100 border border-base-300 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span class="text-2xl font-medium text-base-content">
                           {word_kanji.kanji.character}
                         </span>
                       </div>
@@ -105,11 +105,11 @@ defmodule MedoruWeb.LearnLive do
                           <div class="text-sm font-medium text-base-content mb-1">
                             {word_kanji.kanji_reading.reading}
                           </div>
-                          <div class="text-xs text-secondary/90 mb-1">
+                          <div class="text-xs text-secondary/80 mb-1">
                             {word_kanji.kanji_reading.romaji}
                           </div>
                         <% end %>
-                        <div class="text-xs text-secondary line-clamp-2">
+                        <div class="text-xs text-secondary/70 line-clamp-2">
                           {Enum.join(word_kanji.kanji.meanings, ", ")}
                         </div>
                       </div>
@@ -122,14 +122,14 @@ defmodule MedoruWeb.LearnLive do
             <%!-- Example Words for Each Kanji (if available) --%>
             <%= if length(@current_word.word_kanjis) > 0 do %>
               <div class="border-t border-base-200 pt-6">
-                <h3 class="text-sm font-semibold text-secondary/90 uppercase tracking-wider mb-4">
+                <h3 class="text-sm font-semibold text-secondary/80 uppercase tracking-wider mb-4">
                   Kanji Details
                 </h3>
-                <div class="space-y-4">
+                <div class="space-y-3">
                   <%= for word_kanji <- @current_word.word_kanjis do %>
-                    <div class="flex items-center justify-between py-2 px-3 bg-base-200/50 rounded-lg">
+                    <div class="flex items-center justify-between py-2.5 px-4 bg-base-200/50 rounded-xl">
                       <div class="flex items-center gap-3">
-                        <span class="text-xl font-medium text-secondary">
+                        <span class="text-xl font-medium text-base-content">
                           {word_kanji.kanji.character}
                         </span>
                         <div>
@@ -137,11 +137,11 @@ defmodule MedoruWeb.LearnLive do
                             <div class="text-sm text-secondary">
                               {word_kanji.kanji_reading.reading} · {word_kanji.kanji_reading.romaji}
                             </div>
-                            <div class="text-xs text-secondary/90">
+                            <div class="text-xs text-secondary/70">
                               {word_kanji.kanji_reading.reading_type} reading
                             </div>
                           <% else %>
-                            <div class="text-sm text-secondary/90">
+                            <div class="text-sm text-secondary/70">
                               Reading not available
                             </div>
                           <% end %>

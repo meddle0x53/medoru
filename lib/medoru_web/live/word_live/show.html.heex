@@ -3,13 +3,13 @@
     <%!-- Back Link --%>
     <.link
       navigate={~p"/words?difficulty=#{@word.difficulty}"}
-      class="inline-flex items-center gap-2 text-secondary/80 hover:text-primary mb-6 transition-colors"
+      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
       <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@word.difficulty} Words
     </.link>
 
     <%!-- Main Word Card --%>
-    <div class="bg-white rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
       <div class="p-8">
         <%!-- Word Header --%>
         <div class="text-center mb-8">
@@ -18,15 +18,15 @@
               {@word.text}
             </h1>
           </div>
-          <div class="text-2xl text-secondary/80 font-medium mb-2">
+          <div class="text-2xl text-secondary/80 font-medium mb-3">
             {@word.reading}
           </div>
           <div class="flex items-center justify-center gap-3">
-            <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
+            <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
               JLPT N{@word.difficulty}
             </span>
             <%= if @word.usage_frequency && @word.usage_frequency <= 100 do %>
-              <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">
+              <span class="bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 rounded-full text-sm">
                 Common word
               </span>
             <% end %>
@@ -35,7 +35,7 @@
 
         <%!-- Meaning --%>
         <div class="bg-base-200/50 rounded-xl p-6 mb-6">
-          <h2 class="text-sm font-medium text-secondary/60 uppercase tracking-wide mb-2">
+          <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-2">
             Meaning
           </h2>
           <p class="text-xl text-base-content">
@@ -46,17 +46,17 @@
         <%!-- Kanji Breakdown --%>
         <%= if @word.word_kanjis != [] do %>
           <div>
-            <h2 class="text-sm font-medium text-secondary/60 uppercase tracking-wide mb-4">
+            <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-4">
               Kanji Breakdown
             </h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               <%= for word_kanji <- @word.word_kanjis do %>
                 <.link
                   navigate={~p"/kanji/#{word_kanji.kanji.id}"}
-                  class="bg-white border border-base-300 rounded-xl p-4 hover:border-primary/30
-                         hover:shadow-sm transition-all text-center"
+                  class="bg-base-100 border border-base-300 rounded-xl p-4 hover:border-primary/30
+                         hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 text-center group"
                 >
-                  <div class="text-3xl mb-1 text-base-content">
+                  <div class="text-3xl mb-1 text-base-content group-hover:text-primary transition-colors">
                     {word_kanji.kanji.character}
                   </div>
                   <%= if word_kanji.kanji_reading do %>
@@ -64,7 +64,7 @@
                       {word_kanji.kanji_reading.reading}
                     </div>
                   <% else %>
-                    <div class="text-sm text-secondary/50">
+                    <div class="text-sm text-secondary/60">
                       No specific reading
                     </div>
                   <% end %>
@@ -80,14 +80,14 @@
     <div class="mt-8 flex justify-between items-center">
       <.link
         navigate={~p"/words?difficulty=#{@word.difficulty}"}
-        class="text-secondary/80 hover:text-primary font-medium transition-colors"
+        class="text-secondary hover:text-primary font-medium transition-colors"
       >
         ← Back to list
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
-        <button class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-medium
-                 transition-colors shadow-sm hover:shadow-md">
+        <button class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
+                 transition-all shadow-sm hover:shadow active:scale-[0.98]">
           Add to Study List
         </button>
       <% end %>

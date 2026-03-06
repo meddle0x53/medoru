@@ -35,55 +35,55 @@ defmodule MedoruWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8 bg-white border-b border-base-300">
+    <header class="navbar px-4 sm:px-6 lg:px-8 bg-base-100 border-b border-base-300 sticky top-0 z-40">
       <div class="flex-1">
-        <.link navigate={~p"/"} class="flex items-center gap-2">
-          <span class="text-xl font-bold text-accent">Medoru</span>
-          <span class="text-sm text-secondary/70">Learn Japanese</span>
+        <.link navigate={~p"/"} class="flex items-center gap-2 group">
+          <img src={~p"/images/medoru_logo_h.png"} alt="Medoru" class="h-10 w-auto" />
         </.link>
       </div>
       <div class="flex-none">
-        <ul class="flex items-center space-x-4">
+        <ul class="flex items-center space-x-1 sm:space-x-2">
           <%= if @current_scope && @current_scope.current_user do %>
-            <li>
-              <.link navigate={~p"/dashboard"} class="btn btn-ghost text-secondary">
+            <li class="hidden sm:block">
+              <.link navigate={~p"/dashboard"} class="btn btn-ghost btn-sm text-secondary">
                 Dashboard
               </.link>
             </li>
-            <li>
-              <.link navigate={~p"/lessons"} class="btn btn-ghost text-secondary">
+            <li class="hidden sm:block">
+              <.link navigate={~p"/lessons"} class="btn btn-ghost btn-sm text-secondary">
                 Lessons
               </.link>
             </li>
-            <li>
-              <.link navigate={~p"/kanji"} class="btn btn-ghost text-secondary">
+            <li class="hidden md:block">
+              <.link navigate={~p"/kanji"} class="btn btn-ghost btn-sm text-secondary">
                 Kanji
               </.link>
             </li>
-            <li>
-              <.link navigate={~p"/words"} class="btn btn-ghost text-secondary">
+            <li class="hidden md:block">
+              <.link navigate={~p"/words"} class="btn btn-ghost btn-sm text-secondary">
                 Words
               </.link>
             </li>
-            <li class="flex items-center gap-2 ml-4 pl-4 border-l border-base-300">
+            <li class="flex items-center gap-2 ml-2 pl-2 sm:ml-4 sm:pl-4 border-l border-base-300">
               <%= if @current_scope.current_user.avatar_url do %>
                 <img
                   src={@current_scope.current_user.avatar_url}
                   alt="Avatar"
-                  class="w-8 h-8 rounded-full"
+                  class="w-8 h-8 rounded-full ring-2 ring-base-200"
                 />
               <% else %>
-                <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-                  <.icon name="hero-user" class="w-4 h-4 text-accent" />
+                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+                  <.icon name="hero-user" class="w-4 h-4 text-primary" />
                 </div>
               <% end %>
-              <span class="text-sm text-secondary hidden sm:block">
+              <span class="text-sm text-secondary hidden lg:block max-w-[120px] truncate">
                 {@current_scope.current_user.name || @current_scope.current_user.email}
               </span>
               <.link
                 href={~p"/auth/logout"}
                 method="delete"
-                class="ml-2 text-sm text-secondary/70 hover:text-red-600"
+                class="ml-1 p-2 rounded-lg text-secondary/70 hover:text-error hover:bg-error/10 transition-colors"
+                title="Sign out"
               >
                 <.icon name="hero-arrow-right-on-rectangle" class="w-5 h-5" />
               </.link>
@@ -92,7 +92,7 @@ defmodule MedoruWeb.Layouts do
             <li>
               <.link
                 href={~p"/auth/google"}
-                class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-base-300 rounded-lg text-sm font-medium text-secondary hover:bg-base-200 transition-colors"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-sm font-medium text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
               >
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                   <path
@@ -112,7 +112,8 @@ defmodule MedoruWeb.Layouts do
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Sign in with Google
+                <span class="hidden sm:inline">Sign in with Google</span>
+                <span class="sm:hidden">Sign in</span>
               </.link>
             </li>
           <% end %>

@@ -9,12 +9,12 @@
     </.link>
 
     <%!-- Main Kanji Card --%>
-    <div class="bg-white rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
       <div class="p-8">
         <div class="flex flex-col md:flex-row gap-8">
           <%!-- Large Kanji Display --%>
           <div class="flex-shrink-0">
-            <div class="w-32 h-32 md:w-40 md:h-40 bg-base-200/50 rounded-2xl flex items-center justify-center border border-base-300">
+            <div class="w-32 h-32 md:w-40 md:h-40 bg-base-200/70 rounded-2xl flex items-center justify-center border border-base-300 shadow-inner">
               <span class="text-7xl md:text-8xl font-medium text-base-content">
                 {@kanji.character}
               </span>
@@ -46,12 +46,12 @@
 
             <%= if @kanji.radicals != [] do %>
               <div>
-                <h2 class="text-sm font-medium text-secondary uppercase tracking-wide mb-2">
+                <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
                   Radicals
                 </h2>
                 <div class="flex gap-2">
                   <%= for radical <- @kanji.radicals do %>
-                    <span class="bg-secondary/10 text-secondary/80 px-3 py-1 rounded-lg text-lg border border-secondary/30">
+                    <span class="bg-secondary/10 text-secondary px-3 py-1.5 rounded-lg text-lg border border-secondary/20">
                       {radical}
                     </span>
                   <% end %>
@@ -66,12 +66,12 @@
     <%!-- Readings Section --%>
     <div class="grid md:grid-cols-2 gap-6">
       <%!-- On Readings --%>
-      <div class="bg-white rounded-2xl shadow-sm border border-base-300 p-6">
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
-          <span class="bg-accent/20 text-accent/80 px-3 py-1 rounded-full text-sm font-medium">
+          <span class="bg-accent/15 text-accent px-3 py-1 rounded-full text-sm font-medium">
             On'yomi
           </span>
-          <span class="text-sm text-secondary">(Chinese reading)</span>
+          <span class="text-sm text-secondary/70">(Chinese reading)</span>
         </div>
 
         <%= if @on_readings != [] do %>
@@ -100,12 +100,12 @@
       </div>
 
       <%!-- Kun Readings --%>
-      <div class="bg-white rounded-2xl shadow-sm border border-base-300 p-6">
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
-          <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
+          <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
             Kun'yomi
           </span>
-          <span class="text-sm text-secondary">(Japanese reading)</span>
+          <span class="text-sm text-secondary/70">(Japanese reading)</span>
         </div>
 
         <%= if @kun_readings != [] do %>
@@ -149,7 +149,7 @@
         <%!-- Words Grouped by Reading --%>
         <div class="space-y-6">
           <%= for {reading, words} <- @words_data.groups do %>
-            <div class="bg-white rounded-xl shadow-sm border border-base-300 overflow-hidden">
+            <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
               <%!-- Reading Header --%>
               <div class="bg-base-200/50 px-6 py-3 border-b border-base-300">
                 <div class="flex items-center gap-3">
@@ -158,12 +158,12 @@
                   <% else %>
                     <span class="text-2xl font-medium text-accent">{reading}</span>
                   <% end %>
-                  <span class="text-sm text-secondary">({length(words)} words)</span>
+                  <span class="text-sm text-secondary/70">({length(words)} words)</span>
                 </div>
               </div>
 
               <%!-- Words List --%>
-              <div class="divide-y divide-slate-100">
+              <div class="divide-y divide-base-200">
                 <%= for word <- words do %>
                   <.link
                     navigate={~p"/words/#{word.id}"}
@@ -197,12 +197,12 @@
             <%= if @page > 1 do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page - 1}"}
-                class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
+                class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
               >
                 ← Previous
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-base-200 text-secondary/50 cursor-not-allowed">
+              <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
                 ← Previous
               </span>
             <% end %>
@@ -211,13 +211,13 @@
             <div class="flex items-center gap-1">
               <%= for page_num <- 1..@words_data.total_pages do %>
                 <%= if page_num == @page do %>
-                  <span class="px-4 py-2 rounded-lg bg-primary text-white font-medium">
+                  <span class="px-4 py-2 rounded-lg bg-primary text-primary-content font-medium shadow-sm">
                     {page_num}
                   </span>
                 <% else %>
                   <.link
                     patch={~p"/kanji/#{@kanji.id}?page=#{page_num}"}
-                    class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
+                    class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
                   >
                     {page_num}
                   </.link>
@@ -229,12 +229,12 @@
             <%= if @page < @words_data.total_pages do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page + 1}"}
-                class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
+                class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
               >
                 Next →
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-base-200 text-secondary/50 cursor-not-allowed">
+              <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
                 Next →
               </span>
             <% end %>
@@ -257,8 +257,8 @@
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
-        <button class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-medium
-                 transition-colors shadow-sm hover:shadow-md">
+        <button class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
+                 transition-all shadow-sm hover:shadow active:scale-[0.98]">
           Add to Study List
         </button>
       <% end %>

@@ -3,7 +3,7 @@
     <%!-- Header --%>
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">Kanji Browser</h1>
-      <p class="text-secondary/80">Browse and learn Japanese kanji organized by JLPT level</p>
+      <p class="text-secondary">Browse and learn Japanese kanji organized by JLPT level</p>
     </div>
 
     <%!-- Level Selector --%>
@@ -12,10 +12,10 @@
         <.link
           patch={~p"/kanji?level=#{level}"}
           class={[
-            "px-4 py-2 rounded-lg font-medium transition-colors",
+            "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
             if(@jlpt_level == level,
-              do: "bg-primary text-white",
-              else: "bg-base-200 text-secondary hover:bg-base-300"
+              do: "bg-primary text-primary-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
             )
           ]}
         >
@@ -25,11 +25,11 @@
     </div>
 
     <%!-- Stats --%>
-    <div class="mb-6 flex items-center gap-4 text-sm text-secondary/80">
-      <span class="bg-base-200 px-3 py-1 rounded-full">
+    <div class="mb-6 flex items-center gap-3 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
         {length(@kanji_list)} characters
       </span>
-      <span class="bg-base-200 px-3 py-1 rounded-full">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
         JLPT N{@jlpt_level}
       </span>
     </div>
@@ -41,14 +41,14 @@
           navigate={~p"/kanji/#{kanji.id}"}
           class="group"
         >
-          <div class="aspect-square bg-white border border-base-300 rounded-xl flex items-center justify-center
-                      shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
-            <span class="text-3xl font-medium text-slate-800 group-hover:text-primary transition-colors">
+          <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex items-center justify-center
+                      shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
+            <span class="text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
               {kanji.character}
             </span>
           </div>
-          <div class="mt-1 text-center">
-            <span class="text-xs text-secondary/60">
+          <div class="mt-1.5 text-center">
+            <span class="text-xs text-secondary/70 line-clamp-1 px-1">
               {List.first(kanji.meanings, "")}
             </span>
           </div>
@@ -60,7 +60,7 @@
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
         <h3 class="text-lg font-medium text-base-content mb-2">No kanji found</h3>
-        <p class="text-secondary/80">This JLPT level doesn't have any kanji data yet.</p>
+        <p class="text-secondary">This JLPT level doesn't have any kanji data yet.</p>
       </div>
     <% end %>
   </div>

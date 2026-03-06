@@ -4,7 +4,7 @@
     <div class="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
       <div class="mx-auto max-w-2xl text-center">
         <div class="mb-8 flex justify-center">
-          <span class="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold leading-6 text-primary ring-1 ring-inset ring-primary/20">
+          <span class="rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold leading-6 text-primary ring-1 ring-inset ring-primary/20">
             0.1.0 Early Access
           </span>
         </div>
@@ -20,14 +20,14 @@
           <%= if @current_scope && @current_scope.current_user do %>
             <.link
               navigate={~p"/dashboard"}
-              class="rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              class="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-content shadow-sm hover:bg-primary/90 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               Go to Dashboard
             </.link>
           <% else %>
             <a
               href={~p"/auth/google"}
-              class="inline-flex items-center gap-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-base-content shadow-sm ring-1 ring-inset ring-base-300 hover:bg-base-200"
+              class="inline-flex items-center gap-2 rounded-xl bg-base-100 px-5 py-3 text-sm font-semibold text-base-content shadow-sm ring-1 ring-inset ring-base-300 hover:bg-base-200 transition-colors"
             >
               <svg class="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -50,7 +50,10 @@
               Sign in with Google
             </a>
           <% end %>
-          <a href="#features" class="text-sm font-semibold leading-6 text-base-content">
+          <a
+            href="#features"
+            class="text-sm font-semibold leading-6 text-base-content hover:text-primary transition-colors"
+          >
             Learn more <span aria-hidden="true">→</span>
           </a>
         </div>

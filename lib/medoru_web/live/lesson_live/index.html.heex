@@ -3,7 +3,9 @@
     <%!-- Header --%>
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">Lessons</h1>
-      <p class="text-secondary">Learn vocabulary through structured lessons. Each word teaches kanji readings in context.</p>
+      <p class="text-secondary">
+        Learn vocabulary through structured lessons. Each word teaches kanji readings in context.
+      </p>
     </div>
 
     <%!-- Difficulty Selector --%>
@@ -12,10 +14,10 @@
         <.link
           patch={~p"/lessons?difficulty=#{level}"}
           class={[
-            "px-4 py-2 rounded-lg font-medium transition-colors",
+            "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
             if(@difficulty == level,
-              do: "bg-primary text-white",
-              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-accent"
+              do: "bg-primary text-primary-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
             )
           ]}
         >
@@ -47,7 +49,7 @@
             "border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200",
             if(is_completed,
               do: "bg-primary/5 border-primary/30 hover:border-primary/50",
-              else: "bg-white border-base-300 hover:border-accent/30"
+              else: "bg-base-100 border-base-300 hover:border-primary/30"
             )
           ]}>
             <div class="flex items-start gap-4">
@@ -57,13 +59,13 @@
                   "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
                   if(is_completed,
                     do: "bg-primary/20 group-hover:bg-primary/30",
-                    else: "bg-accent/20 group-hover:bg-accent/30"
+                    else: "bg-primary/10 group-hover:bg-primary/20"
                   )
                 ]}>
                   <%= if is_completed do %>
                     <.icon name="hero-check" class="w-6 h-6 text-primary" />
                   <% else %>
-                    <span class="text-xl font-bold text-accent">
+                    <span class="text-xl font-bold text-primary">
                       {index + 1}
                     </span>
                   <% end %>
@@ -77,47 +79,63 @@
                     "text-xl font-semibold transition-colors",
                     if(is_completed,
                       do: "text-secondary group-hover:text-primary",
-                      else: "text-secondary group-hover:text-accent"
+                      else: "text-base-content group-hover:text-primary"
                     )
                   ]}>
                     {lesson.title}
                   </h2>
                   <%= if is_completed do %>
-                    <span class="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+                    <span class="bg-primary/20 text-primary px-2.5 py-0.5 rounded-full text-xs font-medium">
                       Completed
                     </span>
                   <% end %>
                 </div>
-                <p class="text-secondary/80 text-sm mb-3 line-clamp-2">
+                <p class="text-secondary text-sm mb-3 line-clamp-2">
                   {lesson.description}
                 </p>
                 <div class="flex items-center gap-3 text-sm">
                   <span class={[
-                    "px-2 py-1 rounded font-medium capitalize flex items-center gap-1",
+                    "px-2.5 py-1 rounded-lg font-medium capitalize flex items-center gap-1.5",
                     case lesson.lesson_type do
-                      :reading -> "bg-accent/20 text-accent/80"
-                      :writing -> "bg-purple-100 text-purple-700"
-                      :listening -> "bg-orange-100 text-orange-700"
-                      :speaking -> "bg-pink-100 text-pink-700"
-                      :grammar -> "bg-teal-100 text-teal-700"
-                      _ -> "bg-base-200 text-secondary"
+                      :reading ->
+                        "bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+
+                      :writing ->
+                        "bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+
+                      :listening ->
+                        "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+                      :speaking ->
+                        "bg-pink-100/80 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+
+                      :grammar ->
+                        "bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+
+                      _ ->
+                        "bg-base-200 text-secondary"
                     end
                   ]}>
-                    <.icon name={case lesson.lesson_type do
-                      :reading -> "hero-book-open"
-                      :writing -> "hero-pencil"
-                      :listening -> "hero-speaker-wave"
-                      :speaking -> "hero-chat-bubble-left-right"
-                      :grammar -> "hero-wrench"
-                      _ -> "hero-academic-cap"
-                    end} class="w-3.5 h-3.5" />
+                    <.icon
+                      name={
+                        case lesson.lesson_type do
+                          :reading -> "hero-book-open"
+                          :writing -> "hero-pencil"
+                          :listening -> "hero-speaker-wave"
+                          :speaking -> "hero-chat-bubble-left-right"
+                          :grammar -> "hero-wrench"
+                          _ -> "hero-academic-cap"
+                        end
+                      }
+                      class="w-3.5 h-3.5"
+                    />
                     {lesson.lesson_type}
                   </span>
-                  <span class="bg-base-200 text-secondary px-2 py-1 rounded">
+                  <span class="bg-base-200 text-secondary px-2.5 py-1 rounded-lg">
                     {length(lesson.lesson_words)} words
                   </span>
                   <%= if lesson_progress && !is_completed do %>
-                    <span class="bg-accent/20 text-accent px-2 py-1 rounded">
+                    <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-lg font-medium">
                       {lesson_progress.progress_percentage}% complete
                     </span>
                   <% end %>
@@ -132,7 +150,7 @@
                     "w-5 h-5 transition-colors",
                     if(is_completed,
                       do: "text-primary/50 group-hover:text-primary",
-                      else: "text-secondary/50 group-hover:text-accent"
+                      else: "text-secondary/50 group-hover:text-primary"
                     )
                   ]}
                 />
