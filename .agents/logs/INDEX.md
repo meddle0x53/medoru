@@ -1,6 +1,7 @@
 # Medoru Development Logs
 
-## Iterations
+## Version 0.1.0 (MVP) - Current
+
 | # | Title | Status | Date |
 |---|-------|--------|------|
 | 1 | OAuth & Accounts | ✅ APPROVED | 2026-03-05 |
@@ -11,10 +12,40 @@
 | 6 | Daily Reviews & Streaks | ⏳ PENDING | - |
 | 7 | Polish & Integration | ⏳ PENDING | - |
 
+## Version 0.2.0 (Social Features) - Planned
+
+| # | Title | Status | Date |
+|---|-------|--------|------|
+| 8 | Friends System | ⏳ PLANNED | - |
+| 9 | Real-time Duels | ⏳ PLANNED | - |
+| 10 | Rankings & Leaderboards | ⏳ PLANNED | - |
+| 11 | Duel History & Stats | ⏳ PLANNED | - |
+| 12 | Notifications | ⏳ PLANNED | - |
+
+## Version 0.3.0 (Content Expansion) - Planned
+
+| # | Title | Status | Date |
+|---|-------|--------|------|
+| 13 | N4 Kanji & Words | ⏳ PLANNED | - |
+| 14 | Grammar Content | ⏳ PLANNED | - |
+| 15 | Listening Exercises | ⏳ PLANNED | - |
+| 16 | Stroke Drawing | ⏳ PLANNED | - |
+
+## Future Ideas (Backlog)
+- Mobile app (React Native/Flutter)
+- AI-powered pronunciation feedback
+- Community-created lessons
+- JLPT practice exams
+- Offline mode
+- Dark mode UI
+- API for third-party integrations
+
 ## Current State
-- **Phase**: Iteration 3 APPROVED
+- **Version**: 0.1.0 (MVP)
+- **Phase**: Iteration 3 APPROVED, ready for Iteration 4
 - **Last completed**: Iteration 3 - Words with Reading Links
-- **Current**: Ready for Iteration 4 - Lessons
+- **Next**: Iteration 4 - Lessons System
+- **Overall Progress**: 3/7 iterations for v0.1.0
 
 ## Project Status
 
