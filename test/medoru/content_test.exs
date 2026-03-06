@@ -655,6 +655,291 @@ defmodule Medoru.ContentTest do
     end
   end
 
+  describe "lessons" do
+    import Medoru.ContentFixtures
+
+    @invalid_attrs %{title: nil, description: nil, difficulty: nil, order_index: nil}
+
+    test "list_lessons/0 returns all lessons ordered by difficulty and order_index" do
+      # Create lessons in non-sequential order
+      lesson1 = lesson_fixture(%{difficulty: 5, order_index: 2})
+      lesson2 = lesson_fixture(%{difficulty: 5, order_index: 1})
+      lesson3 = lesson_fixture(%{difficulty: 4, order_index: 1})
+
+      list = Content.list_lessons()
+      difficulty_4_index = Enum.find_index(list, &(&1.id == lesson3.id))
+      difficulty_5_first = Enum.find_index(list, &(&1.id == lesson2.id))
+      difficulty_5_second = Enum.find_index(list, &(&1.id == lesson1.id))
+
+      # N4 should come before N5
+      assert difficulty_4_index < difficulty_5_first
+      # Within N5, order_index 1 should come before 2
+      assert difficulty_5_first < difficulty_5_second
+    end
+
+    test "list_lessons_by_difficulty/1 returns lessons filtered by difficulty" do
+      n5_lesson = lesson_fixture(%{difficulty: 5})
+      n4_lesson = lesson_fixture(%{difficulty: 4})
+
+      n5_list = Content.list_lessons_by_difficulty(5)
+      n4_list = Content.list_lessons_by_difficulty(4)
+
+      assert Enum.map(n5_list, & &1.id) |> Enum.member?(n5_lesson.id)
+      assert Enum.map(n4_list, & &1.id) |> Enum.member?(n4_lesson.id)
+      refute Enum.map(n5_list, & &1.id) |> Enum.member?(n4_lesson.id)
+    end
+
+    test "get_lesson!/1 returns the lesson with given id" do
+      lesson = lesson_fixture()
+      assert Content.get_lesson!(lesson.id).id == lesson.id
+    end
+
+    test "get_lesson!/1 raises if lesson does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_lesson!(Ecto.UUID.generate())
+      end
+    end
+
+    test "get_lesson_with_words!/1 returns lesson with preloaded words" do
+      lesson = lesson_with_words_fixture()
+      loaded = Content.get_lesson_with_words!(lesson.id)
+
+      assert loaded.id == lesson.id
+      assert is_list(loaded.lesson_words)
+      assert length(loaded.lesson_words) == 2
+
+      # Check that words are preloaded
+      first_lw = List.first(loaded.lesson_words)
+      assert %Word{} = first_lw.word
+    end
+
+    test "create_lesson/1 with valid data creates a lesson" do
+      valid_attrs = %{
+        title: "Test Lesson",
+        description: "Test description",
+        difficulty: 5,
+        order_index: 1
+      }
+
+      assert {:ok, %Medoru.Content.Lesson{} = lesson} = Content.create_lesson(valid_attrs)
+      assert lesson.title == "Test Lesson"
+      assert lesson.description == "Test description"
+      assert lesson.difficulty == 5
+      assert lesson.order_index == 1
+    end
+
+    test "create_lesson/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_lesson(@invalid_attrs)
+    end
+
+    test "create_lesson/1 validates difficulty range" do
+      attrs = %{
+        title: "Test",
+        description: "Test",
+        difficulty: 6,
+        order_index: 1
+      }
+
+      assert {:error, changeset} = Content.create_lesson(attrs)
+      assert "must be less than or equal to 5" in errors_on(changeset).difficulty
+    end
+
+    test "create_lesson/1 validates order_index is non-negative" do
+      attrs = %{
+        title: "Test",
+        description: "Test",
+        difficulty: 5,
+        order_index: -1
+      }
+
+      assert {:error, changeset} = Content.create_lesson(attrs)
+      assert "must be greater than or equal to 0" in errors_on(changeset).order_index
+    end
+
+    test "create_lesson_with_words/2 creates lesson and word links in transaction" do
+      word1 = word_fixture()
+      word2 = word_fixture()
+
+      lesson_attrs = %{
+        title: "Test Lesson",
+        description: "Test with words",
+        difficulty: 5,
+        order_index: 1
+      }
+
+      word_links = [
+        %{position: 0, word_id: word1.id},
+        %{position: 1, word_id: word2.id}
+      ]
+
+      assert {:ok, %Medoru.Content.Lesson{} = lesson} =
+               Content.create_lesson_with_words(lesson_attrs, word_links)
+
+      assert lesson.title == "Test Lesson"
+      assert length(lesson.lesson_words) == 2
+
+      # Verify lesson_words were created
+      lws = Content.list_words_for_lesson(lesson.id)
+      assert length(lws) == 2
+    end
+
+    test "create_lesson_with_words/2 rolls back on invalid word link" do
+      lesson_attrs = %{
+        title: "Test Lesson",
+        description: "Test",
+        difficulty: 5,
+        order_index: 1
+      }
+
+      # Invalid word_id
+      word_links = [
+        %{position: 0, word_id: Ecto.UUID.generate()}
+      ]
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.create_lesson_with_words(lesson_attrs, word_links)
+
+      assert changeset.errors[:word_id]
+
+      # Verify lesson was not created
+      assert Content.list_lessons() == []
+    end
+
+    test "update_lesson/2 with valid data updates the lesson" do
+      lesson = lesson_fixture()
+      update_attrs = %{title: "Updated Title", description: "Updated description"}
+
+      assert {:ok, %Medoru.Content.Lesson{} = lesson} =
+               Content.update_lesson(lesson, update_attrs)
+
+      assert lesson.title == "Updated Title"
+      assert lesson.description == "Updated description"
+    end
+
+    test "update_lesson/2 with invalid data returns error changeset" do
+      lesson = lesson_fixture()
+      assert {:error, %Ecto.Changeset{}} = Content.update_lesson(lesson, @invalid_attrs)
+      assert lesson.id == Content.get_lesson!(lesson.id).id
+    end
+
+    test "delete_lesson/1 deletes the lesson and associated word links" do
+      lesson = lesson_with_words_fixture()
+      lw_ids = Enum.map(lesson.lesson_words, & &1.id)
+
+      assert {:ok, %Medoru.Content.Lesson{}} = Content.delete_lesson(lesson)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_lesson!(lesson.id)
+      end
+
+      # Verify lesson_words were also deleted
+      for lw_id <- lw_ids do
+        assert_raise Ecto.NoResultsError, fn ->
+          Content.get_lesson_word!(lw_id)
+        end
+      end
+    end
+
+    test "change_lesson/1 returns a lesson changeset" do
+      lesson = lesson_fixture()
+      assert %Ecto.Changeset{} = Content.change_lesson(lesson)
+    end
+  end
+
+  describe "lesson_words" do
+    import Medoru.ContentFixtures
+
+    @invalid_attrs %{position: nil}
+
+    test "list_lesson_words/0 returns all lesson word links" do
+      lesson = lesson_with_words_fixture()
+
+      assert Content.list_lesson_words()
+             |> Enum.map(& &1.id)
+             |> Enum.member?(List.first(lesson.lesson_words).id)
+    end
+
+    test "list_words_for_lesson/1 returns word links for specific lesson" do
+      lesson = lesson_with_words_fixture()
+
+      lws = Content.list_words_for_lesson(lesson.id)
+      assert length(lws) == 2
+      assert List.first(lws).position == 0
+      assert List.last(lws).position == 1
+    end
+
+    test "get_lesson_word!/1 returns the lesson word link with given id" do
+      lesson = lesson_with_words_fixture()
+      lw = List.first(lesson.lesson_words)
+
+      assert Content.get_lesson_word!(lw.id).id == lw.id
+    end
+
+    test "create_lesson_word/1 with valid data creates a lesson word link" do
+      lesson = lesson_fixture()
+      word = word_fixture()
+
+      valid_attrs = %{
+        position: 0,
+        lesson_id: lesson.id,
+        word_id: word.id
+      }
+
+      assert {:ok, %Medoru.Content.LessonWord{} = lw} =
+               Content.create_lesson_word(valid_attrs)
+
+      assert lw.position == 0
+      assert lw.lesson_id == lesson.id
+      assert lw.word_id == word.id
+    end
+
+    test "create_lesson_word/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_lesson_word(@invalid_attrs)
+    end
+
+    test "create_lesson_word/1 validates position is non-negative" do
+      lesson = lesson_fixture()
+      word = word_fixture()
+
+      attrs = %{
+        position: -1,
+        lesson_id: lesson.id,
+        word_id: word.id
+      }
+
+      assert {:error, changeset} = Content.create_lesson_word(attrs)
+      assert "must be greater than or equal to 0" in errors_on(changeset).position
+    end
+
+    test "update_lesson_word/2 with valid data updates the lesson word link" do
+      lesson = lesson_with_words_fixture()
+      lw = List.first(lesson.lesson_words)
+
+      assert {:ok, %Medoru.Content.LessonWord{} = lw} =
+               Content.update_lesson_word(lw, %{position: 5})
+
+      assert lw.position == 5
+    end
+
+    test "delete_lesson_word/1 deletes the lesson word link" do
+      lesson = lesson_with_words_fixture()
+      lw = List.first(lesson.lesson_words)
+
+      assert {:ok, %Medoru.Content.LessonWord{}} = Content.delete_lesson_word(lw)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_lesson_word!(lw.id)
+      end
+    end
+
+    test "change_lesson_word/1 returns a lesson word changeset" do
+      lesson = lesson_with_words_fixture()
+      lw = List.first(lesson.lesson_words)
+
+      assert %Ecto.Changeset{} = Content.change_lesson_word(lw)
+    end
+  end
+
   # Helper functions
 
   defp unique_kanji_char do

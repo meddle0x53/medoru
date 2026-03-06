@@ -139,4 +139,69 @@ else
   IO.puts("Warning: #{n5_words_path} not found. Skipping word seeds.")
 end
 
+# Load N5 Lessons from JSON
+n5_lessons_path = Path.join(__DIR__, "seeds/lessons_n5.json")
+
+if File.exists?(n5_lessons_path) do
+  n5_lessons =
+    n5_lessons_path
+    |> File.read!()
+    |> Jason.decode!()
+
+  IO.puts("\nSeeding #{length(n5_lessons)} N5 lessons...")
+
+  # Build a lookup map of word text to word record
+  word_map =
+    Content.list_words()
+    |> Map.new(fn word -> {word.text, word} end)
+
+  Enum.each(n5_lessons, fn lesson_data ->
+    lesson_attrs = %{
+      title: lesson_data["title"],
+      description: lesson_data["description"],
+      difficulty: lesson_data["difficulty"],
+      order_index: lesson_data["order_index"]
+    }
+
+    # Build word links for this lesson
+    word_links =
+      lesson_data["words"]
+      |> Enum.with_index()
+      |> Enum.map(fn {text, position} ->
+        case Map.get(word_map, text) do
+          nil ->
+            IO.puts("  ⚠ Word not found: #{text}")
+            nil
+
+          word ->
+            %{
+              position: position,
+              word_id: word.id
+            }
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    # Only create if we found all words
+    if length(word_links) == length(lesson_data["words"]) do
+      case Content.create_lesson_with_words(lesson_attrs, word_links) do
+        {:ok, _lesson} ->
+          IO.puts("  ✓ Created lesson: #{lesson_data["title"]}")
+
+        {:error, changeset} ->
+          IO.puts("  ✗ Failed to create lesson: #{lesson_data["title"]}")
+          IO.inspect(changeset.errors, label: "Errors")
+      end
+    else
+      IO.puts("  ⚠ Skipped lesson (missing words): #{lesson_data["title"]}")
+    end
+  end)
+
+  IO.puts("\nLesson seeding complete!")
+  IO.puts("Total lessons: #{Enum.count(Content.list_lessons())}")
+  IO.puts("Total lesson-word links: #{Enum.count(Content.list_lesson_words())}")
+else
+  IO.puts("Warning: #{n5_lessons_path} not found. Skipping lesson seeds.")
+end
+
 IO.puts("\n✅ All seeding complete!")

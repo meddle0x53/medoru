@@ -7,7 +7,7 @@
 | 1 | OAuth & Accounts | ✅ APPROVED | 2026-03-05 |
 | 2 | Kanji & Readings | ✅ APPROVED | 2026-03-05 |
 | 3 | Words with Reading Links | ✅ APPROVED | 2026-03-06 |
-| 4 | Lessons | ⏳ PENDING | - |
+| 4 | Lessons | ✅ COMPLETED | 2026-03-06 |
 | 5 | Learning Core | ⏳ PENDING | - |
 | 6 | Daily Reviews & Streaks | ⏳ PENDING | - |
 | 7 | Polish & Integration | ⏳ PENDING | - |
@@ -42,10 +42,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP)
-- **Phase**: Iteration 3 APPROVED, ready for Iteration 4
-- **Last completed**: Iteration 3 - Words with Reading Links
-- **Next**: Iteration 4 - Lessons System
-- **Overall Progress**: 3/7 iterations for v0.1.0
+- **Phase**: Iteration 4 COMPLETED - PENDING REVIEW
+- **Last completed**: Iteration 4 - Lessons System
+- **Next**: Iteration 5 - Learning Core
+- **Overall Progress**: 4/7 iterations for v0.1.0
 
 ## Project Status
 
@@ -129,9 +129,9 @@ mix ecto.reset
 ## Notes for Next Instance
 
 1. **Always read this INDEX first** to understand current state
-2. **Check ITERATION-02-kanji-readings.md** for detailed implementation notes
+2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 3)
+4. **Ask meddle** which iteration to work on (currently: Iteration 5 - Learning Core)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files

@@ -31,6 +31,8 @@ defmodule MedoruWeb.Router do
       live "/kanji/:id", KanjiLive.Show
       live "/words", WordLive.Index
       live "/words/:id", WordLive.Show
+      live "/lessons", LessonLive.Index
+      live "/lessons/:id", LessonLive.Show
     end
   end
 
@@ -52,7 +54,6 @@ defmodule MedoruWeb.Router do
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
       # Placeholder routes for future iterations
-      live "/lessons", DashboardLive, :lessons_placeholder
       live "/daily-review", DashboardLive, :daily_review_placeholder
     end
   end

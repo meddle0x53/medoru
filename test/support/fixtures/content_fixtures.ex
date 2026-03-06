@@ -141,4 +141,45 @@ defmodule Medoru.ContentFixtures do
     index = System.unique_integer([:positive]) |> rem(100)
     <<0x3400 + index::utf8>>
   end
+
+  @doc """
+  Generate a lesson without kanji links.
+  """
+  def lesson_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        title: "Test Lesson #{System.unique_integer([:positive])}",
+        description: "Test lesson description",
+        difficulty: 5,
+        order_index: System.unique_integer([:positive])
+      })
+
+    {:ok, lesson} = Medoru.Content.create_lesson(attrs)
+    lesson
+  end
+
+  @doc """
+  Generate a lesson with word links in a single transaction.
+  """
+  def lesson_with_words_fixture(word_attrs \\ %{}, lesson_attrs \\ %{}) do
+    # Create words first
+    word1 = word_fixture(word_attrs)
+    word2 = word_fixture(word_attrs)
+
+    lesson_attrs =
+      Enum.into(lesson_attrs, %{
+        title: "Test Lesson #{System.unique_integer([:positive])}",
+        description: "Test lesson with words",
+        difficulty: 5,
+        order_index: System.unique_integer([:positive])
+      })
+
+    word_links = [
+      %{position: 0, word_id: word1.id},
+      %{position: 1, word_id: word2.id}
+    ]
+
+    {:ok, lesson} = Medoru.Content.create_lesson_with_words(lesson_attrs, word_links)
+    %{lesson | lesson_words: Medoru.Content.list_words_for_lesson(lesson.id)}
+  end
 end

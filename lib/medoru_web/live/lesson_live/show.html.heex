@@ -1,0 +1,101 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Back Link --%>
+    <.link
+      navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
+      class="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 mb-6 transition-colors"
+    >
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@lesson.difficulty} Lessons
+    </.link>
+
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+          Lesson {@lesson.order_index}
+        </span>
+        <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+          JLPT N{@lesson.difficulty}
+        </span>
+      </div>
+      <h1 class="text-3xl font-bold text-slate-900 mb-3">
+        {@lesson.title}
+      </h1>
+      <p class="text-lg text-slate-600">
+        {@lesson.description}
+      </p>
+    </div>
+
+    <%!-- Progress Bar --%>
+    <%= if @current_scope && @current_scope.current_user do %>
+      <div class="bg-white border border-slate-200 rounded-xl p-6 mb-8">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Your Progress</span>
+          <span class="text-sm text-slate-500">0/{length(@lesson.lesson_words)} words learned</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2">
+          <div class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Words List --%>
+    <div class="mb-8">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">
+        Words in this Lesson ({length(@lesson.lesson_words)})
+      </h2>
+      <div class="space-y-3">
+        <%= for lesson_word <- @lesson.lesson_words do %>
+          <.link
+            navigate={~p"/words/#{lesson_word.word.id}"}
+            class="group block"
+          >
+            <div class="bg-white border border-slate-200 rounded-xl p-4
+                        hover:border-indigo-300 hover:shadow-sm transition-all">
+              <div class="flex items-center justify-between">
+                <div class="flex items-baseline gap-4">
+                  <span class="text-2xl font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">
+                    {lesson_word.word.text}
+                  </span>
+                  <span class="text-slate-500">
+                    {lesson_word.word.reading}
+                  </span>
+                </div>
+                <.icon name="hero-chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              </div>
+              <p class="text-slate-600 text-sm mt-1">
+                {lesson_word.word.meaning}
+              </p>
+            </div>
+          </.link>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Action Buttons --%>
+    <div class="flex flex-col sm:flex-row gap-4">
+      <%= if @current_scope && @current_scope.current_user do %>
+        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-xl font-medium
+                 transition-colors shadow-sm hover:shadow-md text-center">
+          Start Learning
+        </button>
+      <% else %>
+        <.link
+          href={~p"/auth/google"}
+          class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-xl font-medium
+                 transition-colors shadow-sm hover:shadow-md text-center"
+        >
+          Sign in to Start Learning
+        </.link>
+      <% end %>
+
+      <.link
+        navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
+        class="px-6 py-4 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200
+               transition-colors text-center"
+      >
+        Back to Lessons
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

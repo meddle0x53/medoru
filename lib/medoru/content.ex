@@ -4,7 +4,7 @@ defmodule Medoru.Content do
   """
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji}
+  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji, Lesson, LessonWord}
 
   # Kanji Functions
 
@@ -330,6 +330,69 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns words containing a specific kanji, grouped by reading, with pagination.
+
+  Returns a map where keys are reading strings and values are lists of words.
+  Each reading group is sorted by usage frequency.
+
+  ## Examples
+
+      iex> list_words_by_kanji_grouped_by_reading(kanji_id, page: 1, per_page: 20)
+      %{"ニチ" => [%Word{}, ...], "ひ" => [%Word{}, ...]}
+
+  """
+  def list_words_by_kanji_grouped_by_reading(kanji_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+    offset = (page - 1) * per_page
+
+    # Get total count for pagination
+    total_count =
+      WordKanji
+      |> where(kanji_id: ^kanji_id)
+      |> select([wk], count(wk.id))
+      |> Repo.one()
+
+    # Get paginated word_kanjis with preloaded data
+    word_kanjis =
+      WordKanji
+      |> where(kanji_id: ^kanji_id)
+      |> order_by([wk], asc: wk.word_id)
+      |> limit(^per_page)
+      |> offset(^offset)
+      |> preload([:word, :kanji_reading])
+      |> Repo.all()
+
+    # Group by reading (kanji_reading.reading or "kun"/"on" if no specific reading)
+    grouped =
+      word_kanjis
+      |> Enum.group_by(fn wk ->
+        case wk.kanji_reading do
+          nil -> "misc"
+          reading -> reading.reading
+        end
+      end)
+      |> Enum.map(fn {reading, wks} ->
+        # Sort words within each group by frequency
+        sorted_words =
+          wks
+          |> Enum.map(& &1.word)
+          |> Enum.sort_by(& &1.usage_frequency)
+
+        {reading, sorted_words}
+      end)
+      |> Enum.into(%{})
+
+    %{
+      groups: grouped,
+      total_count: total_count,
+      page: page,
+      per_page: per_page,
+      total_pages: ceil(total_count / per_page)
+    }
+  end
+
+  @doc """
   Gets a single word by ID.
 
   Raises `Ecto.NoResultsError` if the Word does not exist.
@@ -590,5 +653,278 @@ defmodule Medoru.Content do
   """
   def change_word_kanji(%WordKanji{} = word_kanji, attrs \\ %{}) do
     WordKanji.changeset(word_kanji, attrs)
+  end
+
+  # Lesson Functions
+
+  @doc """
+  Returns the list of all lessons ordered by difficulty and order_index.
+  """
+  def list_lessons do
+    Lesson
+    |> order_by([l], asc: l.difficulty, asc: l.order_index)
+    |> preload(lesson_words: :word)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of lessons filtered by difficulty level (1-5).
+
+  ## Examples
+
+      iex> list_lessons_by_difficulty(5)
+      [%Lesson{}, ...]
+
+  """
+  def list_lessons_by_difficulty(difficulty) when difficulty in 1..5 do
+    Lesson
+    |> where(difficulty: ^difficulty)
+    |> order_by([l], asc: l.order_index)
+    |> preload(lesson_words: :word)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single lesson by ID.
+
+  Raises `Ecto.NoResultsError` if the Lesson does not exist.
+
+  ## Examples
+
+      iex> get_lesson!(123)
+      %Lesson{}
+
+      iex> get_lesson!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_lesson!(id), do: Repo.get!(Lesson, id)
+
+  @doc """
+  Gets a single lesson with its words preloaded.
+
+  Raises `Ecto.NoResultsError` if the Lesson does not exist.
+
+  ## Examples
+
+      iex> get_lesson_with_words!(123)
+      %Lesson{lesson_words: [%LessonWord{word: %Word{}}, ...]}
+
+  """
+  def get_lesson_with_words!(id) do
+    Lesson
+    |> where(id: ^id)
+    |> preload(lesson_words: [word: :word_kanjis])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Creates a lesson.
+
+  ## Examples
+
+      iex> create_lesson(%{title: "Basic Kanji", description: "Learn...", difficulty: 5, order_index: 1})
+      {:ok, %Lesson{}}
+
+      iex> create_lesson(%{title: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_lesson(attrs \\ %{}) do
+    %Lesson{}
+    |> Lesson.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates a lesson with its word links in a single transaction.
+
+  The word_links should be a list of maps with:
+  - :position - position in lesson (0-indexed)
+  - :word_id - the word ID
+
+  ## Examples
+
+      iex> create_lesson_with_words(%{title: "Basic Vocabulary", ...}, [
+      ...>   %{position: 0, word_id: word1_id},
+      ...>   %{position: 1, word_id: word2_id}
+      ...> ])
+      {:ok, %Lesson{lesson_words: [%LessonWord{}, ...]}}
+
+  """
+  def create_lesson_with_words(lesson_attrs, word_links) do
+    Repo.transaction(fn ->
+      lesson =
+        case create_lesson(lesson_attrs) do
+          {:ok, lesson} -> lesson
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+
+      lesson_words =
+        Enum.map(word_links, fn link_attrs ->
+          link_attrs = Map.put(link_attrs, :lesson_id, lesson.id)
+
+          case create_lesson_word(link_attrs) do
+            {:ok, lesson_word} -> lesson_word
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end)
+
+      %{lesson | lesson_words: lesson_words}
+    end)
+  end
+
+  @doc """
+  Updates a lesson.
+
+  ## Examples
+
+      iex> update_lesson(lesson, %{title: "Updated Title"})
+      {:ok, %Lesson{}}
+
+      iex> update_lesson(lesson, %{title: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_lesson(%Lesson{} = lesson, attrs) do
+    lesson
+    |> Lesson.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a lesson and all its associated kanji links.
+
+  ## Examples
+
+      iex> delete_lesson(lesson)
+      {:ok, %Lesson{}}
+
+      iex> delete_lesson(lesson)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_lesson(%Lesson{} = lesson) do
+    Repo.delete(lesson)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking lesson changes.
+
+  ## Examples
+
+      iex> change_lesson(lesson)
+      %Ecto.Changeset{data: %Lesson{}}
+
+  """
+  def change_lesson(%Lesson{} = lesson, attrs \\ %{}) do
+    Lesson.changeset(lesson, attrs)
+  end
+
+  # LessonWord Functions
+
+  @doc """
+  Returns the list of all lesson word links.
+  """
+  def list_lesson_words do
+    Repo.all(LessonWord)
+  end
+
+  @doc """
+  Returns the list of word links for a specific lesson.
+
+  ## Examples
+
+      iex> list_words_for_lesson(lesson_id)
+      [%LessonWord{}, ...]
+
+  """
+  def list_words_for_lesson(lesson_id) do
+    LessonWord
+    |> where(lesson_id: ^lesson_id)
+    |> order_by([lw], asc: lw.position)
+    |> preload(:word)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single lesson word link.
+
+  Raises `Ecto.NoResultsError` if the LessonWord does not exist.
+
+  ## Examples
+
+      iex> get_lesson_word!(123)
+      %LessonWord{}
+
+      iex> get_lesson_word!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_lesson_word!(id), do: Repo.get!(LessonWord, id)
+
+  @doc """
+  Creates a lesson word link.
+
+  ## Examples
+
+      iex> create_lesson_word(%{position: 0, lesson_id: lesson_id, word_id: word_id})
+      {:ok, %LessonWord{}}
+
+      iex> create_lesson_word(%{position: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_lesson_word(attrs \\ %{}) do
+    %LessonWord{}
+    |> LessonWord.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a lesson word link.
+
+  ## Examples
+
+      iex> update_lesson_word(lesson_word, %{position: 1})
+      {:ok, %LessonWord{}}
+
+      iex> update_lesson_word(lesson_word, %{position: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_lesson_word(%LessonWord{} = lesson_word, attrs) do
+    lesson_word
+    |> LessonWord.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a lesson word link.
+
+  ## Examples
+
+      iex> delete_lesson_word(lesson_word)
+      {:ok, %LessonWord{}}
+
+      iex> delete_lesson_word(lesson_word)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_lesson_word(%LessonWord{} = lesson_word) do
+    Repo.delete(lesson_word)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking lesson word changes.
+
+  ## Examples
+
+      iex> change_lesson_word(lesson_word)
+      %Ecto.Changeset{data: %LessonWord{}}
+
+  """
+  def change_lesson_word(%LessonWord{} = lesson_word, attrs \\ %{}) do
+    LessonWord.changeset(lesson_word, attrs)
   end
 end

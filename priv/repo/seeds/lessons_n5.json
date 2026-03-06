@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Counting People & Things",
+    "description": "Learn to count people and objects in Japanese. Master the basic counters for everyday use.",
+    "difficulty": 5,
+    "order_index": 1,
+    "words": ["一人", "二人", "三つ", "四つ", "五つ", "九つ"]
+  },
+  {
+    "title": "Describing Size",
+    "description": "Learn words to describe the size of things. Essential for everyday conversation.",
+    "difficulty": 5,
+    "order_index": 2,
+    "words": ["大きい"]
+  },
+  {
+    "title": "Japan & Identity",
+    "description": "Learn words related to Japan and Japanese identity. Basic vocabulary for introducing yourself.",
+    "difficulty": 5,
+    "order_index": 3,
+    "words": ["日本", "日本人"]
+  },
+  {
+    "title": "Time & Dates",
+    "description": "Master vocabulary for talking about time. Learn how to refer to today and the current year.",
+    "difficulty": 5,
+    "order_index": 4,
+    "words": ["今日", "今年"]
+  },
+  {
+    "title": "Locations & Directions",
+    "description": "Learn basic location words. Essential for describing where things are.",
+    "difficulty": 5,
+    "order_index": 5,
+    "words": ["上", "中"]
+  }
+]
