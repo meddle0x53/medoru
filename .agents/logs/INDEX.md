@@ -9,7 +9,7 @@
 | 3 | Words with Reading Links | ✅ APPROVED | 2026-03-06 |
 | 4 | Lessons | ✅ APPROVED | 2026-03-06 |
 | 5 | Learning Core | ✅ APPROVED | 2026-03-06 |
-| 6 | Daily Reviews & Streaks | ✅ COMPLETED | 2026-03-06 |
+| 6 | Daily Reviews & Streaks | ✅ APPROVED | 2026-03-06 |
 | 7 | Polish & Integration | 🔄 IN PROGRESS | - |
 
 ## Version 0.2.0 (Social Features) - Planned
@@ -42,10 +42,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP)
-- **Phase**: Iteration 6 IN PROGRESS
-- **Last completed**: Iteration 6 - Daily Reviews & Streaks (PENDING REVIEW)
+- **Phase**: Iteration 7 IN PROGRESS
+- **Last completed**: Iteration 6 - Daily Reviews & Streaks (APPROVED)
 - **Current**: Iteration 7 - Polish & Integration
-- **Overall Progress**: 6/7 iterations for v0.1.0 (completed, pending review)
+- **Overall Progress**: 6/7 iterations for v0.1.0 (1 remaining)
 
 ## Project Status
 
@@ -131,7 +131,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 5 - Learning Core)
+4. **Ask meddle** which iteration to work on (currently: Iteration 7 - Polish & Integration)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
@@ -146,5 +146,5 @@ mix ecto.reset
 
 ---
 
-**Last updated**: 2026-03-05  
-**Status**: Iteration 3 IN PROGRESS
+**Last updated**: 2026-03-06  
+**Status**: Iteration 7 IN PROGRESS
