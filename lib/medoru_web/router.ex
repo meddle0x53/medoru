@@ -29,6 +29,8 @@ defmodule MedoruWeb.Router do
       on_mount: [{MedoruWeb.UserAuth, :default}] do
       live "/kanji", KanjiLive.Index
       live "/kanji/:id", KanjiLive.Show
+      live "/words", WordLive.Index
+      live "/words/:id", WordLive.Show
     end
   end
 

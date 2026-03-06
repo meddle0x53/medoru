@@ -3,7 +3,9 @@
 #     mix run priv/repo/seeds.exs
 #
 
+import Ecto.Query
 alias Medoru.Content
+alias Medoru.Repo
 
 # Load N5 Kanji from JSON
 n5_kanji_path = Path.join(__DIR__, "seeds/kanji_n5.json")
@@ -50,9 +52,91 @@ if File.exists?(n5_kanji_path) do
     end
   end)
 
-  IO.puts("\nSeeding complete!")
+  IO.puts("\nKanji seeding complete!")
   IO.puts("Total kanji: #{Enum.count(Content.list_kanji())}")
   IO.puts("Total readings: #{Enum.count(Content.list_kanji_readings())}")
 else
   IO.puts("Warning: #{n5_kanji_path} not found. Skipping kanji seeds.")
 end
+
+# Load N5 Words from JSON
+n5_words_path = Path.join(__DIR__, "seeds/words_n5.json")
+
+if File.exists?(n5_words_path) do
+  n5_words =
+    n5_words_path
+    |> File.read!()
+    |> Jason.decode!()
+
+  IO.puts("\nSeeding #{length(n5_words)} N5 words...")
+
+  # Build a lookup map of kanji character to kanji record with readings
+  kanji_map =
+    Content.list_kanji()
+    |> Repo.preload(:kanji_readings)
+    |> Map.new(fn kanji -> {kanji.character, kanji} end)
+
+  Enum.each(n5_words, fn word_data ->
+    word_attrs = %{
+      text: word_data["text"],
+      meaning: word_data["meaning"],
+      reading: word_data["reading"],
+      difficulty: word_data["difficulty"],
+      usage_frequency: word_data["usage_frequency"]
+    }
+
+    # Build kanji links for this word
+    kanji_links =
+      Enum.map(word_data["kanji"], fn kanji_data ->
+        character = kanji_data["character"]
+        position = kanji_data["position"]
+        reading_text = kanji_data["reading"]
+
+        case Map.get(kanji_map, character) do
+          nil ->
+            IO.puts("  ⚠ Kanji not found: #{character}")
+            nil
+
+          kanji ->
+            # Find the reading that matches
+            reading_id =
+              if reading_text != "" do
+                Enum.find_value(kanji.kanji_readings, nil, fn reading ->
+                  if reading.reading == reading_text, do: reading.id, else: nil
+                end)
+              else
+                nil
+              end
+
+            %{
+              position: position,
+              kanji_id: kanji.id,
+              kanji_reading_id: reading_id
+            }
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    # Only create if we found all kanji
+    if length(kanji_links) == length(word_data["kanji"]) do
+      case Content.create_word_with_kanji(word_attrs, kanji_links) do
+        {:ok, _word} ->
+          IO.puts("  ✓ Created word: #{word_data["text"]}")
+
+        {:error, changeset} ->
+          IO.puts("  ✗ Failed to create word: #{word_data["text"]}")
+          IO.inspect(changeset.errors, label: "Errors")
+      end
+    else
+      IO.puts("  ⚠ Skipped word (missing kanji): #{word_data["text"]}")
+    end
+  end)
+
+  IO.puts("\nWord seeding complete!")
+  IO.puts("Total words: #{Enum.count(Content.list_words())}")
+  IO.puts("Total word-kanji links: #{Enum.count(Content.list_word_kanjis())}")
+else
+  IO.puts("Warning: #{n5_words_path} not found. Skipping word seeds.")
+end
+
+IO.puts("\n✅ All seeding complete!")

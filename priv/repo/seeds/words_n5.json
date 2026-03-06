@@ -1,0 +1,340 @@
+[
+  {
+    "text": "日本",
+    "meaning": "Japan",
+    "reading": "にほん",
+    "difficulty": 5,
+    "usage_frequency": 10,
+    "kanji": [
+      {"character": "日", "position": 0, "reading": "ニチ"},
+      {"character": "本", "position": 1, "reading": "ホン"}
+    ]
+  },
+  {
+    "text": "日本人",
+    "meaning": "Japanese person",
+    "reading": "にほんじん",
+    "difficulty": 5,
+    "usage_frequency": 20,
+    "kanji": [
+      {"character": "日", "position": 0, "reading": "ニチ"},
+      {"character": "本", "position": 1, "reading": "ホン"},
+      {"character": "人", "position": 2, "reading": "ジン"}
+    ]
+  },
+  {
+    "text": "一人",
+    "meaning": "one person, alone",
+    "reading": "ひとり",
+    "difficulty": 5,
+    "usage_frequency": 30,
+    "kanji": [
+      {"character": "一", "position": 0, "reading": "ひと"},
+      {"character": "人", "position": 1, "reading": "り"}
+    ]
+  },
+  {
+    "text": "二人",
+    "meaning": "two people",
+    "reading": "ふたり",
+    "difficulty": 5,
+    "usage_frequency": 40,
+    "kanji": [
+      {"character": "二", "position": 0, "reading": "ふた"},
+      {"character": "人", "position": 1, "reading": "り"}
+    ]
+  },
+  {
+    "text": "大きい",
+    "meaning": "big, large",
+    "reading": "おおきい",
+    "difficulty": 5,
+    "usage_frequency": 50,
+    "kanji": [
+      {"character": "大", "position": 0, "reading": "おお"}
+    ]
+  },
+  {
+    "text": "大学",
+    "meaning": "university, college",
+    "reading": "だいがく",
+    "difficulty": 5,
+    "usage_frequency": 60,
+    "kanji": [
+      {"character": "大", "position": 0, "reading": "ダイ"},
+      {"character": "学", "position": 1, "reading": "ガク"}
+    ]
+  },
+  {
+    "text": "学生",
+    "meaning": "student",
+    "reading": "がくせい",
+    "difficulty": 5,
+    "usage_frequency": 70,
+    "kanji": [
+      {"character": "学", "position": 0, "reading": "ガク"},
+      {"character": "生", "position": 1, "reading": "セイ"}
+    ]
+  },
+  {
+    "text": "学校",
+    "meaning": "school",
+    "reading": "がっこう",
+    "difficulty": 5,
+    "usage_frequency": 80,
+    "kanji": [
+      {"character": "学", "position": 0, "reading": "ガク"},
+      {"character": "校", "position": 1, "reading": "コウ"}
+    ]
+  },
+  {
+    "text": "先生",
+    "meaning": "teacher",
+    "reading": "せんせい",
+    "difficulty": 5,
+    "usage_frequency": 90,
+    "kanji": [
+      {"character": "先", "position": 0, "reading": "セン"},
+      {"character": "生", "position": 1, "reading": "セイ"}
+    ]
+  },
+  {
+    "text": "今年",
+    "meaning": "this year",
+    "reading": "ことし",
+    "difficulty": 5,
+    "usage_frequency": 100,
+    "kanji": [
+      {"character": "今", "position": 0, "reading": "こ"},
+      {"character": "年", "position": 1, "reading": "とし"}
+    ]
+  },
+  {
+    "text": "来年",
+    "meaning": "next year",
+    "reading": "らいねん",
+    "difficulty": 5,
+    "usage_frequency": 110,
+    "kanji": [
+      {"character": "来", "position": 0, "reading": "ライ"},
+      {"character": "年", "position": 1, "reading": "ネン"}
+    ]
+  },
+  {
+    "text": "去年",
+    "meaning": "last year",
+    "reading": "きょねん",
+    "difficulty": 5,
+    "usage_frequency": 120,
+    "kanji": [
+      {"character": "去", "position": 0, "reading": "キョ"},
+      {"character": "年", "position": 1, "reading": "ネン"}
+    ]
+  },
+  {
+    "text": "毎日",
+    "meaning": "every day",
+    "reading": "まいにち",
+    "difficulty": 5,
+    "usage_frequency": 130,
+    "kanji": [
+      {"character": "毎", "position": 0, "reading": "マイ"},
+      {"character": "日", "position": 1, "reading": "ニチ"}
+    ]
+  },
+  {
+    "text": "今日",
+    "meaning": "today",
+    "reading": "きょう",
+    "difficulty": 5,
+    "usage_frequency": 140,
+    "kanji": [
+      {"character": "今", "position": 0, "reading": "キョウ"},
+      {"character": "日", "position": 1, "reading": ""}
+    ]
+  },
+  {
+    "text": "明日",
+    "meaning": "tomorrow",
+    "reading": "あした",
+    "difficulty": 5,
+    "usage_frequency": 150,
+    "kanji": [
+      {"character": "明", "position": 0, "reading": "あ"},
+      {"character": "日", "position": 1, "reading": "した"}
+    ]
+  },
+  {
+    "text": "昨日",
+    "meaning": "yesterday",
+    "reading": "きのう",
+    "difficulty": 5,
+    "usage_frequency": 160,
+    "kanji": [
+      {"character": "昨", "position": 0, "reading": "サク"},
+      {"character": "日", "position": 1, "reading": ""}
+    ]
+  },
+  {
+    "text": "月曜日",
+    "meaning": "Monday",
+    "reading": "げつようび",
+    "difficulty": 5,
+    "usage_frequency": 170,
+    "kanji": [
+      {"character": "月", "position": 0, "reading": "ゲツ"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "火曜日",
+    "meaning": "Tuesday",
+    "reading": "かようび",
+    "difficulty": 5,
+    "usage_frequency": 180,
+    "kanji": [
+      {"character": "火", "position": 0, "reading": "カ"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "水曜日",
+    "meaning": "Wednesday",
+    "reading": "すいようび",
+    "difficulty": 5,
+    "usage_frequency": 190,
+    "kanji": [
+      {"character": "水", "position": 0, "reading": "スイ"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "木曜日",
+    "meaning": "Thursday",
+    "reading": "もくようび",
+    "difficulty": 5,
+    "usage_frequency": 200,
+    "kanji": [
+      {"character": "木", "position": 0, "reading": "モク"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "金曜日",
+    "meaning": "Friday",
+    "reading": "きんようび",
+    "difficulty": 5,
+    "usage_frequency": 210,
+    "kanji": [
+      {"character": "金", "position": 0, "reading": "キン"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "何曜日",
+    "meaning": "what day of the week",
+    "reading": "なんようび",
+    "difficulty": 5,
+    "usage_frequency": 220,
+    "kanji": [
+      {"character": "何", "position": 0, "reading": "ナン"},
+      {"character": "曜", "position": 1, "reading": "ヨウ"},
+      {"character": "日", "position": 2, "reading": "ビ"}
+    ]
+  },
+  {
+    "text": "上",
+    "meaning": "up, above, on",
+    "reading": "うえ",
+    "difficulty": 5,
+    "usage_frequency": 230,
+    "kanji": [
+      {"character": "上", "position": 0, "reading": "うえ"}
+    ]
+  },
+  {
+    "text": "下",
+    "meaning": "down, below, under",
+    "reading": "した",
+    "difficulty": 5,
+    "usage_frequency": 240,
+    "kanji": [
+      {"character": "下", "position": 0, "reading": "した"}
+    ]
+  },
+  {
+    "text": "中",
+    "meaning": "inside, middle, center",
+    "reading": "なか",
+    "difficulty": 5,
+    "usage_frequency": 250,
+    "kanji": [
+      {"character": "中", "position": 0, "reading": "なか"}
+    ]
+  },
+  {
+    "text": "三つ",
+    "meaning": "three (things)",
+    "reading": "みっつ",
+    "difficulty": 5,
+    "usage_frequency": 260,
+    "kanji": [
+      {"character": "三", "position": 0, "reading": "み"}
+    ]
+  },
+  {
+    "text": "四つ",
+    "meaning": "four (things)",
+    "reading": "よっつ",
+    "difficulty": 5,
+    "usage_frequency": 270,
+    "kanji": [
+      {"character": "四", "position": 0, "reading": "よ"}
+    ]
+  },
+  {
+    "text": "五つ",
+    "meaning": "five (things)",
+    "reading": "いつつ",
+    "difficulty": 5,
+    "usage_frequency": 280,
+    "kanji": [
+      {"character": "五", "position": 0, "reading": "いつ"}
+    ]
+  },
+  {
+    "text": "九つ",
+    "meaning": "nine (things)",
+    "reading": "ここのつ",
+    "difficulty": 5,
+    "usage_frequency": 290,
+    "kanji": [
+      {"character": "九", "position": 0, "reading": "ここの"}
+    ]
+  },
+  {
+    "text": "男",
+    "meaning": "man, male",
+    "reading": "おとこ",
+    "difficulty": 5,
+    "usage_frequency": 300,
+    "kanji": [
+      {"character": "男", "position": 0, "reading": "おとこ"}
+    ]
+  },
+  {
+    "text": "女",
+    "meaning": "woman, female",
+    "reading": "おんな",
+    "difficulty": 5,
+    "usage_frequency": 310,
+    "kanji": [
+      {"character": "女", "position": 0, "reading": "おんな"}
+    ]
+  }
+]

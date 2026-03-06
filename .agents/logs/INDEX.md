@@ -5,16 +5,16 @@
 |---|-------|--------|------|
 | 1 | OAuth & Accounts | ✅ APPROVED | 2026-03-05 |
 | 2 | Kanji & Readings | ✅ APPROVED | 2026-03-05 |
-| 3 | Words with Reading Links | 🔄 IN PROGRESS | 2026-03-05 |
+| 3 | Words with Reading Links | ✅ APPROVED | 2026-03-06 |
 | 4 | Lessons | ⏳ PENDING | - |
 | 5 | Learning Core | ⏳ PENDING | - |
 | 6 | Daily Reviews & Streaks | ⏳ PENDING | - |
 | 7 | Polish & Integration | ⏳ PENDING | - |
 
 ## Current State
-- **Phase**: Iteration 3 IN PROGRESS
-- **Last completed**: Iteration 2 - Kanji & Readings
-- **Current**: Iteration 3 - Words with Reading Links
+- **Phase**: Iteration 3 APPROVED
+- **Last completed**: Iteration 3 - Words with Reading Links
+- **Current**: Ready for Iteration 4 - Lessons
 
 ## Project Status
 

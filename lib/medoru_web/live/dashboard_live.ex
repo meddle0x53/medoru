@@ -77,6 +77,13 @@ defmodule MedoruWeb.DashboardLive do
             button_link={~p"/kanji"}
             icon="book-open"
           />
+          <.action_card
+            title="Browse Vocabulary"
+            description="Learn Japanese words and see their kanji breakdown."
+            button_text="Browse Words"
+            button_link={~p"/words"}
+            icon="document-text"
+          />
         </div>
       </div>
     </Layouts.app>

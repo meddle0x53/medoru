@@ -2,7 +2,7 @@ defmodule Medoru.ContentTest do
   use Medoru.DataCase
 
   alias Medoru.Content
-  alias Medoru.Content.{Kanji, KanjiReading}
+  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji}
 
   describe "kanji" do
     import Medoru.ContentFixtures
@@ -334,8 +334,335 @@ defmodule Medoru.ContentTest do
     end
   end
 
-  # Helper to generate unique kanji characters for tests
+  describe "words" do
+    import Medoru.ContentFixtures
+
+    @invalid_attrs %{text: nil, meaning: nil, reading: nil, difficulty: nil}
+
+    test "list_words/0 returns all words ordered by frequency" do
+      word1 = word_fixture(%{usage_frequency: 10, text: unique_word_text()})
+      word2 = word_fixture(%{usage_frequency: 5, text: unique_word_text()})
+
+      list = Content.list_words()
+      freq_5_index = Enum.find_index(list, &(&1.id == word2.id))
+      freq_10_index = Enum.find_index(list, &(&1.id == word1.id))
+
+      assert freq_5_index < freq_10_index
+    end
+
+    test "list_words_by_difficulty/1 returns words filtered by difficulty" do
+      n5_word = word_fixture(%{difficulty: 5, text: unique_word_text()})
+      n4_word = word_fixture(%{difficulty: 4, text: unique_word_text()})
+
+      n5_list = Content.list_words_by_difficulty(5)
+      n4_list = Content.list_words_by_difficulty(4)
+
+      assert Enum.map(n5_list, & &1.id) |> Enum.member?(n5_word.id)
+      assert Enum.map(n4_list, & &1.id) |> Enum.member?(n4_word.id)
+      refute Enum.map(n5_list, & &1.id) |> Enum.member?(n4_word.id)
+    end
+
+    test "list_words_by_kanji/1 returns words containing specific kanji" do
+      word_with_kanji = word_with_kanji_fixture()
+      kanji_id = List.first(word_with_kanji.word_kanjis).kanji_id
+
+      words = Content.list_words_by_kanji(kanji_id)
+      assert Enum.map(words, & &1.id) |> Enum.member?(word_with_kanji.id)
+    end
+
+    test "get_word!/1 returns the word with given id" do
+      word = word_fixture()
+      assert Content.get_word!(word.id).id == word.id
+    end
+
+    test "get_word!/1 raises if word does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_word!(Ecto.UUID.generate())
+      end
+    end
+
+    test "get_word_by_text/1 returns the word with given text" do
+      word = word_fixture()
+      assert Content.get_word_by_text(word.text).id == word.id
+    end
+
+    test "get_word_by_text/1 returns nil if word does not exist" do
+      assert Content.get_word_by_text("不存在") == nil
+    end
+
+    test "get_word_with_kanji!/1 returns word with preloaded kanji and readings" do
+      word = word_with_kanji_fixture()
+      loaded = Content.get_word_with_kanji!(word.id)
+
+      assert loaded.id == word.id
+      assert is_list(loaded.word_kanjis)
+      assert length(loaded.word_kanjis) == 2
+
+      # Check that kanji and readings are preloaded
+      first_wk = List.first(loaded.word_kanjis)
+      assert %Kanji{} = first_wk.kanji
+    end
+
+    test "create_word/1 with valid data creates a word" do
+      valid_attrs = %{
+        text: unique_word_text(),
+        meaning: "test meaning",
+        reading: "てすと",
+        difficulty: 5,
+        usage_frequency: 100
+      }
+
+      assert {:ok, %Word{} = word} = Content.create_word(valid_attrs)
+      assert word.text == valid_attrs.text
+      assert word.meaning == "test meaning"
+      assert word.reading == "てすと"
+      assert word.difficulty == 5
+      assert word.usage_frequency == 100
+    end
+
+    test "create_word/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_word(@invalid_attrs)
+    end
+
+    test "create_word/1 validates difficulty range" do
+      attrs = %{
+        text: unique_word_text(),
+        meaning: "test",
+        reading: "てすと",
+        difficulty: 6
+      }
+
+      assert {:error, changeset} = Content.create_word(attrs)
+      assert "must be less than or equal to 5" in errors_on(changeset).difficulty
+    end
+
+    test "create_word/1 validates text contains Japanese characters" do
+      attrs = %{
+        text: "hello",
+        meaning: "test",
+        reading: "てすと",
+        difficulty: 5
+      }
+
+      assert {:error, changeset} = Content.create_word(attrs)
+      assert "must contain valid Japanese characters" in errors_on(changeset).text
+    end
+
+    test "create_word/1 validates reading contains only kana" do
+      attrs = %{
+        text: unique_word_text(),
+        meaning: "test",
+        reading: "testテスト",
+        difficulty: 5
+      }
+
+      assert {:error, changeset} = Content.create_word(attrs)
+      assert "must contain only hiragana or katakana" in errors_on(changeset).reading
+    end
+
+    test "create_word/1 validates text uniqueness" do
+      word = word_fixture()
+
+      attrs = %{
+        text: word.text,
+        meaning: "duplicate",
+        reading: "てすと",
+        difficulty: 5
+      }
+
+      assert {:error, changeset} = Content.create_word(attrs)
+      assert "has already been taken" in errors_on(changeset).text
+    end
+
+    test "create_word_with_kanji/2 creates word and kanji links in transaction" do
+      kanji1 = kanji_with_readings_fixture()
+      kanji2 = kanji_with_readings_fixture()
+
+      reading1 = List.first(Enum.filter(kanji1.kanji_readings, &(&1.reading_type == :on)))
+      reading2 = List.first(Enum.filter(kanji2.kanji_readings, &(&1.reading_type == :on)))
+
+      word_attrs = %{
+        text: unique_word_text(),
+        meaning: "test compound",
+        reading: "てすと",
+        difficulty: 5,
+        usage_frequency: 100
+      }
+
+      kanji_links = [
+        %{position: 0, kanji_id: kanji1.id, kanji_reading_id: reading1 && reading1.id},
+        %{position: 1, kanji_id: kanji2.id, kanji_reading_id: reading2 && reading2.id}
+      ]
+
+      assert {:ok, %Word{} = word} = Content.create_word_with_kanji(word_attrs, kanji_links)
+      assert word.text == word_attrs.text
+      assert length(word.word_kanjis) == 2
+
+      # Verify word_kanjis were created
+      wks = Content.list_kanji_for_word(word.id)
+      assert length(wks) == 2
+    end
+
+    test "create_word_with_kanji/2 rolls back on invalid kanji link" do
+      word_attrs = %{
+        text: unique_word_text(),
+        meaning: "test",
+        reading: "てすと",
+        difficulty: 5
+      }
+
+      # Invalid kanji_id
+      kanji_links = [
+        %{position: 0, kanji_id: Ecto.UUID.generate(), kanji_reading_id: nil}
+      ]
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.create_word_with_kanji(word_attrs, kanji_links)
+
+      assert changeset.errors[:kanji_id] || changeset.errors[:text]
+
+      # Verify word was not created
+      assert Content.get_word_by_text(word_attrs.text) == nil
+    end
+
+    test "update_word/2 with valid data updates the word" do
+      word = word_fixture()
+      update_attrs = %{meaning: "updated meaning", difficulty: 4}
+
+      assert {:ok, %Word{} = word} = Content.update_word(word, update_attrs)
+      assert word.meaning == "updated meaning"
+      assert word.difficulty == 4
+    end
+
+    test "update_word/2 with invalid data returns error changeset" do
+      word = word_fixture()
+      assert {:error, %Ecto.Changeset{}} = Content.update_word(word, @invalid_attrs)
+      assert word.id == Content.get_word!(word.id).id
+    end
+
+    test "delete_word/1 deletes the word and associated kanji links" do
+      word = word_with_kanji_fixture()
+      wk_ids = Enum.map(word.word_kanjis, & &1.id)
+
+      assert {:ok, %Word{}} = Content.delete_word(word)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_word!(word.id)
+      end
+
+      # Verify word_kanjis were also deleted
+      for wk_id <- wk_ids do
+        assert_raise Ecto.NoResultsError, fn ->
+          Content.get_word_kanji!(wk_id)
+        end
+      end
+    end
+
+    test "change_word/1 returns a word changeset" do
+      word = word_fixture()
+      assert %Ecto.Changeset{} = Content.change_word(word)
+    end
+  end
+
+  describe "word_kanjis" do
+    import Medoru.ContentFixtures
+
+    @invalid_attrs %{position: nil}
+
+    test "list_word_kanjis/0 returns all word kanji links" do
+      word = word_with_kanji_fixture()
+
+      assert Content.list_word_kanjis()
+             |> Enum.map(& &1.id)
+             |> Enum.member?(List.first(word.word_kanjis).id)
+    end
+
+    test "list_kanji_for_word/1 returns kanji links for specific word" do
+      word = word_with_kanji_fixture()
+
+      wks = Content.list_kanji_for_word(word.id)
+      assert length(wks) == 2
+      assert List.first(wks).position == 0
+      assert List.last(wks).position == 1
+    end
+
+    test "get_word_kanji!/1 returns the word kanji link with given id" do
+      word = word_with_kanji_fixture()
+      wk = List.first(word.word_kanjis)
+
+      assert Content.get_word_kanji!(wk.id).id == wk.id
+    end
+
+    test "create_word_kanji/1 with valid data creates a word kanji link" do
+      word = word_fixture()
+      kanji = kanji_fixture()
+
+      valid_attrs = %{
+        position: 0,
+        word_id: word.id,
+        kanji_id: kanji.id,
+        kanji_reading_id: nil
+      }
+
+      assert {:ok, %WordKanji{} = wk} = Content.create_word_kanji(valid_attrs)
+      assert wk.position == 0
+      assert wk.word_id == word.id
+      assert wk.kanji_id == kanji.id
+    end
+
+    test "create_word_kanji/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_word_kanji(@invalid_attrs)
+    end
+
+    test "create_word_kanji/1 validates position is non-negative" do
+      word = word_fixture()
+      kanji = kanji_fixture()
+
+      attrs = %{
+        position: -1,
+        word_id: word.id,
+        kanji_id: kanji.id
+      }
+
+      assert {:error, changeset} = Content.create_word_kanji(attrs)
+      assert "must be greater than or equal to 0" in errors_on(changeset).position
+    end
+
+    test "update_word_kanji/2 with valid data updates the word kanji link" do
+      word = word_with_kanji_fixture()
+      wk = List.first(word.word_kanjis)
+
+      assert {:ok, %WordKanji{} = wk} = Content.update_word_kanji(wk, %{position: 5})
+      assert wk.position == 5
+    end
+
+    test "delete_word_kanji/1 deletes the word kanji link" do
+      word = word_with_kanji_fixture()
+      wk = List.first(word.word_kanjis)
+
+      assert {:ok, %WordKanji{}} = Content.delete_word_kanji(wk)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_word_kanji!(wk.id)
+      end
+    end
+
+    test "change_word_kanji/1 returns a word kanji changeset" do
+      word = word_with_kanji_fixture()
+      wk = List.first(word.word_kanjis)
+
+      assert %Ecto.Changeset{} = Content.change_word_kanji(wk)
+    end
+  end
+
+  # Helper functions
+
   defp unique_kanji_char do
+    index = System.unique_integer([:positive]) |> rem(100)
+    <<0x3400 + index::utf8>>
+  end
+
+  defp unique_word_text do
     index = System.unique_integer([:positive]) |> rem(100)
     <<0x3400 + index::utf8>>
   end
