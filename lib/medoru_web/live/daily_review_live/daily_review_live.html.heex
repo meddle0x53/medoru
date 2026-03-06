@@ -1,0 +1,168 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="min-h-screen bg-base-200 py-8">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <%!-- Header --%>
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-base-content mb-2">Daily Review</h1>
+        <p class="text-base-content/70">Review words and maintain your streak!</p>
+      </div>
+
+      <%!-- Empty State --%>
+      <%= if @total_count == 0 do %>
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body items-center text-center py-16">
+            <div class="w-24 h-24 bg-success/20 rounded-full flex items-center justify-center mb-6">
+              <.icon name="hero-check-circle" class="w-12 h-12 text-success" />
+            </div>
+            <h2 class="card-title text-2xl mb-2">All Caught Up!</h2>
+            <p class="text-base-content/70 mb-6 max-w-md">
+              You have no words due for review right now. Great job keeping up with your studies!
+            </p>
+            <.link navigate={~p"/lessons"} class="btn btn-primary">
+              <.icon name="hero-book-open" class="w-5 h-5 mr-2" /> Learn New Words
+            </.link>
+          </div>
+        </div>
+      <% else %>
+        <%!-- Progress Bar --%>
+        <div class="mb-6">
+          <div class="flex justify-between text-sm text-base-content/70 mb-2">
+            <span>Progress</span>
+            <span>{@current_index + 1} / {@total_count}</span>
+          </div>
+          <div class="w-full bg-base-300 rounded-full h-3">
+            <div
+              class="bg-primary h-3 rounded-full transition-all duration-300"
+              style={"width: #{progress_percentage(@current_index + 1, @total_count)}%"}
+            >
+            </div>
+          </div>
+        </div>
+
+        <%!-- Completion Screen --%>
+        <%= if @show_completion do %>
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body items-center text-center py-12">
+              <div class="w-24 h-24 bg-success/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+                <.icon name="hero-fire" class="w-12 h-12 text-warning" />
+              </div>
+              <h2 class="card-title text-2xl mb-2">Daily Review Complete! 🎉</h2>
+              <p class="text-base-content/70 mb-6">
+                Great work! You've reviewed {@stats.total} words today.
+              </p>
+
+              <%!-- Stats --%>
+              <div class="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+                <div class="bg-success/10 rounded-xl p-4 text-center">
+                  <div class="text-3xl font-bold text-success">{@stats.correct}</div>
+                  <div class="text-sm text-base-content/70">Correct</div>
+                </div>
+                <div class="bg-error/10 rounded-xl p-4 text-center">
+                  <div class="text-3xl font-bold text-error">{@stats.incorrect}</div>
+                  <div class="text-sm text-base-content/70">Incorrect</div>
+                </div>
+              </div>
+
+              <div class="flex gap-4">
+                <.link navigate={~p"/dashboard"} class="btn btn-primary">
+                  <.icon name="hero-home" class="w-5 h-5 mr-2" /> Back to Dashboard
+                </.link>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <%!-- Question Card --%>
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body p-8">
+              <%!-- Question --%>
+              <div class="text-center mb-8">
+                <div class="text-sm text-base-content/60 mb-4 uppercase tracking-wider">
+                  <%= if @question_type == :meaning_to_reading do %>
+                    Select the correct reading
+                  <% else %>
+                    Select the correct meaning
+                  <% end %>
+                </div>
+                <div class="text-6xl font-bold text-primary mb-4 font-japanese">
+                  {@current_item.word.text}
+                </div>
+                <%!-- Show hint based on question type --%>
+                <div class="text-xl text-base-content/80">
+                  <%= if @question_type == :meaning_to_reading do %>
+                    <%!-- Asking for reading, show meaning as hint --%>
+                    <span class="text-secondary">{@current_item.word.meaning}</span>
+                  <% else %>
+                    <%!-- Asking for meaning, show reading as hint --%>
+                    <span class="text-secondary font-japanese">{@current_item.word.reading}</span>
+                  <% end %>
+                </div>
+              </div>
+
+              <%!-- Answer Options --%>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <%= for {option, is_correct} <- @options do %>
+                  <button
+                    type="button"
+                    phx-click="select_answer"
+                    phx-value-answer={option}
+                    disabled={@show_result}
+                    class={[
+                      "btn btn-lg h-auto py-6 text-lg transition-all duration-200",
+                      cond do
+                        not @show_result -> "btn-outline hover:btn-primary"
+                        @selected_answer == option and is_correct -> "btn-success"
+                        @selected_answer == option and not is_correct -> "btn-error"
+                        is_correct -> "btn-success"
+                        true -> "btn-outline opacity-50"
+                      end
+                    ]}
+                  >
+                    {option}
+                  </button>
+                <% end %>
+              </div>
+
+              <%!-- Result Feedback --%>
+              <%= if @show_result do %>
+                <div class={[
+                  "alert mb-6",
+                  if(@is_correct, do: "alert-success", else: "alert-error")
+                ]}>
+                  <.icon
+                    name={if @is_correct, do: "hero-check-circle", else: "hero-x-circle"}
+                    class="w-6 h-6"
+                  />
+                  <span class="text-lg">
+                    <%= if @is_correct do %>
+                      Correct! Great job!
+                    <% else %>
+                      Not quite. The correct answer was highlighted.
+                    <% end %>
+                  </span>
+                </div>
+
+                <%!-- Next Button --%>
+                <button
+                  type="button"
+                  phx-click="next_question"
+                  class="btn btn-primary btn-lg w-full"
+                >
+                  <%= if @current_index + 1 >= @total_count do %>
+                    <.icon name="hero-flag" class="w-5 h-5 mr-2" /> Finish Review
+                  <% else %>
+                    <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" /> Next Word
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Tips --%>
+          <div class="mt-6 text-center text-sm text-base-content/50">
+            <p>Tip: Take your time and think about the word before answering.</p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

@@ -4,7 +4,7 @@ defmodule MedoruWeb.DashboardLive do
   """
   use MedoruWeb, :live_view
 
-  alias Medoru.Accounts
+  alias Medoru.{Accounts, Learning}
 
   embed_templates "*.html"
 
@@ -15,12 +15,16 @@ defmodule MedoruWeb.DashboardLive do
     # Load fresh user data with profile and stats
     user = Accounts.get_user_with_profile_and_stats!(user.id)
 
+    # Get daily review stats
+    daily_stats = Learning.get_daily_review_stats(user.id)
+
     {:ok,
      socket
      |> assign(:page_title, "Dashboard")
      |> assign(:user, user)
      |> assign(:stats, user.stats)
-     |> assign(:profile, user.profile)}
+     |> assign(:profile, user.profile)
+     |> assign(:daily_stats, daily_stats)}
   end
 
   # Components

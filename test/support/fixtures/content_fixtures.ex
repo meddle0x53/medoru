@@ -90,7 +90,8 @@ defmodule Medoru.ContentFixtures do
         meaning: "test meaning",
         reading: "てすと",
         difficulty: 5,
-        usage_frequency: 100
+        usage_frequency: 100,
+        word_type: :noun
       })
 
     {:ok, word} = Medoru.Content.create_word(attrs)
@@ -114,7 +115,8 @@ defmodule Medoru.ContentFixtures do
         meaning: "test compound word",
         reading: "てすと",
         difficulty: 5,
-        usage_frequency: 100
+        usage_frequency: 100,
+        word_type: :noun
       })
 
     kanji_links = [

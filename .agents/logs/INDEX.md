@@ -9,8 +9,8 @@
 | 3 | Words with Reading Links | ✅ APPROVED | 2026-03-06 |
 | 4 | Lessons | ✅ APPROVED | 2026-03-06 |
 | 5 | Learning Core | ✅ APPROVED | 2026-03-06 |
-| 6 | Daily Reviews & Streaks | 🔄 IN PROGRESS | 2026-03-06 |
-| 7 | Polish & Integration | ⏳ PENDING | - |
+| 6 | Daily Reviews & Streaks | ✅ COMPLETED | 2026-03-06 |
+| 7 | Polish & Integration | 🔄 IN PROGRESS | - |
 
 ## Version 0.2.0 (Social Features) - Planned
 
@@ -43,9 +43,9 @@
 ## Current State
 - **Version**: 0.1.0 (MVP)
 - **Phase**: Iteration 6 IN PROGRESS
-- **Last completed**: Iteration 4 - Lessons System (APPROVED)
-- **Current**: Iteration 6 - Daily Reviews & Streaks
-- **Overall Progress**: 6/7 iterations for v0.1.0 (started)
+- **Last completed**: Iteration 6 - Daily Reviews & Streaks (PENDING REVIEW)
+- **Current**: Iteration 7 - Polish & Integration
+- **Overall Progress**: 6/7 iterations for v0.1.0 (completed, pending review)
 
 ## Project Status
 

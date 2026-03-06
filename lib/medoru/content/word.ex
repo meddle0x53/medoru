@@ -7,12 +7,15 @@ defmodule Medoru.Content.Word do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @word_types [:noun, :verb, :adjective, :adverb, :particle, :pronoun, :counter, :expression, :other]
+
   schema "words" do
     field :text, :string
     field :meaning, :string
     field :reading, :string
     field :difficulty, :integer
     field :usage_frequency, :integer, default: 1000
+    field :word_type, Ecto.Enum, values: @word_types, default: :other
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
 
@@ -22,7 +25,7 @@ defmodule Medoru.Content.Word do
   @doc false
   def changeset(word, attrs) do
     word
-    |> cast(attrs, [:text, :meaning, :reading, :difficulty, :usage_frequency])
+    |> cast(attrs, [:text, :meaning, :reading, :difficulty, :usage_frequency, :word_type])
     |> validate_required([:text, :meaning, :reading, :difficulty])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:usage_frequency, greater_than: 0)

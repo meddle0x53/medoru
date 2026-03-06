@@ -10,16 +10,76 @@
       </p>
     </div>
 
+    <%!-- Daily Goal Card --%>
+    <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-8">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <%!-- Default values when daily_stats is nil --%>
+            <% studied_today = @daily_stats && @daily_stats.studied_today %>
+            <% due_count = (@daily_stats && @daily_stats.due_count) || 0 %>
+            <% new_available = (@daily_stats && @daily_stats.new_available) || 0 %>
+            <div class={[
+              "w-16 h-16 rounded-full flex items-center justify-center",
+              if(studied_today, do: "bg-success/20", else: "bg-warning/20")
+            ]}>
+              <.icon
+                name={if studied_today, do: "hero-check-circle", else: "hero-fire"}
+                class={[
+                  "w-8 h-8",
+                  if(studied_today, do: "text-success", else: "text-warning")
+                ]}
+              />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-base-content">
+                <%= if studied_today do %>
+                  Daily Goal Completed! 🎉
+                <% else %>
+                  Keep Your Streak Going!
+                <% end %>
+              </h2>
+              <p class="text-base-content/70">
+                {due_count} words due for review
+                <%= if new_available > 0 do %>
+                  · {new_available} new words available
+                <% end %>
+              </p>
+            </div>
+          </div>
+
+          <.link
+            navigate={~p"/daily-review"}
+            class={[
+              "btn btn-lg",
+              if(studied_today, do: "btn-outline btn-success", else: "btn-primary")
+            ]}
+          >
+            <%= if studied_today do %>
+              <.icon name="hero-arrow-path" class="w-5 h-5 mr-2" /> Review Again
+            <% else %>
+              <.icon name="hero-play" class="w-5 h-5 mr-2" /> Start Daily Review
+            <% end %>
+          </.link>
+        </div>
+      </div>
+    </div>
+
     <%!-- Stats Grid --%>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <.stat_card
         label="Current Streak"
-        value={@stats.current_streak}
+        value={(@daily_stats && @daily_stats.current_streak) || 0}
         icon="fire"
         color="orange"
       />
-      <.stat_card label="XP" value={@stats.xp} icon="star" color="yellow" />
-      <.stat_card label="Level" value={@stats.level} icon="trophy" color="purple" />
+      <.stat_card
+        label="Longest Streak"
+        value={(@daily_stats && @daily_stats.longest_streak) || 0}
+        icon="trophy"
+        color="yellow"
+      />
+      <.stat_card label="Level" value={@stats.level} icon="star" color="purple" />
       <.stat_card
         label="Kanji Learned"
         value={@stats.total_kanji_learned}

@@ -17,6 +17,7 @@ defmodule Medoru.Learning.UserProgress do
     belongs_to :user, Medoru.Accounts.User
     belongs_to :kanji, Medoru.Content.Kanji
     belongs_to :word, Medoru.Content.Word
+    has_one :review_schedule, Medoru.Learning.ReviewSchedule
 
     timestamps(type: :utc_datetime)
   end

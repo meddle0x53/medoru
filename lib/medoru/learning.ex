@@ -12,7 +12,7 @@ defmodule Medoru.Learning do
   import Ecto.Query, warn: false
   alias Medoru.Repo
 
-  alias Medoru.Learning.{UserProgress, LessonProgress}
+  alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule}
   alias Medoru.Content.{Lesson, Word}
 
   # ============================================================================
@@ -510,5 +510,399 @@ defmodule Medoru.Learning do
     # This will be expanded in a future iteration when we integrate
     # with the gamification context
     :ok
+  end
+
+  # ============================================================================
+  # Daily Streak
+  # ============================================================================
+
+  @doc """
+  Gets or creates a daily streak record for a user.
+
+  ## Examples
+
+      iex> get_or_create_daily_streak(user_id)
+      %DailyStreak{}
+
+  """
+  def get_or_create_daily_streak(user_id) do
+    case Repo.get_by(DailyStreak, user_id: user_id) do
+      nil ->
+        {:ok, streak} =
+          %DailyStreak{}
+          |> DailyStreak.changeset(%{user_id: user_id})
+          |> Repo.insert()
+
+        streak
+
+      streak ->
+        streak
+    end
+  end
+
+  @doc """
+  Gets a user's daily streak.
+
+  Returns nil if no streak record exists.
+
+  ## Examples
+
+      iex> get_daily_streak(user_id)
+      %DailyStreak{}
+
+      iex> get_daily_streak(user_id_without_streak)
+      nil
+
+  """
+  def get_daily_streak(user_id) do
+    Repo.get_by(DailyStreak, user_id: user_id)
+  end
+
+  @doc """
+  Updates a user's daily streak after completing a study session.
+
+  Calculates if the streak should be continued, reset, or started fresh.
+
+  ## Examples
+
+      iex> update_streak(user_id)
+      {:ok, %DailyStreak{current_streak: 5, longest_streak: 10}}
+
+  """
+  def update_streak(user_id) do
+    streak = get_or_create_daily_streak(user_id)
+    today = Date.utc_today()
+
+    new_streak =
+      case streak.last_study_date do
+        nil ->
+          # First time studying
+          %{current_streak: 1, longest_streak: 1, last_study_date: today}
+
+        ^today ->
+          # Already studied today, no change
+          %{}
+
+        last_date ->
+          yesterday = Date.add(today, -1)
+
+          if Date.compare(last_date, yesterday) == :eq do
+            # Studied yesterday, continue streak
+            new_current = streak.current_streak + 1
+            new_longest = max(new_current, streak.longest_streak)
+
+            %{
+              current_streak: new_current,
+              longest_streak: new_longest,
+              last_study_date: today
+            }
+          else
+            # Streak broken, start new
+            %{current_streak: 1, last_study_date: today}
+          end
+      end
+
+    streak
+    |> DailyStreak.changeset(new_streak)
+    |> Repo.update()
+  end
+
+  @doc """
+  Checks if a user has studied today.
+
+  ## Examples
+
+      iex> studied_today?(user_id)
+      true
+
+  """
+  def studied_today?(user_id) do
+    case get_daily_streak(user_id) do
+      nil -> false
+      streak -> streak.last_study_date == Date.utc_today()
+    end
+  end
+
+  # ============================================================================
+  # Review Schedule (SRS)
+  # ============================================================================
+
+  @doc """
+  Gets the review schedule for a user progress entry.
+
+  Returns nil if no schedule exists.
+
+  ## Examples
+
+      iex> get_review_schedule(user_id, user_progress_id)
+      %ReviewSchedule{}
+
+  """
+  def get_review_schedule(user_id, user_progress_id) do
+    ReviewSchedule
+    |> where([rs], rs.user_id == ^user_id and rs.user_progress_id == ^user_progress_id)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets or creates a review schedule for a user progress entry.
+
+  ## Examples
+
+      iex> get_or_create_review_schedule(user_id, user_progress_id)
+      %ReviewSchedule{}
+
+  """
+  def get_or_create_review_schedule(user_id, user_progress_id) do
+    case get_review_schedule(user_id, user_progress_id) do
+      nil ->
+        attrs = %{
+          user_id: user_id,
+          user_progress_id: user_progress_id,
+          next_review_at: DateTime.utc_now() |> DateTime.truncate(:second),
+          interval: 1,
+          ease_factor: 2.5,
+          repetitions: 0
+        }
+
+        {:ok, schedule} =
+          %ReviewSchedule{}
+          |> ReviewSchedule.changeset(attrs)
+          |> Repo.insert()
+
+        schedule
+
+      schedule ->
+        schedule
+    end
+  end
+
+  @doc """
+  Updates the review schedule based on review result using SM-2 algorithm.
+
+  Quality: 0-5 scale (0=complete blackout, 5=perfect response)
+  - 0-2: Failed review, reset interval
+  - 3-5: Successful review, increase interval
+
+  ## Examples
+
+      iex> record_review(user_id, user_progress_id, 4)
+      {:ok, %ReviewSchedule{interval: 3, ease_factor: 2.6}}
+
+  """
+  def record_review(user_id, user_progress_id, quality) when quality in 0..5 do
+    schedule = get_or_create_review_schedule(user_id, user_progress_id)
+
+    # SM-2 algorithm parameters
+    {new_interval, new_ease_factor, new_repetitions} =
+      calculate_sm2(schedule.interval, schedule.ease_factor, schedule.repetitions, quality)
+
+    next_review_at =
+      DateTime.utc_now()
+      |> DateTime.add(new_interval, :day)
+      |> DateTime.truncate(:second)
+
+    schedule
+    |> ReviewSchedule.changeset(%{
+      interval: new_interval,
+      ease_factor: new_ease_factor,
+      repetitions: new_repetitions,
+      next_review_at: next_review_at
+    })
+    |> Repo.update()
+  end
+
+  # SM-2 algorithm implementation
+  defp calculate_sm2(interval, ease_factor, repetitions, quality) do
+    # Minimum ease factor to prevent excessive intervals
+    min_ease_factor = 1.3
+
+    if quality < 3 do
+      # Failed review - reset repetitions, keep ease factor, reset interval to 1
+      {1, ease_factor, 0}
+    else
+      # Successful review
+      new_repetitions = repetitions + 1
+
+      new_interval =
+        cond do
+          new_repetitions == 1 -> 1
+          new_repetitions == 2 -> 3
+          true -> round(interval * ease_factor)
+        end
+
+      # Update ease factor
+      new_ease_factor = ease_factor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+      new_ease_factor = max(new_ease_factor, min_ease_factor)
+
+      {new_interval, new_ease_factor, new_repetitions}
+    end
+  end
+
+  @doc """
+  Gets words due for review for a user.
+
+  Returns a list of user_progress entries with preloaded words/kanji that are due.
+
+  ## Examples
+
+      iex> get_due_reviews(user_id, limit: 10)
+      [%UserProgress{word: %Word{}}, ...]
+
+  """
+  def get_due_reviews(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+    now = DateTime.utc_now()
+
+    UserProgress
+    |> join(:inner, [up], rs in ReviewSchedule, on: rs.user_progress_id == up.id)
+    |> where([up, rs], up.user_id == ^user_id and rs.next_review_at <= ^now)
+    |> preload([:word, :kanji])
+    |> order_by([_, rs], asc: rs.next_review_at)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts the number of words due for review for a user.
+
+  ## Examples
+
+      iex> count_due_reviews(user_id)
+      15
+
+  """
+  def count_due_reviews(user_id) do
+    now = DateTime.utc_now()
+
+    ReviewSchedule
+    |> where([rs], rs.user_id == ^user_id and rs.next_review_at <= ^now)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  # ============================================================================
+  # Daily Review Generation
+  # ============================================================================
+
+  @doc """
+  Generates a daily review session for a user.
+
+  Combines:
+  1. Words due for review (SRS-based)
+  2. New words to learn (if daily goal not met)
+
+  Returns a list of user_progress entries ready for review.
+
+  ## Examples
+
+      iex> generate_daily_review(user_id, daily_goal: 10)
+      %{
+        reviews: [%UserProgress{}, ...],
+        new_words: [%UserProgress{}, ...],
+        total_count: 12
+      }
+
+  """
+  def generate_daily_review(user_id, opts \\ []) do
+    daily_goal = Keyword.get(opts, :daily_goal, 10)
+    new_word_limit = Keyword.get(opts, :new_word_limit, 5)
+
+    # Get words due for review
+    due_reviews = get_due_reviews(user_id, limit: daily_goal)
+    due_count = length(due_reviews)
+
+    # Calculate how many new words to add
+    new_words_needed = max(0, daily_goal - due_count)
+    new_words_needed = min(new_words_needed, new_word_limit)
+
+    # Get new words (learned but not yet reviewed, or not yet scheduled)
+    new_words = get_new_words_for_review(user_id, limit: new_words_needed)
+
+    %{
+      reviews: due_reviews,
+      new_words: new_words,
+      review_count: due_count,
+      new_word_count: length(new_words),
+      total_count: due_count + length(new_words)
+    }
+  end
+
+  @doc """
+  Gets new words for a user that haven't been scheduled for review yet.
+
+  These are words the user has learned but haven't reviewed yet.
+
+  ## Examples
+
+      iex> get_new_words_for_review(user_id, limit: 5)
+      [%UserProgress{word: %Word{}}, ...]
+
+  """
+  def get_new_words_for_review(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 5)
+
+    query =
+      from up in UserProgress,
+        where: up.user_id == ^user_id,
+        left_join: rs in ReviewSchedule,
+        on: rs.user_progress_id == up.id,
+        where: is_nil(rs.id) or rs.repetitions == 0,
+        preload: [:word, :kanji],
+        order_by: [asc: up.inserted_at],
+        limit: ^limit
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Gets daily review statistics for the dashboard.
+
+  ## Examples
+
+      iex> get_daily_review_stats(user_id)
+      %{
+        due_count: 5,
+        new_available: 3,
+        studied_today: true,
+        current_streak: 7,
+        longest_streak: 14,
+        daily_goal: 10
+      }
+
+  """
+  def get_daily_review_stats(user_id) do
+    streak = get_daily_streak(user_id)
+    due_count = count_due_reviews(user_id)
+    new_available = count_new_words_available(user_id)
+    studied_today = studied_today?(user_id)
+
+    %{
+      due_count: due_count,
+      new_available: new_available,
+      studied_today: studied_today,
+      current_streak: if(streak, do: streak.current_streak, else: 0),
+      longest_streak: if(streak, do: streak.longest_streak, else: 0),
+      daily_goal: 10
+    }
+  end
+
+  @doc """
+  Counts how many new words are available for review.
+
+  ## Examples
+
+      iex> count_new_words_available(user_id)
+      15
+
+  """
+  def count_new_words_available(user_id) do
+    query =
+      from up in UserProgress,
+        where: up.user_id == ^user_id,
+        left_join: rs in ReviewSchedule,
+        on: rs.user_progress_id == up.id,
+        where: is_nil(rs.id) or rs.repetitions == 0
+
+    Repo.aggregate(query, :count, :id)
   end
 end

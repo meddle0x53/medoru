@@ -82,7 +82,8 @@ if File.exists?(n5_words_path) do
       meaning: word_data["meaning"],
       reading: word_data["reading"],
       difficulty: word_data["difficulty"],
-      usage_frequency: word_data["usage_frequency"]
+      usage_frequency: word_data["usage_frequency"],
+      word_type: String.to_atom(Map.get(word_data, "word_type", "other"))
     }
 
     # Build kanji links for this word
