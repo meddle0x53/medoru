@@ -2,8 +2,8 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Vocabulary Browser</h1>
-      <p class="text-slate-600">Browse and learn Japanese words organized by JLPT level</p>
+      <h1 class="text-3xl font-bold text-base-content mb-2">Vocabulary Browser</h1>
+      <p class="text-secondary/80">Browse and learn Japanese words organized by JLPT level</p>
     </div>
 
     <%!-- Difficulty Selector --%>
@@ -14,8 +14,8 @@
           class={[
             "px-4 py-2 rounded-lg font-medium transition-colors",
             if(@difficulty == level,
-              do: "bg-indigo-600 text-white",
-              else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              do: "bg-primary text-white",
+              else: "bg-base-200 text-secondary hover:bg-base-300"
             )
           ]}
         >
@@ -25,11 +25,11 @@
     </div>
 
     <%!-- Stats --%>
-    <div class="mb-6 flex items-center gap-4 text-sm text-slate-600">
-      <span class="bg-slate-100 px-3 py-1 rounded-full">
+    <div class="mb-6 flex items-center gap-4 text-sm text-secondary/80">
+      <span class="bg-base-200 px-3 py-1 rounded-full">
         {length(@words)} words
       </span>
-      <span class="bg-slate-100 px-3 py-1 rounded-full">
+      <span class="bg-base-200 px-3 py-1 rounded-full">
         JLPT N{@difficulty}
       </span>
     </div>
@@ -41,17 +41,17 @@
           navigate={~p"/words/#{word.id}"}
           class="group"
         >
-          <div class="bg-white border border-slate-200 rounded-xl p-4
-                      shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200">
+          <div class="bg-white border border-base-300 rounded-xl p-4
+                      shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
             <div class="flex items-baseline justify-between mb-2">
-              <span class="text-2xl font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">
+              <span class="text-2xl font-medium text-base-content group-hover:text-primary transition-colors">
                 {word.text}
               </span>
-              <span class="text-sm text-slate-500 font-medium">
+              <span class="text-sm text-secondary/60 font-medium">
                 {word.reading}
               </span>
             </div>
-            <p class="text-slate-700 text-sm">
+            <p class="text-secondary text-sm">
               {word.meaning}
             </p>
           </div>
@@ -62,8 +62,8 @@
     <%= if @words == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📖</div>
-        <h3 class="text-lg font-medium text-slate-900 mb-2">No words found</h3>
-        <p class="text-slate-600">This difficulty level doesn't have any vocabulary yet.</p>
+        <h3 class="text-lg font-medium text-base-content mb-2">No words found</h3>
+        <p class="text-secondary/80">This difficulty level doesn't have any vocabulary yet.</p>
       </div>
     <% end %>
   </div>

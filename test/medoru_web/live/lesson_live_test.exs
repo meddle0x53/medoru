@@ -110,7 +110,7 @@ defmodule MedoruWeb.LessonLiveTest do
     test "shows sign in button for anonymous user", %{conn: conn, lesson: lesson} do
       {:ok, _view, html} = live(conn, ~p"/lessons/#{lesson.id}")
 
-      assert html =~ "Sign in to Start Learning"
+      assert html =~ "Preview Lesson"
     end
 
     test "shows progress section for authenticated user", %{
@@ -129,6 +129,28 @@ defmodule MedoruWeb.LessonLiveTest do
       {:ok, _view, html} = live(conn, ~p"/lessons/#{lesson.id}")
 
       refute html =~ "Your Progress"
+    end
+
+    test "shows completed status for completed lesson", %{
+      conn: conn,
+      lesson: lesson,
+      user: user
+    } do
+      conn = log_in_user(conn, user)
+
+      # Create a completed lesson progress
+      {:ok, _progress} =
+        Medoru.Learning.start_lesson(user.id, lesson.id)
+
+      {:ok, progress} =
+        Medoru.Learning.complete_lesson(user.id, lesson.id)
+
+      assert progress.progress_percentage == 100
+
+      {:ok, _view, html} = live(conn, ~p"/lessons/#{lesson.id}")
+
+      assert html =~ "Completed!"
+      assert html =~ "Review Lesson"
     end
 
     test "404 for non-existent lesson", %{conn: conn} do

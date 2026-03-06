@@ -3,45 +3,88 @@
     <%!-- Back Link --%>
     <.link
       navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
-      class="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 mb-6 transition-colors"
+      class="inline-flex items-center gap-2 text-secondary/80 hover:text-accent mb-6 transition-colors"
     >
       <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@lesson.difficulty} Lessons
     </.link>
 
     <%!-- Header --%>
     <div class="mb-8">
-      <div class="flex items-center gap-3 mb-2">
-        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+      <div class="flex items-center gap-3 mb-2 flex-wrap">
+        <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
           Lesson {@lesson.order_index}
         </span>
-        <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+        <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
           JLPT N{@lesson.difficulty}
         </span>
+        <span class={[
+          "px-3 py-1 rounded-full text-sm font-medium capitalize flex items-center gap-1.5",
+          case @lesson.lesson_type do
+            :reading -> "bg-accent/20 text-accent/80"
+            :writing -> "bg-purple-100 text-purple-700"
+            :listening -> "bg-orange-100 text-orange-700"
+            :speaking -> "bg-pink-100 text-pink-700"
+            :grammar -> "bg-teal-100 text-teal-700"
+            _ -> "bg-base-200 text-secondary"
+          end
+        ]}>
+          <.icon name={case @lesson.lesson_type do
+            :reading -> "hero-book-open"
+            :writing -> "hero-pencil"
+            :listening -> "hero-speaker-wave"
+            :speaking -> "hero-chat-bubble-left-right"
+            :grammar -> "hero-wrench"
+            _ -> "hero-academic-cap"
+          end} class="w-4 h-4" />
+          {@lesson.lesson_type}
+        </span>
       </div>
-      <h1 class="text-3xl font-bold text-slate-900 mb-3">
+      <h1 class="text-3xl font-bold text-base-content mb-3">
         {@lesson.title}
       </h1>
-      <p class="text-lg text-slate-600">
+      <p class="text-lg text-secondary/80">
         {@lesson.description}
       </p>
     </div>
 
     <%!-- Progress Bar --%>
     <%= if @current_scope && @current_scope.current_user do %>
-      <div class="bg-white border border-slate-200 rounded-xl p-6 mb-8">
+      <div class="bg-white border border-base-300 rounded-xl p-6 mb-8">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-slate-700">Your Progress</span>
-          <span class="text-sm text-slate-500">0/{length(@lesson.lesson_words)} words learned</span>
+          <span class="text-sm font-medium text-secondary">Your Progress</span>
+          <%= if @lesson_progress && @lesson_progress.status == :completed do %>
+            <span class="text-sm text-primary font-medium">Completed!</span>
+          <% else %>
+            <span class="text-sm text-secondary/60">
+              {@learned_count}/{length(@lesson.lesson_words)} words learned
+            </span>
+          <% end %>
         </div>
-        <div class="w-full bg-slate-100 rounded-full h-2">
-          <div class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+        <div class="w-full bg-base-200 rounded-full h-2">
+          <div
+            class={[
+              "h-2 rounded-full transition-all duration-300",
+              if(@lesson_progress && @lesson_progress.status == :completed,
+                do: "bg-primary",
+                else: "bg-accent"
+              )
+            ]}
+            style={"width: #{@progress_percentage}%"}
+          >
+          </div>
         </div>
+        <%= if @lesson_progress && @lesson_progress.status == :completed do %>
+          <div class="mt-3 text-sm text-primary flex items-center gap-2">
+            <.icon name="hero-check-circle" class="w-4 h-4" />
+            <span>You completed this lesson on {@lesson_progress.completed_at |> Calendar.strftime("%B %d, %Y")}</span>
+          </div>
+        <% end %>
       </div>
     <% end %>
 
     <%!-- Words List --%>
     <div class="mb-8">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">
+      <h2 class="text-lg font-semibold text-base-content mb-4">
         Words in this Lesson ({length(@lesson.lesson_words)})
       </h2>
       <div class="space-y-3">
@@ -50,20 +93,20 @@
             navigate={~p"/words/#{lesson_word.word.id}"}
             class="group block"
           >
-            <div class="bg-white border border-slate-200 rounded-xl p-4
-                        hover:border-indigo-300 hover:shadow-sm transition-all">
+            <div class="bg-white border border-base-300 rounded-xl p-4
+                        hover:border-accent/30 hover:shadow-sm transition-all">
               <div class="flex items-center justify-between">
                 <div class="flex items-baseline gap-4">
-                  <span class="text-2xl font-medium text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  <span class="text-2xl font-medium text-base-content group-hover:text-accent transition-colors">
                     {lesson_word.word.text}
                   </span>
-                  <span class="text-slate-500">
+                  <span class="text-secondary/60">
                     {lesson_word.word.reading}
                   </span>
                 </div>
-                <.icon name="hero-chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                <.icon name="hero-chevron-right" class="w-5 h-5 text-secondary/50 group-hover:text-accent transition-colors" />
               </div>
-              <p class="text-slate-600 text-sm mt-1">
+              <p class="text-secondary/80 text-sm mt-1">
                 {lesson_word.word.meaning}
               </p>
             </div>
@@ -74,24 +117,34 @@
 
     <%!-- Action Buttons --%>
     <div class="flex flex-col sm:flex-row gap-4">
-      <%= if @current_scope && @current_scope.current_user do %>
-        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-xl font-medium
-                 transition-colors shadow-sm hover:shadow-md text-center">
-          Start Learning
-        </button>
-      <% else %>
-        <.link
-          href={~p"/auth/google"}
-          class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-xl font-medium
-                 transition-colors shadow-sm hover:shadow-md text-center"
-        >
-          Sign in to Start Learning
-        </.link>
-      <% end %>
+      <.link
+        navigate={~p"/lessons/#{@lesson.id}/learn"}
+        class={[
+          "flex-1 px-6 py-4 rounded-xl font-medium transition-colors shadow-sm hover:shadow-md text-center",
+          if(@lesson_progress && @lesson_progress.status == :completed,
+            do: "bg-primary hover:bg-primary/80 text-white",
+            else: "bg-accent hover:bg-accent/80 text-white"
+          )
+        ]}
+      >
+        <%= cond do %>
+          <% !@current_scope || !@current_scope.current_user -> %>
+            Preview Lesson (Sign in to Track Progress)
+          <% @lesson_progress && @lesson_progress.status == :completed -> %>
+            <span class="flex items-center justify-center gap-2">
+              <.icon name="hero-check-circle" class="w-5 h-5" />
+              Review Lesson
+            </span>
+          <% @lesson_progress -> %>
+            Continue Learning
+          <% true -> %>
+            Start Learning
+        <% end %>
+      </.link>
 
       <.link
         navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
-        class="px-6 py-4 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200
+        class="px-6 py-4 rounded-xl font-medium text-secondary bg-base-200 hover:bg-base-300
                transition-colors text-center"
       >
         Back to Lessons

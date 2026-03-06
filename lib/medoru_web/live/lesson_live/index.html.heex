@@ -2,8 +2,8 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">Lessons</h1>
-      <p class="text-slate-600">Learn vocabulary through structured lessons. Each word teaches kanji readings in context.</p>
+      <h1 class="text-3xl font-bold text-base-content mb-2">Lessons</h1>
+      <p class="text-secondary">Learn vocabulary through structured lessons. Each word teaches kanji readings in context.</p>
     </div>
 
     <%!-- Difficulty Selector --%>
@@ -14,8 +14,8 @@
           class={[
             "px-4 py-2 rounded-lg font-medium transition-colors",
             if(@difficulty == level,
-              do: "bg-indigo-600 text-white",
-              else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              do: "bg-primary text-white",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-accent"
             )
           ]}
         >
@@ -25,11 +25,11 @@
     </div>
 
     <%!-- Stats --%>
-    <div class="mb-6 flex items-center gap-4 text-sm text-slate-600">
-      <span class="bg-slate-100 px-3 py-1 rounded-full">
+    <div class="mb-6 flex items-center gap-4 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1 rounded-full">
         {length(@lessons)} lessons
       </span>
-      <span class="bg-slate-100 px-3 py-1 rounded-full">
+      <span class="bg-base-200 px-3 py-1 rounded-full">
         JLPT N{@difficulty}
       </span>
     </div>
@@ -37,41 +37,105 @@
     <%!-- Lessons List --%>
     <div class="space-y-4">
       <%= for {lesson, index} <- Enum.with_index(@lessons) do %>
+        <% lesson_progress = Map.get(@lesson_progress_map, lesson.id) %>
+        <% is_completed = lesson_progress && lesson_progress.status == :completed %>
         <.link
           navigate={~p"/lessons/#{lesson.id}"}
           class="group block"
         >
-          <div class="bg-white border border-slate-200 rounded-xl p-6
-                      shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200">
+          <div class={[
+            "border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-200",
+            if(is_completed,
+              do: "bg-primary/5 border-primary/30 hover:border-primary/50",
+              else: "bg-white border-base-300 hover:border-accent/30"
+            )
+          ]}>
             <div class="flex items-start gap-4">
               <%!-- Lesson Number --%>
               <div class="flex-shrink-0">
-                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center
-                            group-hover:bg-indigo-200 transition-colors">
-                  <span class="text-xl font-bold text-indigo-700">
-                    {index + 1}
-                  </span>
+                <div class={[
+                  "w-12 h-12 rounded-xl flex items-center justify-center transition-colors",
+                  if(is_completed,
+                    do: "bg-primary/20 group-hover:bg-primary/30",
+                    else: "bg-accent/20 group-hover:bg-accent/30"
+                  )
+                ]}>
+                  <%= if is_completed do %>
+                    <.icon name="hero-check" class="w-6 h-6 text-primary" />
+                  <% else %>
+                    <span class="text-xl font-bold text-accent">
+                      {index + 1}
+                    </span>
+                  <% end %>
                 </div>
               </div>
 
               <%!-- Lesson Info --%>
               <div class="flex-1 min-w-0">
-                <h2 class="text-xl font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1">
-                  {lesson.title}
-                </h2>
-                <p class="text-slate-600 text-sm mb-3 line-clamp-2">
+                <div class="flex items-center gap-2 mb-1">
+                  <h2 class={[
+                    "text-xl font-semibold transition-colors",
+                    if(is_completed,
+                      do: "text-secondary group-hover:text-primary",
+                      else: "text-secondary group-hover:text-accent"
+                    )
+                  ]}>
+                    {lesson.title}
+                  </h2>
+                  <%= if is_completed do %>
+                    <span class="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+                      Completed
+                    </span>
+                  <% end %>
+                </div>
+                <p class="text-secondary/80 text-sm mb-3 line-clamp-2">
                   {lesson.description}
                 </p>
                 <div class="flex items-center gap-3 text-sm">
-                  <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded">
+                  <span class={[
+                    "px-2 py-1 rounded font-medium capitalize flex items-center gap-1",
+                    case lesson.lesson_type do
+                      :reading -> "bg-accent/20 text-accent/80"
+                      :writing -> "bg-purple-100 text-purple-700"
+                      :listening -> "bg-orange-100 text-orange-700"
+                      :speaking -> "bg-pink-100 text-pink-700"
+                      :grammar -> "bg-teal-100 text-teal-700"
+                      _ -> "bg-base-200 text-secondary"
+                    end
+                  ]}>
+                    <.icon name={case lesson.lesson_type do
+                      :reading -> "hero-book-open"
+                      :writing -> "hero-pencil"
+                      :listening -> "hero-speaker-wave"
+                      :speaking -> "hero-chat-bubble-left-right"
+                      :grammar -> "hero-wrench"
+                      _ -> "hero-academic-cap"
+                    end} class="w-3.5 h-3.5" />
+                    {lesson.lesson_type}
+                  </span>
+                  <span class="bg-base-200 text-secondary px-2 py-1 rounded">
                     {length(lesson.lesson_words)} words
                   </span>
+                  <%= if lesson_progress && !is_completed do %>
+                    <span class="bg-accent/20 text-accent px-2 py-1 rounded">
+                      {lesson_progress.progress_percentage}% complete
+                    </span>
+                  <% end %>
                 </div>
               </div>
 
               <%!-- Arrow --%>
               <div class="flex-shrink-0 self-center">
-                <.icon name="hero-chevron-right" class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                <.icon
+                  name="hero-chevron-right"
+                  class={[
+                    "w-5 h-5 transition-colors",
+                    if(is_completed,
+                      do: "text-primary/50 group-hover:text-primary",
+                      else: "text-secondary/50 group-hover:text-accent"
+                    )
+                  ]}
+                />
               </div>
             </div>
           </div>
@@ -82,8 +146,8 @@
     <%= if @lessons == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
-        <h3 class="text-lg font-medium text-slate-900 mb-2">No lessons found</h3>
-        <p class="text-slate-600">This difficulty level doesn't have any lessons yet.</p>
+        <h3 class="text-lg font-medium text-base-content mb-2">No lessons found</h3>
+        <p class="text-secondary">This difficulty level doesn't have any lessons yet.</p>
       </div>
     <% end %>
   </div>

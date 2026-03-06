@@ -35,37 +35,37 @@ defmodule MedoruWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8 bg-white border-b border-gray-200">
+    <header class="navbar px-4 sm:px-6 lg:px-8 bg-white border-b border-base-300">
       <div class="flex-1">
         <.link navigate={~p"/"} class="flex items-center gap-2">
-          <span class="text-xl font-bold text-indigo-600">Medoru</span>
-          <span class="text-sm text-gray-500">Learn Japanese</span>
+          <span class="text-xl font-bold text-accent">Medoru</span>
+          <span class="text-sm text-secondary/70">Learn Japanese</span>
         </.link>
       </div>
       <div class="flex-none">
         <ul class="flex items-center space-x-4">
           <%= if @current_scope && @current_scope.current_user do %>
             <li>
-              <.link navigate={~p"/dashboard"} class="btn btn-ghost text-gray-700">
+              <.link navigate={~p"/dashboard"} class="btn btn-ghost text-secondary">
                 Dashboard
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/lessons"} class="btn btn-ghost text-gray-700">
+              <.link navigate={~p"/lessons"} class="btn btn-ghost text-secondary">
                 Lessons
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/kanji"} class="btn btn-ghost text-gray-700">
+              <.link navigate={~p"/kanji"} class="btn btn-ghost text-secondary">
                 Kanji
               </.link>
             </li>
             <li>
-              <.link navigate={~p"/words"} class="btn btn-ghost text-gray-700">
+              <.link navigate={~p"/words"} class="btn btn-ghost text-secondary">
                 Words
               </.link>
             </li>
-            <li class="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
+            <li class="flex items-center gap-2 ml-4 pl-4 border-l border-base-300">
               <%= if @current_scope.current_user.avatar_url do %>
                 <img
                   src={@current_scope.current_user.avatar_url}
@@ -73,17 +73,17 @@ defmodule MedoruWeb.Layouts do
                   class="w-8 h-8 rounded-full"
                 />
               <% else %>
-                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                  <.icon name="hero-user" class="w-4 h-4 text-indigo-600" />
+                <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                  <.icon name="hero-user" class="w-4 h-4 text-accent" />
                 </div>
               <% end %>
-              <span class="text-sm text-gray-700 hidden sm:block">
+              <span class="text-sm text-secondary hidden sm:block">
                 {@current_scope.current_user.name || @current_scope.current_user.email}
               </span>
               <.link
                 href={~p"/auth/logout"}
                 method="delete"
-                class="ml-2 text-sm text-gray-500 hover:text-red-600"
+                class="ml-2 text-sm text-secondary/70 hover:text-red-600"
               >
                 <.icon name="hero-arrow-right-on-rectangle" class="w-5 h-5" />
               </.link>
@@ -92,7 +92,7 @@ defmodule MedoruWeb.Layouts do
             <li>
               <.link
                 href={~p"/auth/google"}
-                class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-base-300 rounded-lg text-sm font-medium text-secondary hover:bg-base-200 transition-colors"
               >
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                   <path
@@ -120,7 +120,7 @@ defmodule MedoruWeb.Layouts do
       </div>
     </header>
 
-    <main class="min-h-screen bg-gray-50">
+    <main class="min-h-screen bg-base-200">
       {render_slot(@inner_block)}
     </main>
 

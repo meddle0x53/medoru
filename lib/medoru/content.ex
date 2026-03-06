@@ -685,6 +685,24 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns a list of lessons filtered by lesson type.
+
+  ## Examples
+
+      iex> list_lessons_by_type(:reading)
+      [%Lesson{}, ...]
+
+  """
+  def list_lessons_by_type(lesson_type)
+      when lesson_type in [:reading, :writing, :listening, :speaking, :grammar] do
+    Lesson
+    |> where(lesson_type: ^lesson_type)
+    |> order_by([l], asc: l.difficulty, asc: l.order_index)
+    |> preload(lesson_words: :word)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single lesson by ID.
 
   Raises `Ecto.NoResultsError` if the Lesson does not exist.
@@ -715,6 +733,31 @@ defmodule Medoru.Content do
     Lesson
     |> where(id: ^id)
     |> preload(lesson_words: [word: :word_kanjis])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a single lesson with full word data preloaded for learning.
+  Preloads words, word_kanjis, kanji, and kanji_readings.
+
+  Raises `Ecto.NoResultsError` if the Lesson does not exist.
+
+  ## Examples
+
+      iex> get_lesson_for_learning!(123)
+      %Lesson{lesson_words: [%LessonWord{word: %Word{word_kanjis: [%WordKanji{kanji: %Kanji{}, kanji_reading: %KanjiReading{}}]}}, ...]}
+
+  """
+  def get_lesson_for_learning!(id) do
+    Lesson
+    |> where(id: ^id)
+    |> preload(
+      lesson_words: [
+        word: [
+          word_kanjis: [:kanji, :kanji_reading]
+        ]
+      ]
+    )
     |> Repo.one!()
   end
 

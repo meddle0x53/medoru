@@ -7,9 +7,9 @@
 | 1 | OAuth & Accounts | ✅ APPROVED | 2026-03-05 |
 | 2 | Kanji & Readings | ✅ APPROVED | 2026-03-05 |
 | 3 | Words with Reading Links | ✅ APPROVED | 2026-03-06 |
-| 4 | Lessons | ✅ COMPLETED | 2026-03-06 |
-| 5 | Learning Core | ⏳ PENDING | - |
-| 6 | Daily Reviews & Streaks | ⏳ PENDING | - |
+| 4 | Lessons | ✅ APPROVED | 2026-03-06 |
+| 5 | Learning Core | ✅ COMPLETED | 2026-03-06 |
+| 6 | Daily Reviews & Streaks | ⏳ NEXT | - |
 | 7 | Polish & Integration | ⏳ PENDING | - |
 
 ## Version 0.2.0 (Social Features) - Planned
@@ -42,10 +42,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP)
-- **Phase**: Iteration 4 COMPLETED - PENDING REVIEW
-- **Last completed**: Iteration 4 - Lessons System
-- **Next**: Iteration 5 - Learning Core
-- **Overall Progress**: 4/7 iterations for v0.1.0
+- **Phase**: Iteration 5 COMPLETED - PENDING REVIEW
+- **Last completed**: Iteration 4 - Lessons System (APPROVED)
+- **Current**: Iteration 5 - Learning Core
+- **Overall Progress**: 5/7 iterations for v0.1.0
 
 ## Project Status
 

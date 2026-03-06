@@ -3,19 +3,19 @@
     <%!-- Back Link --%>
     <.link
       navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
-      class="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 mb-6 transition-colors"
+      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
       <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@kanji.jlpt_level} Kanji
     </.link>
 
     <%!-- Main Kanji Card --%>
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+    <div class="bg-white rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
       <div class="p-8">
         <div class="flex flex-col md:flex-row gap-8">
           <%!-- Large Kanji Display --%>
           <div class="flex-shrink-0">
-            <div class="w-32 h-32 md:w-40 md:h-40 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200">
-              <span class="text-7xl md:text-8xl font-medium text-slate-900">
+            <div class="w-32 h-32 md:w-40 md:h-40 bg-base-200/50 rounded-2xl flex items-center justify-center border border-base-300">
+              <span class="text-7xl md:text-8xl font-medium text-base-content">
                 {@kanji.character}
               </span>
             </div>
@@ -24,34 +24,34 @@
           <%!-- Info Section --%>
           <div class="flex-1">
             <div class="flex flex-wrap items-center gap-3 mb-4">
-              <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+              <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
                 JLPT N{@kanji.jlpt_level}
               </span>
-              <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+              <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
                 {@kanji.stroke_count} strokes
               </span>
               <%= if @kanji.frequency do %>
-                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+                <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
                   Frequency: #{@kanji.frequency}
                 </span>
               <% end %>
             </div>
 
-            <h1 class="text-2xl font-bold text-slate-900 mb-2">
+            <h1 class="text-2xl font-bold text-base-content mb-2">
               Meanings
             </h1>
-            <p class="text-lg text-slate-700 mb-6">
+            <p class="text-lg text-secondary mb-6">
               {Enum.join(@kanji.meanings, ", ")}
             </p>
 
             <%= if @kanji.radicals != [] do %>
               <div>
-                <h2 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
+                <h2 class="text-sm font-medium text-secondary uppercase tracking-wide mb-2">
                   Radicals
                 </h2>
                 <div class="flex gap-2">
                   <%= for radical <- @kanji.radicals do %>
-                    <span class="bg-amber-50 text-amber-700 px-3 py-1 rounded-lg text-lg border border-amber-200">
+                    <span class="bg-secondary/10 text-secondary/80 px-3 py-1 rounded-lg text-lg border border-secondary/30">
                       {radical}
                     </span>
                   <% end %>
@@ -66,28 +66,28 @@
     <%!-- Readings Section --%>
     <div class="grid md:grid-cols-2 gap-6">
       <%!-- On Readings --%>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
-          <span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-sm font-medium">
+          <span class="bg-accent/20 text-accent/80 px-3 py-1 rounded-full text-sm font-medium">
             On'yomi
           </span>
-          <span class="text-sm text-slate-500">(Chinese reading)</span>
+          <span class="text-sm text-secondary">(Chinese reading)</span>
         </div>
 
         <%= if @on_readings != [] do %>
           <div class="space-y-3">
             <%= for reading <- @on_readings do %>
-              <div class="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+              <div class="border-b border-base-200 last:border-0 pb-3 last:pb-0">
                 <div class="flex items-baseline gap-3">
-                  <span class="text-2xl font-medium text-slate-900">
+                  <span class="text-2xl font-medium text-accent">
                     {reading.reading}
                   </span>
-                  <span class="text-slate-500">
+                  <span class="text-secondary">
                     {reading.romaji}
                   </span>
                 </div>
                 <%= if reading.usage_notes do %>
-                  <p class="text-sm text-slate-600 mt-1">
+                  <p class="text-sm text-secondary mt-1">
                     {reading.usage_notes}
                   </p>
                 <% end %>
@@ -95,33 +95,33 @@
             <% end %>
           </div>
         <% else %>
-          <p class="text-slate-500 italic">No common on'yomi readings</p>
+          <p class="text-secondary italic">No common on'yomi readings</p>
         <% end %>
       </div>
 
       <%!-- Kun Readings --%>
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div class="bg-white rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
-          <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
+          <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
             Kun'yomi
           </span>
-          <span class="text-sm text-slate-500">(Japanese reading)</span>
+          <span class="text-sm text-secondary">(Japanese reading)</span>
         </div>
 
         <%= if @kun_readings != [] do %>
           <div class="space-y-3">
             <%= for reading <- @kun_readings do %>
-              <div class="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+              <div class="border-b border-base-200 last:border-0 pb-3 last:pb-0">
                 <div class="flex items-baseline gap-3">
-                  <span class="text-2xl font-medium text-slate-900">
+                  <span class="text-2xl font-medium text-accent">
                     {reading.reading}
                   </span>
-                  <span class="text-slate-500">
+                  <span class="text-secondary">
                     {reading.romaji}
                   </span>
                 </div>
                 <%= if reading.usage_notes do %>
-                  <p class="text-sm text-slate-600 mt-1">
+                  <p class="text-sm text-secondary mt-1">
                     {reading.usage_notes}
                   </p>
                 <% end %>
@@ -129,7 +129,7 @@
             <% end %>
           </div>
         <% else %>
-          <p class="text-slate-500 italic">No common kun'yomi readings</p>
+          <p class="text-secondary italic">No common kun'yomi readings</p>
         <% end %>
       </div>
     </div>
@@ -137,10 +137,10 @@
     <%!-- Words Using This Kanji Section --%>
     <div class="mt-8">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-slate-900">
+        <h2 class="text-xl font-bold text-base-content">
           Words Using This Kanji
         </h2>
-        <span class="text-sm text-slate-600">
+        <span class="text-sm text-secondary">
           {@words_data.total_count} words total
         </span>
       </div>
@@ -149,16 +149,16 @@
         <%!-- Words Grouped by Reading --%>
         <div class="space-y-6">
           <%= for {reading, words} <- @words_data.groups do %>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-base-300 overflow-hidden">
               <%!-- Reading Header --%>
-              <div class="bg-slate-50 px-6 py-3 border-b border-slate-200">
+              <div class="bg-base-200/50 px-6 py-3 border-b border-base-300">
                 <div class="flex items-center gap-3">
                   <%= if reading == "misc" do %>
-                    <span class="text-lg font-medium text-slate-700">Other</span>
+                    <span class="text-lg font-medium text-accent">Other</span>
                   <% else %>
-                    <span class="text-2xl font-medium text-slate-900">{reading}</span>
+                    <span class="text-2xl font-medium text-accent">{reading}</span>
                   <% end %>
-                  <span class="text-sm text-slate-500">({length(words)} words)</span>
+                  <span class="text-sm text-secondary">({length(words)} words)</span>
                 </div>
               </div>
 
@@ -167,20 +167,20 @@
                 <%= for word <- words do %>
                   <.link
                     navigate={~p"/words/#{word.id}"}
-                    class="block px-6 py-4 hover:bg-slate-50 transition-colors"
+                    class="block px-6 py-4 hover:bg-base-200/50 transition-colors"
                   >
                     <div class="flex items-center justify-between">
                       <div class="flex items-baseline gap-4">
-                        <span class="text-xl font-medium text-slate-900">
+                        <span class="text-xl font-medium text-base-content">
                           {word.text}
                         </span>
-                        <span class="text-slate-500">
+                        <span class="text-secondary">
                           {word.reading}
                         </span>
                       </div>
-                      <.icon name="hero-chevron-right" class="w-5 h-5 text-slate-400" />
+                      <.icon name="hero-chevron-right" class="w-5 h-5 text-secondary/50" />
                     </div>
-                    <p class="text-slate-600 text-sm mt-1">
+                    <p class="text-secondary text-sm mt-1">
                       {word.meaning}
                     </p>
                   </.link>
@@ -197,12 +197,12 @@
             <%= if @page > 1 do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page - 1}"}
-                class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
               >
                 ← Previous
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed">
+              <span class="px-4 py-2 rounded-lg bg-base-200 text-secondary/50 cursor-not-allowed">
                 ← Previous
               </span>
             <% end %>
@@ -211,13 +211,13 @@
             <div class="flex items-center gap-1">
               <%= for page_num <- 1..@words_data.total_pages do %>
                 <%= if page_num == @page do %>
-                  <span class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium">
+                  <span class="px-4 py-2 rounded-lg bg-primary text-white font-medium">
                     {page_num}
                   </span>
                 <% else %>
                   <.link
                     patch={~p"/kanji/#{@kanji.id}?page=#{page_num}"}
-                    class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                    class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
                   >
                     {page_num}
                   </.link>
@@ -229,20 +229,20 @@
             <%= if @page < @words_data.total_pages do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page + 1}"}
-                class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                class="px-4 py-2 rounded-lg bg-white border border-base-300 text-secondary hover:bg-base-200/50 transition-colors"
               >
                 Next →
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed">
+              <span class="px-4 py-2 rounded-lg bg-base-200 text-secondary/50 cursor-not-allowed">
                 Next →
               </span>
             <% end %>
           </div>
         <% end %>
       <% else %>
-        <div class="bg-slate-50 rounded-xl p-8 text-center">
-          <p class="text-slate-600">No words found containing this kanji.</p>
+        <div class="bg-base-200/50 rounded-xl p-8 text-center">
+          <p class="text-secondary">No words found containing this kanji.</p>
         </div>
       <% end %>
     </div>
@@ -251,13 +251,13 @@
     <div class="mt-8 flex justify-between items-center">
       <.link
         navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
-        class="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+        class="text-secondary hover:text-primary font-medium transition-colors"
       >
         ← Back to list
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
-        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium
+        <button class="bg-primary hover:bg-primary/80 text-white px-6 py-3 rounded-xl font-medium
                  transition-colors shadow-sm hover:shadow-md">
           Add to Study List
         </button>

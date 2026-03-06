@@ -32,7 +32,7 @@ defmodule MedoruWeb.DashboardLive do
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-base-300 p-6">
       <div class="flex items-center">
         <div class={[
           "flex-shrink-0 p-3 rounded-lg",
@@ -41,7 +41,7 @@ defmodule MedoruWeb.DashboardLive do
           <.icon name={"hero-#{@icon}"} class="h-6 w-6" />
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-500">{@label}</p>
+          <p class="text-sm font-medium text-secondary/70">{@label}</p>
           <p class="text-2xl font-bold text-gray-900">{@value}</p>
         </div>
       </div>
@@ -57,17 +57,17 @@ defmodule MedoruWeb.DashboardLive do
 
   defp action_card(assigns) do
     ~H"""
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-base-300 p-6">
       <div class="flex items-start">
-        <div class="flex-shrink-0 p-3 bg-indigo-100 rounded-lg text-indigo-600">
+        <div class="flex-shrink-0 p-3 bg-primary/20 rounded-lg text-primary">
           <.icon name={"hero-#{@icon}"} class="h-6 w-6" />
         </div>
         <div class="ml-4 flex-1">
           <h3 class="text-lg font-semibold text-gray-900">{@title}</h3>
-          <p class="mt-1 text-gray-600">{@description}</p>
+          <p class="mt-1 text-secondary/80">{@description}</p>
           <.link
             navigate={@button_link}
-            class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+            class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/80 transition-colors"
           >
             {@button_text}
           </.link>

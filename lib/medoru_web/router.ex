@@ -36,6 +36,16 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Learn routes (can be accessed anonymously but progress tracking requires auth)
+  scope "/", MedoruWeb do
+    pipe_through :browser
+
+    live_session :learn,
+      on_mount: [{MedoruWeb.UserAuth, :default}] do
+      live "/lessons/:lesson_id/learn", LearnLive
+    end
+  end
+
   # OAuth routes
   scope "/auth", MedoruWeb do
     pipe_through :browser

@@ -160,7 +160,8 @@ if File.exists?(n5_lessons_path) do
       title: lesson_data["title"],
       description: lesson_data["description"],
       difficulty: lesson_data["difficulty"],
-      order_index: lesson_data["order_index"]
+      order_index: lesson_data["order_index"],
+      lesson_type: String.to_atom(lesson_data["lesson_type"] || "reading")
     }
 
     # Build word links for this lesson
