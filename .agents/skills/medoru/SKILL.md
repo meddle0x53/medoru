@@ -185,6 +185,38 @@ lib/medoru/accounts/
 ```
 
 ### LiveView Structure
+
+#### Template Organization Rule
+**When a LiveView's `render/1` function exceeds ~30 lines, extract the template to a separate `.html.heex` file.**
+
+```
+lib/medoru_web/live/
+├── dashboard_live.ex           # LiveView logic only
+├── dashboard_live.html.heex    # Extracted template (>30 lines)
+├── lesson_live/
+│   ├── index.ex               # Uses embed_templates "*.html"
+│   ├── index.html.heex        # Extracted template
+│   ├── show.ex                
+│   └── show.html.heex         
+└── user_live/
+    ├── profile.ex
+    └── profile.html.heex
+```
+
+**Implementation:**
+1. Create `{live_view_name}.html.heex` in the same directory
+2. Move the `~H"""..."""` content to the file (without the sigil wrapper)
+3. Add `embed_templates "*.html"` to the LiveView module
+4. Remove the `render/1` function (or keep if needed for logic)
+5. Keep private component functions (`defp stat_card`, etc.) in the `.ex` file
+
+**Benefits:**
+- Cleaner separation of concerns
+- Better syntax highlighting for HTML
+- Easier to review template changes
+- Prevents LiveView modules from becoming too large
+
+#### Directory Structure
 ```
 lib/medoru_web/live/
 ├── dashboard_live.ex           # Main learning dashboard

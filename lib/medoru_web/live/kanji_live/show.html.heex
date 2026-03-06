@@ -1,0 +1,154 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Back Link --%>
+    <.link
+      navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
+      class="inline-flex items-center gap-2 text-slate-600 hover:text-indigo-600 mb-6 transition-colors"
+    >
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@kanji.jlpt_level} Kanji
+    </.link>
+
+    <%!-- Main Kanji Card --%>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+      <div class="p-8">
+        <div class="flex flex-col md:flex-row gap-8">
+          <%!-- Large Kanji Display --%>
+          <div class="flex-shrink-0">
+            <div class="w-32 h-32 md:w-40 md:h-40 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200">
+              <span class="text-7xl md:text-8xl font-medium text-slate-900">
+                {@kanji.character}
+              </span>
+            </div>
+          </div>
+
+          <%!-- Info Section --%>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
+                JLPT N{@kanji.jlpt_level}
+              </span>
+              <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+                {@kanji.stroke_count} strokes
+              </span>
+              <%= if @kanji.frequency do %>
+                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm">
+                  Frequency: #{@kanji.frequency}
+                </span>
+              <% end %>
+            </div>
+
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">
+              Meanings
+            </h1>
+            <p class="text-lg text-slate-700 mb-6">
+              {Enum.join(@kanji.meanings, ", ")}
+            </p>
+
+            <%= if @kanji.radicals != [] do %>
+              <div>
+                <h2 class="text-sm font-medium text-slate-500 uppercase tracking-wide mb-2">
+                  Radicals
+                </h2>
+                <div class="flex gap-2">
+                  <%= for radical <- @kanji.radicals do %>
+                    <span class="bg-amber-50 text-amber-700 px-3 py-1 rounded-lg text-lg border border-amber-200">
+                      {radical}
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Readings Section --%>
+    <div class="grid md:grid-cols-2 gap-6">
+      <%!-- On Readings --%>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-sm font-medium">
+            On'yomi
+          </span>
+          <span class="text-sm text-slate-500">(Chinese reading)</span>
+        </div>
+
+        <%= if @on_readings != [] do %>
+          <div class="space-y-3">
+            <%= for reading <- @on_readings do %>
+              <div class="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                <div class="flex items-baseline gap-3">
+                  <span class="text-2xl font-medium text-slate-900">
+                    {reading.reading}
+                  </span>
+                  <span class="text-slate-500">
+                    {reading.romaji}
+                  </span>
+                </div>
+                <%= if reading.usage_notes do %>
+                  <p class="text-sm text-slate-600 mt-1">
+                    {reading.usage_notes}
+                  </p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-slate-500 italic">No common on'yomi readings</p>
+        <% end %>
+      </div>
+
+      <%!-- Kun Readings --%>
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-medium">
+            Kun'yomi
+          </span>
+          <span class="text-sm text-slate-500">(Japanese reading)</span>
+        </div>
+
+        <%= if @kun_readings != [] do %>
+          <div class="space-y-3">
+            <%= for reading <- @kun_readings do %>
+              <div class="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                <div class="flex items-baseline gap-3">
+                  <span class="text-2xl font-medium text-slate-900">
+                    {reading.reading}
+                  </span>
+                  <span class="text-slate-500">
+                    {reading.romaji}
+                  </span>
+                </div>
+                <%= if reading.usage_notes do %>
+                  <p class="text-sm text-slate-600 mt-1">
+                    {reading.usage_notes}
+                  </p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-slate-500 italic">No common kun'yomi readings</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Navigation --%>
+    <div class="mt-8 flex justify-between items-center">
+      <.link
+        navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
+        class="text-slate-600 hover:text-indigo-600 font-medium transition-colors"
+      >
+        ← Back to list
+      </.link>
+
+      <%= if @current_scope && @current_scope.current_user do %>
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium
+                 transition-colors shadow-sm hover:shadow-md">
+          Add to Study List
+        </button>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

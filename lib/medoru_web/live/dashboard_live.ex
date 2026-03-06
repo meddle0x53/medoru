@@ -6,6 +6,8 @@ defmodule MedoruWeb.DashboardLive do
 
   alias Medoru.Accounts
 
+  embed_templates "*.html"
+
   @impl true
   def mount(_params, _session, socket) do
     %{current_user: user} = socket.assigns.current_scope
@@ -19,75 +21,6 @@ defmodule MedoruWeb.DashboardLive do
      |> assign(:user, user)
      |> assign(:stats, user.stats)
      |> assign(:profile, user.profile)}
-  end
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <%!-- Welcome Header --%>
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">
-            Welcome back, {@profile.display_name || @user.name || @user.email}!
-          </h1>
-          <p class="mt-2 text-gray-600">
-            Continue your Japanese learning journey.
-          </p>
-        </div>
-
-        <%!-- Stats Grid --%>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <.stat_card
-            label="Current Streak"
-            value={@stats.current_streak}
-            icon="fire"
-            color="orange"
-          />
-          <.stat_card label="XP" value={@stats.xp} icon="star" color="yellow" />
-          <.stat_card label="Level" value={@stats.level} icon="trophy" color="purple" />
-          <.stat_card
-            label="Kanji Learned"
-            value={@stats.total_kanji_learned}
-            icon="book-open"
-            color="blue"
-          />
-        </div>
-
-        <%!-- Quick Actions --%>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <.action_card
-            title="Daily Review"
-            description="Review kanji due for today and keep your streak going."
-            button_text="Start Review"
-            button_link={~p"/daily-review"}
-            icon="calendar"
-          />
-          <.action_card
-            title="Continue Learning"
-            description="Pick up where you left off with your lessons."
-            button_text="View Lessons"
-            button_link={~p"/lessons"}
-            icon="academic-cap"
-          />
-          <.action_card
-            title="Browse Kanji"
-            description="Explore the kanji database organized by JLPT level."
-            button_text="Browse Kanji"
-            button_link={~p"/kanji"}
-            icon="book-open"
-          />
-          <.action_card
-            title="Browse Vocabulary"
-            description="Learn Japanese words and see their kanji breakdown."
-            button_text="Browse Words"
-            button_link={~p"/words"}
-            icon="document-text"
-          />
-        </div>
-      </div>
-    </Layouts.app>
-    """
   end
 
   # Components
