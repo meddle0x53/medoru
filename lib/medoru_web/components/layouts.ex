@@ -64,6 +64,14 @@ defmodule MedoruWeb.Layouts do
                 Words
               </.link>
             </li>
+            <%= if @current_scope.current_user.type == "admin" do %>
+              <li class="hidden md:block">
+                <.link navigate={~p"/admin/users"} class="btn btn-ghost btn-sm text-error">
+                  <.icon name="hero-shield-check" class="w-4 h-4 mr-1" />
+                  Admin
+                </.link>
+              </li>
+            <% end %>
             <li class="flex items-center gap-2 ml-2 pl-2 sm:ml-4 sm:pl-4 border-l border-base-300">
               <%= if @current_scope.current_user.avatar_url do %>
                 <img

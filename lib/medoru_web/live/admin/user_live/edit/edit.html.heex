@@ -1,0 +1,127 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <button
+        phx-click="go_back"
+        class="btn btn-sm btn-ghost mb-4"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> Back to Users
+      </button>
+      <h1 class="text-3xl font-bold text-base-content">Edit User</h1>
+      <p class="mt-2 text-secondary">
+        Manage user permissions for {@user.email}
+      </p>
+    </div>
+
+    <%!-- User Info Card --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4">User Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="text-sm text-base-content/60">Email</label>
+            <p class="font-medium">{@user.email}</p>
+          </div>
+          <div>
+            <label class="text-sm text-base-content/60">Name</label>
+            <p class="font-medium">{@user.name || "Not set"}</p>
+          </div>
+          <div>
+            <label class="text-sm text-base-content/60">Display Name</label>
+            <p class="font-medium">
+              {(@user.profile && @user.profile.display_name) || "Not set"}
+            </p>
+          </div>
+          <div>
+            <label class="text-sm text-base-content/60">Joined</label>
+            <p class="font-medium">
+              {Calendar.strftime(@user.inserted_at, "%B %d, %Y at %I:%M %p")}
+            </p>
+          </div>
+          <div>
+            <label class="text-sm text-base-content/60">Level</label>
+            <p class="font-medium">{(@user.stats && @user.stats.level) || 1}</p>
+          </div>
+          <div>
+            <label class="text-sm text-base-content/60">XP</label>
+            <p class="font-medium">{(@user.stats && @user.stats.xp) || 0}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Change Type Card --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4">User Type</h2>
+        <p class="text-secondary mb-6">
+          Select the appropriate role for this user. This determines what actions they can perform.
+        </p>
+
+        <div class="space-y-3">
+          <%= for type <- @user_types do %>
+            <button
+              phx-click="change_type"
+              phx-value-type={type}
+              class={[
+                "w-full p-4 rounded-xl border-2 text-left transition-all",
+                if @current_type == type do
+                  "border-primary bg-primary/5"
+                else
+                  "border-base-300 hover:border-primary/30"
+                end
+              ]}
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class={[
+                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    case type do
+                      "admin" -> "bg-error/10 text-error"
+                      "teacher" -> "bg-warning/10 text-warning"
+                      "student" -> "bg-info/10 text-info"
+                      _ -> "bg-base-200"
+                    end
+                  ]}>
+                    <.icon
+                      name={
+                        case type do
+                          "admin" -> "hero-shield-check"
+                          "teacher" -> "hero-academic-cap"
+                          "student" -> "hero-book-open"
+                          _ -> "hero-user"
+                        end
+                      }
+                      class="w-5 h-5"
+                    />
+                  </div>
+                  <div>
+                    <div class="font-semibold text-base-content">
+                      {String.capitalize(type)}
+                    </div>
+                    <div class="text-sm text-base-content/60">
+                      <%= case type do %>
+                        <% "admin" -> %>
+                          Full system access. Can manage users, content, and settings.
+                        <% "teacher" -> %>
+                          Can create classrooms, lessons, and tests for students.
+                        <% "student" -> %>
+                          Can learn, take tests, and join classrooms.
+                        <% _ -> %>
+                          Standard user
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+                <%= if @current_type == type do %>
+                  <span class="badge badge-primary">Current</span>
+                <% end %>
+              </div>
+            </button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

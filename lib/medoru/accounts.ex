@@ -116,6 +116,90 @@ defmodule Medoru.Accounts do
     User.changeset(user, attrs)
   end
 
+  # Admin User Management
+
+  @doc """
+  Returns a paginated list of users for admin.
+  Supports filtering by type and searching by email/name.
+  Returns {users, total_count} tuple.
+  """
+  def list_users_for_admin(opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+    type_filter = Keyword.get(opts, :type)
+    search = Keyword.get(opts, :search)
+
+    offset = (page - 1) * per_page
+
+    query =
+      User
+      |> maybe_filter_by_type(type_filter)
+      |> maybe_search_users(search)
+
+    users =
+      query
+      |> order_by([u], desc: u.inserted_at)
+      |> preload([:profile, :stats])
+      |> limit(^per_page)
+      |> offset(^offset)
+      |> Repo.all()
+
+    total_count = Repo.aggregate(query, :count, :id)
+
+    {users, total_count}
+  end
+
+  defp maybe_filter_by_type(query, nil), do: query
+
+  defp maybe_filter_by_type(query, type) when type in ["student", "teacher", "admin"] do
+    where(query, type: ^type)
+  end
+
+  defp maybe_filter_by_type(query, _), do: query
+
+  defp maybe_search_users(query, nil), do: query
+  defp maybe_search_users(query, ""), do: query
+
+  defp maybe_search_users(query, search) do
+    search_term = "%#{search}%"
+
+    query
+    |> where(
+      [u],
+      ilike(u.email, ^search_term) or
+        ilike(u.name, ^search_term)
+    )
+  end
+
+  @doc """
+  Updates a user's type (admin only).
+  """
+  def update_user_type(%User{} = user, type) when type in ["student", "teacher", "admin"] do
+    user
+    |> User.type_changeset(%{type: type})
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets a single user with profile and stats for admin.
+  """
+  def get_user_for_admin!(id) do
+    User
+    |> where(id: ^id)
+    |> preload([:profile, :stats])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a user by email for admin operations.
+  """
+  def get_user_by_email_for_admin(email) when is_binary(email) do
+    User
+    |> where(email: ^email)
+    |> preload([:profile, :stats])
+    |> Repo.one()
+  end
+
   @doc """
   Gets a user profile by user id.
   """

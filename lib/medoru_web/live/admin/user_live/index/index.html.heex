@@ -1,0 +1,215 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content">User Management</h1>
+      <p class="mt-2 text-secondary">
+        Manage user accounts and permissions. Total users: {@total_count}
+      </p>
+    </div>
+
+    <%!-- Filters --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <%!-- Type Filter --%>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70">Filter by type:</span>
+            <div class="join">
+              <button
+                phx-click="filter_type"
+                phx-value-type=""
+                class={[
+                  "join-item btn btn-sm",
+                  if(is_nil(@type_filter), do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                All
+              </button>
+              <button
+                phx-click="filter_type"
+                phx-value-type="student"
+                class={[
+                  "join-item btn btn-sm",
+                  if(@type_filter == "student", do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                Students
+              </button>
+              <button
+                phx-click="filter_type"
+                phx-value-type="teacher"
+                class={[
+                  "join-item btn btn-sm",
+                  if(@type_filter == "teacher", do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                Teachers
+              </button>
+              <button
+                phx-click="filter_type"
+                phx-value-type="admin"
+                class={[
+                  "join-item btn btn-sm",
+                  if(@type_filter == "admin", do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                Admins
+              </button>
+            </div>
+          </div>
+
+          <%!-- Search --%>
+          <.form
+            for={%{}}
+            phx-submit="search"
+            class="flex items-center gap-2 w-full sm:w-auto"
+          >
+            <div class="join w-full sm:w-auto">
+              <input
+                type="text"
+                name="search[query]"
+                value={@search}
+                placeholder="Search by email or name..."
+                class="join-item input input-sm input-bordered w-full sm:w-64"
+              />
+              <button type="submit" class="join-item btn btn-sm btn-primary">
+                <.icon name="hero-magnifying-glass" class="w-4 h-4" />
+              </button>
+            </div>
+            <%= if @search || @type_filter do %>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="btn btn-sm btn-ghost"
+              >
+                Clear
+              </button>
+            <% end %>
+          </.form>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Users Table --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="table table-zebra">
+          <thead>
+            <tr class="bg-base-200/50">
+              <th class="text-base-content/70">User</th>
+              <th class="text-base-content/70">Type</th>
+              <th class="text-base-content/70">Level</th>
+              <th class="text-base-content/70">Joined</th>
+              <th class="text-base-content/70 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for user <- @users do %>
+              <tr class="hover:bg-base-200/50">
+                <td>
+                  <div class="flex items-center gap-3">
+                    <div class="avatar placeholder">
+                      <div class="bg-primary text-primary-content rounded-full w-10">
+                        <%= if user.profile && user.profile.display_name do %>
+                          <span class="text-sm">
+                            {String.first(user.profile.display_name) |> String.upcase()}
+                          </span>
+                        <% else %>
+                          <span class="text-sm">
+                            {String.first(user.name || user.email) |> String.upcase()}
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="font-medium text-base-content">
+                        {(user.profile && user.profile.display_name) || user.name || "No name"}
+                      </div>
+                      <div class="text-sm text-base-content/60">{user.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class={["badge", type_badge_color(user.type)]}>
+                    {String.capitalize(user.type)}
+                  </span>
+                </td>
+                <td>
+                  <div class="flex items-center gap-2">
+                    <.icon name="hero-star" class="w-4 h-4 text-warning" />
+                    <span class="font-medium">{(user.stats && user.stats.level) || 1}</span>
+                  </div>
+                </td>
+                <td class="text-base-content/70">
+                  {Calendar.strftime(user.inserted_at, "%b %d, %Y")}
+                </td>
+                <td class="text-right">
+                  <.link
+                    navigate={~p"/admin/users/#{user.id}/edit"}
+                    class="btn btn-sm btn-ghost"
+                  >
+                    <.icon name="hero-pencil-square" class="w-4 h-4" /> Edit
+                  </.link>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%= if @users == [] do %>
+        <div class="p-12 text-center">
+          <.icon name="hero-users" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
+          <p class="text-base-content/50">No users found matching your criteria.</p>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="flex items-center justify-between mt-6">
+        <div class="text-sm text-base-content/60">
+          Page {@page} of {@total_pages}
+        </div>
+        <div class="join">
+          <.link
+            navigate={
+              if @page > 1,
+                do: ~p"/admin/users?#{%{page: @page - 1, type: @type_filter, search: @search}}",
+                else: "#"
+            }
+            class={["join-item btn btn-sm", if(@page <= 1, do: "btn-disabled")]}
+          >
+            <.icon name="hero-chevron-left" class="w-4 h-4" />
+          </.link>
+          <%= for page_num <- 1..@total_pages do %>
+            <%= if abs(page_num - @page) <= 2 or page_num == 1 or page_num == @total_pages do %>
+              <.link
+                navigate={
+                  ~p"/admin/users?#{%{page: page_num, type: @type_filter, search: @search}}"
+                }
+                class={[
+                  "join-item btn btn-sm",
+                  if(page_num == @page, do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {page_num}
+              </.link>
+            <% end %>
+          <% end %>
+          <.link
+            navigate={
+              if @page < @total_pages,
+                do: ~p"/admin/users?#{%{page: @page + 1, type: @type_filter, search: @search}}",
+                else: "#"
+            }
+            class={["join-item btn btn-sm", if(@page >= @total_pages, do: "btn-disabled")]}
+          >
+            <.icon name="hero-chevron-right" class="w-4 h-4" />
+          </.link>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

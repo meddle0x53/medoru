@@ -79,6 +79,18 @@ defmodule Medoru.MixProject do
     ]
   end
 
+  # Release configuration
+  def releases do
+    [
+      medoru: [
+        version: "0.1.0",
+        applications: [medoru: :permanent],
+        overlays: ["rel/overlays"],
+        steps: [:assemble, :tar]
+      ]
+    ]
+  end
+
   # Aliases are shortcuts or tasks specific to the current project.
   # For example, to install project dependencies and perform other setup tasks, run:
   #

@@ -74,7 +74,9 @@ defmodule MedoruWeb.UserAuth do
   defp mount_current_user(session, socket) do
     case session do
       %{"user_id" => user_id} ->
-        user = Accounts.get_user!(user_id)
+        # Use get_user (not get_user!) to handle case where user no longer exists
+        # This can happen when database is cleaned or user is deleted
+        user = Accounts.get_user(user_id)
         Phoenix.Component.assign(socket, current_scope: %{current_user: user})
 
       %{} ->

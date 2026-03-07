@@ -1,0 +1,175 @@
+#!/bin/bash
+#
+# Medoru CLI helper script
+#
+# Works in both development (mix) and production (release) environments.
+#
+# Development usage:
+#   ./bin/medoru make_admin user@example.com
+#   ./bin/medoru version
+#   ./bin/medoru migrate
+#   ./bin/medoru start
+#
+# Production usage (after mix release):
+#   ./bin/medoru make_admin user@example.com
+#   ./bin/medoru version
+#   ./bin/medoru migrate
+#   ./bin/medoru daemon
+#
+# Or using release's eval directly:
+#   bin/medoru eval "Medoru.Release.make_admin(\"user@example.com\")"
+#
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Detect if we're in a release environment
+# A release has: bin/medoru (the release script), releases/ directory with COOKIE
+is_release() {
+  [ -f "$APP_ROOT/releases/COOKIE" ] || [ -d "$APP_ROOT/releases" ]
+}
+
+# Show help
+show_help() {
+  local mode="$1"
+  echo "Medoru CLI (${mode})"
+  echo ""
+  echo "Usage: $0 <command> [args]"
+  echo ""
+  echo "Commands:"
+  echo "  make_admin <email>  Make a user an admin"
+  echo "  version             Show application version"
+  echo "  migrate             Run database migrations"
+  echo "  seed                Seed the database"
+  echo "  start               Start the application (foreground)"
+  
+  if [ "$mode" = "Production" ]; then
+    echo "  daemon              Start as daemon (background)"
+    echo "  stop                Stop the application"
+    echo "  restart             Restart the application"
+    echo "  remote              Connect to running app (remote console)"
+    echo "  pid                 Show running PID"
+    echo ""
+    echo "Direct eval (advanced):"
+    echo "  bin/medoru eval 'Elixir code here'"
+    echo "  bin/medoru rpc 'Enum.map([1,2,3], &(&1*2))'"
+  else
+    echo ""
+    echo "In production, additional commands available:"
+    echo "  daemon, stop, restart, remote, pid"
+  fi
+}
+
+# Run command
+if is_release; then
+  # Production release mode
+  RELEASE_BIN="$APP_ROOT/bin/medoru"
+  
+  # If the release binary doesn't exist at expected path, try to find it
+  if [ ! -f "$RELEASE_BIN" ]; then
+    RELEASE_BIN="$(find "$APP_ROOT/bin" -name 'medoru' -type f 2>/dev/null | head -1)"
+  fi
+  
+  if [ -z "$RELEASE_BIN" ] || [ ! -f "$RELEASE_BIN" ]; then
+    echo "Error: Could not find release binary."
+    echo "Make sure you're running from a built release directory."
+    exit 1
+  fi
+  
+  case "$1" in
+    make_admin)
+      if [ -z "$2" ]; then
+        echo "Usage: $0 make_admin <email>"
+        exit 1
+      fi
+      $RELEASE_BIN eval "Medoru.Release.make_admin(\"$2\")"
+      ;;
+    
+    version)
+      $RELEASE_BIN eval "Medoru.Release.version()"
+      ;;
+    
+    migrate)
+      $RELEASE_BIN eval "Medoru.Release.migrate()"
+      ;;
+    
+    seed)
+      $RELEASE_BIN eval "Medoru.Release.seed()"
+      ;;
+    
+    start)
+      $RELEASE_BIN start
+      ;;
+    
+    daemon)
+      $RELEASE_BIN daemon
+      ;;
+    
+    stop)
+      $RELEASE_BIN stop
+      ;;
+    
+    restart)
+      $RELEASE_BIN restart
+      ;;
+    
+    remote)
+      $RELEASE_BIN remote
+      ;;
+    
+    pid)
+      $RELEASE_BIN pid
+      ;;
+    
+    help|--help|-h)
+      show_help "Production"
+      ;;
+    
+    *)
+      # Pass through to release binary for other commands
+      $RELEASE_BIN "$@"
+      ;;
+  esac
+else
+  # Development mode (mix)
+  cd "$APP_ROOT"
+  
+  case "$1" in
+    make_admin)
+      if [ -z "$2" ]; then
+        echo "Usage: $0 make_admin <email>"
+        exit 1
+      fi
+      mix run -e "Medoru.Release.make_admin(\"$2\")"
+      ;;
+    
+    version)
+      mix run -e "Medoru.Release.version()"
+      ;;
+    
+    migrate)
+      mix ecto.migrate
+      ;;
+    
+    seed)
+      mix run priv/repo/seeds.exs
+      ;;
+    
+    start)
+      mix phx.server
+      ;;
+    
+    help|--help|-h)
+      show_help "Development"
+      ;;
+    
+    *)
+      echo "Unknown command: $1"
+      show_help "Development"
+      exit 1
+      ;;
+  esac
+fi

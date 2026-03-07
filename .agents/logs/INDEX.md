@@ -11,7 +11,7 @@
 | 5 | Learning Core | ✅ APPROVED | 2026-03-06 |
 | 6 | Daily Reviews & Streaks | ✅ APPROVED | 2026-03-06 |
 | 7 | Polish & Integration | ✅ APPROVED | 2026-03-07 |
-| 8 | User Types & Admin Foundation | ⏳ PLANNED | - |
+| 8 | User Types & Admin Foundation | ✅ APPROVED | 2026-03-07 |
 | 9 | Enhanced Profiles | ⏳ PLANNED | - |
 | 10 | Badge System | ⏳ PLANNED | - |
 | 11 | Multi-Step Test System | ⏳ PLANNED | - |
@@ -54,9 +54,9 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 8 IN PROGRESS
-- **Last completed**: Iteration 7 - Polish & Integration (APPROVED)
-- **Current**: Iteration 8 - User Types & Admin Foundation
+- **Phase**: Iteration 9 IN PROGRESS
+- **Last completed**: Iteration 8 - User Types & Admin Foundation (APPROVED)
+- **Current**: Iteration 9 - Enhanced Profiles
 - **Overall Progress**: 7/19 iterations for v0.1.0 (12 remaining)
 
 ## Project Status
@@ -96,8 +96,14 @@
 - Daily Reviews & Streaks ✅
 - Polish & Integration ✅
 
-### ⏳ Pending (Iterations 8-19) - MVP Extended
-- User types & admin (8-10)
+### ✅ Completed (Iteration 8)
+- User types (student/teacher/admin)
+- Admin authorization plugs
+- Admin user management interface
+- Mix task for first admin
+
+### ⏳ Pending (Iterations 9-19) - MVP Extended
+- Enhanced profiles & badges (9-10)
 - Test system overhaul (11-13)
 - Vocabulary lessons (14)
 - Kanji stroke animation (15)
@@ -146,7 +152,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 8 - User Types & Admin Foundation)
+4. **Ask meddle** which iteration to work on (currently: Iteration 9 - Enhanced Profiles)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files

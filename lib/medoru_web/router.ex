@@ -68,6 +68,20 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Admin routes
+  scope "/admin", MedoruWeb.Admin do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :admin,
+      on_mount: [
+        {MedoruWeb.UserAuth, :require_authenticated_user},
+        {MedoruWeb.Plugs.Admin, :default}
+      ] do
+      live "/users", UserLive.Index
+      live "/users/:id/edit", UserLive.Edit
+    end
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", MedoruWeb do
   #   pipe_through :api
