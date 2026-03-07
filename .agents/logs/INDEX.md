@@ -13,35 +13,37 @@
 | 7 | Polish & Integration | ✅ APPROVED | 2026-03-07 |
 | 8 | User Types & Admin Foundation | ✅ APPROVED | 2026-03-07 |
 | 9 | Enhanced Profiles | ✅ APPROVED | 2026-03-07 |
-| 10 | Badge System | ⏳ PLANNED | - |
-| 11 | Multi-Step Test System | ⏳ PLANNED | - |
-| 12 | Teacher Test Creation | ⏳ PLANNED | - |
-| 13 | Daily Tests | ⏳ PLANNED | - |
-| 14 | Vocabulary Lesson System | ⏳ PLANNED | - |
-| 15 | Kanji Stroke Animation | ⏳ PLANNED | - |
-| 16 | Classroom Core | ⏳ PLANNED | - |
-| 17 | Classroom Membership | ⏳ PLANNED | - |
-| 18 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
-| 19 | Admin Dashboard | ⏳ PLANNED | - |
+| 10 | Badge System | ✅ APPROVED | 2026-03-07 |
+| 11 | Logging Infrastructure | 🔄 IN PROGRESS | 2026-03-07 |
+| 12 | Kanji Stroke Animation | ⏳ PLANNED | - |
+| 13 | Admin Badge Management | ⏳ PLANNED | - |
+| 14 | Multi-Step Test System | ⏳ PLANNED | - |
+| 15 | Teacher Test Creation | ⏳ PLANNED | - |
+| 16 | Daily Tests | ⏳ PLANNED | - |
+| 17 | Vocabulary Lesson System | ⏳ PLANNED | - |
+| 18 | Classroom Core | ⏳ PLANNED | - |
+| 19 | Classroom Membership | ⏳ PLANNED | - |
+| 20 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
+| 21 | Admin Dashboard | ⏳ PLANNED | - |
 
 ## Version 0.2.0 (Social Features) - Planned
 
 | # | Title | Status | Date |
 |---|-------|--------|------|
-| 20 | Friends System | ⏳ PLANNED | - |
-| 21 | Real-time Duels | ⏳ PLANNED | - |
-| 22 | Rankings & Leaderboards | ⏳ PLANNED | - |
-| 23 | Duel History & Stats | ⏳ PLANNED | - |
-| 24 | Notifications | ⏳ PLANNED | - |
+| 22 | Friends System | ⏳ PLANNED | - |
+| 23 | Real-time Duels | ⏳ PLANNED | - |
+| 24 | Rankings & Leaderboards | ⏳ PLANNED | - |
+| 25 | Duel History & Stats | ⏳ PLANNED | - |
+| 26 | Notifications System | ⏳ PLANNED | - |
 
 ## Version 0.3.0 (Content Expansion) - Planned
 
 | # | Title | Status | Date |
 |---|-------|--------|------|
-| 25 | N4 Kanji & Words | ⏳ PLANNED | - |
-| 26 | Grammar Content | ⏳ PLANNED | - |
-| 27 | Listening Exercises | ⏳ PLANNED | - |
-| 28 | Stroke Drawing | ⏳ PLANNED | - |
+| 27 | N4 Kanji & Words | ⏳ PLANNED | - |
+| 28 | Grammar Content | ⏳ PLANNED | - |
+| 29 | Listening Exercises | ⏳ PLANNED | - |
+| 30 | Stroke Drawing | ⏳ PLANNED | - |
 
 ## Future Ideas (Backlog)
 - Mobile app (React Native/Flutter)
@@ -54,10 +56,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 10 IN PROGRESS
-- **Last completed**: Iteration 9 - Enhanced Profiles (APPROVED)
-- **Current**: Iteration 10 - Badge System
-- **Overall Progress**: 7/19 iterations for v0.1.0 (12 remaining)
+- **Phase**: Iteration 10 COMPLETE - Ready for Review
+- **Last completed**: Iteration 10 - Badge System
+- **Current**: Waiting for review
+- **Overall Progress**: 10/20 iterations for v0.1.0 (10 remaining)
 
 ## Project Status
 
@@ -96,7 +98,7 @@
 - Daily Reviews & Streaks ✅
 - Polish & Integration ✅
 
-### ✅ Completed (Iterations 8-9)
+### ✅ Completed (Iterations 8-10)
 - User types (student/teacher/admin)
 - Admin authorization plugs
 - Admin user management interface
@@ -104,14 +106,16 @@
 - Enhanced profiles (display name, bio, avatar)
 - Profile settings page
 - Public profile pages
+- Badge system (13 badges, auto-award, featured badge, notifications)
 
-### ⏳ Pending (Iterations 10-19) - MVP Extended
-- Badge system (10)
-- Test system overhaul (11-13)
-- Vocabulary lessons (14)
-- Kanji stroke animation (15)
-- Classroom system (16-18)
-- Admin dashboard (19)
+### ⏳ Pending (Iterations 11-21) - MVP Extended
+- Logging infrastructure (11)
+- Kanji stroke animation (12)
+- Admin badge management (13)
+- Test system overhaul (14-16)
+- Vocabulary lessons (17)
+- Classroom system (18-20)
+- Admin dashboard (21)
 
 ## Environment
 
@@ -155,7 +159,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 10 - Badge System)
+4. **Ask meddle** which iteration to work on (currently: Iteration 11 - Logging Infrastructure)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
@@ -170,5 +174,5 @@ mix ecto.reset
 
 ---
 
-**Last updated**: 2026-03-06  
-**Status**: Iteration 8 IN PROGRESS
+**Last updated**: 2026-03-07  
+**Status**: Iteration 10 COMPLETE - Iteration 11 PLANNED

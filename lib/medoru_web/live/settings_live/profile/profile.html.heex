@@ -95,8 +95,14 @@
               class="border-2 border-dashed border-base-300 rounded-xl p-8 text-center hover:border-primary/50 transition-colors"
             >
               <.live_file_input upload={@uploads.avatar} class="hidden" />
-              <div class="cursor-pointer" phx-click={JS.dispatch("click", to: "##{@uploads.avatar.ref}")}>
-                <.icon name="hero-cloud-arrow-up" class="w-10 h-10 text-base-content/40 mx-auto mb-2" />
+              <div
+                class="cursor-pointer"
+                phx-click={JS.dispatch("click", to: "##{@uploads.avatar.ref}")}
+              >
+                <.icon
+                  name="hero-cloud-arrow-up"
+                  class="w-10 h-10 text-base-content/40 mx-auto mb-2"
+                />
                 <p class="text-sm text-base-content/60">
                   Click to upload or drag and drop
                 </p>
@@ -158,12 +164,76 @@
               Cancel
             </.link>
             <button type="submit" class="btn btn-primary" disabled={@form.errors != []}>
-              <.icon name="hero-check" class="w-4 h-4 mr-2" />
-              Save Changes
+              <.icon name="hero-check" class="w-4 h-4 mr-2" /> Save Changes
             </button>
           </div>
         </.form>
       </div>
     </div>
+
+    <%!-- Featured Badge Section --%>
+    <%= if length(@user_badges) > 0 do %>
+      <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+        <div class="card-body">
+          <h2 class="card-title text-lg">
+            <.icon name="hero-trophy" class="w-5 h-5 text-warning" /> Featured Badge
+          </h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            Choose a badge to feature on your public profile.
+          </p>
+
+          <%!-- Current Featured Badge --%>
+          <%= if @featured_badge do %>
+            <div class="mb-4 p-4 bg-gradient-to-r from-warning/10 to-transparent rounded-xl border border-warning/20">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class={["p-3 rounded-xl", badge_color_class(@featured_badge.badge.color)]}>
+                    <.icon name={"hero-#{@featured_badge.badge.icon}"} class="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p class="font-semibold text-base-content">{@featured_badge.badge.name}</p>
+                    <p class="text-sm text-base-content/60">
+                      {@featured_badge.badge.description}
+                    </p>
+                  </div>
+                </div>
+                <span class="badge badge-warning">Currently Featured</span>
+              </div>
+            </div>
+
+            <button
+              phx-click="remove_featured_badge"
+              class="btn btn-ghost btn-sm"
+            >
+              <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> Remove Featured Badge
+            </button>
+          <% else %>
+            <p class="text-sm text-base-content/50 mb-4">No badge currently featured.</p>
+          <% end %>
+
+          <%!-- Badge Selection Grid --%>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+            <%= for user_badge <- @user_badges do %>
+              <button
+                phx-click="set_featured_badge"
+                phx-value-badge_id={user_badge.badge.id}
+                class={[
+                  "flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
+                  "hover:scale-105 hover:shadow-sm",
+                  user_badge.is_featured && "ring-2 ring-warning border-warning",
+                  !user_badge.is_featured && "bg-base-200 border-base-300 hover:border-primary/50"
+                ]}
+                disabled={user_badge.is_featured}
+              >
+                <div class={["p-2 rounded-lg", badge_color_class(user_badge.badge.color)]}>
+                  <.icon name={"hero-#{user_badge.badge.icon}"} class="w-4 h-4" />
+                </div>
+                <span class="text-sm font-medium truncate">{user_badge.badge.name}</span>
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </Layouts.app>

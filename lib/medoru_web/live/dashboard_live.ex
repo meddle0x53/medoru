@@ -12,17 +12,32 @@ defmodule MedoruWeb.DashboardLive do
   def mount(_params, _session, socket) do
     %{current_user: user} = socket.assigns.current_scope
 
-    # Load fresh user data with profile and stats
-    user = Accounts.get_user_with_profile_and_stats!(user.id)
+    # Load fresh user data with profile
+    user = Accounts.get_user_with_profile!(user.id)
+
+    # Calculate stats dynamically from learning progress
+    learning_stats = Learning.get_user_stats(user.id)
 
     # Get daily review stats
     daily_stats = Learning.get_daily_review_stats(user.id)
+
+    # Merge learning stats with user stats (level, xp from gamification)
+    user_stats = user.stats || %Accounts.UserStats{}
+
+    stats = %{
+      level: user_stats.level,
+      xp: user_stats.xp,
+      total_kanji_learned: learning_stats.total_kanji_learned,
+      total_words_learned: learning_stats.total_words_learned,
+      current_streak: daily_stats.current_streak,
+      longest_streak: daily_stats.longest_streak
+    }
 
     {:ok,
      socket
      |> assign(:page_title, "Dashboard")
      |> assign(:user, user)
-     |> assign(:stats, user.stats)
+     |> assign(:stats, stats)
      |> assign(:profile, user.profile)
      |> assign(:daily_stats, daily_stats)}
   end

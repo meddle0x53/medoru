@@ -66,7 +66,7 @@
     </div>
 
     <%!-- Stats Grid --%>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
       <.stat_card
         label="Current Streak"
         value={(@daily_stats && @daily_stats.current_streak) || 0}
@@ -85,6 +85,12 @@
         value={@stats.total_kanji_learned}
         icon="book-open"
         color="blue"
+      />
+      <.stat_card
+        label="Words Learned"
+        value={@stats.total_words_learned}
+        icon="document-text"
+        color="green"
       />
     </div>
 

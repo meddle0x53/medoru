@@ -10,8 +10,6 @@ defmodule Medoru.LearningTest do
     import Medoru.AccountsFixtures
     import Medoru.ContentFixtures
 
-    @invalid_attrs %{status: nil, progress_percentage: -1}
-
     test "list_lesson_progress/1 returns all lesson_progress for a user" do
       user = user_fixture()
       lesson = lesson_fixture()

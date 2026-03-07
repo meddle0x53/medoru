@@ -13,7 +13,8 @@ defmodule Medoru.Learning do
   alias Medoru.Repo
 
   alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule}
-  alias Medoru.Content.{Lesson, Word}
+  alias Medoru.Content.{Lesson, Word, WordKanji}
+  alias Medoru.Gamification
 
   # ============================================================================
   # Lesson Progress
@@ -168,9 +169,10 @@ defmodule Medoru.Learning do
           |> LessonProgress.complete_changeset()
           |> Repo.update()
 
-        # Update user stats
-        with {:ok, _} <- result do
+        # Update user stats and check badges
+        with {:ok, _completed_progress} <- result do
           update_user_stats_on_lesson_complete(user_id)
+          check_and_award_lesson_badges(user_id)
         end
 
         result
@@ -317,9 +319,17 @@ defmodule Medoru.Learning do
           times_reviewed: 0
         }
 
-        %UserProgress{}
-        |> UserProgress.changeset(attrs)
-        |> Repo.insert()
+        result =
+          %UserProgress{}
+          |> UserProgress.changeset(attrs)
+          |> Repo.insert()
+
+        # Check kanji badges after tracking new kanji
+        with {:ok, _} <- result do
+          check_and_award_kanji_badges(user_id)
+        end
+
+        result
 
       existing_progress ->
         {:ok, existing_progress}
@@ -348,9 +358,17 @@ defmodule Medoru.Learning do
           times_reviewed: 0
         }
 
-        %UserProgress{}
-        |> UserProgress.changeset(attrs)
-        |> Repo.insert()
+        result =
+          %UserProgress{}
+          |> UserProgress.changeset(attrs)
+          |> Repo.insert()
+
+        # Check word badges after tracking new word
+        with {:ok, _} <- result do
+          check_and_award_words_badges(user_id)
+        end
+
+        result
 
       existing_progress ->
         {:ok, existing_progress}
@@ -513,6 +531,29 @@ defmodule Medoru.Learning do
   end
 
   # ============================================================================
+  # Badge Award Hooks
+  # ============================================================================
+
+  defp check_and_award_lesson_badges(user_id) do
+    stats = get_user_stats(user_id)
+    Gamification.check_lesson_badges(user_id, stats.lessons_completed)
+  end
+
+  defp check_and_award_kanji_badges(user_id) do
+    stats = get_user_stats(user_id)
+    Gamification.check_kanji_badges(user_id, stats.total_kanji_learned)
+  end
+
+  defp check_and_award_words_badges(user_id) do
+    stats = get_user_stats(user_id)
+    Gamification.check_words_badges(user_id, stats.total_words_learned)
+  end
+
+  defp check_and_award_streak_badges(user_id, current_streak) do
+    Gamification.check_streak_badges(user_id, current_streak)
+  end
+
+  # ============================================================================
   # Daily Streak
   # ============================================================================
 
@@ -602,9 +643,17 @@ defmodule Medoru.Learning do
           end
       end
 
-    streak
-    |> DailyStreak.changeset(new_streak)
-    |> Repo.update()
+    result =
+      streak
+      |> DailyStreak.changeset(new_streak)
+      |> Repo.update()
+
+    # Check streak badges after updating streak
+    with {:ok, updated_streak} <- result do
+      check_and_award_streak_badges(user_id, updated_streak.current_streak)
+    end
+
+    result
   end
 
   @doc """
@@ -904,5 +953,52 @@ defmodule Medoru.Learning do
         where: is_nil(rs.id) or rs.repetitions == 0
 
     Repo.aggregate(query, :count, :id)
+  end
+
+  # ============================================================================
+  # Auto-learn Kanji Logic
+  # ============================================================================
+
+  @doc """
+  Checks if all words containing a kanji are learned, and if so,
+  automatically marks the kanji as learned.
+
+  ## Examples
+
+      iex> check_and_auto_learn_kanji(user_id, kanji_id)
+      {:ok, %UserProgress{}} | nil
+
+  """
+  def check_and_auto_learn_kanji(user_id, kanji_id) do
+    # First check if kanji is already learned
+    if kanji_learned?(user_id, kanji_id) do
+      nil
+    else
+      # Get all words that contain this kanji
+      word_ids =
+        from(wk in WordKanji,
+          where: wk.kanji_id == ^kanji_id,
+          select: wk.word_id
+        )
+        |> Repo.all()
+
+      # Check if there are any words for this kanji
+      if Enum.empty?(word_ids) do
+        nil
+      else
+        # Count how many of these words are learned
+        learned_count =
+          UserProgress
+          |> where([up], up.user_id == ^user_id and up.word_id in ^word_ids)
+          |> Repo.aggregate(:count, :id)
+
+        # If all words are learned, mark kanji as learned
+        if learned_count == length(word_ids) do
+          track_kanji_learned(user_id, kanji_id)
+        else
+          nil
+        end
+      end
+    end
   end
 end

@@ -131,7 +131,7 @@ defmodule MedoruWeb.KanjiLiveTest do
       assert html =~ "50"
     end
 
-    test "shows 'Add to Study List' button for authenticated users", %{conn: conn} do
+    test "shows 'Mark as Learned' button for authenticated users", %{conn: conn} do
       user = user_fixture_with_registration()
       conn = log_in_user(conn, user)
 
@@ -139,7 +139,7 @@ defmodule MedoruWeb.KanjiLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/kanji/#{kanji.id}")
 
-      assert html =~ "Add to Study List"
+      assert html =~ "Mark as Learned"
     end
 
     test "returns 404 for non-existent kanji", %{conn: conn} do

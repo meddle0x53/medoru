@@ -16,6 +16,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :theme, :string, default: "light"
 
     belongs_to :user, Medoru.Accounts.User
+    belongs_to :featured_badge, Medoru.Gamification.Badge
 
     timestamps(type: :utc_datetime)
   end

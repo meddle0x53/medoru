@@ -7,6 +7,7 @@ defmodule MedoruWeb.UserAuth do
   import Phoenix.Controller
 
   alias Medoru.Accounts
+  alias Medoru.Notifications
 
   @doc """
   Plug that fetches the current user from the session.
@@ -14,10 +15,11 @@ defmodule MedoruWeb.UserAuth do
   def fetch_current_user(conn, _opts) do
     user_id = get_session(conn, :user_id)
     user = user_id && Accounts.get_user_with_profile(user_id)
+    unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
 
     conn
     |> assign(:current_user, user)
-    |> assign(:current_scope, %{current_user: user})
+    |> assign(:current_scope, %{current_user: user, unread_count: unread_count})
   end
 
   @doc """
@@ -77,10 +79,14 @@ defmodule MedoruWeb.UserAuth do
         # Use get_user_with_profile to load display name and avatar
         # Returns nil if user no longer exists (e.g., database cleaned)
         user = Accounts.get_user_with_profile(user_id)
-        Phoenix.Component.assign(socket, current_scope: %{current_user: user})
+        unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
+
+        Phoenix.Component.assign(socket,
+          current_scope: %{current_user: user, unread_count: unread_count}
+        )
 
       %{} ->
-        Phoenix.Component.assign(socket, current_scope: %{current_user: nil})
+        Phoenix.Component.assign(socket, current_scope: %{current_user: nil, unread_count: 0})
     end
   end
 

@@ -1,0 +1,146 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-base-content">Notifications</h1>
+        <p class="mt-1 text-secondary">
+          <%= if @unread_count > 0 do %>
+            You have {@unread_count} unread notification{if @unread_count != 1, do: "s"}
+          <% else %>
+            You're all caught up!
+          <% end %>
+        </p>
+      </div>
+      <%= if @unread_count > 0 do %>
+        <button
+          phx-click="mark_all_read"
+          class="btn btn-ghost btn-sm"
+        >
+          <.icon name="hero-check-all" class="w-4 h-4 mr-1" /> Mark all read
+        </button>
+      <% end %>
+    </div>
+
+    <%!-- Filter Tabs --%>
+    <div class="tabs tabs-boxed mb-6 bg-base-100 p-1">
+      <button
+        phx-click="filter"
+        phx-value-type="all"
+        class={["tab", @filter == "all" && "tab-active"]}
+      >
+        All
+      </button>
+      <button
+        phx-click="filter"
+        phx-value-type="unread"
+        class={["tab", @filter == "unread" && "tab-active"]}
+      >
+        Unread
+      </button>
+      <button
+        phx-click="filter"
+        phx-value-type="badge_earned"
+        class={["tab", @filter == "badge_earned" && "tab-active"]}
+      >
+        Badges
+      </button>
+    </div>
+
+    <%!-- Notifications List --%>
+    <div class="space-y-3">
+      <%= if length(@notifications) == 0 do %>
+        <div class="card bg-base-100 border border-base-300">
+          <div class="card-body items-center text-center py-12">
+            <.icon name="hero-bell-slash" class="w-16 h-16 text-base-content/30 mb-4" />
+            <h3 class="text-lg font-medium text-base-content">No notifications</h3>
+            <p class="text-secondary">
+              <%= case @filter do %>
+                <% "unread" -> %>
+                  You have no unread notifications. Great job staying on top of things!
+                <% "badge_earned" -> %>
+                  You haven't earned any badges yet. Keep learning to earn your first one!
+                <% _ -> %>
+                  You don't have any notifications yet. Start learning to get updates!
+              <% end %>
+            </p>
+          </div>
+        </div>
+      <% else %>
+        <%= for notification <- @notifications do %>
+          <div class={[
+            "card border transition-all",
+            is_nil(notification.read_at) && "border-primary/30 bg-primary/5",
+            !is_nil(notification.read_at) && "border-base-300 bg-base-100 opacity-75"
+          ]}>
+            <div class="card-body p-4">
+              <div class="flex items-start gap-4">
+                <%!-- Icon --%>
+                <div class={[
+                  "flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
+                  icon_bg_class(notification.type)
+                ]}>
+                  <.icon name={icon_for_type(notification.type)} class="w-5 h-5" />
+                </div>
+
+                <%!-- Content --%>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 class="font-semibold text-base-content">
+                        {notification.title}
+                      </h3>
+                      <p class="text-sm text-secondary mt-0.5">
+                        {notification.message}
+                      </p>
+                      <p class="text-xs text-base-content/50 mt-2">
+                        {format_time(notification.inserted_at)}
+                      </p>
+                    </div>
+
+                    <%!-- Actions --%>
+                    <div class="flex items-center gap-2">
+                      <%= if is_nil(notification.read_at) do %>
+                        <button
+                          phx-click="mark_read"
+                          phx-value-id={notification.id}
+                          class="btn btn-ghost btn-xs"
+                          title="Mark as read"
+                        >
+                          <.icon name="hero-check" class="w-4 h-4" />
+                        </button>
+                      <% end %>
+                      <div class={[
+                        "w-2 h-2 rounded-full",
+                        is_nil(notification.read_at) && "bg-primary"
+                      ]}>
+                      </div>
+                    </div>
+                  </div>
+
+                  <%!-- Badge-specific actions --%>
+                  <%= if notification.type == "badge_earned" do %>
+                    <div class="mt-3 flex gap-2">
+                      <.link
+                        navigate={~p"/settings/profile"}
+                        class="btn btn-primary btn-xs"
+                      >
+                        <.icon name="hero-star" class="w-3 h-3 mr-1" /> Feature on Profile
+                      </.link>
+                      <.link
+                        navigate={~p"/users/#{@current_scope.current_user.id}"}
+                        class="btn btn-ghost btn-xs"
+                      >
+                        View Profile
+                      </.link>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

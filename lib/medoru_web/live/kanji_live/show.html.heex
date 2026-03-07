@@ -247,7 +247,7 @@
       <% end %>
     </div>
 
-    <%!-- Navigation --%>
+    <%!-- Navigation & Actions --%>
     <div class="mt-8 flex justify-between items-center">
       <.link
         navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
@@ -257,10 +257,19 @@
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
-        <button class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
-                 transition-all shadow-sm hover:shadow active:scale-[0.98]">
-          Add to Study List
-        </button>
+        <%= if @kanji_learned do %>
+          <div class="flex items-center gap-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-6 py-3 rounded-xl font-medium">
+            <.icon name="hero-check-circle" class="w-5 h-5" /> Learned
+          </div>
+        <% else %>
+          <button
+            phx-click="mark_kanji_learned"
+            class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
+                   transition-all shadow-sm hover:shadow active:scale-[0.98]"
+          >
+            <.icon name="hero-check" class="w-5 h-5 mr-1 inline" /> Mark as Learned
+          </button>
+        <% end %>
       <% end %>
     </div>
   </div>

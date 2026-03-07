@@ -324,4 +324,45 @@ defmodule Medoru.Accounts do
     # Level 4: 900 XP
     trunc(:math.sqrt(xp / 100)) + 1
   end
+
+  # ============================================================================
+  # Badge Functions
+  # ============================================================================
+
+  alias Medoru.Gamification
+
+  @doc """
+  Gets all badges earned by a user.
+  """
+  def get_user_badges(user_id) do
+    Gamification.list_user_badges(user_id)
+  end
+
+  @doc """
+  Sets a user's featured badge.
+  """
+  def set_user_featured_badge(user_id, badge_id) do
+    Gamification.set_featured_badge(user_id, badge_id)
+  end
+
+  @doc """
+  Removes a user's featured badge.
+  """
+  def remove_user_featured_badge(user_id) do
+    Gamification.remove_featured_badge(user_id)
+  end
+
+  @doc """
+  Gets a user's featured badge.
+  """
+  def get_user_featured_badge(user_id) do
+    Gamification.get_featured_badge(user_id)
+  end
+
+  @doc """
+  Awards a badge to a user.
+  """
+  def award_badge_to_user(user_id, badge_id) do
+    Gamification.award_badge(user_id, badge_id)
+  end
 end

@@ -40,7 +40,8 @@ defmodule Medoru.Release.Seeds do
       ]
 
       Enum.each(n5_kanji, fn kanji_data ->
-        {:ok, kanji} = %Kanji{}
+        {:ok, kanji} =
+          %Kanji{}
           |> Kanji.changeset(kanji_data)
           |> Repo.insert()
 

@@ -206,4 +206,43 @@ else
   IO.puts("Warning: #{n5_lessons_path} not found. Skipping lesson seeds.")
 end
 
+# Load Badges from JSON
+alias Medoru.Gamification
+
+badges_path = Path.join(__DIR__, "seeds/badges.json")
+
+if File.exists?(badges_path) do
+  badges =
+    badges_path
+    |> File.read!()
+    |> Jason.decode!()
+
+  IO.puts("\nSeeding #{length(badges)} badges...")
+
+  Enum.each(badges, fn badge_data ->
+    badge_attrs = %{
+      name: badge_data["name"],
+      description: badge_data["description"],
+      icon: badge_data["icon"],
+      color: badge_data["color"],
+      criteria_type: String.to_atom(badge_data["criteria_type"]),
+      criteria_value: badge_data["criteria_value"],
+      order_index: badge_data["order_index"]
+    }
+
+    case Gamification.create_badge(badge_attrs) do
+      {:ok, _badge} ->
+        IO.puts("  ✓ Created badge: #{badge_data["name"]}")
+
+      {:error, changeset} ->
+        IO.puts("  ⚠ Badge already exists or error: #{badge_data["name"]}")
+    end
+  end)
+
+  IO.puts("\nBadge seeding complete!")
+  IO.puts("Total badges: #{Enum.count(Gamification.list_badges())}")
+else
+  IO.puts("Warning: #{badges_path} not found. Skipping badge seeds.")
+end
+
 IO.puts("\n✅ All seeding complete!")

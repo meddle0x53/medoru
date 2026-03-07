@@ -24,7 +24,9 @@ defmodule MedoruWeb.SettingsLiveTest do
       # Submit the form - render_submit returns redirect tuple on success
       result =
         view
-        |> form("form", user_profile: %{display_name: "NewDisplayName", bio: "Hello, this is my bio!"})
+        |> form("form",
+          user_profile: %{display_name: "NewDisplayName", bio: "Hello, this is my bio!"}
+        )
         |> render_submit()
 
       # Check that it redirects (success case)
@@ -38,7 +40,9 @@ defmodule MedoruWeb.SettingsLiveTest do
 
     test "validates display name uniqueness", %{conn: conn, user: user} do
       # Create another user with a display name
-      other_user = user_fixture_with_registration(%{email: "other@example.com", provider_uid: "other123"})
+      other_user =
+        user_fixture_with_registration(%{email: "other@example.com", provider_uid: "other123"})
+
       {:ok, _} = Medoru.Accounts.update_profile(other_user.profile, %{display_name: "TakenName"})
 
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")

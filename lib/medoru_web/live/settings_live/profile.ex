@@ -5,6 +5,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
   use MedoruWeb, :live_view
 
   alias Medoru.Accounts
+  alias Medoru.Gamification
 
   embed_templates "profile/*"
 
@@ -18,9 +19,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    
+
     # Get or create profile
-    profile = 
+    profile =
       try do
         Accounts.get_profile_by_user!(user.id)
       rescue
@@ -32,12 +33,18 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
     changeset = Accounts.change_profile(profile, %{})
 
+    # Load user badges
+    user_badges = Gamification.list_user_badges(user.id)
+    featured_badge = Gamification.get_featured_badge(user.id)
+
     {:ok,
      socket
      |> assign(:page_title, "Profile Settings")
      |> assign(:profile, profile)
      |> assign(:form, to_form(changeset))
      |> assign(:uploaded_files, [])
+     |> assign(:user_badges, user_badges)
+     |> assign(:featured_badge, featured_badge)
      |> allow_upload(:avatar,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,
@@ -97,6 +104,37 @@ defmodule MedoruWeb.SettingsLive.Profile do
     {:noreply, cancel_upload(socket, :avatar, ref)}
   end
 
+  @impl true
+  def handle_event("set_featured_badge", %{"badge_id" => badge_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+    badge_id = String.to_integer(badge_id)
+
+    case Gamification.set_featured_badge(user.id, badge_id) do
+      {:ok, _} ->
+        featured_badge = Gamification.get_featured_badge(user.id)
+
+        {:noreply,
+         socket
+         |> assign(:featured_badge, featured_badge)
+         |> put_flash(:info, "Featured badge updated.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Could not set featured badge.")}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_featured_badge", _params, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    Gamification.remove_featured_badge(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:featured_badge, nil)
+     |> put_flash(:info, "Featured badge removed.")}
+  end
+
   # Helper functions
 
   defp format_bytes(bytes) when bytes < 1_000, do: "#{bytes} B"
@@ -107,4 +145,35 @@ defmodule MedoruWeb.SettingsLive.Profile do
   defp error_to_string(:too_many_files), do: "You can only upload one file"
   defp error_to_string(:not_accepted), do: "File type not accepted (use JPG, PNG, or GIF)"
   defp error_to_string(err), do: to_string(err)
+
+  # Badge color helper
+  defp badge_color_class("blue"),
+    do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+
+  defp badge_color_class("green"),
+    do: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+
+  defp badge_color_class("yellow"),
+    do: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+
+  defp badge_color_class("orange"),
+    do: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+
+  defp badge_color_class("red"),
+    do: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+
+  defp badge_color_class("purple"),
+    do: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+
+  defp badge_color_class("pink"),
+    do: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300"
+
+  defp badge_color_class("indigo"),
+    do: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+
+  defp badge_color_class("emerald"),
+    do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+
+  defp badge_color_class(_),
+    do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
 end

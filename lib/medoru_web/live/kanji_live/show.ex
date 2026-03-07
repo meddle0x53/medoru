@@ -2,6 +2,7 @@ defmodule MedoruWeb.KanjiLive.Show do
   use MedoruWeb, :live_view
 
   alias Medoru.Content
+  alias Medoru.Learning
 
   embed_templates "*.html"
 
@@ -24,6 +25,14 @@ defmodule MedoruWeb.KanjiLive.Show do
     on_readings = Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on))
     kun_readings = Enum.filter(kanji.kanji_readings, &(&1.reading_type == :kun))
 
+    # Check if user has learned this kanji (if authenticated)
+    kanji_learned =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        Learning.kanji_learned?(socket.assigns.current_scope.current_user.id, kanji.id)
+      else
+        false
+      end
+
     {:noreply,
      socket
      |> assign(:kanji, kanji)
@@ -31,6 +40,7 @@ defmodule MedoruWeb.KanjiLive.Show do
      |> assign(:kun_readings, kun_readings)
      |> assign(:words_data, words_data)
      |> assign(:page, page)
+     |> assign(:kanji_learned, kanji_learned)
      |> assign(:page_title, "#{kanji.character} - Kanji Details")}
   end
 
@@ -46,6 +56,27 @@ defmodule MedoruWeb.KanjiLive.Show do
      socket
      |> assign(:words_data, words_data)
      |> assign(:page, page)}
+  end
+
+  @impl true
+  def handle_event("mark_kanji_learned", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      user_id = socket.assigns.current_scope.current_user.id
+      kanji = socket.assigns.kanji
+
+      case Learning.track_kanji_learned(user_id, kanji.id) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:kanji_learned, true)
+           |> put_flash(:info, "#{kanji.character} marked as learned!")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not mark kanji as learned.")}
+      end
+    else
+      {:noreply, push_navigate(socket, to: ~p"/")}
+    end
   end
 
   defp parse_page(nil), do: 1

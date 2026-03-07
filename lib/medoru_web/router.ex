@@ -63,6 +63,7 @@ defmodule MedoruWeb.Router do
     live_session :authenticated,
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
+      live "/notifications", NotificationsLive
       # Placeholder routes for future iterations
       live "/daily-review", DailyReviewLive
     end

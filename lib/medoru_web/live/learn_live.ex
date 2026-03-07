@@ -285,12 +285,13 @@ defmodule MedoruWeb.LearnLive do
       user_id = socket.assigns.current_scope.current_user.id
       word = socket.assigns.current_word
 
-      # Track word and its kanji as learned
+      # Track word as learned
       Learning.track_word_learned(user_id, word.id)
 
-      # Also track the kanji from this word
+      # Check if any kanji from this word should be auto-learned
+      # (when all words containing that kanji are learned)
       Enum.each(word.word_kanjis, fn wk ->
-        Learning.track_kanji_learned(user_id, wk.kanji_id)
+        Learning.check_and_auto_learn_kanji(user_id, wk.kanji_id)
       end)
 
       # Move to next word automatically
