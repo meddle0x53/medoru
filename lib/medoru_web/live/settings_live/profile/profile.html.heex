@@ -1,0 +1,169 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content">Profile Settings</h1>
+      <p class="mt-2 text-secondary">
+        Update your public profile information.
+      </p>
+    </div>
+
+    <%!-- Profile Form --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@form}
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <%!-- Display Name --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Display Name</span>
+              <span class="label-text-alt text-base-content/50">Required</span>
+            </label>
+            <input
+              type="text"
+              name={@form[:display_name].name}
+              value={@form[:display_name].value}
+              placeholder="How you want to be known"
+              class={[
+                "input input-bordered w-full",
+                @form[:display_name].errors != [] && "input-error"
+              ]}
+              maxlength="50"
+            />
+            <label class="label">
+              <span class="label-text-alt text-base-content/50">
+                This will be shown on your public profile and in rankings.
+              </span>
+              <span class="label-text-alt text-error">
+                {Enum.map(@form[:display_name].errors || [], &elem(&1, 0))}
+              </span>
+            </label>
+          </div>
+
+          <%!-- Bio --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Bio</span>
+              <span class="label-text-alt text-base-content/50">Optional</span>
+            </label>
+            <textarea
+              name={@form[:bio].name}
+              value={@form[:bio].value}
+              placeholder="Tell us a bit about yourself..."
+              class={[
+                "textarea textarea-bordered w-full h-32 resize-none",
+                @form[:bio].errors != [] && "textarea-error"
+              ]}
+              maxlength="500"
+            >{@form[:bio].value}</textarea>
+            <label class="label">
+              <span class="label-text-alt text-base-content/50">
+                Brief description for your profile. Max 500 characters.
+              </span>
+              <span class="label-text-alt">
+                {String.length(@form[:bio].value || "")}/500
+              </span>
+            </label>
+          </div>
+
+          <%!-- Avatar Upload --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">Avatar</span>
+              <span class="label-text-alt text-base-content/50">Optional</span>
+            </label>
+
+            <%!-- Current Avatar --%>
+            <%= if @profile.avatar do %>
+              <div class="flex items-center gap-4 mb-4">
+                <img
+                  src={@profile.avatar}
+                  alt="Current avatar"
+                  class="w-20 h-20 rounded-full object-cover ring-2 ring-base-300"
+                />
+                <span class="text-sm text-base-content/60">Current avatar</span>
+              </div>
+            <% end %>
+
+            <%!-- Upload Dropzone --%>
+            <div
+              phx-drop-target={@uploads.avatar.ref}
+              class="border-2 border-dashed border-base-300 rounded-xl p-8 text-center hover:border-primary/50 transition-colors"
+            >
+              <.live_file_input upload={@uploads.avatar} class="hidden" />
+              <div class="cursor-pointer" phx-click={JS.dispatch("click", to: "##{@uploads.avatar.ref}")}>
+                <.icon name="hero-cloud-arrow-up" class="w-10 h-10 text-base-content/40 mx-auto mb-2" />
+                <p class="text-sm text-base-content/60">
+                  Click to upload or drag and drop
+                </p>
+                <p class="text-xs text-base-content/40 mt-1">
+                  PNG, JPG, GIF up to 2MB
+                </p>
+              </div>
+            </div>
+
+            <%!-- Upload Preview/Errors --%>
+            <%= for entry <- @uploads.avatar.entries do %>
+              <div class="mt-4 p-4 bg-base-200 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <.live_img_preview entry={entry} class="w-12 h-12 rounded object-cover" />
+                    <div>
+                      <p class="text-sm font-medium">{entry.client_name}</p>
+                      <p class="text-xs text-base-content/60">
+                        {entry.client_type} · {format_bytes(entry.client_size)}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="btn btn-ghost btn-sm btn-circle"
+                  >
+                    <.icon name="hero-x-mark" class="w-4 h-4" />
+                  </button>
+                </div>
+
+                <%!-- Progress Bar --%>
+                <div class="mt-2">
+                  <progress
+                    value={entry.progress}
+                    max="100"
+                    class="progress progress-primary w-full"
+                  >
+                    {entry.progress}%
+                  </progress>
+                </div>
+
+                <%!-- Errors --%>
+                <%= for err <- upload_errors(@uploads.avatar, entry) do %>
+                  <p class="text-error text-sm mt-1">{error_to_string(err)}</p>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= for err <- upload_errors(@uploads.avatar) do %>
+              <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+            <% end %>
+          </div>
+
+          <%!-- Submit Button --%>
+          <div class="flex items-center justify-between pt-4 border-t border-base-300">
+            <.link navigate={~p"/dashboard"} class="btn btn-ghost">
+              Cancel
+            </.link>
+            <button type="submit" class="btn btn-primary" disabled={@form.errors != []}>
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              Save Changes
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

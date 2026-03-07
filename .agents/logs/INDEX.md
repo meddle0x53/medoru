@@ -12,7 +12,7 @@
 | 6 | Daily Reviews & Streaks | ✅ APPROVED | 2026-03-06 |
 | 7 | Polish & Integration | ✅ APPROVED | 2026-03-07 |
 | 8 | User Types & Admin Foundation | ✅ APPROVED | 2026-03-07 |
-| 9 | Enhanced Profiles | ⏳ PLANNED | - |
+| 9 | Enhanced Profiles | ✅ APPROVED | 2026-03-07 |
 | 10 | Badge System | ⏳ PLANNED | - |
 | 11 | Multi-Step Test System | ⏳ PLANNED | - |
 | 12 | Teacher Test Creation | ⏳ PLANNED | - |
@@ -54,9 +54,9 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 9 IN PROGRESS
-- **Last completed**: Iteration 8 - User Types & Admin Foundation (APPROVED)
-- **Current**: Iteration 9 - Enhanced Profiles
+- **Phase**: Iteration 10 IN PROGRESS
+- **Last completed**: Iteration 9 - Enhanced Profiles (APPROVED)
+- **Current**: Iteration 10 - Badge System
 - **Overall Progress**: 7/19 iterations for v0.1.0 (12 remaining)
 
 ## Project Status
@@ -96,14 +96,17 @@
 - Daily Reviews & Streaks ✅
 - Polish & Integration ✅
 
-### ✅ Completed (Iteration 8)
+### ✅ Completed (Iterations 8-9)
 - User types (student/teacher/admin)
 - Admin authorization plugs
 - Admin user management interface
 - Mix task for first admin
+- Enhanced profiles (display name, bio, avatar)
+- Profile settings page
+- Public profile pages
 
-### ⏳ Pending (Iterations 9-19) - MVP Extended
-- Enhanced profiles & badges (9-10)
+### ⏳ Pending (Iterations 10-19) - MVP Extended
+- Badge system (10)
 - Test system overhaul (11-13)
 - Vocabulary lessons (14)
 - Kanji stroke animation (15)
@@ -152,7 +155,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 9 - Enhanced Profiles)
+4. **Ask meddle** which iteration to work on (currently: Iteration 10 - Badge System)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files

@@ -72,29 +72,54 @@ defmodule MedoruWeb.Layouts do
                 </.link>
               </li>
             <% end %>
-            <li class="flex items-center gap-2 ml-2 pl-2 sm:ml-4 sm:pl-4 border-l border-base-300">
-              <%= if @current_scope.current_user.avatar_url do %>
-                <img
-                  src={@current_scope.current_user.avatar_url}
-                  alt="Avatar"
-                  class="w-8 h-8 rounded-full ring-2 ring-base-200"
-                />
-              <% else %>
-                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
-                  <.icon name="hero-user" class="w-4 h-4 text-primary" />
-                </div>
-              <% end %>
-              <span class="text-sm text-secondary hidden lg:block max-w-[120px] truncate">
-                {@current_scope.current_user.name || @current_scope.current_user.email}
-              </span>
-              <.link
-                href={~p"/auth/logout"}
-                method="delete"
-                class="ml-1 p-2 rounded-lg text-secondary/70 hover:text-error hover:bg-error/10 transition-colors"
-                title="Sign out"
-              >
-                <.icon name="hero-arrow-right-on-rectangle" class="w-5 h-5" />
-              </.link>
+
+            <%!-- User Dropdown --%>
+            <li class="dropdown dropdown-end ml-2 pl-2 sm:ml-4 sm:pl-4 border-l border-base-300">
+              <div tabindex="0" role="button" class="flex items-center gap-2 btn btn-ghost btn-sm p-1 h-auto">
+                <%= if @current_scope.current_user.avatar_url do %>
+                  <img
+                    src={@current_scope.current_user.avatar_url}
+                    alt="Avatar"
+                    class="w-8 h-8 rounded-full ring-2 ring-base-200"
+                  />
+                <% else %>
+                  <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+                    <.icon name="hero-user" class="w-4 h-4 text-primary" />
+                  </div>
+                <% end %>
+                <span class="text-sm text-secondary hidden lg:block max-w-[120px] truncate">
+                  {(@current_scope.current_user.profile && @current_scope.current_user.profile.display_name) || @current_scope.current_user.name || @current_scope.current_user.email}
+                </span>
+                <.icon name="hero-chevron-down" class="w-4 h-4 text-secondary/50 hidden lg:block" />
+              </div>
+              <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 mt-2 border border-base-300">
+                <li class="menu-title px-3 py-2">
+                  <span class="text-xs text-base-content/50">Account</span>
+                </li>
+                <li>
+                  <.link navigate={~p"/users/#{@current_scope.current_user.id}"} class="flex items-center gap-2">
+                    <.icon name="hero-user-circle" class="w-4 h-4" />
+                    My Profile
+                  </.link>
+                </li>
+                <li>
+                  <.link navigate={~p"/settings/profile"} class="flex items-center gap-2">
+                    <.icon name="hero-cog-6-tooth" class="w-4 h-4" />
+                    Settings
+                  </.link>
+                </li>
+                <div class="divider my-1"></div>
+                <li>
+                  <.link
+                    href={~p"/auth/logout"}
+                    method="delete"
+                    class="text-error hover:bg-error/10"
+                  >
+                    <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" />
+                    Sign out
+                  </.link>
+                </li>
+              </ul>
             </li>
           <% else %>
             <li>

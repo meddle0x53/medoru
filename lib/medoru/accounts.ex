@@ -29,6 +29,17 @@ defmodule Medoru.Accounts do
   def get_user(id), do: Repo.get(User, id)
 
   @doc """
+  Gets a single user with preloaded profile.
+  Returns nil if the User does not exist.
+  """
+  def get_user_with_profile(id) do
+    User
+    |> where(id: ^id)
+    |> preload([:profile])
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a single user with preloaded profile and stats.
   """
   def get_user_with_profile_and_stats!(id) do
@@ -206,6 +217,28 @@ defmodule Medoru.Accounts do
   def get_profile_by_user!(user_id) do
     UserProfile
     |> where(user_id: ^user_id)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a user with their profile and stats by display name.
+  Returns nil if not found.
+  """
+  def get_user_by_display_name(display_name) when is_binary(display_name) do
+    User
+    |> join(:inner, [u], p in assoc(u, :profile))
+    |> where([u, p], p.display_name == ^display_name)
+    |> preload([:profile, :stats])
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a user with their profile and stats by id.
+  """
+  def get_user_with_profile!(id) do
+    User
+    |> where(id: ^id)
+    |> preload([:profile, :stats])
     |> Repo.one!()
   end
 

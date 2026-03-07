@@ -13,7 +13,7 @@ defmodule MedoruWeb.UserAuth do
   """
   def fetch_current_user(conn, _opts) do
     user_id = get_session(conn, :user_id)
-    user = user_id && Accounts.get_user(user_id)
+    user = user_id && Accounts.get_user_with_profile(user_id)
 
     conn
     |> assign(:current_user, user)
@@ -74,9 +74,9 @@ defmodule MedoruWeb.UserAuth do
   defp mount_current_user(session, socket) do
     case session do
       %{"user_id" => user_id} ->
-        # Use get_user (not get_user!) to handle case where user no longer exists
-        # This can happen when database is cleaned or user is deleted
-        user = Accounts.get_user(user_id)
+        # Use get_user_with_profile to load display name and avatar
+        # Returns nil if user no longer exists (e.g., database cleaned)
+        user = Accounts.get_user_with_profile(user_id)
         Phoenix.Component.assign(socket, current_scope: %{current_user: user})
 
       %{} ->

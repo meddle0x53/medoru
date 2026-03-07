@@ -1,0 +1,129 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Profile Header Card --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <%!-- Avatar --%>
+          <div class="flex-shrink-0">
+            <%= if @profile && @profile.avatar do %>
+              <img
+                src={@profile.avatar}
+                alt={@profile.display_name || @user.name}
+                class="w-32 h-32 rounded-full object-cover ring-4 ring-base-200"
+              />
+            <% else %>
+              <div class="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-base-200">
+                <.icon name="hero-user" class="w-16 h-16 text-primary/50" />
+              </div>
+            <% end %>
+          </div>
+
+          <%!-- User Info --%>
+          <div class="flex-1 text-center sm:text-left">
+            <h1 class="text-3xl font-bold text-base-content">
+              {@profile && @profile.display_name || @user.name || "Anonymous"}
+            </h1>
+            <p class="text-base-content/60 mt-1">{@user.email}</p>
+
+            <%!-- User Type Badge --%>
+            <div class="mt-3">
+              <%= case @user.type do %>
+                <% "admin" -> %>
+                  <span class="badge badge-error gap-1">
+                    <.icon name="hero-shield-check" class="w-3 h-3" />
+                    Admin
+                  </span>
+                <% "teacher" -> %>
+                  <span class="badge badge-warning gap-1">
+                    <.icon name="hero-academic-cap" class="w-3 h-3" />
+                    Teacher
+                  </span>
+                <% _ -> %>
+                  <span class="badge badge-info gap-1">
+                    <.icon name="hero-book-open" class="w-3 h-3" />
+                    Student
+                  </span>
+              <% end %>
+            </div>
+
+            <%!-- Bio --%>
+            <%= if @profile && @profile.bio do %>
+              <p class="mt-4 text-base-content/80 max-w-xl">
+                {@profile.bio}
+              </p>
+            <% end %>
+
+            <%!-- Join Date --%>
+            <p class="mt-4 text-sm text-base-content/50">
+              Member since {Calendar.strftime(@user.inserted_at, "%B %Y")}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Stats Grid --%>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center p-4">
+          <.icon name="hero-star" class="w-6 h-6 text-warning mb-2" />
+          <p class="text-2xl font-bold">{@stats.level}</p>
+          <p class="text-sm text-base-content/60">Level</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center p-4">
+          <.icon name="hero-fire" class="w-6 h-6 text-orange-500 mb-2" />
+          <p class="text-2xl font-bold">{@stats.current_streak}</p>
+          <p class="text-sm text-base-content/60">Day Streak</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center p-4">
+          <.icon name="hero-book-open" class="w-6 h-6 text-blue-500 mb-2" />
+          <p class="text-2xl font-bold">{@stats.total_kanji_learned}</p>
+          <p class="text-sm text-base-content/60">Kanji Learned</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center p-4">
+          <.icon name="hero-document-text" class="w-6 h-6 text-green-500 mb-2" />
+          <p class="text-2xl font-bold">{@stats.total_words_learned}</p>
+          <p class="text-sm text-base-content/60">Words Learned</p>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Additional Stats --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4">Learning Stats</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+            <span class="text-base-content/70">Total XP</span>
+            <span class="font-semibold">{@stats.xp}</span>
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+            <span class="text-base-content/70">Tests Completed</span>
+            <span class="font-semibold">{@stats.total_tests_completed}</span>
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+            <span class="text-base-content/70">Longest Streak</span>
+            <span class="font-semibold">{@stats.longest_streak} days</span>
+          </div>
+
+          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
+            <span class="text-base-content/70">Duels Played</span>
+            <span class="font-semibold">{@stats.total_duels_played}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

@@ -68,6 +68,26 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Settings routes
+  scope "/settings", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :settings,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/profile", SettingsLive.Profile
+    end
+  end
+
+  # Public user profiles
+  scope "/users", MedoruWeb do
+    pipe_through :browser
+
+    live_session :public_profiles,
+      on_mount: [{MedoruWeb.UserAuth, :default}] do
+      live "/:id", UserLive.Show
+    end
+  end
+
   # Admin routes
   scope "/admin", MedoruWeb.Admin do
     pipe_through [:browser, :require_authenticated_user]
