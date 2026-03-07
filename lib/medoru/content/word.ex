@@ -7,7 +7,17 @@ defmodule Medoru.Content.Word do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
-  @word_types [:noun, :verb, :adjective, :adverb, :particle, :pronoun, :counter, :expression, :other]
+  @word_types [
+    :noun,
+    :verb,
+    :adjective,
+    :adverb,
+    :particle,
+    :pronoun,
+    :counter,
+    :expression,
+    :other
+  ]
 
   schema "words" do
     field :text, :string

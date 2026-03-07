@@ -14,7 +14,7 @@ defmodule MedoruWeb.DailyReviewLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <%= daily_review_live(assigns) %>
+    {daily_review_live(assigns)}
     """
   end
 

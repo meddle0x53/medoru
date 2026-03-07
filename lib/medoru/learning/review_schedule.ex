@@ -24,7 +24,14 @@ defmodule Medoru.Learning.ReviewSchedule do
   @doc false
   def changeset(review_schedule, attrs) do
     review_schedule
-    |> cast(attrs, [:next_review_at, :interval, :ease_factor, :repetitions, :user_id, :user_progress_id])
+    |> cast(attrs, [
+      :next_review_at,
+      :interval,
+      :ease_factor,
+      :repetitions,
+      :user_id,
+      :user_progress_id
+    ])
     |> validate_required([:interval, :ease_factor, :repetitions])
     |> validate_number(:interval, greater_than_or_equal_to: 0)
     |> validate_number(:ease_factor, greater_than_or_equal_to: 1.3)

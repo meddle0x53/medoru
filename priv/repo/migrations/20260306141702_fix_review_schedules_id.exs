@@ -17,7 +17,9 @@ defmodule Medoru.Repo.Migrations.FixReviewSchedulesId do
       add :repetitions, :integer, null: false, default: 0
 
       add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
-      add :user_progress_id, references(:user_progress, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :user_progress_id, references(:user_progress, type: :binary_id, on_delete: :delete_all),
+        null: false
 
       timestamps(type: :utc_datetime)
     end
@@ -41,7 +43,9 @@ defmodule Medoru.Repo.Migrations.FixReviewSchedulesId do
       add :repetitions, :integer, null: false, default: 0
 
       add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
-      add :user_progress_id, references(:user_progress, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :user_progress_id, references(:user_progress, type: :binary_id, on_delete: :delete_all),
+        null: false
 
       timestamps(type: :utc_datetime)
     end

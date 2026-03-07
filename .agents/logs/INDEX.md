@@ -10,26 +10,38 @@
 | 4 | Lessons | ✅ APPROVED | 2026-03-06 |
 | 5 | Learning Core | ✅ APPROVED | 2026-03-06 |
 | 6 | Daily Reviews & Streaks | ✅ APPROVED | 2026-03-06 |
-| 7 | Polish & Integration | 🔄 IN PROGRESS | - |
+| 7 | Polish & Integration | ✅ APPROVED | 2026-03-07 |
+| 8 | User Types & Admin Foundation | ⏳ PLANNED | - |
+| 9 | Enhanced Profiles | ⏳ PLANNED | - |
+| 10 | Badge System | ⏳ PLANNED | - |
+| 11 | Multi-Step Test System | ⏳ PLANNED | - |
+| 12 | Teacher Test Creation | ⏳ PLANNED | - |
+| 13 | Daily Tests | ⏳ PLANNED | - |
+| 14 | Vocabulary Lesson System | ⏳ PLANNED | - |
+| 15 | Kanji Stroke Animation | ⏳ PLANNED | - |
+| 16 | Classroom Core | ⏳ PLANNED | - |
+| 17 | Classroom Membership | ⏳ PLANNED | - |
+| 18 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
+| 19 | Admin Dashboard | ⏳ PLANNED | - |
 
 ## Version 0.2.0 (Social Features) - Planned
 
 | # | Title | Status | Date |
 |---|-------|--------|------|
-| 8 | Friends System | ⏳ PLANNED | - |
-| 9 | Real-time Duels | ⏳ PLANNED | - |
-| 10 | Rankings & Leaderboards | ⏳ PLANNED | - |
-| 11 | Duel History & Stats | ⏳ PLANNED | - |
-| 12 | Notifications | ⏳ PLANNED | - |
+| 20 | Friends System | ⏳ PLANNED | - |
+| 21 | Real-time Duels | ⏳ PLANNED | - |
+| 22 | Rankings & Leaderboards | ⏳ PLANNED | - |
+| 23 | Duel History & Stats | ⏳ PLANNED | - |
+| 24 | Notifications | ⏳ PLANNED | - |
 
 ## Version 0.3.0 (Content Expansion) - Planned
 
 | # | Title | Status | Date |
 |---|-------|--------|------|
-| 13 | N4 Kanji & Words | ⏳ PLANNED | - |
-| 14 | Grammar Content | ⏳ PLANNED | - |
-| 15 | Listening Exercises | ⏳ PLANNED | - |
-| 16 | Stroke Drawing | ⏳ PLANNED | - |
+| 25 | N4 Kanji & Words | ⏳ PLANNED | - |
+| 26 | Grammar Content | ⏳ PLANNED | - |
+| 27 | Listening Exercises | ⏳ PLANNED | - |
+| 28 | Stroke Drawing | ⏳ PLANNED | - |
 
 ## Future Ideas (Backlog)
 - Mobile app (React Native/Flutter)
@@ -41,11 +53,11 @@
 - API for third-party integrations
 
 ## Current State
-- **Version**: 0.1.0 (MVP)
-- **Phase**: Iteration 7 IN PROGRESS
-- **Last completed**: Iteration 6 - Daily Reviews & Streaks (APPROVED)
-- **Current**: Iteration 7 - Polish & Integration
-- **Overall Progress**: 6/7 iterations for v0.1.0 (1 remaining)
+- **Version**: 0.1.0 (MVP Extended)
+- **Phase**: Iteration 8 IN PROGRESS
+- **Last completed**: Iteration 7 - Polish & Integration (APPROVED)
+- **Current**: Iteration 8 - User Types & Admin Foundation
+- **Overall Progress**: 7/19 iterations for v0.1.0 (12 remaining)
 
 ## Project Status
 
@@ -75,19 +87,22 @@
 - 76 tests passing
 - Approved by meddle
 
-### ⏳ Pending (Iterations 3-7)
-- Words with Reading Links
-- Lessons
-- Learning progress & tests
-- Daily reviews & streaks
-- Polish & integration
+### ✅ Completed (Iterations 1-7) - Core MVP
+- OAuth & Accounts ✅
+- Kanji & Readings ✅
+- Words with Reading Links ✅
+- Lessons ✅
+- Learning Core ✅
+- Daily Reviews & Streaks ✅
+- Polish & Integration ✅
 
-### ⏳ Pending (Iterations 3-7)
-- Words with reading links
-- Lessons system
-- Learning progress & tests
-- Daily reviews & streaks
-- Polish & integration
+### ⏳ Pending (Iterations 8-19) - MVP Extended
+- User types & admin (8-10)
+- Test system overhaul (11-13)
+- Vocabulary lessons (14)
+- Kanji stroke animation (15)
+- Classroom system (16-18)
+- Admin dashboard (19)
 
 ## Environment
 
@@ -131,7 +146,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 7 - Polish & Integration)
+4. **Ask meddle** which iteration to work on (currently: Iteration 8 - User Types & Admin Foundation)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
@@ -147,4 +162,4 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-06  
-**Status**: Iteration 7 IN PROGRESS
+**Status**: Iteration 8 IN PROGRESS

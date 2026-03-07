@@ -6,9 +6,9 @@ This document outlines the long-term development plan for Medoru.
 
 ## Version 0.1.0 - MVP (Current)
 
-**Goal:** Core learning platform with content and basic progress tracking
+**Goal:** Core learning platform with content, progress tracking, and classroom support
 
-**Features:**
+**Features (Iterations 1-7):**
 - ✅ Google OAuth authentication
 - ✅ Kanji database (N5) with readings
 - ✅ Words with kanji/reading links
@@ -17,7 +17,24 @@ This document outlines the long-term development plan for Medoru.
 - ⏳ Daily review tests with SRS
 - ⏳ Streak tracking
 
-**Target Users:** Individual learners
+**Features (Iterations 8-19):**
+- ⏳ User types (admin, teacher, student)
+- ⏳ Admin interface for user management
+- ⏳ Enhanced profiles (display name, avatar, badges)
+- ⏳ Badge/achievement system
+- ⏳ Multi-step tests (reading/writing/listening/grammar/speaking)
+- ⏳ Test sub-types: multichoice (1pt) and fill (2pt)
+- ⏳ Teacher-created tests with workflow
+- ⏳ Auto-generated daily tests
+- ⏳ Vocabulary lessons (3-5 words per lesson)
+- ⏳ Kanji stroke animation
+- ⏳ Classroom system (teachers, students, applications)
+- ⏳ Classroom-specific tests and lessons
+- ⏳ Classroom rankings and leaderboards
+- ⏳ Full admin dashboard
+
+**Status**: Core MVP (Iterations 1-7) ✅ COMPLETE  
+**Target Users:** Individual learners, classrooms, teachers
 
 ---
 

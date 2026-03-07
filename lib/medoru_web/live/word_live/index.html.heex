@@ -59,15 +59,32 @@
               <span class={[
                 "px-2 py-0.5 rounded text-xs font-medium capitalize",
                 case word.word_type do
-                  :noun -> "bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                  :verb -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  :adjective -> "bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                  :adverb -> "bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                  :particle -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
-                  :pronoun -> "bg-pink-100/80 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
-                  :counter -> "bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
-                  :expression -> "bg-indigo-100/80 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
-                  _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+                  :noun ->
+                    "bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+
+                  :verb ->
+                    "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+
+                  :adjective ->
+                    "bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+
+                  :adverb ->
+                    "bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+
+                  :particle ->
+                    "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+                  :pronoun ->
+                    "bg-pink-100/80 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+
+                  :counter ->
+                    "bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+
+                  :expression ->
+                    "bg-indigo-100/80 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+
+                  _ ->
+                    "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
                 end
               ]}>
                 {word.word_type}
