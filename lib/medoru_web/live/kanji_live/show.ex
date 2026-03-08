@@ -33,6 +33,12 @@ defmodule MedoruWeb.KanjiLive.Show do
         false
       end
 
+    # Check if kanji has stroke data
+    has_stroke_data =
+      kanji.stroke_data != %{} and
+        kanji.stroke_data != nil and
+        not is_nil(kanji.stroke_data["strokes"])
+
     {:noreply,
      socket
      |> assign(:kanji, kanji)
@@ -41,6 +47,7 @@ defmodule MedoruWeb.KanjiLive.Show do
      |> assign(:words_data, words_data)
      |> assign(:page, page)
      |> assign(:kanji_learned, kanji_learned)
+     |> assign(:has_stroke_data, has_stroke_data)
      |> assign(:page_title, "#{kanji.character} - Kanji Details")}
   end
 

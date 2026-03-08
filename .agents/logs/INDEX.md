@@ -15,7 +15,7 @@
 | 9 | Enhanced Profiles | ✅ APPROVED | 2026-03-07 |
 | 10 | Badge System | ✅ APPROVED | 2026-03-07 |
 | 11 | Logging Infrastructure | ✅ APPROVED | 2026-03-08 |
-| 12 | Kanji Stroke Animation | ⏳ PLANNED | - |
+| 12 | Kanji Stroke Animation | ✅ APPROVED | 2026-03-08 |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
 | 14 | Multi-Step Test System | ⏳ PLANNED | - |
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
@@ -56,10 +56,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 11 COMPLETE - Ready for Review
-- **Last completed**: Iteration 11 - Logging Infrastructure
+- **Phase**: Iteration 12 COMPLETE - Ready for Review
+- **Last completed**: Iteration 12 - Kanji Stroke Animation
 - **Current**: Waiting for review
-- **Overall Progress**: 11/20 iterations for v0.1.0 (9 remaining)
+- **Overall Progress**: 12/20 iterations for v0.1.0 (8 remaining)
 
 ## Project Status
 
@@ -118,8 +118,17 @@
 - Logrotate configuration for system-level rotation
 - Documentation in LOGGING.md
 
-### ⏳ Pending (Iterations 12-21) - MVP Extended
-- Kanji stroke animation (12)
+### ✅ Completed (Iteration 12)
+- Stroke data JSON for 30+ N5 kanji
+- `StrokeAnimator` LiveComponent with SVG animation
+- Playback controls (play, pause, step forward/backward, reset)
+- Stroke order list with visual indicators
+- Adjustable animation speed
+- Optional stroke number display
+- Integrated on kanji detail pages
+- CSS animations for stroke drawing effect
+
+### ⏳ Pending (Iterations 13-21) - MVP Extended
 - Admin badge management (13)
 - Test system overhaul (14-16)
 - Vocabulary lessons (17)

@@ -15,6 +15,7 @@ defmodule Medoru.Release.Seeds do
 
     seed_n5_kanji()
     seed_n5_words()
+    seed_stroke_data()
 
     IO.puts("Database seeded successfully!")
   end
@@ -103,5 +104,10 @@ defmodule Medoru.Release.Seeds do
       # Seed some basic words
       IO.puts("Seeded basic vocabulary")
     end
+  end
+
+  defp seed_stroke_data do
+    IO.puts("Seeding KanjiVG stroke data...")
+    Medoru.Release.Seeds.KanjiVG.seed()
   end
 end

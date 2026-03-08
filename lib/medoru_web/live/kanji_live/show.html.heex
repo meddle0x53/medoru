@@ -63,6 +63,25 @@
       </div>
     </div>
 
+    <%!-- Stroke Animation Section (if available) --%>
+    <%= if @has_stroke_data do %>
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 mb-8">
+        <div class="flex items-center gap-2 mb-4">
+          <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
+          <h2 class="text-xl font-bold text-base-content">Stroke Order</h2>
+          <span class="text-sm text-secondary/70 ml-auto">
+            Learn the correct stroke order
+          </span>
+        </div>
+
+        <.live_component
+          module={MedoruWeb.StrokeAnimator}
+          id="kanji-stroke-animator"
+          stroke_data={@kanji.stroke_data}
+        />
+      </div>
+    <% end %>
+
     <%!-- Readings Section --%>
     <div class="grid md:grid-cols-2 gap-6">
       <%!-- On Readings --%>

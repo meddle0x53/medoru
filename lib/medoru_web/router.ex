@@ -34,6 +34,7 @@ defmodule MedoruWeb.Router do
       live "/words/:id", WordLive.Show
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
+      live "/attribution", SettingsLive.Attribution
     end
   end
 

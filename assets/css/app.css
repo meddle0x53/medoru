@@ -111,3 +111,67 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Stroke Animation Keyframes */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Stroke Animator Component Styles */
+.stroke-animator svg {
+  touch-action: none;
+}
+
+.stroke-animator path {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Range slider styling */
+.stroke-animator input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.stroke-animator input[type="range"]::-webkit-slider-track {
+  background: hsl(var(--b3));
+  height: 6px;
+  border-radius: 3px;
+}
+
+.stroke-animator input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: hsl(var(--p));
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  margin-top: -6px;
+  transition: transform 0.1s;
+}
+
+.stroke-animator input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.stroke-animator input[type="range"]::-moz-range-track {
+  background: hsl(var(--b3));
+  height: 6px;
+  border-radius: 3px;
+}
+
+.stroke-animator input[type="range"]::-moz-range-thumb {
+  background: hsl(var(--p));
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  border: none;
+  transition: transform 0.1s;
+}
+
+.stroke-animator input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}

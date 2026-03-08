@@ -206,6 +206,28 @@ defmodule MedoruWeb.Layouts do
       {render_slot(@inner_block)}
     </main>
 
+    <%!-- Footer with Attribution --%>
+    <footer class="bg-base-100 border-t border-base-300 py-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="text-sm text-secondary">
+            <span>© 2025 Medoru</span>
+            <span class="mx-2">·</span>
+            <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
+              Data Attribution
+            </.link>
+          </div>
+          <div class="text-xs text-secondary/60">
+            Kanji stroke data from
+            <a href="http://kanjivg.tagaini.net" target="_blank" class="hover:text-primary">
+              KanjiVG
+            </a>
+            (CC BY-SA 3.0)
+          </div>
+        </div>
+      </div>
+    </footer>
+
     <.flash_group flash={@flash} />
     """
   end
