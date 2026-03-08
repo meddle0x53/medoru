@@ -17,23 +17,33 @@ This document outlines the long-term development plan for Medoru.
 - ⏳ Daily review tests with SRS
 - ⏳ Streak tracking
 
-**Features (Iterations 8-19):**
-- ⏳ User types (admin, teacher, student)
-- ⏳ Admin interface for user management
-- ⏳ Enhanced profiles (display name, avatar, badges)
-- ⏳ Badge/achievement system
-- ⏳ Multi-step tests (reading/writing/listening/grammar/speaking)
-- ⏳ Test sub-types: multichoice (1pt) and fill (2pt)
+**Features (Iterations 8-12) ✅ COMPLETE:**
+- ✅ User types (admin, teacher, student)
+- ✅ Admin interface for user management
+- ✅ Enhanced profiles (display name, avatar, badges)
+- ✅ Badge/achievement system
+- ✅ Kanji stroke animation
+- ✅ Logging infrastructure
+
+**Features (Iterations 13-21) ⏳ PENDING:**
+- ⏳ Admin badge management
+- ⏳ **Multi-step tests** (reading/writing/listening/grammar/speaking)
+- ⏳ **Test sub-types**: multichoice (1pt) and fill (2pt)
 - ⏳ Teacher-created tests with workflow
-- ⏳ Auto-generated daily tests
-- ⏳ Vocabulary lessons (3-5 words per lesson)
-- ⏳ Kanji stroke animation
-- ⏳ Classroom system (teachers, students, applications)
+- ⏳ **Auto-generated daily tests**
+- ⏳ **Vocabulary lessons** (3-5 words per lesson)
+- ⏳ **Classroom system** (teachers, students, applications)
 - ⏳ Classroom-specific tests and lessons
-- ⏳ Classroom rankings and leaderboards
+- ⏳ **Classroom rankings and leaderboards**
 - ⏳ Full admin dashboard
 
-**Status**: Core MVP (Iterations 1-7) ✅ COMPLETE  
+**Next Priority**: See [PENDING.md](./PENDING.md)
+
+**Status**: 
+- Core MVP (Iterations 1-7) ✅ COMPLETE
+- Extended MVP (Iterations 8-12) ✅ COMPLETE  
+- **⏳ PENDING: 9 iterations remaining** (see [PENDING.md](./PENDING.md))
+
 **Target Users:** Individual learners, classrooms, teachers
 
 ---

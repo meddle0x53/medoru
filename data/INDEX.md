@@ -1,7 +1,7 @@
 # Medoru Data Pipeline - Development Index
 
 **Last Updated:** 2026-03-08  
-**Status:** Milestone 5 Complete ✅
+**Status:** Milestone 6 Complete ✅
 
 ---
 
@@ -13,6 +13,8 @@
 | With N5-N1 Levels | 2,211 |
 | With Stroke Data | 2,211 (100%) |
 | With Radical Data | 2,132 (96%) |
+| **Words Available** | **~175,000** (with kanji) |
+| **Words Exportable** | All JMdict entries with kanji |
 
 ---
 
@@ -139,6 +141,7 @@ mix medoru.seed_radicals --all
 | [KanjiVG](http://kanjivg.tagaini.net) | Stroke order SVGs | CC BY-SA 3.0 | © Ulrich Apel |
 | [Make Me A Hanzi](https://github.com/skishore/makemeahanzi) | Radicals, decomposition | CC BY-SA 4.0 | © skishore |
 | [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) | Dictionary data | CC BY-SA 4.0 | © EDRG |
+| [JMdict](https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project) | Word dictionary | CC BY-SA 4.0 | © EDRG |
 
 ---
 
@@ -177,6 +180,14 @@ medoru-data makemeahanzi status
 ```bash
 medoru-data export-full --level N5 --output seeds/kanji_n5_full.json
 medoru-data export-full --level all --output seeds/kanji_all_full.json
+```
+
+### JMdict (Words)
+```bash
+medoru-data jmdict download
+medoru-data jmdict export --output seeds/words_all.json
+medoru-data jmdict export-for-kanji --kanji "日,月,火" --output seeds/words_sample.json
+medoru-data jmdict stats
 ```
 
 ---
@@ -222,13 +233,46 @@ Each kanji JSON includes:
 
 ---
 
+### ✅ Milestone 6: JMdict Integration (Words)
+**Status:** COMPLETE ✅  
+**Date:** 2026-03-08
+
+- [x] Download JMdict XML (~215,000 entries)
+- [x] Parse word entries (kanji forms, readings, senses, POS tags)
+- [x] Cross-reference with kanji
+- [x] Export vocabulary lists by kanji
+- [x] Export in database seeding format
+- [x] **Word type classification** (noun, verb, adjective, adverb, expression, etc.)
+- [x] **JLPT level calculation** based on kanji composition (N5, N4, N3+)
+- [x] CLI commands:
+  - `jmdict download` - Download JMdict
+  - `jmdict export` - Export all words
+  - `jmdict export-for-kanji` - Export for specific kanji
+  - `jmdict export-for-seeding` - Export for DB seeding (by kanji)
+  - `jmdict export-all-for-seeding` - Export ALL words for DB seeding
+- [x] Elixir mix task: `mix medoru.seed_words` - Import/update words with classification
+
+**Features:**
+- Automatic word type detection from JMdict POS tags
+- JLPT level calculation (N5=level 5, N4=level 4, N3+=level 3)
+- Long meaning truncation (max 250 chars)
+- Duplicate detection and update support
+- Progress bars for large exports
+
+**Files:**
+- `src/medoru_data/spiders/jmdict.py` - JMdict spider with classification
+- `src/medoru_data/exporters/word_exporter.py` - Word export utilities
+- `lib/mix/tasks/medoru.seed_words.ex` - Database import/update task
+- `WORD_SEEDING.md` - Complete usage documentation
+
+---
+
 ## Next Steps / Future Milestones
 
-### Milestone 6: JMdict Integration (Words)
-- [ ] Download JMdict
-- [ ] Parse word entries
-- [ ] Cross-reference with kanji
-- [ ] Export vocabulary lists by JLPT level
+### Milestone 7: Example Sentences
+- [ ] Integrate Tatoeba corpus
+- [ ] Match sentences to kanji/words
+- [ ] Difficulty grading
 
 ### Milestone 7: Example Sentences
 - [ ] Integrate Tatoeba or similar corpus

@@ -195,11 +195,30 @@ medoru-data export-full --level all --output seeds/kanji_all_full.json
 - [x] Etymology/hint information
 - [x] Full combined export (metadata + strokes + radicals)
 
-### Milestone 6: JMdict Integration (Planned)
-- [ ] Download JMdict
-- [ ] Parse word entries
-- [ ] Cross-reference with kanji
-- [ ] Export to seeds
+### Milestone 6: JMdict Integration ✅
+- [x] Download JMdict (215,000+ entries)
+- [x] Parse word entries (kanji forms, readings, senses, POS tags)
+- [x] Cross-reference with kanji
+- [x] Export to Medoru word format
+- [x] Word type classification (noun, verb, adjective, etc.)
+- [x] JLPT level calculation based on kanji
+- [x] CLI: `export-for-seeding`, `export-all-for-seeding`
+- [x] Elixir mix task: `mix medoru.seed_words`
+
+### JMdict Word Export
+```bash
+# Download JMdict
+medoru-data jmdict download
+
+# Export all words with kanji
+medoru-data jmdict export --output seeds/words_all.json
+
+# Export words for specific kanji (e.g., N5 set)
+medoru-data jmdict export-for-kanji --kanji "日,月,火,水,木" --output seeds/words_sample.json
+
+# Show statistics
+medoru-data jmdict stats
+```
 
 ### Milestone 7: Example Sentences (Planned)
 - [ ] Integrate Tatoeba corpus

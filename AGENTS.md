@@ -151,23 +151,49 @@ Word (id, text, meaning, difficulty, usage_frequency)
 
 ## Database Schema Priorities
 
-### Phase 1 (MVP)
-1. Users + OAuth
-2. Kanji + KanjiReadings (seed with N5-N4)
-3. Words + WordKanjis (cross-referenced to specific readings)
-4. Lessons (static, predefined)
-5. UserProgress + TestSession
-6. DailyStreak
+## Phase 1 (MVP) - Extended Iterations
 
-### Phase 2 (Social)
-7. Duels + Real-time answers
-8. Rankings
-9. User invites/friends
+### ✅ COMPLETED (Iterations 1-12)
+| # | Feature | Status |
+|---|---------|--------|
+| 1 | Users + OAuth | ✅ |
+| 2 | Kanji + KanjiReadings (N5-N1) | ✅ |
+| 3 | Words + WordKanjis | ✅ |
+| 4 | Lessons (basic) | ✅ |
+| 5 | UserProgress + DailyStreak | ✅ |
+| 6 | Daily Reviews (basic) | ✅ |
+| 7 | Polish & Integration | ✅ |
+| 8 | User Types (student/teacher/admin) | ✅ |
+| 9 | Enhanced Profiles | ✅ |
+| 10 | Badge System | ✅ |
+| 11 | Logging Infrastructure | ✅ |
+| 12 | Kanji Stroke Animation | ✅ |
 
-### Phase 3 (Advanced)
-10. Stroke drawing data
-11. Grammar content
-12. Listening content
+### ⏳ PENDING (Iterations 13-21) - See `.agents/logs/PENDING.md`
+| # | Feature | Priority |
+|---|---------|----------|
+| 14 | Multi-Step Test System | 🔴 HIGH |
+| 16 | Auto-Generated Daily Tests | 🔴 HIGH |
+| 17 | Vocabulary Lesson System | 🟡 MEDIUM |
+| 13 | Admin Badge Management | 🟡 MEDIUM |
+| 15 | Teacher Test Creation | 🟢 LOWER |
+| 18 | Classroom Core | 🟢 LOWER |
+| 19 | Classroom Membership | 🟢 LOWER |
+| 20 | Classroom Tests & Rankings | 🟢 LOWER |
+| 21 | Admin Dashboard | 🟢 LOWER |
+
+## Phase 2 (Social) - v0.2.0
+- Friends system
+- Real-time 1v1 duels
+- Global and friend leaderboards
+- Duel history and statistics
+
+## Phase 3 (Advanced) - v0.3.0
+- Grammar lessons and tests
+- Listening exercises (audio)
+- Writing tests (stroke recognition)
+- N4-N1 vocabulary expansion
+- Mobile app
 
 ## Phoenix Conventions (Strict)
 

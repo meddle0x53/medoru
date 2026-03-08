@@ -56,10 +56,19 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 12 COMPLETE - Ready for Review
+- **Phase**: Iteration 12 COMPLETE - Ready for Iteration 13+
 - **Last completed**: Iteration 12 - Kanji Stroke Animation
-- **Current**: Waiting for review
-- **Overall Progress**: 12/20 iterations for v0.1.0 (8 remaining)
+- **Current**: ⏳ 9 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 12/21 iterations for v0.1.0 (9 remaining)
+
+## ⏳ Pending Work (Priority Order)
+1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System
+2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests  
+3. **🟡 MEDIUM**: Iteration 17 - Vocabulary Lesson System
+4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
+5. **🟢 LOWER**: Iterations 15, 18-21 - Classroom System
+
+See [PENDING.md](./PENDING.md) for detailed breakdown.
 
 ## Project Status
 

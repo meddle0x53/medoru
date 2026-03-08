@@ -1,5 +1,7 @@
 """Command-line interface for Medoru data pipeline."""
 
+from typing import Optional
+
 import click
 from rich.console import Console
 from rich.table import Table
@@ -451,6 +453,253 @@ def export_full(level: str, output: str, include_readings: bool):
         output, 
         include_readings=include_readings
     )
+
+
+@main.group()
+def jmdict():
+    """JMdict Japanese-English dictionary commands."""
+    pass
+
+
+@jmdict.command()
+def download():
+    """Download JMdict data from EDRG."""
+    from .spiders.jmdict import JMdictSpider
+    
+    spider = JMdictSpider()
+    spider.download()
+
+
+@jmdict.command()
+@click.option("--output", "-o", required=True, help="Output JSON file")
+@click.option("--limit", "-l", type=int, default=None, help="Limit number of entries (for testing)")
+@click.option("--include-kana-only/--no-kana-only", default=False, help="Include kana-only words")
+def export(output: str, limit: Optional[int], include_kana_only: bool):
+    """Export JMdict words to Medoru format.
+    
+    Exports words with kanji to JSON format suitable for Medoru.
+    """
+    from .spiders.jmdict import JMdictSpider
+    from .exporters.word_exporter import WordExporter
+    
+    spider = JMdictSpider()
+    exporter = WordExporter()
+    
+    if not spider.xml_path.exists():
+        console.print("[red]Error:[/red] JMdict data not downloaded. Run 'medoru-data jmdict download' first.")
+        return
+    
+    words = spider.extract_all_words(limit=limit)
+    
+    # Filter out kana-only words unless requested
+    if not include_kana_only:
+        words = [w for w in words if w.get("kanji_forms")]
+    
+    exporter.export_words(
+        words, 
+        output,
+        source="JMdict",
+        license="CC BY-SA 4.0",
+        copyright="© EDRG",
+        attribution="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project"
+    )
+
+
+@jmdict.command()
+@click.option("--kanji", "-k", required=True, help="Kanji character(s) to search for (comma-separated)")
+@click.option("--output", "-o", required=True, help="Output JSON file")
+@click.option("--max-per-kanji", "-m", type=int, default=10, help="Maximum words per kanji")
+def export_for_kanji(kanji: str, output: str, max_per_kanji: int):
+    """Export words containing specific kanji.
+    
+    Useful for building vocabulary lists for specific JLPT levels.
+    """
+    from .spiders.jmdict import JMdictSpider
+    from .exporters.word_exporter import WordExporter
+    
+    spider = JMdictSpider()
+    exporter = WordExporter()
+    
+    if not spider.xml_path.exists():
+        console.print("[red]Error:[/red] JMdict data not downloaded. Run 'medoru-data jmdict download' first.")
+        return
+    
+    # Parse kanji list
+    kanji_list = [c.strip() for c in kanji.replace(",", "").replace(" ", "")]
+    kanji_list = [c for c in kanji_list if c]  # Remove empty strings
+    
+    if not kanji_list:
+        console.print("[red]Error:[/red] No valid kanji characters provided.")
+        return
+    
+    # Get words for these kanji
+    words_by_kanji = spider.get_words_for_kanji_list(kanji_list, max_per_kanji=max_per_kanji)
+    
+    # Export organized by kanji
+    exporter.export_words_by_kanji(
+        words_by_kanji,
+        output,
+        source="JMdict",
+        license="CC BY-SA 4.0",
+        copyright="© EDRG",
+        attribution="https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project"
+    )
+
+
+@jmdict.command()
+def status():
+    """Show JMdict download status."""
+    from .spiders.jmdict import JMdictSpider
+    
+    spider = JMdictSpider()
+    info = spider.get_status()
+    
+    table = Table(title="JMdict Status")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("Downloaded", "✓ Yes" if info["downloaded"] else "✗ No")
+    table.add_row("File Size", info["file_size"])
+    table.add_row("License", info["license"])
+    
+    console.print(table)
+
+
+@jmdict.command()
+def stats():
+    """Show JMdict statistics."""
+    from .spiders.jmdict import JMdictSpider
+    
+    spider = JMdictSpider()
+    
+    if not spider.xml_path.exists():
+        console.print("[red]Error:[/red] JMdict data not downloaded. Run 'medoru-data jmdict download' first.")
+        return
+    
+    stats_data = spider.get_stats()
+    
+    table = Table(title="JMdict Statistics")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Count", style="green", justify="right")
+    
+    table.add_row("Total Entries", str(stats_data.get("total_entries", 0)))
+    table.add_row("With Kanji", str(stats_data.get("with_kanji", 0)))
+    table.add_row("Kana Only", str(stats_data.get("kana_only", 0)))
+    
+    console.print(table)
+
+
+@jmdict.command(name="export-for-seeding")
+@click.option("--kanji", "-k", required=True, help="Kanji characters to find words for (comma-separated)")
+@click.option("--max-per-kanji", "-m", type=int, default=10, help="Maximum words per kanji")
+@click.option("--output", "-o", required=True, help="Output JSON file (for priv/repo/seeds/)")
+def export_for_seeding(kanji: str, max_per_kanji: int, output: str):
+    """Export words in format compatible with Medoru seeds.exs.
+    
+    This exports a flat array of words matching the structure of
+    priv/repo/seeds/words_n5.json for direct database seeding.
+    
+    Example:
+        medoru-data jmdict export-for-seeding \\
+            --kanji "日,月,火,水,木" \\
+            --max-per-kanji 10 \\
+            --output ../priv/repo/seeds/words_custom.json
+    """
+    from .spiders.jmdict import JMdictSpider
+    import json
+    from pathlib import Path
+    
+    spider = JMdictSpider()
+    
+    if not spider.xml_path.exists():
+        console.print("[red]Error:[/red] JMdict data not downloaded. Run 'medoru-data jmdict download' first.")
+        return
+    
+    # Parse kanji list
+    kanji_list = [c.strip() for c in kanji.replace(",", "").replace(" ", "")]
+    kanji_list = [c for c in kanji_list if c]
+    
+    if not kanji_list:
+        console.print("[red]Error:[/red] No valid kanji characters provided.")
+        return
+    
+    # Export words
+    words = spider.export_words_for_seeding(kanji_list, max_per_kanji=max_per_kanji)
+    
+    if not words:
+        console.print("[yellow]No words found for the given kanji.[/yellow]")
+        return
+    
+    # Write to file
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(words, f, ensure_ascii=False, indent=2)
+    
+    console.print(f"[green]✓[/green] Exported {len(words)} words to {output}")
+    console.print(f"[dim]Use with: mix medoru.seed_words --file {output}[/dim]")
+
+
+@jmdict.command(name="export-all-for-seeding")
+@click.option("--output", "-o", required=True, help="Output JSON file")
+@click.option("--limit", "-l", type=int, default=None, help="Limit number of words (default: all)")
+def export_all_for_seeding(output: str, limit: Optional[int]):
+    """Export ALL words from JMdict in seeding format.
+    
+    This exports all words with kanji (excluding kana-only words) in the format
+    compatible with Medoru database seeding. Use --limit for testing.
+    
+    WARNING: This will export ~170,000+ words and create a large file (~500MB).
+    
+    Example:
+        # Export all words (large file!)
+        medoru-data jmdict export-all-for-seeding \\
+            --output ../priv/repo/seeds/words_all.json
+        
+        # Export first 1000 words for testing
+        medoru-data jmdict export-all-for-seeding \\
+            --limit 1000 \\
+            --output ../priv/repo/seeds/words_sample.json
+    """
+    from .spiders.jmdict import JMdictSpider
+    import json
+    from pathlib import Path
+    
+    spider = JMdictSpider()
+    
+    if not spider.xml_path.exists():
+        console.print("[red]Error:[/red] JMdict data not downloaded. Run 'medoru-data jmdict download' first.")
+        return
+    
+    # Confirm for large exports
+    if limit is None or limit > 10000:
+        console.print("[yellow]Warning:[/yellow] This will export a large number of words.")
+        console.print("The output file may be very large (>100MB).")
+        console.print("Consider using --limit to export a smaller set first.")
+        console.print("")
+    
+    # Export all words
+    words = spider.export_all_words_for_seeding(limit=limit)
+    
+    if not words:
+        console.print("[yellow]No words found.[/yellow]")
+        return
+    
+    # Write to file
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(words, f, ensure_ascii=False, indent=2)
+    
+    # Get file size
+    file_size = output_path.stat().st_size
+    size_mb = file_size / (1024 * 1024)
+    
+    console.print(f"[green]✓[/green] Exported {len(words)} words to {output}")
+    console.print(f"[dim]File size: {size_mb:.1f} MB[/dim]")
+    console.print(f"[dim]Use with: mix medoru.seed_words --file {output}[/dim]")
 
 
 @main.group()

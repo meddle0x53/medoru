@@ -34,7 +34,7 @@ SOURCES = {
     "jmdict": {
         "name": "JMdict",
         "url": "https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project",
-        "download_url": "http://ftp.monash.edu.au/pub/nihongo/JMdict_e.gz",
+        "download_url": "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz",
         "license": "CC BY-SA 4.0",
         "copyright": "© EDRG",
         "attribution_url": "https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project",
