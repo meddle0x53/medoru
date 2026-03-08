@@ -110,7 +110,7 @@
       <%= for {lesson, index} <- Enum.with_index(@lessons) do %>
         <% lesson_progress = Map.get(@lesson_progress_map, lesson.id) %>
         <% is_completed = lesson_progress && lesson_progress.status == :completed %>
-        <% actual_index = ((@page - 1) * @per_page) + index + 1 %>
+        <% actual_index = (@page - 1) * @per_page + index + 1 %>
         <.link
           navigate={~p"/lessons/#{lesson.id}"}
           class="group block"
@@ -168,12 +168,23 @@
                   <span class={[
                     "px-2.5 py-1 rounded-lg font-medium",
                     case lesson.difficulty do
-                      5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                      4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
-                      3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                      2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
-                      1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                      _ -> "bg-base-200 text-secondary"
+                      5 ->
+                        "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+
+                      4 ->
+                        "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+
+                      3 ->
+                        "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+
+                      2 ->
+                        "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+                      1 ->
+                        "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+
+                      _ ->
+                        "bg-base-200 text-secondary"
                     end
                   ]}>
                     N{lesson.difficulty}
@@ -282,7 +293,8 @@
           <div class="flex items-center gap-1">
             <% start_page = max(1, @page - 2) %>
             <% end_page = min(@total_pages, start_page + 4) %>
-            <% start_page = if end_page - start_page < 4, do: max(1, end_page - 4), else: start_page %>
+            <% start_page =
+              if end_page - start_page < 4, do: max(1, end_page - 4), else: start_page %>
 
             <%= if start_page > 1 do %>
               <.link

@@ -142,12 +142,13 @@ defmodule Mix.Tasks.Medoru.SeedWords do
 
     Mix.shell().info("Found #{map_size(kanji_map)} kanji in database")
 
-    imported = Enum.reduce(word_list, 0, fn word_data, count ->
-      case import_word(word_data, kanji_map) do
-        :ok -> count + 1
-        :error -> count
-      end
-    end)
+    imported =
+      Enum.reduce(word_list, 0, fn word_data, count ->
+        case import_word(word_data, kanji_map) do
+          :ok -> count + 1
+          :error -> count
+        end
+      end)
 
     Mix.shell().info("")
     Mix.shell().info("Import complete! Imported #{imported}/#{length(word_list)} words")
@@ -205,11 +206,14 @@ defmodule Mix.Tasks.Medoru.SeedWords do
         existing && should_update?(existing, word_attrs) ->
           # Update existing word with new classification
           case Content.update_word(existing, %{
-            word_type: word_attrs.word_type,
-            difficulty: word_attrs.difficulty
-          }) do
+                 word_type: word_attrs.word_type,
+                 difficulty: word_attrs.difficulty
+               }) do
             {:ok, _word} ->
-              Mix.shell().info("  ⟳ Updated word: #{word_attrs.text} (type: #{word_attrs.word_type}, difficulty: #{word_attrs.difficulty})")
+              Mix.shell().info(
+                "  ⟳ Updated word: #{word_attrs.text} (type: #{word_attrs.word_type}, difficulty: #{word_attrs.difficulty})"
+              )
+
               :ok
 
             {:error, changeset} ->
@@ -244,10 +248,10 @@ defmodule Mix.Tasks.Medoru.SeedWords do
   defp should_update?(existing, new_attrs) do
     # Update if word_type changed from default :other
     type_changed = existing.word_type == :other && new_attrs.word_type != :other
-    
+
     # Update if difficulty changed from default 3
     difficulty_changed = existing.difficulty == 3 && new_attrs.difficulty != 3
-    
+
     type_changed || difficulty_changed
   end
 
@@ -263,6 +267,7 @@ defmodule Mix.Tasks.Medoru.SeedWords do
   # Normalize word type to atom
   defp normalize_word_type(nil), do: :other
   defp normalize_word_type(type) when is_atom(type), do: type
+
   defp normalize_word_type(type) when is_binary(type) do
     case String.downcase(type) do
       "noun" -> :noun
@@ -276,6 +281,7 @@ defmodule Mix.Tasks.Medoru.SeedWords do
       _ -> :other
     end
   end
+
   defp normalize_word_type(_), do: :other
 
   defp show_stats do

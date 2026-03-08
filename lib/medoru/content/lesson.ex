@@ -19,17 +19,21 @@ defmodule Medoru.Content.Lesson do
 
     has_many :lesson_words, Medoru.Content.LessonWord, preload_order: [asc: :position]
 
+    # Associated test for lesson completion
+    belongs_to :test, Medoru.Tests.Test
+
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(lesson, attrs) do
     lesson
-    |> cast(attrs, [:title, :description, :difficulty, :order_index, :lesson_type])
+    |> cast(attrs, [:title, :description, :difficulty, :order_index, :lesson_type, :test_id])
     |> validate_required([:title, :description, :difficulty, :order_index, :lesson_type])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:order_index, greater_than_or_equal_to: 0)
     |> validate_inclusion(:lesson_type, @lesson_types)
+    |> foreign_key_constraint(:test_id)
     |> unique_constraint([:difficulty, :order_index])
   end
 end

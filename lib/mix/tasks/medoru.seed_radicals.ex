@@ -25,18 +25,19 @@ defmodule Mix.Tasks.Medoru.SeedRadicals do
 
   @impl true
   def run(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      switches: [
-        all: :boolean,
-        level: :string,
-        file: :string
-      ],
-      aliases: [
-        a: :all,
-        l: :level,
-        f: :file
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        switches: [
+          all: :boolean,
+          level: :string,
+          file: :string
+        ],
+        aliases: [
+          a: :all,
+          l: :level,
+          f: :file
+        ]
+      )
 
     # Start the application
     Mix.Task.run("app.start")
@@ -87,7 +88,11 @@ defmodule Mix.Tasks.Medoru.SeedRadicals do
     unless File.exists?(file_path) do
       Mix.shell().error("File not found: #{file_path}")
       Mix.shell().info("Make sure you've exported the kanji with radicals:")
-      Mix.shell().info("  medoru-data export-full --level N5 --output data/seeds/kanji_n5_full.json")
+
+      Mix.shell().info(
+        "  medoru-data export-full --level N5 --output data/seeds/kanji_n5_full.json"
+      )
+
       Mix.shell().info("  cp data/seeds/kanji_n5_full.json priv/repo/seeds/")
       {:error, :file_not_found}
     else

@@ -48,6 +48,17 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Lesson Test routes (require authentication)
+  scope "/", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :lesson_test,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/lessons/:lesson_id/test", LessonTestLive.Show
+      live "/lessons/:lesson_id/test/complete", LessonTestLive.Complete
+    end
+  end
+
   # OAuth routes
   scope "/auth", MedoruWeb do
     pipe_through :browser

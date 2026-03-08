@@ -74,6 +74,7 @@ defmodule Mix.Tasks.Medoru.FixWordReadings do
   end
 
   defp parse_level(nil), do: nil
+
   defp parse_level(level) when is_binary(level) do
     case String.upcase(level) do
       "N5" -> 5
@@ -205,6 +206,7 @@ defmodule Mix.Tasks.Medoru.FixWordReadings do
     |> String.graphemes()
     |> Enum.count(fn char ->
       codepoint = :binary.first(char)
+
       (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or
         (codepoint >= 0x3400 and codepoint <= 0x4DBF)
     end)
@@ -216,8 +218,9 @@ defmodule Mix.Tasks.Medoru.FixWordReadings do
     |> Enum.with_index()
     |> Enum.find_value(fn {char, idx} ->
       codepoint = :binary.first(char)
+
       if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or
-         (codepoint >= 0x3400 and codepoint <= 0x4DBF) do
+           (codepoint >= 0x3400 and codepoint <= 0x4DBF) do
         idx
       else
         nil

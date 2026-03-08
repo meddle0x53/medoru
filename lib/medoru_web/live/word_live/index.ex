@@ -71,7 +71,7 @@ defmodule MedoruWeb.WordLive.Index do
   @impl true
   def handle_event("sort", %{"sort_by" => sort_by}, socket) do
     sort_by_atom = String.to_existing_atom(sort_by)
-    
+
     # Toggle sort order if clicking same column
     sort_order =
       if socket.assigns.sort_by == sort_by_atom do
@@ -80,14 +80,15 @@ defmodule MedoruWeb.WordLive.Index do
         default_order(sort_by_atom)
       end
 
-    params = [
-      difficulty: socket.assigns.difficulty,
-      search: socket.assigns.search,
-      page: 1,
-      sort_by: sort_by,
-      sort_order: sort_order
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+    params =
+      [
+        difficulty: socket.assigns.difficulty,
+        search: socket.assigns.search,
+        page: 1,
+        sort_by: sort_by,
+        sort_order: sort_order
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) end)
 
     {:noreply, push_patch(socket, to: ~p"/words?#{params}")}
   end

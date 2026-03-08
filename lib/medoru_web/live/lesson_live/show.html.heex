@@ -163,6 +163,27 @@
         <% end %>
       </.link>
 
+      <%!-- Test Button - Available after starting lesson --%>
+      <%= if @current_scope && @current_scope.current_user && @lesson_progress do %>
+        <.link
+          navigate={~p"/lessons/#{@lesson.id}/test"}
+          class={[
+            "px-6 py-4 rounded-xl font-medium transition-all shadow-sm hover:shadow-md text-center active:scale-[0.98] flex items-center justify-center gap-2",
+            if @lesson_progress.status == :completed do
+              "bg-success hover:bg-success/90 text-success-content"
+            else
+              "bg-secondary hover:bg-secondary/90 text-secondary-content"
+            end
+          ]}
+        >
+          <%= if @lesson_progress.status == :completed do %>
+            <.icon name="hero-trophy" class="w-5 h-5" /> Retake Test
+          <% else %>
+            <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> Take Test
+          <% end %>
+        </.link>
+      <% end %>
+
       <.link
         navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
         class="px-6 py-4 rounded-xl font-medium text-secondary bg-base-200 hover:bg-base-300

@@ -55,23 +55,25 @@ defmodule MedoruWeb.LessonLive.Index do
 
   @impl true
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
-    params = [
-      difficulty: socket.assigns.difficulty,
-      search: query,
-      page: 1
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+    params =
+      [
+        difficulty: socket.assigns.difficulty,
+        search: query,
+        page: 1
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) end)
 
     {:noreply, push_patch(socket, to: ~p"/lessons?#{params}")}
   end
 
   @impl true
   def handle_event("clear_search", _params, socket) do
-    params = [
-      difficulty: socket.assigns.difficulty,
-      page: 1
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+    params =
+      [
+        difficulty: socket.assigns.difficulty,
+        page: 1
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) end)
 
     {:noreply, push_patch(socket, to: ~p"/lessons?#{params}")}
   end

@@ -93,8 +93,13 @@
                   <div class="text-3xl mb-1 text-base-content group-hover:text-primary transition-colors">
                     {word_kanji.kanji.character}
                   </div>
-                  <% kanji_reading = (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) || 
-                       Medoru.Content.extract_kanji_reading(@word.text, @word.reading, word_kanji.kanji.character) %>
+                  <% kanji_reading =
+                    (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) ||
+                      Medoru.Content.extract_kanji_reading(
+                        @word.text,
+                        @word.reading,
+                        word_kanji.kanji.character
+                      ) %>
                   <%= if kanji_reading && kanji_reading != "" do %>
                     <div class="text-sm text-primary font-medium">
                       {kanji_reading}

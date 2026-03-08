@@ -3,16 +3,16 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
   Generates system vocabulary lessons with optimized kanji and word-type progression.
 
   This version implements a pedagogically sound lesson structure:
-  
+
   1. **Phase 1: Short Focus Lessons** (Single kanji, short words only - 2-3 chars)
      - Numbers → Time → Directions → Common descriptors
      - Builds foundational kanji recognition with easy words
-  
+
   2. **Phase 2: Themed Mixed Lessons** (Categorized by word type, interleaved)
      - Pattern: 2-3 Noun lessons → 1 Verb lesson → 1 Adjective lesson → repeat
      - Within each type, ordered by complexity (kana-only → single kanji → compound)
      - Thematic grouping (family, food, actions, descriptions)
-  
+
   3. **Phase 3: Compound & Complex** (Multi-kanji words, expressions)
      - Building on learned kanji
      - Real-world phrases and expressions
@@ -48,24 +48,137 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
   # Research-based kanji learning order
   @kanji_priority [
     # Tier 1: Numbers (Essential building blocks)
-    "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万",
+    "一",
+    "二",
+    "三",
+    "四",
+    "五",
+    "六",
+    "七",
+    "八",
+    "九",
+    "十",
+    "百",
+    "千",
+    "万",
     # Tier 2: Time/Date (Daily life essential)
-    "日", "月", "年", "時", "分", "週", "間", "朝", "昼", "夜", "今", "昨", "明",
+    "日",
+    "月",
+    "年",
+    "時",
+    "分",
+    "週",
+    "間",
+    "朝",
+    "昼",
+    "夜",
+    "今",
+    "昨",
+    "明",
     # Tier 3: Direction/Location (Spatial understanding)
-    "上", "下", "中", "左", "右", "前", "後", "外", "内", "東", "西", "南", "北",
-    "近", "遠", "方", "場",
+    "上",
+    "下",
+    "中",
+    "左",
+    "右",
+    "前",
+    "後",
+    "外",
+    "内",
+    "東",
+    "西",
+    "南",
+    "北",
+    "近",
+    "遠",
+    "方",
+    "場",
     # Tier 4: Common descriptors (Adjective foundations)
-    "大", "小", "高", "低", "長", "短", "新", "古", "多", "少", "良", "悪",
-    "早", "遅", "易", "難", "暑", "寒", "楽",
+    "大",
+    "小",
+    "高",
+    "低",
+    "長",
+    "短",
+    "新",
+    "古",
+    "多",
+    "少",
+    "良",
+    "悪",
+    "早",
+    "遅",
+    "易",
+    "難",
+    "暑",
+    "寒",
+    "楽",
     # Tier 5: People/Social (Human interactions)
-    "人", "子", "女", "男", "友", "先", "生", "母", "父", "兄", "弟", "姉", "妹",
-    "名", "家", "自", "他", "私", "君",
+    "人",
+    "子",
+    "女",
+    "男",
+    "友",
+    "先",
+    "生",
+    "母",
+    "父",
+    "兄",
+    "弟",
+    "姉",
+    "妹",
+    "名",
+    "家",
+    "自",
+    "他",
+    "私",
+    "君",
     # Tier 6: Nature/Elements (Physical world)
-    "山", "川", "田", "天", "気", "火", "水", "木", "金", "土", "空", "雨",
-    "風", "雪", "花", "草", "林", "森", "海", "石",
+    "山",
+    "川",
+    "田",
+    "天",
+    "気",
+    "火",
+    "水",
+    "木",
+    "金",
+    "土",
+    "空",
+    "雨",
+    "風",
+    "雪",
+    "花",
+    "草",
+    "林",
+    "森",
+    "海",
+    "石",
     # Tier 7: Actions (Verb foundations)
-    "見", "行", "来", "食", "飲", "話", "読", "書", "聞", "言", "思", "知",
-    "入", "出", "立", "会", "買", "売", "待", "持", "住", "作", "使", "開"
+    "見",
+    "行",
+    "来",
+    "食",
+    "飲",
+    "話",
+    "読",
+    "書",
+    "聞",
+    "言",
+    "思",
+    "知",
+    "入",
+    "出",
+    "立",
+    "会",
+    "買",
+    "売",
+    "待",
+    "持",
+    "住",
+    "作",
+    "使",
+    "開"
   ]
 
   # Thematic categories for future use
@@ -110,6 +223,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
   end
 
   defp parse_level(nil), do: nil
+
   defp parse_level(level) when is_binary(level) do
     case String.upcase(level) do
       "N5" -> 5
@@ -185,11 +299,16 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
       # Determine complexity score
       complexity =
         case {word_length, kanji_count} do
-          {l, 0} when l <= 3 -> 1  # Short kana words
-          {l, 1} when l <= 3 -> 2  # Short single-kanji
-          {l, 1} when l <= 5 -> 3  # Medium single-kanji
-          {_, 2} -> 4              # Two-kanji
-          {_, _} -> 5              # Complex
+          # Short kana words
+          {l, 0} when l <= 3 -> 1
+          # Short single-kanji
+          {l, 1} when l <= 3 -> 2
+          # Medium single-kanji
+          {l, 1} when l <= 5 -> 3
+          # Two-kanji
+          {_, 2} -> 4
+          # Complex
+          {_, _} -> 5
         end
 
       # Get priority for first kanji
@@ -257,10 +376,12 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
       |> Enum.flat_map(fn {_kanji, words} ->
         words
         |> Enum.chunk_every(@words_per_lesson)
-        |> Enum.take(2)  # Max 2 lessons per kanji in focus phase
+        # Max 2 lessons per kanji in focus phase
+        |> Enum.take(2)
       end)
 
-    {focus_lessons, remaining ++ (focus_eligible -- Enum.concat(Enum.map(focus_by_kanji, fn {_, w} -> w end)))}
+    {focus_lessons,
+     remaining ++ (focus_eligible -- Enum.concat(Enum.map(focus_by_kanji, fn {_, w} -> w end)))}
   end
 
   # Phase 2: Build themed lessons with interleaved word types
@@ -272,7 +393,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
     verbs = Map.get(by_type, :verb, [])
     adjectives = Map.get(by_type, :adjective, [])
     adverbs = Map.get(by_type, :adverb, [])
-    others = (Map.get(by_type, :other, []) ++ Map.get(by_type, :expression, []))
+    others = Map.get(by_type, :other, []) ++ Map.get(by_type, :expression, [])
 
     # Sort each by complexity then frequency
     nouns = Enum.sort_by(nouns, &{&1.complexity, &1.frequency})
@@ -286,16 +407,18 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
   end
 
   defp build_interleaved_lessons([], [], [], [], [], acc), do: Enum.reverse(acc)
+
   defp build_interleaved_lessons(nouns, verbs, adjectives, adverbs, others, acc) do
     # Take 2-3 noun lessons
-    {noun_chunks, nouns_rest} = take_lessons(nouns, 2 + rem(length(acc), 2))  # Alternate 2,3,2,3...
-    
+    # Alternate 2,3,2,3...
+    {noun_chunks, nouns_rest} = take_lessons(nouns, 2 + rem(length(acc), 2))
+
     # Take 1 verb lesson
     {verb_chunks, verbs_rest} = take_lessons(verbs, 1)
-    
+
     # Take 1 adjective lesson
     {adj_chunks, adj_rest} = take_lessons(adjectives, 1)
-    
+
     # Add any adverbs/others as fillers
     {filler_chunks, others_rest} = take_lessons(adverbs ++ others, 1)
 
@@ -304,7 +427,14 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
     if new_lessons == [] do
       Enum.reverse(acc)
     else
-      build_interleaved_lessons(nouns_rest, verbs_rest, adj_rest, [], others_rest, new_lessons ++ acc)
+      build_interleaved_lessons(
+        nouns_rest,
+        verbs_rest,
+        adj_rest,
+        [],
+        others_rest,
+        new_lessons ++ acc
+      )
     end
   end
 
@@ -370,7 +500,8 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
 
     cond do
       # Phase 1: Focus lessons (single kanji, short)
-      length(words) <= @words_per_lesson and length(all_kanji) == 1 and String.length(first_word.text) <= 3 ->
+      length(words) <= @words_per_lesson and length(all_kanji) == 1 and
+          String.length(first_word.text) <= 3 ->
         kanji = hd(all_kanji)
         tier = get_kanji_tier(kanji)
         "#{kanji} Basics #{tier}"
@@ -388,20 +519,28 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
 
   defp get_kanji_tier(kanji) do
     idx = Enum.find_index(@kanji_priority, &(&1 == kanji))
+
     cond do
-      idx < 13 -> "①"  # Numbers
-      idx < 26 -> "②"  # Time
-      idx < 39 -> "③"  # Directions
-      idx < 52 -> "④"  # Descriptors
-      idx < 65 -> "⑤"  # People
-      idx < 78 -> "⑥"  # Nature
-      true -> "⑦"      # Actions
+      # Numbers
+      idx < 13 -> "①"
+      # Time
+      idx < 26 -> "②"
+      # Directions
+      idx < 39 -> "③"
+      # Descriptors
+      idx < 52 -> "④"
+      # People
+      idx < 65 -> "⑤"
+      # Nature
+      idx < 78 -> "⑥"
+      # Actions
+      true -> "⑦"
     end
   end
 
   defp generate_lesson_description(words, word_data_list) do
     word_texts = Enum.map(words, & &1.text) |> Enum.join(", ")
-    
+
     type_counts =
       word_data_list
       |> Enum.group_by(& &1.word_type)
@@ -492,7 +631,10 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
     Mix.shell().info("  Phase 2: Themed Mixed (2-3 noun → 1 verb → 1 adj cycles)")
     Mix.shell().info("")
     Mix.shell().info("Progression:")
-    Mix.shell().info("  ① Numbers → ② Time → ③ Directions → ④ Descriptors → ⑤ People → ⑥ Nature → ⑦ Actions")
+
+    Mix.shell().info(
+      "  ① Numbers → ② Time → ③ Directions → ④ Descriptors → ⑤ People → ⑥ Nature → ⑦ Actions"
+    )
   end
 
   defp return, do: :ok

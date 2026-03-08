@@ -77,6 +77,7 @@ defmodule Medoru.Release.Seeds.Kanjidic2 do
                       # Update radicals
                       radical_list = radicals || [radical]
                       current_radicals = kanji.radicals || []
+
                       updates =
                         if radical_list != [] and radical_list != current_radicals do
                           Map.put(updates, :radicals, radical_list)
@@ -102,6 +103,7 @@ defmodule Medoru.Release.Seeds.Kanjidic2 do
                         end
 
                       original_stroke_data = kanji.stroke_data || %{}
+
                       updates =
                         if stroke_data != original_stroke_data do
                           Map.put(updates, :stroke_data, stroke_data)
@@ -119,6 +121,7 @@ defmodule Medoru.Release.Seeds.Kanjidic2 do
                             Logger.error(
                               "Failed to update metadata for #{char}: #{inspect(changeset.errors)}"
                             )
+
                             count
                         end
                       else

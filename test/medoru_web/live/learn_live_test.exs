@@ -101,10 +101,13 @@ defmodule MedoruWeb.LearnLiveTest do
       |> element("button[class*='bg-primary']", "Finish")
       |> render_click()
 
-      assert render(view) =~ "Lesson Complete!"
+      assert render(view) =~ "Ready for the Test?"
     end
 
-    test "completing lesson sets progress to 100%", %{conn: conn, lesson: lesson} do
+    test "finishing learning flow shows test prompt but doesn't complete lesson", %{
+      conn: conn,
+      lesson: lesson
+    } do
       user = user_fixture()
       conn = log_in_user(conn, user)
 
@@ -115,12 +118,11 @@ defmodule MedoruWeb.LearnLiveTest do
       |> element("button", "Finish Early")
       |> render_click()
 
-      assert render(view) =~ "Lesson Complete!"
+      assert render(view) =~ "Ready for the Test?"
 
-      # Verify lesson progress is 100% in database
+      # Lesson should NOT be completed yet (only after passing test)
       progress = Medoru.Learning.get_lesson_progress(user.id, lesson.id)
-      assert progress.status == :completed
-      assert progress.progress_percentage == 100
+      assert progress.status == :started
     end
 
     test "marking word as learned tracks progress", %{conn: conn, lesson: lesson} do
@@ -150,10 +152,10 @@ defmodule MedoruWeb.LearnLiveTest do
       |> element("button", "Finish Early")
       |> render_click()
 
-      assert render(view) =~ "Lesson Complete!"
+      assert render(view) =~ "Ready for the Test?"
     end
 
-    test "returning to lesson page from completion", %{conn: conn, lesson: lesson} do
+    test "returning to lesson page from test prompt", %{conn: conn, lesson: lesson} do
       {:ok, view, _html} = live(conn, ~p"/lessons/#{lesson.id}/learn")
 
       # Finish lesson
@@ -161,14 +163,13 @@ defmodule MedoruWeb.LearnLiveTest do
       |> element("button", "Finish Early")
       |> render_click()
 
-      assert render(view) =~ "Lesson Complete!"
+      assert render(view) =~ "Ready for the Test?"
 
-      # Click back to lesson
-      {:ok, _view, _html} =
-        view
-        |> element("button[class*='bg-primary']", "Back to Lesson")
-        |> render_click()
-        |> follow_redirect(conn, ~p"/lessons/#{lesson.id}")
+      # Verify Review Lesson link exists
+      assert has_element?(view, "a", "Review Lesson")
+
+      # Verify Take Test link exists
+      assert has_element?(view, "a", "Take Test")
     end
 
     test "shows progress bar", %{conn: conn, lesson: lesson} do

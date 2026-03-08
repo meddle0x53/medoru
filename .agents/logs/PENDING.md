@@ -9,23 +9,26 @@
 ## 🔴 HIGH PRIORITY (Core Learning Loop)
 
 ### Iteration 14: Multi-Step Test System Architecture
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
-**Files to Create**:
-- `lib/medoru/tests/test.ex` - Schema
-- `lib/medoru/tests/test_step.ex` - Schema  
-- `lib/medoru/tests/test_session.ex` - Schema
-- `lib/medoru/tests/test_step_answer.ex` - Schema
-- `lib/medoru/tests.ex` - Context
-- `priv/repo/migrations/*_create_tests.exs`
-- `priv/repo/migrations/*_create_test_steps.exs`
-- `priv/repo/migrations/*_create_test_sessions.exs`
-- `test/medoru/tests_test.exs`
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
+**Files Created**:
+- ✅ `lib/medoru/tests/test.ex` - Test schema with types (daily/lesson/teacher/practice)
+- ✅ `lib/medoru/tests/test_step.ex` - Step schema with question types (multichoice/fill/match/order)
+- ✅ `lib/medoru/tests/test_session.ex` - Session tracking (started/in_progress/completed/abandoned/timed_out)
+- ✅ `lib/medoru/tests/test_step_answer.ex` - Answer recording with penalty calculation
+- ✅ `lib/medoru/tests.ex` - Context with full CRUD and statistics
+- ✅ `priv/repo/migrations/*_create_tests.exs`
+- ✅ `priv/repo/migrations/*_create_test_steps.exs`
+- ✅ `priv/repo/migrations/*_create_test_sessions.exs`
+- ✅ `priv/repo/migrations/*_create_test_step_answers.exs`
+- ✅ `test/medoru/tests_test.exs` - 38 passing tests
 
-**Key Features**:
-- Test schema with steps (reading/writing/listening/grammar/speaking)
-- Sub-types: multichoice (1pt), fill (2pt)
-- TestSession tracks progress step-by-step
-- Step answers with time tracking
+**Key Features Implemented**:
+- Test schema with step types: reading, writing, listening, grammar, speaking, vocabulary
+- Question sub-types: multichoice (1pt), fill (2pt), match (2pt), order (2pt)
+- TestSession tracks progress step-by-step with time tracking
+- Step answers with penalty system (25% per extra attempt, 10% per hint)
+- Comprehensive statistics for users and tests
+- Full CRUD operations for tests, steps, sessions, and answers
 
 ---
 
@@ -47,11 +50,16 @@
 
 ## 🟡 MEDIUM PRIORITY (Content Expansion)
 
-### Iteration 17: Vocabulary Lesson System (Partially Complete)
-**Status**: 🟡 IN PROGRESS | **Estimated**: 2-3 days remaining  
+### Iteration 17: Vocabulary Lesson System ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
 **Files Created**:
 - ✅ `lib/mix/tasks/medoru.generate_lessons.ex` - System lesson generation
 - ✅ `LESSON_GENERATION.md` - Documentation
+- ✅ `lib/medoru/tests/lesson_test_generator.ex` - Auto-generates tests from lesson words
+- ✅ `lib/medoru/tests/lesson_test_session.ex` - Adaptive test sessions with retry logic
+- ✅ `lib/medoru_web/live/lesson_test_live/show.ex` - Test taking interface
+- ✅ `lib/medoru_web/live/lesson_test_live/complete.ex` - Test completion screen
+- ✅ `priv/repo/migrations/*_add_test_id_to_lessons.exs` - Lesson-test association
 
 **Completed**:
 - ✅ System lessons auto-generated from existing words
@@ -59,13 +67,11 @@
 - ✅ 3-5 words per lesson (4.0 avg)
 - ✅ Ordered by frequency (most common first)
 - ✅ Grouped by JLPT level (N5, N4, N3+)
-
-**Remaining**:
-- ⏳ Teacher custom lesson builder UI
-- ⏳ Lesson completion tracking
-- ⏳ Test integration at end of lessons
-- ⏳ Progress tracking per user
-- ⏳ Prerequisites (complete N5 before N4)
+- ✅ **Lesson tests auto-generated from words**
+- ✅ **3-4 multichoice steps per word (reading, meaning, reverse)**
+- ✅ **Adaptive retry: wrong answers go to end of queue**
+- ✅ **Test UI with progress tracking, hints, skip option**
+- ✅ **Lesson completion tracking via tests**
 
 **Usage**:
 ```bash
@@ -187,20 +193,22 @@ mix medoru.generate_lessons  # Generate all system lessons
 
 ## 📊 Summary
 
+**Completed**: 14/21 iterations (67%)
+
 | Priority | Iterations | Total Days |
 |----------|------------|------------|
-| 🔴 High | 14, 16 | 5-7 days |
-| 🟡 Medium | 13, 17 | 4-6 days |
+| 🔴 High | 14 ✅, 16 | 2-3 days |
+| 🟡 Medium | 13, 17 ✅ | 1-2 days |
 | 🟢 Lower | 15, 18, 19, 20, 21 | 12-17 days |
-| **Total** | **9** | **21-30 days** |
+| **Total** | **7** | **15-22 days** |
 
 ---
 
 ## 🎯 Recommended Order
 
-1. **Iteration 14** (Multi-Step Test) - Foundation for tests
-2. **Iteration 16** (Daily Tests) - Uses test system
-3. **Iteration 17** (Vocabulary Lessons) - Expand content
+1. **Iteration 14** ✅ (Multi-Step Test) - Foundation for tests
+2. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
+3. **Iteration 16** (Daily Tests) - Uses test system
 4. **Iteration 13** (Admin Badge Management) - Quick win
 5. **Iteration 15** (Teacher Test Creation) - Teacher features
 6. **Iteration 18** (Classroom Core) - Classroom foundation

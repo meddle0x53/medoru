@@ -1,0 +1,314 @@
+defmodule MedoruWeb.LessonTestLive.Show do
+  use MedoruWeb, :live_view
+
+  alias Medoru.Content
+  alias Medoru.Tests
+  alias Medoru.Tests.LessonTestSession
+
+  @impl true
+  def mount(%{"lesson_id" => lesson_id}, _session, socket) do
+    lesson = Content.get_lesson_with_words!(lesson_id)
+    user = socket.assigns.current_scope.current_user
+
+    # Always regenerate test to ensure fresh distractors
+    # Archive old test if exists
+    if lesson.test_id do
+      old_test = Tests.get_test!(lesson.test_id)
+      Tests.archive_test(old_test)
+    end
+
+    # Generate new test
+    {:ok, test} = Tests.generate_lesson_test(lesson_id)
+
+    # Check if user has started this lesson
+    lesson_progress = Medoru.Learning.get_lesson_progress(user.id, lesson_id)
+
+    socket =
+      socket
+      |> assign(:lesson, lesson)
+      |> assign(:test, test)
+      |> assign(:lesson_progress, lesson_progress)
+      |> assign(:page_title, "#{lesson.title} - Test")
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(_params, _uri, socket) do
+    # Start or resume test session
+    user = socket.assigns.current_scope.current_user
+    test = socket.assigns.test
+
+    case LessonTestSession.start_lesson_test(user.id, test.id) do
+      {:ok, %{session: session, current_step: step}} ->
+        state = LessonTestSession.get_session_state(session.id)
+
+        socket =
+          socket
+          |> assign(:session, session)
+          |> assign(:current_step, step)
+          |> assign(:session_state, state)
+          |> assign(:selected_answer, nil)
+          |> assign(:feedback, nil)
+          |> assign(:show_hint, false)
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Could not start test: #{inspect(reason)}")
+         |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_answer", %{"answer" => answer}, socket) do
+    {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  @impl true
+  def handle_event("submit_answer", _params, socket) do
+    answer = socket.assigns.selected_answer
+
+    if is_nil(answer) do
+      {:noreply, put_flash(socket, :error, "Please select an answer")}
+    else
+      session = socket.assigns.session
+      step = socket.assigns.current_step
+
+      # Submit answer
+      case LessonTestSession.submit_answer(session.id, step.id, answer, time_spent_seconds: 10) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:selected_answer, nil)
+            |> assign(:show_hint, false)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:selected_answer, nil)
+            |> assign(:show_hint, false)
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          # Mark lesson as completed
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("show_hint", _params, socket) do
+    {:noreply, assign(socket, :show_hint, true)}
+  end
+
+  @impl true
+  def handle_event("skip_question", _params, socket) do
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    {:ok, result} = LessonTestSession.skip_step(session.id, step.id)
+
+    socket =
+      socket
+      |> assign(:current_step, result.next_step)
+      |> assign(:session_state, LessonTestSession.get_session_state(session.id))
+      |> assign(:selected_answer, nil)
+      |> assign(:show_hint, false)
+      |> assign(:feedback, nil)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("clear_feedback", _params, socket) do
+    {:noreply, assign(socket, :feedback, nil)}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <div class="max-w-3xl mx-auto px-4 py-8">
+        <%!-- Header --%>
+        <div class="mb-8">
+          <div class="flex items-center gap-2 text-sm text-secondary mb-2">
+            <.link navigate={~p"/lessons/#{@lesson.id}"} class="hover:text-primary transition-colors">
+              ← Back to Lesson
+            </.link>
+          </div>
+          <h1 class="text-2xl font-bold text-base-content">{@lesson.title} - Test</h1>
+          <p class="text-secondary mt-1">Test your knowledge of the words in this lesson</p>
+        </div>
+
+        <%!-- Progress Bar --%>
+        <div class="mb-8">
+          <div class="flex justify-between text-sm mb-2">
+            <span class="text-secondary">
+              Question {@session_state.completed_steps + 1} of {@session_state.total_steps}
+            </span>
+            <span class="text-secondary">{@session_state.progress}% complete</span>
+          </div>
+          <div class="h-2 bg-base-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary transition-all duration-300"
+              style={"width: #{@session_state.progress}%"}
+            >
+            </div>
+          </div>
+          <%= if @session_state.wrong_answer_count > 0 do %>
+            <div class="text-sm text-warning mt-1">
+              Retries: {@session_state.wrong_answer_count}
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Question Card --%>
+        <%= if @current_step do %>
+          <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 mb-6">
+            <%!-- Question --%>
+            <div class="mb-6">
+              <h2 class="text-xl font-semibold text-base-content leading-relaxed">
+                {@current_step.question}
+              </h2>
+            </div>
+
+            <%!-- Hint --%>
+            <%= if @show_hint && List.first(@current_step.hints) do %>
+              <div class="bg-info/10 text-info rounded-lg p-3 mb-4">
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-light-bulb" class="w-5 h-5" />
+                  <span>{List.first(@current_step.hints)}</span>
+                </div>
+              </div>
+            <% end %>
+
+            <%!-- Answer Options --%>
+            <div class="space-y-3 mb-6">
+              <%= for option <- @current_step.options do %>
+                <button
+                  type="button"
+                  phx-click="select_answer"
+                  phx-value-answer={option}
+                  class={[
+                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
+                    if @selected_answer == option do
+                      "border-primary bg-primary/5"
+                    else
+                      "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                    end
+                  ]}
+                >
+                  <div class="flex items-center gap-3">
+                    <div class={[
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                      if @selected_answer == option do
+                        "border-primary bg-primary"
+                      else
+                        "border-base-300"
+                      end
+                    ]}>
+                      <%= if @selected_answer == option do %>
+                        <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
+                      <% end %>
+                    </div>
+                    <span class="text-base-content font-medium">{option}</span>
+                  </div>
+                </button>
+              <% end %>
+            </div>
+
+            <%!-- Actions --%>
+            <div class="flex flex-wrap gap-3">
+              <button
+                type="button"
+                phx-click="submit_answer"
+                disabled={is_nil(@selected_answer)}
+                class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Submit Answer
+              </button>
+
+              <%= if !@show_hint do %>
+                <button
+                  type="button"
+                  phx-click="show_hint"
+                  class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    <.icon name="hero-light-bulb" class="w-5 h-5" />
+                    <span>Hint</span>
+                  </div>
+                </button>
+              <% end %>
+
+              <button
+                type="button"
+                phx-click="skip_question"
+                class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
+              >
+                Skip →
+              </button>
+            </div>
+          </div>
+        <% else %>
+          <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-8 text-center">
+            <.icon name="hero-check-circle" class="w-16 h-16 text-success mx-auto mb-4" />
+            <h2 class="text-2xl font-bold text-base-content mb-2">Test Complete!</h2>
+            <p class="text-secondary mb-6">You've completed all questions in this lesson test.</p>
+            <.link
+              navigate={~p"/lessons/#{@lesson.id}"}
+              class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+            >
+              Back to Lesson
+            </.link>
+          </div>
+        <% end %>
+
+        <%!-- Feedback Toast --%>
+        <%= case @feedback do %>
+          <% :correct -> %>
+            <div
+              class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-success text-success-content px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-2"
+              phx-click="clear_feedback"
+            >
+              <.icon name="hero-check-circle" class="w-5 h-5" />
+              <span class="font-medium">Correct! Well done.</span>
+            </div>
+          <% :incorrect -> %>
+            <div
+              class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-error text-error-content px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-2"
+              phx-click="clear_feedback"
+            >
+              <.icon name="hero-x-circle" class="w-5 h-5" />
+              <span class="font-medium">Not quite. Try again later!</span>
+            </div>
+          <% _ -> %>
+        <% end %>
+      </div>
+    </Layouts.app>
+    """
+  end
+end

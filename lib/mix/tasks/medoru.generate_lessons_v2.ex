@@ -165,7 +165,9 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV2 do
 
     all_lessons = kana_lessons ++ single_kanji_lessons ++ multi_kanji_lessons
 
-    Mix.shell().info("  Creating #{length(all_lessons)} lessons (#{length(kana_lessons)} kana, #{length(single_kanji_lessons)} single-kanji, #{length(multi_kanji_lessons)} multi-kanji)...")
+    Mix.shell().info(
+      "  Creating #{length(all_lessons)} lessons (#{length(kana_lessons)} kana, #{length(single_kanji_lessons)} single-kanji, #{length(multi_kanji_lessons)} multi-kanji)..."
+    )
 
     # Create lessons
     Enum.with_index(all_lessons, 1)

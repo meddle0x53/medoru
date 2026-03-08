@@ -275,7 +275,27 @@ defmodule Mix.Tasks.Medoru.GenerateLessons do
   end
 
   defp starts_with_particle?(text) do
-    particles = ["お", "ご", "は", "が", "を", "に", "で", "と", "の", "も", "や", "へ", "から", "より", "その", "この", "あの", "どの"]
+    particles = [
+      "お",
+      "ご",
+      "は",
+      "が",
+      "を",
+      "に",
+      "で",
+      "と",
+      "の",
+      "も",
+      "や",
+      "へ",
+      "から",
+      "より",
+      "その",
+      "この",
+      "あの",
+      "どの"
+    ]
+
     Enum.any?(particles, &String.starts_with?(text, &1))
   end
 
@@ -344,11 +364,13 @@ defmodule Mix.Tasks.Medoru.GenerateLessons do
 
     Enum.each([5, 4, 3, 2, 1], fn level ->
       count = Map.get(by_level, level, 0)
+
       word_count =
         from(lw in LessonWord,
           join: l in Lesson,
           on: lw.lesson_id == l.id,
-          where: l.difficulty == ^level and l.lesson_type == :reading and like(l.title, "%Vocabulary%")
+          where:
+            l.difficulty == ^level and l.lesson_type == :reading and like(l.title, "%Vocabulary%")
         )
         |> Repo.aggregate(:count, :id)
 

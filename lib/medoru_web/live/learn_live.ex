@@ -14,32 +14,32 @@ defmodule MedoruWeb.LearnLive do
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
       <div class="max-w-4xl mx-auto px-4 py-6">
         <%= if @completed do %>
-          <%!-- Completion Screen --%>
+          <%!-- Completion Screen - Redirect to Test --%>
           <div class="text-center py-12">
             <div class="w-24 h-24 bg-primary/15 rounded-full flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-check-badge" class="w-12 h-12 text-primary" />
             </div>
-            <h1 class="text-3xl font-bold text-base-content mb-3">Lesson Complete!</h1>
+            <h1 class="text-3xl font-bold text-base-content mb-3">Ready for the Test?</h1>
             <p class="text-lg text-secondary mb-2">
               You've finished learning <strong>{@lesson.title}</strong>
             </p>
             <p class="text-secondary mb-8">
-              You've studied {length(@words)} words
+              Now take the test to complete the lesson and track your progress!
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                phx-click="finish"
-                class="bg-primary hover:bg-primary/90 text-primary-content px-8 py-3 rounded-xl font-medium
-                       transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
-              >
-                Back to Lesson
-              </button>
               <.link
-                navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
-                class="px-8 py-3 rounded-xl font-medium text-base-content bg-base-200 hover:bg-base-300
-                       transition-colors"
+                navigate={~p"/lessons/#{@lesson.id}/test"}
+                class="bg-primary hover:bg-primary/90 text-primary-content px-8 py-3 rounded-xl font-medium
+                       transition-all shadow-sm hover:shadow-md active:scale-[0.98] inline-flex items-center justify-center gap-2"
               >
-                Browse More Lessons
+                <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> Take Test
+              </.link>
+              <.link
+                navigate={~p"/lessons/#{@lesson.id}"}
+                class="px-8 py-3 rounded-xl font-medium text-base-content bg-base-200 hover:bg-base-300
+                       transition-colors inline-flex items-center justify-center"
+              >
+                Review Lesson
               </.link>
             </div>
           </div>
@@ -101,9 +101,15 @@ defmodule MedoruWeb.LearnLive do
                         </span>
                       </div>
                       <div class="flex-1 min-w-0">
-                        <% kanji_reading = (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) || 
-                             Content.extract_kanji_reading(@current_word.text, @current_word.reading, word_kanji.kanji.character)
-                           kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji %>
+                        <% kanji_reading =
+                          (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) ||
+                            Content.extract_kanji_reading(
+                              @current_word.text,
+                              @current_word.reading,
+                              word_kanji.kanji.character
+                            )
+
+                        kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji %>
                         <%= if kanji_reading && kanji_reading != "" do %>
                           <div class="text-sm font-medium text-base-content mb-1">
                             {kanji_reading}
@@ -138,13 +144,24 @@ defmodule MedoruWeb.LearnLive do
                           {word_kanji.kanji.character}
                         </span>
                         <div>
-                          <% kanji_reading = (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) || 
-                               Content.extract_kanji_reading(@current_word.text, @current_word.reading, word_kanji.kanji.character)
-                             kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji
-                             reading_type = word_kanji.kanji_reading && word_kanji.kanji_reading.reading_type %>
+                          <% kanji_reading =
+                            (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) ||
+                              Content.extract_kanji_reading(
+                                @current_word.text,
+                                @current_word.reading,
+                                word_kanji.kanji.character
+                              )
+
+                          kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji
+
+                          reading_type =
+                            word_kanji.kanji_reading && word_kanji.kanji_reading.reading_type %>
                           <%= if kanji_reading && kanji_reading != "" do %>
                             <div class="text-sm text-secondary">
-                              {kanji_reading} <%= if kanji_romaji do %>· {kanji_romaji}<% end %>
+                              {kanji_reading}
+                              <%= if kanji_romaji do %>
+                                · {kanji_romaji}
+                              <% end %>
                             </div>
                             <%= if reading_type do %>
                               <div class="text-xs text-secondary/70">
@@ -319,7 +336,8 @@ defmodule MedoruWeb.LearnLive do
 
   @impl true
   def handle_event("finish", _params, socket) do
-    {:noreply, push_navigate(socket, to: ~p"/lessons/#{socket.assigns.lesson.id}")}
+    # Redirect to test
+    {:noreply, push_navigate(socket, to: ~p"/lessons/#{socket.assigns.lesson.id}/test")}
   end
 
   @impl true
@@ -356,18 +374,12 @@ defmodule MedoruWeb.LearnLive do
   end
 
   defp complete_lesson(socket) do
-    lesson = socket.assigns.lesson
-
-    # Complete the lesson if user is authenticated
-    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-      user_id = socket.assigns.current_scope.current_user.id
-      Learning.complete_lesson(user_id, lesson.id)
-    end
-
+    # Note: Lesson is no longer marked as completed here
+    # The lesson is only completed when the user passes the test
     socket
     |> assign(:completed, true)
     |> assign(:progress_percentage, 100)
-    |> assign(:page_title, "Lesson Complete!")
+    |> assign(:page_title, "Ready for Test")
   end
 
   @doc """

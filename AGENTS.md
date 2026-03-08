@@ -67,32 +67,60 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - This allows words to correctly link to which reading they use (e.g., "日本" uses ニチ not ジツ)
 
 ### 3. Learning Context (`lib/medoru/learning/`)
-**Responsibility:** User progress, lessons, tests, daily reviews
+**Responsibility:** User progress, lessons, daily reviews, SRS scheduling
 
 **Key Schemas:**
 - `UserProgress` - Which kanji/words user has learned, mastery level
 - `LessonProgress` - Started/completed lessons, completion date
-- `TestSession` - Individual test attempt (score, duration, answers)
-- `TestAnswer` - Specific answer to a question
 - `DailyStreak` - Streak tracking, last study date
 - `ReviewSchedule` - SRS data (next review, interval, ease factor)
 
 **Key Functions:**
 - `start_lesson/2` - Begin lesson for user
 - `complete_lesson/2` - Finish lesson, update progress
-- `generate_daily_test/1` - Create review test based on SRS
-- `submit_test_answer/3` - Record answer, update mastery
-- `calculate_streak/1` - Update streak logic
+- `generate_daily_review/1` - Get due reviews + new words for daily study
+- `update_streak/1` - Update streak logic
+- `record_review/3` - Record SRS review with SM-2 algorithm
 
-**Test Configuration:**
-- Options count: 4-8 (configurable per user)
-- Question types: 
-  - `meaning_to_kanji` (show meaning, pick kanji)
-  - `reading_to_kanji` (show reading, pick kanji)
-  - `kanji_to_meaning` (show kanji, pick meaning)
-  - `kanji_to_reading` (show kanji, pick reading)
+### 4. Tests Context (`lib/medoru/tests/`)
+**Responsibility:** Multi-step test system for assessments and daily reviews
 
-### 4. Duels Context (`lib/medoru/duels/`)
+**Key Schemas:**
+- `Test` - Test definition (daily, lesson, teacher, practice types)
+- `TestStep` - Individual questions within a test
+- `TestSession` - User's attempt at a test (tracks progress step-by-step)
+- `TestStepAnswer` - User's answer to a specific step
+
+**Test Types:**
+- `:daily` - Auto-generated daily review test
+- `:lesson` - Test at the end of a lesson
+- `:teacher` - Custom test created by teachers
+- `:practice` - Self-practice test
+
+**Step Types:**
+- `:reading`, `:writing`, `:listening`, `:grammar`, `:speaking`, `:vocabulary`
+
+**Question Types:**
+- `:multichoice` - Multiple choice (1 point)
+- `:fill` - Fill in the blank (2 points)
+- `:match` - Matching pairs (2 points)
+- `:order` - Put in correct order (2 points)
+
+**Key Functions:**
+- `create_test/1`, `publish_test/1` - Test management
+- `create_test_step/2`, `create_test_steps/2` - Add questions
+- `start_test_session/2` - Begin taking a test
+- `record_step_answer/3` - Submit answer with auto-scoring
+- `complete_session/4` - Finish test and calculate score
+- `get_user_test_stats/1`, `get_test_stats/1` - Analytics
+
+**Scoring & Penalties:**
+- Base points based on question type
+- -25% per extra attempt beyond first
+- -10% per hint used
+- Minimum 10% of base points if correct
+
+### 5. Duels Context (`lib/medoru/duels/`)
 **Responsibility:** Real-time duels, matchmaking, rankings
 
 **Key Schemas:**
@@ -118,7 +146,7 @@ Word (id, text, meaning, difficulty, usage_frequency)
 6. Scoring: +10 correct, -5 wrong, +5 speed bonus (if < 5s)
 7. Winner: highest score, tie-breaker: fastest average time
 
-### 5. Gamification Context (`lib/medoru/gamification/`)
+### 6. Gamification Context (`lib/medoru/gamification/`)
 **Responsibility:** Scores, achievements, leaderboards
 
 **Key Schemas:**
@@ -168,6 +196,8 @@ Word (id, text, meaning, difficulty, usage_frequency)
 | 10 | Badge System | ✅ |
 | 11 | Logging Infrastructure | ✅ |
 | 12 | Kanji Stroke Animation | ✅ |
+| 14 | Multi-Step Test System | ✅ |
+| 17 | Vocabulary Lesson System | ✅ |
 
 ### ⏳ PENDING (Iterations 13-21) - See `.agents/logs/PENDING.md`
 | # | Feature | Priority |

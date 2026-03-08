@@ -4,7 +4,16 @@ defmodule Medoru.Content do
   """
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji, Lesson, LessonWord, KanjiReadingExtractor}
+
+  alias Medoru.Content.{
+    Kanji,
+    KanjiReading,
+    Word,
+    WordKanji,
+    Lesson,
+    LessonWord,
+    KanjiReadingExtractor
+  }
 
   # Kanji Functions
 
@@ -354,16 +363,20 @@ defmodule Medoru.Content do
     query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
 
     # Apply search filter (case-insensitive ILIKE for PostgreSQL)
-    query = if search && search != "" do
-      search_term = "%#{search}%"
-      where(query, [w],
-        ilike(w.text, ^search_term) or
-        ilike(w.reading, ^search_term) or
-        ilike(w.meaning, ^search_term)
-      )
-    else
-      query
-    end
+    query =
+      if search && search != "" do
+        search_term = "%#{search}%"
+
+        where(
+          query,
+          [w],
+          ilike(w.text, ^search_term) or
+            ilike(w.reading, ^search_term) or
+            ilike(w.meaning, ^search_term)
+        )
+      else
+        query
+      end
 
     # Get total count for pagination
     total_count = query |> select([w], count(w.id)) |> Repo.one()
@@ -801,12 +814,13 @@ defmodule Medoru.Content do
     query = if lesson_type, do: where(query, lesson_type: ^lesson_type), else: query
 
     # Apply search filter (case-insensitive ILIKE for PostgreSQL)
-    query = if search && search != "" do
-      search_term = "%#{search}%"
-      where(query, [l], ilike(l.title, ^search_term))
-    else
-      query
-    end
+    query =
+      if search && search != "" do
+        search_term = "%#{search}%"
+        where(query, [l], ilike(l.title, ^search_term))
+      else
+        query
+      end
 
     # Get total count for pagination
     total_count = query |> select([l], count(l.id)) |> Repo.one()
@@ -816,7 +830,12 @@ defmodule Medoru.Content do
     # 1. By difficulty (easiest N5 first - desc since 5 > 1)
     # 2. By order_index (lesson progression)
     # 3. By title length (shorter words first) as tiebreaker
-    query = order_by(query, [l], desc: l.difficulty, asc: l.order_index, asc: fragment("LENGTH(?)", l.title))
+    query =
+      order_by(query, [l],
+        desc: l.difficulty,
+        asc: l.order_index,
+        asc: fragment("LENGTH(?)", l.title)
+      )
 
     # Apply pagination
     offset = (page - 1) * per_page
@@ -1125,12 +1144,12 @@ defmodule Medoru.Content do
 
   @doc """
   Extracts the reading for a kanji in a word by analyzing the word text and reading.
-  
+
   This is useful when the word_kanji association doesn't have a linked reading.
   It works by comparing the kanji text with the hiragana/katakana reading.
-  
+
   ## Examples
-  
+
       iex> extract_kanji_reading("ついこの間", "ついこのあいだ", "間")
       "あいだ"
       
@@ -1145,9 +1164,9 @@ defmodule Medoru.Content do
 
   @doc """
   Returns a map of all kanji readings for a word.
-  
+
   ## Example
-  
+
       iex> extract_all_kanji_readings("ついこの間", "ついこのあいだ")
       %{"間" => "あいだ"}
   """

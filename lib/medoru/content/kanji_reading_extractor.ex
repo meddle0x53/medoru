@@ -1,7 +1,7 @@
 defmodule Medoru.Content.KanjiReadingExtractor do
   @moduledoc """
   Extracts kanji readings from words by comparing kanji forms with hiragana readings.
-  
+
   Uses a hybrid approach:
   1. Find matching kana prefix/suffix to isolate kanji portions
   2. For single kanji words, the entire remaining reading is the kanji reading
@@ -28,16 +28,16 @@ defmodule Medoru.Content.KanjiReadingExtractor do
   def extract_all_readings(word_text, word_reading) do
     text_chars = String.graphemes(word_text)
     reading_chars = String.graphemes(word_reading)
-    
+
     # Find common prefix (kana at start)
     {_prefix, text_rest, reading_rest} = find_common_prefix(text_chars, reading_chars)
-    
+
     # Find common suffix (kana at end, like okurigana)
     {_suffix, text_middle, reading_middle} = find_common_suffix(text_rest, reading_rest)
-    
+
     # Now text_middle contains just kanji, reading_middle contains their readings
     readings = match_kanji_to_readings(text_middle, reading_middle)
-    
+
     {:ok, readings}
   end
 
@@ -50,7 +50,7 @@ defmodule Medoru.Content.KanjiReadingExtractor do
         else
           find_common_prefix(t_rest, r_rest, [t | acc])
         end
-      
+
       _ ->
         {Enum.reverse(acc), text, reading}
     end
@@ -61,25 +61,25 @@ defmodule Medoru.Content.KanjiReadingExtractor do
     # Reverse both to find suffix
     text_rev = Enum.reverse(text)
     reading_rev = Enum.reverse(reading)
-    
+
     {suffix_rev, text_mid_rev, reading_mid_rev} = find_common_prefix(text_rev, reading_rev)
-    
+
     {Enum.reverse(suffix_rev), Enum.reverse(text_mid_rev), Enum.reverse(reading_mid_rev)}
   end
 
   # Matches kanji characters to their readings
   defp match_kanji_to_readings(text_chars, reading_chars) do
     kanji_list = Enum.filter(text_chars, &kanji?/1)
-    
+
     cond do
       # No kanji - empty result
       kanji_list == [] ->
         %{}
-      
+
       # Single kanji - entire reading belongs to it
       length(kanji_list) == 1 ->
         %{hd(kanji_list) => Enum.join(reading_chars)}
-      
+
       # Multiple kanji - try to segment using known readings
       true ->
         segment_multi_kanji(kanji_list, reading_chars)
@@ -89,16 +89,17 @@ defmodule Medoru.Content.KanjiReadingExtractor do
   # For multi-kanji words, try to segment the reading
   defp segment_multi_kanji(kanji_list, reading_chars) do
     reading = Enum.join(reading_chars)
-    
+
     # Try each kanji's known readings to find segment boundaries
     Enum.reduce(kanji_list, {%{}, reading}, fn kanji, {acc, remaining} ->
       known = get_known_readings(kanji)
-      
+
       # Find the longest known reading that matches the start of remaining
       case find_matching_reading(remaining, known) do
-        nil -> 
+        nil ->
           # No match - assign empty
           {Map.put(acc, kanji, ""), remaining}
+
         {match, rest} ->
           {Map.put(acc, kanji, match), rest}
       end
@@ -119,7 +120,8 @@ defmodule Medoru.Content.KanjiReadingExtractor do
   # Finds a known reading that matches the start of the word reading
   defp find_matching_reading(remaining, known_readings) do
     known_readings
-    |> Enum.sort_by(&String.length/1, :desc)  # Longest first
+    # Longest first
+    |> Enum.sort_by(&String.length/1, :desc)
     |> Enum.find_value(fn kr ->
       if String.starts_with?(remaining, kr) do
         rest = String.slice(remaining, String.length(kr)..-1)

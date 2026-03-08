@@ -39,29 +39,180 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV3 do
   # Research-based kanji learning order (prioritized by frequency and utility)
   @kanji_priority_order [
     # Numbers (Tier 1: Essential)
-    "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万",
+    "一",
+    "二",
+    "三",
+    "四",
+    "五",
+    "六",
+    "七",
+    "八",
+    "九",
+    "十",
+    "百",
+    "千",
+    "万",
     # Time/Date (Tier 2: Daily life essential)
-    "日", "月", "年", "時", "分", "週", "間", "朝", "昼", "夜", "今", "昨", "明",
+    "日",
+    "月",
+    "年",
+    "時",
+    "分",
+    "週",
+    "間",
+    "朝",
+    "昼",
+    "夜",
+    "今",
+    "昨",
+    "明",
     # Direction/Location (Tier 3: Spatial concepts)
-    "上", "下", "中", "左", "右", "前", "後", "外", "内", "東", "西", "南", "北",
+    "上",
+    "下",
+    "中",
+    "左",
+    "右",
+    "前",
+    "後",
+    "外",
+    "内",
+    "東",
+    "西",
+    "南",
+    "北",
     # Common descriptors (Tier 4: Adjectives/attributes)
-    "大", "小", "高", "低", "長", "短", "新", "古", "多", "少", "良", "悪", "早", "遅",
+    "大",
+    "小",
+    "高",
+    "低",
+    "長",
+    "短",
+    "新",
+    "古",
+    "多",
+    "少",
+    "良",
+    "悪",
+    "早",
+    "遅",
     # People (Tier 5: Social interactions)
-    "人", "子", "女", "男", "友", "先", "生", "母", "父", "兄", "弟", "姉", "妹",
-    "名", "家", "私", "自", "他", "方", "者",
+    "人",
+    "子",
+    "女",
+    "男",
+    "友",
+    "先",
+    "生",
+    "母",
+    "父",
+    "兄",
+    "弟",
+    "姉",
+    "妹",
+    "名",
+    "家",
+    "私",
+    "自",
+    "他",
+    "方",
+    "者",
     # Nature elements (Tier 6: Basic elements)
-    "山", "川", "田", "天", "気", "火", "水", "木", "金", "土", "空", "雨", "風",
-    "雪", "花", "草", "林", "森", "海", "川",
+    "山",
+    "川",
+    "田",
+    "天",
+    "気",
+    "火",
+    "水",
+    "木",
+    "金",
+    "土",
+    "空",
+    "雨",
+    "風",
+    "雪",
+    "花",
+    "草",
+    "林",
+    "森",
+    "海",
+    "川",
     # Common verbs/actions (Tier 7: Essential actions)
-    "見", "行", "来", "食", "飲", "話", "読", "書", "聞", "言", "思", "知",
-    "入", "出", "立", "会", "買", "売", "待", "持", "住", "作", "使", "開", "閉",
+    "見",
+    "行",
+    "来",
+    "食",
+    "飲",
+    "話",
+    "読",
+    "書",
+    "聞",
+    "言",
+    "思",
+    "知",
+    "入",
+    "出",
+    "立",
+    "会",
+    "買",
+    "売",
+    "待",
+    "持",
+    "住",
+    "作",
+    "使",
+    "開",
+    "閉",
     # School/learning (Tier 8: Education context)
-    "学", "校", "教", "室", "本", "文", "字", "語", "英", "算", "数", "理",
+    "学",
+    "校",
+    "教",
+    "室",
+    "本",
+    "文",
+    "字",
+    "語",
+    "英",
+    "算",
+    "数",
+    "理",
     # Common objects/places (Tier 9)
-    "車", "道", "店", "駅", "国", "市", "村", "町", "社", "店", "院", "館",
+    "車",
+    "道",
+    "店",
+    "駅",
+    "国",
+    "市",
+    "村",
+    "町",
+    "社",
+    "店",
+    "院",
+    "館",
     # Abstract/common (Tier 10)
-    "事", "物", "思", "言", "手", "目", "口", "耳", "心", "力", "体", "頭",
-    "顔", "足", "道", "社", "員", "月", "曜", "番", "毎", "何", "万"
+    "事",
+    "物",
+    "思",
+    "言",
+    "手",
+    "目",
+    "口",
+    "耳",
+    "心",
+    "力",
+    "体",
+    "頭",
+    "顔",
+    "足",
+    "道",
+    "社",
+    "員",
+    "月",
+    "曜",
+    "番",
+    "毎",
+    "何",
+    "万"
   ]
 
   @impl true
@@ -103,6 +254,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV3 do
   end
 
   defp parse_level(nil), do: nil
+
   defp parse_level(level) when is_binary(level) do
     case String.upcase(level) do
       "N5" -> 5
@@ -199,10 +351,16 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV3 do
     multi_kanji_lessons = build_multi_kanji_lessons(multi_kanji, @words_per_lesson)
 
     # Combine: kana first, then prioritized single kanji, then multi-kanji
-    all_lessons = chunk_into_lessons(kana_words, @words_per_lesson) ++ single_kanji_lessons ++ multi_kanji_lessons
+    all_lessons =
+      chunk_into_lessons(kana_words, @words_per_lesson) ++
+        single_kanji_lessons ++ multi_kanji_lessons
 
     Mix.shell().info("  Creating #{length(all_lessons)} lessons")
-    Mix.shell().info("    - Kana: #{length(chunk_into_lessons(kana_words, @words_per_lesson))} lessons")
+
+    Mix.shell().info(
+      "    - Kana: #{length(chunk_into_lessons(kana_words, @words_per_lesson))} lessons"
+    )
+
     Mix.shell().info("    - Single kanji: #{length(single_kanji_lessons)} lessons")
     Mix.shell().info("    - Multi-kanji: #{length(multi_kanji_lessons)} lessons")
 

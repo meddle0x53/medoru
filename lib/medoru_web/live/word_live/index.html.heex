@@ -116,7 +116,12 @@
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </form>
     </div>
@@ -199,12 +204,23 @@
               <span class={[
                 "px-2 py-0.5 rounded text-xs font-medium",
                 case word.difficulty do
-                  5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                  4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
-                  3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                  2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
-                  1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+                  5 ->
+                    "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+
+                  4 ->
+                    "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+
+                  3 ->
+                    "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+
+                  2 ->
+                    "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+                  1 ->
+                    "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+
+                  _ ->
+                    "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
                 end
               ]}>
                 N{word.difficulty}
@@ -252,7 +268,8 @@
           <div class="flex items-center gap-1">
             <% start_page = max(1, @page - 2) %>
             <% end_page = min(@total_pages, start_page + 4) %>
-            <% start_page = if end_page - start_page < 4, do: max(1, end_page - 4), else: start_page %>
+            <% start_page =
+              if end_page - start_page < 4, do: max(1, end_page - 4), else: start_page %>
 
             <%= if start_page > 1 do %>
               <.link
