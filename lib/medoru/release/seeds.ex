@@ -110,4 +110,21 @@ defmodule Medoru.Release.Seeds do
     IO.puts("Seeding KanjiVG stroke data...")
     Medoru.Release.Seeds.KanjiVG.seed()
   end
+
+  @doc """
+  Seed all kanji from KANJIDIC2.
+  This imports comprehensive kanji data with readings, meanings, and JLPT levels.
+  """
+  def seed_kanjidic2 do
+    IO.puts("Seeding kanji from KANJIDIC2...")
+    Medoru.Release.Seeds.Kanjidic2.seed()
+  end
+
+  @doc """
+  Seed KANJIDIC2 kanji from a specific file path.
+  """
+  def seed_kanjidic2_from_file(path) do
+    IO.puts("Seeding kanji from KANJIDIC2 file: #{path}")
+    Medoru.Release.Seeds.Kanjidic2.seed_from_file(path)
+  end
 end

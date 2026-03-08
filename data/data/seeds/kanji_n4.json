@@ -1,0 +1,5123 @@
+{
+  "kanji": [
+    {
+      "character": "力",
+      "meanings": [
+        "Power",
+        "Strength",
+        "Strong",
+        "Strain",
+        "Bear Up",
+        "Exert"
+      ],
+      "stroke_count": 2,
+      "jlpt_level": 4,
+      "frequency": 62,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "リョク",
+          "romaji": "ryoku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "リキ",
+          "romaji": "riki"
+        },
+        {
+          "reading_type": "on",
+          "reading": "リイ",
+          "romaji": "rii"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ちから",
+          "romaji": "chikara"
+        }
+      ]
+    },
+    {
+      "character": "口",
+      "meanings": [
+        "Mouth"
+      ],
+      "stroke_count": 3,
+      "jlpt_level": 4,
+      "frequency": 284,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コウ",
+          "romaji": "kou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ク",
+          "romaji": "ku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "くち",
+          "romaji": "kuchi"
+        }
+      ]
+    },
+    {
+      "character": "工",
+      "meanings": [
+        "Craft",
+        "Construction",
+        "Katakana E Radical (no. 48)"
+      ],
+      "stroke_count": 3,
+      "jlpt_level": 4,
+      "frequency": 299,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コウ",
+          "romaji": "kou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ク",
+          "romaji": "ku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "グ",
+          "romaji": "gu"
+        }
+      ]
+    },
+    {
+      "character": "夕",
+      "meanings": [
+        "Evening"
+      ],
+      "stroke_count": 3,
+      "jlpt_level": 4,
+      "frequency": 924,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セキ",
+          "romaji": "seki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ゆう",
+          "romaji": "yuu"
+        }
+      ]
+    },
+    {
+      "character": "手",
+      "meanings": [
+        "Hand"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 60,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュ",
+          "romaji": "shu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ズ",
+          "romaji": "zu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "て",
+          "romaji": "te"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "て-",
+          "romaji": "tee"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-て",
+          "romaji": "-te"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た-",
+          "romaji": "taa"
+        }
+      ]
+    },
+    {
+      "character": "文",
+      "meanings": [
+        "Sentence",
+        "Literature",
+        "Style",
+        "Art",
+        "Decoration",
+        "Figures",
+        "Plan",
+        "Literary Radical (no. 67)"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 190,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ブン",
+          "romaji": "bun"
+        },
+        {
+          "reading_type": "on",
+          "reading": "モン",
+          "romaji": "mon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ふみ",
+          "romaji": "fumi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あや",
+          "romaji": "aya"
+        }
+      ]
+    },
+    {
+      "character": "犬",
+      "meanings": [
+        "Dog"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 1326,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケン",
+          "romaji": "ken"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いぬ",
+          "romaji": "inu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いぬ-",
+          "romaji": "inuu"
+        }
+      ]
+    },
+    {
+      "character": "正",
+      "meanings": [
+        "Correct",
+        "Justice",
+        "Righteous",
+        "10**40"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 143,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セイ",
+          "romaji": "sei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ショウ",
+          "romaji": "shou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ただ",
+          "romaji": "tada"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "まさ",
+          "romaji": "masa"
+        }
+      ]
+    },
+    {
+      "character": "田",
+      "meanings": [
+        "Rice Field",
+        "Rice Paddy"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 90,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "デン",
+          "romaji": "den"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        }
+      ]
+    },
+    {
+      "character": "目",
+      "meanings": [
+        "Eye",
+        "Class",
+        "Look",
+        "Insight",
+        "Experience",
+        "Care",
+        "Favor"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 76,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "モク",
+          "romaji": "moku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ボク",
+          "romaji": "boku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "め",
+          "romaji": "me"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-め",
+          "romaji": "-me"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ま-",
+          "romaji": "maa"
+        }
+      ]
+    },
+    {
+      "character": "立",
+      "meanings": [
+        "Stand Up",
+        "Rise",
+        "Set Up",
+        "Erect"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 58,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "リツ",
+          "romaji": "ritsu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "リュウ",
+          "romaji": "ryuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "リットル",
+          "romaji": "ritoru"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-た",
+          "romaji": "-ta"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たて-",
+          "romaji": "tatee"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-だ",
+          "romaji": "-da"
+        }
+      ]
+    },
+    {
+      "character": "元",
+      "meanings": [
+        "Beginning",
+        "Former Time",
+        "Origin"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 192,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ゲン",
+          "romaji": "gen"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ガン",
+          "romaji": "gan"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もと",
+          "romaji": "moto"
+        }
+      ]
+    },
+    {
+      "character": "公",
+      "meanings": [
+        "Public",
+        "Prince",
+        "Official",
+        "Governmental"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 118,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コウ",
+          "romaji": "kou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ク",
+          "romaji": "ku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おおやけ",
+          "romaji": "ooyake"
+        }
+      ]
+    },
+    {
+      "character": "切",
+      "meanings": [
+        "Cut",
+        "Cutoff",
+        "Be Sharp"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 324,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セツ",
+          "romaji": "setsu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "サイ",
+          "romaji": "sai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "き",
+          "romaji": "ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-き",
+          "romaji": "-ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ぎ",
+          "romaji": "-gi"
+        }
+      ]
+    },
+    {
+      "character": "少",
+      "meanings": [
+        "Few",
+        "Little"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 287,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ショウ",
+          "romaji": "shou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "すく",
+          "romaji": "suku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "すこ",
+          "romaji": "suko"
+        }
+      ]
+    },
+    {
+      "character": "心",
+      "meanings": [
+        "Heart",
+        "Mind",
+        "Spirit",
+        "Heart Radical (no. 61)"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 157,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シン",
+          "romaji": "shin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こころ",
+          "romaji": "kokoro"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ごころ",
+          "romaji": "-gokoro"
+        }
+      ]
+    },
+    {
+      "character": "方",
+      "meanings": [
+        "Direction",
+        "Person",
+        "Alternative"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 46,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ホウ",
+          "romaji": "hou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かた",
+          "romaji": "kata"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-かた",
+          "romaji": "-kata"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-がた",
+          "romaji": "-gata"
+        }
+      ]
+    },
+    {
+      "character": "牛",
+      "meanings": [
+        "Cow"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 1202,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ギュウ",
+          "romaji": "gyuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うし",
+          "romaji": "ushi"
+        }
+      ]
+    },
+    {
+      "character": "止",
+      "meanings": [
+        "Stop",
+        "Halt"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 310,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "と",
+          "romaji": "to"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ど",
+          "romaji": "-do"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-と",
+          "romaji": "-to"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とど",
+          "romaji": "todo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "や",
+          "romaji": "ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-や",
+          "romaji": "-ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "よ",
+          "romaji": "yo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-さ",
+          "romaji": "-sa"
+        }
+      ]
+    },
+    {
+      "character": "兄",
+      "meanings": [
+        "Elder Brother",
+        "Big Brother"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 1219,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケイ",
+          "romaji": "kei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "キョウ",
+          "romaji": "kyou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あに",
+          "romaji": "ani"
+        }
+      ]
+    },
+    {
+      "character": "冬",
+      "meanings": [
+        "Winter"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 1090,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "トウ",
+          "romaji": "tou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ふゆ",
+          "romaji": "fuyu"
+        }
+      ]
+    },
+    {
+      "character": "古",
+      "meanings": [
+        "Old"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 509,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コ",
+          "romaji": "ko"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ふる",
+          "romaji": "furu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ふる-",
+          "romaji": "furuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ふる",
+          "romaji": "-furu"
+        }
+      ]
+    },
+    {
+      "character": "台",
+      "meanings": [
+        "Pedestal",
+        "A Stand",
+        "Counter For Machines And Vehicles"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 262,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ダイ",
+          "romaji": "dai"
+        },
+        {
+          "reading_type": "on",
+          "reading": "タイ",
+          "romaji": "tai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うてな",
+          "romaji": "utena"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "われ",
+          "romaji": "ware"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つかさ",
+          "romaji": "tsukasa"
+        }
+      ]
+    },
+    {
+      "character": "広",
+      "meanings": [
+        "Wide",
+        "Broad",
+        "Spacious"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 263,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コウ",
+          "romaji": "kou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ひろ",
+          "romaji": "hiro"
+        }
+      ]
+    },
+    {
+      "character": "用",
+      "meanings": [
+        "Utilize",
+        "Business",
+        "Service",
+        "Use",
+        "Employ"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 107,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヨウ",
+          "romaji": "you"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もち",
+          "romaji": "mochi"
+        }
+      ]
+    },
+    {
+      "character": "世",
+      "meanings": [
+        "Generation",
+        "World",
+        "Society",
+        "Public"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 135,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セイ",
+          "romaji": "sei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "セ",
+          "romaji": "se"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ソウ",
+          "romaji": "sou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "よ",
+          "romaji": "yo"
+        }
+      ]
+    },
+    {
+      "character": "主",
+      "meanings": [
+        "Lord",
+        "Chief",
+        "Master",
+        "Main Thing",
+        "Principal"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 95,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュ",
+          "romaji": "shu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ス",
+          "romaji": "su"
+        },
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ぬし",
+          "romaji": "nushi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おも",
+          "romaji": "omo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あるじ",
+          "romaji": "aruji"
+        }
+      ]
+    },
+    {
+      "character": "代",
+      "meanings": [
+        "Substitute",
+        "Change",
+        "Convert",
+        "Replace",
+        "Period",
+        "Age",
+        "Counter For Decades Of Ages, Eras, Etc.",
+        "Generation",
+        "Charge",
+        "Rate",
+        "Fee"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 66,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ダイ",
+          "romaji": "dai"
+        },
+        {
+          "reading_type": "on",
+          "reading": "タイ",
+          "romaji": "tai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "か",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かわ",
+          "romaji": "kawa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-がわ",
+          "romaji": "-gawa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-が",
+          "romaji": "-ga"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "よ",
+          "romaji": "yo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "しろ",
+          "romaji": "shiro"
+        }
+      ]
+    },
+    {
+      "character": "写",
+      "meanings": [
+        "Copy",
+        "Be Photographed",
+        "Describe"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 453,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シャ",
+          "romaji": "sha"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ジャ",
+          "romaji": "ja"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うつ",
+          "romaji": "utsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うつ-",
+          "romaji": "utsuu"
+        }
+      ]
+    },
+    {
+      "character": "去",
+      "meanings": [
+        "Gone",
+        "Past",
+        "Quit",
+        "Leave",
+        "Elapse",
+        "Eliminate",
+        "Divorce"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 440,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キョ",
+          "romaji": "kyo"
+        },
+        {
+          "reading_type": "on",
+          "reading": "コ",
+          "romaji": "ko"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "さ",
+          "romaji": "sa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-さ",
+          "romaji": "-sa"
+        }
+      ]
+    },
+    {
+      "character": "字",
+      "meanings": [
+        "Character",
+        "Letter",
+        "Word",
+        "Section Of Village"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 485,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あざ",
+          "romaji": "aza"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あざな",
+          "romaji": "azana"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-な",
+          "romaji": "-na"
+        }
+      ]
+    },
+    {
+      "character": "早",
+      "meanings": [
+        "Early",
+        "Fast"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 402,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ソウ",
+          "romaji": "sou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "サッ",
+          "romaji": "sa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はや",
+          "romaji": "haya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はや-",
+          "romaji": "hayaa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "さ-",
+          "romaji": "saa"
+        }
+      ]
+    },
+    {
+      "character": "町",
+      "meanings": [
+        "Town",
+        "Village",
+        "Block",
+        "Street"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 292,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チョウ",
+          "romaji": "chou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "まち",
+          "romaji": "machi"
+        }
+      ]
+    },
+    {
+      "character": "花",
+      "meanings": [
+        "Flower"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 578,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カ",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ケ",
+          "romaji": "ke"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はな",
+          "romaji": "hana"
+        }
+      ]
+    },
+    {
+      "character": "赤",
+      "meanings": [
+        "Red"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 584,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セキ",
+          "romaji": "seki"
+        },
+        {
+          "reading_type": "on",
+          "reading": "シャク",
+          "romaji": "shaku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あか",
+          "romaji": "aka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あか-",
+          "romaji": "akaa"
+        }
+      ]
+    },
+    {
+      "character": "足",
+      "meanings": [
+        "Leg",
+        "Foot",
+        "Be Sufficient",
+        "Counter For Pairs Of Footwear"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 343,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ソク",
+          "romaji": "soku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あし",
+          "romaji": "ashi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        }
+      ]
+    },
+    {
+      "character": "不",
+      "meanings": [
+        "Negative",
+        "Non-",
+        "Bad",
+        "Ugly",
+        "Clumsy"
+      ],
+      "stroke_count": 4,
+      "jlpt_level": 4,
+      "frequency": 101,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "フ",
+          "romaji": "fu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ブ",
+          "romaji": "bu"
+        }
+      ]
+    },
+    {
+      "character": "仕",
+      "meanings": [
+        "Attend",
+        "Doing",
+        "Official",
+        "Serve"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 439,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つか",
+          "romaji": "tsuka"
+        }
+      ]
+    },
+    {
+      "character": "会",
+      "meanings": [
+        "Meeting",
+        "Meet",
+        "Party",
+        "Association",
+        "Interview",
+        "Join"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 4,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カイ",
+          "romaji": "kai"
+        },
+        {
+          "reading_type": "on",
+          "reading": "エ",
+          "romaji": "e"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あつ",
+          "romaji": "atsu"
+        }
+      ]
+    },
+    {
+      "character": "同",
+      "meanings": [
+        "Same",
+        "Agree",
+        "Equal"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 15,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ドウ",
+          "romaji": "dou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おな",
+          "romaji": "ona"
+        }
+      ]
+    },
+    {
+      "character": "多",
+      "meanings": [
+        "Many",
+        "Frequent",
+        "Much"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 139,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "タ",
+          "romaji": "ta"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おお",
+          "romaji": "oo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "まさ",
+          "romaji": "masa"
+        }
+      ]
+    },
+    {
+      "character": "考",
+      "meanings": [
+        "Consider",
+        "Think Over"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 196,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コウ",
+          "romaji": "kou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かんが",
+          "romaji": "kanga"
+        }
+      ]
+    },
+    {
+      "character": "肉",
+      "meanings": [
+        "Meat"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 986,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ニク",
+          "romaji": "niku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "しし",
+          "romaji": "shishi"
+        }
+      ]
+    },
+    {
+      "character": "自",
+      "meanings": [
+        "Oneself"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 19,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        },
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "みずか",
+          "romaji": "mizuka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おの",
+          "romaji": "ono"
+        }
+      ]
+    },
+    {
+      "character": "色",
+      "meanings": [
+        "Color"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 621,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ショク",
+          "romaji": "shoku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "シキ",
+          "romaji": "shiki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いろ",
+          "romaji": "iro"
+        }
+      ]
+    },
+    {
+      "character": "体",
+      "meanings": [
+        "Body",
+        "Substance",
+        "Object",
+        "Reality",
+        "Counter For Images"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 88,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "タイ",
+          "romaji": "tai"
+        },
+        {
+          "reading_type": "on",
+          "reading": "テイ",
+          "romaji": "tei"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "からだ",
+          "romaji": "karada"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かたち",
+          "romaji": "katachi"
+        }
+      ]
+    },
+    {
+      "character": "作",
+      "meanings": [
+        "Make",
+        "Production",
+        "Prepare",
+        "Build"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 103,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "サク",
+          "romaji": "saku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "サ",
+          "romaji": "sa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つく",
+          "romaji": "tsuku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-づく",
+          "romaji": "-zuku"
+        }
+      ]
+    },
+    {
+      "character": "図",
+      "meanings": [
+        "Map",
+        "Drawing",
+        "Plan",
+        "Extraordinary",
+        "Audacious"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 539,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ズ",
+          "romaji": "zu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ト",
+          "romaji": "to"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "え",
+          "romaji": "e"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はか",
+          "romaji": "haka"
+        }
+      ]
+    },
+    {
+      "character": "売",
+      "meanings": [
+        "Sell"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 202,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "バイ",
+          "romaji": "bai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "う",
+          "romaji": "u"
+        }
+      ]
+    },
+    {
+      "character": "弟",
+      "meanings": [
+        "Younger Brother",
+        "Faithful Service To Elders"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 1161,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "テイ",
+          "romaji": "tei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ダイ",
+          "romaji": "dai"
+        },
+        {
+          "reading_type": "on",
+          "reading": "デ",
+          "romaji": "de"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おとうと",
+          "romaji": "otouto"
+        }
+      ]
+    },
+    {
+      "character": "社",
+      "meanings": [
+        "Company",
+        "Firm",
+        "Office",
+        "Association",
+        "Shrine"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 21,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シャ",
+          "romaji": "sha"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "やしろ",
+          "romaji": "yashiro"
+        }
+      ]
+    },
+    {
+      "character": "言",
+      "meanings": [
+        "Say",
+        "Word"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 83,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ゲン",
+          "romaji": "gen"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゴン",
+          "romaji": "gon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "い",
+          "romaji": "i"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こと",
+          "romaji": "koto"
+        }
+      ]
+    },
+    {
+      "character": "走",
+      "meanings": [
+        "Run"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 626,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ソウ",
+          "romaji": "sou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はし",
+          "romaji": "hashi"
+        }
+      ]
+    },
+    {
+      "character": "近",
+      "meanings": [
+        "Near",
+        "Early",
+        "Akin",
+        "Tantamount"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 194,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キン",
+          "romaji": "kin"
+        },
+        {
+          "reading_type": "on",
+          "reading": "コン",
+          "romaji": "kon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ちか",
+          "romaji": "chika"
+        }
+      ]
+    },
+    {
+      "character": "空",
+      "meanings": [
+        "Empty",
+        "Sky",
+        "Void",
+        "Vacant",
+        "Vacuum"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 304,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "クウ",
+          "romaji": "kuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "そら",
+          "romaji": "sora"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "から",
+          "romaji": "kara"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "す",
+          "romaji": "su"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "むな",
+          "romaji": "muna"
+        }
+      ]
+    },
+    {
+      "character": "青",
+      "meanings": [
+        "Blue",
+        "Green"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 589,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "セイ",
+          "romaji": "sei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ショウ",
+          "romaji": "shou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あお",
+          "romaji": "ao"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あお-",
+          "romaji": "aou"
+        }
+      ]
+    },
+    {
+      "character": "音",
+      "meanings": [
+        "Sound",
+        "Noise"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 491,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "オン",
+          "romaji": "on"
+        },
+        {
+          "reading_type": "on",
+          "reading": "イン",
+          "romaji": "in"
+        },
+        {
+          "reading_type": "on",
+          "reading": "-ノン",
+          "romaji": "-non"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おと",
+          "romaji": "oto"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ね",
+          "romaji": "ne"
+        }
+      ]
+    },
+    {
+      "character": "地",
+      "meanings": [
+        "Ground",
+        "Earth"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 40,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チ",
+          "romaji": "chi"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        }
+      ]
+    },
+    {
+      "character": "安",
+      "meanings": [
+        "Relax",
+        "Cheap",
+        "Low",
+        "Quiet",
+        "Rested",
+        "Contented",
+        "Peaceful"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 144,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "アン",
+          "romaji": "an"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "やす",
+          "romaji": "yasu"
+        }
+      ]
+    },
+    {
+      "character": "有",
+      "meanings": [
+        "Possess",
+        "Have",
+        "Exist",
+        "Happen",
+        "Occur",
+        "Approx"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 282,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ユウ",
+          "romaji": "yuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ウ",
+          "romaji": "u"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        }
+      ]
+    },
+    {
+      "character": "死",
+      "meanings": [
+        "Death",
+        "Die"
+      ],
+      "stroke_count": 6,
+      "jlpt_level": 4,
+      "frequency": 229,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "し",
+          "romaji": "shi"
+        }
+      ]
+    },
+    {
+      "character": "京",
+      "meanings": [
+        "Capital",
+        "10**16"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 74,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キョウ",
+          "romaji": "kyou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ケイ",
+          "romaji": "kei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "キン",
+          "romaji": "kin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "みやこ",
+          "romaji": "miyako"
+        }
+      ]
+    },
+    {
+      "character": "夜",
+      "meanings": [
+        "Night",
+        "Evening"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 487,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヤ",
+          "romaji": "ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "よ",
+          "romaji": "yo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "よる",
+          "romaji": "yoru"
+        }
+      ]
+    },
+    {
+      "character": "妹",
+      "meanings": [
+        "Younger Sister"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 1446,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "マイ",
+          "romaji": "mai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いもうと",
+          "romaji": "imouto"
+        }
+      ]
+    },
+    {
+      "character": "姉",
+      "meanings": [
+        "Elder Sister"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 1473,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あね",
+          "romaji": "ane"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はは",
+          "romaji": "haha"
+        }
+      ]
+    },
+    {
+      "character": "店",
+      "meanings": [
+        "Store",
+        "Shop"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 378,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "テン",
+          "romaji": "ten"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "みせ",
+          "romaji": "mise"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たな",
+          "romaji": "tana"
+        }
+      ]
+    },
+    {
+      "character": "明",
+      "meanings": [
+        "Bright",
+        "Light"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 67,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "メイ",
+          "romaji": "mei"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ミョウ",
+          "romaji": "myou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ミン",
+          "romaji": "min"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あか",
+          "romaji": "aka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あき",
+          "romaji": "aki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-あ",
+          "romaji": "-a"
+        }
+      ]
+    },
+    {
+      "character": "歩",
+      "meanings": [
+        "Walk",
+        "Counter For Steps"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 554,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ホ",
+          "romaji": "ho"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ブ",
+          "romaji": "bu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "フ",
+          "romaji": "fu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ある",
+          "romaji": "aru"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あゆ",
+          "romaji": "ayu"
+        }
+      ]
+    },
+    {
+      "character": "画",
+      "meanings": [
+        "Brush-stroke",
+        "Picture"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 199,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ガ",
+          "romaji": "ga"
+        },
+        {
+          "reading_type": "on",
+          "reading": "カク",
+          "romaji": "kaku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "エ",
+          "romaji": "e"
+        },
+        {
+          "reading_type": "on",
+          "reading": "カイ",
+          "romaji": "kai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "えが",
+          "romaji": "ega"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かく",
+          "romaji": "kaku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かぎ",
+          "romaji": "kagi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はかりごと",
+          "romaji": "hakarigoto"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はか",
+          "romaji": "haka"
+        }
+      ]
+    },
+    {
+      "character": "知",
+      "meanings": [
+        "Know",
+        "Wisdom"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 205,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チ",
+          "romaji": "chi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "し",
+          "romaji": "shi"
+        }
+      ]
+    },
+    {
+      "character": "室",
+      "meanings": [
+        "Room",
+        "Apartment",
+        "Chamber",
+        "Greenhouse",
+        "Cellar"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 550,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シツ",
+          "romaji": "shitsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "むろ",
+          "romaji": "muro"
+        }
+      ]
+    },
+    {
+      "character": "思",
+      "meanings": [
+        "Think"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 132,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おも",
+          "romaji": "omo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おもえら",
+          "romaji": "omoera"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おぼ",
+          "romaji": "obo"
+        }
+      ]
+    },
+    {
+      "character": "海",
+      "meanings": [
+        "Sea",
+        "Ocean"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 200,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カイ",
+          "romaji": "kai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うみ",
+          "romaji": "umi"
+        }
+      ]
+    },
+    {
+      "character": "茶",
+      "meanings": [
+        "Tea"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 1116,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チャ",
+          "romaji": "cha"
+        },
+        {
+          "reading_type": "on",
+          "reading": "サ",
+          "romaji": "sa"
+        }
+      ]
+    },
+    {
+      "character": "以",
+      "meanings": [
+        "By Means Of",
+        "Because",
+        "In View Of",
+        "Compared With"
+      ],
+      "stroke_count": 5,
+      "jlpt_level": 4,
+      "frequency": 126,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イ",
+          "romaji": "i"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もっ",
+          "romaji": "mo"
+        }
+      ]
+    },
+    {
+      "character": "夏",
+      "meanings": [
+        "Summer"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 659,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カ",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ガ",
+          "romaji": "ga"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゲ",
+          "romaji": "ge"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "なつ",
+          "romaji": "natsu"
+        }
+      ]
+    },
+    {
+      "character": "家",
+      "meanings": [
+        "House",
+        "Home",
+        "Family",
+        "Professional",
+        "Expert",
+        "Performer"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 133,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カ",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ケ",
+          "romaji": "ke"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いえ",
+          "romaji": "ie"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "や",
+          "romaji": "ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うち",
+          "romaji": "uchi"
+        }
+      ]
+    },
+    {
+      "character": "紙",
+      "meanings": [
+        "Paper"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 559,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かみ",
+          "romaji": "kami"
+        }
+      ]
+    },
+    {
+      "character": "通",
+      "meanings": [
+        "Traffic",
+        "Pass Through",
+        "Avenue",
+        "Commute",
+        "Counter For Letters, Notes, Documents, Etc."
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 80,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ツウ",
+          "romaji": "tsuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ツ",
+          "romaji": "tsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とお",
+          "romaji": "too"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-とお",
+          "romaji": "-too"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-どお",
+          "romaji": "-doo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かよ",
+          "romaji": "kayo"
+        }
+      ]
+    },
+    {
+      "character": "強",
+      "meanings": [
+        "Strong"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 112,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キョウ",
+          "romaji": "kyou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゴウ",
+          "romaji": "gou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つよ",
+          "romaji": "tsuyo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "し",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こわ",
+          "romaji": "kowa"
+        }
+      ]
+    },
+    {
+      "character": "教",
+      "meanings": [
+        "Teach",
+        "Faith",
+        "Doctrine"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 166,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キョウ",
+          "romaji": "kyou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おし",
+          "romaji": "oshi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おそ",
+          "romaji": "oso"
+        }
+      ]
+    },
+    {
+      "character": "理",
+      "meanings": [
+        "Logic",
+        "Arrangement",
+        "Reason",
+        "Justice",
+        "Truth"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 86,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "リ",
+          "romaji": "ri"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ことわり",
+          "romaji": "kotowari"
+        }
+      ]
+    },
+    {
+      "character": "週",
+      "meanings": [
+        "Week"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 540,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        }
+      ]
+    },
+    {
+      "character": "魚",
+      "meanings": [
+        "Fish"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 1208,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ギョ",
+          "romaji": "gyo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うお",
+          "romaji": "uo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "さかな",
+          "romaji": "sakana"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ざかな",
+          "romaji": "-zakana"
+        }
+      ]
+    },
+    {
+      "character": "鳥",
+      "meanings": [
+        "Bird",
+        "Chicken"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 1043,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チョウ",
+          "romaji": "chou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とり",
+          "romaji": "tori"
+        }
+      ]
+    },
+    {
+      "character": "黒",
+      "meanings": [
+        "Black"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 573,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "コク",
+          "romaji": "koku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "くろ",
+          "romaji": "kuro"
+        }
+      ]
+    },
+    {
+      "character": "住",
+      "meanings": [
+        "Dwell",
+        "Reside",
+        "Live",
+        "Inhabit"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 270,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジュウ",
+          "romaji": "juu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ヂュウ",
+          "romaji": "jiュu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "チュウ",
+          "romaji": "chuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "す",
+          "romaji": "su"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ず",
+          "romaji": "-zu"
+        }
+      ]
+    },
+    {
+      "character": "医",
+      "meanings": [
+        "Doctor",
+        "Medicine"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 437,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イ",
+          "romaji": "i"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "い",
+          "romaji": "i"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "くすし",
+          "romaji": "kusushi"
+        }
+      ]
+    },
+    {
+      "character": "究",
+      "meanings": [
+        "Research",
+        "Study"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 368,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キュウ",
+          "romaji": "kyuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ク",
+          "romaji": "ku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "きわ",
+          "romaji": "kiwa"
+        }
+      ]
+    },
+    {
+      "character": "者",
+      "meanings": [
+        "Someone",
+        "Person"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 38,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シャ",
+          "romaji": "sha"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もの",
+          "romaji": "mono"
+        }
+      ]
+    },
+    {
+      "character": "研",
+      "meanings": [
+        "Polish",
+        "Study Of",
+        "Sharpen"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 336,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケン",
+          "romaji": "ken"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "と",
+          "romaji": "to"
+        }
+      ]
+    },
+    {
+      "character": "場",
+      "meanings": [
+        "Location",
+        "Place"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 52,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジョウ",
+          "romaji": "jou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "チョウ",
+          "romaji": "chou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ば",
+          "romaji": "ba"
+        }
+      ]
+    },
+    {
+      "character": "朝",
+      "meanings": [
+        "Morning",
+        "Dynasty",
+        "Regime",
+        "Epoch",
+        "Period",
+        "(north) Korea"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 248,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チョウ",
+          "romaji": "chou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あさ",
+          "romaji": "asa"
+        }
+      ]
+    },
+    {
+      "character": "答",
+      "meanings": [
+        "Solution",
+        "Answer"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 486,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "トウ",
+          "romaji": "tou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こた",
+          "romaji": "kota"
+        }
+      ]
+    },
+    {
+      "character": "買",
+      "meanings": [
+        "Buy"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 520,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "バイ",
+          "romaji": "bai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "か",
+          "romaji": "ka"
+        }
+      ]
+    },
+    {
+      "character": "道",
+      "meanings": [
+        "Road-way",
+        "Street",
+        "District",
+        "Journey",
+        "Course",
+        "Moral",
+        "Teachings"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 207,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ドウ",
+          "romaji": "dou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "トウ",
+          "romaji": "tou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "みち",
+          "romaji": "michi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いう",
+          "romaji": "iu"
+        }
+      ]
+    },
+    {
+      "character": "楽",
+      "meanings": [
+        "Music",
+        "Comfort",
+        "Ease"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 373,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ガク",
+          "romaji": "gaku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ラク",
+          "romaji": "raku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゴウ",
+          "romaji": "gou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たの",
+          "romaji": "tano"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "この",
+          "romaji": "kono"
+        }
+      ]
+    },
+    {
+      "character": "事",
+      "meanings": [
+        "Matter",
+        "Thing",
+        "Fact",
+        "Business",
+        "Reason",
+        "Possibly"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 18,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ズ",
+          "romaji": "zu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こと",
+          "romaji": "koto"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つか",
+          "romaji": "tsuka"
+        }
+      ]
+    },
+    {
+      "character": "使",
+      "meanings": [
+        "Use",
+        "Send On A Mission",
+        "Order",
+        "Messenger",
+        "Envoy",
+        "Ambassador",
+        "Cause"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 219,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つか",
+          "romaji": "tsuka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-つか",
+          "romaji": "-tsuka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-づか",
+          "romaji": "-zuka"
+        }
+      ]
+    },
+    {
+      "character": "始",
+      "meanings": [
+        "Commence",
+        "Begin"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 244,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はじ",
+          "romaji": "haji"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-はじ",
+          "romaji": "-haji"
+        }
+      ]
+    },
+    {
+      "character": "服",
+      "meanings": [
+        "Clothing",
+        "Admit",
+        "Obey",
+        "Discharge"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 873,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "フク",
+          "romaji": "fuku"
+        }
+      ]
+    },
+    {
+      "character": "物",
+      "meanings": [
+        "Thing",
+        "Object",
+        "Matter"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 215,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ブツ",
+          "romaji": "butsu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "モツ",
+          "romaji": "motsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もの",
+          "romaji": "mono"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もの-",
+          "romaji": "monou"
+        }
+      ]
+    },
+    {
+      "character": "屋",
+      "meanings": [
+        "Roof",
+        "House",
+        "Shop",
+        "Dealer",
+        "Seller"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 616,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "オク",
+          "romaji": "oku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "や",
+          "romaji": "ya"
+        }
+      ]
+    },
+    {
+      "character": "度",
+      "meanings": [
+        "Degrees",
+        "Occurrence",
+        "Time",
+        "Counter For Occurrences",
+        "Consider",
+        "Attitude"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 110,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ド",
+          "romaji": "do"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ト",
+          "romaji": "to"
+        },
+        {
+          "reading_type": "on",
+          "reading": "タク",
+          "romaji": "taku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たび",
+          "romaji": "tabi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-た",
+          "romaji": "-ta"
+        }
+      ]
+    },
+    {
+      "character": "待",
+      "meanings": [
+        "Wait",
+        "Depend On"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 391,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "タイ",
+          "romaji": "tai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ま",
+          "romaji": "ma"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ま",
+          "romaji": "-ma"
+        }
+      ]
+    },
+    {
+      "character": "持",
+      "meanings": [
+        "Hold",
+        "Have"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 119,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジ",
+          "romaji": "ji"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "も",
+          "romaji": "mo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-も",
+          "romaji": "-mo"
+        }
+      ]
+    },
+    {
+      "character": "界",
+      "meanings": [
+        "World",
+        "Boundary"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 158,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カイ",
+          "romaji": "kai"
+        }
+      ]
+    },
+    {
+      "character": "発",
+      "meanings": [
+        "Departure",
+        "Discharge",
+        "Publish",
+        "Emit",
+        "Start From",
+        "Disclose",
+        "Counter For Gunshots"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 32,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ハツ",
+          "romaji": "hatsu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ホツ",
+          "romaji": "hotsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あば",
+          "romaji": "aba"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おこ",
+          "romaji": "oko"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つか",
+          "romaji": "tsuka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はな",
+          "romaji": "hana"
+        }
+      ]
+    },
+    {
+      "character": "送",
+      "meanings": [
+        "Escort",
+        "Send"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 311,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ソウ",
+          "romaji": "sou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おく",
+          "romaji": "oku"
+        }
+      ]
+    },
+    {
+      "character": "重",
+      "meanings": [
+        "Heavy",
+        "Important",
+        "Esteem",
+        "Respect",
+        "Heap Up",
+        "Pile Up",
+        "Nest Of Boxes",
+        "-fold"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 193,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ジュウ",
+          "romaji": "juu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "チョウ",
+          "romaji": "chou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "え",
+          "romaji": "e"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おも",
+          "romaji": "omo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かさ",
+          "romaji": "kasa"
+        }
+      ]
+    },
+    {
+      "character": "起",
+      "meanings": [
+        "Rouse",
+        "Wake Up",
+        "Get Up"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 374,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キ",
+          "romaji": "ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "お",
+          "romaji": "o"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おこ",
+          "romaji": "oko"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        }
+      ]
+    },
+    {
+      "character": "院",
+      "meanings": [
+        "Inst.",
+        "Institution",
+        "Temple",
+        "Mansion",
+        "School"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 150,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イン",
+          "romaji": "in"
+        }
+      ]
+    },
+    {
+      "character": "終",
+      "meanings": [
+        "End",
+        "Finish"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 256,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "お",
+          "romaji": "o"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-お",
+          "romaji": "-o"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おわ",
+          "romaji": "owa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つい",
+          "romaji": "tsui"
+        }
+      ]
+    },
+    {
+      "character": "習",
+      "meanings": [
+        "Learn"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 706,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ジュ",
+          "romaji": "ju"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "なら",
+          "romaji": "nara"
+        }
+      ]
+    },
+    {
+      "character": "転",
+      "meanings": [
+        "Revolve",
+        "Turn Around",
+        "Change"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 327,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "テン",
+          "romaji": "ten"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ころ",
+          "romaji": "koro"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "まろ",
+          "romaji": "maro"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うたた",
+          "romaji": "utata"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うつ",
+          "romaji": "utsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "くる",
+          "romaji": "kuru"
+        }
+      ]
+    },
+    {
+      "character": "運",
+      "meanings": [
+        "Carry",
+        "Luck",
+        "Destiny",
+        "Fate",
+        "Lot",
+        "Transport",
+        "Progress",
+        "Advance"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 255,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ウン",
+          "romaji": "un"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はこ",
+          "romaji": "hako"
+        }
+      ]
+    },
+    {
+      "character": "開",
+      "meanings": [
+        "Open",
+        "Unfold",
+        "Unseal"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 59,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カイ",
+          "romaji": "kai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ひら",
+          "romaji": "hira"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-びら",
+          "romaji": "-bira"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        }
+      ]
+    },
+    {
+      "character": "集",
+      "meanings": [
+        "Gather",
+        "Meet",
+        "Congregate",
+        "Swarm",
+        "Flock"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 210,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あつ",
+          "romaji": "atsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つど",
+          "romaji": "tsudo"
+        }
+      ]
+    },
+    {
+      "character": "飲",
+      "meanings": [
+        "Drink",
+        "Smoke",
+        "Take"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 969,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イン",
+          "romaji": "in"
+        },
+        {
+          "reading_type": "on",
+          "reading": "オン",
+          "romaji": "on"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "の",
+          "romaji": "no"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-の",
+          "romaji": "-no"
+        }
+      ]
+    },
+    {
+      "character": "業",
+      "meanings": [
+        "Business",
+        "Vocation",
+        "Arts",
+        "Performance"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 43,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ギョウ",
+          "romaji": "gyou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゴウ",
+          "romaji": "gou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わざ",
+          "romaji": "waza"
+        }
+      ]
+    },
+    {
+      "character": "漢",
+      "meanings": [
+        "Sino-",
+        "China"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 1487,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カン",
+          "romaji": "kan"
+        }
+      ]
+    },
+    {
+      "character": "歌",
+      "meanings": [
+        "Song",
+        "Sing"
+      ],
+      "stroke_count": 14,
+      "jlpt_level": 4,
+      "frequency": 519,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カ",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うた",
+          "romaji": "uta"
+        }
+      ]
+    },
+    {
+      "character": "親",
+      "meanings": [
+        "Parent",
+        "Intimacy",
+        "Relative",
+        "Familiarity",
+        "Dealer (cards)"
+      ],
+      "stroke_count": 16,
+      "jlpt_level": 4,
+      "frequency": 406,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シン",
+          "romaji": "shin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おや",
+          "romaji": "oya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おや-",
+          "romaji": "oyaa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "した",
+          "romaji": "shita"
+        }
+      ]
+    },
+    {
+      "character": "病",
+      "meanings": [
+        "Ill",
+        "Sick"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 384,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ビョウ",
+          "romaji": "byou"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ヘイ",
+          "romaji": "hei"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "や",
+          "romaji": "ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-や",
+          "romaji": "-ya"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "やまい",
+          "romaji": "yamai"
+        }
+      ]
+    },
+    {
+      "character": "別",
+      "meanings": [
+        "Separate",
+        "Branch Off",
+        "Diverge",
+        "Fork",
+        "Another",
+        "Extra",
+        "Specially"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 214,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ベツ",
+          "romaji": "betsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わか",
+          "romaji": "waka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わ",
+          "romaji": "wa"
+        }
+      ]
+    },
+    {
+      "character": "注",
+      "meanings": [
+        "Pour",
+        "Irrigate",
+        "Shed (tears)",
+        "Flow Into",
+        "Concentrate On",
+        "Notes",
+        "Comment",
+        "Annotate"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 497,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チュウ",
+          "romaji": "chuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "そそ",
+          "romaji": "soso"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "さ",
+          "romaji": "sa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つ",
+          "romaji": "tsu"
+        }
+      ]
+    },
+    {
+      "character": "洋",
+      "meanings": [
+        "Ocean",
+        "Sea",
+        "Foreign",
+        "Western Style"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 763,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヨウ",
+          "romaji": "you"
+        }
+      ]
+    },
+    {
+      "character": "特",
+      "meanings": [
+        "Special"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 234,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "トク",
+          "romaji": "toku"
+        }
+      ]
+    },
+    {
+      "character": "意",
+      "meanings": [
+        "Idea",
+        "Mind",
+        "Heart",
+        "Taste",
+        "Thought",
+        "Desire",
+        "Care",
+        "Liking"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 99,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イ",
+          "romaji": "i"
+        }
+      ]
+    },
+    {
+      "character": "味",
+      "meanings": [
+        "Flavor",
+        "Taste"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 442,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ミ",
+          "romaji": "mi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あじ",
+          "romaji": "aji"
+        }
+      ]
+    },
+    {
+      "character": "勉",
+      "meanings": [
+        "Exertion",
+        "Endeavour",
+        "Encourage",
+        "Strive",
+        "Make Effort",
+        "Diligent"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 1066,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ベン",
+          "romaji": "ben"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つと",
+          "romaji": "tsuto"
+        }
+      ]
+    },
+    {
+      "character": "旅",
+      "meanings": [
+        "Trip",
+        "Travel"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 783,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "リョ",
+          "romaji": "ryo"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たび",
+          "romaji": "tabi"
+        }
+      ]
+    },
+    {
+      "character": "員",
+      "meanings": [
+        "Employee",
+        "Member",
+        "Number",
+        "The One In Charge"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 54,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "イン",
+          "romaji": "in"
+        }
+      ]
+    },
+    {
+      "character": "動",
+      "meanings": [
+        "Move",
+        "Motion",
+        "Change",
+        "Confusion",
+        "Shift",
+        "Shake"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 73,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ドウ",
+          "romaji": "dou"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うご",
+          "romaji": "ugo"
+        }
+      ]
+    },
+    {
+      "character": "悪",
+      "meanings": [
+        "Bad",
+        "Vice",
+        "Rascal",
+        "False",
+        "Evil",
+        "Wrong"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 530,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "アク",
+          "romaji": "aku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "オ",
+          "romaji": "o"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わる",
+          "romaji": "waru"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わる-",
+          "romaji": "waruu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あ",
+          "romaji": "a"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "にく",
+          "romaji": "niku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-にく",
+          "romaji": "-niku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ああ",
+          "romaji": "aa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いずくに",
+          "romaji": "izukuni"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いずくんぞ",
+          "romaji": "izukunzo"
+        }
+      ]
+    },
+    {
+      "character": "族",
+      "meanings": [
+        "Tribe",
+        "Family"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 393,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ゾク",
+          "romaji": "zoku"
+        }
+      ]
+    },
+    {
+      "character": "着",
+      "meanings": [
+        "Don",
+        "Arrive",
+        "Wear",
+        "Counter For Suits Of Clothing"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 376,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チャク",
+          "romaji": "chaku"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ジャク",
+          "romaji": "jaku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "き",
+          "romaji": "ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ぎ",
+          "romaji": "-gi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-き",
+          "romaji": "-ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "つ",
+          "romaji": "tsu"
+        }
+      ]
+    },
+    {
+      "character": "野",
+      "meanings": [
+        "Plains",
+        "Field",
+        "Rustic",
+        "Civilian Life"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 120,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヤ",
+          "romaji": "ya"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ショ",
+          "romaji": "sho"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "の",
+          "romaji": "no"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "の-",
+          "romaji": "nou"
+        }
+      ]
+    },
+    {
+      "character": "風",
+      "meanings": [
+        "Wind",
+        "Air",
+        "Style",
+        "Manner"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 558,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "フウ",
+          "romaji": "fuu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "フ",
+          "romaji": "fu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かぜ",
+          "romaji": "kaze"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かざ-",
+          "romaji": "kazaa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-かぜ",
+          "romaji": "-kaze"
+        }
+      ]
+    },
+    {
+      "character": "新",
+      "meanings": [
+        "New"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 51,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シン",
+          "romaji": "shin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あたら",
+          "romaji": "atara"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あら",
+          "romaji": "ara"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あら-",
+          "romaji": "araa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "にい-",
+          "romaji": "niii"
+        }
+      ]
+    },
+    {
+      "character": "問",
+      "meanings": [
+        "Question",
+        "Ask",
+        "Problem"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 64,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "モン",
+          "romaji": "mon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "と",
+          "romaji": "to"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とん",
+          "romaji": "ton"
+        }
+      ]
+    },
+    {
+      "character": "銀",
+      "meanings": [
+        "Silver"
+      ],
+      "stroke_count": 14,
+      "jlpt_level": 4,
+      "frequency": 395,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ギン",
+          "romaji": "gin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "しろがね",
+          "romaji": "shirogane"
+        }
+      ]
+    },
+    {
+      "character": "題",
+      "meanings": [
+        "Topic",
+        "Subject"
+      ],
+      "stroke_count": 18,
+      "jlpt_level": 4,
+      "frequency": 96,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ダイ",
+          "romaji": "dai"
+        }
+      ]
+    },
+    {
+      "character": "館",
+      "meanings": [
+        "Building",
+        "Mansion",
+        "Large Building",
+        "Palace"
+      ],
+      "stroke_count": 16,
+      "jlpt_level": 4,
+      "frequency": 613,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "カン",
+          "romaji": "kan"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "やかた",
+          "romaji": "yakata"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たて",
+          "romaji": "tate"
+        }
+      ]
+    },
+    {
+      "character": "駅",
+      "meanings": [
+        "Station"
+      ],
+      "stroke_count": 14,
+      "jlpt_level": 4,
+      "frequency": 724,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "エキ",
+          "romaji": "eki"
+        }
+      ]
+    },
+    {
+      "character": "料",
+      "meanings": [
+        "Fee",
+        "Materials"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 295,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "リョウ",
+          "romaji": "ryou"
+        }
+      ]
+    },
+    {
+      "character": "映",
+      "meanings": [
+        "Reflect",
+        "Reflection",
+        "Projection"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 404,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "エイ",
+          "romaji": "ei"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "うつ",
+          "romaji": "utsu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "は",
+          "romaji": "ha"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-ば",
+          "romaji": "-ba"
+        }
+      ]
+    },
+    {
+      "character": "私",
+      "meanings": [
+        "Private",
+        "I",
+        "Me"
+      ],
+      "stroke_count": 7,
+      "jlpt_level": 4,
+      "frequency": 242,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わたくし",
+          "romaji": "watakushi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わたし",
+          "romaji": "watashi"
+        }
+      ]
+    },
+    {
+      "character": "帰",
+      "meanings": [
+        "Homecoming",
+        "Arrive At",
+        "Lead To",
+        "Result In"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 504,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キ",
+          "romaji": "ki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かえ",
+          "romaji": "kae"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "おく",
+          "romaji": "oku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とつ",
+          "romaji": "totsu"
+        }
+      ]
+    },
+    {
+      "character": "春",
+      "meanings": [
+        "Springtime",
+        "Spring (season)"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 579,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュン",
+          "romaji": "shun"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はる",
+          "romaji": "haru"
+        }
+      ]
+    },
+    {
+      "character": "昼",
+      "meanings": [
+        "Daytime",
+        "Noon"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 1115,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "チュウ",
+          "romaji": "chuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ひる",
+          "romaji": "hiru"
+        }
+      ]
+    },
+    {
+      "character": "秋",
+      "meanings": [
+        "Autumn"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 635,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シュウ",
+          "romaji": "shuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あき",
+          "romaji": "aki"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "とき",
+          "romaji": "toki"
+        }
+      ]
+    },
+    {
+      "character": "計",
+      "meanings": [
+        "Plot",
+        "Plan",
+        "Scheme",
+        "Measure"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 228,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケイ",
+          "romaji": "kei"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はか",
+          "romaji": "haka"
+        }
+      ]
+    },
+    {
+      "character": "建",
+      "meanings": [
+        "Build"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 300,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケン",
+          "romaji": "ken"
+        },
+        {
+          "reading_type": "on",
+          "reading": "コン",
+          "romaji": "kon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "た",
+          "romaji": "ta"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "-だ",
+          "romaji": "-da"
+        }
+      ]
+    },
+    {
+      "character": "英",
+      "meanings": [
+        "England",
+        "English",
+        "Hero",
+        "Outstanding",
+        "Calyx"
+      ],
+      "stroke_count": 8,
+      "jlpt_level": 4,
+      "frequency": 430,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "エイ",
+          "romaji": "ei"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "はなぶさ",
+          "romaji": "hanabusa"
+        }
+      ]
+    },
+    {
+      "character": "飯",
+      "meanings": [
+        "Meal",
+        "Boiled Rice"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 1046,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ハン",
+          "romaji": "han"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "めし",
+          "romaji": "meshi"
+        }
+      ]
+    },
+    {
+      "character": "曜",
+      "meanings": [
+        "Weekday"
+      ],
+      "stroke_count": 18,
+      "jlpt_level": 4,
+      "frequency": 940,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヨウ",
+          "romaji": "you"
+        }
+      ]
+    },
+    {
+      "character": "品",
+      "meanings": [
+        "Goods",
+        "Refinement",
+        "Dignity",
+        "Article",
+        "Counter For Meal Courses"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 225,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ヒン",
+          "romaji": "hin"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ホン",
+          "romaji": "hon"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "しな",
+          "romaji": "shina"
+        }
+      ]
+    },
+    {
+      "character": "急",
+      "meanings": [
+        "Hurry",
+        "Emergency",
+        "Sudden",
+        "Steep"
+      ],
+      "stroke_count": 9,
+      "jlpt_level": 4,
+      "frequency": 309,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "キュウ",
+          "romaji": "kyuu"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "いそ",
+          "romaji": "iso"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "せ",
+          "romaji": "se"
+        }
+      ]
+    },
+    {
+      "character": "真",
+      "meanings": [
+        "True",
+        "Reality",
+        "Buddhist Sect"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 279,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シン",
+          "romaji": "shin"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ま",
+          "romaji": "ma"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ま-",
+          "romaji": "maa"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "まこと",
+          "romaji": "makoto"
+        }
+      ]
+    },
+    {
+      "character": "堂",
+      "meanings": [
+        "Public Chamber",
+        "Hall"
+      ],
+      "stroke_count": 11,
+      "jlpt_level": 4,
+      "frequency": 1010,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ドウ",
+          "romaji": "dou"
+        }
+      ]
+    },
+    {
+      "character": "試",
+      "meanings": [
+        "Test",
+        "Try",
+        "Attempt",
+        "Experiment",
+        "Ordeal"
+      ],
+      "stroke_count": 13,
+      "jlpt_level": 4,
+      "frequency": 392,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シ",
+          "romaji": "shi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "こころ",
+          "romaji": "kokoro"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ため",
+          "romaji": "tame"
+        }
+      ]
+    },
+    {
+      "character": "借",
+      "meanings": [
+        "Borrow",
+        "Rent"
+      ],
+      "stroke_count": 10,
+      "jlpt_level": 4,
+      "frequency": 932,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シャク",
+          "romaji": "shaku"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "か",
+          "romaji": "ka"
+        }
+      ]
+    },
+    {
+      "character": "験",
+      "meanings": [
+        "Verification",
+        "Effect",
+        "Testing"
+      ],
+      "stroke_count": 18,
+      "jlpt_level": 4,
+      "frequency": 410,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "ケン",
+          "romaji": "ken"
+        },
+        {
+          "reading_type": "on",
+          "reading": "ゲン",
+          "romaji": "gen"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "あかし",
+          "romaji": "akashi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "しるし",
+          "romaji": "shirushi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ため",
+          "romaji": "tame"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ためし",
+          "romaji": "tameshi"
+        }
+      ]
+    },
+    {
+      "character": "質",
+      "meanings": [
+        "Substance",
+        "Quality",
+        "Matter",
+        "Temperament"
+      ],
+      "stroke_count": 15,
+      "jlpt_level": 4,
+      "frequency": 389,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "シツ",
+          "romaji": "shitsu"
+        },
+        {
+          "reading_type": "on",
+          "reading": "シチ",
+          "romaji": "shichi"
+        },
+        {
+          "reading_type": "on",
+          "reading": "チ",
+          "romaji": "chi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "たち",
+          "romaji": "tachi"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "ただ",
+          "romaji": "tada"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "もと",
+          "romaji": "moto"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "わりふ",
+          "romaji": "warifu"
+        }
+      ]
+    },
+    {
+      "character": "貸",
+      "meanings": [
+        "Lend"
+      ],
+      "stroke_count": 12,
+      "jlpt_level": 4,
+      "frequency": 995,
+      "radicals": [],
+      "readings": [
+        {
+          "reading_type": "on",
+          "reading": "タイ",
+          "romaji": "tai"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "か",
+          "romaji": "ka"
+        },
+        {
+          "reading_type": "kun",
+          "reading": "かし-",
+          "romaji": "kashii"
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "source": "Kanji Data (davidluzgouveia)",
+    "license": "MIT",
+    "copyright": "© davidluzgouveia",
+    "attribution": "https://github.com/davidluzgouveia/kanji-data",
+    "count": 166,
+    "include_readings": true
+  }
+}

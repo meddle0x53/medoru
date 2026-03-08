@@ -24,6 +24,13 @@ Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Medoru uses data from the following third-party sources:
 
+### Kanji JLPT Levels & Metadata
+
+Kanji JLPT level classifications (N5-N1), stroke counts, and frequency rankings are provided by [Kanji Data](https://github.com/davidluzgouveia/kanji-data).
+
+- **Copyright**: © davidluzgouveia
+- **License**: MIT
+
 ### Kanji Stroke Data
 
 Kanji stroke diagrams and animation data are provided by [KanjiVG](http://kanjivg.tagaini.net).
@@ -31,9 +38,16 @@ Kanji stroke diagrams and animation data are provided by [KanjiVG](http://kanjiv
 - **Copyright**: © 2009-2025 Ulrich Apel
 - **License**: [Creative Commons Attribution-Share Alike 3.0](http://creativecommons.org/licenses/by-sa/3.0/)
 
+### Kanji Radicals & Decomposition
+
+Kanji radical information, character decomposition, and etymology are provided by [Make Me A Hanzi](https://github.com/skishore/makemeahanzi).
+
+- **Copyright**: © skishore
+- **License**: [Creative Commons Attribution-ShareAlike 4.0 International](https://github.com/skishore/makemeahanzi/blob/master/LICENSE.txt)
+
 ### Kanji Dictionary Data
 
-Kanji readings, meanings, and metadata are provided by [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) from the Electronic Dictionary Research and Development Group (EDRDG).
+Additional kanji readings, meanings, and metadata are provided by [KANJIDIC2](https://www.edrdg.org/wiki/index.php/KANJIDIC_Project) from the Electronic Dictionary Research and Development Group (EDRDG).
 
 - **Copyright**: © EDRG (Electronic Dictionary Research and Development Group)
 - **License**: [Creative Commons Attribution-ShareAlike 4.0 International](https://www.edrdg.org/edrdg/licence.html)

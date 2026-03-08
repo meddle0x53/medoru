@@ -218,11 +218,23 @@ defmodule MedoruWeb.Layouts do
             </.link>
           </div>
           <div class="text-xs text-secondary/60">
-            Kanji stroke data from
-            <a href="http://kanjivg.tagaini.net" target="_blank" class="hover:text-primary">
-              KanjiVG
+            Data from <a
+              href="https://github.com/davidluzgouveia/kanji-data"
+              target="_blank"
+              class="hover:text-primary"
+            >Kanji Data</a>, <a
+              href="http://kanjivg.tagaini.net"
+              target="_blank"
+              class="hover:text-primary"
+            >KanjiVG</a>,
+            <a
+              href="https://github.com/skishore/makemeahanzi"
+              target="_blank"
+              class="hover:text-primary"
+            >
+              MakeMeAHanzi
             </a>
-            (CC BY-SA 3.0)
+            & <a href="https://www.edrdg.org/" target="_blank" class="hover:text-primary">EDRDG</a>
           </div>
         </div>
       </div>

@@ -46,6 +46,9 @@ class KanjiVGSpider:
         url = self.source["download_url"]
         zip_path = self.raw_dir / "kanjivg.zip"
         
+        # Ensure directories exist
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
+        
         console.print(f"[blue]Downloading KanjiVG from {url}...[/blue]")
         
         try:

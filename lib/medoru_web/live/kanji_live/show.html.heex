@@ -45,7 +45,7 @@
             </p>
 
             <%= if @kanji.radicals != [] do %>
-              <div>
+              <div class="mb-4">
                 <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
                   Radicals
                 </h2>
@@ -56,6 +56,35 @@
                     </span>
                   <% end %>
                 </div>
+              </div>
+            <% end %>
+
+            <%!-- Decomposition --%>
+            <%= if @kanji.stroke_data && @kanji.stroke_data["decomposition"] do %>
+              <div class="mb-4">
+                <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
+                  Decomposition
+                </h2>
+                <p class="text-secondary font-mono text-lg">
+                  {@kanji.stroke_data["decomposition"]}
+                </p>
+              </div>
+            <% end %>
+
+            <%!-- Etymology --%>
+            <%= if @kanji.stroke_data && @kanji.stroke_data["etymology"] do %>
+              <div>
+                <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
+                  Etymology
+                </h2>
+                <p class="text-secondary text-sm">
+                  <%= if @kanji.stroke_data["etymology"]["type"] do %>
+                    <span class="font-medium text-base-content">
+                      {String.capitalize(@kanji.stroke_data["etymology"]["type"])}:
+                    </span>
+                  <% end %>
+                  <%= @kanji.stroke_data["etymology"]["hint"] || "" %>
+                </p>
               </div>
             <% end %>
           </div>

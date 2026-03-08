@@ -22,6 +22,23 @@ defmodule MedoruWeb.SettingsLive.Attribution do
         </p>
 
         <div class="space-y-6">
+          <%!-- Kanji Data (N5-N1 levels) --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+            <h2 class="text-xl font-semibold text-base-content mb-3">Kanji JLPT Levels</h2>
+            <p class="text-secondary mb-4">
+              Kanji JLPT level classifications (N5-N1), stroke counts, and frequency rankings
+              are provided by <a
+                href="https://github.com/davidluzgouveia/kanji-data"
+                target="_blank"
+                class="text-primary hover:underline"
+              >Kanji Data</a>.
+            </p>
+            <div class="bg-base-200 rounded-lg p-4 text-sm text-secondary">
+              <p class="font-medium text-base-content mb-2">License: MIT</p>
+              <p>Copyright © davidluzgouveia. Licensed under MIT License.</p>
+            </div>
+          </div>
+
           <%!-- KanjiVG --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
             <h2 class="text-xl font-semibold text-base-content mb-3">Kanji Stroke Data</h2>
@@ -42,11 +59,32 @@ defmodule MedoruWeb.SettingsLive.Attribution do
             </div>
           </div>
 
+          <%!-- Make Me A Hanzi --%>
+          <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
+            <h2 class="text-xl font-semibold text-base-content mb-3">
+              Kanji Radicals & Decomposition
+            </h2>
+            <p class="text-secondary mb-4">
+              Kanji radical information, character decomposition, and etymology are provided by <a
+                href="https://github.com/skishore/makemeahanzi"
+                target="_blank"
+                class="text-primary hover:underline"
+              >Make Me A Hanzi</a>.
+            </p>
+            <div class="bg-base-200 rounded-lg p-4 text-sm text-secondary">
+              <p class="font-medium text-base-content mb-2">License: CC BY-SA 4.0</p>
+              <p>
+                Copyright © skishore. Derived from TW-Sung fonts.
+                Licensed under Creative Commons Attribution-ShareAlike 4.0 International.
+              </p>
+            </div>
+          </div>
+
           <%!-- KANJIDIC2 --%>
           <div class="bg-base-100 rounded-2xl border border-base-300 p-6">
             <h2 class="text-xl font-semibold text-base-content mb-3">Kanji Dictionary Data</h2>
             <p class="text-secondary mb-4">
-              Kanji readings, meanings, and metadata are provided by
+              Additional kanji readings, meanings, and metadata are provided by
               <a
                 href="https://www.edrdg.org/wiki/index.php/KANJIDIC_Project"
                 target="_blank"
@@ -71,8 +109,8 @@ defmodule MedoruWeb.SettingsLive.Attribution do
             <p class="text-secondary">
               Medoru combines these open data sources with our own learning algorithms,
               lesson structure, and user experience design to create a unique Japanese
-              learning platform. The stroke animations and dictionary information are
-              processed from the sources above but presented in our own interface.
+              learning platform. The data is processed from the sources above but
+              presented in our own interface.
             </p>
           </div>
         </div>
