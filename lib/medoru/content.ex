@@ -4,7 +4,7 @@ defmodule Medoru.Content do
   """
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji, Lesson, LessonWord}
+  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji, Lesson, LessonWord, KanjiReadingExtractor}
 
   # Kanji Functions
 
@@ -310,6 +310,81 @@ defmodule Medoru.Content do
     |> where(difficulty: ^difficulty)
     |> order_by([w], asc: w.usage_frequency)
     |> Repo.all()
+  end
+
+  @doc """
+  Returns paginated words with search and sorting capabilities.
+
+  ## Options
+
+    * `:page` - Page number (default: 1)
+    * `:per_page` - Items per page (default: 30)
+    * `:search` - Search term for text, reading, or meaning (default: nil)
+    * `:difficulty` - Filter by JLPT level 1-5 (default: nil)
+    * `:sort_by` - Sort field: `:text`, `:reading`, `:meaning`, `:difficulty`, `:word_type`, `:inserted_at`, `:usage_frequency` (default: :usage_frequency)
+    * `:sort_order` - Sort order: `:asc` or `:desc` (default: :asc)
+
+  ## Learning Order (Default)
+
+  By default, words are sorted by usage_frequency (ascending) to show the most
+  common words first. This is optimal for learning as you encounter the most
+  useful vocabulary early.
+
+  ## Examples
+
+      iex> list_words_paginated(page: 1, per_page: 30)
+      %{words: [%Word{}, ...], total_count: 100, total_pages: 4}
+
+      iex> list_words_paginated(search: "日本", difficulty: 5)
+      %{words: [%Word{}, ...], total_count: 10, total_pages: 1}
+
+  """
+  def list_words_paginated(opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 30)
+    search = Keyword.get(opts, :search)
+    difficulty = Keyword.get(opts, :difficulty)
+    sort_by = Keyword.get(opts, :sort_by, :usage_frequency)
+    sort_order = Keyword.get(opts, :sort_order, :asc)
+
+    # Build base query
+    query = Word
+
+    # Apply difficulty filter
+    query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+
+    # Apply search filter (case-insensitive ILIKE for PostgreSQL)
+    query = if search && search != "" do
+      search_term = "%#{search}%"
+      where(query, [w],
+        ilike(w.text, ^search_term) or
+        ilike(w.reading, ^search_term) or
+        ilike(w.meaning, ^search_term)
+      )
+    else
+      query
+    end
+
+    # Get total count for pagination
+    total_count = query |> select([w], count(w.id)) |> Repo.one()
+    total_pages = ceil(total_count / per_page)
+
+    # Apply sorting
+    query = order_by(query, [w], [{^sort_order, ^sort_by}])
+
+    # Apply pagination
+    offset = (page - 1) * per_page
+    query = query |> limit(^per_page) |> offset(^offset)
+
+    words = Repo.all(query)
+
+    %{
+      words: words,
+      total_count: total_count,
+      total_pages: total_pages,
+      current_page: page,
+      per_page: per_page
+    }
   end
 
   @doc """
@@ -685,6 +760,81 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns paginated lessons with search capabilities.
+
+  ## Options
+
+    * `:page` - Page number (default: 1)
+    * `:per_page` - Items per page (default: 20)
+    * `:search` - Search term for title (default: nil)
+    * `:difficulty` - Filter by JLPT level 1-5 (default: nil)
+    * `:lesson_type` - Filter by lesson type (default: nil)
+
+  ## Sorting
+
+  Lessons are sorted by:
+  1. JLPT level (easiest N5 first)
+  2. Word length (shorter words first - easier to learn)
+  3. Order index (for consistent pagination)
+
+  ## Examples
+
+      iex> list_lessons_paginated(page: 1, per_page: 20)
+      %{lessons: [%Lesson{}, ...], total_count: 100, total_pages: 5}
+
+      iex> list_lessons_paginated(search: "日本", difficulty: 5)
+      %{lessons: [%Lesson{}, ...], total_count: 10, total_pages: 1}
+
+  """
+  def list_lessons_paginated(opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :search)
+    difficulty = Keyword.get(opts, :difficulty)
+    lesson_type = Keyword.get(opts, :lesson_type)
+
+    # Build base query
+    query = Lesson
+
+    # Apply filters
+    query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+    query = if lesson_type, do: where(query, lesson_type: ^lesson_type), else: query
+
+    # Apply search filter (case-insensitive ILIKE for PostgreSQL)
+    query = if search && search != "" do
+      search_term = "%#{search}%"
+      where(query, [l], ilike(l.title, ^search_term))
+    else
+      query
+    end
+
+    # Get total count for pagination
+    total_count = query |> select([l], count(l.id)) |> Repo.one()
+    total_pages = ceil(total_count / per_page)
+
+    # Apply ordering:
+    # 1. By difficulty (easiest N5 first - desc since 5 > 1)
+    # 2. By order_index (lesson progression)
+    # 3. By title length (shorter words first) as tiebreaker
+    query = order_by(query, [l], desc: l.difficulty, asc: l.order_index, asc: fragment("LENGTH(?)", l.title))
+
+    # Apply pagination
+    offset = (page - 1) * per_page
+    query = query |> limit(^per_page) |> offset(^offset)
+
+    # Preload associations
+    lessons = query |> preload(lesson_words: :word) |> Repo.all()
+
+    %{
+      lessons: lessons,
+      total_count: total_count,
+      total_pages: total_pages,
+      current_page: page,
+      per_page: per_page
+    }
+  end
+
+  @doc """
   Returns a list of lessons filtered by lesson type.
 
   ## Examples
@@ -969,5 +1119,41 @@ defmodule Medoru.Content do
   """
   def change_lesson_word(%LessonWord{} = lesson_word, attrs \\ %{}) do
     LessonWord.changeset(lesson_word, attrs)
+  end
+
+  # Kanji Reading Extraction
+
+  @doc """
+  Extracts the reading for a kanji in a word by analyzing the word text and reading.
+  
+  This is useful when the word_kanji association doesn't have a linked reading.
+  It works by comparing the kanji text with the hiragana/katakana reading.
+  
+  ## Examples
+  
+      iex> extract_kanji_reading("ついこの間", "ついこのあいだ", "間")
+      "あいだ"
+      
+      iex> extract_kanji_reading("のし上がる", "のしあがる", "上")
+      "あ"
+  """
+  def extract_kanji_reading(word_text, word_reading, kanji_character) do
+    case KanjiReadingExtractor.extract_all_readings(word_text, word_reading) do
+      {:ok, readings} -> Map.get(readings, kanji_character)
+    end
+  end
+
+  @doc """
+  Returns a map of all kanji readings for a word.
+  
+  ## Example
+  
+      iex> extract_all_kanji_readings("ついこの間", "ついこのあいだ")
+      %{"間" => "あいだ"}
+  """
+  def extract_all_kanji_readings(word_text, word_reading) do
+    case KanjiReadingExtractor.extract_all_readings(word_text, word_reading) do
+      {:ok, readings} -> readings
+    end
   end
 end

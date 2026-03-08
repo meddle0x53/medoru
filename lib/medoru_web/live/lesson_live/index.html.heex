@@ -9,10 +9,22 @@
     </div>
 
     <%!-- Difficulty Selector --%>
-    <div class="flex flex-wrap gap-2 mb-8">
+    <div class="flex flex-wrap gap-2 mb-6">
+      <.link
+        patch={~p"/lessons"}
+        class={[
+          "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
+          if(is_nil(@difficulty),
+            do: "bg-primary text-primary-content shadow-md",
+            else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+          )
+        ]}
+      >
+        All
+      </.link>
       <%= for level <- [5, 4, 3, 2, 1] do %>
         <.link
-          patch={~p"/lessons?difficulty=#{level}"}
+          patch={~p"/lessons?#{page_link_params(assigns, 1) |> Keyword.put(:difficulty, level)}"}
           class={[
             "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
             if(@difficulty == level,
@@ -26,13 +38,70 @@
       <% end %>
     </div>
 
+    <%!-- Search --%>
+    <div class="mb-6">
+      <form phx-submit="search" class="flex gap-2">
+        <div class="relative flex-1 max-w-md">
+          <input
+            type="text"
+            name="search[query]"
+            value={@search}
+            placeholder="Search lessons by title..."
+            class="w-full px-4 py-2.5 pl-10 bg-base-100 border border-base-300 rounded-xl
+                   text-base-content placeholder:text-secondary/50
+                   focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary/50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <button
+          type="submit"
+          class="px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
+                 hover:bg-primary/90 transition-colors"
+        >
+          Search
+        </button>
+        <%= if @search && @search != "" do %>
+          <button
+            type="button"
+            phx-click="clear_search"
+            class="px-4 py-2.5 bg-base-200 text-secondary rounded-xl font-medium
+                   hover:bg-base-300 transition-colors"
+          >
+            Clear
+          </button>
+        <% end %>
+      </form>
+    </div>
+
     <%!-- Stats --%>
-    <div class="mb-6 flex items-center gap-4 text-sm text-secondary">
-      <span class="bg-base-200 px-3 py-1 rounded-full">
-        {length(@lessons)} lessons
+    <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        {@total_count} lessons
       </span>
-      <span class="bg-base-200 px-3 py-1 rounded-full">
-        JLPT N{@difficulty}
+      <%= if @difficulty do %>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          JLPT N{@difficulty}
+        </span>
+      <% end %>
+      <%= if @search && @search != "" do %>
+        <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+          Search: "{@search}"
+        </span>
+      <% end %>
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        Page {@page} of {@total_pages}
       </span>
     </div>
 
@@ -41,6 +110,7 @@
       <%= for {lesson, index} <- Enum.with_index(@lessons) do %>
         <% lesson_progress = Map.get(@lesson_progress_map, lesson.id) %>
         <% is_completed = lesson_progress && lesson_progress.status == :completed %>
+        <% actual_index = ((@page - 1) * @per_page) + index + 1 %>
         <.link
           navigate={~p"/lessons/#{lesson.id}"}
           class="group block"
@@ -66,7 +136,7 @@
                     <.icon name="hero-check" class="w-6 h-6 text-primary" />
                   <% else %>
                     <span class="text-xl font-bold text-primary">
-                      {index + 1}
+                      {actual_index}
                     </span>
                   <% end %>
                 </div>
@@ -94,6 +164,20 @@
                   {lesson.description}
                 </p>
                 <div class="flex items-center gap-3 text-sm">
+                  <%!-- JLPT Level Badge --%>
+                  <span class={[
+                    "px-2.5 py-1 rounded-lg font-medium",
+                    case lesson.difficulty do
+                      5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                      4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+                      3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                      2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                      1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      _ -> "bg-base-200 text-secondary"
+                    end
+                  ]}>
+                    N{lesson.difficulty}
+                  </span>
                   <span class={[
                     "px-2.5 py-1 rounded-lg font-medium capitalize flex items-center gap-1.5",
                     case lesson.lesson_type do
@@ -161,11 +245,99 @@
       <% end %>
     </div>
 
+    <%!-- Empty State --%>
     <%= if @lessons == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
         <h3 class="text-lg font-medium text-base-content mb-2">No lessons found</h3>
-        <p class="text-secondary">This difficulty level doesn't have any lessons yet.</p>
+        <p class="text-secondary">
+          <%= if @search && @search != "" do %>
+            No lessons match your search "{@search}". Try different keywords.
+          <% else %>
+            This difficulty level doesn't have any lessons yet.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          <%!-- Previous Page --%>
+          <%= if @page > 1 do %>
+            <.link
+              patch={~p"/lessons?#{page_link_params(assigns, @page - 1)}"}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              ← Prev
+            </.link>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              ← Prev
+            </span>
+          <% end %>
+
+          <%!-- Page Numbers --%>
+          <div class="flex items-center gap-1">
+            <% start_page = max(1, @page - 2) %>
+            <% end_page = min(@total_pages, start_page + 4) %>
+            <% start_page = if end_page - start_page < 4, do: max(1, end_page - 4), else: start_page %>
+
+            <%= if start_page > 1 do %>
+              <.link
+                patch={~p"/lessons?#{page_link_params(assigns, 1)}"}
+                class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+              >
+                1
+              </.link>
+              <%= if start_page > 2 do %>
+                <span class="px-2 text-secondary/50">...</span>
+              <% end %>
+            <% end %>
+
+            <%= for p <- start_page..end_page do %>
+              <%= if p == @page do %>
+                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                  {p}
+                </span>
+              <% else %>
+                <.link
+                  patch={~p"/lessons?#{page_link_params(assigns, p)}"}
+                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                >
+                  {p}
+                </.link>
+              <% end %>
+            <% end %>
+
+            <%= if end_page < @total_pages do %>
+              <%= if end_page < @total_pages - 1 do %>
+                <span class="px-2 text-secondary/50">...</span>
+              <% end %>
+              <.link
+                patch={~p"/lessons?#{page_link_params(assigns, @total_pages)}"}
+                class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+              >
+                {@total_pages}
+              </.link>
+            <% end %>
+          </div>
+
+          <%!-- Next Page --%>
+          <%= if @page < @total_pages do %>
+            <.link
+              patch={~p"/lessons?#{page_link_params(assigns, @page + 1)}"}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              Next →
+            </.link>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              Next →
+            </span>
+          <% end %>
+        </div>
       </div>
     <% end %>
   </div>

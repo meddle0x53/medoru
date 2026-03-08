@@ -31,7 +31,7 @@ class WordExporter:
         Args:
             words: List of word dictionaries from JMdict
             output_path: Path to output JSON file
-            kanji_mapping: Optional dict mapping kanji characters to their readings
+            kanji_mapping: Optional dict mapping kanji characters to their reading info
             source: Data source name
             license: License information
             copyright: Copyright notice
@@ -90,7 +90,7 @@ class WordExporter:
         Args:
             words_by_kanji: Dict mapping kanji to list of words
             output_path: Path to output JSON file
-            kanji_mapping: Optional dict mapping kanji characters to their readings
+            kanji_mapping: Optional dict mapping kanji characters to their reading info
             source: Data source name
             license: License information
             copyright: Copyright notice
@@ -103,12 +103,13 @@ class WordExporter:
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
             
-            # Transform words for each kanji
+            # Transform words
             medoru_data = {}
             total_words = 0
             
-            for kanji, words in words_by_kanji.items():
+            for kanji, words in track(words_by_kanji.items(), description="Processing words by kanji..."):
                 medoru_words = []
+                
                 for word in words:
                     medoru_word = self._transform_to_medoru_format(word, kanji_mapping)
                     if medoru_word:
@@ -198,18 +199,10 @@ class WordExporter:
                 all_pos.extend(sense.get("pos", []))
             all_pos = list(set(all_pos))  # Deduplicate
             
-            # Build kanji breakdown if we have kanji mapping
+            # Build kanji breakdown with reading matching
             kanji_breakdown = []
             if kanji_mapping:
-                for i, char in enumerate(text):
-                    if char in kanji_mapping:
-                        # Try to find which reading of this kanji is used
-                        kanji_info = kanji_mapping[char]
-                        kanji_breakdown.append({
-                            "character": char,
-                            "position": i,
-                            "reading": None  # Will be populated by caller if matched
-                        })
+                kanji_breakdown = self._build_kanji_breakdown(text, primary_reading, kanji_mapping)
             
             # Calculate difficulty (placeholder - could use JLPT or frequency)
             difficulty = self._estimate_difficulty(word, kanji_mapping)
@@ -232,6 +225,81 @@ class WordExporter:
             console.print(f"[yellow]Warning:[/yellow] Error transforming word: {e}")
             return None
     
+    def _build_kanji_breakdown(
+        self,
+        text: str,
+        reading: str,
+        kanji_mapping: dict
+    ) -> list[dict]:
+        """Build kanji breakdown with reading matching.
+        
+        For each kanji in the word, tries to determine which specific reading
+        is used based on the word's reading.
+        
+        Args:
+            text: Kanji text of the word
+            reading: Hiragana reading of the word
+            kanji_mapping: Dict mapping kanji to their reading info
+            
+        Returns:
+            List of kanji breakdown dicts with reading info
+        """
+        breakdown = []
+        reading_pos = 0  # Current position in the reading string
+        
+        for i, char in enumerate(text):
+            if char not in kanji_mapping:
+                # Kana character - advance reading position
+                if reading_pos < len(reading) and reading[reading_pos] == char:
+                    reading_pos += 1
+                continue
+            
+            kanji_info = kanji_mapping[char]
+            kanji_readings = kanji_info.get("readings", [])
+            
+            # Try to find which reading matches
+            matched_reading = None
+            
+            # For single-kanji words, the reading should directly match
+            if len([c for c in text if c in kanji_mapping]) == 1:
+                # Single kanji word - try to match reading directly
+                for kr in kanji_readings:
+                    if kr["reading"] == reading:
+                        matched_reading = kr["reading"]
+                        break
+                    # Also check without trailing kana (okurigana)
+                    if reading.startswith(kr["reading"]):
+                        matched_reading = kr["reading"]
+                        break
+            else:
+                # Multi-kanji word - more complex matching needed
+                # For now, try simple prefix matching from current position
+                remaining_reading = reading[reading_pos:]
+                
+                # Sort readings by length (longest first) to match greedily
+                sorted_readings = sorted(kanji_readings, key=lambda x: len(x["reading"]), reverse=True)
+                
+                for kr in sorted_readings:
+                    kr_text = kr["reading"]
+                    # Check if this reading appears at current position
+                    if remaining_reading.startswith(kr_text):
+                        matched_reading = kr_text
+                        reading_pos += len(kr_text)
+                        break
+                    # Handle rendaku (voicing changes) - basic support
+                    # This is a simplified check
+                    if kr["reading_type"] == "kun":
+                        # Try without checking for now - will need more sophisticated logic
+                        pass
+            
+            breakdown.append({
+                "character": char,
+                "position": i,
+                "reading": matched_reading  # May be None if not matched
+            })
+        
+        return breakdown
+    
     def _estimate_difficulty(
         self,
         word: dict,
@@ -249,45 +317,35 @@ class WordExporter:
         # Base difficulty
         difficulty = 50
         
+        # Adjust based on kanji JLPT levels if available
         kanji_forms = word.get("kanji_forms", [])
+        if kanji_forms and kanji_mapping:
+            jlpt_levels = []
+            for char in kanji_forms[0]:
+                if char in kanji_mapping:
+                    level = kanji_mapping[char].get("jlpt_level")
+                    if level:
+                        jlpt_levels.append(level)
+            
+            if jlpt_levels:
+                # Average JLPT level (N5=5, N1=1)
+                avg_level = sum(jlpt_levels) / len(jlpt_levels)
+                # Convert to difficulty (N5 = easier = lower difficulty)
+                difficulty = 100 - (avg_level * 20) + 10
+                difficulty = max(1, min(100, difficulty))
+        
+        # Adjust based on word frequency if available
+        priority = word.get("priority", [])
+        if priority:
+            # Common words are easier
+            difficulty -= 10
+        
+        # Adjust based on word length
         if kanji_forms:
-            text = kanji_forms[0]
-            kanji_count = sum(1 for c in text if self._is_kanji(c))
-            
-            # Adjust based on kanji count
-            if kanji_count == 1:
-                difficulty -= 20
-            elif kanji_count == 2:
-                difficulty -= 10
-            elif kanji_count >= 4:
+            length = len(kanji_forms[0])
+            if length <= 2:
+                difficulty -= 5
+            elif length >= 4:
                 difficulty += 10
-            
-            # Adjust based on kanji JLPT levels if available
-            if kanji_mapping:
-                total_level = 0
-                counted = 0
-                for char in text:
-                    if char in kanji_mapping:
-                        kanji_info = kanji_mapping[char]
-                        if isinstance(kanji_info, dict) and "jlpt_level" in kanji_info:
-                            # N5=5 (easiest), N1=1 (hardest) - invert for scoring
-                            jlpt = kanji_info.get("jlpt_level")
-                            if jlpt:
-                                total_level += (6 - jlpt) * 20  # N5=100, N4=80, ..., N1=20
-                                counted += 1
-                
-                if counted > 0:
-                    kanji_difficulty = total_level / counted
-                    difficulty = (difficulty + kanji_difficulty) / 2
         
-        return max(1, min(100, int(difficulty)))
-    
-    def _is_kanji(self, char: str) -> bool:
-        """Check if character is a CJK Unified Ideograph."""
-        if not char or len(char) != 1:
-            return False
-        
-        codepoint = ord(char)
-        # Main CJK range: U+4E00 to U+9FFF
-        # Extension A: U+3400 to U+4DBF
-        return (0x4E00 <= codepoint <= 0x9FFF) or (0x3400 <= codepoint <= 0x4DBF)
+        return max(1, min(100, difficulty))

@@ -234,9 +234,13 @@ class JMdictSpider:
             console.print(f"[red]Error parsing entry {ent_seq}: {e}[/red]")
             return None
     
-    def parse_entry_for_seeding(self, entry_element: ET.Element) -> Optional[dict]:
+    def parse_entry_for_seeding(self, entry_element: ET.Element, kanji_mapping: Optional[dict] = None) -> Optional[dict]:
         """Parse entry in format compatible with Medoru database seeding.
         
+        Args:
+            entry_element: XML entry element from JMdict
+            kanji_mapping: Optional dict mapping kanji chars to their reading info
+            
         Returns format matching priv/repo/seeds/words_n5.json structure.
         """
         try:
@@ -294,17 +298,25 @@ class JMdictSpider:
             # Determine word type from POS tags
             word_type = self._determine_word_type(all_pos_tags)
             
-            # Build kanji breakdown and calculate JLPT level
+            # Build kanji breakdown with reading matching
             kanji_breakdown = []
             kanji_chars = []
             for i, char in enumerate(text):
                 if self._is_cjk_kanji(char):
-                    kanji_breakdown.append({
-                        "character": char,
-                        "position": i,
-                        "reading": ""  # Will be matched during seeding
-                    })
                     kanji_chars.append(char)
+            
+            # Match readings if kanji_mapping provided
+            if kanji_mapping:
+                kanji_breakdown = self._match_kanji_readings(text, primary_reading, kanji_chars, kanji_mapping)
+            else:
+                # Without mapping, just create basic breakdown
+                for i, char in enumerate(text):
+                    if self._is_cjk_kanji(char):
+                        kanji_breakdown.append({
+                            "character": char,
+                            "position": i,
+                            "reading": ""
+                        })
             
             # Skip if no actual CJK kanji found
             if not kanji_breakdown:
@@ -329,6 +341,62 @@ class JMdictSpider:
             
         except Exception as e:
             return None
+    
+    def _match_kanji_readings(self, text: str, word_reading: str, kanji_chars: list[str], kanji_mapping: dict) -> list[dict]:
+        """Match specific kanji readings used in a word.
+        
+        Args:
+            text: The kanji text of the word
+            word_reading: The hiragana/katakana reading of the word
+            kanji_chars: List of kanji characters in the word
+            kanji_mapping: Dict mapping kanji to their reading info
+            
+        Returns:
+            List of kanji breakdown dicts with matched readings
+        """
+        breakdown = []
+        reading_pos = 0
+        
+        for i, char in enumerate(text):
+            if not self._is_cjk_kanji(char):
+                # Kana character - advance reading position
+                if reading_pos < len(word_reading) and word_reading[reading_pos] == char:
+                    reading_pos += 1
+                continue
+            
+            kanji_info = kanji_mapping.get(char, {})
+            readings = kanji_info.get("readings", [])
+            
+            matched_reading = ""
+            
+            if len(kanji_chars) == 1:
+                # Single kanji word - try direct matching
+                for kr in readings:
+                    kr_text = kr.get("reading", "")
+                    if word_reading == kr_text or word_reading.startswith(kr_text):
+                        matched_reading = kr_text
+                        break
+            else:
+                # Multi-kanji word - try matching from current position
+                remaining = word_reading[reading_pos:]
+                
+                # Sort by length (longest first) for greedy matching
+                sorted_readings = sorted(readings, key=lambda x: len(x.get("reading", "")), reverse=True)
+                
+                for kr in sorted_readings:
+                    kr_text = kr.get("reading", "")
+                    if remaining.startswith(kr_text):
+                        matched_reading = kr_text
+                        reading_pos += len(kr_text)
+                        break
+            
+            breakdown.append({
+                "character": char,
+                "position": i,
+                "reading": matched_reading
+            })
+        
+        return breakdown
     
     def _determine_word_type(self, pos_tags: list[str]) -> str:
         """Determine word type from JMdict POS tags."""
@@ -566,7 +634,7 @@ class JMdictSpider:
             console.print(f"[red]✗[/red] Error extracting words: {e}")
             return {}
     
-    def export_words_for_seeding(self, kanji_list: list[str], max_per_kanji: int = 10) -> list[dict]:
+    def export_words_for_seeding(self, kanji_list: list[str], max_per_kanji: int = 10, kanji_mapping: Optional[dict] = None) -> list[dict]:
         """Export words in format compatible with Medoru seeds.exs.
         
         This returns a flat list of word objects matching the structure of
@@ -575,6 +643,7 @@ class JMdictSpider:
         Args:
             kanji_list: List of kanji characters to find words for
             max_per_kanji: Maximum words per kanji
+            kanji_mapping: Optional dict mapping kanji to their reading info for matching
             
         Returns:
             List of word dictionaries in seeding format
@@ -603,8 +672,8 @@ class JMdictSpider:
                 
                 for event, elem in context:
                     if event == "end" and elem.tag == "entry":
-                        # Parse entry in seeding format
-                        word_data = self.parse_entry_for_seeding(elem)
+                        # Parse entry in seeding format with reading matching
+                        word_data = self.parse_entry_for_seeding(elem, kanji_mapping)
                         
                         if word_data and word_data["text"] not in seen_words:
                             text = word_data["text"]
@@ -641,7 +710,7 @@ class JMdictSpider:
             console.print(f"[red]✗[/red] Error exporting words: {e}")
             return []
     
-    def export_all_words_for_seeding(self, limit: Optional[int] = None) -> list[dict]:
+    def export_all_words_for_seeding(self, limit: Optional[int] = None, kanji_mapping: Optional[dict] = None) -> list[dict]:
         """Export ALL words from JMdict in seeding format.
         
         This exports all words with kanji (not kana-only) in the format
@@ -649,6 +718,7 @@ class JMdictSpider:
         
         Args:
             limit: Optional limit on number of words to export
+            kanji_mapping: Optional dict mapping kanji to their reading info for matching
             
         Returns:
             List of word dictionaries in seeding format
@@ -678,8 +748,8 @@ class JMdictSpider:
                 
                 for ev, elem in context:
                     if ev == "end" and elem.tag == "entry":
-                        # Parse entry in seeding format
-                        word_data = self.parse_entry_for_seeding(elem)
+                        # Parse entry in seeding format with reading matching
+                        word_data = self.parse_entry_for_seeding(elem, kanji_mapping)
                         
                         if word_data:
                             text = word_data["text"]

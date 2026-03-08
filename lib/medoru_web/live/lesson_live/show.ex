@@ -50,4 +50,16 @@ defmodule MedoruWeb.LessonLive.Show do
      |> assign(:progress_percentage, progress_percentage)
      |> assign(:page_title, lesson.title)}
   end
+
+  # Helper for shared templates
+  def page_link_params(assigns, page) do
+    assigns = Map.new(assigns)
+
+    [
+      difficulty: Map.get(assigns, :difficulty),
+      search: Map.get(assigns, :search),
+      page: page
+    ]
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+  end
 end

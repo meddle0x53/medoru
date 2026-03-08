@@ -47,22 +47,30 @@
 
 ## 🟡 MEDIUM PRIORITY (Content Expansion)
 
-### Iteration 17: Vocabulary Lesson System
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
-**Files to Create/Modify**:
-- Update `lib/medoru/content/lesson.ex` - Add lesson_type field
-- `lib/medoru/content/lesson_word.ex` - Schema (exists, may need updates)
-- `lib/medoru/learning/lesson_generator.ex` - Generation algorithm
-- `lib/mix/tasks/medoru.generate_lessons.ex` - Mix task
-- `lib/medoru_web/live/teacher/lesson_builder_live.ex` - Teacher UI
+### Iteration 17: Vocabulary Lesson System (Partially Complete)
+**Status**: 🟡 IN PROGRESS | **Estimated**: 2-3 days remaining  
+**Files Created**:
+- ✅ `lib/mix/tasks/medoru.generate_lessons.ex` - System lesson generation
+- ✅ `LESSON_GENERATION.md` - Documentation
 
-**Key Features**:
-- 3-5 words per lesson
-- Auto-generation algorithm (max 2 new kanji per lesson)
-- System lessons: "Vocabulary N5-01", etc.
-- Teacher custom lessons for classrooms
+**Completed**:
+- ✅ System lessons auto-generated from existing words
+- ✅ 36,451 lessons created (145,803 word links)
+- ✅ 3-5 words per lesson (4.0 avg)
+- ✅ Ordered by frequency (most common first)
+- ✅ Grouped by JLPT level (N5, N4, N3+)
 
-**Note**: Requires more word data (currently only 31 N5 words)
+**Remaining**:
+- ⏳ Teacher custom lesson builder UI
+- ⏳ Lesson completion tracking
+- ⏳ Test integration at end of lessons
+- ⏳ Progress tracking per user
+- ⏳ Prerequisites (complete N5 before N4)
+
+**Usage**:
+```bash
+mix medoru.generate_lessons  # Generate all system lessons
+```
 
 ---
 

@@ -593,16 +593,21 @@ def stats():
 @click.option("--kanji", "-k", required=True, help="Kanji characters to find words for (comma-separated)")
 @click.option("--max-per-kanji", "-m", type=int, default=10, help="Maximum words per kanji")
 @click.option("--output", "-o", required=True, help="Output JSON file (for priv/repo/seeds/)")
-def export_for_seeding(kanji: str, max_per_kanji: int, output: str):
+@click.option("--kanji-data", "-d", help="Path to kanji JSON file with reading data (e.g., kanji_n5.json)")
+def export_for_seeding(kanji: str, max_per_kanji: int, output: str, kanji_data: Optional[str] = None):
     """Export words in format compatible with Medoru seeds.exs.
     
     This exports a flat array of words matching the structure of
     priv/repo/seeds/words_n5.json for direct database seeding.
     
+    If --kanji-data is provided, the exporter will match specific kanji readings
+    for each word (e.g., 上 in のし上がる → reading "あ").
+    
     Example:
         medoru-data jmdict export-for-seeding \\
             --kanji "日,月,火,水,木" \\
             --max-per-kanji 10 \\
+            --kanji-data ../priv/repo/seeds/kanji_n5.json \\
             --output ../priv/repo/seeds/words_custom.json
     """
     from .spiders.jmdict import JMdictSpider
@@ -623,8 +628,15 @@ def export_for_seeding(kanji: str, max_per_kanji: int, output: str):
         console.print("[red]Error:[/red] No valid kanji characters provided.")
         return
     
-    # Export words
-    words = spider.export_words_for_seeding(kanji_list, max_per_kanji=max_per_kanji)
+    # Load kanji data with readings if provided
+    kanji_mapping = None
+    if kanji_data:
+        kanji_mapping = _load_kanji_mapping(kanji_data)
+        if kanji_mapping:
+            console.print(f"[dim]Loaded {len(kanji_mapping)} kanji with readings[/dim]")
+    
+    # Export words with reading matching
+    words = spider.export_words_for_seeding(kanji_list, max_per_kanji=max_per_kanji, kanji_mapping=kanji_mapping)
     
     if not words:
         console.print("[yellow]No words found for the given kanji.[/yellow]")
@@ -637,6 +649,12 @@ def export_for_seeding(kanji: str, max_per_kanji: int, output: str):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(words, f, ensure_ascii=False, indent=2)
     
+    # Show reading match stats
+    if kanji_mapping:
+        total_kanji = sum(len(w.get("kanji", [])) for w in words)
+        matched = sum(1 for w in words for k in w.get("kanji", []) if k.get("reading"))
+        console.print(f"[dim]Reading matches: {matched}/{total_kanji} ({matched/total_kanji*100:.1f}%)[/dim]")
+    
     console.print(f"[green]✓[/green] Exported {len(words)} words to {output}")
     console.print(f"[dim]Use with: mix medoru.seed_words --file {output}[/dim]")
 
@@ -644,11 +662,15 @@ def export_for_seeding(kanji: str, max_per_kanji: int, output: str):
 @jmdict.command(name="export-all-for-seeding")
 @click.option("--output", "-o", required=True, help="Output JSON file")
 @click.option("--limit", "-l", type=int, default=None, help="Limit number of words (default: all)")
-def export_all_for_seeding(output: str, limit: Optional[int]):
+@click.option("--kanji-data", "-d", help="Path to kanji JSON file with reading data (e.g., kanji_n5.json)")
+def export_all_for_seeding(output: str, limit: Optional[int], kanji_data: Optional[str] = None):
     """Export ALL words from JMdict in seeding format.
     
     This exports all words with kanji (excluding kana-only words) in the format
     compatible with Medoru database seeding. Use --limit for testing.
+    
+    If --kanji-data is provided, the exporter will match specific kanji readings
+    for each word.
     
     WARNING: This will export ~170,000+ words and create a large file (~500MB).
     
@@ -679,8 +701,15 @@ def export_all_for_seeding(output: str, limit: Optional[int]):
         console.print("Consider using --limit to export a smaller set first.")
         console.print("")
     
-    # Export all words
-    words = spider.export_all_words_for_seeding(limit=limit)
+    # Load kanji data with readings if provided
+    kanji_mapping = None
+    if kanji_data:
+        kanji_mapping = _load_kanji_mapping(kanji_data)
+        if kanji_mapping:
+            console.print(f"[dim]Loaded {len(kanji_mapping)} kanji with readings[/dim]")
+    
+    # Export all words with reading matching
+    words = spider.export_all_words_for_seeding(limit=limit, kanji_mapping=kanji_mapping)
     
     if not words:
         console.print("[yellow]No words found.[/yellow]")
@@ -696,6 +725,12 @@ def export_all_for_seeding(output: str, limit: Optional[int]):
     # Get file size
     file_size = output_path.stat().st_size
     size_mb = file_size / (1024 * 1024)
+    
+    # Show reading match stats
+    if kanji_mapping:
+        total_kanji = sum(len(w.get("kanji", [])) for w in words)
+        matched = sum(1 for w in words for k in w.get("kanji", []) if k.get("reading"))
+        console.print(f"[dim]Reading matches: {matched}/{total_kanji} ({matched/total_kanji*100:.1f}%)[/dim]")
     
     console.print(f"[green]✓[/green] Exported {len(words)} words to {output}")
     console.print(f"[dim]File size: {size_mb:.1f} MB[/dim]")
@@ -726,6 +761,75 @@ def list():
     console.print(table)
     console.print("\n[dim]All data used under terms of respective licenses.[/dim]")
     console.print("[dim]See README.md for attribution requirements.[/dim]")
+
+
+def _load_kanji_mapping(kanji_data_path: str):
+    """Load kanji data and build a mapping for reading matching.
+    
+    Args:
+        kanji_data_path: Path to kanji JSON file (e.g., kanji_n5.json)
+        
+    Returns:
+        Dict mapping kanji characters to their reading info, or None if file not found
+    """
+    import json
+    from pathlib import Path
+    
+    path = Path(kanji_data_path)
+    if not path.exists():
+        console.print(f"[yellow]Warning:[/yellow] Kanji data file not found: {kanji_data_path}")
+        return None
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Handle different JSON structures
+        kanji_list = []
+        data_type = type(data).__name__
+        
+        if data_type == "list":
+            kanji_list = data
+        elif data_type == "dict":
+            if "kanji" in data:
+                kanji_list = data["kanji"]
+            elif "characters" in data:
+                kanji_list = data["characters"]
+        
+        # Build mapping
+        mapping = {}
+        for k in kanji_list:
+            char = None
+            if "character" in k:
+                char = k["character"]
+            elif "kanji" in k:
+                char = k["kanji"]
+            
+            if char:
+                # Normalize readings format
+                readings = []
+                for r in k.get("readings", []):
+                    r_type = type(r).__name__
+                    if r_type == "dict":
+                        readings.append(r)
+                    elif r_type == "str":
+                        # Simple string reading - assume kun
+                        readings.append({"reading": r, "reading_type": "kun"})
+                
+                jlpt = k.get("jlpt_level") or k.get("level")
+                mapping[char] = {
+                    "character": char,
+                    "readings": readings,
+                    "jlpt_level": jlpt
+                }
+        
+        return mapping
+        
+    except Exception as e:
+        import traceback
+        console.print(f"[yellow]Warning:[/yellow] Error loading kanji data: {e}")
+        traceback.print_exc()
+        return None
 
 
 if __name__ == "__main__":

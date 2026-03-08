@@ -101,13 +101,18 @@ defmodule MedoruWeb.LearnLive do
                         </span>
                       </div>
                       <div class="flex-1 min-w-0">
-                        <%= if word_kanji.kanji_reading do %>
+                        <% kanji_reading = (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) || 
+                             Content.extract_kanji_reading(@current_word.text, @current_word.reading, word_kanji.kanji.character)
+                           kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji %>
+                        <%= if kanji_reading && kanji_reading != "" do %>
                           <div class="text-sm font-medium text-base-content mb-1">
-                            {word_kanji.kanji_reading.reading}
+                            {kanji_reading}
                           </div>
-                          <div class="text-xs text-secondary/80 mb-1">
-                            {word_kanji.kanji_reading.romaji}
-                          </div>
+                          <%= if kanji_romaji do %>
+                            <div class="text-xs text-secondary/80 mb-1">
+                              {kanji_romaji}
+                            </div>
+                          <% end %>
                         <% end %>
                         <div class="text-xs text-secondary/70 line-clamp-2">
                           {Enum.join(word_kanji.kanji.meanings, ", ")}
@@ -133,13 +138,19 @@ defmodule MedoruWeb.LearnLive do
                           {word_kanji.kanji.character}
                         </span>
                         <div>
-                          <%= if word_kanji.kanji_reading do %>
+                          <% kanji_reading = (word_kanji.kanji_reading && word_kanji.kanji_reading.reading) || 
+                               Content.extract_kanji_reading(@current_word.text, @current_word.reading, word_kanji.kanji.character)
+                             kanji_romaji = word_kanji.kanji_reading && word_kanji.kanji_reading.romaji
+                             reading_type = word_kanji.kanji_reading && word_kanji.kanji_reading.reading_type %>
+                          <%= if kanji_reading && kanji_reading != "" do %>
                             <div class="text-sm text-secondary">
-                              {word_kanji.kanji_reading.reading} · {word_kanji.kanji_reading.romaji}
+                              {kanji_reading} <%= if kanji_romaji do %>· {kanji_romaji}<% end %>
                             </div>
-                            <div class="text-xs text-secondary/70">
-                              {word_kanji.kanji_reading.reading_type} reading
-                            </div>
+                            <%= if reading_type do %>
+                              <div class="text-xs text-secondary/70">
+                                {reading_type} reading
+                              </div>
+                            <% end %>
                           <% else %>
                             <div class="text-sm text-secondary/70">
                               Reading not available
