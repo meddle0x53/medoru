@@ -11,7 +11,7 @@ defmodule MedoruWeb.LearnLive do
   @impl true
   def render(assigns),
     do: ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
       <div class="max-w-4xl mx-auto px-4 py-6">
         <%= if @completed do %>
           <%!-- Completion Screen --%>

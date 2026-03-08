@@ -31,6 +31,10 @@ defmodule MedoruWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :socket, :any,
+    default: nil,
+    doc: "the parent socket when rendering in a LiveView"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -90,12 +94,21 @@ defmodule MedoruWeb.Layouts do
                 tabindex="0"
                 class="dropdown-content z-[1] bg-base-100 rounded-xl w-80 mt-2 border border-base-300 shadow-lg"
               >
-                <.live_component
-                  module={MedoruWeb.NotificationDropdown}
-                  id="notification-dropdown"
-                  user_id={@current_scope.current_user.id}
-                  unread_count={@current_scope.unread_count}
-                />
+                <%= if @socket do %>
+                  {live_render(
+                    @socket,
+                    MedoruWeb.NotificationDropdownLive,
+                    id: "notification-dropdown",
+                    session: %{"user_id" => @current_scope.current_user.id}
+                  )}
+                <% else %>
+                  <%!-- Static fallback for controller contexts --%>
+                  <div class="py-4 text-center">
+                    <.link navigate={~p"/notifications"} class="text-primary hover:underline">
+                      View all notifications →
+                    </.link>
+                  </div>
+                <% end %>
               </div>
             </li>
 
