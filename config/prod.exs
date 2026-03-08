@@ -25,8 +25,14 @@ config :swoosh, api_client: Swoosh.ApiClient.Req
 # Disable Swoosh Local Memory Storage
 config :swoosh, local: false
 
-# Do not print debug messages in production
+# Production logging - JSON format to console (for container orchestrators)
+# For file logging, use logger_backends and configure in Application.start/2
 config :logger, level: :info
+
+# Console output with JSON formatter
+config :logger, :default_formatter,
+  format: {LoggerJSON.Formatters.Basic, :format},
+  metadata: :all
 
 # Runtime production configuration, including reading
 # of environment variables, is done on config/runtime.exs.

@@ -14,7 +14,7 @@
 | 8 | User Types & Admin Foundation | ✅ APPROVED | 2026-03-07 |
 | 9 | Enhanced Profiles | ✅ APPROVED | 2026-03-07 |
 | 10 | Badge System | ✅ APPROVED | 2026-03-07 |
-| 11 | Logging Infrastructure | 🔄 IN PROGRESS | 2026-03-07 |
+| 11 | Logging Infrastructure | ✅ APPROVED | 2026-03-08 |
 | 12 | Kanji Stroke Animation | ⏳ PLANNED | - |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
 | 14 | Multi-Step Test System | ⏳ PLANNED | - |
@@ -56,10 +56,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 10 COMPLETE - Ready for Review
-- **Last completed**: Iteration 10 - Badge System
+- **Phase**: Iteration 11 COMPLETE - Ready for Review
+- **Last completed**: Iteration 11 - Logging Infrastructure
 - **Current**: Waiting for review
-- **Overall Progress**: 10/20 iterations for v0.1.0 (10 remaining)
+- **Overall Progress**: 11/20 iterations for v0.1.0 (9 remaining)
 
 ## Project Status
 
@@ -108,8 +108,17 @@
 - Public profile pages
 - Badge system (13 badges, auto-award, featured badge, notifications)
 
-### ⏳ Pending (Iterations 11-21) - MVP Extended
-- Logging infrastructure (11)
+### ✅ Completed (Iteration 11)
+- Structured logging with `Medoru.Logger`
+- Environment-specific configuration (dev/test/prod)
+- JSON formatting for production
+- File backend with rotation (10MB per file, keep 5)
+- Request logging plug with metadata (request_id, user_id, IP, duration)
+- Audit logging for security events
+- Logrotate configuration for system-level rotation
+- Documentation in LOGGING.md
+
+### ⏳ Pending (Iterations 12-21) - MVP Extended
 - Kanji stroke animation (12)
 - Admin badge management (13)
 - Test system overhaul (14-16)

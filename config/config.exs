@@ -9,7 +9,8 @@ import Config
 
 config :medoru,
   ecto_repos: [Medoru.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  env: config_env()
 
 # Configure the endpoint
 config :medoru, MedoruWeb.Endpoint,
@@ -55,7 +56,7 @@ config :tailwind,
 # Configure Elixir's Logger
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id, :user_id, :ip, :module, :function, :line]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

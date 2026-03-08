@@ -5,15 +5,20 @@ defmodule Medoru.Application do
 
   use Application
 
+  require Logger
+
   @impl true
   def start(_type, _args) do
+    # Configure additional logging backends for production
+    configure_logging()
+
     children = [
       MedoruWeb.Telemetry,
       Medoru.Repo,
       {DNSCluster, query: Application.get_env(:medoru, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Medoru.PubSub},
       # Start a worker by calling: Medoru.Worker.start_link(arg)
-      # {Medoru.Worker, arg},
+      # {Medoru.Worker, _arg},
       # Start to serve requests, typically the last entry
       MedoruWeb.Endpoint
     ]
@@ -22,6 +27,25 @@ defmodule Medoru.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Medoru.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  # Configure logging backends based on environment
+  defp configure_logging do
+    env = Application.get_env(:medoru, :env, Mix.env())
+
+    if env == :prod do
+      # Add file backend in production
+      LoggerBackends.add({LoggerFileBackend, :file_log})
+
+      # Configure the file backend
+      Application.put_env(:logger, :file_log,
+        path: "/var/log/medoru/app.log",
+        level: :info,
+        format: {LoggerJSON.Formatters.Basic, :format},
+        metadata: :all,
+        rotate: %{max_bytes: 10_000_000, keep: 5}
+      )
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration

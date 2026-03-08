@@ -75,7 +75,12 @@ defmodule Medoru.MixProject do
       {:usage_rules, "~> 0.1", runtime: false},
 
       # Optional: For project introspection if using MCP servers
-      {:tidewave, "~> 0.1", only: :dev}
+      {:tidewave, "~> 0.1", only: :dev},
+
+      # Logging
+      {:logger_backends, "~> 1.0"},
+      {:logger_file_backend, "~> 0.0.12"},
+      {:logger_json, "~> 5.0"}
     ]
   end
 

@@ -72,8 +72,12 @@ config :medoru, MedoruWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :medoru, dev_routes: true
 
-# Do not include metadata nor timestamps in development logs
-config :logger, :default_formatter, format: "[$level] $message\n"
+# Development logging - human readable with metadata
+config :logger, level: :debug
+
+config :logger, :default_formatter,
+  format: "[$level] $time $metadata$message\n",
+  metadata: [:request_id, :user_id, :module, :function, :line]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
