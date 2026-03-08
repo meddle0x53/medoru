@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
 **Last Updated**: 2026-03-08  
-**Completed**: 12/21 iterations  
-**Remaining**: 9 iterations
+**Completed**: 15/21 iterations  
+**Remaining**: 6 iterations
 
 ---
 
@@ -77,6 +77,33 @@
 ```bash
 mix medoru.generate_lessons  # Generate all system lessons
 ```
+
+---
+
+### Iteration 22: Kanji Writing Test Step ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
+**Depends On**: Iteration 14, 17
+
+**Files Created**:
+- ✅ `lib/medoru/tests/writing_validator.ex` - Stroke validation against KanjiVG
+- ✅ `lib/medoru_web/live/lesson_test_live/writing_component.ex` - Canvas drawing component
+- ✅ `assets/js/hooks/kanji_writing.js` - Client-side drawing hook
+
+**Files Modified**:
+- ✅ `lib/medoru/tests/lesson_test_generator.ex` - Added writing step generation
+- ✅ `lib/medoru/tests/lesson_test_session.ex` - Added `submit_writing_answer/4`
+- ✅ `lib/medoru_web/live/lesson_test_live/show.ex` - Writing question UI
+- ✅ `assets/js/app.js` - Added KanjiWriting hook
+
+**Key Features**:
+- ✅ Canvas-based kanji drawing (mouse, pen, touch)
+- ✅ Stroke validation against KanjiVG reference data
+- ✅ 70% accuracy threshold to pass
+- ✅ Writing steps worth 5 points (highest value)
+- ✅ Wrong answers show stroke animation preview
+- ✅ Grid background for proportion guidance
+- ✅ Undo last stroke, Clear canvas controls
+- ✅ Adaptive retry: wrong writing steps go to end of queue
 
 ---
 

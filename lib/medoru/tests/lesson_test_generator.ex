@@ -110,18 +110,88 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
   # Generates test steps for all words
   defp generate_steps(test, words, steps_per_word, distractor_count) do
-    # For each word, generate steps and flatten
-    all_steps =
+    # Get unique kanji from all words for writing steps
+    writing_steps = generate_writing_steps(words)
+
+    # For each word, generate multichoice steps and flatten
+    multichoice_steps =
       words
       |> Enum.flat_map(fn word ->
         word
         |> generate_word_steps(steps_per_word)
         |> Enum.map(fn step -> add_distractors(step, word, distractor_count) end)
       end)
+
+    # Combine all steps, shuffle, and assign order indices
+    all_steps =
+      (writing_steps ++ multichoice_steps)
       |> shuffle_steps()
       |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
 
     Tests.create_test_steps(test, all_steps)
+  end
+
+  # Generate writing steps for unique kanji in lesson words
+  defp generate_writing_steps(words) do
+    # Collect all unique kanji from words
+    unique_kanji =
+      words
+      |> Enum.flat_map(&get_word_kanji/1)
+      |> Enum.uniq_by(& &1.id)
+
+    # Create a writing step for each unique kanji
+    Enum.map(unique_kanji, &build_writing_step/1)
+  end
+
+  # Get kanji characters from a word
+  defp get_word_kanji(word) do
+    # Load word with kanji if not already loaded
+    word_with_kanji =
+      case word.word_kanjis do
+        %Ecto.Association.NotLoaded{} ->
+          Medoru.Content.get_word_with_kanji!(word.id)
+
+        _ ->
+          word
+      end
+
+    # Extract unique kanji
+    word_with_kanji.word_kanjis
+    |> Enum.map(& &1.kanji)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq_by(& &1.id)
+  end
+
+  # Build a writing step for a kanji
+  defp build_writing_step(kanji) do
+    meanings = Enum.join(kanji.meanings || [], ", ")
+
+    # Extract stroke paths from kanji.stroke_data
+    strokes =
+      case kanji.stroke_data do
+        %{"strokes" => s} when is_list(s) -> s
+        _ -> []
+      end
+
+    %{
+      step_type: :writing,
+      question_type: :writing,
+      question: "Write the kanji for '#{meanings}'",
+      correct_answer: kanji.character,
+      kanji_id: kanji.id,
+      points: 5,
+      hints: ["Remember the stroke order", "Start from top-left"],
+      explanation: "The kanji '#{kanji.character}' means #{meanings}",
+      question_data: %{
+        type: :kanji_writing,
+        kanji: kanji.character,
+        meanings: kanji.meanings,
+        stroke_count: kanji.stroke_count,
+        strokes: strokes
+      },
+      # Writing steps don't have multiple choice options
+      options: []
+    }
   end
 
   # Generate steps for a single word

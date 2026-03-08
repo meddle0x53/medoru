@@ -16,10 +16,8 @@ defmodule Medoru.Content.KanjiReadingExtractor do
   Extracts the reading for a specific kanji in a word.
   """
   def extract_reading(word_text, word_reading, kanji_character) do
-    case extract_all_readings(word_text, word_reading) do
-      {:ok, readings} -> Map.get(readings, kanji_character)
-      {:error, _} -> nil
-    end
+    {:ok, readings} = extract_all_readings(word_text, word_reading)
+    Map.get(readings, kanji_character)
   end
 
   @doc """

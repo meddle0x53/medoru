@@ -8,7 +8,10 @@ defmodule MedoruWeb.KanjiLive.Show do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok,
+     socket
+     |> assign(:show_writing_practice, false)
+     |> assign(:writing_completed, false)}
   end
 
   @impl true
@@ -84,6 +87,48 @@ defmodule MedoruWeb.KanjiLive.Show do
     else
       {:noreply, push_navigate(socket, to: ~p"/")}
     end
+  end
+
+  @impl true
+  def handle_event("toggle_writing_practice", params, socket) do
+    # Reset completed state when explicitly starting practice (not just toggling)
+    reset = params["reset"] == "true"
+
+    socket =
+      if reset or not socket.assigns.show_writing_practice do
+        socket
+        |> assign(:show_writing_practice, true)
+        |> assign(:writing_completed, false)
+      else
+        assign(socket, :show_writing_practice, false)
+      end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("kanji_complete", _params, socket) do
+    # Mark writing as completed successfully
+    {:noreply,
+     socket
+     |> assign(:writing_completed, true)
+     |> put_flash(:info, "Great job! You wrote #{socket.assigns.kanji.character} correctly!")}
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => true}, socket) do
+    handle_event("kanji_complete", %{}, socket)
+  end
+
+  @impl true
+  def handle_event("submit_writing", _params, socket) do
+    # Not completed yet - just ignore or show hint
+    {:noreply,
+     put_flash(
+       socket,
+       :info,
+       "Keep going! Draw all #{socket.assigns.kanji.stroke_count} strokes."
+     )}
   end
 
   defp parse_page(nil), do: 1

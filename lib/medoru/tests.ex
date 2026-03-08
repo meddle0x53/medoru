@@ -718,6 +718,7 @@ defmodule Medoru.Tests do
   Records an answer to a test step.
 
   Automatically determines if the answer is correct and calculates points.
+  For writing steps, pass `is_correct` directly.
 
   ## Examples
 
@@ -733,9 +734,25 @@ defmodule Medoru.Tests do
       |> Map.put(:test_session_id, session_id)
       |> Map.put(:test_step_id, step_id)
 
-    %TestStepAnswer{}
-    |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
-    |> Repo.insert()
+    # For writing steps, is_correct is passed directly
+    changeset =
+      if attrs[:is_correct] != nil do
+        %TestStepAnswer{}
+        |> TestStepAnswer.changeset(%{
+          answer: attrs.answer,
+          is_correct: attrs.is_correct,
+          points_earned: if(attrs.is_correct, do: step.points, else: 0),
+          time_spent_seconds: attrs.time_spent_seconds,
+          step_index: attrs.step_index,
+          test_session_id: session_id,
+          test_step_id: step_id
+        })
+      else
+        %TestStepAnswer{}
+        |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+      end
+
+    changeset |> Repo.insert()
   end
 
   @doc """

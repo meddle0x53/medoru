@@ -51,6 +51,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
           |> assign(:selected_answer, nil)
           |> assign(:feedback, nil)
           |> assign(:show_hint, false)
+          |> assign(:show_stroke_preview, false)
+          |> assign(:preview_kanji, nil)
 
         {:noreply, socket}
 
@@ -148,6 +150,124 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   @impl true
+  def handle_event("stroke_correct", _params, socket) do
+    # KanjiWriter library validated stroke as correct
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("stroke_incorrect", _params, socket) do
+    # KanjiWriter library cleared the stroke automatically
+    # Just show a brief hint
+    {:noreply, put_flash(socket, :error, "Try again - follow the red guide")}
+  end
+
+  @impl true
+  def handle_event("kanji_complete", _params, socket) do
+    # All strokes completed correctly on client side - submit as correct answer
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    # Submit as correct answer (explicitly mark as correct for writing questions)
+    submit_result =
+      LessonTestSession.submit_writing_answer(
+        session.id,
+        step.id,
+        %{"completed" => true},
+        time_spent_seconds: 15,
+        is_correct: true
+      )
+
+    handle_submit_result(submit_result, step, socket)
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => true}, socket) do
+    # Submit button clicked when kanji is complete - treat same as kanji_complete
+    handle_event("kanji_complete", %{}, socket)
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"strokes" => _strokes} = params, socket) do
+    # Manual submit with strokes data
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    # Validate writing
+    submit_result =
+      if step.question_type == :writing do
+        LessonTestSession.submit_writing_answer(
+          session.id,
+          step.id,
+          params,
+          time_spent_seconds: 30
+        )
+      else
+        # Fallback for non-writing steps
+        LessonTestSession.submit_answer(session.id, step.id, "written", time_spent_seconds: 30)
+      end
+
+    handle_submit_result(submit_result, step, socket)
+  end
+
+  # Handle submit result (shared between manual submit and auto-submit on complete)
+  @impl true
+  def handle_event("hide_stroke_preview", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_stroke_preview, false)
+     |> assign(:preview_kanji, nil)}
+  end
+
+  defp handle_submit_result(submit_result, step, socket) do
+    case submit_result do
+      {:correct, result} ->
+        socket =
+          socket
+          |> assign(:feedback, :correct)
+          |> assign(:session, result.session)
+          |> assign(:current_step, result.next_step)
+          |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+          |> assign(:show_stroke_preview, false)
+          |> assign(:preview_kanji, nil)
+
+        {:noreply, socket}
+
+      {:incorrect, result} ->
+        # Load kanji for stroke preview
+        kanji =
+          if step.kanji_id do
+            Medoru.Content.get_kanji!(step.kanji_id)
+          else
+            nil
+          end
+
+        socket =
+          socket
+          |> assign(:feedback, :incorrect)
+          |> assign(:session, result.session)
+          |> assign(:current_step, result.next_step)
+          |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+          |> assign(:show_stroke_preview, true)
+          |> assign(:preview_kanji, kanji)
+
+        {:noreply, socket}
+
+      {:completed, result} ->
+        Medoru.Learning.complete_lesson(
+          socket.assigns.current_scope.current_user.id,
+          socket.assigns.lesson.id
+        )
+
+        {:noreply,
+         socket
+         |> assign(:completed, true)
+         |> assign(:result, result)
+         |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
@@ -188,89 +308,110 @@ defmodule MedoruWeb.LessonTestLive.Show do
         <%!-- Question Card --%>
         <%= if @current_step do %>
           <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 mb-6">
-            <%!-- Question --%>
-            <div class="mb-6">
-              <h2 class="text-xl font-semibold text-base-content leading-relaxed">
-                {@current_step.question}
-              </h2>
-            </div>
-
-            <%!-- Hint --%>
-            <%= if @show_hint && List.first(@current_step.hints) do %>
-              <div class="bg-info/10 text-info rounded-lg p-3 mb-4">
-                <div class="flex items-center gap-2">
-                  <.icon name="hero-light-bulb" class="w-5 h-5" />
-                  <span>{List.first(@current_step.hints)}</span>
-                </div>
-              </div>
-            <% end %>
-
-            <%!-- Answer Options --%>
-            <div class="space-y-3 mb-6">
-              <%= for option <- @current_step.options do %>
-                <button
-                  type="button"
-                  phx-click="select_answer"
-                  phx-value-answer={option}
-                  class={[
-                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
-                    if @selected_answer == option do
-                      "border-primary bg-primary/5"
-                    else
-                      "border-base-200 hover:border-primary/50 hover:bg-base-50"
-                    end
-                  ]}
-                >
-                  <div class="flex items-center gap-3">
-                    <div class={[
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                      if @selected_answer == option do
-                        "border-primary bg-primary"
-                      else
-                        "border-base-300"
-                      end
-                    ]}>
-                      <%= if @selected_answer == option do %>
-                        <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
-                      <% end %>
+            <%!-- Show stroke preview after wrong answer --%>
+            <%= if @show_stroke_preview && @preview_kanji do %>
+              <MedoruWeb.LessonTestLive.WritingComponent.stroke_preview kanji={@preview_kanji} />
+            <% else %>
+              <%!-- Question --%>
+              <div class="mb-6">
+                <h2 class="text-xl font-semibold text-base-content leading-relaxed">
+                  <%= if @current_step.question_type == :writing do %>
+                    <div class="flex items-center gap-2 text-primary">
+                      <.icon name="hero-pencil" class="w-6 h-6" />
+                      <span>Writing Challenge (5 points)</span>
                     </div>
-                    <span class="text-base-content font-medium">{option}</span>
+                  <% end %>
+                  {@current_step.question}
+                </h2>
+              </div>
+
+              <%!-- Hint --%>
+              <%= if @show_hint && List.first(@current_step.hints) do %>
+                <div class="bg-info/10 text-info rounded-lg p-3 mb-4">
+                  <div class="flex items-center gap-2">
+                    <.icon name="hero-light-bulb" class="w-5 h-5" />
+                    <span>{List.first(@current_step.hints)}</span>
                   </div>
-                </button>
+                </div>
               <% end %>
-            </div>
+
+              <%!-- Writing Step --%>
+              <%= if @current_step.question_type == :writing do %>
+                <MedoruWeb.LessonTestLive.WritingComponent.writing_question
+                  step={@current_step}
+                  target="writing-component"
+                />
+              <% else %>
+                <%!-- Answer Options for Multichoice --%>
+                <div class="space-y-3 mb-6">
+                  <%= for option <- @current_step.options do %>
+                    <button
+                      type="button"
+                      phx-click="select_answer"
+                      phx-value-answer={option}
+                      class={[
+                        "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
+                        if @selected_answer == option do
+                          "border-primary bg-primary/5"
+                        else
+                          "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                        end
+                      ]}
+                    >
+                      <div class="flex items-center gap-3">
+                        <div class={[
+                          "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                          if @selected_answer == option do
+                            "border-primary bg-primary"
+                          else
+                            "border-base-300"
+                          end
+                        ]}>
+                          <%= if @selected_answer == option do %>
+                            <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
+                          <% end %>
+                        </div>
+                        <span class="text-base-content font-medium">{option}</span>
+                      </div>
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            <% end %>
 
             <%!-- Actions --%>
             <div class="flex flex-wrap gap-3">
-              <button
-                type="button"
-                phx-click="submit_answer"
-                disabled={is_nil(@selected_answer)}
-                class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Submit Answer
-              </button>
-
-              <%= if !@show_hint do %>
+              <%= if @current_step.question_type != :writing do %>
                 <button
                   type="button"
-                  phx-click="show_hint"
-                  class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                  phx-click="submit_answer"
+                  disabled={is_nil(@selected_answer)}
+                  class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <div class="flex items-center gap-2">
-                    <.icon name="hero-light-bulb" class="w-5 h-5" />
-                    <span>Hint</span>
-                  </div>
+                  Submit Answer
+                </button>
+
+                <%= if !@show_hint do %>
+                  <button
+                    type="button"
+                    phx-click="show_hint"
+                    class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                  >
+                    <div class="flex items-center gap-2">
+                      <.icon name="hero-light-bulb" class="w-5 h-5" />
+                      <span>Hint</span>
+                    </div>
+                  </button>
+                <% end %>
+
+                <button
+                  type="button"
+                  phx-click="skip_question"
+                  class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
+                >
+                  Skip →
                 </button>
               <% end %>
-
-              <button
-                type="button"
-                phx-click="skip_question"
-                class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
-              >
-                Skip →
-              </button>
             </div>
           </div>
         <% else %>
@@ -311,4 +452,6 @@ defmodule MedoruWeb.LessonTestLive.Show do
     </Layouts.app>
     """
   end
+
+  # Convert stroke points from JSON format to tuples
 end

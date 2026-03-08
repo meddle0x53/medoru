@@ -92,22 +92,103 @@
       </div>
     </div>
 
-    <%!-- Stroke Animation Section (if available) --%>
+    <%!-- Writing Practice Section (if stroke data available) --%>
     <%= if @has_stroke_data do %>
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 mb-8">
-        <div class="flex items-center gap-2 mb-4">
-          <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
-          <h2 class="text-xl font-bold text-base-content">Stroke Order</h2>
-          <span class="text-sm text-secondary/70 ml-auto">
-            Learn the correct stroke order
-          </span>
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
+            <h2 class="text-xl font-bold text-base-content">Writing Practice</h2>
+          </div>
+          <button
+            phx-click="toggle_writing_practice"
+            class="text-sm bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-lg transition-colors"
+          >
+            <%= if @show_writing_practice do %>
+              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> Hide Practice
+            <% else %>
+              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> Practice Writing
+            <% end %>
+          </button>
         </div>
 
-        <.live_component
-          module={MedoruWeb.StrokeAnimator}
-          id="kanji-stroke-animator"
-          stroke_data={@kanji.stroke_data}
-        />
+        <%= if @show_writing_practice do %>
+          <%!-- Force remount by changing ID when completed state changes --%>
+          <div id={"writing-practice-#{@writing_completed}"} phx-hook="KanjiWriting" class="mt-4">
+            <%!-- Hidden stroke data for JS --%>
+            <div
+              data-stroke-data={Jason.encode!(@kanji.stroke_data["strokes"] || [])}
+              class="hidden"
+            >
+            </div>
+
+            <%= if @writing_completed do %>
+              <%!-- Success state --%>
+              <div class="text-center py-8">
+                <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-4 rounded-2xl mb-4">
+                  <.icon name="hero-check-circle" class="w-8 h-8" />
+                  <span class="text-xl font-bold">Correct!</span>
+                </div>
+                <p class="text-secondary mb-4">You wrote {@kanji.character} correctly!</p>
+                <div class="flex justify-center gap-3">
+                  <button
+                    phx-click="toggle_writing_practice"
+                    phx-value-reset="true"
+                    class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-xl font-medium transition-colors flex items-center gap-2"
+                  >
+                    <.icon name="hero-arrow-path" class="w-5 h-5" /> Practice Again
+                  </button>
+                  <button
+                    phx-click="toggle_writing_practice"
+                    class="px-6 py-3 bg-base-200 hover:bg-base-300 rounded-xl transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            <% else %>
+              <%!-- Writing canvas --%>
+              <div class="flex flex-col items-center gap-4">
+                <div class="text-center text-secondary text-sm">
+                  Draw the kanji stroke by stroke. Each stroke must be longer than 10 pixels.
+                </div>
+
+                <div
+                  id="writing-canvas-container"
+                  class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden"
+                  style="width: 300px; height: 300px;"
+                >
+                </div>
+
+                <div class="flex justify-center gap-3">
+                  <button
+                    type="button"
+                    data-action="clear"
+                    class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-secondary transition-colors flex items-center gap-2"
+                  >
+                    <.icon name="hero-trash" class="w-5 h-5" /> Clear
+                  </button>
+                  <button
+                    type="button"
+                    data-action="submit"
+                    class="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <.icon name="hero-check" class="w-5 h-5" /> Check
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <%!-- Show stroke animator when not practicing --%>
+          <div class="mt-4">
+            <.live_component
+              module={MedoruWeb.StrokeAnimator}
+              id="kanji-stroke-animator"
+              stroke_data={@kanji.stroke_data}
+            />
+          </div>
+        <% end %>
       </div>
     <% end %>
 

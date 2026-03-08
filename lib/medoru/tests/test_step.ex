@@ -15,12 +15,13 @@ defmodule Medoru.Tests.TestStep do
   - :fill - Fill in the blank (2 points)
   - :match - Matching pairs (1-2 points depending on complexity)
   - :order - Put in correct order (2 points)
+  - :writing - Kanji writing with stroke validation (5 points)
   """
   use Ecto.Schema
   import Ecto.Changeset
 
   @step_types [:reading, :writing, :listening, :grammar, :speaking, :vocabulary]
-  @question_types [:multichoice, :fill, :match, :order]
+  @question_types [:multichoice, :fill, :match, :order, :writing]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -95,6 +96,7 @@ defmodule Medoru.Tests.TestStep do
       :fill -> 2
       :match -> 2
       :order -> 2
+      :writing -> 5
     end
   end
 
@@ -105,6 +107,9 @@ defmodule Medoru.Tests.TestStep do
     case {question_type, points} do
       {:multichoice, p} when p != 1 ->
         add_error(changeset, :points, "multiple choice questions must be worth 1 point")
+
+      {:writing, p} when p != 5 ->
+        add_error(changeset, :points, "writing questions must be worth 5 points")
 
       {type, p} when type in [:fill, :match, :order] and p not in [1, 2] ->
         add_error(changeset, :points, "this question type must be worth 1 or 2 points")

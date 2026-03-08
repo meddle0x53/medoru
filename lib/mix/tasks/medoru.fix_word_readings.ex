@@ -156,7 +156,7 @@ defmodule Mix.Tasks.Medoru.FixWordReadings do
 
   defp find_matching_reading(%WordKanji{} = wk, readings) when is_list(readings) do
     word_reading = wk.word.reading
-    kanji_char = wk.kanji.character
+    _kanji_char = wk.kanji.character
 
     # Count kanji in word
     kanji_count = count_kanji(wk.word.text)

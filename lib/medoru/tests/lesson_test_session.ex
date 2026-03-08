@@ -72,6 +72,175 @@ defmodule Medoru.Tests.LessonTestSession do
   end
 
   @doc """
+  Submits a writing step answer for validation.
+
+  ## Parameters
+    * `strokes` - List of strokes, each as list of {x, y} points
+    * `opts` - Additional options
+
+  ## Examples
+
+      iex> submit_writing_answer(session_id, step_id, [[{10, 10}, {50, 50}], [{60, 10}, {60, 50}]])
+      {:correct, %{accuracy: 0.85}}
+
+  """
+  def submit_writing_answer(session_id, step_id, strokes, opts \\ []) do
+    time_spent = Keyword.get(opts, :time_spent_seconds, 0)
+    # Allow overriding is_correct (used when client validates via kanji_complete)
+    is_correct_override = Keyword.get(opts, :is_correct)
+
+    # Parse strokes if sent as JSON string from JavaScript
+    # Convert %{"x" => x, "y" => y} format to {x, y} tuples
+    parsed_strokes =
+      cond do
+        is_binary(strokes) ->
+          case Jason.decode(strokes) do
+            {:ok, decoded} -> convert_stroke_format(decoded)
+            {:error, _} -> []
+          end
+
+        is_list(strokes) ->
+          strokes
+
+        true ->
+          []
+      end
+
+    session =
+      TestSession
+      |> where([ts], ts.id == ^session_id)
+      |> preload(:test)
+      |> Repo.one!()
+
+    step = Repo.get!(TestStep, step_id)
+
+    # Determine if correct (use override if provided, otherwise validate)
+    {is_correct, accuracy} =
+      if is_correct_override != nil do
+        {is_correct_override, 1.0}
+      else
+        # Get kanji stroke data for validation
+        kanji =
+          if step.kanji_id do
+            Medoru.Content.get_kanji!(step.kanji_id)
+          else
+            nil
+          end
+
+        # Validate the writing
+        result =
+          if kanji && kanji.stroke_data do
+            Medoru.Tests.WritingValidator.validate_writing(
+              step.correct_answer,
+              parsed_strokes,
+              kanji.stroke_data
+            )
+          else
+            # Fallback: just check stroke count
+            if length(parsed_strokes) > 0, do: {:ok, 0.8}, else: {:error, :no_strokes}
+          end
+
+        # Determine if correct from validation result
+        correct = match?({:ok, _}, result)
+        acc = if correct, do: elem(result, 1), else: 0.0
+        {correct, acc}
+      end
+
+    # Get current metadata
+    metadata = session.metadata || %{}
+    answer_counter = metadata["answer_counter"] || 0
+    step_queue = metadata["step_queue"] || []
+
+    # Record the answer with validation result
+    answer_text = if is_correct, do: "Correct (#{round(accuracy * 100)}%)", else: "Incorrect"
+
+    attrs = %{
+      answer: answer_text,
+      time_spent_seconds: time_spent,
+      step_index: answer_counter,
+      is_correct: is_correct
+    }
+
+    {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
+
+    # Update queue based on result
+    new_queue =
+      if is_correct do
+        List.delete(step_queue, step_id)
+      else
+        # Move to end
+        List.delete(step_queue, step_id) ++ [step_id]
+      end
+
+    wrong_count =
+      if is_correct do
+        metadata["wrong_answer_count"] || 0
+      else
+        (metadata["wrong_answer_count"] || 0) + 1
+      end
+
+    next_step_id = List.first(new_queue)
+
+    new_metadata = %{
+      metadata
+      | "step_queue" => new_queue,
+        "wrong_answer_count" => wrong_count,
+        "current_step_id" => next_step_id,
+        "answer_counter" => answer_counter + 1
+    }
+
+    # Update session
+    total_steps = metadata["total_steps"] || length(step_queue)
+    progress_index = total_steps - length(new_queue)
+
+    updated_session =
+      if is_correct do
+        session
+        |> TestSession.progress_changeset(progress_index, session.time_spent_seconds + time_spent)
+        |> Ecto.Changeset.put_change(:metadata, new_metadata)
+        |> Repo.update!()
+      else
+        session
+        |> Ecto.Changeset.change(
+          metadata: new_metadata,
+          current_step_index: session.current_step_index + 1
+        )
+        |> Repo.update!()
+      end
+
+    # Return result
+    if is_correct do
+      if new_queue == [] do
+        complete_lesson_test(updated_session, total_steps)
+      else
+        next_step = Repo.get!(TestStep, hd(new_queue))
+
+        {:correct,
+         %{
+           session: updated_session,
+           next_step: next_step,
+           remaining_count: length(new_queue),
+           total_steps: total_steps,
+           completed_steps: progress_index,
+           accuracy: accuracy
+         }}
+      end
+    else
+      next_step = Repo.get!(TestStep, next_step_id || step_id)
+
+      {:incorrect,
+       %{
+         session: updated_session,
+         next_step: next_step,
+         remaining_count: length(new_queue),
+         wrong_answer: %{accuracy: accuracy},
+         retry_position: length(new_queue),
+         show_stroke_preview: true
+       }}
+    end
+  end
+
+  @doc """
   Submits an answer for the current step in a lesson test.
 
   If correct: removes step from queue, moves to next step
@@ -336,4 +505,19 @@ defmodule Medoru.Tests.LessonTestSession do
        wrong_answer_count: session.metadata["wrong_answer_count"] || 0
      }}
   end
+
+  # Convert strokes from JSON format %{"x" => x, "y" => y} to tuple format {x, y}
+  defp convert_stroke_format(strokes) when is_list(strokes) do
+    Enum.map(strokes, fn stroke ->
+      Enum.map(stroke, fn
+        %{"x" => x, "y" => y} -> {x, y}
+        [x, y] -> {x, y}
+        {x, y} -> {x, y}
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+    end)
+  end
+
+  defp convert_stroke_format(_), do: []
 end
