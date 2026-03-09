@@ -40,3 +40,4 @@ npm-debug.log
 # Data related
 /raw
 /seeds
+/priv/repo/seeds/*.json

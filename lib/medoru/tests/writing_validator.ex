@@ -30,7 +30,7 @@ defmodule Medoru.Tests.WritingValidator do
         result = analyze_and_compare(user_strokes, stroke_data["strokes"])
 
         case result do
-          %{correct_order: true, correct_directions: true, accuracy: acc} when acc >= 0.60 ->
+          %{correct_order: true, correct_directions: true, accuracy: acc} when acc >= 0.55 ->
             {:ok, acc}
 
           %{correct_order: false} ->

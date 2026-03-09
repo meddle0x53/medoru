@@ -37,7 +37,7 @@ defmodule MedoruWeb.Admin.UserLive.Index do
         search: search
       )
 
-    total_pages = safe_ceil(total_count / @per_page)
+    total_pages = safe_ceil(total_count)
 
     {:noreply,
      socket
@@ -83,11 +83,7 @@ defmodule MedoruWeb.Admin.UserLive.Index do
   def type_badge_color("student"), do: "badge-info"
   def type_badge_color(_), do: "badge-ghost"
 
-  defp safe_ceil(number) when is_float(number) do
-    trunc(Float.ceil(number))
-  end
-
-  defp safe_ceil(number) when is_integer(number) do
-    div(number + @per_page - 1, @per_page)
+  defp safe_ceil(number) do
+    trunc(Float.ceil(number / @per_page))
   end
 end

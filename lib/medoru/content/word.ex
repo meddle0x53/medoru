@@ -26,6 +26,14 @@ defmodule Medoru.Content.Word do
     field :difficulty, :integer
     field :usage_frequency, :integer, default: 1000
     field :word_type, Ecto.Enum, values: @word_types, default: :other
+    # Pre-computed sort score for lesson ordering (frequency + complexity)
+    field :sort_score, :integer
+    # Core 6000 frequency rank (1 = most common, 6000 = less common)
+    field :core_rank, :integer
+    # Example sentence from Core 6000
+    field :example_sentence, :string
+    field :example_reading, :string
+    field :example_meaning, :string
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
 
@@ -35,7 +43,7 @@ defmodule Medoru.Content.Word do
   @doc false
   def changeset(word, attrs) do
     word
-    |> cast(attrs, [:text, :meaning, :reading, :difficulty, :usage_frequency, :word_type])
+    |> cast(attrs, [:text, :meaning, :reading, :difficulty, :usage_frequency, :word_type, :sort_score, :core_rank, :example_sentence, :example_reading, :example_meaning])
     |> validate_required([:text, :meaning, :reading, :difficulty])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:usage_frequency, greater_than: 0)

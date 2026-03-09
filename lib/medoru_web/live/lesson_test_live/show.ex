@@ -188,6 +188,25 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   @impl true
+  def handle_event("submit_writing", %{"completed" => false}, socket) do
+    # User gave up or skipped - mark as incorrect and show correct answer
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    # Submit as incorrect answer
+    submit_result =
+      LessonTestSession.submit_writing_answer(
+        session.id,
+        step.id,
+        %{"completed" => false},
+        time_spent_seconds: 30,
+        is_correct: false
+      )
+
+    handle_submit_result(submit_result, step, socket)
+  end
+
+  @impl true
   def handle_event("submit_writing", %{"strokes" => _strokes} = params, socket) do
     # Manual submit with strokes data
     session = socket.assigns.session

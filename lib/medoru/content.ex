@@ -301,7 +301,7 @@ defmodule Medoru.Content do
   """
   def list_words do
     Word
-    |> order_by([w], asc: w.usage_frequency)
+    |> order_by([w], asc: w.sort_score)
     |> Repo.all()
   end
 
@@ -317,7 +317,7 @@ defmodule Medoru.Content do
   def list_words_by_difficulty(difficulty) when difficulty in 1..5 do
     Word
     |> where(difficulty: ^difficulty)
-    |> order_by([w], asc: w.usage_frequency)
+    |> order_by([w], asc: w.sort_score)
     |> Repo.all()
   end
 
@@ -330,14 +330,14 @@ defmodule Medoru.Content do
     * `:per_page` - Items per page (default: 30)
     * `:search` - Search term for text, reading, or meaning (default: nil)
     * `:difficulty` - Filter by JLPT level 1-5 (default: nil)
-    * `:sort_by` - Sort field: `:text`, `:reading`, `:meaning`, `:difficulty`, `:word_type`, `:inserted_at`, `:usage_frequency` (default: :usage_frequency)
+    * `:sort_by` - Sort field: `:text`, `:reading`, `:meaning`, `:difficulty`, `:word_type`, `:inserted_at`, `:usage_frequency`, `:sort_score` (default: :sort_score)
     * `:sort_order` - Sort order: `:asc` or `:desc` (default: :asc)
 
   ## Learning Order (Default)
 
-  By default, words are sorted by usage_frequency (ascending) to show the most
-  common words first. This is optimal for learning as you encounter the most
-  useful vocabulary early.
+  By default, words are sorted by sort_score (ascending) which combines frequency
+  and visual complexity. This shows the most common, simplest words first - optimal
+  for learning: single kanji → kanji+kana → 2 kanji → complex patterns.
 
   ## Examples
 
@@ -353,7 +353,7 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     search = Keyword.get(opts, :search)
     difficulty = Keyword.get(opts, :difficulty)
-    sort_by = Keyword.get(opts, :sort_by, :usage_frequency)
+    sort_by = Keyword.get(opts, :sort_by, :sort_score)
     sort_order = Keyword.get(opts, :sort_order, :asc)
 
     # Build base query
@@ -413,7 +413,7 @@ defmodule Medoru.Content do
     Word
     |> join(:inner, [w], wk in WordKanji, on: wk.word_id == w.id)
     |> where([w, wk], wk.kanji_id == ^kanji_id)
-    |> order_by([w], asc: w.usage_frequency)
+    |> order_by([w], asc: w.sort_score)
     |> Repo.all()
   end
 

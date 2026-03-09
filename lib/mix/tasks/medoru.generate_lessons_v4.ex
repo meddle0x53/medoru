@@ -251,23 +251,40 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
   end
 
   defp generate_lessons_for_level(difficulty, dry_run) do
+    # Get all kanji up to this level (e.g., for N4, include N5+N4 kanji)
+    allowed_kanji =
+      Kanji
+      |> where([k], k.jlpt_level >= ^difficulty)
+      |> select([k], k.character)
+      |> Repo.all()
+      |> MapSet.new()
+
     words =
       Word
       |> where(difficulty: ^difficulty)
       |> preload(word_kanjis: :kanji)
       |> Repo.all()
 
-    total_words = length(words)
+    # Filter words to only include those where ALL kanji are at or below this level
+    filtered_words =
+      Enum.filter(words, fn word ->
+        word_kanjis = get_word_kanji(word)
+        # Allow kana-only words or words where all kanji are in allowed set
+        word_kanjis == [] or Enum.all?(word_kanjis, &MapSet.member?(allowed_kanji, &1))
+      end)
+
+    total_words = length(filtered_words)
+    filtered_count = length(words) - total_words
 
     if total_words == 0 do
       Mix.shell().info("  No words found for N#{difficulty}")
       return()
     end
 
-    Mix.shell().info("  Found #{total_words} words")
+    Mix.shell().info("  Found #{length(words)} words, filtered to #{total_words} (removed #{filtered_count} with higher-level kanji)")
 
     # Enrich word data
-    word_data = enrich_word_data(words, difficulty)
+    word_data = enrich_word_data(filtered_words, difficulty)
 
     # Phase 1: Short Focus Lessons (single kanji, short words 2-3 chars)
     {focus_lessons, remaining} = build_focus_lessons(word_data, difficulty)

@@ -49,14 +49,14 @@
           </div>
 
           <.link
-            navigate={~p"/daily-review"}
+            navigate={~p"/daily-test"}
             class={[
               "btn btn-lg",
               if(studied_today, do: "btn-outline btn-success", else: "btn-primary")
             ]}
           >
             <%= if studied_today do %>
-              <.icon name="hero-arrow-path" class="w-5 h-5 mr-2" /> Review Again
+              <.icon name="hero-check" class="w-5 h-5 mr-2" /> Completed
             <% else %>
               <.icon name="hero-play" class="w-5 h-5 mr-2" /> Start Daily Review
             <% end %>
@@ -100,7 +100,7 @@
         title="Daily Review"
         description="Review kanji due for today and keep your streak going."
         button_text="Start Review"
-        button_link={~p"/daily-review"}
+        button_link={~p"/daily-test"}
         icon="calendar"
       />
       <.action_card

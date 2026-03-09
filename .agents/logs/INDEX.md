@@ -16,8 +16,13 @@
 | 10 | Badge System | ✅ APPROVED | 2026-03-07 |
 | 11 | Logging Infrastructure | ✅ APPROVED | 2026-03-08 |
 | 12 | Kanji Stroke Animation | ✅ APPROVED | 2026-03-08 |
+| 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
+| 16 | Auto-Generated Daily Tests | ✅ COMPLETED | 2026-03-09 |
+| 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
+| 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
+| 16 | Auto-Generated Daily Tests | ✅ COMPLETED | 2026-03-09 |
+| 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
-| 14 | Multi-Step Test System | ⏳ PLANNED | - |
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
 | 16 | Daily Tests | ⏳ PLANNED | - |
 | 17 | Vocabulary Lesson System | ⏳ PLANNED | - |
@@ -56,10 +61,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 12 COMPLETE - Ready for Iteration 13+
-- **Last completed**: Iteration 12 - Kanji Stroke Animation
-- **Current**: ⏳ 9 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 12/21 iterations for v0.1.0 (9 remaining)
+- **Phase**: Iteration 16 COMPLETE - Ready for Iteration 13+
+- **Last completed**: Iteration 16 - Auto-Generated Daily Tests
+- **Current**: ⏳ 6 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 15/21 iterations for v0.1.0 (6 remaining)
 
 ## ⏳ Pending Work (Priority Order)
 1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System
@@ -127,20 +132,17 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Logrotate configuration for system-level rotation
 - Documentation in LOGGING.md
 
-### ✅ Completed (Iteration 12)
-- Stroke data JSON for 30+ N5 kanji
-- `StrokeAnimator` LiveComponent with SVG animation
-- Playback controls (play, pause, step forward/backward, reset)
-- Stroke order list with visual indicators
-- Adjustable animation speed
-- Optional stroke number display
-- Integrated on kanji detail pages
-- CSS animations for stroke drawing effect
+### ✅ Completed (Iteration 16)
+- Daily Test Generator with SRS integration
+- `/daily-test` LiveView for taking daily tests
+- `/daily-test/complete` completion screen
+- Streak updates on test completion
+- Review items + new words mix (up to 5 new)
+- One test per user per day
 
-### ⏳ Pending (Iterations 13-21) - MVP Extended
+### ⏳ Pending (Iterations 13, 15, 18-21) - MVP Extended
 - Admin badge management (13)
-- Test system overhaul (14-16)
-- Vocabulary lessons (17)
+- Teacher test creation (15)
 - Classroom system (18-20)
 - Admin dashboard (21)
 

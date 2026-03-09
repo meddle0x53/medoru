@@ -73,7 +73,9 @@ defmodule MedoruWeb.WordLive.Show do
   defp toggle_order(:asc), do: :desc
   defp toggle_order(:desc), do: :asc
 
-  # Learning order: Most common words first (ascending frequency)
+  # Learning order: sort_score combines frequency + complexity (ascending)
+  defp default_order(:sort_score), do: :asc
+  # Most common words first (ascending frequency)
   defp default_order(:usage_frequency), do: :asc
   # JLPT: Easiest first (N5=5 -> N1=1, so descending)
   defp default_order(:difficulty), do: :desc

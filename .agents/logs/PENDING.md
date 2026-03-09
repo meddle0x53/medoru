@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-08  
-**Completed**: 15/21 iterations  
-**Remaining**: 6 iterations
+**Last Updated**: 2026-03-09  
+**Completed**: 16/23 iterations  
+**Remaining**: 7 iterations
 
 ---
 
@@ -10,6 +10,7 @@
 
 ### Iteration 14: Multi-Step Test System Architecture
 **Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
+**Log**: [ITERATION-14-multi-step-test.md](./ITERATION-14-multi-step-test.md)  
 **Files Created**:
 - ✅ `lib/medoru/tests/test.ex` - Test schema with types (daily/lesson/teacher/practice)
 - ✅ `lib/medoru/tests/test_step.ex` - Step schema with question types (multichoice/fill/match/order)
@@ -32,28 +33,38 @@
 
 ---
 
-### Iteration 16: Auto-Generated Daily Tests  
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
-**Depends On**: Iteration 14
-**Files to Create/Modify**:
-- `lib/medoru/learning/daily_test_generator.ex` - Service module
-- `lib/medoru_web/live/daily_test_live.ex` - Main LiveView
-- Update `lib/medoru/learning.ex` - Add daily test functions
+### Iteration 16: Auto-Generated Daily Tests ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-09  
+**Log**: [ITERATION-16-auto-generated-daily-tests.md](./ITERATION-16-auto-generated-daily-tests.md)
 
-**Key Features**:
-- SRS-based review items + new words (up to 5)
-- Mix multichoice and fill questions
-- One daily test per user per day
-- Completing updates streak
+**Files Created**:
+- ✅ `lib/medoru/learning/daily_test_generator.ex` - Service module
+- ✅ `lib/medoru_web/live/daily_test_live.ex` - Main LiveView
+- ✅ `lib/medoru_web/live/daily_test_live/daily_test_live.html.heex` - Template
+- ✅ `lib/medoru_web/live/daily_test_live/complete.ex` - Completion screen
+- ✅ `test/medoru/learning/daily_test_generator_test.exs` - Tests
+
+**Features Implemented**:
+- ✅ SRS-based review items + new words (up to 5)
+- ✅ Multiple choice questions (2 per word)
+- ✅ One daily test per user per day
+- ✅ Completing updates streak
+- ✅ `/daily-test` and `/daily-test/complete` routes
 
 ---
 
 ## 🟡 MEDIUM PRIORITY (Content Expansion)
 
-### Iteration 17: Vocabulary Lesson System ✅ COMPLETED
-**Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
+### Iteration 17: Vocabulary Lesson System ✅ COMPLETED | **APPROVED**
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-09 | **Approved**: 2026-03-09  
+**Log**: [ITERATION-17-vocabulary-lessons.md](./ITERATION-17-vocabulary-lessons.md)  
 **Files Created**:
-- ✅ `lib/mix/tasks/medoru.generate_lessons.ex` - System lesson generation
+- ✅ `lib/mix/tasks/medoru.generate_lessons_v7.ex` - v7 Topic-based lesson generation
+- ✅ `priv/repo/parse_anki_export.exs` - Parse Core 6000 data
+- ✅ `priv/repo/enrich_word_pool.exs` - Enrich word pool with DB IDs
+- ✅ `docs/v7_lesson_design.md` - Lesson design document
+- ✅ `docs/v7_lesson_summary.md` - Generation summary
+- ✅ `docs/v7_lesson_improvements.md` - Topic alignment improvements
 - ✅ `LESSON_GENERATION.md` - Documentation
 - ✅ `lib/medoru/tests/lesson_test_generator.ex` - Auto-generates tests from lesson words
 - ✅ `lib/medoru/tests/lesson_test_session.ex` - Adaptive test sessions with retry logic
@@ -62,26 +73,37 @@
 - ✅ `priv/repo/migrations/*_add_test_id_to_lessons.exs` - Lesson-test association
 
 **Completed**:
+- ✅ **v7: 300 topic-based lessons (100 N5 + 100 N4 + 100 N3)**
+- ✅ **v7: 4,421 word-lesson links (~15 words per lesson)**
+- ✅ **v7: Core 6000 data with example sentences**
+- ✅ **v7: Topic names aligned with Core 6000 word distribution**
+- ✅ **v7: N5 topics renamed to match actual content (numbers→time→verbs→adjectives→places)**
 - ✅ System lessons auto-generated from existing words
-- ✅ 36,451 lessons created (145,803 word links)
-- ✅ 3-5 words per lesson (4.0 avg)
-- ✅ Ordered by frequency (most common first)
-- ✅ Grouped by JLPT level (N5, N4, N3+)
-- ✅ **Lesson tests auto-generated from words**
-- ✅ **3-4 multichoice steps per word (reading, meaning, reverse)**
-- ✅ **Adaptive retry: wrong answers go to end of queue**
-- ✅ **Test UI with progress tracking, hints, skip option**
-- ✅ **Lesson completion tracking via tests**
+- ✅ Lesson tests auto-generated from words
+- ✅ 3-4 multichoice steps per word (reading, meaning, reverse)
+- ✅ Adaptive retry: wrong answers go to end of queue
+- ✅ Test UI with progress tracking, hints, skip option
+- ✅ Lesson completion tracking via tests
+
+**Approved By**: User  
+**Notes**: N5 topic names now accurately reflect Core 6000 natural progression. N4/N3 topics still generic - to be improved in future iteration.
 
 **Usage**:
 ```bash
-mix medoru.generate_lessons  # Generate all system lessons
+# v7 Lesson Generation (current)
+mix run priv/repo/parse_anki_export.exs data/anki2.txt
+mix run priv/repo/enrich_word_pool.exs
+mix medoru.generate_lessons_v7  # 300 topic-based lessons
+
+# Legacy (replaced by v7)
+# mix medoru.generate_lessons
 ```
 
 ---
 
 ### Iteration 22: Kanji Writing Test Step ✅ COMPLETED
 **Status**: ✅ COMPLETED | **Completed**: 2026-03-08  
+**Log**: [2026-03-08_iteration_22.md](./2026-03-08_iteration_22.md)  
 **Depends On**: Iteration 14, 17
 
 **Files Created**:
@@ -104,6 +126,121 @@ mix medoru.generate_lessons  # Generate all system lessons
 - ✅ Grid background for proportion guidance
 - ✅ Undo last stroke, Clear canvas controls
 - ✅ Adaptive retry: wrong writing steps go to end of queue
+
+---
+
+### Iteration 23: Reading Comprehension Text Input Test Step
+**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Depends On**: Iteration 14 (Multi-Step Test System), Iteration 17 (Vocabulary Lessons)
+
+**Files to Create**:
+- `lib/medoru_web/live/lesson_test_live/reading_text_component.ex` - Text input component for reading questions
+- `lib/medoru/tests/reading_answer_validator.ex` - Validates meaning and kana reading answers
+
+**Files Modified**:
+- `lib/medoru/tests/lesson_test_generator.ex` - Add reading text step generation
+- `lib/medoru/tests/lesson_test_session.ex` - Add `submit_reading_text_answer/4`
+- `lib/medoru/tests/test_step.ex` - Add `:reading_text` question type
+- `lib/medoru_web/live/lesson_test_live/show.ex` - Reading text question UI
+- `assets/js/hooks/reading_input.js` - Input handling (optional)
+
+**Key Features**:
+- New test step type: `:reading_text` (distinct from `:multichoice`)
+- Displays Japanese word (kanji/kana)
+- User types two fields:
+  1. **Meaning** - English translation
+  2. **Kana Reading** - Hiragana reading of the word
+- Validation:
+  - Meaning: Fuzzy match against accepted meanings (case insensitive, partial match)
+  - Kana: Exact match or acceptable variations (おう/おお, えい/ええ)
+- Scoring: 2 points base, -25% per extra attempt
+- Visual feedback: Green/red highlighting on input fields
+- Hint button reveals partial answer (first letter, -10% penalty)
+- Skip option puts word back in queue (adaptive retry)
+
+**Answer Format**:
+```json
+{
+  "meaning": "to eat",
+  "reading": "たべる"
+}
+```
+
+**UI Design**:
+- Large Japanese word display (kanji if applicable)
+- Two labeled input fields:
+  - "Meaning (English):"
+  - "Reading (Hiragana):"
+- Submit button validates both fields
+- Shows correct answers after incorrect attempt
+- Progress bar showing test completion
+
+---
+
+### Iteration 24: Internationalization (i18n) - Multi-Language Support
+**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Depends On**: None (can be done in parallel)
+
+**Overview**:  
+Add full internationalization support to make the platform accessible in English, Bulgarian, and Japanese. Use AI-powered translation for all UI labels, with fallback to English.
+
+**Files to Create**:
+- `priv/gettext/en/LC_MESSAGES/default.po` - English source translations
+- `priv/gettext/bg/LC_MESSAGES/default.po` - Bulgarian translations
+- `priv/gettext/ja/LC_MESSAGES/default.po` - Japanese translations
+- `lib/medoru_web/live/settings_live/language_selector.ex` - Language selection component
+- `lib/medoru/i18n/translation_manager.ex` - Translation management utilities
+
+**Files Modified**:
+- `config/config.exs` - Add i18n configuration, default locale
+- `lib/medoru_web.ex` - Import Gettext macros, set locale plug
+- `lib/medoru_web/router.ex` - Add locale scope or parameter
+- `lib/medoru_web/components/core_components.ex` - Wrap all text in `gettext()` calls
+- All LiveView modules - Replace hardcoded strings with `gettext()` calls
+- All templates (.heex files) - Replace text with `{gettext("...")}`
+- `lib/medoru_web/plugs/set_locale.ex` - Set locale from session/cookie/params
+
+**Key Features**:
+- **Language Selector Dropdown**: Available in header/settings
+  - 🇬🇧 English (default)
+  - 🇧🇬 Bulgarian
+  - 🇯🇵 Japanese
+- **AI-Powered Translation**: Use AI to generate initial translations for all labels
+- **Gettext Integration**: Standard Elixir i18n via `Gettext` module
+- **Locale Persistence**: Store selection in session + cookie
+- **Fallback Chain**: ja → en, bg → en (if translation missing)
+- **Translation Coverage**:
+  - All UI labels and buttons
+  - Flash messages and notifications
+  - Error messages and validations
+  - Lesson titles and descriptions (keep Japanese content, translate UI)
+  - Navigation and menus
+  - Forms and placeholders
+
+**Translation Process**:
+1. Extract all strings using `mix gettext.extract`
+2. AI translate missing strings for bg/ja
+3. Review and refine translations
+4. Compile with `mix gettext.merge`
+
+**UI Example**:
+```elixir
+# Before
+<.button>Start Lesson</.button>
+
+# After
+<.button>{gettext("Start Lesson")}</.button>
+```
+
+**Database Considerations**:
+- User preference: `users.settings["locale"]` (default: "en")
+- Guest users: cookie-based locale preference
+
+**Technical Notes**:
+- Use `ex_cldr` for number/date/currency formatting if needed
+- Japanese: Consider kanji vs hiragana for different user levels
+- Bulgarian: Cyrillic support, pluralization rules
+- Keep content language (vocabulary words) in Japanese, only translate UI
 
 ---
 
@@ -220,14 +357,14 @@ mix medoru.generate_lessons  # Generate all system lessons
 
 ## 📊 Summary
 
-**Completed**: 14/21 iterations (67%)
+**Completed**: 16/23 iterations (70%)
 
 | Priority | Iterations | Total Days |
 |----------|------------|------------|
-| 🔴 High | 14 ✅, 16 | 2-3 days |
-| 🟡 Medium | 13, 17 ✅ | 1-2 days |
+| 🔴 High | 14 ✅, 16 ✅ | 0 days (COMPLETE) |
+| 🟡 Medium | 13, 17 ✅, 22 ✅, 23, 24 | 5-8 days |
 | 🟢 Lower | 15, 18, 19, 20, 21 | 12-17 days |
-| **Total** | **7** | **15-22 days** |
+| **Total** | **7** | **17-25 days** |
 
 ---
 
@@ -235,13 +372,15 @@ mix medoru.generate_lessons  # Generate all system lessons
 
 1. **Iteration 14** ✅ (Multi-Step Test) - Foundation for tests
 2. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
-3. **Iteration 16** (Daily Tests) - Uses test system
-4. **Iteration 13** (Admin Badge Management) - Quick win
-5. **Iteration 15** (Teacher Test Creation) - Teacher features
-6. **Iteration 18** (Classroom Core) - Classroom foundation
-7. **Iteration 19** (Classroom Membership) - Student joining
-8. **Iteration 20** (Classroom Tests/Rankings) - Full classroom
-9. **Iteration 21** (Admin Dashboard) - Admin polish
+3. **Iteration 22** ✅ (Kanji Writing) - Writing validation
+4. **Iteration 23** (Reading Text Input) - Text-based reading comprehension
+5. **Iteration 13** (Admin Badge Management) - Quick win
+6. **Iteration 24** (i18n Multi-Language) - Platform internationalization
+7. **Iteration 15** (Teacher Test Creation) - Teacher features
+8. **Iteration 18** (Classroom Core) - Classroom foundation
+9. **Iteration 19** (Classroom Membership) - Student joining
+10. **Iteration 20** (Classroom Tests/Rankings) - Full classroom
+11. **Iteration 21** (Admin Dashboard) - Admin polish
 
 ---
 

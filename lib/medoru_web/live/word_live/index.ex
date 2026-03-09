@@ -127,7 +127,7 @@ defmodule MedoruWeb.WordLive.Index do
   defp parse_search(""), do: nil
   defp parse_search(search), do: String.trim(search)
 
-  defp parse_sort_by(nil), do: :usage_frequency
+  defp parse_sort_by(nil), do: :sort_score
 
   defp parse_sort_by(sort_by) when is_binary(sort_by) do
     case sort_by do
@@ -137,12 +137,13 @@ defmodule MedoruWeb.WordLive.Index do
       "difficulty" -> :difficulty
       "word_type" -> :word_type
       "usage_frequency" -> :usage_frequency
+      "sort_score" -> :sort_score
       "inserted_at" -> :inserted_at
-      _ -> :usage_frequency
+      _ -> :sort_score
     end
   end
 
-  defp parse_sort_by(_), do: :usage_frequency
+  defp parse_sort_by(_), do: :sort_score
 
   defp parse_sort_order(nil), do: :asc
 
@@ -159,8 +160,10 @@ defmodule MedoruWeb.WordLive.Index do
   defp toggle_order(:asc), do: :desc
   defp toggle_order(:desc), do: :asc
 
-  # Easiest first: N5 (level 5) -> N1 (level 1) = descending order
-  # Learning order: Most common words first (ascending frequency)
+  # Learning order: sort_score combines frequency + complexity (ascending)
+  # Single kanji → kanji+kana → 2 kanji → complex patterns
+  defp default_order(:sort_score), do: :asc
+  # Most common words first (ascending frequency)
   defp default_order(:usage_frequency), do: :asc
   # JLPT: Easiest first (N5=5 -> N1=1, so descending)
   defp default_order(:difficulty), do: :desc

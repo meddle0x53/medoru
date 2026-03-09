@@ -1001,4 +1001,104 @@ defmodule Medoru.Learning do
       end
     end
   end
+
+  # ============================================================================
+  # Daily Tests
+  # ============================================================================
+
+  @doc """
+  Gets or creates a daily test for a user.
+
+  If the user already has a daily test for today, returns that test.
+  Otherwise, generates a new daily test based on SRS due reviews and new words.
+
+  ## Examples
+
+      iex> get_or_create_daily_test(user_id)
+      {:ok, %Test{}}
+
+  """
+  def get_or_create_daily_test(user_id) do
+    Medoru.Learning.DailyTestGenerator.get_or_create_daily_test(user_id)
+  end
+
+  @doc """
+  Checks if a user has already completed their daily test today.
+
+  ## Examples
+
+      iex> daily_test_completed_today?(user_id)
+      true
+
+  """
+  def daily_test_completed_today?(user_id) do
+    Medoru.Learning.DailyTestGenerator.daily_test_completed_today?(user_id)
+  end
+
+  @doc """
+  Gets today's daily test for a user if one exists.
+
+  Returns nil if no daily test exists for today.
+
+  ## Examples
+
+      iex> get_todays_daily_test(user_id)
+      %Test{}
+
+      iex> get_todays_daily_test(user_id_without_test)
+      nil
+
+  """
+  def get_todays_daily_test(user_id) do
+    Medoru.Learning.DailyTestGenerator.get_todays_daily_test(user_id)
+  end
+
+  @doc """
+  Returns the daily test status for a user.
+
+  Includes information about:
+  - Whether a test exists for today
+  - Whether it has been completed
+  - Count of due reviews and new words available
+
+  ## Examples
+
+      iex> get_daily_test_status(user_id)
+      %{
+        has_test: true,
+        completed: false,
+        test_id: "uuid",
+        due_count: 5,
+        new_available: 3,
+        total_items: 8
+      }
+
+  """
+  def get_daily_test_status(user_id) do
+    daily_stats = get_daily_review_stats(user_id)
+    todays_test = get_todays_daily_test(user_id)
+
+    if todays_test do
+      # Check if there's a completed session
+      completed_today = daily_test_completed_today?(user_id)
+
+      %{
+        has_test: true,
+        completed: completed_today,
+        test_id: todays_test.id,
+        due_count: daily_stats.due_count,
+        new_available: daily_stats.new_available,
+        total_items: length(todays_test.test_steps || [])
+      }
+    else
+      %{
+        has_test: false,
+        completed: false,
+        test_id: nil,
+        due_count: daily_stats.due_count,
+        new_available: daily_stats.new_available,
+        total_items: 0
+      }
+    end
+  end
 end

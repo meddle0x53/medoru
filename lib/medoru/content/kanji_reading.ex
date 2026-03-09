@@ -41,14 +41,20 @@ defmodule Medoru.Content.KanjiReading do
 
   # On readings use katakana (U+30A0 to U+30FF)
   # Kun readings use hiragana (U+3040 to U+309F)
-  defp valid_kana?(reading, :on) do
-    String.to_charlist(reading)
-    |> Enum.all?(fn cp -> cp >= 0x30A0 and cp <= 0x30FF end)
+  defp valid_kana?(reading, :on) when is_binary(reading) do
+    reading
+    |> String.codepoints()
+    |> Enum.all?(fn <<cp::utf8>> -> cp >= 0x30A0 and cp <= 0x30FF end)
+  rescue
+    _ -> false
   end
 
-  defp valid_kana?(reading, :kun) do
-    String.to_charlist(reading)
-    |> Enum.all?(fn cp -> cp >= 0x3040 and cp <= 0x309F end)
+  defp valid_kana?(reading, :kun) when is_binary(reading) do
+    reading
+    |> String.codepoints()
+    |> Enum.all?(fn <<cp::utf8>> -> cp >= 0x3040 and cp <= 0x309F end)
+  rescue
+    _ -> false
   end
 
   defp valid_kana?(_, _), do: false

@@ -77,8 +77,18 @@ defmodule MedoruWeb.Router do
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
       live "/notifications", NotificationsLive
-      # Placeholder routes for future iterations
       live "/daily-review", DailyReviewLive
+    end
+  end
+
+  # Daily Test routes (require authentication)
+  scope "/", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :daily_test,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/daily-test", DailyTestLive
+      live "/daily-test/complete", DailyTestLive.Complete
     end
   end
 
