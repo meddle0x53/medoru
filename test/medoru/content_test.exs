@@ -339,15 +339,15 @@ defmodule Medoru.ContentTest do
 
     @invalid_attrs %{text: nil, meaning: nil, reading: nil, difficulty: nil}
 
-    test "list_words/0 returns all words ordered by frequency" do
-      word1 = word_fixture(%{usage_frequency: 10, text: unique_word_text()})
-      word2 = word_fixture(%{usage_frequency: 5, text: unique_word_text()})
+    test "list_words/0 returns all words ordered by sort_score" do
+      word1 = word_fixture(%{sort_score: 10, text: unique_word_text()})
+      word2 = word_fixture(%{sort_score: 5, text: unique_word_text()})
 
       list = Content.list_words()
-      freq_5_index = Enum.find_index(list, &(&1.id == word2.id))
-      freq_10_index = Enum.find_index(list, &(&1.id == word1.id))
+      score_5_index = Enum.find_index(list, &(&1.id == word2.id))
+      score_10_index = Enum.find_index(list, &(&1.id == word1.id))
 
-      assert freq_5_index < freq_10_index
+      assert score_5_index < score_10_index
     end
 
     test "list_words_by_difficulty/1 returns words filtered by difficulty" do

@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
 **Last Updated**: 2026-03-09  
-**Completed**: 16/23 iterations  
-**Remaining**: 7 iterations
+**Completed**: 17/23 iterations  
+**Remaining**: 6 iterations
 
 ---
 
@@ -130,50 +130,31 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 ---
 
 ### Iteration 23: Reading Comprehension Text Input Test Step
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-10  
+**Log**: [ITERATION-23-reading-text-input.md](./ITERATION-23-reading-text-input.md)  
 **Depends On**: Iteration 14 (Multi-Step Test System), Iteration 17 (Vocabulary Lessons)
 
-**Files to Create**:
-- `lib/medoru_web/live/lesson_test_live/reading_text_component.ex` - Text input component for reading questions
-- `lib/medoru/tests/reading_answer_validator.ex` - Validates meaning and kana reading answers
+**Files Created**:
+- ✅ `lib/medoru/tests/reading_answer_validator.ex` - Validates meaning and kana reading answers
+- ✅ `lib/medoru_web/live/lesson_test_live/reading_text_component.ex` - Text input component for reading questions
+- ✅ `test/medoru/tests/reading_answer_validator_test.exs` - Validation tests
 
 **Files Modified**:
-- `lib/medoru/tests/lesson_test_generator.ex` - Add reading text step generation
-- `lib/medoru/tests/lesson_test_session.ex` - Add `submit_reading_text_answer/4`
-- `lib/medoru/tests/test_step.ex` - Add `:reading_text` question type
-- `lib/medoru_web/live/lesson_test_live/show.ex` - Reading text question UI
-- `assets/js/hooks/reading_input.js` - Input handling (optional)
+- ✅ `lib/medoru/tests/test_step.ex` - Added `:reading_text` question type (2 points)
+- ✅ `lib/medoru/tests/lesson_test_generator.ex` - Added reading text step generation
+- ✅ `lib/medoru/tests/lesson_test_session.ex` - Added `submit_reading_text_answer/5`
+- ✅ `lib/medoru_web/live/lesson_test_live/show.ex` - Reading text question UI with event handlers
 
-**Key Features**:
-- New test step type: `:reading_text` (distinct from `:multichoice`)
-- Displays Japanese word (kanji/kana)
-- User types two fields:
-  1. **Meaning** - English translation
-  2. **Kana Reading** - Hiragana reading of the word
-- Validation:
-  - Meaning: Fuzzy match against accepted meanings (case insensitive, partial match)
-  - Kana: Exact match or acceptable variations (おう/おお, えい/ええ)
-- Scoring: 2 points base, -25% per extra attempt
-- Visual feedback: Green/red highlighting on input fields
-- Hint button reveals partial answer (first letter, -10% penalty)
-- Skip option puts word back in queue (adaptive retry)
-
-**Answer Format**:
-```json
-{
-  "meaning": "to eat",
-  "reading": "たべる"
-}
-```
-
-**UI Design**:
-- Large Japanese word display (kanji if applicable)
-- Two labeled input fields:
-  - "Meaning (English):"
-  - "Reading (Hiragana):"
-- Submit button validates both fields
-- Shows correct answers after incorrect attempt
-- Progress bar showing test completion
+**Key Features Implemented**:
+- ✅ New test step type: `:reading_text` (distinct from `:multichoice`)
+- ✅ Displays Japanese word with meaning + reading input fields
+- ✅ **Meaning validation**: Fuzzy match (case insensitive, partial match, prefix stripping)
+- ✅ **Reading validation**: Exact match with kana variations (おう/おお, えい/ええ)
+- ✅ Visual feedback: Green/red highlighting on input fields
+- ✅ Hint system reveals first letter/kana (-10% penalty)
+- ✅ Shows correct answers after incorrect attempt
+- ✅ Adaptive retry: wrong answers go to end of queue
+- ✅ 2 points base scoring with penalty system
 
 ---
 
@@ -258,10 +239,10 @@ Add full internationalization support to make the platform accessible in English
 
 ---
 
-## 🟢 LOWER PRIORITY (Classroom System)
+## 🔴 HIGH PRIORITY (Classroom System)
 
 ### Iteration 18: Classroom Core
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2-3 days  
 **Depends On**: User types (✅ done)
 **Files to Create**:
 - `lib/medoru/classrooms/classroom.ex` - Schema
@@ -282,7 +263,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 19: Classroom Membership & Applications
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2-3 days  
 **Depends On**: Iteration 18, Notifications (✅ done)
 **Files to Create**:
 - `lib/medoru_web/live/classroom_live/join.ex` - Student join page
@@ -300,7 +281,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 20: Classroom Tests, Lessons & Rankings
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 3-4 days  
 **Depends On**: Iterations 14, 17, 18, 19
 **Files to Create**:
 - `lib/medoru/classrooms/classroom_test_attempt.ex` - Schema
@@ -318,7 +299,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 15: Teacher Test Creation Interface
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 3-4 days  
 **Depends On**: Iteration 14, User types (✅ done)
 **Files to Create**:
 - `lib/medoru_web/live/teacher/test_builder_live/index.ex` - List teacher tests
@@ -357,14 +338,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 16/23 iterations (70%)
+**Completed**: 17/23 iterations (74%)
 
 | Priority | Iterations | Total Days |
 |----------|------------|------------|
-| 🔴 High | 14 ✅, 16 ✅ | 0 days (COMPLETE) |
-| 🟡 Medium | 13, 17 ✅, 22 ✅, 23, 24 | 5-8 days |
-| 🟢 Lower | 15, 18, 19, 20, 21 | 12-17 days |
-| **Total** | **7** | **17-25 days** |
+| 🔴 High | 14 ✅, 16 ✅, 23 ✅ | 0 days (COMPLETE) |
+| 🟡 Medium | 13, 17 ✅, 22 ✅, 24 | 4-6 days |
+| 🔴 High | 15, 18, 19, 20 | 10-13 days |
+| 🟢 Lower | 21 | 2-3 days |
+| **Total** | **6** | **14-21 days** |
 
 ---
 
@@ -373,7 +355,7 @@ Add full internationalization support to make the platform accessible in English
 1. **Iteration 14** ✅ (Multi-Step Test) - Foundation for tests
 2. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
 3. **Iteration 22** ✅ (Kanji Writing) - Writing validation
-4. **Iteration 23** (Reading Text Input) - Text-based reading comprehension
+4. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
 5. **Iteration 13** (Admin Badge Management) - Quick win
 6. **Iteration 24** (i18n Multi-Language) - Platform internationalization
 7. **Iteration 15** (Teacher Test Creation) - Teacher features

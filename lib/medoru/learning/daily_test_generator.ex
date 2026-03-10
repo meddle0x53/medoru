@@ -79,7 +79,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
       end
 
     # Combine and create test items
-    test_items = build_test_items(due_reviews, new_words)
+    test_items = build_test_items(due_reviews, new_words, [])
 
     if test_items == [] do
       {:error, :no_items_available}
@@ -170,19 +170,22 @@ defmodule Medoru.Learning.DailyTestGenerator do
   # Private functions
 
   # Get new words that are available for the daily test
-  # ONLY includes words the user has learned through lessons (in UserProgress)
+  # Includes words the user has learned (in UserProgress)
   # but hasn't reviewed yet (no ReviewSchedule or not due)
   defp get_eligible_new_words(user_id, opts) do
     limit = Keyword.get(opts, :limit, 5)
 
-    # Only get words from UserProgress without ReviewSchedule
-    # These are words learned via lessons but not yet reviewed
+    # Get words from UserProgress without ReviewSchedule
+    # These are words that have been learned but not yet scheduled for review
     user_progress_entries = Medoru.Learning.get_new_words_for_review(user_id, limit: limit)
+
+    # Map to words - no additional filtering needed
+    # If a word is in UserProgress, it means the user has learned it
     Enum.map(user_progress_entries, & &1.word)
   end
 
   # Build test items from reviews and new words
-  defp build_test_items(due_reviews, new_words) do
+  defp build_test_items(due_reviews, new_words, _started_lesson_ids) do
     # Create items from due reviews
     review_items =
       Enum.map(due_reviews, fn progress ->
@@ -248,7 +251,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
     Tests.create_test_steps(test, steps)
   end
 
-  # Build steps for a single word (2 questions: meaning->reading, reading->meaning)
+  # Build steps for a single word (mix of multichoice and reading_text)
+  # Randomly assigns question types to create variety
   defp build_word_steps(%{word: word, is_new: is_new}) do
     base_attrs = %{
       word_id: word.id,
@@ -256,39 +260,80 @@ defmodule Medoru.Learning.DailyTestGenerator do
       hints: ["Take your time and think about the word"]
     }
 
-    # Question 1: Show word text, select meaning
-    step1 =
-      Map.merge(base_attrs, %{
-        question_type: :multichoice,
-        question: "What does '#{word.text}' mean?",
-        correct_answer: word.meaning,
-        points: 1,
-        options: fetch_meaning_options(word),
-        question_data: %{
-          word_text: word.text,
-          word_reading: word.reading,
-          type: :word_to_meaning,
-          is_new_word: is_new
-        }
-      })
+    # Randomly decide which question types to include
+    # Options: multichoice meaning, multichoice reading, reading_text (input)
+    question_types = select_question_types(is_new)
 
-    # Question 2: Show word text, select reading
-    step2 =
-      Map.merge(base_attrs, %{
-        question_type: :multichoice,
-        question: "How do you read '#{word.text}'?",
-        correct_answer: word.reading,
-        points: 1,
-        options: fetch_reading_options(word),
-        question_data: %{
-          word_text: word.text,
-          word_meaning: word.meaning,
-          type: :word_to_reading,
-          is_new_word: is_new
-        }
-      })
+    Enum.map(question_types, fn
+      :word_to_meaning ->
+        Map.merge(base_attrs, %{
+          question_type: :multichoice,
+          question: "What does '#{word.text}' mean?",
+          correct_answer: word.meaning,
+          points: 1,
+          options: fetch_meaning_options(word),
+          question_data: %{
+            word_text: word.text,
+            word_reading: word.reading,
+            type: :word_to_meaning,
+            is_new_word: is_new
+          }
+        })
 
-    [step1, step2]
+      :word_to_reading ->
+        Map.merge(base_attrs, %{
+          question_type: :multichoice,
+          question: "How do you read '#{word.text}'?",
+          correct_answer: word.reading,
+          points: 1,
+          options: fetch_reading_options(word),
+          question_data: %{
+            word_text: word.text,
+            word_meaning: word.meaning,
+            type: :word_to_reading,
+            is_new_word: is_new
+          }
+        })
+
+      :reading_text ->
+        Map.merge(base_attrs, %{
+          question_type: :reading_text,
+          question: "Type the meaning and reading for '#{word.text}'",
+          correct_answer: Jason.encode!(%{meaning: word.meaning, reading: word.reading}),
+          points: 2,
+          options: [],
+          hints: ["Type the English meaning and hiragana reading"],
+          explanation: "#{word.text} means '#{word.meaning}' and is read as '#{word.reading}'",
+          question_data: %{
+            type: :reading_text,
+            word_text: word.text,
+            word_meaning: word.meaning,
+            word_reading: word.reading,
+            is_new_word: is_new
+          }
+        })
+    end)
+  end
+
+  # Select question types for a word
+  # New words: 2 multichoice questions (easier)
+  # Review words: mix of multichoice and reading_text (more challenging)
+  defp select_question_types(is_new) do
+    case is_new do
+      true ->
+        # New words get 2 multichoice questions
+        [:word_to_meaning, :word_to_reading]
+
+      false ->
+        # Review words get variety:
+        # 50%: 1 multichoice + 1 reading_text
+        # 50%: 2 multichoice
+        if :rand.uniform() > 0.5 do
+          [:word_to_meaning, :reading_text]
+        else
+          [:word_to_reading, :reading_text]
+        end
+    end
   end
 
   # Fetch meaning options with distractors

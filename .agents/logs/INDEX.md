@@ -17,10 +17,10 @@
 | 11 | Logging Infrastructure | ✅ APPROVED | 2026-03-08 |
 | 12 | Kanji Stroke Animation | ✅ APPROVED | 2026-03-08 |
 | 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
-| 16 | Auto-Generated Daily Tests | ✅ COMPLETED | 2026-03-09 |
+| 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
 | 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
-| 16 | Auto-Generated Daily Tests | ✅ COMPLETED | 2026-03-09 |
+| 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
@@ -67,11 +67,12 @@
 - **Overall Progress**: 15/21 iterations for v0.1.0 (6 remaining)
 
 ## ⏳ Pending Work (Priority Order)
-1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System
-2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests  
-3. **🟡 MEDIUM**: Iteration 17 - Vocabulary Lesson System
+1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
+2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests ✅
+3. **🔴 HIGH**: Iterations 15, 18-20 - Classroom System
 4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
-5. **🟢 LOWER**: Iterations 15, 18-21 - Classroom System
+5. **🟡 MEDIUM**: Iteration 24 - i18n (Bulgarian/Japanese)
+6. **🟢 LOWER**: Iteration 21 - Admin Dashboard
 
 See [PENDING.md](./PENDING.md) for detailed breakdown.
 

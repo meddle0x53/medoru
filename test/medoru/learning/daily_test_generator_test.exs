@@ -2,20 +2,29 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   use Medoru.DataCase, async: true
 
   alias Medoru.Learning
-  alias Medoru.Learning.{DailyTestGenerator, UserProgress}
+  alias Medoru.Learning.DailyTestGenerator
   alias Medoru.Tests
-  alias Medoru.Content
-  alias Medoru.Accounts
 
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
 
+  # Helper to set up a user with a started lesson and word
+  defp setup_user_with_lesson_and_word(_) do
+    user = user_fixture()
+    lesson = lesson_fixture()
+    word = word_fixture()
+
+    # Associate word with lesson
+    lesson_word_fixture(lesson, word)
+
+    # Start the lesson for the user
+    {:ok, _} = Learning.start_lesson(user.id, lesson.id)
+
+    %{user: user, lesson: lesson, word: word}
+  end
+
   describe "get_or_create_daily_test/1" do
-    setup do
-      user = user_fixture()
-      word = word_fixture()
-      {:ok, user: user, word: word}
-    end
+    setup :setup_user_with_lesson_and_word
 
     test "creates a new daily test when none exists", %{user: user, word: word} do
       # Track the word first so it can be included in the test
@@ -41,24 +50,18 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert test1.id == test2.id
     end
 
-    test "returns error when no words are available", %{user: user} do
-      # This test only passes when there are truly no words in the database at all
-      # Since other tests create words that persist, we check behavior instead
-      # In a clean database, this would return {:error, :no_items_available}
-      # For now, we verify the function handles the empty case gracefully
-      result = DailyTestGenerator.get_or_create_daily_test(user.id)
-      # If words exist in DB from other tests, we get {:ok, test}
-      # If DB is empty, we get {:error, :no_items_available}
-      assert match?({:ok, _}, result) or match?({:error, :no_items_available}, result)
+    test "returns error when no words have been learned", %{user: _user} do
+      # Create a new user who hasn't learned any words
+      new_user = user_fixture()
+
+      # User has no UserProgress entries, so should get no_items_available
+      assert {:error, :no_items_available} =
+               DailyTestGenerator.get_or_create_daily_test(new_user.id)
     end
   end
 
   describe "daily_test_completed_today?/1" do
-    setup do
-      user = user_fixture()
-      word = word_fixture()
-      {:ok, user: user, word: word}
-    end
+    setup :setup_user_with_lesson_and_word
 
     test "returns false when no daily test has been completed", %{user: user} do
       refute DailyTestGenerator.daily_test_completed_today?(user.id)
@@ -92,11 +95,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   describe "get_todays_daily_test/1" do
-    setup do
-      user = user_fixture()
-      word = word_fixture()
-      {:ok, user: user, word: word}
-    end
+    setup :setup_user_with_lesson_and_word
 
     test "returns nil when no daily test exists for today", %{user: user} do
       assert DailyTestGenerator.get_todays_daily_test(user.id) == nil
@@ -128,11 +127,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   describe "generate_daily_test/1" do
-    setup do
-      user = user_fixture()
-      word = word_fixture()
-      {:ok, user: user, word: word}
-    end
+    setup :setup_user_with_lesson_and_word
 
     test "generates test with review items", %{user: user, word: word} do
       # Track word and create review schedule
@@ -145,23 +140,60 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
     end
 
     test "generates test with new words", %{user: user, word: word} do
-      # Don't track the word - it should be picked up as "new"
+      # Track the word - it should be picked up as "new" (no review schedule yet)
+      {:ok, _} = Learning.track_word_learned(user.id, word.id)
+
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
       assert test.test_type == :daily
       assert length(test.test_steps) > 0
     end
 
     test "includes both review and new items when available", %{user: user, word: word} do
-      # Create multiple words
+      # Create multiple words in the same lesson
       word2 = word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"})
+      lesson = lesson_fixture()
+      lesson_word_fixture(lesson, word, position: 0)
+      lesson_word_fixture(lesson, word2, position: 1)
 
-      # Track first word
+      # Start the lesson
+      {:ok, _} = Learning.start_lesson(user.id, lesson.id)
+
+      # Track first word and create review schedule (review item)
       {:ok, progress} = Learning.track_word_learned(user.id, word.id)
       Learning.get_or_create_review_schedule(user.id, progress.id)
+
+      # Track second word but no review schedule (new item)
+      {:ok, _} = Learning.track_word_learned(user.id, word2.id)
 
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
       # At least 2 steps (2 per word)
       assert length(test.test_steps) >= 2
+    end
+
+    test "includes all learned words regardless of lesson status", %{user: user, word: word} do
+      # Track the word from the started lesson
+      {:ok, _} = Learning.track_word_learned(user.id, word.id)
+
+      # Create another word and track it
+      other_word = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
+
+      # Track the other word (should now appear in daily test since we include all learned words)
+      {:ok, _} = Learning.track_word_learned(user.id, other_word.id)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      # Should have steps for both tracked words
+      word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
+      assert word.id in word_ids_in_test
+      assert other_word.id in word_ids_in_test
+    end
+
+    test "returns error when no words have been learned" do
+      # Create a fresh user who hasn't learned any words
+      new_user = user_fixture()
+
+      # User has no UserProgress entries, so should get no_items_available
+      assert {:error, :no_items_available} = DailyTestGenerator.generate_daily_test(new_user.id)
     end
   end
 end

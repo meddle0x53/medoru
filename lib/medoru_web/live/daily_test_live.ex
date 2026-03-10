@@ -49,16 +49,25 @@ defmodule MedoruWeb.DailyTestLive do
            |> assign(:current_step, nil)
            |> assign(:session_state, nil)
            |> assign(:selected_answer, nil)
+           |> assign(:meaning_answer, "")
+           |> assign(:reading_answer, "")
            |> assign(:feedback, nil)
            |> assign(:show_hint, false)
-           |> assign(:error_message, nil)}
+           |> assign(:error_message, nil)
+           |> assign(:meaning_error, false)
+           |> assign(:reading_error, false)
+           |> assign(:correct_meaning, nil)
+           |> assign(:correct_reading, nil)}
         end
 
       {:error, :no_items_available} ->
         # No words learned yet - redirect to lessons page
         {:ok,
          socket
-         |> put_flash(:info, "Complete some lessons first to learn words for your daily review!")
+         |> put_flash(
+           :info,
+           "Start a lesson to begin learning Japanese! Your daily review will be available once you've learned some words."
+         )
          |> push_navigate(to: ~p"/lessons")}
     end
   end
@@ -86,8 +95,14 @@ defmodule MedoruWeb.DailyTestLive do
             |> assign(:current_step, current_step)
             |> assign(:session_state, calculate_session_state(session))
             |> assign(:selected_answer, nil)
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
             |> assign(:feedback, nil)
             |> assign(:show_hint, false)
+            |> assign(:meaning_error, false)
+            |> assign(:reading_error, false)
+            |> assign(:correct_meaning, nil)
+            |> assign(:correct_reading, nil)
 
           {:noreply, socket}
 
@@ -103,6 +118,18 @@ defmodule MedoruWeb.DailyTestLive do
   @impl true
   def handle_event("select_answer", %{"answer" => answer}, socket) do
     {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  @impl true
+  def handle_event("update_meaning", params, socket) do
+    value = Map.get(params, "meaning_answer", params["value"] || "")
+    {:noreply, assign(socket, :meaning_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_reading", params, socket) do
+    value = Map.get(params, "reading_answer", params["value"] || "")
+    {:noreply, assign(socket, :reading_answer, value)}
   end
 
   @impl true
@@ -132,6 +159,65 @@ defmodule MedoruWeb.DailyTestLive do
 
         {:error, _reason} ->
           {:noreply, put_flash(socket, :error, "Error recording answer")}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("submit_reading_text", _params, socket) do
+    meaning = String.trim(socket.assigns.meaning_answer)
+    reading = String.trim(socket.assigns.reading_answer)
+
+    if meaning == "" or reading == "" do
+      {:noreply, put_flash(socket, :error, "Please enter both meaning and reading")}
+    else
+      session = socket.assigns.session
+      step = socket.assigns.current_step
+
+      # Validate using ReadingAnswerValidator
+      word =
+        if step.word_id do
+          Medoru.Content.get_word!(step.word_id)
+        else
+          nil
+        end
+
+      if word do
+        {:ok, validation} =
+          Medoru.Tests.ReadingAnswerValidator.validate_answer(
+            word,
+            meaning,
+            reading
+          )
+
+        # Record the answer
+        answer_text =
+          Jason.encode!(%{
+            meaning: meaning,
+            reading: reading,
+            validation: validation
+          })
+
+        attrs = %{
+          answer: answer_text,
+          time_spent_seconds: 15,
+          step_index: session.current_step_index,
+          is_correct: validation.both_correct
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs) do
+          {:ok, _step_answer} ->
+            if validation.both_correct do
+              handle_correct_answer(socket, step)
+            else
+              handle_incorrect_reading_text(socket, step, validation, word)
+            end
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, "Error recording answer")}
+        end
+      else
+        {:noreply, put_flash(socket, :error, "Error: word not found")}
       end
     end
   end
@@ -174,8 +260,14 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:current_step, next_step)
         |> assign(:session_state, calculate_session_state(updated_session))
         |> assign(:selected_answer, nil)
+        |> assign(:meaning_answer, "")
+        |> assign(:reading_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, nil)
+        |> assign(:meaning_error, false)
+        |> assign(:reading_error, false)
+        |> assign(:correct_meaning, nil)
+        |> assign(:correct_reading, nil)
 
       {:noreply, socket}
     else
@@ -227,12 +319,54 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:current_step, next_step)
         |> assign(:session_state, calculate_session_state(updated_session))
         |> assign(:selected_answer, nil)
+        |> assign(:meaning_answer, "")
+        |> assign(:reading_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, :correct)
+        |> assign(:meaning_error, false)
+        |> assign(:reading_error, false)
+        |> assign(:correct_meaning, nil)
+        |> assign(:correct_reading, nil)
 
       {:noreply, socket}
     else
       # Complete test
+      complete_test(socket)
+    end
+  end
+
+  defp handle_incorrect_reading_text(socket, step, validation, word) do
+    session = socket.assigns.session
+
+    # Still advance to next step (daily test doesn't have adaptive retry)
+    next_step = get_next_step(session, step)
+
+    if next_step do
+      {:ok, updated_session} =
+        Tests.progress_session(
+          session,
+          session.current_step_index + 1,
+          session.time_spent_seconds + 15
+        )
+
+      socket =
+        socket
+        |> assign(:session, updated_session)
+        |> assign(:current_step, next_step)
+        |> assign(:session_state, calculate_session_state(updated_session))
+        |> assign(:selected_answer, nil)
+        |> assign(:meaning_answer, "")
+        |> assign(:reading_answer, "")
+        |> assign(:show_hint, false)
+        |> assign(:feedback, :incorrect)
+        |> assign(:meaning_error, !validation.meaning_correct)
+        |> assign(:reading_error, !validation.reading_correct)
+        |> assign(:correct_meaning, word.meaning)
+        |> assign(:correct_reading, word.reading)
+
+      {:noreply, socket}
+    else
+      # Complete test even with incorrect last answer
       complete_test(socket)
     end
   end

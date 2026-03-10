@@ -21,7 +21,7 @@ defmodule Medoru.Tests.TestStep do
   import Ecto.Changeset
 
   @step_types [:reading, :writing, :listening, :grammar, :speaking, :vocabulary]
-  @question_types [:multichoice, :fill, :match, :order, :writing]
+  @question_types [:multichoice, :fill, :match, :order, :writing, :reading_text]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -97,6 +97,7 @@ defmodule Medoru.Tests.TestStep do
       :match -> 2
       :order -> 2
       :writing -> 5
+      :reading_text -> 2
     end
   end
 
@@ -110,6 +111,9 @@ defmodule Medoru.Tests.TestStep do
 
       {:writing, p} when p != 5 ->
         add_error(changeset, :points, "writing questions must be worth 5 points")
+
+      {:reading_text, p} when p not in [1, 2] ->
+        add_error(changeset, :points, "reading text questions must be worth 1 or 2 points")
 
       {type, p} when type in [:fill, :match, :order] and p not in [1, 2] ->
         add_error(changeset, :points, "this question type must be worth 1 or 2 points")

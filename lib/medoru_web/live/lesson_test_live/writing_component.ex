@@ -14,7 +14,12 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
 
   def writing_question(assigns) do
     ~H"""
-    <div class="space-y-6" id="writing-component" phx-hook="KanjiWriting" data-target={@target}>
+    <div
+      class="space-y-6"
+      id={"writing-component-#{@step.id}"}
+      phx-hook="KanjiWriting"
+      data-target={@target}
+    >
       <%!-- Hidden stroke data for JS library --%>
       <div data-stroke-data={Jason.encode!(@step.question_data["strokes"] || [])} class="hidden">
       </div>
@@ -34,8 +39,8 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       <%!-- Writing Canvas Container (SVG created by KanjiWriter) --%>
       <div class="flex justify-center">
         <div
-          id="writing-canvas-container"
-          class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden"
+          id={"writing-canvas-container-#{@step.id}"}
+          class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container"
           style="width: 300px; height: 300px;"
         >
         </div>

@@ -13,11 +13,17 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Content.{Lesson, Word}
+  alias Medoru.Content.{Lesson, LessonWord, Word}
   alias Medoru.Tests
 
   # Question types to generate per word
-  @step_types [:meaning_to_word, :reading_to_word, :word_to_meaning, :word_to_reading]
+  @step_types [
+    :meaning_to_word,
+    :reading_to_word,
+    :word_to_meaning,
+    :word_to_reading,
+    :reading_text
+  ]
 
   @doc """
   Generates or updates a test for a lesson.
@@ -41,11 +47,11 @@ defmodule Medoru.Tests.LessonTestGenerator do
     steps_per_word = Keyword.get(opts, :steps_per_word, 3)
     distractor_count = Keyword.get(opts, :distractor_count, 3)
 
-    # Get lesson with words
+    # Get lesson with words and their kanji
     lesson =
       Lesson
       |> where([l], l.id == ^lesson_id)
-      |> preload(lesson_words: [:word])
+      |> preload(lesson_words: [word: [word_kanjis: :kanji]])
       |> Repo.one!()
 
     words = Enum.map(lesson.lesson_words, & &1.word)
@@ -70,7 +76,8 @@ defmodule Medoru.Tests.LessonTestGenerator do
       }
 
       with {:ok, test} <- Tests.create_test(test_attrs),
-           {:ok, _steps} <- generate_steps(test, words, steps_per_word, distractor_count),
+           {:ok, _steps} <-
+             generate_steps(test, words, steps_per_word, distractor_count, lesson.id),
            {:ok, updated_test} <- Tests.ready_test(test) do
         # Update lesson with test reference
         lesson
@@ -109,9 +116,12 @@ defmodule Medoru.Tests.LessonTestGenerator do
   end
 
   # Generates test steps for all words
-  defp generate_steps(test, words, steps_per_word, distractor_count) do
+  defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id \\ nil) do
     # Get unique kanji from all words for writing steps
     writing_steps = generate_writing_steps(words)
+
+    # Get distractor pool: same lesson + previous lessons
+    distractor_pool = build_distractor_pool(lesson_id, words)
 
     # For each word, generate multichoice steps and flatten
     multichoice_steps =
@@ -119,7 +129,9 @@ defmodule Medoru.Tests.LessonTestGenerator do
       |> Enum.flat_map(fn word ->
         word
         |> generate_word_steps(steps_per_word)
-        |> Enum.map(fn step -> add_distractors(step, word, distractor_count) end)
+        |> Enum.map(fn step ->
+          add_distractors(step, word, distractor_count, distractor_pool)
+        end)
       end)
 
     # Combine all steps, shuffle, and assign order indices
@@ -130,6 +142,50 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
     Tests.create_test_steps(test, all_steps)
   end
+
+  # Build a prioritized distractor pool:
+  # Priority 1: Words from the same lesson (most confusing)
+  # Priority 2: Words from previous lessons (already learned)
+  # We NEVER use words from future lessons (unlearned) as distractors
+  defp build_distractor_pool(nil, _words), do: []
+
+  defp build_distractor_pool(lesson_id, current_words) do
+    current_word_ids = Enum.map(current_words, & &1.id)
+
+    # Get current lesson info
+    lesson = Repo.get(Lesson, lesson_id)
+
+    if lesson do
+      # Same lesson words (highest priority - most confusing)
+      same_lesson_words =
+        LessonWord
+        |> where([lw], lw.lesson_id == ^lesson_id and lw.word_id not in ^current_word_ids)
+        |> preload(:word)
+        |> limit(20)
+        |> Repo.all()
+        |> Enum.map(& &1.word)
+
+      # Previous lessons words (already learned)
+      previous_lesson_words =
+        LessonWord
+        |> join(:inner, [lw], l in Lesson, on: lw.lesson_id == l.id)
+        |> where([lw, l], l.difficulty == ^lesson.difficulty and l.order_index < ^lesson.order_index)
+        |> where([lw], lw.word_id not in ^current_word_ids)
+        |> preload(:word)
+        |> limit(30)
+        |> Repo.all()
+        |> Enum.map(& &1.word)
+
+      # Note: We intentionally do NOT use words from future lessons (next lessons)
+      # as distractors because they haven't been learned yet.
+      # Combine in priority order: same lesson first, then previous lessons
+      same_lesson_words ++ previous_lesson_words
+    else
+      []
+    end
+  end
+
+
 
   # Generate writing steps for unique kanji in lesson words
   defp generate_writing_steps(words) do
@@ -145,18 +201,20 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
   # Get kanji characters from a word
   defp get_word_kanji(word) do
-    # Load word with kanji if not already loaded
-    word_with_kanji =
+    # Ensure word_kanjis is loaded
+    word_kanjis =
       case word.word_kanjis do
         %Ecto.Association.NotLoaded{} ->
-          Medoru.Content.get_word_with_kanji!(word.id)
+          # Fallback: load the word with kanji
+          word_with_kanji = Medoru.Content.get_word_with_kanji!(word.id)
+          word_with_kanji.word_kanjis
 
-        _ ->
-          word
+        word_kanjis ->
+          word_kanjis
       end
 
     # Extract unique kanji
-    word_with_kanji.word_kanjis
+    word_kanjis
     |> Enum.map(& &1.kanji)
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq_by(& &1.id)
@@ -253,43 +311,82 @@ defmodule Medoru.Tests.LessonTestGenerator do
     }
   end
 
+  defp build_step_data(word, :reading_text) do
+    %{
+      step_type: :reading,
+      question_type: :reading_text,
+      question: "Type the meaning and reading for '#{word.text}'",
+      correct_answer: Jason.encode!(%{meaning: word.meaning, reading: word.reading}),
+      word_id: word.id,
+      points: 2,
+      hints: ["Think about the kanji meanings and their readings"],
+      explanation: "#{word.text} means '#{word.meaning}' and is read as '#{word.reading}'",
+      question_data: %{
+        type: :reading_text,
+        word_text: word.text,
+        word_meaning: word.meaning,
+        word_reading: word.reading
+      },
+      # Reading text steps don't have multiple choice options
+      options: []
+    }
+  end
+
   # Add distractor options to a step
-  defp add_distractors(step, correct_word, distractor_count) do
-    distractors = fetch_distractors(correct_word, distractor_count, step)
+  defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
+    distractors = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
     options = [step.correct_answer | distractors] |> Enum.shuffle()
 
     Map.put(step, :options, options)
   end
 
   # Fetch distractor words based on step type
-  # The correct_answer field tells us what type of distractors we need:
-  # - If correct_answer is a Japanese word (text), distractors should be other Japanese words
-  # - If correct_answer is English (meaning), distractors should be English meanings
-  # - If correct_answer is hiragana (reading), distractors should be hiragana readings
-  defp fetch_distractors(correct_word, count, %{correct_answer: correct_answer}) do
+  # Priority: 1) Same lesson words, 2) Previous lesson words, 3) Next lesson words, 4) Generic fallback
+  defp fetch_distractors(
+         correct_word,
+         count,
+         %{correct_answer: correct_answer},
+         distractor_pool
+       ) do
     # Determine what type of distractors we need based on correct_answer
-    # Check by character codepoints
     distractor_field =
       cond do
-        # Check if contains any Japanese characters (Kanji, Hiragana, or Katakana)
         contains_japanese?(correct_answer) ->
-          # If it's ONLY hiragana/katakana, it's a reading question
           if only_kana?(correct_answer), do: :reading, else: :text
 
-        # English meaning (no Japanese characters)
         true ->
           :meaning
       end
 
-    # Get words from same difficulty level
-    Word
-    |> where([w], w.id != ^correct_word.id and w.difficulty == ^correct_word.difficulty)
-    |> where([w], not is_nil(field(w, ^distractor_field)))
-    |> limit(^count)
-    |> order_by(fragment("RANDOM()"))
-    |> select([w], field(w, ^distractor_field))
-    |> Repo.all()
-    |> pad_distractors(count, distractor_field)
+    # Get distractors from the pool (prioritized: same lesson > previous lessons > next lessons)
+    pool_distractors =
+      distractor_pool
+      |> Enum.reject(&(&1.id == correct_word.id))
+      |> Enum.map(&Map.get(&1, distractor_field))
+      |> Enum.reject(&is_nil/1)
+      |> Enum.take(count)
+
+    # If we have enough from the pool, use them
+    if length(pool_distractors) >= count do
+      Enum.take(pool_distractors, count)
+    else
+      # Otherwise, supplement with words from same difficulty (but not in current curriculum)
+      needed = count - length(pool_distractors)
+
+      existing_ids = [correct_word.id | Enum.map(distractor_pool, & &1.id)]
+
+      additional_distractors =
+        Word
+        |> where([w], w.id not in ^existing_ids and w.difficulty == ^correct_word.difficulty)
+        |> where([w], not is_nil(field(w, ^distractor_field)))
+        |> limit(^needed)
+        |> order_by(fragment("RANDOM()"))
+        |> select([w], field(w, ^distractor_field))
+        |> Repo.all()
+
+      all_distractors = pool_distractors ++ additional_distractors
+      pad_distractors(all_distractors, count, distractor_field)
+    end
   end
 
   # Pad with generic distractors if not enough found

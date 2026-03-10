@@ -49,10 +49,17 @@ defmodule MedoruWeb.LessonTestLive.Show do
           |> assign(:current_step, step)
           |> assign(:session_state, state)
           |> assign(:selected_answer, nil)
+          |> assign(:meaning_answer, "")
+          |> assign(:reading_answer, "")
           |> assign(:feedback, nil)
           |> assign(:show_hint, false)
           |> assign(:show_stroke_preview, false)
           |> assign(:preview_kanji, nil)
+          |> assign(:meaning_error, false)
+          |> assign(:reading_error, false)
+          |> assign(:correct_meaning, nil)
+          |> assign(:correct_reading, nil)
+          |> assign(:next_step_after_correction, nil)
 
         {:noreply, socket}
 
@@ -67,6 +74,18 @@ defmodule MedoruWeb.LessonTestLive.Show do
   @impl true
   def handle_event("select_answer", %{"answer" => answer}, socket) do
     {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  @impl true
+  def handle_event("update_meaning", params, socket) do
+    value = Map.get(params, "meaning_answer", params["value"] || "")
+    {:noreply, assign(socket, :meaning_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_reading", params, socket) do
+    value = Map.get(params, "reading_answer", params["value"] || "")
+    {:noreply, assign(socket, :reading_answer, value)}
   end
 
   @impl true
@@ -122,6 +141,79 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   @impl true
+  def handle_event("submit_reading_text", _params, socket) do
+    meaning = String.trim(socket.assigns.meaning_answer)
+    reading = String.trim(socket.assigns.reading_answer)
+
+    # Validate inputs are not empty
+    if meaning == "" or reading == "" do
+      {:noreply, put_flash(socket, :error, "Please enter both meaning and reading")}
+    else
+      session = socket.assigns.session
+      step = socket.assigns.current_step
+
+      # Submit reading text answer
+      case LessonTestSession.submit_reading_text_answer(
+             session.id,
+             step.id,
+             meaning,
+             reading,
+             time_spent_seconds: 15
+           ) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, false)
+            |> assign(:reading_error, false)
+            |> assign(:correct_meaning, nil)
+            |> assign(:correct_reading, nil)
+            |> assign(:next_step_after_correction, nil)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          # Don't advance to next_step yet - show the correction first
+          # Keep current_step as the one they got wrong so they can see the correct answer
+          # next_step will be assigned when they click Continue
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, !result.wrong_answer.meaning_correct)
+            |> assign(:reading_error, !result.wrong_answer.reading_correct)
+            |> assign(:correct_meaning, result.correct_meaning)
+            |> assign(:correct_reading, result.correct_reading)
+            |> assign(:next_step_after_correction, result.next_step)
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("show_hint", _params, socket) do
     {:noreply, assign(socket, :show_hint, true)}
   end
@@ -138,15 +230,46 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:current_step, result.next_step)
       |> assign(:session_state, LessonTestSession.get_session_state(session.id))
       |> assign(:selected_answer, nil)
+      |> assign(:meaning_answer, "")
+      |> assign(:reading_answer, "")
       |> assign(:show_hint, false)
       |> assign(:feedback, nil)
+      |> assign(:meaning_error, false)
+      |> assign(:reading_error, false)
+      |> assign(:correct_meaning, nil)
+      |> assign(:correct_reading, nil)
+      |> assign(:next_step_after_correction, nil)
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("clear_feedback", _params, socket) do
-    {:noreply, assign(socket, :feedback, nil)}
+    {:noreply,
+     socket
+     |> assign(:feedback, nil)
+     |> assign(:meaning_error, false)
+     |> assign(:reading_error, false)}
+  end
+
+  @impl true
+  def handle_event("continue_after_correction", _params, socket) do
+    # After showing the correction, advance to the next step
+    next_step = socket.assigns.next_step_after_correction
+
+    socket =
+      socket
+      |> assign(:current_step, next_step)
+      |> assign(:session_state, LessonTestSession.get_session_state(socket.assigns.session.id))
+      |> assign(:feedback, nil)
+      |> assign(:show_hint, false)
+      |> assign(:meaning_error, false)
+      |> assign(:reading_error, false)
+      |> assign(:correct_meaning, nil)
+      |> assign(:correct_reading, nil)
+      |> assign(:next_step_after_correction, nil)
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -360,7 +483,25 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   step={@current_step}
                   target="writing-component"
                 />
-              <% else %>
+              <% end %>
+
+              <%!-- Reading Text Step --%>
+              <%= if @current_step.question_type == :reading_text do %>
+                <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                  step={@current_step}
+                  meaning_answer={@meaning_answer}
+                  reading_answer={@reading_answer}
+                  feedback={@feedback}
+                  show_hint={@show_hint}
+                  meaning_error={@meaning_error}
+                  reading_error={@reading_error}
+                  correct_meaning={@correct_meaning}
+                  correct_reading={@correct_reading}
+                />
+              <% end %>
+
+              <%!-- Multichoice Step --%>
+              <%= if @current_step.question_type == :multichoice do %>
                 <%!-- Answer Options for Multichoice --%>
                 <div class="space-y-3 mb-6">
                   <%= for option <- @current_step.options do %>
@@ -400,7 +541,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
             <%!-- Actions --%>
             <div class="flex flex-wrap gap-3">
-              <%= if @current_step.question_type != :writing do %>
+              <%= if @current_step.question_type == :multichoice do %>
                 <button
                   type="button"
                   phx-click="submit_answer"
@@ -429,6 +570,48 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
                 >
                   Skip →
+                </button>
+              <% end %>
+
+              <%= if @current_step.question_type == :reading_text && @feedback != :incorrect do %>
+                <button
+                  type="button"
+                  phx-click="submit_reading_text"
+                  disabled={@meaning_answer == "" or @reading_answer == ""}
+                  class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Submit Answer
+                </button>
+
+                <%= if !@show_hint do %>
+                  <button
+                    type="button"
+                    phx-click="show_hint"
+                    class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                  >
+                    <div class="flex items-center gap-2">
+                      <.icon name="hero-light-bulb" class="w-5 h-5" />
+                      <span>Hint</span>
+                    </div>
+                  </button>
+                <% end %>
+
+                <button
+                  type="button"
+                  phx-click="skip_question"
+                  class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
+                >
+                  Skip →
+                </button>
+              <% end %>
+
+              <%= if @current_step.question_type == :reading_text && @feedback == :incorrect do %>
+                <button
+                  type="button"
+                  phx-click="continue_after_correction"
+                  class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Continue →
                 </button>
               <% end %>
             </div>

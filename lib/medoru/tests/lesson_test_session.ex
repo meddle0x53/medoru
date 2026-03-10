@@ -72,6 +72,155 @@ defmodule Medoru.Tests.LessonTestSession do
   end
 
   @doc """
+  Submits a reading text answer for validation.
+
+  ## Parameters
+    * `meaning_answer` - User's English meaning answer
+    * `reading_answer` - User's hiragana reading answer
+    * `opts` - Additional options
+
+  ## Examples
+
+      iex> submit_reading_text_answer(session_id, step_id, "to eat", "たべる")
+      {:correct, %{meaning_correct: true, reading_correct: true}}
+
+  """
+  def submit_reading_text_answer(session_id, step_id, meaning_answer, reading_answer, opts \\ []) do
+    time_spent = Keyword.get(opts, :time_spent_seconds, 0)
+
+    session =
+      TestSession
+      |> where([ts], ts.id == ^session_id)
+      |> preload(:test)
+      |> Repo.one!()
+
+    step = Repo.get!(TestStep, step_id)
+
+    # Load the word for validation
+    word =
+      if step.word_id do
+        Medoru.Content.get_word!(step.word_id)
+      else
+        nil
+      end
+
+    # Validate the answers
+    {is_correct, validation_result} =
+      if word do
+        {:ok, result} =
+          Medoru.Tests.ReadingAnswerValidator.validate_answer(
+            word,
+            meaning_answer,
+            reading_answer
+          )
+
+        {result.both_correct, result}
+      else
+        # Fallback if no word associated
+        {false, %{meaning_correct: false, reading_correct: false}}
+      end
+
+    # Get current metadata
+    metadata = session.metadata || %{}
+    answer_counter = metadata["answer_counter"] || 0
+    step_queue = metadata["step_queue"] || []
+
+    # Record the answer
+    answer_text =
+      Jason.encode!(%{
+        meaning: meaning_answer,
+        reading: reading_answer,
+        validation: validation_result
+      })
+
+    attrs = %{
+      answer: answer_text,
+      time_spent_seconds: time_spent,
+      step_index: answer_counter,
+      is_correct: is_correct
+    }
+
+    {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
+
+    # Update queue based on result
+    new_queue =
+      if is_correct do
+        List.delete(step_queue, step_id)
+      else
+        # Move to end
+        List.delete(step_queue, step_id) ++ [step_id]
+      end
+
+    wrong_count =
+      if is_correct do
+        metadata["wrong_answer_count"] || 0
+      else
+        (metadata["wrong_answer_count"] || 0) + 1
+      end
+
+    next_step_id = List.first(new_queue)
+
+    new_metadata = %{
+      metadata
+      | "step_queue" => new_queue,
+        "wrong_answer_count" => wrong_count,
+        "current_step_id" => next_step_id,
+        "answer_counter" => answer_counter + 1
+    }
+
+    # Update session
+    total_steps = metadata["total_steps"] || length(step_queue)
+    progress_index = total_steps - length(new_queue)
+
+    updated_session =
+      if is_correct do
+        session
+        |> TestSession.progress_changeset(progress_index, session.time_spent_seconds + time_spent)
+        |> Ecto.Changeset.put_change(:metadata, new_metadata)
+        |> Repo.update!()
+      else
+        session
+        |> Ecto.Changeset.change(
+          metadata: new_metadata,
+          current_step_index: session.current_step_index + 1
+        )
+        |> Repo.update!()
+      end
+
+    # Return result
+    if is_correct do
+      if new_queue == [] do
+        complete_lesson_test(updated_session, total_steps)
+      else
+        next_step = Repo.get!(TestStep, hd(new_queue))
+
+        {:correct,
+         %{
+           session: updated_session,
+           next_step: next_step,
+           remaining_count: length(new_queue),
+           total_steps: total_steps,
+           completed_steps: progress_index,
+           validation: validation_result
+         }}
+      end
+    else
+      next_step = Repo.get!(TestStep, next_step_id || step_id)
+
+      {:incorrect,
+       %{
+         session: updated_session,
+         next_step: next_step,
+         remaining_count: length(new_queue),
+         wrong_answer: validation_result,
+         retry_position: length(new_queue),
+         correct_meaning: word && word.meaning,
+         correct_reading: word && word.reading
+       }}
+    end
+  end
+
+  @doc """
   Submits a writing step answer for validation.
 
   ## Parameters

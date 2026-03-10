@@ -184,4 +184,20 @@ defmodule Medoru.ContentFixtures do
     {:ok, lesson} = Medoru.Content.create_lesson_with_words(lesson_attrs, word_links)
     %{lesson | lesson_words: Medoru.Content.list_words_for_lesson(lesson.id)}
   end
+
+  @doc """
+  Generate a lesson word association.
+  """
+  def lesson_word_fixture(lesson, word, attrs \\ []) do
+    position = Keyword.get(attrs, :position, 0)
+
+    {:ok, lesson_word} =
+      Medoru.Content.create_lesson_word(%{
+        lesson_id: lesson.id,
+        word_id: word.id,
+        position: position
+      })
+
+    lesson_word
+  end
 end
