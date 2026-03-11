@@ -281,7 +281,9 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV4 do
       return()
     end
 
-    Mix.shell().info("  Found #{length(words)} words, filtered to #{total_words} (removed #{filtered_count} with higher-level kanji)")
+    Mix.shell().info(
+      "  Found #{length(words)} words, filtered to #{total_words} (removed #{filtered_count} with higher-level kanji)"
+    )
 
     # Enrich word data
     word_data = enrich_word_data(filtered_words, difficulty)

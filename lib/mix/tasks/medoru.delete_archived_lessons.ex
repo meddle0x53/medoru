@@ -48,17 +48,25 @@ defmodule Mix.Tasks.Medoru.DeleteArchivedLessons do
         # Step 1: If there are tests, delete their related data first
         if length(test_ids) > 0 do
           # Get test step IDs
-          test_step_ids = Repo.all(from ts in TestStep, where: ts.test_id in ^test_ids, select: ts.id)
+          test_step_ids =
+            Repo.all(from ts in TestStep, where: ts.test_id in ^test_ids, select: ts.id)
+
           Logger.info("Found #{length(test_step_ids)} test steps to delete")
 
           # Delete test step answers for these test steps
           if length(test_step_ids) > 0 do
-            {deleted_answers, _} = Repo.delete_all(from tsa in TestStepAnswer, where: tsa.test_step_id in ^test_step_ids)
+            {deleted_answers, _} =
+              Repo.delete_all(
+                from tsa in TestStepAnswer, where: tsa.test_step_id in ^test_step_ids
+              )
+
             Logger.info("  Deleted #{deleted_answers} test step answers")
           end
 
           # Delete test steps
-          {deleted_steps, _} = Repo.delete_all(from ts in TestStep, where: ts.test_id in ^test_ids)
+          {deleted_steps, _} =
+            Repo.delete_all(from ts in TestStep, where: ts.test_id in ^test_ids)
+
           Logger.info("  Deleted #{deleted_steps} test steps")
 
           # Delete tests
@@ -69,7 +77,9 @@ defmodule Mix.Tasks.Medoru.DeleteArchivedLessons do
         end
 
         # Step 2: Delete lesson word links
-        {deleted_links, _} = Repo.delete_all(from lw in LessonWord, where: lw.lesson_id in ^lesson_ids)
+        {deleted_links, _} =
+          Repo.delete_all(from lw in LessonWord, where: lw.lesson_id in ^lesson_ids)
+
         Logger.info("  Deleted #{deleted_links} lesson word links")
 
         # Step 3: Delete the archived lessons

@@ -805,7 +805,8 @@ defmodule Medoru.Learning do
 
     UserProgress
     |> join(:inner, [up], rs in ReviewSchedule, on: rs.user_progress_id == up.id)
-    |> where([up, rs], up.user_id == ^user_id and rs.next_review_at <= ^now)
+    |> where([up, rs], up.user_id == ^user_id and not is_nil(up.word_id))
+    |> where([_, rs], rs.next_review_at <= ^now)
     |> preload([:word, :kanji])
     |> order_by([_, rs], asc: rs.next_review_at)
     |> limit(^limit)
@@ -892,7 +893,7 @@ defmodule Medoru.Learning do
 
     query =
       from up in UserProgress,
-        where: up.user_id == ^user_id,
+        where: up.user_id == ^user_id and not is_nil(up.word_id),
         left_join: rs in ReviewSchedule,
         on: rs.user_progress_id == up.id,
         where: is_nil(rs.id) or rs.repetitions == 0,

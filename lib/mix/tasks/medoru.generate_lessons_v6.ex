@@ -52,8 +52,9 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
     level = parse_level(opts[:level])
 
     # Check if we have Core 6000 data
-    core_count = from(w in Word, where: not is_nil(w.core_rank), select: count(w.id)) |> Repo.one()
-    
+    core_count =
+      from(w in Word, where: not is_nil(w.core_rank), select: count(w.id)) |> Repo.one()
+
     if core_count == 0 do
       Mix.shell().error("No Core 6000 data found!")
       Mix.shell().info("Please import Core 6000 data first:")
@@ -82,6 +83,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
   end
 
   defp parse_level(nil), do: nil
+
   defp parse_level(level) when is_binary(level) do
     case String.upcase(level) do
       "N5" -> 5
@@ -95,6 +97,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
 
   defp generate_lessons(nil, dry_run) do
     Mix.shell().info("Generating lessons for all JLPT levels...")
+
     Enum.each([5, 4, 3, 2, 1], fn level ->
       Mix.shell().info("")
       Mix.shell().info("=== JLPT N#{level} ===")
@@ -120,7 +123,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
 
     # Get words for this level based on Core rank
     {core_min, core_max} = core_range_for_jlpt(difficulty)
-    
+
     words =
       Word
       |> where([w], not is_nil(w.core_rank))
@@ -136,7 +139,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
     filtered_words =
       Enum.filter(words, fn word ->
         word_kanjis = get_word_kanji(word)
-        
+
         if word_kanjis == [] do
           true
         else
@@ -176,7 +179,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
     {by_priority_kanji, remaining} = group_by_priority_kanji(word_data)
 
     # Build lessons in priority order
-    kanji_lessons = 
+    kanji_lessons =
       Enum.flat_map(by_priority_kanji, fn {_kanji, words_for_kanji} ->
         # Sort by Core rank (already sorted, but ensure it)
         sorted = Enum.sort_by(words_for_kanji, & &1.core_rank)
@@ -205,7 +208,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
         word_length: word_length,
         word_type: word.word_type,
         core_rank: word.core_rank,
-        sort_score: word.sort_score || 999999
+        sort_score: word.sort_score || 999_999
       }
     end)
   end
@@ -213,8 +216,26 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
   defp group_by_priority_kanji(word_data) do
     # Priority: number kanji first, then by frequency
     priority_kanji = [
-      "一", "二", "三", "四", "五", "六", "七", "八", "九", "十",
-      "百", "千", "万", "日", "月", "年", "時", "分", "人", "本"
+      "一",
+      "二",
+      "三",
+      "四",
+      "五",
+      "六",
+      "七",
+      "八",
+      "九",
+      "十",
+      "百",
+      "千",
+      "万",
+      "日",
+      "月",
+      "年",
+      "時",
+      "分",
+      "人",
+      "本"
     ]
 
     priority_map = Map.new(priority_kanji, fn k -> {k, []} end)
@@ -230,7 +251,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
         end
       end)
 
-    ordered = 
+    ordered =
       priority_kanji
       |> Enum.map(fn k -> {k, Enum.reverse(by_kanji[k])} end)
       |> Enum.filter(fn {_, words} -> words != [] end)
@@ -247,8 +268,8 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
   defp build_mixed_lesson_chunks(words, acc) do
     by_type = Enum.group_by(words, & &1.word_type)
     types = [:counter, :noun, :verb, :adjective, :adverb, :expression, :other]
-    
-    {lesson_words, remaining_by_type} = 
+
+    {lesson_words, remaining_by_type} =
       Enum.reduce(types, {[], %{}}, fn type, {picked, rem} ->
         case Map.get(by_type, type, []) do
           [first | rest] -> {[first | picked], Map.put(rem, type, rest)}
@@ -256,12 +277,12 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
         end
       end)
 
-    all_remaining = 
+    all_remaining =
       remaining_by_type
       |> Map.values()
       |> Enum.concat()
 
-    lesson_words = 
+    lesson_words =
       if length(lesson_words) < @words_per_lesson do
         lesson_words ++ Enum.take(all_remaining, @words_per_lesson - length(lesson_words))
       else
@@ -291,8 +312,8 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
 
   defp create_lesson(difficulty, order_index, word_data_list, dry_run) do
     words = Enum.map(word_data_list, & &1.word)
-    first_word = hd(words)
-    
+    _first_word = hd(words)
+
     title = generate_lesson_title(word_data_list, order_index)
     description = generate_lesson_description(words)
 
@@ -307,10 +328,13 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
     if dry_run do
       if order_index <= 5 do
         word_texts = Enum.map(words, & &1.text) |> Enum.join(", ")
-        types = word_data_list |> Enum.map(& &1.word_type) |> Enum.join(", ")
+        _types = word_data_list |> Enum.map(& &1.word_type) |> Enum.join(", ")
         Mix.shell().info("  [##{order_index}] #{title}")
         Mix.shell().info("      Words: #{word_texts}")
-        Mix.shell().info("      Core ranks: #{Enum.map(word_data_list, & &1.core_rank) |> Enum.join(", ")}")
+
+        Mix.shell().info(
+          "      Core ranks: #{Enum.map(word_data_list, & &1.core_rank) |> Enum.join(", ")}"
+        )
       end
     else
       existing =
@@ -338,20 +362,20 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
   defp generate_lesson_title(word_data_list, index) do
     words = Enum.map(word_data_list, & &1.word)
     first = hd(words)
-    
+
     kanji = word_data_list |> Enum.flat_map(& &1.kanji_chars) |> Enum.uniq() |> Enum.join("")
     types = word_data_list |> Enum.map(& &1.word_type) |> Enum.uniq()
-    
+
     type_str = if length(types) == 1, do: " #{hd(types)}s", else: " mix"
-    
+
     cond do
-      index <= 3 and kanji != "" -> 
+      index <= 3 and kanji != "" ->
         "#{kanji} Basics"
-      
-      String.length(kanji) == 1 -> 
+
+      String.length(kanji) == 1 ->
         "#{kanji} Words"
-      
-      true -> 
+
+      true ->
         "#{first.text}#{type_str}"
     end
   end
@@ -372,12 +396,14 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
   defp delete_system_lessons(nil) do
     from(l in Lesson, where: l.difficulty in [1, 2, 3, 4, 5])
     |> Repo.delete_all()
+
     Mix.shell().info("Deleted all existing lessons")
   end
 
   defp delete_system_lessons(level) do
     from(l in Lesson, where: l.difficulty == ^level)
     |> Repo.delete_all()
+
     Mix.shell().info("Deleted existing N#{level} lessons")
   end
 
@@ -389,7 +415,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV6 do
 
     Mix.shell().info("")
     Mix.shell().info("=== Generated Lessons ===")
-    
+
     Enum.each([5, 4, 3, 2, 1], fn level ->
       count = Map.get(by_level, level, 0)
       core_range = core_range_for_jlpt(level) |> then(fn {min, max} -> "Core #{min}-#{max}" end)

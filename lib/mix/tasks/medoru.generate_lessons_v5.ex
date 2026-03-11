@@ -33,20 +33,112 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
   # Research-based kanji learning order - Numbers FIRST
   @kanji_priority [
     # Tier 1: Numbers (Most essential - come first!)
-    "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "百", "千", "万",
+    "一",
+    "二",
+    "三",
+    "四",
+    "五",
+    "六",
+    "七",
+    "八",
+    "九",
+    "十",
+    "百",
+    "千",
+    "万",
     # Tier 2: Time/Date
-    "日", "月", "年", "時", "分", "週", "間", "朝", "昼", "夜", "今", "昨", "明",
+    "日",
+    "月",
+    "年",
+    "時",
+    "分",
+    "週",
+    "間",
+    "朝",
+    "昼",
+    "夜",
+    "今",
+    "昨",
+    "明",
     # Tier 3: People/Family
-    "人", "子", "女", "男", "友", "先", "生", "母", "父", "兄", "弟", "姉", "妹",
+    "人",
+    "子",
+    "女",
+    "男",
+    "友",
+    "先",
+    "生",
+    "母",
+    "父",
+    "兄",
+    "弟",
+    "姉",
+    "妹",
     # Tier 4: Directions/Location
-    "上", "下", "中", "左", "右", "前", "後", "外", "内", "東", "西", "南", "北",
+    "上",
+    "下",
+    "中",
+    "左",
+    "右",
+    "前",
+    "後",
+    "外",
+    "内",
+    "東",
+    "西",
+    "南",
+    "北",
     # Tier 5: Descriptors
-    "大", "小", "高", "長", "新", "古", "多", "少", "良", "悪", "早", "楽",
+    "大",
+    "小",
+    "高",
+    "長",
+    "新",
+    "古",
+    "多",
+    "少",
+    "良",
+    "悪",
+    "早",
+    "楽",
     # Tier 6: Nature
-    "山", "川", "田", "天", "気", "火", "水", "木", "金", "土", "雨", "花",
+    "山",
+    "川",
+    "田",
+    "天",
+    "気",
+    "火",
+    "水",
+    "木",
+    "金",
+    "土",
+    "雨",
+    "花",
     # Tier 7: Actions
-    "見", "行", "来", "食", "飲", "話", "読", "書", "聞", "言", "思", "知",
-    "入", "出", "立", "会", "買", "売", "待", "持", "住", "作", "使", "開"
+    "見",
+    "行",
+    "来",
+    "食",
+    "飲",
+    "話",
+    "読",
+    "書",
+    "聞",
+    "言",
+    "思",
+    "知",
+    "入",
+    "出",
+    "立",
+    "会",
+    "買",
+    "売",
+    "待",
+    "持",
+    "住",
+    "作",
+    "使",
+    "開"
   ]
 
   @impl true
@@ -80,6 +172,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
   end
 
   defp parse_level(nil), do: nil
+
   defp parse_level(level) when is_binary(level) do
     case String.upcase(level) do
       "N5" -> 5
@@ -93,6 +186,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
 
   defp generate_lessons(nil, dry_run) do
     Mix.shell().info("Generating lessons for all JLPT levels...")
+
     Enum.each([5, 4, 3, 2, 1], fn level ->
       Mix.shell().info("")
       Mix.shell().info("=== JLPT N#{level} ===")
@@ -129,7 +223,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
     filtered_words =
       Enum.filter(words, fn word ->
         word_kanjis = get_word_kanji(word)
-        
+
         # Kana-only words are always allowed
         if word_kanjis == [] do
           true
@@ -140,7 +234,10 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
       end)
 
     filtered_count = length(words) - length(filtered_words)
-    Mix.shell().info("  Words: #{length(words)} total, #{length(filtered_words)} valid (removed #{filtered_count})")
+
+    Mix.shell().info(
+      "  Words: #{length(words)} total, #{length(filtered_words)} valid (removed #{filtered_count})"
+    )
 
     if filtered_words == [] do
       Mix.shell().info("  No valid words for N#{difficulty}")
@@ -167,7 +264,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
     {by_priority_kanji, remaining} = group_by_priority_kanji(word_data)
 
     # Build lessons in priority order, with balanced word types
-    kanji_lessons = 
+    kanji_lessons =
       Enum.flat_map(by_priority_kanji, fn {_kanji, words_for_kanji} ->
         # Sort by pre-computed sort_score
         sorted = Enum.sort_by(words_for_kanji, & &1.sort_score)
@@ -200,7 +297,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
       end)
 
     # Convert to ordered list (respecting @kanji_priority order)
-    ordered = 
+    ordered =
       @kanji_priority
       |> Enum.map(fn k -> {k, Enum.reverse(by_kanji[k])} end)
       |> Enum.filter(fn {_, words} -> words != [] end)
@@ -219,9 +316,9 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
     # Take words in a balanced way - prioritize variety
     by_type = Enum.group_by(words, & &1.word_type)
     types = [:counter, :noun, :verb, :adjective, :adverb, :other]
-    
+
     # Pick one word from each type if available
-    {lesson_words, remaining_by_type} = 
+    {lesson_words, remaining_by_type} =
       Enum.reduce(types, {[], %{}}, fn type, {picked, rem} ->
         case Map.get(by_type, type, []) do
           [first | rest] -> {[first | picked], Map.put(rem, type, rest)}
@@ -230,12 +327,12 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
       end)
 
     # Fill remaining slots from other words
-    all_remaining = 
+    all_remaining =
       remaining_by_type
       |> Map.values()
       |> Enum.concat()
 
-    lesson_words = 
+    lesson_words =
       if length(lesson_words) < @words_per_lesson do
         lesson_words ++ Enum.take(all_remaining, @words_per_lesson - length(lesson_words))
       else
@@ -270,7 +367,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
         kanji_count: kanji_count,
         word_length: word_length,
         word_type: word.word_type,
-        sort_score: word.sort_score || 999999,
+        sort_score: word.sort_score || 999_999,
         frequency: word.usage_frequency || 1000
       }
     end)
@@ -331,25 +428,25 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
   defp generate_lesson_title(word_data_list, index) do
     words = Enum.map(word_data_list, & &1.word)
     first = hd(words)
-    
+
     # Get kanji used
     kanji = word_data_list |> Enum.flat_map(& &1.kanji_chars) |> Enum.uniq() |> Enum.join("")
-    
+
     # Get types
     types = word_data_list |> Enum.map(& &1.word_type) |> Enum.uniq()
     type_str = if length(types) == 1, do: " #{hd(types)}s", else: " mix"
-    
+
     cond do
       # First few lessons with numbers
-      index <= 3 and kanji != "" -> 
+      index <= 3 and kanji != "" ->
         "#{kanji} Basics"
-      
+
       # Single kanji focus
-      String.length(kanji) == 1 -> 
+      String.length(kanji) == 1 ->
         "#{kanji} Words"
-      
+
       # Mixed
-      true -> 
+      true ->
         "#{first.text}#{type_str}"
     end
   end
@@ -370,12 +467,14 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
   defp delete_system_lessons(nil) do
     from(l in Lesson, where: l.difficulty in [1, 2, 3, 4, 5])
     |> Repo.delete_all()
+
     Mix.shell().info("Deleted all existing lessons")
   end
 
   defp delete_system_lessons(level) do
     from(l in Lesson, where: l.difficulty == ^level)
     |> Repo.delete_all()
+
     Mix.shell().info("Deleted existing N#{level} lessons")
   end
 
@@ -387,7 +486,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV5 do
 
     Mix.shell().info("")
     Mix.shell().info("=== Generated Lessons ===")
-    
+
     Enum.each([5, 4, 3, 2, 1], fn level ->
       count = Map.get(by_level, level, 0)
       Mix.shell().info("  N#{level}: #{count} lessons")

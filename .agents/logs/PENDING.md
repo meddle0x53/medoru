@@ -241,24 +241,31 @@ Add full internationalization support to make the platform accessible in English
 
 ## 🔴 HIGH PRIORITY (Classroom System)
 
-### Iteration 18: Classroom Core
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2-3 days  
+### Iteration 18: Classroom Core ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-11  
+**Log**: [ITERATION-18-classroom-core.md](./ITERATION-18-classroom-core.md)  
 **Depends On**: User types (✅ done)
-**Files to Create**:
-- `lib/medoru/classrooms/classroom.ex` - Schema
-- `lib/medoru/classrooms/classroom_membership.ex` - Schema
-- `lib/medoru/classrooms.ex` - Context
-- `lib/medoru_web/live/teacher/classroom_live/index.ex`
-- `lib/medoru_web/live/teacher/classroom_live/show.ex`
-- `lib/medoru_web/live/teacher/classroom_live/new.ex`
-- `priv/repo/migrations/*_create_classrooms.exs`
-- `priv/repo/migrations/*_create_classroom_memberships.exs`
-- `test/medoru/classrooms_test.exs`
 
-**Key Features**:
-- Create classrooms (name, slug, invite code)
-- Teacher management interface
-- Tabs: Overview, Students, Lessons, Tests, Settings
+**Files Created**:
+- ✅ `lib/medoru/classrooms/classroom.ex` - Schema with auto slug/code generation
+- ✅ `lib/medoru/classrooms/classroom_membership.ex` - Schema with status workflow
+- ✅ `lib/medoru/classrooms.ex` - Full context with CRUD and membership functions
+- ✅ `lib/medoru_web/live/teacher/classroom_live/index.ex` - Classroom listing
+- ✅ `lib/medoru_web/live/teacher/classroom_live/show.ex` - Management interface with tabs
+- ✅ `lib/medoru_web/live/teacher/classroom_live/new.ex` - Create classroom form
+- ✅ `priv/repo/migrations/20260311085827_create_classrooms.exs`
+- ✅ `priv/repo/migrations/20260311085840_create_classroom_memberships.exs`
+- ✅ `test/medoru/classrooms_test.exs` - 31 passing tests
+
+**Key Features Implemented**:
+- ✅ Create classrooms (name, slug, invite code) with auto-generation
+- ✅ Teacher management interface at `/teacher/classrooms`
+- ✅ Tabs: Overview, Students, Lessons, Tests, Settings
+- ✅ Membership workflow: apply → approve/reject
+- ✅ Student management: view, remove, points tracking
+- ✅ Invite code regeneration
+- ✅ Classroom stats (members, pending apps, total points)
+- ✅ Archive and close classroom actions
 
 ---
 
@@ -338,15 +345,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 17/23 iterations (74%)
+**Completed**: 18/23 iterations (78%)
 
 | Priority | Iterations | Total Days |
 |----------|------------|------------|
-| 🔴 High | 14 ✅, 16 ✅, 23 ✅ | 0 days (COMPLETE) |
+| 🔴 High | 14 ✅, 16 ✅, 18 ✅, 23 ✅ | 0 days (COMPLETE) |
 | 🟡 Medium | 13, 17 ✅, 22 ✅, 24 | 4-6 days |
-| 🔴 High | 15, 18, 19, 20 | 10-13 days |
+| 🔴 High | 15, 19, 20 | 7-10 days |
 | 🟢 Lower | 21 | 2-3 days |
-| **Total** | **6** | **14-21 days** |
+| **Total** | **5** | **11-17 days** |
 
 ---
 

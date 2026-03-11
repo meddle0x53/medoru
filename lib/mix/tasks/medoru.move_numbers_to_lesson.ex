@@ -62,7 +62,7 @@ defmodule Mix.Tasks.Medoru.MoveNumbersToLesson do
     number_word_ids = identify_number_words(basic_words)
 
     Logger.info("Found #{length(number_word_ids)} number words to move:")
-    
+
     Enum.each(number_word_ids, fn word_id ->
       word = Enum.find(basic_words, &(&1.word_id == word_id))
       Logger.info("  - #{word.word.text} (#{word.word.meaning}) at position #{word.position}")
@@ -97,12 +97,14 @@ defmodule Mix.Tasks.Medoru.MoveNumbersToLesson do
 
       # Show what remains in Basic Words
       Logger.info("Words remaining in Basic Words & Pronouns:")
+
       Enum.each(new_basic_words, fn lw ->
         Logger.info("  - #{lw.word.text} (#{lw.word.meaning})")
       end)
 
       # Show what's now in Numbers 1-10
       Logger.info("Words now in Numbers 1-10:")
+
       Enum.each(new_numbers_words, fn lw ->
         Logger.info("  - #{lw.word.text} (#{lw.word.meaning}) at position #{lw.position}")
       end)
@@ -137,7 +139,7 @@ defmodule Mix.Tasks.Medoru.MoveNumbersToLesson do
 
   defp archive_lesson_tests(lesson_id) do
     lesson = Repo.get(Lesson, lesson_id) |> Repo.preload(:test)
-    
+
     if lesson.test_id do
       test = Tests.get_test!(lesson.test_id)
       {:ok, _} = Tests.archive_test(test)

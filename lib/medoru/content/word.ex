@@ -43,7 +43,19 @@ defmodule Medoru.Content.Word do
   @doc false
   def changeset(word, attrs) do
     word
-    |> cast(attrs, [:text, :meaning, :reading, :difficulty, :usage_frequency, :word_type, :sort_score, :core_rank, :example_sentence, :example_reading, :example_meaning])
+    |> cast(attrs, [
+      :text,
+      :meaning,
+      :reading,
+      :difficulty,
+      :usage_frequency,
+      :word_type,
+      :sort_score,
+      :core_rank,
+      :example_sentence,
+      :example_reading,
+      :example_meaning
+    ])
     |> validate_required([:text, :meaning, :reading, :difficulty])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:usage_frequency, greater_than: 0)

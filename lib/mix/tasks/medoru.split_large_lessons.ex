@@ -35,9 +35,10 @@ defmodule Mix.Tasks.Medoru.SplitLargeLessons do
     large_lessons = find_large_lessons()
 
     # Filter out already archived lessons
-    large_lessons = Enum.filter(large_lessons, fn {lesson, _} ->
-      not String.contains?(lesson.title, "[ARCHIVED")
-    end)
+    large_lessons =
+      Enum.filter(large_lessons, fn {lesson, _} ->
+        not String.contains?(lesson.title, "[ARCHIVED")
+      end)
 
     Logger.info("Found #{length(large_lessons)} lessons with more than #{@split_threshold} words")
 
@@ -51,7 +52,10 @@ defmodule Mix.Tasks.Medoru.SplitLargeLessons do
       end)
 
       Logger.info("✅ Migration complete!")
-      Logger.info("Note: Old lessons have been kept for reference. Run 'mix medoru.delete_split_lessons' to remove them after verifying the new lessons.")
+
+      Logger.info(
+        "Note: Old lessons have been kept for reference. Run 'mix medoru.delete_split_lessons' to remove them after verifying the new lessons."
+      )
     end
   end
 
@@ -86,7 +90,7 @@ defmodule Mix.Tasks.Medoru.SplitLargeLessons do
     Logger.info("  Splitting into #{num_chunks} lessons of ~#{@words_per_lesson} words each")
 
     # Create new lessons
-    Enum.with_index(1..num_chunks, fn chunk_index, i ->
+    Enum.with_index(1..num_chunks, fn _chunk_index, i ->
       # Get words for this chunk
       start_idx = (i - 1) * @words_per_lesson
       end_idx = min(i * @words_per_lesson - 1, word_count - 1)
@@ -94,10 +98,10 @@ defmodule Mix.Tasks.Medoru.SplitLargeLessons do
 
       # Create new lesson
       new_title = "#{lesson.title} (#{i})"
-      
+
       # Determine difficulty based on original
       difficulty = lesson.difficulty || 5
-      
+
       # Create the new lesson - use a large offset for order_index to ensure proper ordering
       # This ensures split lessons appear after the original lesson's position
       lesson_attrs = %{
@@ -119,15 +123,16 @@ defmodule Mix.Tasks.Medoru.SplitLargeLessons do
       case Medoru.Content.create_lesson_with_words(lesson_attrs, word_links) do
         {:ok, new_lesson} ->
           Logger.info("  Created '#{new_lesson.title}' with #{length(chunk_words)} words")
-          
+
           # Generate test for the new lesson
           case Tests.generate_lesson_test(new_lesson.id) do
             {:ok, _test} ->
               Logger.info("    Generated test for '#{new_lesson.title}'")
+
             {:error, reason} ->
               Logger.warning("    Could not generate test: #{inspect(reason)}")
           end
-          
+
           new_lesson
 
         {:error, changeset} ->

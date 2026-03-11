@@ -24,12 +24,11 @@
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
-| 16 | Daily Tests | ⏳ PLANNED | - |
-| 17 | Vocabulary Lesson System | ⏳ PLANNED | - |
-| 18 | Classroom Core | ⏳ PLANNED | - |
+| 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
 | 19 | Classroom Membership | ⏳ PLANNED | - |
 | 20 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
 | 21 | Admin Dashboard | ⏳ PLANNED | - |
+| 24 | i18n Multi-Language | ⏳ PLANNED | - |
 
 ## Version 0.2.0 (Social Features) - Planned
 
@@ -61,10 +60,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 16 COMPLETE - Ready for Iteration 13+
-- **Last completed**: Iteration 16 - Auto-Generated Daily Tests
-- **Current**: ⏳ 6 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 15/21 iterations for v0.1.0 (6 remaining)
+- **Phase**: Iteration 18 COMPLETE - Ready for Iteration 19+
+- **Last completed**: Iteration 18 - Classroom Core
+- **Current**: ⏳ 5 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 18/23 iterations for v0.1.0 (5 remaining)
 
 ## ⏳ Pending Work (Priority Order)
 1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
@@ -141,11 +140,13 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Review items + new words mix (up to 5 new)
 - One test per user per day
 
-### ⏳ Pending (Iterations 13, 15, 18-21) - MVP Extended
+### ⏳ Pending (Iterations 13, 15, 19-21, 24) - MVP Extended
 - Admin badge management (13)
 - Teacher test creation (15)
-- Classroom system (18-20)
+- Classroom membership (19)
+- Classroom tests, lessons & rankings (20)
 - Admin dashboard (21)
+- i18n Multi-Language (24)
 
 ## Environment
 
@@ -204,5 +205,5 @@ mix ecto.reset
 
 ---
 
-**Last updated**: 2026-03-07  
-**Status**: Iteration 10 COMPLETE - Iteration 11 PLANNED
+**Last updated**: 2026-03-11  
+**Status**: Iteration 18 COMPLETE - Iteration 19 PLANNED

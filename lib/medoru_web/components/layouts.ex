@@ -68,6 +68,13 @@ defmodule MedoruWeb.Layouts do
                 Words
               </.link>
             </li>
+            <%= if @current_scope.current_user.type in ["teacher", "admin"] do %>
+              <li class="hidden md:block">
+                <.link navigate={~p"/teacher/classrooms"} class="btn btn-ghost btn-sm text-secondary">
+                  <.icon name="hero-academic-cap" class="w-4 h-4 mr-1" /> Classrooms
+                </.link>
+              </li>
+            <% end %>
             <%= if @current_scope.current_user.type == "admin" do %>
               <li class="hidden md:block">
                 <.link navigate={~p"/admin/users"} class="btn btn-ghost btn-sm text-error">

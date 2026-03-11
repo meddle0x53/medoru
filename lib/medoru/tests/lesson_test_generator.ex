@@ -116,7 +116,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
   end
 
   # Generates test steps for all words
-  defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id \\ nil) do
+  defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id) do
     # Get unique kanji from all words for writing steps
     writing_steps = generate_writing_steps(words)
 
@@ -169,7 +169,10 @@ defmodule Medoru.Tests.LessonTestGenerator do
       previous_lesson_words =
         LessonWord
         |> join(:inner, [lw], l in Lesson, on: lw.lesson_id == l.id)
-        |> where([lw, l], l.difficulty == ^lesson.difficulty and l.order_index < ^lesson.order_index)
+        |> where(
+          [lw, l],
+          l.difficulty == ^lesson.difficulty and l.order_index < ^lesson.order_index
+        )
         |> where([lw], lw.word_id not in ^current_word_ids)
         |> preload(:word)
         |> limit(30)
@@ -184,8 +187,6 @@ defmodule Medoru.Tests.LessonTestGenerator do
       []
     end
   end
-
-
 
   # Generate writing steps for unique kanji in lesson words
   defp generate_writing_steps(words) do
