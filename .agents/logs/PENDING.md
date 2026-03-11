@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
 **Last Updated**: 2026-03-11  
-**Completed**: 19/23 iterations  
-**Remaining**: 4 iterations
+**Completed**: 20/23 iterations  
+**Remaining**: 3 iterations
 
 ---
 
@@ -292,7 +292,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 20: Classroom Tests, Lessons & Rankings
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 3-4 days  
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-11 | **Log**: [ITERATION-20-classroom-tests-rankings.md](./ITERATION-20-classroom-tests-rankings.md)  
 **Depends On**: Iterations 14, 17, 18, 19
 **Files to Create**:
 - `lib/medoru/classrooms/classroom_test_attempt.ex` - Schema
@@ -309,21 +309,97 @@ Add full internationalization support to make the platform accessible in English
 
 ---
 
-### Iteration 15: Teacher Test Creation Interface
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 3-4 days  
+### Iteration 15: Teacher Test Creation - Part A: Test Management Core
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
 **Depends On**: Iteration 14, User types (✅ done)
 **Files to Create**:
-- `lib/medoru_web/live/teacher/test_builder_live/index.ex` - List teacher tests
-- `lib/medoru_web/live/teacher/test_builder_live/new.ex` - Create test
-- `lib/medoru_web/live/teacher/test_builder_live/edit.ex` - Edit test steps
-- `lib/medoru_web/live/teacher/test_builder_live/preview.ex` - Preview test
-- `lib/medoru_web/components/test_builder_components.ex`
+- `lib/medoru_web/live/teacher/test_live/index.ex` - List teacher's tests
+- `lib/medoru_web/live/teacher/test_live/new.ex` - Create test with settings
+- `lib/medoru_web/live/teacher/test_live/show.ex` - Test overview
+- Update `lib/medoru/tests/test.ex` - Add state field and owner
 
 **Key Features**:
-- Test builder workflow: created → ready → published
-- Step builder with kanji/word search
-- Drag-drop step reordering
-- Test preview mode
+- Test lifecycle: `in_progress` → `ready` → `published` → `archived`
+- Test settings: name, description, time limit, max attempts
+- Draft auto-save (in_progress state)
+- Archive/unarchive functionality
+- Tests owned by teacher, only visible to them
+
+---
+
+### Iteration 25: Teacher Test Creation - Part B: Step Builder Framework
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
+**Depends On**: Iteration 15A
+**Files to Create**:
+- `lib/medoru_web/live/teacher/test_live/edit.ex` - Test editor
+- `lib/medoru_web/live/teacher/test_live/step_builder.ex` - Step management
+- `lib/medoru_web/components/step_builder_components.ex`
+
+**Key Features**:
+- Add/remove/reorder steps (drag-drop)
+- Step type selector: multichoice, typing, writing
+- Step list with preview
+- Empty step placeholders
+
+---
+
+### Iteration 26: Teacher Test Creation - Part C: Multi-Choice Step Builder
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
+**Depends On**: Iteration 15B
+**Files to Create**:
+- `lib/medoru_web/live/teacher/test_live/steps/multichoice.ex`
+
+**Key Features**:
+- Word search/typeahead selection
+- Distractor word selection (alternative choices)
+- Number of choices setting (4-8)
+- Step preview mode
+- Validation: 1 correct + N distractors
+
+---
+
+### Iteration 27: Teacher Test Creation - Part D: Typing Step Builder
+**Status**: ⏳ NOT STARTED | **Priority**: 🟡 MEDIUM | **Estimated**: 1-2 days  
+**Depends On**: Iteration 15B
+**Files to Create**:
+- `lib/medoru_web/live/teacher/test_live/steps/typing.ex`
+
+**Key Features**:
+- Word selection
+- Toggle: default meaning vs custom meaning
+- Custom meaning input (exact match override)
+- Hint text configuration
+
+---
+
+### Iteration 28: Teacher Test Creation - Part E: Kanji Writing Step Builder
+**Status**: ⏳ NOT STARTED | **Priority**: 🟡 MEDIUM | **Estimated**: 1 day  
+**Depends On**: Iteration 15B
+**Files to Create**:
+- `lib/medoru_web/live/teacher/test_live/steps/writing.ex`
+
+**Key Features**:
+- Kanji search/selection
+- Stroke count validation
+- Preview with stroke animation
+
+---
+
+### Iteration 29: Teacher Test Creation - Part F: Classroom Publishing
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 1-2 days  
+**Depends On**: Iteration 15A, 15C-E
+**Files to Create**:
+- `lib/medoru/classrooms/classroom_test.ex` - Schema
+- `priv/repo/migrations/*_create_classroom_tests.exs`
+- Update `lib/medoru_web/live/teacher/test_live/publish.ex`
+
+**Key Features**:
+- "Publish to Classroom" flow
+- Select target classrooms from teacher's list
+- Published tests appear in classroom's "Tests" tab
+- Unpublish/remake functionality
+- Track which classrooms have the test
+- Students can see and take published tests
 
 ---
 
@@ -349,31 +425,40 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 19/23 iterations (83%)
+**Completed**: 20/29 iterations (69%)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 16 ✅, 18 ✅, 19 ✅, 23 ✅ | 5 COMPLETE |
-| 🔴 High | 15, 20 | 2 PENDING (Next) |
-| 🟡 Medium | 13, 17 ✅, 22 ✅, 24 | 2 PENDING |
+| 🔴 High | 14 ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅ | 6 COMPLETE |
+| 🔴 High | 15, 25-26, 29 | 5 PENDING |
+| 🟡 Medium | 13, 17 ✅, 22 ✅, 24, 27-28 | 5 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **4** | **9-14 days est.** |
+| **Total** | **11** | **14-21 days est.** |
 
 ---
 
 ## 🎯 Recommended Order
 
+### Completed ✅
 1. **Iteration 14** ✅ (Multi-Step Test) - Foundation for tests
 2. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
-3. **Iteration 22** ✅ (Kanji Writing) - Writing validation
-4. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
-5. **Iteration 13** (Admin Badge Management) - Quick win
-6. **Iteration 24** (i18n Multi-Language) - Platform internationalization
-7. **Iteration 15** (Teacher Test Creation) - Teacher features
-8. **Iteration 18** (Classroom Core) - Classroom foundation
-9. **Iteration 19** (Classroom Membership) - Student joining
-10. **Iteration 20** (Classroom Tests/Rankings) - Full classroom
-11. **Iteration 21** (Admin Dashboard) - Admin polish
+3. **Iteration 18** ✅ (Classroom Core) - Classroom foundation
+4. **Iteration 19** ✅ (Classroom Membership) - Student joining
+5. **Iteration 20** ✅ (Classroom Tests/Rankings) - Full classroom
+6. **Iteration 22** ✅ (Kanji Writing) - Writing validation
+7. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
+
+### Up Next 🔴
+8. **Iteration 15A** (Test Management Core) - Teacher test CRUD
+9. **Iteration 15B** (Step Builder Framework) - Base step management
+10. **Iteration 15C** (Multi-Choice Steps) - First step type
+11. **Iteration 29** (Classroom Publishing) - Connect tests to classrooms
+
+### Future 🟡
+12. **Iteration 27-28** (Typing/Writing Steps) - Additional step types
+13. **Iteration 13** (Admin Badge Management) - Admin features
+14. **Iteration 24** (i18n Multi-Language) - Platform internationalization
+15. **Iteration 21** (Admin Dashboard) - Admin polish
 
 ---
 

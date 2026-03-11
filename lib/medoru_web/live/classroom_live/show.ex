@@ -235,7 +235,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body">
-        <h3 class="card-title text-base-content mb-4">Classroom Rankings</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="card-title text-base-content">Classroom Rankings</h3>
+          <.link
+            navigate={~p"/classrooms/#{@current_user.id}/rankings"}
+            class="btn btn-primary btn-sm"
+          >
+            <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> Full Rankings
+          </.link>
+        </div>
         <%= if @members == [] do %>
           <p class="text-secondary">No members yet.</p>
         <% else %>

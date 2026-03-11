@@ -26,7 +26,7 @@
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
 | 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
 | 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
-| 20 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
+| 20 | Classroom Tests, Lessons & Rankings | ✅ COMPLETED | 2026-03-11 |
 | 21 | Admin Dashboard | ⏳ PLANNED | - |
 | 24 | i18n Multi-Language | ⏳ PLANNED | - |
 
@@ -60,10 +60,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 19 COMPLETE - Ready for Iteration 20+
-- **Last completed**: Iteration 19 - Classroom Membership
-- **Current**: ⏳ 4 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 19/23 iterations for v0.1.0 (4 remaining)
+- **Phase**: Iteration 20 COMPLETE - Ready for Iteration 15A+
+- **Last completed**: Iteration 20 - Classroom Tests, Lessons & Rankings
+- **Current**: ⏳ 9 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 20/29 iterations for v0.1.0 (9 remaining)
 
 ## ⏳ Pending Work (Priority Order)
 1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
@@ -206,5 +206,5 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-11  
-**Status**: Iteration 19 COMPLETE - Iteration 20 PLANNED
+**Status**: Iteration 20 COMPLETE - Iteration 15/21 PLANNED
 **Tests**: 397 passing

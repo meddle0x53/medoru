@@ -213,6 +213,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             <.tab_button active={@active_tab == "tests"} tab="tests" label="Tests" />
             <.tab_button active={@active_tab == "settings"} tab="settings" label="Settings" />
           </div>
+          <div class="ml-auto">
+            <.link
+              navigate={~p"/teacher/classrooms/#{@classroom.id}/analytics"}
+              class="btn btn-primary btn-sm"
+            >
+              <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> Analytics
+            </.link>
+          </div>
         </div>
 
         <%!-- Tab Content --%>

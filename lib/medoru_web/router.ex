@@ -121,6 +121,7 @@ defmodule MedoruWeb.Router do
       live "/classrooms", ClassroomLive.Index
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show
+      live "/classrooms/:id/analytics", ClassroomLive.Analytics
     end
   end
 
@@ -133,6 +134,7 @@ defmodule MedoruWeb.Router do
       live "/", ClassroomLive.Index
       live "/join", ClassroomLive.Join
       live "/:id", ClassroomLive.Show
+      live "/:id/rankings", ClassroomLive.Rankings
     end
   end
 
