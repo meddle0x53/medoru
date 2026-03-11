@@ -122,6 +122,11 @@ defmodule MedoruWeb.Router do
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show
       live "/classrooms/:id/analytics", ClassroomLive.Analytics
+
+      live "/tests", TestLive.Index
+      live "/tests/new", TestLive.New
+      live "/tests/:id", TestLive.Show
+      live "/tests/:id/edit", TestLive.Edit
     end
   end
 

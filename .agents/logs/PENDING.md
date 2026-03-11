@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
 **Last Updated**: 2026-03-11  
-**Completed**: 20/23 iterations  
-**Remaining**: 3 iterations
+**Completed**: 16 iterations  
+**Remaining**: 8 iterations for v0.1.0
 
 ---
 
@@ -310,7 +310,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 15: Teacher Test Creation - Part A: Test Management Core
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-11 | **Log**: [ITERATION-15A-test-management-core.md](./ITERATION-15A-test-management-core.md)  
 **Depends On**: Iteration 14, User types (✅ done)
 **Files to Create**:
 - `lib/medoru_web/live/teacher/test_live/index.ex` - List teacher's tests
@@ -441,24 +441,25 @@ Add full internationalization support to make the platform accessible in English
 
 ### Completed ✅
 1. **Iteration 14** ✅ (Multi-Step Test) - Foundation for tests
-2. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
-3. **Iteration 18** ✅ (Classroom Core) - Classroom foundation
-4. **Iteration 19** ✅ (Classroom Membership) - Student joining
-5. **Iteration 20** ✅ (Classroom Tests/Rankings) - Full classroom
-6. **Iteration 22** ✅ (Kanji Writing) - Writing validation
-7. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
+2. **Iteration 16** ✅ (Auto-Generated Daily Tests) - SRS-based daily reviews
+3. **Iteration 17** ✅ (Vocabulary Lessons) - Expand content
+4. **Iteration 18** ✅ (Classroom Core) - Classroom foundation
+5. **Iteration 19** ✅ (Classroom Membership) - Student joining
+6. **Iteration 20** ✅ (Classroom Tests/Rankings) - Full classroom
+7. **Iteration 22** ✅ (Kanji Writing) - Writing validation
+8. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
+9. **Iteration 15A** ✅ (Test Management Core) - Teacher test CRUD
 
 ### Up Next 🔴
-8. **Iteration 15A** (Test Management Core) - Teacher test CRUD
-9. **Iteration 15B** (Step Builder Framework) - Base step management
-10. **Iteration 15C** (Multi-Choice Steps) - First step type
-11. **Iteration 29** (Classroom Publishing) - Connect tests to classrooms
+10. **Iteration 15B** (Step Builder Framework) - Base step management
+11. **Iteration 15C** (Multi-Choice Steps) - First step type
+12. **Iteration 29** (Classroom Publishing) - Connect tests to classrooms
 
 ### Future 🟡
-12. **Iteration 27-28** (Typing/Writing Steps) - Additional step types
-13. **Iteration 13** (Admin Badge Management) - Admin features
-14. **Iteration 24** (i18n Multi-Language) - Platform internationalization
-15. **Iteration 21** (Admin Dashboard) - Admin polish
+13. **Iteration 27-28** (Typing/Writing Steps) - Additional step types
+14. **Iteration 13** (Admin Badge Management) - Admin features
+15. **Iteration 24** (i18n Multi-Language) - Platform internationalization
+16. **Iteration 21** (Admin Dashboard) - Admin polish
 
 ---
 

@@ -60,7 +60,7 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 20 COMPLETE - Ready for Iteration 15A+
+- **Phase**: Iteration 15A COMPLETE - Ready for Iteration 15B+
 - **Last completed**: Iteration 20 - Classroom Tests, Lessons & Rankings
 - **Current**: ⏳ 9 PENDING iterations ([see PENDING.md](./PENDING.md))
 - **Overall Progress**: 20/29 iterations for v0.1.0 (9 remaining)
@@ -206,5 +206,5 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-11  
-**Status**: Iteration 20 COMPLETE - Iteration 15/21 PLANNED
+**Status**: Iteration 15A COMPLETE - Iteration 15B PLANNED
 **Tests**: 397 passing

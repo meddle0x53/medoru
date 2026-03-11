@@ -72,6 +72,25 @@ defmodule Medoru.TestsTest do
       assert {:error, %Ecto.Changeset{}} = Tests.create_test(@invalid_attrs)
     end
 
+    test "create_test/1 with nil max_attempts is valid" do
+      # Bug fix: max_attempts can be nil (unlimited attempts)
+      attrs = Map.put(@valid_attrs, :max_attempts, nil)
+      assert {:ok, %Test{} = test} = Tests.create_test(attrs)
+      assert test.max_attempts == nil
+    end
+
+    test "create_test/1 with valid max_attempts is valid" do
+      attrs = Map.put(@valid_attrs, :max_attempts, 5)
+      assert {:ok, %Test{} = test} = Tests.create_test(attrs)
+      assert test.max_attempts == 5
+    end
+
+    test "create_test/1 with invalid max_attempts returns error" do
+      attrs = Map.put(@valid_attrs, :max_attempts, 15)
+      assert {:error, %Ecto.Changeset{errors: errors}} = Tests.create_test(attrs)
+      assert errors[:max_attempts]
+    end
+
     test "update_test/2 with valid data updates the test" do
       test = test_fixture()
       assert {:ok, %Test{} = test} = Tests.update_test(test, @update_attrs)
@@ -451,6 +470,101 @@ defmodule Medoru.TestsTest do
       assert stats.total_sessions == 2
       assert stats.completion_rate == 100.0
       assert stats.average_score == 80.0
+    end
+  end
+
+  describe "teacher tests" do
+    defp teacher_fixture do
+      email = "teacher#{System.unique_integer()}@example.com"
+
+      {:ok, user} =
+        Medoru.Accounts.register_user_with_oauth(%{
+          email: email,
+          provider: "google",
+          provider_uid: "uid_#{System.unique_integer()}"
+        })
+
+      user
+    end
+
+    test "create_teacher_test/2 creates a teacher test with string keys (form params)" do
+      teacher = teacher_fixture()
+
+      # Use string keys to simulate form params
+      attrs = %{
+        "title" => "My Quiz",
+        "description" => "Test description",
+        "time_limit_seconds" => "600",
+        "max_attempts" => "3"
+      }
+
+      assert {:ok, %Test{} = test} = Tests.create_teacher_test(attrs, teacher.id)
+      assert test.title == "My Quiz"
+      assert test.description == "Test description"
+      assert test.time_limit_seconds == 600
+      assert test.max_attempts == 3
+      assert test.test_type == :teacher
+      assert test.setup_state == "in_progress"
+      assert test.creator_id == teacher.id
+    end
+
+    test "create_teacher_test/2 with atom keys also works" do
+      teacher = teacher_fixture()
+
+      attrs = %{
+        title: "My Quiz 2",
+        description: "Another test"
+      }
+
+      assert {:ok, %Test{} = test} = Tests.create_teacher_test(attrs, teacher.id)
+      assert test.title == "My Quiz 2"
+      assert test.test_type == :teacher
+    end
+
+    test "create_teacher_test/2 with nil max_attempts" do
+      teacher = teacher_fixture()
+
+      attrs = %{
+        "title" => "Unlimited Quiz",
+        "max_attempts" => nil
+      }
+
+      assert {:ok, %Test{} = test} = Tests.create_teacher_test(attrs, teacher.id)
+      assert test.max_attempts == nil
+    end
+
+    test "list_teacher_tests/2 returns tests for a teacher" do
+      teacher = teacher_fixture()
+      other_teacher = teacher_fixture()
+
+      {:ok, test1} =
+        Tests.create_teacher_test(%{"title" => "Quiz 1"}, teacher.id)
+
+      {:ok, test2} =
+        Tests.create_teacher_test(%{"title" => "Quiz 2"}, teacher.id)
+
+      {:ok, _other_test} =
+        Tests.create_teacher_test(%{"title" => "Other Quiz"}, other_teacher.id)
+
+      tests = Tests.list_teacher_tests(teacher.id)
+      assert length(tests) == 2
+      assert Enum.map(tests, & &1.id) |> Enum.sort() == [test1.id, test2.id] |> Enum.sort()
+    end
+
+    test "list_teacher_tests/2 filters by setup_state" do
+      teacher = teacher_fixture()
+
+      {:ok, test} =
+        Tests.create_teacher_test(%{"title" => "Quiz"}, teacher.id)
+
+      # Initially in_progress
+      assert Tests.list_teacher_tests(teacher.id, setup_state: "in_progress") == [test]
+      assert Tests.list_teacher_tests(teacher.id, setup_state: "ready") == []
+
+      # Mark as ready
+      {:ok, test} = Tests.mark_test_ready(test)
+      [listed] = Tests.list_teacher_tests(teacher.id, setup_state: "ready")
+      assert listed.id == test.id
     end
   end
 end

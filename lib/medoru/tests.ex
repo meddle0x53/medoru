@@ -219,6 +219,162 @@ defmodule Medoru.Tests do
     Test.changeset(test, attrs)
   end
 
+  @doc """
+  Returns a changeset for a teacher test form.
+  Only validates fields that users can edit.
+  """
+  def change_teacher_test(%Test{} = test, attrs \\ %{}) do
+    Test.form_changeset(test, attrs)
+  end
+
+  # ============================================================================
+  # Teacher Test Management
+  # ============================================================================
+
+  @doc """
+  Returns the list of tests created by a teacher.
+
+  ## Options
+
+    * `:setup_state` - Filter by setup state ("in_progress", "ready", "published", "archived")
+    * `:limit` - Limit number of results
+
+  ## Examples
+
+      iex> list_teacher_tests(teacher_id)
+      [%Test{}, ...]
+
+      iex> list_teacher_tests(teacher_id, setup_state: "published")
+      [%Test{}, ...]
+
+  """
+  def list_teacher_tests(teacher_id, opts \\ []) do
+    Test
+    |> where([t], t.creator_id == ^teacher_id)
+    |> where([t], t.test_type == :teacher)
+    |> maybe_filter_by_setup_state(opts[:setup_state])
+    |> maybe_limit(opts[:limit])
+    |> order_by([t], desc: t.inserted_at)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_by_setup_state(query, nil), do: query
+
+  defp maybe_filter_by_setup_state(query, state) when is_binary(state) do
+    where(query, [t], t.setup_state == ^state)
+  end
+
+  @doc """
+  Creates a new teacher test.
+
+  ## Examples
+
+      iex> create_teacher_test(%{title: "Quiz 1", time_limit_seconds: 600}, teacher_id)
+      {:ok, %Test{}}
+
+  """
+  def create_teacher_test(attrs, teacher_id) do
+    # Ensure all keys are strings for consistency with form params
+    attrs =
+      attrs
+      |> Map.put("creator_id", teacher_id)
+      |> Map.put("setup_state", "in_progress")
+
+    %Test{}
+    |> Test.teacher_create_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Checks if a user is the owner/creator of a test.
+
+  ## Examples
+
+      iex> is_test_owner?(test, user_id)
+      true
+
+  """
+  def is_test_owner?(%Test{} = test, user_id) do
+    test.creator_id == user_id
+  end
+
+  @doc """
+  Transitions a test to a new setup state.
+  Returns error if transition is invalid.
+
+  ## Examples
+
+      iex> transition_test_state(test, "ready")
+      {:ok, %Test{setup_state: "ready"}}
+
+  """
+  def transition_test_state(%Test{} = test, new_state) do
+    test
+    |> Test.setup_state_changeset(new_state)
+    |> Repo.update()
+  end
+
+  @doc """
+  Marks a teacher test as ready for publishing.
+
+  ## Examples
+
+      iex> mark_test_ready(test)
+      {:ok, %Test{setup_state: "ready"}}
+
+  """
+  def mark_test_ready(%Test{} = test) do
+    test
+    |> Test.mark_ready_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Publishes a teacher test.
+  Only ready tests can be published.
+
+  ## Examples
+
+      iex> publish_teacher_test(test)
+      {:ok, %Test{setup_state: "published"}}
+
+  """
+  def publish_teacher_test(%Test{} = test) do
+    test
+    |> Test.publish_teacher_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Archives a teacher test.
+
+  ## Examples
+
+      iex> archive_teacher_test(test)
+      {:ok, %Test{setup_state: "archived"}}
+
+  """
+  def archive_teacher_test(%Test{} = test) do
+    test
+    |> Test.archive_teacher_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Counts steps in a test.
+
+  ## Examples
+
+      iex> count_test_steps(test_id)
+      10
+
+  """
+  def count_test_steps(test_id) do
+    TestStep
+    |> where([ts], ts.test_id == ^test_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
   # ============================================================================
   # Test Step Management
   # ============================================================================
