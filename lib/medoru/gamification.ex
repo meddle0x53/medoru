@@ -354,18 +354,7 @@ defmodule Medoru.Gamification do
 
   """
   def check_streak_badges(user_id, streak_count) do
-    Badge
-    |> where([b], b.criteria_type == :streak)
-    |> where([b], b.criteria_value <= ^streak_count)
-    |> Repo.all()
-    |> Enum.filter(fn badge -> not user_has_badge?(user_id, badge.id) end)
-    |> Enum.map(fn badge ->
-      case award_badge(user_id, badge.id) do
-        {:ok, user_badge} -> user_badge
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    check_and_award_badges(user_id, :streak, streak_count)
   end
 
   @doc """
@@ -378,18 +367,7 @@ defmodule Medoru.Gamification do
 
   """
   def check_kanji_badges(user_id, kanji_count) do
-    Badge
-    |> where([b], b.criteria_type == :kanji_count)
-    |> where([b], b.criteria_value <= ^kanji_count)
-    |> Repo.all()
-    |> Enum.filter(fn badge -> not user_has_badge?(user_id, badge.id) end)
-    |> Enum.map(fn badge ->
-      case award_badge(user_id, badge.id) do
-        {:ok, user_badge} -> user_badge
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    check_and_award_badges(user_id, :kanji_count, kanji_count)
   end
 
   @doc """
@@ -402,18 +380,7 @@ defmodule Medoru.Gamification do
 
   """
   def check_words_badges(user_id, word_count) do
-    Badge
-    |> where([b], b.criteria_type == :words_count)
-    |> where([b], b.criteria_value <= ^word_count)
-    |> Repo.all()
-    |> Enum.filter(fn badge -> not user_has_badge?(user_id, badge.id) end)
-    |> Enum.map(fn badge ->
-      case award_badge(user_id, badge.id) do
-        {:ok, user_badge} -> user_badge
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    check_and_award_badges(user_id, :words_count, word_count)
   end
 
   @doc """
@@ -426,18 +393,7 @@ defmodule Medoru.Gamification do
 
   """
   def check_lesson_badges(user_id, lessons_count) do
-    Badge
-    |> where([b], b.criteria_type == :lessons_completed)
-    |> where([b], b.criteria_value <= ^lessons_count)
-    |> Repo.all()
-    |> Enum.filter(fn badge -> not user_has_badge?(user_id, badge.id) end)
-    |> Enum.map(fn badge ->
-      case award_badge(user_id, badge.id) do
-        {:ok, user_badge} -> user_badge
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    check_and_award_badges(user_id, :lessons_completed, lessons_count)
   end
 
   @doc """
@@ -450,11 +406,37 @@ defmodule Medoru.Gamification do
 
   """
   def check_daily_reviews_badges(user_id, reviews_count) do
-    Badge
-    |> where([b], b.criteria_type == :daily_reviews)
-    |> where([b], b.criteria_value <= ^reviews_count)
-    |> Repo.all()
-    |> Enum.filter(fn badge -> not user_has_badge?(user_id, badge.id) end)
+    check_and_award_badges(user_id, :daily_reviews, reviews_count)
+  end
+
+  # ============================================================================
+  # Private Helpers
+  # ============================================================================
+
+  # Checks and awards badges of a specific criteria type.
+  # Fetches user badges once to avoid N+1 queries.
+  defp check_and_award_badges(user_id, criteria_type, value) do
+    # Fetch eligible badges and user's current badges in parallel
+    eligible_badges =
+      Badge
+      |> where([b], b.criteria_type == ^criteria_type)
+      |> where([b], b.criteria_value <= ^value)
+      |> Repo.all()
+
+    # Get user's badge IDs as a MapSet for O(1) lookups
+    user_badge_ids =
+      user_id
+      |> list_user_badge_ids()
+      |> MapSet.new()
+
+    # Filter out badges the user already has
+    new_badges =
+      Enum.filter(eligible_badges, fn badge ->
+        not MapSet.member?(user_badge_ids, badge.id)
+      end)
+
+    # Award the new badges
+    new_badges
     |> Enum.map(fn badge ->
       case award_badge(user_id, badge.id) do
         {:ok, user_badge} -> user_badge

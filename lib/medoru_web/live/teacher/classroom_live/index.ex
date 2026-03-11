@@ -12,10 +12,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
     user = socket.assigns.current_scope.current_user
     classrooms = Classrooms.list_teacher_classrooms(user.id)
 
+    # Pre-fetch stats for all classrooms in a single batch query
+    classroom_ids = Enum.map(classrooms, & &1.id)
+    stats_map = Classrooms.get_classroom_stats_batch(classroom_ids)
+
     {:ok,
      socket
      |> assign(:page_title, "My Classrooms")
-     |> assign(:classrooms, classrooms)}
+     |> assign(:classrooms, classrooms)
+     |> assign(:stats_map, stats_map)}
   end
 
   @impl true
@@ -52,8 +57,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
           <%!-- Classrooms Grid --%>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <%= for classroom <- @classrooms do %>
-              <% stats = Classrooms.get_classroom_stats(classroom.id) %>
-              <.classroom_card classroom={classroom} stats={stats} />
+              <.classroom_card classroom={classroom} stats={@stats_map[classroom.id]} />
             <% end %>
           </div>
         <% end %>

@@ -253,8 +253,15 @@ defmodule Medoru.Tests do
       nil
 
   """
-  def get_test_step(id) do
+  def get_test_step(id) when is_binary(id) or is_integer(id) do
     Repo.get(TestStep, id)
+  end
+
+  # Batch fetch for multiple test steps - used to avoid N+1 queries
+  def get_test_step(ids) when is_list(ids) do
+    TestStep
+    |> where([ts], ts.id in ^ids)
+    |> Repo.all()
   end
 
   @doc """

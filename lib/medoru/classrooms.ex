@@ -563,6 +563,59 @@ defmodule Medoru.Classrooms do
     }
   end
 
+  @doc """
+  Returns statistics for multiple classrooms in a batch query.
+  Much more efficient than calling get_classroom_stats/1 in a loop.
+
+  ## Examples
+
+      iex> get_classroom_stats_batch([classroom_id1, classroom_id2])
+      %{classroom_id1 => %{total_members: 10, pending_applications: 2, total_points: 500}, ...}
+
+  """
+  def get_classroom_stats_batch(classroom_ids) when is_list(classroom_ids) do
+    if classroom_ids == [] do
+      %{}
+    else
+      # Fetch all memberships for the given classrooms
+      memberships =
+        ClassroomMembership
+        |> where([m], m.classroom_id in ^classroom_ids)
+        |> where([m], m.status in [:approved, :pending])
+        |> select([m], {m.classroom_id, m.status, m.points})
+        |> Repo.all()
+
+      # Aggregate in memory
+      memberships
+      |> Enum.reduce(%{}, fn {classroom_id, status, points}, acc ->
+        existing =
+          Map.get(acc, classroom_id, %{
+            total_members: 0,
+            pending_applications: 0,
+            total_points: 0
+          })
+
+        updated =
+          case status do
+            :approved ->
+              %{
+                existing
+                | total_members: existing.total_members + 1,
+                  total_points: existing.total_points + (points || 0)
+              }
+
+            :pending ->
+              %{existing | pending_applications: existing.pending_applications + 1}
+
+            _ ->
+              existing
+          end
+
+        Map.put(acc, classroom_id, updated)
+      end)
+    end
+  end
+
   # ============================================================================
   # Private Functions
   # ============================================================================

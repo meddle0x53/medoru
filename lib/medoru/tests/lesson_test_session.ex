@@ -545,9 +545,13 @@ defmodule Medoru.Tests.LessonTestSession do
       end
 
     remaining_steps =
-      step_queue
-      |> Enum.map(&Tests.get_test_step/1)
-      |> Enum.reject(&is_nil/1)
+      if step_queue == [] do
+        []
+      else
+        step_queue
+        |> Tests.get_test_step()
+        |> Enum.sort_by(fn step -> Enum.find_index(step_queue, &(&1 == step.id)) end)
+      end
 
     completed_steps = total_steps - length(step_queue)
 
