@@ -5,6 +5,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
   """
   use MedoruWeb, :live_view
 
+  import MedoruWeb.Components.Helpers, only: [display_name: 3]
+
   alias Medoru.Classrooms
 
   @impl true
@@ -76,15 +78,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <.link navigate={~p"/classrooms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
-            <.icon name="hero-arrow-left" class="w-4 h-4" />
-            Back to My Classrooms
+          <.link
+            navigate={~p"/classrooms"}
+            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to My Classrooms
           </.link>
 
           <div class="flex items-start justify-between">
             <div>
               <h1 class="text-3xl font-bold text-base-content">{@classroom.name}</h1>
-              <p class="text-secondary max-w-2xl mt-2">{@classroom.description || "No description"}</p>
+              <p class="text-secondary max-w-2xl mt-2">
+                {@classroom.description || "No description"}
+              </p>
             </div>
 
             <button
@@ -92,8 +98,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               data-confirm="Are you sure you want to leave this classroom?"
               class="btn btn-error btn-outline btn-sm"
             >
-              <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" />
-              Leave
+              <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" /> Leave
             </button>
           </div>
         </div>
@@ -111,7 +116,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
               </div>
               <div class="ml-auto text-right">
                 <p class="text-sm text-secondary">Rank</p>
-                <p class="text-2xl font-bold text-base-content">#{get_rank(@members, @current_scope.current_user.id)}</p>
+                <p class="text-2xl font-bold text-base-content">
+                  #{get_rank(@members, @current_scope.current_user.id)}
+                </p>
               </div>
             </div>
           </div>
@@ -131,7 +138,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
         <div class="min-h-[400px]">
           <%= case @active_tab do %>
             <% "overview" -> %>
-              <.overview_tab classroom={@classroom} members={@members} current_user={@current_scope.current_user} />
+              <.overview_tab
+                classroom={@classroom}
+                members={@members}
+                current_user={@current_scope.current_user}
+              />
             <% "rankings" -> %>
               <.rankings_tab members={@members} current_user={@current_scope.current_user} />
             <% "lessons" -> %>
@@ -160,7 +171,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <div class="flex justify-between items-center py-2 border-b border-base-200">
               <span class="text-secondary">Teacher</span>
               <span class="font-medium text-base-content">
-                {@classroom.teacher.name || @classroom.teacher.email}
+                {display_name(@classroom.teacher, @current_user.id, @current_user.type == "admin")}
               </span>
             </div>
             <div class="flex justify-between items-center py-2 border-b border-base-200">
@@ -200,8 +211,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     ]}>
                       {index}
                     </span>
-                    <span class={member.user_id == @current_user.id && "font-medium text-base-content"}>
-                      {member.user.name || member.user.email}
+                    <span class={
+                      member.user_id == @current_user.id && "font-medium text-base-content"
+                    }>
+                      {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                       <%= if member.user_id == @current_user.id do %>
                         <span class="badge badge-primary badge-sm ml-2">You</span>
                       <% end %>
@@ -247,12 +260,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   </div>
                   <div>
                     <p class={member.user_id == @current_user.id && "font-medium text-base-content"}>
-                      {member.user.name || member.user.email}
+                      {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                       <%= if member.user_id == @current_user.id do %>
                         <span class="badge badge-primary badge-sm ml-2">You</span>
                       <% end %>
                     </p>
-                    <p class="text-sm text-secondary">Joined {Calendar.strftime(member.joined_at || member.inserted_at, "%b %d, %Y")}</p>
+                    <p class="text-sm text-secondary">
+                      Joined {Calendar.strftime(member.joined_at || member.inserted_at, "%b %d, %Y")}
+                    </p>
                   </div>
                 </div>
                 <span class="font-bold text-lg text-base-content">{member.points} pts</span>

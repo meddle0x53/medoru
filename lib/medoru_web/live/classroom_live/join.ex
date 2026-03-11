@@ -4,6 +4,8 @@ defmodule MedoruWeb.ClassroomLive.Join do
   """
   use MedoruWeb, :live_view
 
+  import MedoruWeb.Components.Helpers, only: [display_name: 3]
+
   alias Medoru.Classrooms
 
   @impl true
@@ -28,10 +30,16 @@ defmodule MedoruWeb.ClassroomLive.Join do
 
       cond do
         is_nil(classroom) ->
-          {:noreply, assign(socket, invite_code: code, classroom: nil, error: "Invalid invite code")}
+          {:noreply,
+           assign(socket, invite_code: code, classroom: nil, error: "Invalid invite code")}
 
         classroom.status != :active ->
-          {:noreply, assign(socket, invite_code: code, classroom: nil, error: "This classroom is not accepting new members")}
+          {:noreply,
+           assign(socket,
+             invite_code: code,
+             classroom: nil,
+             error: "This classroom is not accepting new members"
+           )}
 
         true ->
           {:noreply, assign(socket, invite_code: code, classroom: classroom, error: nil)}
@@ -72,9 +80,11 @@ defmodule MedoruWeb.ClassroomLive.Join do
       <div class="max-w-2xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <.link navigate={~p"/classrooms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
-            <.icon name="hero-arrow-left" class="w-4 h-4" />
-            Back to My Classrooms
+          <.link
+            navigate={~p"/classrooms"}
+            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to My Classrooms
           </.link>
           <h1 class="text-3xl font-bold text-base-content">Join Classroom</h1>
           <p class="text-secondary mt-1">Enter an invite code to join a classroom</p>
@@ -124,7 +134,11 @@ defmodule MedoruWeb.ClassroomLive.Join do
                         {@classroom.description || "No description"}
                       </p>
                       <p class="text-sm text-secondary mt-1">
-                        Teacher: {@classroom.teacher.name || @classroom.teacher.email}
+                        <% user = @current_scope.current_user %> Teacher: {display_name(
+                          @classroom.teacher,
+                          user.id,
+                          user.type == "admin"
+                        )}
                       </p>
                     </div>
                   </div>
@@ -135,13 +149,11 @@ defmodule MedoruWeb.ClassroomLive.Join do
               <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <%= if @classroom && is_nil(@error) do %>
                   <button type="submit" class="btn btn-primary">
-                    <.icon name="hero-user-plus" class="w-4 h-4 mr-2" />
-                    Apply to Join
+                    <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Apply to Join
                   </button>
                 <% else %>
                   <button type="submit" class="btn btn-primary" disabled>
-                    <.icon name="hero-magnifying-glass" class="w-4 h-4 mr-2" />
-                    Find Classroom
+                    <.icon name="hero-magnifying-glass" class="w-4 h-4 mr-2" /> Find Classroom
                   </button>
                 <% end %>
                 <.link navigate={~p"/classrooms"} class="btn btn-ghost">
@@ -155,8 +167,7 @@ defmodule MedoruWeb.ClassroomLive.Join do
         <%!-- Tips --%>
         <div class="mt-8 bg-info/10 rounded-xl p-6 border border-info/20">
           <h3 class="text-sm font-semibold text-info mb-3 flex items-center gap-2">
-            <.icon name="hero-light-bulb" class="w-4 h-4" />
-            How to join a classroom
+            <.icon name="hero-light-bulb" class="w-4 h-4" /> How to join a classroom
           </h3>
           <ul class="text-sm text-info/80 space-y-2">
             <li>• Ask your teacher for the classroom invite code</li>

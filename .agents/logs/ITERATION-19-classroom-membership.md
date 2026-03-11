@@ -99,13 +99,29 @@ end
 - Students can only view approved classroom memberships
 - `format_relative_time` extracted to shared helper module
 
+## Bug Fixes
+
+### Email Privacy Bug Fix
+**Issue**: `member_row` and `pending_member_row` components couldn't access `current_scope` to determine if the viewer should see email addresses.
+
+**Fix**:
+- Added `current_scope` attribute to `students_tab/1` component
+- Updated `students_tab` to pass `current_user` and `is_admin` to row components
+- Added proper `attr` declarations for `is_admin` in row components
+- Fixed `display_name/3` to use actual admin status instead of hardcoded `true`
+
+**Test Coverage**:
+- Created `test/medoru_web/live/teacher/classroom_live/show_test.exs` with 8 tests
+- Tests cover: member listing, pending applications, approve/reject/remove actions
+- Tests verify email privacy: hidden for others (shows "Anonymous"), visible for own profile
+
 ## Test Results
 
 ```
-389 tests, 0 failures
+397 tests, 0 failures
 ```
 
-All tests pass including existing classroom tests.
+All tests pass including new classroom show tests (8 tests added).
 
 ## Next Steps
 

@@ -6,7 +6,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
   """
   use MedoruWeb, :live_view
 
-  import MedoruWeb.Components.Helpers, only: [format_relative_time: 1]
+  import MedoruWeb.Components.Helpers, only: [format_relative_time: 1, display_name: 3]
 
   alias Medoru.Classrooms
 
@@ -82,13 +82,22 @@ defmodule MedoruWeb.ClassroomLive.Index do
           {:noreply, assign(socket, invite_code: code, join_error: "Invalid invite code")}
 
         classroom.status != :active ->
-          {:noreply, assign(socket, invite_code: code, join_error: "This classroom is not accepting new members")}
+          {:noreply,
+           assign(socket,
+             invite_code: code,
+             join_error: "This classroom is not accepting new members"
+           )}
 
         Classrooms.is_member?(classroom.id, socket.assigns.user.id) ->
-          {:noreply, assign(socket, invite_code: code, join_error: "You are already a member of this classroom")}
+          {:noreply,
+           assign(socket,
+             invite_code: code,
+             join_error: "You are already a member of this classroom"
+           )}
 
         true ->
-          {:noreply, assign(socket, invite_code: code, join_error: nil, classroom_preview: classroom)}
+          {:noreply,
+           assign(socket, invite_code: code, join_error: nil, classroom_preview: classroom)}
       end
     end
   end
@@ -177,24 +186,24 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <%!-- Stats Cards --%>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <%= if @user.type in ["teacher", "admin"] do %>
-            <.stat_card 
-              icon="hero-building-office" 
-              label="Owned" 
-              value={@owned_count} 
-              color="primary" 
+            <.stat_card
+              icon="hero-building-office"
+              label="Owned"
+              value={@owned_count}
+              color="primary"
             />
           <% end %>
-          <.stat_card 
-            icon="hero-users" 
-            label="Joined" 
-            value={@joined_count} 
-            color="success" 
+          <.stat_card
+            icon="hero-users"
+            label="Joined"
+            value={@joined_count}
+            color="success"
           />
-          <.stat_card 
-            icon="hero-clock" 
-            label="Pending" 
-            value={length(@pending_applications)} 
-            color="warning" 
+          <.stat_card
+            icon="hero-clock"
+            label="Pending"
+            value={length(@pending_applications)}
+            color="warning"
           />
         </div>
 
@@ -267,8 +276,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
                 class="btn btn-primary"
                 disabled={@invite_code == "" || not is_nil(@join_error)}
               >
-                <.icon name="hero-user-plus" class="w-4 h-4 mr-2" />
-                Apply to Join
+                <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Apply to Join
               </button>
             </form>
 
@@ -282,7 +290,11 @@ defmodule MedoruWeb.ClassroomLive.Index do
                   <div>
                     <p class="font-medium text-base-content">{assigns.classroom_preview.name}</p>
                     <p class="text-sm text-secondary">
-                      Teacher: {assigns.classroom_preview.teacher.name || assigns.classroom_preview.teacher.email}
+                      Teacher: {display_name(
+                        assigns.classroom_preview.teacher,
+                        @user.id,
+                        @user.type == "admin"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -296,8 +308,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
           <div class="flex justify-end mb-6">
             <.link navigate={~p"/teacher/classrooms/new"}>
               <button class="btn btn-primary">
-                <.icon name="hero-plus" class="w-4 h-4 mr-2" />
-                Create Classroom
+                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
               </button>
             </.link>
           </div>
@@ -319,7 +330,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <% else %>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <%= for classroom <- @classrooms do %>
-              <.classroom_card classroom={classroom} user={@user} />
+              <.classroom_card classroom={classroom} user={@user} is_admin={@user.type == "admin"} />
             <% end %>
           </div>
 
@@ -382,11 +393,16 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
   attr :classroom, :map, required: true
   attr :user, :map, required: true
+  attr :is_admin, :boolean, required: true
 
   defp classroom_card(assigns) do
     is_owner = assigns.classroom.teacher_id == assigns.user.id
+    teacher_name = display_name(assigns.classroom.teacher, assigns.user.id, assigns.is_admin)
 
-    assigns = assign(assigns, :is_owner, is_owner)
+    assigns =
+      assigns
+      |> assign(:is_owner, is_owner)
+      |> assign(:teacher_name, teacher_name)
 
     ~H"""
     <div class={[
@@ -418,7 +434,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <div class="text-sm text-secondary mb-4">
           <div class="flex items-center gap-1.5 mb-1">
             <.icon name="hero-user" class="w-4 h-4" />
-            <span>Teacher: {@classroom.teacher.name || @classroom.teacher.email}</span>
+            <span>Teacher: {@teacher_name}</span>
           </div>
           <div class="flex items-center gap-1.5">
             <.icon name="hero-calendar" class="w-4 h-4" />
@@ -432,7 +448,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
               Manage →
             </.link>
           <% else %>
-            <.link navigate={~p"/classrooms/#{@classroom.id}"} class="btn btn-ghost btn-sm text-primary">
+            <.link
+              navigate={~p"/classrooms/#{@classroom.id}"}
+              class="btn btn-ghost btn-sm text-primary"
+            >
               View →
             </.link>
           <% end %>

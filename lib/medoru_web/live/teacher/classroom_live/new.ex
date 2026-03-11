@@ -54,9 +54,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
       <div class="max-w-2xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <.link navigate={~p"/teacher/classrooms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
-            <.icon name="hero-arrow-left" class="w-4 h-4" />
-            Back to Classrooms
+          <.link
+            navigate={~p"/teacher/classrooms"}
+            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classrooms
           </.link>
           <h1 class="text-3xl font-bold text-base-content">Create Classroom</h1>
           <p class="text-secondary mt-1">Set up a new classroom for your students</p>
@@ -76,7 +78,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                     placeholder="e.g., N5 Vocabulary Class"
                     required
                   />
-                  <p class="text-sm text-secondary mt-1">Choose a descriptive name for your classroom</p>
+                  <p class="text-sm text-secondary mt-1">
+                    Choose a descriptive name for your classroom
+                  </p>
                 </div>
 
                 <%!-- Slug (auto-generated from name) --%>
@@ -120,8 +124,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
         <%!-- Tips --%>
         <div class="mt-8 bg-info/10 rounded-xl p-6 border border-info/20">
           <h3 class="text-sm font-semibold text-info mb-3 flex items-center gap-2">
-            <.icon name="hero-light-bulb" class="w-4 h-4" />
-            Tips for a great classroom
+            <.icon name="hero-light-bulb" class="w-4 h-4" /> Tips for a great classroom
           </h3>
           <ul class="text-sm text-info/80 space-y-2">
             <li>• Use a clear, descriptive name that students will recognize</li>

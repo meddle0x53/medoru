@@ -5,7 +5,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   """
   use MedoruWeb, :live_view
 
-  import MedoruWeb.Components.Helpers, only: [format_relative_time: 1]
+  import MedoruWeb.Components.Helpers, only: [format_relative_time: 1, display_name: 3]
 
   alias Medoru.Classrooms
   alias Medoru.Notifications
@@ -148,9 +148,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <.link navigate={~p"/teacher/classrooms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
-            <.icon name="hero-arrow-left" class="w-4 h-4" />
-            Back to Classrooms
+          <.link
+            navigate={~p"/teacher/classrooms"}
+            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classrooms
           </.link>
 
           <div class="flex items-start justify-between">
@@ -168,8 +170,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 data-confirm="Are you sure you want to close this classroom? No new students will be able to join."
                 class="btn btn-warning btn-outline btn-sm"
               >
-                <.icon name="hero-lock-closed" class="w-4 h-4 mr-1" />
-                Close
+                <.icon name="hero-lock-closed" class="w-4 h-4 mr-1" /> Close
               </button>
             <% end %>
           </div>
@@ -178,9 +179,24 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <%!-- Stats Cards --%>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <.stat_card icon="hero-users" label="Members" value={@stats.total_members} color="blue" />
-          <.stat_card icon="hero-clock" label="Pending" value={@stats.pending_applications} color="warning" />
-          <.stat_card icon="hero-trophy" label="Total Points" value={@stats.total_points} color="purple" />
-          <.stat_card icon="hero-calendar" label="Created" value={Calendar.strftime(@classroom.inserted_at, "%b %d")} color="neutral" />
+          <.stat_card
+            icon="hero-clock"
+            label="Pending"
+            value={@stats.pending_applications}
+            color="warning"
+          />
+          <.stat_card
+            icon="hero-trophy"
+            label="Total Points"
+            value={@stats.total_points}
+            color="purple"
+          />
+          <.stat_card
+            icon="hero-calendar"
+            label="Created"
+            value={Calendar.strftime(@classroom.inserted_at, "%b %d")}
+            color="neutral"
+          />
         </div>
 
         <%!-- Tabs --%>
@@ -203,9 +219,17 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <div class="min-h-[400px]">
           <%= case @active_tab do %>
             <% "overview" -> %>
-              <.overview_tab classroom={@classroom} stats={@stats} invite_code={@classroom.invite_code} />
+              <.overview_tab
+                classroom={@classroom}
+                stats={@stats}
+                invite_code={@classroom.invite_code}
+              />
             <% "students" -> %>
-              <.students_tab members={@members} pending={@pending_memberships} />
+              <.students_tab
+                members={@members}
+                pending={@pending_memberships}
+                current_scope={@current_scope}
+              />
             <% "lessons" -> %>
               <.lessons_tab />
             <% "tests" -> %>
@@ -230,15 +254,16 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
           <h3 class="card-title text-base-content">Invite Code</h3>
-          <p class="text-secondary mb-4">Share this code with students so they can join your classroom.</p>
+          <p class="text-secondary mb-4">
+            Share this code with students so they can join your classroom.
+          </p>
 
           <div class="flex items-center gap-4">
             <div class="bg-base-200 px-6 py-3 rounded-xl font-mono text-xl tracking-wider text-base-content">
               {@invite_code}
             </div>
             <button phx-click="regenerate_invite_code" class="btn btn-ghost btn-outline">
-              <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" />
-              Regenerate
+              <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> Regenerate
             </button>
           </div>
         </div>
@@ -270,6 +295,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :members, :list, required: true
+  attr :pending, :list, required: true
+  attr :current_scope, :map, required: true
+
   defp students_tab(assigns) do
     ~H"""
     <div class="space-y-6">
@@ -278,12 +307,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <div class="card bg-warning/10 border border-warning/30">
           <div class="card-body">
             <h3 class="card-title text-warning flex items-center gap-2">
-              <.icon name="hero-clock" class="w-5 h-5" />
-              Pending Applications ({length(@pending)})
+              <.icon name="hero-clock" class="w-5 h-5" /> Pending Applications ({length(@pending)})
             </h3>
             <div class="space-y-3 mt-4">
               <%= for membership <- @pending do %>
-                <.pending_member_row membership={membership} />
+                <.pending_member_row
+                  membership={membership}
+                  current_user={@current_scope.current_user}
+                  is_admin={@current_scope.current_user.type == "admin"}
+                />
               <% end %>
             </div>
           </div>
@@ -306,7 +338,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           <% else %>
             <div class="space-y-2">
               <%= for membership <- @members do %>
-                <.member_row membership={membership} />
+                <.member_row
+                  membership={membership}
+                  current_user={@current_scope.current_user}
+                  is_admin={@current_scope.current_user.type == "admin"}
+                />
               <% end %>
             </div>
           <% end %>
@@ -482,6 +518,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :membership, :map, required: true
+  attr :current_user, :map, required: true
+  attr :is_admin, :boolean, default: false
+
   defp pending_member_row(assigns) do
     ~H"""
     <div class="flex items-center justify-between bg-base-100 rounded-xl p-4 border border-base-300">
@@ -490,8 +530,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           <.icon name="hero-user" class="w-5 h-5 text-secondary" />
         </div>
         <div>
-          <p class="font-medium text-base-content">{@membership.user.email}</p>
-          <p class="text-sm text-secondary">Applied {format_relative_time(@membership.inserted_at)}</p>
+          <p class="font-medium text-base-content">
+            {display_name(@membership.user, @current_user.id, @is_admin)}
+          </p>
+          <p class="text-sm text-secondary">
+            Applied {format_relative_time(@membership.inserted_at)}
+          </p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -514,6 +558,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :membership, :map, required: true
+  attr :current_user, :map, required: true
+  attr :is_admin, :boolean, default: false
+
   defp member_row(assigns) do
     ~H"""
     <div class="flex items-center justify-between p-4 hover:bg-base-200/50 rounded-xl transition-colors">
@@ -522,7 +570,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           <.icon name="hero-user" class="w-5 h-5 text-secondary" />
         </div>
         <div>
-          <p class="font-medium text-base-content">{@membership.user.email}</p>
+          <p class="font-medium text-base-content">
+            {display_name(@membership.user, @current_user.id, @is_admin)}
+          </p>
           <p class="text-sm text-secondary">
             Joined {Calendar.strftime(@membership.joined_at || @membership.inserted_at, "%b %d, %Y")}
           </p>
@@ -545,5 +595,4 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     </div>
     """
   end
-
 end

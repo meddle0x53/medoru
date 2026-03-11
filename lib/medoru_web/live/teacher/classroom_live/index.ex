@@ -31,8 +31,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
           </div>
           <.link navigate={~p"/teacher/classrooms/new"}>
             <button class="btn btn-primary">
-              <.icon name="hero-plus" class="w-4 h-4 mr-2" />
-              Create Classroom
+              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
             </button>
           </.link>
         </div>
@@ -45,8 +44,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
             <p class="text-secondary mb-6">Create your first classroom to start teaching</p>
             <.link navigate={~p"/teacher/classrooms/new"}>
               <button class="btn btn-primary">
-                <.icon name="hero-plus" class="w-4 h-4 mr-2" />
-                Create Classroom
+                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
               </button>
             </.link>
           </div>
@@ -92,7 +90,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
         </div>
 
         <div class="card-actions justify-end pt-4 border-t border-base-200">
-          <.link navigate={~p"/teacher/classrooms/#{@classroom.id}"} class="btn btn-ghost btn-sm text-primary">
+          <.link
+            navigate={~p"/teacher/classrooms/#{@classroom.id}"}
+            class="btn btn-ghost btn-sm text-primary"
+          >
             Manage Classroom →
           </.link>
         </div>

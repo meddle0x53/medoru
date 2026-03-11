@@ -60,15 +60,15 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 18 COMPLETE - Ready for Iteration 19+
-- **Last completed**: Iteration 18 - Classroom Core
-- **Current**: ⏳ 5 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 18/23 iterations for v0.1.0 (5 remaining)
+- **Phase**: Iteration 19 COMPLETE - Ready for Iteration 20+
+- **Last completed**: Iteration 19 - Classroom Membership
+- **Current**: ⏳ 4 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 19/23 iterations for v0.1.0 (4 remaining)
 
 ## ⏳ Pending Work (Priority Order)
 1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
 2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests ✅
-3. **🔴 HIGH**: Iterations 15, 18-20 - Classroom System
+3. **🔴 HIGH**: Iterations 15, 20 - Classroom System (Test Creation, Lessons & Rankings)
 4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
 5. **🟡 MEDIUM**: Iteration 24 - i18n (Bulgarian/Japanese)
 6. **🟢 LOWER**: Iteration 21 - Admin Dashboard
@@ -206,4 +206,5 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-11  
-**Status**: Iteration 18 COMPLETE - Iteration 19 PLANNED
+**Status**: Iteration 19 COMPLETE - Iteration 20 PLANNED
+**Tests**: 397 passing

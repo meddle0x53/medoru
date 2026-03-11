@@ -24,7 +24,10 @@
             <h1 class="text-3xl font-bold text-base-content">
               {(@profile && @profile.display_name) || @user.name || "Anonymous"}
             </h1>
-            <p class="text-base-content/60 mt-1">{@user.email}</p>
+            <% current_user = @current_scope.current_user %>
+            <%= if current_user.id == @user.id || current_user.type == "admin" do %>
+              <p class="text-base-content/60 mt-1">{@user.email}</p>
+            <% end %>
 
             <%!-- User Type Badge --%>
             <div class="mt-3">
