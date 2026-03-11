@@ -124,6 +124,18 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Student classroom routes
+  scope "/classrooms", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :classrooms,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/", ClassroomLive.Index
+      live "/join", ClassroomLive.Join
+      live "/:id", ClassroomLive.Show
+    end
+  end
+
   # Admin routes
   scope "/admin", MedoruWeb.Admin do
     pipe_through [:browser, :require_authenticated_user]

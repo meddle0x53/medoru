@@ -262,4 +262,99 @@ defmodule Medoru.Notifications do
       }
     })
   end
+
+  # ============================================================================
+  # Classroom Membership Notifications
+  # ============================================================================
+
+  @doc """
+  Notifies a student that their application was approved.
+
+  ## Examples
+
+      iex> notify_application_approved(user_id, classroom_name, classroom_id)
+      {:ok, %Notification{}}
+
+  """
+  def notify_application_approved(user_id, classroom_name, classroom_id) do
+    create_notification(%{
+      user_id: user_id,
+      type: "classroom",
+      title: "✅ Application Approved",
+      message: "You have been approved to join \"#{classroom_name}\"!",
+      data: %{
+        classroom_id: classroom_id,
+        classroom_name: classroom_name,
+        action: "approved"
+      }
+    })
+  end
+
+  @doc """
+  Notifies a student that their application was rejected.
+
+  ## Examples
+
+      iex> notify_application_rejected(user_id, classroom_name)
+      {:ok, %Notification{}}
+
+  """
+  def notify_application_rejected(user_id, classroom_name) do
+    create_notification(%{
+      user_id: user_id,
+      type: "classroom",
+      title: "❌ Application Declined",
+      message: "Your application to join \"#{classroom_name}\" was not accepted.",
+      data: %{
+        classroom_name: classroom_name,
+        action: "rejected"
+      }
+    })
+  end
+
+  @doc """
+  Notifies a teacher that a student applied to join their classroom.
+
+  ## Examples
+
+      iex> notify_new_application(teacher_id, student_email, classroom_name, classroom_id)
+      {:ok, %Notification{}}
+
+  """
+  def notify_new_application(teacher_id, student_email, classroom_name, classroom_id) do
+    create_notification(%{
+      user_id: teacher_id,
+      type: "classroom",
+      title: "👋 New Student Application",
+      message: "#{student_email} wants to join \"#{classroom_name}\".",
+      data: %{
+        classroom_id: classroom_id,
+        classroom_name: classroom_name,
+        student_email: student_email,
+        action: "new_application"
+      }
+    })
+  end
+
+  @doc """
+  Notifies a student that they were removed from a classroom.
+
+  ## Examples
+
+      iex> notify_removed_from_classroom(user_id, classroom_name)
+      {:ok, %Notification{}}
+
+  """
+  def notify_removed_from_classroom(user_id, classroom_name) do
+    create_notification(%{
+      user_id: user_id,
+      type: "classroom",
+      title: "⚠️ Removed from Classroom",
+      message: "You have been removed from \"#{classroom_name}\".",
+      data: %{
+        classroom_name: classroom_name,
+        action: "removed"
+      }
+    })
+  end
 end

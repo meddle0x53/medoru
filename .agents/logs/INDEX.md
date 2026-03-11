@@ -25,7 +25,7 @@
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
 | 15 | Teacher Test Creation | ⏳ PLANNED | - |
 | 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
-| 19 | Classroom Membership | ⏳ PLANNED | - |
+| 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
 | 20 | Classroom Tests, Lessons & Rankings | ⏳ PLANNED | - |
 | 21 | Admin Dashboard | ⏳ PLANNED | - |
 | 24 | i18n Multi-Language | ⏳ PLANNED | - |

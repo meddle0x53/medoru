@@ -12,6 +12,7 @@ defmodule Medoru.Classrooms do
   alias Medoru.Repo
 
   alias Medoru.Classrooms.{Classroom, ClassroomMembership}
+  alias Medoru.Notifications
 
   # ============================================================================
   # Classroom Management
@@ -375,9 +376,24 @@ defmodule Medoru.Classrooms do
         points: 0
       }
 
-      %ClassroomMembership{}
-      |> ClassroomMembership.changeset(attrs)
-      |> Repo.insert()
+      result =
+        %ClassroomMembership{}
+        |> ClassroomMembership.changeset(attrs)
+        |> Repo.insert()
+
+      # Notify teacher of new application
+      with {:ok, _membership} <- result,
+           classroom = %Classroom{} <- get_classroom!(classroom_id),
+           user = %Medoru.Accounts.User{} <- Medoru.Accounts.get_user!(user_id) do
+        Notifications.notify_new_application(
+          classroom.teacher_id,
+          user.email,
+          classroom.name,
+          classroom.id
+        )
+      end
+
+      result
     end
   end
 
@@ -391,9 +407,22 @@ defmodule Medoru.Classrooms do
 
   """
   def approve_membership(%ClassroomMembership{} = membership) do
-    membership
-    |> ClassroomMembership.approve_changeset()
-    |> Repo.update()
+    result =
+      membership
+      |> ClassroomMembership.approve_changeset()
+      |> Repo.update()
+
+    # Notify student of approval
+    with {:ok, _approved_membership} <- result,
+         classroom = %Classroom{} <- get_classroom!(membership.classroom_id) do
+      Notifications.notify_application_approved(
+        membership.user_id,
+        classroom.name,
+        classroom.id
+      )
+    end
+
+    result
   end
 
   @doc """
@@ -406,9 +435,21 @@ defmodule Medoru.Classrooms do
 
   """
   def reject_membership(%ClassroomMembership{} = membership) do
-    membership
-    |> ClassroomMembership.reject_changeset()
-    |> Repo.update()
+    result =
+      membership
+      |> ClassroomMembership.reject_changeset()
+      |> Repo.update()
+
+    # Notify student of rejection
+    with {:ok, _rejected_membership} <- result,
+         classroom = %Classroom{} <- Repo.get(Classroom, membership.classroom_id) do
+      Notifications.notify_application_rejected(
+        membership.user_id,
+        classroom.name
+      )
+    end
+
+    result
   end
 
   @doc """
@@ -421,9 +462,21 @@ defmodule Medoru.Classrooms do
 
   """
   def remove_member(%ClassroomMembership{} = membership) do
-    membership
-    |> ClassroomMembership.remove_changeset()
-    |> Repo.update()
+    result =
+      membership
+      |> ClassroomMembership.remove_changeset()
+      |> Repo.update()
+
+    # Notify student of removal
+    with {:ok, _removed_membership} <- result,
+         classroom = %Classroom{} <- Repo.get(Classroom, membership.classroom_id) do
+      Notifications.notify_removed_from_classroom(
+        membership.user_id,
+        classroom.name
+      )
+    end
+
+    result
   end
 
   @doc """
