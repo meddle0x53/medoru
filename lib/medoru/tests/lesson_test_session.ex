@@ -134,10 +134,10 @@ defmodule Medoru.Tests.LessonTestSession do
       })
 
     attrs = %{
-      answer: answer_text,
-      time_spent_seconds: time_spent,
-      step_index: answer_counter,
-      is_correct: is_correct
+      "answer" => answer_text,
+      "time_spent_seconds" => time_spent,
+      "step_index" => answer_counter,
+      "is_correct" => is_correct
     }
 
     {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
@@ -304,10 +304,10 @@ defmodule Medoru.Tests.LessonTestSession do
     answer_text = if is_correct, do: "Correct (#{round(accuracy * 100)}%)", else: "Incorrect"
 
     attrs = %{
-      answer: answer_text,
-      time_spent_seconds: time_spent,
-      step_index: answer_counter,
-      is_correct: is_correct
+      "answer" => answer_text,
+      "time_spent_seconds" => time_spent,
+      "step_index" => answer_counter,
+      "is_correct" => is_correct
     }
 
     {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
@@ -424,9 +424,9 @@ defmodule Medoru.Tests.LessonTestSession do
     _step = Repo.get!(TestStep, step_id)
 
     attrs = %{
-      answer: answer,
-      time_spent_seconds: time_spent,
-      step_index: answer_counter
+      "answer" => answer,
+      "time_spent_seconds" => time_spent,
+      "step_index" => answer_counter
     }
 
     {:ok, step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
