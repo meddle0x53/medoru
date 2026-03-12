@@ -28,6 +28,12 @@ defmodule MedoruWeb.ConnCase do
       import Plug.Conn
       import Phoenix.ConnTest
       import MedoruWeb.ConnCase
+
+      # Import fixtures
+      import Medoru.AccountsFixtures
+      import Medoru.ContentFixtures
+      import Medoru.LearningFixtures
+      import Medoru.TestsFixtures
     end
   end
 

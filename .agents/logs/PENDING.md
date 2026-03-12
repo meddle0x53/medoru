@@ -328,18 +328,64 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 25: Teacher Test Creation - Part B: Step Builder Framework
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-12 | **Approved**: 2026-03-12  
+**Log**: [ITERATION-25-step-builder-framework.md](./ITERATION-25-step-builder-framework.md)
 **Depends On**: Iteration 15A
-**Files to Create**:
-- `lib/medoru_web/live/teacher/test_live/edit.ex` - Test editor
-- `lib/medoru_web/live/teacher/test_live/step_builder.ex` - Step management
-- `lib/medoru_web/components/step_builder_components.ex`
+**Files Created**:
+- ✅ `lib/medoru_web/components/step_builder_components.ex` - Step builder UI components
+- ✅ `lib/medoru_web/live/teacher/test_live/edit.ex` - Step builder LiveView
+- ✅ `assets/js/hooks/step_sorter.js` - Drag-drop JavaScript hook
+- ✅ `lib/medoru/content.ex` - Added `search_words/2`
+- ✅ `test/medoru_web/live/teacher/test_live/edit_test.exs` - Test suite
 
-**Key Features**:
-- Add/remove/reorder steps (drag-drop)
-- Step type selector: multichoice, typing, writing
-- Step list with preview
-- Empty step placeholders
+**Key Features Implemented**:
+- ✅ Drag-drop step reordering
+- ✅ Step type selector (multichoice, reading, writing)
+- ✅ Step form modal with all fields
+- ✅ Word search/link to vocabulary
+- ✅ Delete steps with confirmation
+- ✅ Mark test as ready
+- ✅ Step count and points tracking
+
+---
+
+### Iteration 25B: Step Builder Enhancements (Next Sub-Iteration)
+**Status**: ⏳ PENDING | **Priority**: 🔴 HIGH  
+**Depends On**: Iteration 25
+**Estimated**: 1-2 days
+
+#### 1. Proper Kanji Writing Step
+**Current**: Writing step uses word search like Reading step
+**Required**: 
+- Teacher searches/selects a **KANJI** (not word)
+- Auto-generated question: "Draw the kanji for [most common word using this kanji]"
+- Show on/kun readings as hints/explanation
+- Correct answer is the kanji character itself
+- Need: `search_kanji/2`, `get_kanji_with_readings!/1`
+
+#### 2. Smarter Multiple Choice Questions
+**Current**: Always asks "What is the meaning of..."
+**Required**:
+- **If teacher searches by meaning** (English): "What is the meaning of '[Japanese word]'?"
+- **If teacher searches by reading** (hiragana/katakana): "How do you read '[Japanese word]'?"
+- Question type adapts based on search input type
+- Detect input: English letters → meaning question, Hiragana/Katakana → reading question
+
+#### 3. Smarter Word Search Ranking
+**Current**: Type "two" shows many words containing "two" scattered (twice, between, two people)
+**Required**:
+- **Exact match priority**: Type "two" → exact match "two" appears first
+- **Better ranking algorithm**:
+  1. Exact text match (highest priority)
+  2. Starts with query
+  3. Contains query
+  4. Sort by usage_frequency within each tier
+- Consider Levenshtein distance for fuzzy matching
+
+**Files to Modify**:
+- `lib/medoru_web/live/teacher/test_live/edit.ex` - Update step form logic
+- `lib/medoru/content.ex` - Add `search_kanji/2`, improve `search_words/2`
+- `lib/medoru/tests/test_step.ex` - May need kanji_id field addition
 
 ---
 

@@ -445,7 +445,12 @@ defmodule Medoru.Tests do
 
   """
   def create_test_step(%Test{} = test, attrs \\ %{}) do
-    attrs = Map.put(attrs, :test_id, test.id)
+    # Ensure all keys are strings for consistency
+    attrs =
+      attrs
+      |> Enum.map(fn {k, v} -> {to_string(k), v} end)
+      |> Map.new()
+      |> Map.put("test_id", test.id)
 
     Ecto.Multi.new()
     |> Ecto.Multi.insert(:step, fn _changes ->
@@ -569,10 +574,19 @@ defmodule Medoru.Tests do
 
   """
   def reorder_steps(test_id, step_ids) when is_list(step_ids) do
-    Enum.with_index(step_ids, fn step_id, index ->
+    Repo.transaction(fn ->
+      # First, set all steps to temporary high indices to avoid unique constraint conflicts
+      # Use 1000 + original index as temporary index
       TestStep
-      |> where([ts], ts.id == ^step_id and ts.test_id == ^test_id)
-      |> Repo.update_all(set: [order_index: index])
+      |> where([ts], ts.test_id == ^test_id)
+      |> Repo.update_all(inc: [order_index: 1000])
+
+      # Now set the correct order indices
+      Enum.with_index(step_ids, fn step_id, index ->
+        TestStep
+        |> where([ts], ts.id == ^step_id and ts.test_id == ^test_id)
+        |> Repo.update_all(set: [order_index: index])
+      end)
     end)
 
     :ok

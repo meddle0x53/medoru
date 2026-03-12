@@ -322,6 +322,43 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Searches words by text, reading, or meaning.
+
+  ## Options
+
+    * `:limit` - Maximum number of results (default: 10)
+
+  ## Examples
+
+      iex> search_words("日本")
+      [%Word{}, ...]
+
+      iex> search_words("nihon", limit: 5)
+      [%Word{}, ...]
+
+  """
+  def search_words(query, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    if String.trim(query) == "" do
+      []
+    else
+      search_term = "%#{query}%"
+
+      Word
+      |> where(
+        [w],
+        ilike(w.text, ^search_term) or
+          ilike(w.reading, ^search_term) or
+          ilike(w.meaning, ^search_term)
+      )
+      |> order_by([w], asc: w.sort_score)
+      |> limit(^limit)
+      |> Repo.all()
+    end
+  end
+
+  @doc """
   Returns paginated words with search and sorting capabilities.
 
   ## Options
