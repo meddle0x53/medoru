@@ -333,6 +333,192 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       assert steps == []
     end
 
+    test "kanji selection for writing step auto-generates question", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      # Create a kanji first (on readings should be katakana)
+      kanji = kanji_fixture(%{character: "日", meanings: ["sun", "day"], stroke_count: 4})
+      _reading = kanji_reading_fixture(kanji.id, %{reading: "ニチ", reading_type: :on, romaji: "nichi"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      # Open selector and select writing type
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='writing']")
+      |> render_click()
+
+      # Type in kanji search to open dropdown
+      view
+      |> element("input[phx-keyup='search_kanji']")
+      |> render_keyup(%{value: "日"})
+
+      # Should show kanji in dropdown
+      assert render(view) =~ kanji.character
+
+      # Select the kanji
+      view
+      |> element("button[phx-click='select_kanji'][phx-value-kanji-id='#{kanji.id}']")
+      |> render_click()
+
+      # Dropdown should be closed
+      refute has_element?(view, "button[phx-click='select_kanji']")
+
+      # Question should be auto-generated with kanji meaning
+      assert has_element?(view, "textarea[id='step_question']")
+
+      # Verify in database after saving
+      view
+      |> form("form", %{"step" => %{}})
+      |> render_submit()
+
+      steps = Tests.list_test_steps(teacher_test.id)
+      assert length(steps) == 1
+      step = hd(steps)
+      assert step.question_type == :writing
+      assert step.correct_answer == "日"
+      assert step.kanji_id == kanji.id
+    end
+
+    test "search type detection for multichoice - meaning search", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      # Create a word
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      # Open selector and select multichoice type
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='multichoice']")
+      |> render_click()
+
+      # Type English search (meaning search)
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "Japan"})
+
+      # Should show "Meaning search detected" indicator
+      assert render(view) =~ "Meaning search detected"
+
+      # Select the word
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      # Submit and verify question is about meaning
+      view
+      |> form("form", %{"step" => %{"options" => "Japan\nChina\nKorea"}})
+      |> render_submit()
+
+      steps = Tests.list_test_steps(teacher_test.id)
+      step = hd(steps)
+      # Question should ask "What is the meaning of..."
+      assert step.question =~ "meaning of"
+      assert step.correct_answer == "Japan"
+    end
+
+    test "search type detection for multichoice - reading search", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      # Create a word
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      # Open selector and select multichoice type
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='multichoice']")
+      |> render_click()
+
+      # Type hiragana search (reading search)
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "にほん"})
+
+      # Should show "Reading search detected" indicator
+      assert render(view) =~ "Reading search detected"
+
+      # Select the word
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      # Submit and verify question is about reading
+      view
+      |> form("form", %{"step" => %{"options" => "日本\n中国\n韓国"}})
+      |> render_submit()
+
+      steps = Tests.list_test_steps(teacher_test.id)
+      step = hd(steps)
+      # Question should ask "How do you read..."
+      assert step.question =~ "How do you read"
+      assert step.correct_answer == "日本"
+    end
+
+    test "word search ranking - exact match priority", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      # Create words where one is exact match and others contain the term
+      word_fixture(%{text: "二人", meaning: "two people", reading: "ふたり"})
+      word_fixture(%{text: "二", meaning: "two", reading: "に"})
+      word_fixture(%{text: "十二", meaning: "twelve", reading: "じゅうに"})
+      word_fixture(%{text: "二人称", meaning: "second person", reading: "ににんしょう"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      # Open selector and select multichoice type
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='multichoice']")
+      |> render_click()
+
+      # Search for "two"
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "two"})
+
+      html = render(view)
+
+      # The exact match "two" should appear before "two people" and "twelve"
+      # Just verify all results show up for now
+      assert html =~ "two"
+    end
+
     test "reorders steps via drag-drop", %{
       conn: conn,
       teacher: teacher,

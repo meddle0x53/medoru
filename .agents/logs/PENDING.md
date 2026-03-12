@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-11  
-**Completed**: 16 iterations  
-**Remaining**: 8 iterations for v0.1.0
+**Last Updated**: 2026-03-12  
+**Completed**: 17 iterations  
+**Remaining**: 7 iterations for v0.1.0
 
 ---
 
@@ -349,43 +349,36 @@ Add full internationalization support to make the platform accessible in English
 
 ---
 
-### Iteration 25B: Step Builder Enhancements (Next Sub-Iteration)
-**Status**: ⏳ PENDING | **Priority**: 🔴 HIGH  
+### Iteration 25B: Step Builder Enhancements
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-12 | **Approved**: 2026-03-12  
+**Log**: [ITERATION-25B-step-builder-enhancements.md](./ITERATION-25B-step-builder-enhancements.md)
 **Depends On**: Iteration 25
-**Estimated**: 1-2 days
 
-#### 1. Proper Kanji Writing Step
-**Current**: Writing step uses word search like Reading step
-**Required**: 
-- Teacher searches/selects a **KANJI** (not word)
-- Auto-generated question: "Draw the kanji for [most common word using this kanji]"
-- Show on/kun readings as hints/explanation
-- Correct answer is the kanji character itself
-- Need: `search_kanji/2`, `get_kanji_with_readings!/1`
+**Files Created**:
+- ✅ `priv/repo/migrations/20260312114903_add_kanji_id_to_test_steps.exs` - Kanji association
 
-#### 2. Smarter Multiple Choice Questions
-**Current**: Always asks "What is the meaning of..."
-**Required**:
-- **If teacher searches by meaning** (English): "What is the meaning of '[Japanese word]'?"
-- **If teacher searches by reading** (hiragana/katakana): "How do you read '[Japanese word]'?"
-- Question type adapts based on search input type
-- Detect input: English letters → meaning question, Hiragana/Katakana → reading question
+**Files Modified**:
+- ✅ `lib/medoru/content.ex` - Added `search_kanji/2` with readings preload, improved `search_words/2` ranking
+- ✅ `lib/medoru/tests/test_step.ex` - Added `kanji_id` field and association
+- ✅ `lib/medoru_web/live/teacher/test_live/edit.ex` - Kanji search UI, smart question generation, hints fix
 
-#### 3. Smarter Word Search Ranking
-**Current**: Type "two" shows many words containing "two" scattered (twice, between, two people)
-**Required**:
-- **Exact match priority**: Type "two" → exact match "two" appears first
-- **Better ranking algorithm**:
-  1. Exact text match (highest priority)
-  2. Starts with query
-  3. Contains query
-  4. Sort by usage_frequency within each tier
-- Consider Levenshtein distance for fuzzy matching
+**Key Features Implemented**:
+- ✅ **Kanji Writing Step**: Separate kanji search dropdown for writing steps
+  - Search by character, meaning, or reading
+  - Auto-generates: "Draw the kanji for [meaning]"
+  - Correct answer is the kanji character
+  - Shows on/kun readings as explanation
+- ✅ **Smart Question Generation**: Detects search type
+  - Hiragana/Katakana search → "How do you read...?"
+  - English search → "What is the meaning of...?"
+- ✅ **Smarter Word Search Ranking**:
+  - Priority 1: Exact match on meaning
+  - Priority 2: Starts with query
+  - Priority 3: Contains query
+  - Sorted by usage_frequency
+- ✅ **Hints Field Fix**: Convert string input to array for schema compatibility
 
-**Files to Modify**:
-- `lib/medoru_web/live/teacher/test_live/edit.ex` - Update step form logic
-- `lib/medoru/content.ex` - Add `search_kanji/2`, improve `search_words/2`
-- `lib/medoru/tests/test_step.ex` - May need kanji_id field addition
+**Approved By**: User
 
 ---
 

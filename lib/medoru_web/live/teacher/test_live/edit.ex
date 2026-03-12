@@ -51,6 +51,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:step_changeset, nil)
           |> assign(:available_words, [])
           |> assign(:word_search_query, "")
+          |> assign(:available_kanji, [])
+          |> assign(:kanji_search_query, "")
+          |> assign(:search_type, nil)
 
         {:ok, socket}
       end
@@ -98,6 +101,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:step_type, type)
       |> assign(:word_search_query, "")
       |> assign(:available_words, [])
+      |> assign(:kanji_search_query, "")
+      |> assign(:available_kanji, [])
+      |> assign(:search_type, nil)
 
     {:noreply, socket}
   end
@@ -113,9 +119,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   @impl true
   def handle_event("validate_step", %{"step" => step_params}, socket) do
+    attrs = parse_options_from_params(step_params)
+
     changeset =
       %TestStep{}
-      |> TestStep.changeset(step_params)
+      |> TestStep.changeset(attrs)
       |> Map.put(:action, :validate)
 
     {:noreply,
@@ -271,28 +279,50 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_event("search_words", %{"value" => query}, socket) do
     words =
-      if String.length(query) >= 2 do
+      if String.length(query) >= 1 do
         Content.search_words(query, limit: 10)
       else
         []
       end
 
+    # Detect search type based on input
+    search_type = detect_search_type(query)
+
     {:noreply,
      socket
      |> assign(:word_search_query, query)
-     |> assign(:available_words, words)}
+     |> assign(:available_words, words)
+     |> assign(:search_type, search_type)}
   end
 
   @impl true
   def handle_event("select_word", %{"word-id" => word_id}, socket) do
     word = Content.get_word!(word_id)
+    search_type = socket.assigns.search_type
 
     # Update the form with word info - merge with existing form data
     current_form = socket.assigns.step_form
+    step_type = socket.assigns.step_type
+
+    # Generate question based on search type and step type
+    {question, correct_answer} =
+      case {step_type, search_type} do
+        {:multichoice, :reading} ->
+          # User searched by reading (hiragana/katakana)
+          {"How do you read \"#{word.meaning}\"?", word.text}
+
+        {:multichoice, _} ->
+          # User searched by meaning (English) or other
+          {"What is the meaning of \"#{word.text}\"?", word.meaning}
+
+        {_, _} ->
+          # For reading_text and other types, use default
+          {"What is the meaning of \"#{word.text}\"?", word.meaning}
+      end
 
     updated_params = %{
-      "question" => "What is the meaning of \"#{word.text}\"?",
-      "correct_answer" => word.meaning,
+      "question" => question,
+      "correct_answer" => correct_answer,
       "word_id" => word_id,
       "options" => current_form[:options].value,
       "hints" => current_form[:hints].value,
@@ -309,7 +339,71 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:step_changeset, changeset)
      |> assign(:step_form, to_form(changeset, as: :step))
      |> assign(:word_search_query, "")
-     |> assign(:available_words, [])}
+     |> assign(:available_words, [])
+     |> assign(:search_type, nil)}
+  end
+
+  @impl true
+  def handle_event("search_kanji", %{"value" => query}, socket) do
+    kanji =
+      if String.length(query) >= 1 do
+        Content.search_kanji(query, limit: 10)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:kanji_search_query, query)
+     |> assign(:available_kanji, kanji)}
+  end
+
+  @impl true
+  def handle_event("select_kanji", %{"kanji-id" => kanji_id}, socket) do
+    kanji = Content.get_kanji_with_readings!(kanji_id)
+
+    # Get readings for the kanji
+    on_readings =
+      kanji.kanji_readings
+      |> Enum.filter(&(&1.reading_type == :on))
+      |> Enum.map(& &1.reading)
+
+    kun_readings =
+      kanji.kanji_readings
+      |> Enum.filter(&(&1.reading_type == :kun))
+      |> Enum.map(& &1.reading)
+
+    # Build readings display for explanation
+    readings_text =
+      case {on_readings, kun_readings} do
+        {[], []} -> ""
+        {on, []} -> "On: #{Enum.join(on, ", ")}"
+        {[], kun} -> "Kun: #{Enum.join(kun, ", ")}"
+        {on, kun} -> "On: #{Enum.join(on, ", ")}, Kun: #{Enum.join(kun, ", ")}"
+      end
+
+    # For the question, use the first meaning as the target word
+    target_meaning = List.first(kanji.meanings) || ""
+
+    updated_params = %{
+      "question" => "Draw the kanji for \"#{target_meaning}\"",
+      "correct_answer" => kanji.character,
+      "kanji_id" => kanji_id,
+      "hints" => [],
+      "explanation" => readings_text
+    }
+
+    changeset =
+      %TestStep{}
+      |> TestStep.changeset(updated_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))
+     |> assign(:kanji_search_query, "")
+     |> assign(:available_kanji, [])}
   end
 
   @impl true
@@ -417,6 +511,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <input type="hidden" name="step[question_type]" value={@step_type} />
                 <input type="hidden" name="step[step_type]" value="vocabulary" />
                 <input type="hidden" name="step[points]" value={TestStep.default_points(@step_type)} />
+                <input type="hidden" name="step[kanji_id]" value={@step_form[:kanji_id].value} />
+                <input type="hidden" name="step[word_id]" value={@step_form[:word_id].value} />
 
                 <%!-- Question --%>
                 <div>
@@ -431,37 +527,84 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   />
                 </div>
 
-                <%!-- Word Search (for linking to vocabulary) --%>
-                <div>
-                  <label class="block text-sm font-medium text-base-content mb-2">
-                    Link to Word (optional)
-                  </label>
-                  <input
-                    type="text"
-                    phx-keyup="search_words"
-                    phx-debounce="300"
-                    class="input input-bordered w-full"
-                    placeholder="Type to search words..."
-                    value={@word_search_query}
-                  />
-                  <%= if length(@available_words) > 0 do %>
-                    <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
-                      <%= for word <- @available_words do %>
-                        <button
-                          type="button"
-                          phx-click="select_word"
-                          phx-value-word-id={word.id}
-                          class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
-                        >
-                          <div class="flex items-center justify-between">
-                            <span class="font-medium">{word.text}</span>
-                            <span class="text-sm text-secondary">{word.meaning}</span>
-                          </div>
-                        </button>
+                <%!-- Kanji Search (for writing type) --%>
+                <%= if @step_type == :writing do %>
+                  <div>
+                    <label class="block text-sm font-medium text-base-content mb-2">
+                      Select Kanji
+                    </label>
+                    <input
+                      type="text"
+                      phx-keyup="search_kanji"
+                      phx-debounce="300"
+                      class="input input-bordered w-full"
+                      placeholder="Type kanji character, meaning, or reading..."
+                      value={@kanji_search_query}
+                    />
+                    <%= if length(@available_kanji) > 0 do %>
+                      <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                        <%= for kanji <- @available_kanji do %>
+                          <% readings = if is_list(kanji.kanji_readings) and length(kanji.kanji_readings) > 0, do: Enum.map_join(kanji.kanji_readings, ", ", & &1.reading), else: "" %>
+                          <button
+                            type="button"
+                            phx-click="select_kanji"
+                            phx-value-kanji-id={kanji.id}
+                            class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
+                          >
+                            <div class="flex items-center justify-between">
+                              <span class="text-2xl font-medium">{kanji.character}</span>
+                              <div class="text-right">
+                                <div class="text-sm font-medium">{Enum.join(kanji.meanings, ", ")}</div>
+                                <div class="text-xs text-secondary">{readings}</div>
+                              </div>
+                            </div>
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <%!-- Word Search (for multichoice and reading types) --%>
+                <%= if @step_type in [:multichoice, :reading_text] do %>
+                  <div>
+                    <label class="block text-sm font-medium text-base-content mb-2">
+                      Link to Word (optional)
+                      <%= case @search_type do %>
+                        <% :reading -> %>
+                          <span class="text-xs text-info ml-2">Reading search detected</span>
+                        <% :meaning -> %>
+                          <span class="text-xs text-success ml-2">Meaning search detected</span>
+                        <% _ -> %>
                       <% end %>
-                    </div>
-                  <% end %>
-                </div>
+                    </label>
+                    <input
+                      type="text"
+                      phx-keyup="search_words"
+                      phx-debounce="300"
+                      class="input input-bordered w-full"
+                      placeholder="Type to search words..."
+                      value={@word_search_query}
+                    />
+                    <%= if length(@available_words) > 0 do %>
+                      <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                        <%= for word <- @available_words do %>
+                          <button
+                            type="button"
+                            phx-click="select_word"
+                            phx-value-word-id={word.id}
+                            class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
+                          >
+                            <div class="flex items-center justify-between">
+                              <span class="font-medium">{word.text}</span>
+                              <span class="text-sm text-secondary">{word.meaning}</span>
+                            </div>
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
 
                 <%!-- Correct Answer --%>
                 <div>
@@ -561,8 +704,41 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
 
-    Map.put(params, "options", options)
+    params = Map.put(params, "options", options)
+    parse_options_from_params(params)
+  end
+
+  defp parse_options_from_params(%{"hints" => hints_text} = params)
+       when is_binary(hints_text) do
+    hints =
+      hints_text
+      |> String.trim()
+      |> case do
+        "" -> []
+        text -> [text]
+      end
+
+    Map.put(params, "hints", hints)
   end
 
   defp parse_options_from_params(params), do: params
+
+  # Detects if the search query is hiragana/katakana (reading search) or English (meaning search)
+  defp detect_search_type(""), do: nil
+
+  defp detect_search_type(query) do
+    query = String.trim(query)
+
+    # Check if query contains hiragana (\u3040-\u309F) or katakana (\u30A0-\u30FF)
+    hiragana_range = ~r/[\x{3040}-\x{309F}]/u
+    katakana_range = ~r/[\x{30A0}-\x{30FF}]/u
+
+    cond do
+      Regex.match?(hiragana_range, query) -> :reading
+      Regex.match?(katakana_range, query) -> :reading
+      # If mostly ASCII letters, it's likely a meaning search
+      String.match?(query, ~r/^[a-zA-Z\s'-]+$/) -> :meaning
+      true -> :mixed
+    end
+  end
 end

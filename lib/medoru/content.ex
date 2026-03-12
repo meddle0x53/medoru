@@ -345,15 +345,76 @@ defmodule Medoru.Content do
     else
       search_term = "%#{query}%"
 
-      Word
+      # Get all matching words
+      words =
+        Word
+        |> where(
+          [w],
+          ilike(w.text, ^search_term) or
+            ilike(w.reading, ^search_term) or
+            ilike(w.meaning, ^search_term)
+        )
+        |> limit(^limit)
+        |> Repo.all()
+
+      # Sort in memory for better ranking
+      query_lower = String.downcase(query)
+
+      Enum.sort_by(words, fn word ->
+        meaning_lower = String.downcase(word.meaning || "")
+
+        # Priority: exact match (0), starts with (1), contains (2)
+        priority =
+          cond do
+            meaning_lower == query_lower -> 0
+            String.starts_with?(meaning_lower, query_lower) -> 1
+            true -> 2
+          end
+
+        # Within same priority, sort by usage frequency (higher = better)
+        # and then by sort_score (lower = better)
+        {priority, -(word.usage_frequency || 0), word.sort_score || 999_999}
+      end)
+    end
+  end
+
+  @doc """
+  Searches kanji by character, meanings, or readings.
+
+  ## Options
+
+    * `:limit` - Maximum number of results (default: 10)
+
+  ## Examples
+
+      iex> search_kanji("日")
+      [%Kanji{}, ...]
+
+      iex> search_kanji("sun", limit: 5)
+      [%Kanji{}, ...]
+
+  """
+  def search_kanji(query, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    if String.trim(query) == "" do
+      []
+    else
+      search_term = "%#{query}%"
+
+      Kanji
+      |> join(:left, [k], kr in assoc(k, :kanji_readings), as: :readings)
       |> where(
-        [w],
-        ilike(w.text, ^search_term) or
-          ilike(w.reading, ^search_term) or
-          ilike(w.meaning, ^search_term)
+        [k, readings: kr],
+        ilike(k.character, ^search_term) or
+          fragment("? = ANY(?)", ^query, k.meanings) or
+          ilike(kr.reading, ^search_term) or
+          ilike(kr.romaji, ^search_term)
       )
-      |> order_by([w], asc: w.sort_score)
+      |> order_by([k], asc: k.jlpt_level, desc: k.frequency)
+      |> distinct([k], true)
       |> limit(^limit)
+      |> preload(:kanji_readings)
       |> Repo.all()
     end
   end
