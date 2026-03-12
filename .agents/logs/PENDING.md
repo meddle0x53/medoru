@@ -482,19 +482,33 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 21: Admin Dashboard & System Management
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
 **Depends On**: All above
 **Files to Create**:
 - `lib/medoru_web/live/admin/dashboard_live.ex` - Main admin dashboard
-- `lib/medoru_web/live/admin/content_live/kanji.ex`
-- `lib/medoru_web/live/admin/content_live/words.ex`
+- `lib/medoru_web/live/admin/content_live/kanji.ex` - Kanji management
+- `lib/medoru_web/live/admin/content_live/kanji_form.ex` - Add/edit kanji
+- `lib/medoru_web/live/admin/content_live/words.ex` - Word management
+- `lib/medoru_web/live/admin/content_live/word_form.ex` - Add/edit words
 - `lib/medoru_web/live/admin/content_live/lessons.ex`
 - `lib/medoru_web/live/admin/classrooms_live.ex`
 - `lib/medoru_web/live/admin/settings_live.ex`
 
 **Key Features**:
 - System stats (users, content, activity)
-- Content CRUD (kanji, words, lessons)
+- **Vocabulary Management**:
+  - List all words with search/filter
+  - Add new word with kanji linkage
+  - Edit word text, meaning, reading
+  - Delete word with confirmation
+  - Bulk import from CSV
+- **Kanji Management**:
+  - List all kanji (N1-N5 filter)
+  - Add new kanji with meanings, readings, stroke count
+  - Edit kanji details and readings
+  - Delete kanji
+  - Upload stroke data (SVG)
+- Content CRUD for lessons
 - Badge management
 - Classroom oversight
 - System settings
