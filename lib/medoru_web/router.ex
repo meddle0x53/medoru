@@ -127,6 +127,7 @@ defmodule MedoruWeb.Router do
       live "/tests/new", TestLive.New
       live "/tests/:id", TestLive.Show
       live "/tests/:id/edit", TestLive.Edit
+      live "/tests/:id/publish", TestLive.Publish
     end
   end
 
@@ -140,6 +141,7 @@ defmodule MedoruWeb.Router do
       live "/join", ClassroomLive.Join
       live "/:id", ClassroomLive.Show
       live "/:id/rankings", ClassroomLive.Rankings
+      live "/:id/tests/:test_id", ClassroomLive.Test
     end
   end
 

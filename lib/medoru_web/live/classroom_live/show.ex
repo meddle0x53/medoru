@@ -29,6 +29,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
         else
           classroom = Classrooms.get_classroom!(id)
           members = Classrooms.list_classroom_members(id)
+          published_tests = Classrooms.list_classroom_tests(id, status: :active)
+          user_attempts = Classrooms.list_user_test_attempts(id, user.id)
 
           {:ok,
            socket
@@ -36,6 +38,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
            |> assign(:classroom, classroom)
            |> assign(:membership, membership)
            |> assign(:members, members)
+           |> assign(:published_tests, published_tests)
+           |> assign(:user_attempts, user_attempts)
            |> assign(:active_tab, "overview")}
         end
     end
@@ -148,7 +152,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <% "lessons" -> %>
               <.lessons_tab />
             <% "tests" -> %>
-              <.tests_tab />
+              <.tests_tab
+                classroom={@classroom}
+                published_tests={@published_tests}
+                user_attempts={@user_attempts}
+                current_user={@current_scope.current_user}
+              />
           <% end %>
         </div>
       </div>
@@ -300,16 +309,148 @@ defmodule MedoruWeb.ClassroomLive.Show do
     """
   end
 
+  attr :classroom, :map, required: true
+  attr :published_tests, :list, required: true
+  attr :user_attempts, :list, required: true
+  attr :current_user, :map, required: true
+
   defp tests_tab(assigns) do
     ~H"""
-    <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-      <.icon name="hero-clipboard-document-list" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-base-content mb-2">Tests Coming Soon</h3>
-      <p class="text-secondary max-w-md mx-auto">
-        Your teacher will soon be able to create custom tests for this classroom. Check back later!
-      </p>
+    <div class="space-y-4">
+      <%= if @published_tests == [] do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
+          <.icon name="hero-clipboard-document-list" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-base-content mb-2">No Tests Available</h3>
+          <p class="text-secondary max-w-md mx-auto">
+            Your teacher hasn't published any tests to this classroom yet. Check back later!
+          </p>
+        </div>
+      <% else %>
+        <%= for classroom_test <- @published_tests do %>
+          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="card-title text-lg text-base-content mb-1">
+                    {classroom_test.test.title}
+                  </h3>
+                  <p class="text-secondary text-sm mb-3">
+                    {classroom_test.test.description || "No description"}
+                  </p>
+
+                  <div class="flex flex-wrap gap-3 text-sm">
+                    <span class="badge badge-outline badge-sm">
+                      <.icon name="hero-clock" class="w-3 h-3 mr-1" />
+                      <%= if classroom_test.test.time_limit_seconds do %>
+                        {format_duration(classroom_test.test.time_limit_seconds)}
+                      <% else %>
+                        No time limit
+                      <% end %>
+                    </span>
+
+                    <span class="badge badge-outline badge-sm">
+                      <.icon name="hero-star" class="w-3 h-3 mr-1" />
+                      {classroom_test.test.total_points} points
+                    </span>
+
+                    <%= if classroom_test.max_attempts do %>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-arrow-path" class="w-3 h-3 mr-1" />
+                        {classroom_test.max_attempts} attempt{classroom_test.max_attempts != 1 && "s"}
+                      </span>
+                    <% end %>
+
+                    <%= if classroom_test.due_date do %>
+                      <% is_overdue =
+                        DateTime.compare(classroom_test.due_date, DateTime.utc_now()) == :lt %>
+                      <span class={[
+                        "badge badge-sm",
+                        is_overdue && "badge-error",
+                        !is_overdue && "badge-warning"
+                      ]}>
+                        <.icon name="hero-calendar" class="w-3 h-3 mr-1" />
+                        <%= if is_overdue do %>
+                          Overdue
+                        <% else %>
+                          Due {Calendar.strftime(classroom_test.due_date, "%b %d")}
+                        <% end %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="ml-4">
+                  <% attempt = get_attempt_for_test(@user_attempts, classroom_test.test_id) %>
+                  <%= case get_test_status(@classroom.id, @current_user.id, classroom_test.test_id, attempt) do %>
+                    <% :not_started -> %>
+                      <.link
+                        navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
+                        class="btn btn-primary"
+                      >
+                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> Start Test
+                      </.link>
+                    
+                    <% :in_progress -> %>
+                      <.link
+                        navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
+                        class="btn btn-warning"
+                      >
+                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> Continue
+                      </.link>
+                    
+                    <% :completed -> %>
+                      <span class="badge badge-success">Completed {attempt.score}/{attempt.max_score}</span>
+                    
+                    <% :timed_out -> %>
+                      <span class="badge badge-error">Timed Out</span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
     </div>
     """
+  end
+
+  defp can_take_test?(classroom_id, user_id, test_id) do
+    Classrooms.can_take_test?(classroom_id, user_id, test_id)
+  end
+
+  defp get_attempt_for_test(attempts, test_id) do
+    Enum.find(attempts, &(&1.test_id == test_id))
+  end
+
+  defp get_test_status(classroom_id, user_id, test_id, nil) do
+    if can_take_test?(classroom_id, user_id, test_id) do
+      :not_started
+    else
+      :not_started
+    end
+  end
+
+  defp get_test_status(_classroom_id, _user_id, _test_id, attempt) do
+    case attempt.status do
+      "in_progress" -> :in_progress
+      "completed" -> :completed
+      "timed_out" -> :timed_out
+      _ -> :completed
+    end
+  end
+
+  defp format_duration(seconds) when seconds < 60 do
+    "#{seconds}s"
+  end
+
+  defp format_duration(seconds) when seconds < 3600 do
+    "#{div(seconds, 60)}m"
+  end
+
+  defp format_duration(seconds) do
+    hours = div(seconds, 3600)
+    mins = rem(seconds, 3600) |> div(60)
+    "#{hours}h #{mins}m"
   end
 
   # ============================================================================

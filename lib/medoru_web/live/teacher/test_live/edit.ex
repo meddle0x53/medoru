@@ -320,11 +320,20 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           {"What is the meaning of \"#{word.text}\"?", word.meaning}
       end
 
+    # For multichoice, ensure correct_answer is in options
+    existing_options = current_form[:options].value || []
+    options =
+      if step_type == :multichoice and correct_answer not in existing_options do
+        [correct_answer | existing_options]
+      else
+        existing_options
+      end
+
     updated_params = %{
       "question" => question,
       "correct_answer" => correct_answer,
       "word_id" => word_id,
-      "options" => current_form[:options].value,
+      "options" => options,
       "hints" => current_form[:hints].value,
       "explanation" => current_form[:explanation].value
     }
@@ -544,7 +553,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     <%= if length(@available_kanji) > 0 do %>
                       <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
                         <%= for kanji <- @available_kanji do %>
-                          <% readings = if is_list(kanji.kanji_readings) and length(kanji.kanji_readings) > 0, do: Enum.map_join(kanji.kanji_readings, ", ", & &1.reading), else: "" %>
+                          <% readings =
+                            if is_list(kanji.kanji_readings) and length(kanji.kanji_readings) > 0,
+                              do: Enum.map_join(kanji.kanji_readings, ", ", & &1.reading),
+                              else: "" %>
                           <button
                             type="button"
                             phx-click="select_kanji"
@@ -554,7 +566,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                             <div class="flex items-center justify-between">
                               <span class="text-2xl font-medium">{kanji.character}</span>
                               <div class="text-right">
-                                <div class="text-sm font-medium">{Enum.join(kanji.meanings, ", ")}</div>
+                                <div class="text-sm font-medium">
+                                  {Enum.join(kanji.meanings, ", ")}
+                                </div>
                                 <div class="text-xs text-secondary">{readings}</div>
                               </div>
                             </div>

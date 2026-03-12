@@ -362,7 +362,7 @@ defmodule Medoru.TestsTest do
     end
 
     test "record_step_answer/3 records a correct answer", %{step: step, session: session} do
-      attrs = %{answer: "Japan", time_spent_seconds: 30, step_index: 0}
+      attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0}
 
       assert {:ok, %TestStepAnswer{} = answer} =
                Tests.record_step_answer(session.id, step.id, attrs)
@@ -372,7 +372,7 @@ defmodule Medoru.TestsTest do
     end
 
     test "record_step_answer/3 records an incorrect answer", %{step: step, session: session} do
-      attrs = %{answer: "China", time_spent_seconds: 30, step_index: 0}
+      attrs = %{"answer" => "China", "time_spent_seconds" => 30, "step_index" => 0}
 
       assert {:ok, %TestStepAnswer{} = answer} =
                Tests.record_step_answer(session.id, step.id, attrs)
@@ -382,7 +382,7 @@ defmodule Medoru.TestsTest do
     end
 
     test "record_step_answer/3 applies penalties for hints", %{step: step, session: session} do
-      attrs = %{answer: "Japan", time_spent_seconds: 30, step_index: 0, hints_used: 1}
+      attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0, "hints_used" => 1}
 
       assert {:ok, %TestStepAnswer{} = answer} =
                Tests.record_step_answer(session.id, step.id, attrs)
@@ -392,7 +392,7 @@ defmodule Medoru.TestsTest do
     end
 
     test "list_step_answers/1 returns all answers for a session", %{step: step, session: session} do
-      attrs = %{answer: "Japan", time_spent_seconds: 30, step_index: 0}
+      attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0}
       {:ok, _} = Tests.record_step_answer(session.id, step.id, attrs)
 
       answers = Tests.list_step_answers(session.id)
@@ -400,7 +400,7 @@ defmodule Medoru.TestsTest do
     end
 
     test "calculate_session_score/1 calculates total score", %{step: step, session: session} do
-      attrs = %{answer: "Japan", time_spent_seconds: 30, step_index: 0}
+      attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0}
       {:ok, _} = Tests.record_step_answer(session.id, step.id, attrs)
 
       {score, total} = Tests.calculate_session_score(session.id)

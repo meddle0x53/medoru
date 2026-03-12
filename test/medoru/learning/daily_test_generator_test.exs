@@ -79,11 +79,11 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       test.test_steps
       |> Enum.each(fn step ->
         Tests.record_step_answer(session.id, step.id, %{
-          answer: step.correct_answer,
-          time_spent_seconds: 5,
-          step_index: step.order_index,
-          is_correct: true,
-          points_earned: step.points
+          "answer" => step.correct_answer,
+          "time_spent_seconds" => 5,
+          "step_index" => step.order_index,
+          "is_correct" => true,
+          "points_earned" => step.points
         })
       end)
 

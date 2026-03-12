@@ -1,0 +1,443 @@
+defmodule MedoruWeb.ClassroomLive.Test do
+  @moduledoc """
+  LiveView for students to take a published test from a classroom.
+  """
+  use MedoruWeb, :live_view
+
+  alias Medoru.Classrooms
+  alias Medoru.Tests
+
+  @impl true
+  def mount(%{"id" => classroom_id, "test_id" => test_id}, _session, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    # Verify user is an approved member of the classroom
+    case Classrooms.get_user_membership(classroom_id, user.id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "You are not a member of this classroom.")
+         |> push_navigate(to: ~p"/classrooms")}
+
+      membership ->
+        if membership.status != :approved do
+          {:ok,
+           socket
+           |> put_flash(:error, "Your membership is pending approval.")
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+        else
+          load_test_session(socket, classroom_id, test_id, user)
+        end
+    end
+  end
+
+  defp load_test_session(socket, classroom_id, test_id, user) do
+    # Verify test is published to this classroom
+    classroom_test = Classrooms.get_classroom_test(classroom_id, test_id)
+
+    cond do
+      is_nil(classroom_test) || classroom_test.status != :active ->
+        {:ok,
+         socket
+         |> put_flash(:error, "This test is not available in this classroom.")
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+
+      true ->
+        # Check for existing attempt
+        existing_attempt = Classrooms.get_test_attempt(classroom_id, user.id, test_id)
+
+        cond do
+          # Has an in-progress attempt - resume it
+          existing_attempt && existing_attempt.status == "in_progress" ->
+            resume_test_session(socket, existing_attempt, classroom_test, classroom_id, test_id, user)
+
+          # Has a completed attempt and can't retake
+          existing_attempt && existing_attempt.status in ["completed", "timed_out"] &&
+              existing_attempt.reset_count == 0 ->
+            {:ok,
+             socket
+             |> put_flash(:info, "You have already completed this test.")
+             |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+
+          # Can start new attempt (no existing or was reset)
+          true ->
+            start_new_test_session(socket, classroom_test, classroom_id, test_id, user)
+        end
+    end
+  end
+
+  defp resume_test_session(socket, attempt, _classroom_test, classroom_id, test_id, _user) do
+    test = Tests.get_test!(test_id)
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    # Get existing test session
+    case Tests.get_test_session(attempt.test_session_id) do
+      nil ->
+        # Session not found, start fresh
+        start_new_test_session(socket, %{}, classroom_id, test_id, %{id: attempt.user_id})
+
+      session ->
+        steps = Tests.list_test_steps(test_id)
+
+        # Calculate current step index from session
+        current_step_index = session.current_step_index || 0
+        current_step = Enum.at(steps, current_step_index)
+
+        {:ok,
+         socket
+         |> assign(:page_title, test.title)
+         |> assign(:classroom, classroom)
+         |> assign(:test, test)
+         |> assign(:attempt, attempt)
+         |> assign(:session, session)
+         |> assign(:steps, steps)
+         |> assign(:current_step_index, current_step_index)
+         |> assign(:current_step, current_step)
+         |> assign(:total_steps, length(steps))
+         |> assign(:time_remaining, attempt.time_remaining_seconds)
+         |> assign(:answer, "")
+         |> assign(:show_hint, false)}
+    end
+  end
+
+  defp start_new_test_session(socket, classroom_test, classroom_id, test_id, user) do
+    test = Tests.get_test!(test_id)
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    # Use classroom test settings or fall back to test defaults
+    time_limit = classroom_test.max_attempts || test.time_limit_seconds
+
+    # Start a new test attempt
+    case Classrooms.start_test_attempt(
+           classroom_id,
+           user.id,
+           test_id,
+           time_limit || 3600,
+           test.total_points
+         ) do
+      {:ok, attempt} ->
+        # Create a test session for the attempt
+        case Tests.start_test_session(user.id, test_id) do
+          {:ok, session} ->
+            # Link attempt to session
+            attempt
+            |> Ecto.Changeset.change(test_session_id: session.id)
+            |> Medoru.Repo.update()
+
+            steps = Tests.list_test_steps(test_id)
+            first_step = List.first(steps)
+
+            {:ok,
+             socket
+             |> assign(:page_title, test.title)
+             |> assign(:classroom, classroom)
+             |> assign(:test, test)
+             |> assign(:attempt, attempt)
+             |> assign(:session, session)
+             |> assign(:steps, steps)
+             |> assign(:current_step_index, 0)
+             |> assign(:current_step, first_step)
+             |> assign(:total_steps, length(steps))
+             |> assign(:time_remaining, attempt.time_remaining_seconds)
+             |> assign(:answer, "")
+             |> assign(:show_hint, false)}
+
+          {:error, _} ->
+            {:ok,
+             socket
+             |> put_flash(:error, "Failed to start test session.")
+             |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+        end
+
+      {:error, :already_attempted} ->
+        {:ok,
+         socket
+         |> put_flash(:info, "You have already taken this test.")
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+
+      {:error, _} ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Failed to start test.")
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+    end
+  end
+
+  @impl true
+  def handle_event("submit_answer", %{"answer" => answer}, socket) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    # Record the answer
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 30,
+        "step_index" => step.order_index
+      })
+
+    case result do
+      {:ok, step_answer} ->
+        # Update attempt progress
+        Classrooms.update_test_progress(attempt.id, %{
+          score: step_answer.points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 30
+        })
+
+        # Move to next step or complete
+        next_index = socket.assigns.current_step_index + 1
+
+        if next_index >= socket.assigns.total_steps do
+          # Complete the test
+          complete_test(socket, session.id, attempt.id)
+        else
+          next_step = Enum.at(socket.assigns.steps, next_index)
+
+          {:noreply,
+           socket
+           |> assign(:current_step_index, next_index)
+           |> assign(:current_step, next_step)
+           |> assign(:answer, "")
+           |> assign(:show_hint, false)}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to submit answer.")}
+    end
+  end
+
+  @impl true
+  def handle_event("show_hint", _, socket) do
+    {:noreply, assign(socket, :show_hint, true)}
+  end
+
+  @impl true
+  def handle_event("tick", _, socket) do
+    attempt = socket.assigns.attempt
+    new_time = attempt.time_remaining_seconds - 1
+
+    if new_time <= 0 do
+      # Time's up - auto-submit
+      auto_submit_test(socket)
+    else
+      # Update time remaining
+      Classrooms.update_test_progress(attempt.id, %{
+        time_remaining_seconds: new_time
+      })
+
+      {:noreply, assign(socket, :time_remaining, new_time)}
+    end
+  end
+
+  defp complete_test(socket, session_id, attempt_id) do
+    # Calculate final score
+    {score, max_score} = Tests.calculate_session_score(session_id)
+
+    # Complete the attempt
+    attrs = %{
+      test_session_id: session_id,
+      score: score,
+      max_score: max_score,
+      points_earned: score,
+      time_spent_seconds:
+        socket.assigns.attempt.time_limit_seconds - socket.assigns.time_remaining,
+      time_remaining_seconds: socket.assigns.time_remaining
+    }
+
+    case Classrooms.complete_test_attempt(attempt_id, attrs) do
+      {:ok, _attempt} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Test completed! You scored #{score}/#{max_score} points.")
+         |> push_navigate(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=tests")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to complete test.")}
+    end
+  end
+
+  defp auto_submit_test(socket) do
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    {score, max_score} = Tests.calculate_session_score(session.id)
+
+    attrs = %{
+      test_session_id: session.id,
+      score: score,
+      max_score: max_score,
+      points_earned: score,
+      time_spent_seconds: attempt.time_limit_seconds,
+      time_remaining_seconds: 0,
+      auto_submitted: true
+    }
+
+    case Classrooms.complete_test_attempt(attempt.id, attrs) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:warning, "Time's up! Your test was auto-submitted.")
+         |> push_navigate(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=tests")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to submit test.")}
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app flash={@flash} current_scope={@current_scope}>
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <%!-- Header --%>
+        <div class="flex items-center justify-between mb-8">
+          <div>
+            <.link
+              navigate={~p"/classrooms/#{@classroom.id}?tab=tests"}
+              class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-2 transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Tests
+            </.link>
+            <h1 class="text-2xl font-bold text-base-content">{@test.title}</h1>
+            <p class="text-secondary text-sm">{@classroom.name}</p>
+          </div>
+
+          <%!-- Timer --%>
+          <div class="flex items-center gap-2 bg-base-200 px-4 py-2 rounded-lg">
+            <.icon name="hero-clock" class="w-5 h-5 text-secondary" />
+            <span class={[
+              "font-mono text-lg font-bold",
+              @time_remaining < 60 && "text-error",
+              @time_remaining >= 60 && @time_remaining < 300 && "text-warning",
+              @time_remaining >= 300 && "text-base-content"
+            ]}>
+              {format_time(@time_remaining)}
+            </span>
+          </div>
+        </div>
+
+        <%!-- Progress Bar --%>
+        <div class="mb-8">
+          <div class="flex justify-between text-sm text-secondary mb-2">
+            <span>Question {@current_step_index + 1} of {@total_steps}</span>
+            <span>{format_percentage(@current_step_index / @total_steps * 100)}% complete</span>
+          </div>
+          <div class="h-2 bg-base-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary transition-all duration-300"
+              style={"width: #{((@current_step_index + 1) / @total_steps) * 100}%"}
+            />
+          </div>
+        </div>
+
+        <%!-- Question Card --%>
+        <div class="card bg-base-100 border border-base-300 shadow-lg">
+          <div class="card-body">
+            <%= if @current_step do %>
+              <div class="mb-6">
+                <span class="badge badge-outline badge-sm mb-4">
+                  {@current_step.question_type
+                  |> to_string()
+                  |> String.replace("_", " ")
+                  |> String.capitalize()}
+                </span>
+                <h2 class="text-xl font-medium text-base-content">
+                  {@current_step.question}
+                </h2>
+              </div>
+
+              <%!-- Answer Input --%>
+              <form phx-submit="submit_answer" class="space-y-4">
+                <%= case @current_step.question_type do %>
+                  <% :multichoice -> %>
+                    <div class="space-y-2">
+                      <%= for option <- @current_step.options do %>
+                        <label class="flex items-center gap-3 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={option}
+                            required
+                            class="radio radio-primary"
+                          />
+                          <span class="text-base-content">{option}</span>
+                        </label>
+                      <% end %>
+                    </div>
+                  <% :writing -> %>
+                    <div class="text-center py-8">
+                      <p class="text-secondary mb-4">Write the kanji in the box below:</p>
+                      <div class="w-48 h-48 mx-auto border-2 border-dashed border-base-300 rounded-lg flex items-center justify-center bg-base-200">
+                        <span class="text-secondary text-sm">Canvas drawing coming soon</span>
+                      </div>
+                      <input type="hidden" name="answer" value="written" />
+                    </div>
+                  <% _ -> %>
+                    <.input
+                      type="text"
+                      name="answer"
+                      value={@answer}
+                      placeholder="Type your answer..."
+                      required
+                      class="w-full"
+                    />
+                <% end %>
+
+                <%!-- Hint --%>
+                <%= if @show_hint && @current_step.hints != [] do %>
+                  <div class="bg-info/10 border border-info/30 rounded-lg p-4 mt-4">
+                    <p class="text-sm text-info">
+                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
+                      Hint: {List.first(@current_step.hints)}
+                    </p>
+                  </div>
+                <% end %>
+
+                <%!-- Actions --%>
+                <div class="flex justify-between items-center pt-4 border-t border-base-200">
+                  <%= if @current_step.hints != [] and not @show_hint do %>
+                    <button
+                      type="button"
+                      phx-click="show_hint"
+                      class="btn btn-ghost btn-sm text-info"
+                    >
+                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> Show Hint
+                    </button>
+                  <% else %>
+                    <div />
+                  <% end %>
+
+                  <button type="submit" class="btn btn-primary">
+                    <%= if @current_step_index == @total_steps - 1 do %>
+                      <.icon name="hero-check" class="w-4 h-4 mr-2" /> Finish Test
+                    <% else %>
+                      <.icon name="hero-arrow-right" class="w-4 h-4 mr-2" /> Next Question
+                    <% end %>
+                  </button>
+                </div>
+              </form>
+            <% else %>
+              <div class="text-center py-8">
+                <p class="text-secondary">No questions available.</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </Layouts.app>
+
+    <%!-- Timer Tick --%>
+    <div phx-hook="Timer" id="test-timer" data-interval="1000" />
+    """
+  end
+
+  defp format_time(seconds) do
+    mins = div(seconds, 60)
+    secs = rem(seconds, 60)
+    "#{String.pad_leading("#{mins}", 2, "0")}:#{String.pad_leading("#{secs}", 2, "0")}"
+  end
+
+  defp format_percentage(float) when is_float(float), do: trunc(float)
+  defp format_percentage(int) when is_integer(int), do: int
+end

@@ -60,14 +60,16 @@ defmodule Medoru.Classrooms.ClassroomTestAttempt do
       :user_id,
       :test_id,
       :time_limit_seconds,
-      :started_at
+      :started_at,
+      :max_score
     ])
     |> validate_required([
       :classroom_id,
       :user_id,
       :test_id,
       :time_limit_seconds,
-      :started_at
+      :started_at,
+      :max_score
     ])
     |> set_initial_time_remaining()
     |> foreign_key_constraint(:classroom_id)

@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
 **Last Updated**: 2026-03-12  
-**Completed**: 17 iterations  
-**Remaining**: 7 iterations for v0.1.0
+**Completed**: 18 iterations  
+**Remaining**: 6 iterations for v0.1.0
 
 ---
 
@@ -425,20 +425,59 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 29: Teacher Test Creation - Part F: Classroom Publishing
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 1-2 days  
-**Depends On**: Iteration 15A, 15C-E
-**Files to Create**:
-- `lib/medoru/classrooms/classroom_test.ex` - Schema
-- `priv/repo/migrations/*_create_classroom_tests.exs`
-- Update `lib/medoru_web/live/teacher/test_live/publish.ex`
+**Status**: ✅ COMPLETED & APPROVED | **Completed**: 2026-03-12 | **Approved**: 2026-03-12  
+**Log**: [ITERATION-29-classroom-publishing.md](./ITERATION-29-classroom-publishing.md)
+**Approved By**: User
+
+---
+
+### Iteration 30: Complete Classroom Test Taking Experience
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2-3 days  
+**Log**: [ITERATION-30-test-taking-complete.md](./ITERATION-30-test-taking-complete.md)
+**Depends On**: Iteration 29
+
+**Issues to Fix**:
+- ⏱️ Timer not counting down (display only)
+- ⏹️ No auto-submit when time runs out
+- 📊 No results/review screen after test
+- 📝 Time not recorded accurately
+- 💾 Progress not saved after each answer
+- 🔄 Resume functionality needs testing
 
 **Key Features**:
-- "Publish to Classroom" flow
-- Select target classrooms from teacher's list
-- Published tests appear in classroom's "Tests" tab
-- Unpublish/remake functionality
-- Track which classrooms have the test
-- Students can see and take published tests
+- Working timer with 1-second countdown
+- Auto-submit on timeout
+- Results page with score breakdown
+- Correct/incorrect answer review
+- Progress persistence
+
+**Files to Create/Modify**:
+- New: `ClassroomLive.TestResults`, `test_timer.js` hook
+- Modify: `ClassroomLive.Test`, `Classrooms` context  
+**Log**: [ITERATION-29-classroom-publishing.md](./ITERATION-29-classroom-publishing.md)
+**Depends On**: Iteration 15A, 25, 25B
+
+**Files Created**:
+- ✅ `lib/medoru/classrooms/classroom_test.ex` - Schema for test-classroom links
+- ✅ `priv/repo/migrations/20260312134138_create_classroom_tests.exs` - Migration
+- ✅ `lib/medoru_web/live/teacher/test_live/publish.ex` - Publish UI
+- ✅ `lib/medoru_web/live/classroom_live/test.ex` - Student test taking
+
+**Files Modified**:
+- ✅ `lib/medoru/classrooms.ex` - Added publishing context functions
+- ✅ `lib/medoru_web/live/teacher/test_live/show.ex` - Link to publish page
+- ✅ `lib/medoru_web/live/classroom_live/show.ex` - Display published tests
+- ✅ `lib/medoru_web/router.ex` - Added publish and test routes
+
+**Key Features Implemented**:
+- ✅ **Publish to Classroom flow**: Teachers select classrooms from their list
+- ✅ **Publishing options**: Due dates and max attempts per classroom
+- ✅ **Published tests appear in classroom's "Tests" tab**: Students can see available tests
+- ✅ **Unpublish/Republish functionality**: Soft unpublish with ability to republish
+- ✅ **Track which classrooms have the test**: Displayed in test show page
+- ✅ **Student test taking**: Students can start and complete tests from classroom
+
+**Approved By**: User
 
 ---
 
@@ -464,15 +503,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 20/29 iterations (69%)
+**Completed**: 21/29 iterations (72%)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅ | 6 COMPLETE |
-| 🔴 High | 15, 25-26, 29 | 5 PENDING |
+| 🔴 High | 14 ✅, 15A ✅, 15B ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 29 ✅ | 11 COMPLETE |
+| 🔴 High | 26 | 1 PENDING |
 | 🟡 Medium | 13, 17 ✅, 22 ✅, 24, 27-28 | 5 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **11** | **14-21 days est.** |
+| **Total** | **7** | **10-14 days est.** |
 
 ---
 

@@ -31,6 +31,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     stats = Classrooms.get_classroom_stats(classroom.id)
     members = Classrooms.list_classroom_members(classroom.id)
     pending = Classrooms.list_pending_memberships(classroom.id)
+    published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+    test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
 
     socket
     |> assign(:page_title, classroom.name)
@@ -38,12 +40,29 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:stats, stats)
     |> assign(:members, members)
     |> assign(:pending_memberships, pending)
+    |> assign(:published_tests, published_tests)
+    |> assign(:test_attempts, test_attempts)
     |> assign(:active_tab, "overview")
   end
 
   @impl true
   def handle_params(params, _url, socket) do
     tab = params["tab"] || "overview"
+    
+    # Reload data when switching to tests tab to get fresh attempt statuses
+    socket =
+      if tab == "tests" do
+        classroom = socket.assigns.classroom
+        published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+        test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
+        
+        socket
+        |> assign(:published_tests, published_tests)
+        |> assign(:test_attempts, test_attempts)
+      else
+        socket
+      end
+    
     {:noreply, assign(socket, :active_tab, tab)}
   end
 
@@ -138,6 +157,26 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Failed to close classroom.")}
+    end
+  end
+
+  @impl true
+  def handle_event("reset_test", %{"attempt_id" => attempt_id}, socket) do
+    teacher_id = socket.assigns.current_scope.current_user.id
+    classroom = socket.assigns.classroom
+
+    case Classrooms.reset_test_attempt(attempt_id, teacher_id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(:test_attempts, Classrooms.list_classroom_test_attempts(classroom.id, limit: 100))
+         |> put_flash(:info, "Test reset successfully. Student can now retake it.")}
+
+      {:error, :not_authorized} ->
+        {:noreply, put_flash(socket, :error, "You are not authorized to reset this test.")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to reset test.")}
     end
   end
 
@@ -241,7 +280,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             <% "lessons" -> %>
               <.lessons_tab />
             <% "tests" -> %>
-              <.tests_tab />
+              <.tests_tab
+                published_tests={@published_tests}
+                test_attempts={@test_attempts}
+                current_scope={@current_scope}
+              />
             <% "settings" -> %>
               <.settings_tab classroom={@classroom} />
           <% end %>
@@ -372,14 +415,105 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :published_tests, :list, required: true
+  attr :test_attempts, :list, required: true
+  attr :current_scope, :map, required: true
+
   defp tests_tab(assigns) do
     ~H"""
-    <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-      <.icon name="hero-clipboard-document-list" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-base-content mb-2">Tests Coming Soon</h3>
-      <p class="text-secondary max-w-md mx-auto">
-        In the next iteration, you'll be able to create custom tests for your classroom and view detailed analytics.
-      </p>
+    <div class="space-y-6">
+      <%!-- Published Tests --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title text-base-content mb-4">
+            <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> Published Tests
+          </h3>
+
+          <%= if @published_tests == [] do %>
+            <p class="text-secondary">No tests published to this classroom yet.</p>
+            <.link navigate={~p"/teacher/tests"} class="btn btn-primary btn-sm mt-4">
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Publish a Test
+            </.link>
+          <% else %>
+            <div class="space-y-3">
+              <%= for classroom_test <- @published_tests do %>
+                <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                  <div>
+                    <p class="font-medium text-base-content">{classroom_test.test.title}</p>
+                    <div class="flex gap-4 text-sm text-secondary mt-1">
+                      <span>{classroom_test.test.total_points} points</span>
+                      <%= if classroom_test.due_date do %>
+                        <span>Due: {Calendar.strftime(classroom_test.due_date, "%b %d, %Y")}</span>
+                      <% end %>
+                    </div>
+                  </div>
+                  <span class="badge badge-success badge-sm">Active</span>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%!-- Student Test Attempts --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title text-base-content mb-4">
+            <.icon name="hero-users" class="w-5 h-5" /> Student Attempts
+          </h3>
+
+          <%= if @test_attempts == [] do %>
+            <p class="text-secondary">No test attempts yet.</p>
+          <% else %>
+            <div class="space-y-3">
+              <%= for attempt <- @test_attempts do %>
+                <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-1">
+                      <p class="font-medium text-base-content">{attempt.user.name}</p>
+                      <span class={[
+                        "badge badge-sm",
+                        attempt.status == "completed" && "badge-success",
+                        attempt.status == "in_progress" && "badge-warning",
+                        attempt.status == "timed_out" && "badge-error"
+                      ]}>
+                        {attempt.status |> String.replace("_", " ") |> String.capitalize()}
+                      </span>
+                      <%= if attempt.reset_count > 0 do %>
+                        <span class="badge badge-info badge-sm">
+                          Reset {attempt.reset_count}x
+                        </span>
+                      <% end %>
+                    </div>
+                    <p class="text-sm text-secondary">
+                      {attempt.test.title} • {attempt.score || 0}/{attempt.max_score} points
+                    </p>
+                    <p class="text-xs text-secondary mt-1">
+                      <%= if attempt.completed_at do %>
+                        Completed {format_relative_time(attempt.completed_at)}
+                      <% else %>
+                        Started {format_relative_time(attempt.started_at)}
+                      <% end %>
+                    </p>
+                  </div>
+
+                  <%!-- Reset Button --%>
+                  <%= if attempt.status in ["completed", "timed_out"] do %>
+                    <button
+                      phx-click="reset_test"
+                      phx-value-attempt_id={attempt.id}
+                      data-confirm="Reset this test for {attempt.user.name}? They will be able to retake it."
+                      class="btn btn-warning btn-sm"
+                    >
+                      <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> Reset
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
     </div>
     """
   end

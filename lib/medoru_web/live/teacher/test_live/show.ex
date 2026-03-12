@@ -5,6 +5,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
   use MedoruWeb, :live_view
 
   alias Medoru.Tests
+  alias Medoru.Classrooms
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -19,12 +20,14 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
        |> push_navigate(to: ~p"/teacher/tests")}
     else
       step_count = Tests.count_test_steps(test.id)
+      published_classrooms = Classrooms.list_test_classrooms(test.id, status: nil)
 
       {:ok,
        socket
        |> assign(:page_title, test.title)
        |> assign(:test, test)
        |> assign(:step_count, step_count)
+       |> assign(:published_classrooms, published_classrooms)
        |> assign(:current_user, user)}
     end
   end
@@ -110,9 +113,9 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                     <.icon name="hero-pencil" class="w-4 h-4 mr-2" /> Edit Test
                   </.link>
                 <% "ready" -> %>
-                  <button phx-click="publish" class="btn btn-success">
+                  <.link navigate={~p"/teacher/tests/#{@test.id}/publish"} class="btn btn-success">
                     <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Publish
-                  </button>
+                  </.link>
                   <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-ghost">
                     <.icon name="hero-pencil" class="w-4 h-4" />
                   </.link>
@@ -232,9 +235,48 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                   <p class="text-sm text-base-content mb-4">
                     Your test is complete and ready for students.
                   </p>
-                  <button phx-click="publish" class="btn btn-success btn-block">
+                  <.link
+                    navigate={~p"/teacher/tests/#{@test.id}/publish"}
+                    class="btn btn-success btn-block"
+                  >
                     <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Publish Now
-                  </button>
+                  </.link>
+                </div>
+              </div>
+            <% end %>
+
+            <%!-- Published Classrooms --%>
+            <%= if @published_classrooms != [] do %>
+              <div class="card bg-base-100 border border-base-300 shadow-sm">
+                <div class="card-body">
+                  <h3 class="card-title text-base-content text-base mb-4">
+                    <.icon name="hero-academic-cap" class="w-5 h-5" /> Published To
+                  </h3>
+                  <div class="space-y-2">
+                    <%= for classroom_test <- @published_classrooms do %>
+                      <div class="flex items-center justify-between p-2 bg-base-200 rounded-lg">
+                        <span class="text-sm font-medium truncate">
+                          {classroom_test.classroom.name}
+                        </span>
+                        <span class={[
+                          "badge badge-xs",
+                          classroom_test.status == :active && "badge-success",
+                          classroom_test.status == :unpublished && "badge-warning",
+                          classroom_test.status == :archived && "badge-ghost"
+                        ]}>
+                          {classroom_test.status}
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                  <%= if @test.setup_state in ["ready", "published"] do %>
+                    <.link
+                      navigate={~p"/teacher/tests/#{@test.id}/publish"}
+                      class="btn btn-ghost btn-sm btn-block mt-4"
+                    >
+                      <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> Manage Publishing
+                    </.link>
+                  <% end %>
                 </div>
               </div>
             <% end %>

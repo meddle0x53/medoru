@@ -11,7 +11,7 @@ defmodule Medoru.Classrooms do
   import Ecto.Query, warn: false
   alias Medoru.Repo
 
-  alias Medoru.Classrooms.{Classroom, ClassroomMembership}
+  alias Medoru.Classrooms.{Classroom, ClassroomMembership, ClassroomTest}
   alias Medoru.Notifications
 
   # ============================================================================
@@ -617,6 +617,211 @@ defmodule Medoru.Classrooms do
   end
 
   # ============================================================================
+  # Classroom Test Publishing
+  # ============================================================================
+
+  alias Medoru.Tests
+
+  @doc """
+  Publishes a test to a classroom.
+
+  ## Examples
+
+      iex> publish_test_to_classroom(classroom_id, test_id, teacher_id, %{})
+      {:ok, %ClassroomTest{}}
+
+      iex> publish_test_to_classroom(classroom_id, test_id, teacher_id, %{due_date: ...})
+      {:ok, %ClassroomTest{}}
+
+  """
+  def publish_test_to_classroom(classroom_id, test_id, teacher_id, attrs \\ %{}) do
+    # Verify teacher owns the classroom
+    classroom = get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      attrs =
+        attrs
+        |> Map.put(:classroom_id, classroom_id)
+        |> Map.put(:test_id, test_id)
+        |> Map.put(:published_by_id, teacher_id)
+
+      %ClassroomTest{}
+      |> ClassroomTest.publish_changeset(attrs)
+      |> Repo.insert()
+    end
+  end
+
+  @doc """
+  Unpublishes a test from a classroom (soft unpublish, can be republished).
+
+  ## Examples
+
+      iex> unpublish_test_from_classroom(classroom_test, teacher_id)
+      {:ok, %ClassroomTest{}}
+
+  """
+  def unpublish_test_from_classroom(%ClassroomTest{} = classroom_test, teacher_id) do
+    # Verify teacher owns the classroom
+    classroom = get_classroom!(classroom_test.classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      classroom_test
+      |> ClassroomTest.unpublish_changeset()
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Republishes an unpublished test to a classroom.
+
+  ## Examples
+
+      iex> republish_test_to_classroom(classroom_test, teacher_id)
+      {:ok, %ClassroomTest{}}
+
+  """
+  def republish_test_to_classroom(%ClassroomTest{} = classroom_test, teacher_id) do
+    # Verify teacher owns the classroom
+    classroom = get_classroom!(classroom_test.classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      classroom_test
+      |> ClassroomTest.republish_changeset()
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Gets a classroom test by ID.
+  """
+  def get_classroom_test!(id) do
+    ClassroomTest
+    |> Repo.get!(id)
+    |> Repo.preload([:classroom, :test, :published_by])
+  end
+
+  @doc """
+  Gets a classroom test by classroom and test IDs.
+  Returns nil if not found.
+  """
+  def get_classroom_test(classroom_id, test_id) do
+    ClassroomTest
+    |> where([ct], ct.classroom_id == ^classroom_id and ct.test_id == ^test_id)
+    |> preload([:test])
+    |> Repo.one()
+  end
+
+  @doc """
+  Lists all published tests for a classroom.
+
+  ## Examples
+
+      iex> list_classroom_tests(classroom_id)
+      [%ClassroomTest{}, ...]
+
+  """
+  def list_classroom_tests(classroom_id, opts \\ []) do
+    status = Keyword.get(opts, :status, :active)
+
+    ClassroomTest
+    |> where([ct], ct.classroom_id == ^classroom_id)
+    |> then(fn query ->
+      if status do
+        where(query, [ct], ct.status == ^status)
+      else
+        query
+      end
+    end)
+    |> order_by([ct], desc: ct.published_at)
+    |> preload([:test])
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all classrooms a test is published to.
+
+  ## Examples
+
+      iex> list_test_classrooms(test_id)
+      [%ClassroomTest{}, ...]
+
+  """
+  def list_test_classrooms(test_id, opts \\ []) do
+    status = Keyword.get(opts, :status, :active)
+
+    ClassroomTest
+    |> where([ct], ct.test_id == ^test_id)
+    |> then(fn query ->
+      if status do
+        where(query, [ct], ct.status == ^status)
+      else
+        query
+      end
+    end)
+    |> order_by([ct], desc: ct.published_at)
+    |> preload([:classroom])
+    |> Repo.all()
+  end
+
+  @doc """
+  Checks if a test is published to a specific classroom.
+
+  ## Examples
+
+      iex> test_published_to_classroom?(classroom_id, test_id)
+      true
+
+  """
+  def test_published_to_classroom?(classroom_id, test_id) do
+    ClassroomTest
+    |> where([ct], ct.classroom_id == ^classroom_id and ct.test_id == ^test_id)
+    |> where([ct], ct.status == :active)
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Gets publish status for a test across all teacher's classrooms.
+  Returns a map of classroom_id => classroom_test status.
+
+  ## Examples
+
+      iex> get_test_publish_status(test_id, teacher_id)
+      %{classroom_id_1 => :active, classroom_id_2 => :unpublished, ...}
+
+  """
+  def get_test_publish_status(test_id, teacher_id) do
+    # Get all teacher's classrooms
+    teacher_classrooms = list_teacher_classrooms(teacher_id)
+    classroom_ids = Enum.map(teacher_classrooms, & &1.id)
+
+    if classroom_ids == [] do
+      %{}
+    else
+      # Get all published records for this test in teacher's classrooms
+      published =
+        ClassroomTest
+        |> where([ct], ct.test_id == ^test_id)
+        |> where([ct], ct.classroom_id in ^classroom_ids)
+        |> select([ct], {ct.classroom_id, ct.status})
+        |> Repo.all()
+        |> Map.new()
+
+      # Build status map for all classrooms
+      teacher_classrooms
+      |> Map.new(fn classroom ->
+        status = Map.get(published, classroom.id, :not_published)
+        {classroom.id, %{status: status, classroom: classroom}}
+      end)
+    end
+  end
+
+  # ============================================================================
   # Test Attempts Management
   # ============================================================================
 
@@ -666,13 +871,14 @@ defmodule Medoru.Classrooms do
   @doc """
   Starts a new test attempt for a user.
   """
-  def start_test_attempt(classroom_id, user_id, test_id, time_limit_seconds) do
+  def start_test_attempt(classroom_id, user_id, test_id, time_limit_seconds, max_score) do
     if can_take_test?(classroom_id, user_id, test_id) do
       attrs = %{
         classroom_id: classroom_id,
         user_id: user_id,
         test_id: test_id,
         time_limit_seconds: time_limit_seconds,
+        max_score: max_score,
         started_at: DateTime.utc_now(),
         status: "in_progress"
       }

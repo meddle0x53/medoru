@@ -340,7 +340,9 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
     } do
       # Create a kanji first (on readings should be katakana)
       kanji = kanji_fixture(%{character: "日", meanings: ["sun", "day"], stroke_count: 4})
-      _reading = kanji_reading_fixture(kanji.id, %{reading: "ニチ", reading_type: :on, romaji: "nichi"})
+
+      _reading =
+        kanji_reading_fixture(kanji.id, %{reading: "ニチ", reading_type: :on, romaji: "nichi"})
 
       {:ok, view, _html} =
         conn
@@ -639,7 +641,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
 
       # Reload test to get updated stats
       teacher_test = Tests.get_test!(teacher_test.id)
-      
+
       {:ok, _view, html} =
         conn
         |> log_in_user(teacher)
