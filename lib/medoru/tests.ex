@@ -703,6 +703,20 @@ defmodule Medoru.Tests do
   end
 
   @doc """
+  Completes a test session by setting its status to :completed.
+  Used when a teacher resets a test attempt.
+  """
+  def complete_test_session(session_id) do
+    case Repo.get(TestSession, session_id) do
+      nil -> {:ok, nil}
+      session ->
+        session
+        |> TestSession.reset_changeset()
+        |> Repo.update()
+    end
+  end
+
+  @doc """
   Gets the active (incomplete) test session for a user on a specific test.
 
   ## Examples
@@ -747,7 +761,8 @@ defmodule Medoru.Tests do
   @doc """
   Starts a new test session for a user.
 
-  If an active session already exists, returns that session.
+  If an active session already exists with no answers, returns that session.
+  If an active session exists with answers (reset test), completes it and creates new.
 
   ## Examples
 
@@ -773,7 +788,38 @@ defmodule Medoru.Tests do
         |> Repo.insert()
 
       existing_session ->
-        {:ok, existing_session}
+        # Check if session has existing answers (from a reset test)
+        has_answers =
+          TestStepAnswer
+          |> where([a], a.test_session_id == ^existing_session.id)
+          |> Repo.exists?()
+
+        if has_answers do
+          # Delete old answers first to avoid constraint issues
+          TestStepAnswer
+          |> where([a], a.test_session_id == ^existing_session.id)
+          |> Repo.delete_all()
+
+          # Complete the old session
+          existing_session
+          |> TestSession.reset_changeset()
+          |> Repo.update()
+
+          test = get_test!(test_id)
+
+          attrs = %{
+            user_id: user_id,
+            test_id: test_id,
+            total_possible: test.total_points,
+            current_step_index: 0
+          }
+
+          %TestSession{}
+          |> TestSession.start_changeset(attrs)
+          |> Repo.insert()
+        else
+          {:ok, existing_session}
+        end
     end
   end
 

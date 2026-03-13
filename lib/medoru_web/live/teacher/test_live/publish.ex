@@ -45,7 +45,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
     # Get actual classroom test records for published/unpublished
     classroom_tests = Classrooms.list_test_classrooms(test.id, status: nil)
-    
+
     # Build a map of classroom_id => classroom_test for easy lookup
     classroom_tests_map =
       Enum.reduce(classroom_tests, %{}, fn ct, acc ->
@@ -364,7 +364,8 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                               <span class="flex items-center gap-1">
                                 <.icon name="hero-arrow-path" class="w-4 h-4" />
                                 {classroom_test.max_attempts} attempt{if classroom_test.max_attempts !=
-                                                                           1, do: "s"}
+                                                                           1,
+                                                                         do: "s"}
                               </span>
                             <% end %>
                           </div>

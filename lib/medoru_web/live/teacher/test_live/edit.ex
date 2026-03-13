@@ -16,6 +16,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   alias Medoru.Tests.TestStep
   alias Medoru.Content
   alias MedoruWeb.StepBuilderComponents
+  alias Ecto.Changeset
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -54,6 +55,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:available_kanji, [])
           |> assign(:kanji_search_query, "")
           |> assign(:search_type, nil)
+          |> assign(:new_option_text, "")
 
         {:ok, socket}
       end
@@ -89,7 +91,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       "points" => TestStep.default_points(type)
     }
 
-    changeset = TestStep.changeset(%TestStep{}, attrs)
+    # Create changeset WITHOUT running validations for initial form display
+    changeset =
+      %TestStep{}
+      |> Changeset.cast(attrs, [
+        :order_index,
+        :step_type,
+        :question_type,
+        :points
+      ])
 
     socket =
       socket
@@ -104,6 +114,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:kanji_search_query, "")
       |> assign(:available_kanji, [])
       |> assign(:search_type, nil)
+      |> assign(:new_option_text, "")
 
     {:noreply, socket}
   end
@@ -114,7 +125,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      socket
      |> assign(:show_step_form, false)
      |> assign(:step_changeset, nil)
-     |> assign(:step_form, nil)}
+     |> assign(:step_form, nil)
+     |> assign(:new_option_text, "")}
   end
 
   @impl true
@@ -155,6 +167,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          |> assign(:show_step_form, false)
          |> assign(:step_changeset, nil)
          |> assign(:step_form, nil)
+         |> assign(:new_option_text, "")
          |> put_flash(:info, "Step added successfully.")}
 
       {:error, changeset} ->
@@ -179,7 +192,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
        |> assign(:editing_step, step)
        |> assign(:step_changeset, changeset)
        |> assign(:step_form, to_form(changeset))
-       |> assign(:step_type, step.question_type)}
+       |> assign(:step_type, step.question_type)
+       |> assign(:new_option_text, "")}
     else
       {:noreply, put_flash(socket, :error, "Step not found.")}
     end
@@ -277,6 +291,157 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   end
 
   @impl true
+  def handle_event("add_option", _params, socket) do
+    value = socket.assigns.new_option_text
+    trimmed = String.trim(value)
+
+    if trimmed == "" do
+      {:noreply, socket}
+    else
+      current_form = socket.assigns.step_form
+      existing_options = current_form[:options].value || []
+      correct_answer = current_form[:correct_answer].value
+
+      # Don't add if already exists (case-insensitive check)
+      already_exists =
+        Enum.any?(existing_options, fn opt ->
+          String.downcase(String.trim(opt)) == String.downcase(trimmed)
+        end)
+
+      if already_exists do
+        socket =
+          socket
+          |> assign(:new_option_text, "")
+          |> put_flash(:error, "This option already exists.")
+
+        # Schedule flash clear after 5 seconds
+        Process.send_after(self(), :clear_flash, 5000)
+
+        {:noreply, push_event(socket, "clear_option_input", %{})}
+      else
+        # Add new option (wrong answer)
+        new_options = existing_options ++ [trimmed]
+
+        updated_params = %{
+          "question" => current_form[:question].value,
+          "correct_answer" => correct_answer,
+          "word_id" => current_form[:word_id].value,
+          "options" => new_options,
+          "hints" => current_form[:hints].value,
+          "explanation" => current_form[:explanation].value,
+          "kanji_id" => current_form[:kanji_id].value
+        }
+
+        changeset =
+          %TestStep{}
+          |> TestStep.changeset(updated_params)
+          |> Map.put(:action, :validate)
+
+        socket =
+          socket
+          |> assign(:step_changeset, changeset)
+          |> assign(:step_form, to_form(changeset, as: :step))
+          |> assign(:new_option_text, "")
+
+        {:noreply, push_event(socket, "clear_option_input", %{})}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("remove_option", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+    current_form = socket.assigns.step_form
+    existing_options = current_form[:options].value || []
+
+    # Remove option at index
+    new_options = List.delete_at(existing_options, index)
+
+    updated_params = %{
+      "question" => current_form[:question].value,
+      "correct_answer" => current_form[:correct_answer].value,
+      "word_id" => current_form[:word_id].value,
+      "options" => new_options,
+      "hints" => current_form[:hints].value,
+      "explanation" => current_form[:explanation].value,
+      "kanji_id" => current_form[:kanji_id].value
+    }
+
+    changeset =
+      %TestStep{}
+      |> TestStep.changeset(updated_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event("update_new_option", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :new_option_text, value)}
+  end
+
+  @impl true
+  def handle_event("update_correct_answer", %{"value" => new_answer}, socket) do
+    current_form = socket.assigns.step_form
+    existing_options = current_form[:options].value || []
+    old_answer = current_form[:correct_answer].value
+
+    new_answer_trimmed = String.trim(new_answer)
+    old_answer_trimmed = if old_answer, do: String.trim(old_answer), else: ""
+
+    # Only update if the answer has actually changed
+    if new_answer_trimmed == "" or new_answer_trimmed == old_answer_trimmed do
+      {:noreply, socket}
+    else
+      # Replace old correct answer with new one in the options list
+      updated_options =
+        existing_options
+        |> Enum.map(fn opt ->
+          if String.trim(opt) == old_answer_trimmed do
+            new_answer_trimmed
+          else
+            opt
+          end
+        end)
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.uniq_by(&String.downcase(String.trim(&1)))
+
+      # Ensure new answer is in options if it wasn't there
+      updated_options =
+        if Enum.any?(updated_options, fn opt ->
+             String.downcase(String.trim(opt)) == String.downcase(new_answer_trimmed)
+           end) do
+          updated_options
+        else
+          [new_answer_trimmed | updated_options]
+        end
+
+      updated_params = %{
+        "question" => current_form[:question].value,
+        "correct_answer" => new_answer_trimmed,
+        "word_id" => current_form[:word_id].value,
+        "options" => updated_options,
+        "hints" => current_form[:hints].value,
+        "explanation" => current_form[:explanation].value,
+        "kanji_id" => current_form[:kanji_id].value
+      }
+
+      changeset =
+        %TestStep{}
+        |> TestStep.changeset(updated_params)
+        |> Map.put(:action, :validate)
+
+      {:noreply,
+       socket
+       |> assign(:step_changeset, changeset)
+       |> assign(:step_form, to_form(changeset, as: :step))}
+    end
+  end
+
+  @impl true
   def handle_event("search_words", %{"value" => query}, socket) do
     words =
       if String.length(query) >= 1 do
@@ -320,18 +485,31 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           {"What is the meaning of \"#{word.text}\"?", word.meaning}
       end
 
-    # For multichoice, ensure correct_answer is in options
+    # For multichoice, ensure correct_answer is in options and trimmed
+    trimmed_answer = String.trim(correct_answer)
     existing_options = current_form[:options].value || []
+
+    # Clean up existing options - remove empty strings and the old correct answer if any
+    cleaned_options =
+      existing_options
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
     options =
-      if step_type == :multichoice and correct_answer not in existing_options do
-        [correct_answer | existing_options]
+      if step_type == :multichoice do
+        # Don't duplicate if already exists
+        if trimmed_answer in cleaned_options do
+          cleaned_options
+        else
+          [trimmed_answer | cleaned_options]
+        end
       else
-        existing_options
+        cleaned_options
       end
 
     updated_params = %{
       "question" => question,
-      "correct_answer" => correct_answer,
+      "correct_answer" => trimmed_answer,
       "word_id" => word_id,
       "options" => options,
       "hints" => current_form[:hints].value,
@@ -396,7 +574,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
     updated_params = %{
       "question" => "Draw the kanji for \"#{target_meaning}\"",
-      "correct_answer" => kanji.character,
+      "correct_answer" => String.trim(kanji.character),
       "kanji_id" => kanji_id,
       "hints" => [],
       "explanation" => readings_text
@@ -413,6 +591,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:step_form, to_form(changeset, as: :step))
      |> assign(:kanji_search_query, "")
      |> assign(:available_kanji, [])}
+  end
+
+  @impl true
+  def handle_info(:clear_flash, socket) do
+    {:noreply, clear_flash(socket)}
   end
 
   @impl true
@@ -629,22 +812,112 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     field={@step_form[:correct_answer]}
                     type="text"
                     placeholder="Enter the correct answer..."
+                    phx-keyup="update_correct_answer"
+                    phx-debounce="3000"
                   />
+                  <p class="text-xs text-secondary mt-1">
+                    Changes will update the correct option after 3 seconds of inactivity.
+                  </p>
                 </div>
 
                 <%!-- Options for multichoice --%>
                 <%= if @step_type == :multichoice do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      Answer Options (one per line, include correct answer)
+                      Answer Options
+                      <span class="text-xs text-secondary ml-2">(4-8 options required)</span>
                     </label>
+
+                    <% options = @step_form[:options].value || [] %>
+                    <% correct = @step_form[:correct_answer].value %>
+                    <% correct_trimmed = if correct, do: String.trim(correct), else: "" %>
+
+                    <%!-- Options as tags --%>
+                    <div class="flex flex-wrap gap-2 mb-3 min-h-[40px] p-3 bg-base-200 rounded-lg">
+                      <%!-- Correct answer tag (not removable) --%>
+                      <%= if correct_trimmed != "" do %>
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-success/20 text-success border border-success/30 rounded-lg">
+                          <.icon name="hero-check-circle" class="w-4 h-4" />
+                          <span class="font-medium">{correct_trimmed}</span>
+                          <span class="text-xs opacity-70">(correct)</span>
+                        </div>
+                      <% end %>
+
+                      <%!-- Wrong answer tags (removable) --%>
+                      <%= for {option, index} <- Enum.with_index(options) do %>
+                        <% trimmed = if is_binary(option), do: String.trim(option), else: "" %>
+                        <% is_correct = correct_trimmed == trimmed %>
+                        <%= if not is_correct and trimmed != "" do %>
+                          <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg group">
+                            <span>{trimmed}</span>
+                            <button
+                              type="button"
+                              phx-click="remove_option"
+                              phx-value-index={index}
+                              class="text-secondary hover:text-error transition-colors"
+                              title="Remove option"
+                            >
+                              <.icon name="hero-x-mark" class="w-4 h-4" />
+                            </button>
+                          </div>
+                        <% end %>
+                      <% end %>
+
+                      <%!-- Empty state --%>
+                      <%= if length(options) < 4 do %>
+                        <span class="text-sm text-secondary italic">
+                          Add {4 - length(options)} more option(s)
+                        </span>
+                      <% end %>
+                    </div>
+
+                    <%!-- Add new option input --%>
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        id="new-option-input"
+                        value={@new_option_text}
+                        phx-keyup="update_new_option"
+                        phx-hook="OptionInput"
+                        class="input input-bordered flex-1"
+                        placeholder="Type a wrong answer and press Enter..."
+                      />
+                      <button
+                        type="button"
+                        phx-click="add_option"
+                        disabled={String.trim(@new_option_text) == ""}
+                        class="btn btn-outline btn-sm"
+                      >
+                        <.icon name="hero-plus" class="w-4 h-4" /> Add
+                      </button>
+                    </div>
+
+                    <%!-- Validation messages --%>
+                    <%= if @step_changeset && @step_changeset.errors[:options] do %>
+                      <p class="text-error text-sm mt-2">
+                        {elem(@step_changeset.errors[:options], 0)}
+                      </p>
+                    <% end %>
+                    <%= if @step_changeset && @step_changeset.errors[:correct_answer] do %>
+                      <p class="text-error text-sm mt-2">
+                        {elem(@step_changeset.errors[:correct_answer], 0)}
+                      </p>
+                    <% end %>
+
+                    <%!-- Textarea for form submission ( visually hidden but functionally present) --%>
+                    <% all_options =
+                      if correct_trimmed != "",
+                        do: [
+                          correct_trimmed
+                          | Enum.reject(options, &(String.trim(&1) == correct_trimmed))
+                        ],
+                        else: options %>
                     <textarea
                       name="step[options]"
-                      rows="4"
-                      class="textarea textarea-bordered w-full"
-                      placeholder="Option 1&#10;Option 2&#10;Option 3&#10;Option 4"
-                    >
-                    <%= format_options(@step_form[:options].value) %></textarea>
+                      class="sr-only"
+                      aria-hidden="true"
+                      readonly
+                    >{format_options_for_submission(all_options)}</textarea>
                   </div>
                 <% end %>
 
@@ -706,9 +979,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp format_question_type(:writing), do: "Writing"
   defp format_question_type(other), do: to_string(other)
 
-  defp format_options(nil), do: ""
-  defp format_options(options) when is_list(options), do: Enum.join(options, "\n")
-  defp format_options(_), do: ""
+  defp format_options_for_submission(options) when is_list(options) do
+    options
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n")
+  end
+
+  defp format_options_for_submission(_), do: ""
 
   defp parse_options_from_params(%{"options" => options_text} = params)
        when is_binary(options_text) do
@@ -735,7 +1013,16 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     Map.put(params, "hints", hints)
   end
 
-  defp parse_options_from_params(params), do: params
+  defp parse_options_from_params(params) do
+    # Ensure correct_answer is always trimmed
+    params =
+      case Map.get(params, "correct_answer") do
+        nil -> params
+        answer -> Map.put(params, "correct_answer", String.trim(answer))
+      end
+
+    params
+  end
 
   # Detects if the search query is hiragana/katakana (reading search) or English (meaning search)
   defp detect_search_type(""), do: nil

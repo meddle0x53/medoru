@@ -382,7 +382,12 @@ defmodule Medoru.TestsTest do
     end
 
     test "record_step_answer/3 applies penalties for hints", %{step: step, session: session} do
-      attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0, "hints_used" => 1}
+      attrs = %{
+        "answer" => "Japan",
+        "time_spent_seconds" => 30,
+        "step_index" => 0,
+        "hints_used" => 1
+      }
 
       assert {:ok, %TestStepAnswer{} = answer} =
                Tests.record_step_answer(session.id, step.id, attrs)

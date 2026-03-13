@@ -49,7 +49,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
         cond do
           # Has an in-progress attempt - resume it
           existing_attempt && existing_attempt.status == "in_progress" ->
-            resume_test_session(socket, existing_attempt, classroom_test, classroom_id, test_id, user)
+            resume_test_session(
+              socket,
+              existing_attempt,
+              classroom_test,
+              classroom_id,
+              test_id,
+              user
+            )
 
           # Has a completed attempt and can't retake
           existing_attempt && existing_attempt.status in ["completed", "timed_out"] &&
@@ -66,37 +73,74 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
-  defp resume_test_session(socket, attempt, _classroom_test, classroom_id, test_id, _user) do
+  defp resume_test_session(socket, attempt, classroom_test, classroom_id, test_id, user) do
     test = Tests.get_test!(test_id)
     classroom = Classrooms.get_classroom!(classroom_id)
 
-    # Get existing test session
-    case Tests.get_test_session(attempt.test_session_id) do
-      nil ->
-        # Session not found, start fresh
-        start_new_test_session(socket, %{}, classroom_id, test_id, %{id: attempt.user_id})
+    # Check if we have a valid session to resume
+    session =
+      if attempt.test_session_id do
+        Tests.get_test_session(attempt.test_session_id)
+      else
+        nil
+      end
 
-      session ->
-        steps = Tests.list_test_steps(test_id)
+    if is_nil(session) do
+      # No session - start a new one for this reset attempt
+      # First link the attempt to a new session
+      case Tests.start_test_session(user.id, test_id) do
+        {:ok, new_session} ->
+          # Update attempt with new session
+          {:ok, updated_attempt} =
+            attempt
+            |> Ecto.Changeset.change(test_session_id: new_session.id)
+            |> Medoru.Repo.update()
 
-        # Calculate current step index from session
-        current_step_index = session.current_step_index || 0
-        current_step = Enum.at(steps, current_step_index)
+          steps = Tests.list_test_steps(test_id)
+          first_step = List.first(steps)
 
-        {:ok,
-         socket
-         |> assign(:page_title, test.title)
-         |> assign(:classroom, classroom)
-         |> assign(:test, test)
-         |> assign(:attempt, attempt)
-         |> assign(:session, session)
-         |> assign(:steps, steps)
-         |> assign(:current_step_index, current_step_index)
-         |> assign(:current_step, current_step)
-         |> assign(:total_steps, length(steps))
-         |> assign(:time_remaining, attempt.time_remaining_seconds)
-         |> assign(:answer, "")
-         |> assign(:show_hint, false)}
+          {:ok,
+           socket
+           |> assign(:page_title, test.title)
+           |> assign(:classroom, classroom)
+           |> assign(:test, test)
+           |> assign(:attempt, updated_attempt)
+           |> assign(:session, new_session)
+           |> assign(:steps, steps)
+           |> assign(:current_step_index, 0)
+           |> assign(:current_step, first_step)
+           |> assign(:total_steps, length(steps))
+           |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
+           |> assign(:answer, "")
+           |> assign(:show_hint, false)}
+
+        {:error, _} ->
+          {:ok,
+           socket
+           |> put_flash(:error, "Failed to start test session.")
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+      end
+    else
+      steps = Tests.list_test_steps(test_id)
+
+      # Calculate current step index from session
+      current_step_index = session.current_step_index || 0
+      current_step = Enum.at(steps, current_step_index)
+
+      {:ok,
+       socket
+       |> assign(:page_title, test.title)
+       |> assign(:classroom, classroom)
+       |> assign(:test, test)
+       |> assign(:attempt, attempt)
+       |> assign(:session, session)
+       |> assign(:steps, steps)
+       |> assign(:current_step_index, current_step_index)
+       |> assign(:current_step, current_step)
+       |> assign(:total_steps, length(steps))
+       |> assign(:time_remaining, attempt.time_remaining_seconds)
+       |> assign(:answer, "")
+       |> assign(:show_hint, false)}
     end
   end
 
@@ -119,10 +163,11 @@ defmodule MedoruWeb.ClassroomLive.Test do
         # Create a test session for the attempt
         case Tests.start_test_session(user.id, test_id) do
           {:ok, session} ->
-            # Link attempt to session
-            attempt
-            |> Ecto.Changeset.change(test_session_id: session.id)
-            |> Medoru.Repo.update()
+            # Link attempt to session and reload
+            {:ok, updated_attempt} =
+              attempt
+              |> Ecto.Changeset.change(test_session_id: session.id)
+              |> Medoru.Repo.update()
 
             steps = Tests.list_test_steps(test_id)
             first_step = List.first(steps)
@@ -132,13 +177,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:page_title, test.title)
              |> assign(:classroom, classroom)
              |> assign(:test, test)
-             |> assign(:attempt, attempt)
+             |> assign(:attempt, updated_attempt)
              |> assign(:session, session)
              |> assign(:steps, steps)
              |> assign(:current_step_index, 0)
              |> assign(:current_step, first_step)
              |> assign(:total_steps, length(steps))
-             |> assign(:time_remaining, attempt.time_remaining_seconds)
+             |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
              |> assign(:answer, "")
              |> assign(:show_hint, false)}
 
@@ -213,21 +258,24 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
-  def handle_event("tick", _, socket) do
+  def handle_event("time_up", _, socket) do
+    # Timer ran out - auto-submit the test
+    auto_submit_test(socket)
+  end
+
+  @impl true
+  def handle_event("sync_time", %{"time_remaining" => time_remaining}, socket) do
+    # Periodic sync from client-side timer - update DB but don't re-render
     attempt = socket.assigns.attempt
-    new_time = attempt.time_remaining_seconds - 1
 
-    if new_time <= 0 do
-      # Time's up - auto-submit
-      auto_submit_test(socket)
-    else
-      # Update time remaining
+    Task.start(fn ->
       Classrooms.update_test_progress(attempt.id, %{
-        time_remaining_seconds: new_time
+        time_remaining_seconds: time_remaining
       })
+    end)
 
-      {:noreply, assign(socket, :time_remaining, new_time)}
-    end
+    # Silently update server state without triggering re-render
+    {:noreply, socket}
   end
 
   defp complete_test(socket, session_id, attempt_id) do
@@ -249,8 +297,10 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:ok, _attempt} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Test completed! You scored #{score}/#{max_score} points.")
-         |> push_navigate(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=tests")}
+         |> push_navigate(
+           to:
+             ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Failed to complete test.")}
@@ -278,7 +328,10 @@ defmodule MedoruWeb.ClassroomLive.Test do
         {:noreply,
          socket
          |> put_flash(:warning, "Time's up! Your test was auto-submitted.")
-         |> push_navigate(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=tests")}
+         |> push_navigate(
+           to:
+             ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Failed to submit test.")}
@@ -303,15 +356,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
             <p class="text-secondary text-sm">{@classroom.name}</p>
           </div>
 
-          <%!-- Timer --%>
+          <%!-- Timer - updated by JS hook to avoid re-rendering form --%>
           <div class="flex items-center gap-2 bg-base-200 px-4 py-2 rounded-lg">
             <.icon name="hero-clock" class="w-5 h-5 text-secondary" />
-            <span class={[
-              "font-mono text-lg font-bold",
-              @time_remaining < 60 && "text-error",
-              @time_remaining >= 60 && @time_remaining < 300 && "text-warning",
-              @time_remaining >= 300 && "text-base-content"
-            ]}>
+            <span
+              id="timer-display"
+              class="font-mono text-lg font-bold text-base-content"
+              phx-update="ignore"
+            >
               {format_time(@time_remaining)}
             </span>
           </div>
@@ -427,8 +479,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
       </div>
     </Layouts.app>
 
-    <%!-- Timer Tick --%>
-    <div phx-hook="Timer" id="test-timer" data-interval="1000" />
+    <%!-- Timer Hook - handles countdown client-side --%>
+    <div
+      phx-hook="Timer"
+      id="test-timer"
+      data-time-remaining={@time_remaining}
+      data-sync-interval="10"
+    />
     """
   end
 

@@ -125,18 +125,47 @@ defmodule Medoru.Tests.TestStep do
 
   defp validate_multichoice_options(changeset) do
     question_type = get_field(changeset, :question_type)
-    options = get_field(changeset, :options)
+    options = get_field(changeset, :options) || []
+    correct_answer = get_field(changeset, :correct_answer)
 
     case question_type do
       :multichoice ->
-        if is_nil(options) or length(options) < 2 do
-          add_error(changeset, :options, "multiple choice questions need at least 2 options")
-        else
-          changeset
-        end
+        changeset
+        |> validate_multichoice_count(options)
+        |> validate_correct_answer_in_options(options, correct_answer)
 
       _ ->
         changeset
+    end
+  end
+
+  defp validate_multichoice_count(changeset, options) do
+    count = length(options)
+
+    cond do
+      count < 4 ->
+        add_error(changeset, :options, "multiple choice questions need at least 4 options")
+
+      count > 8 ->
+        add_error(changeset, :options, "multiple choice questions can have at most 8 options")
+
+      true ->
+        changeset
+    end
+  end
+
+  defp validate_correct_answer_in_options(changeset, options, correct_answer) do
+    if is_nil(correct_answer) or String.trim(correct_answer) == "" do
+      add_error(changeset, :correct_answer, "correct answer is required")
+    else
+      trimmed_answer = String.trim(correct_answer)
+      trimmed_options = Enum.map(options, &String.trim/1)
+
+      if trimmed_answer not in trimmed_options do
+        add_error(changeset, :correct_answer, "correct answer must be one of the options")
+      else
+        changeset
+      end
     end
   end
 end

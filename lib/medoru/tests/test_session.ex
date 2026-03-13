@@ -147,6 +147,19 @@ defmodule Medoru.Tests.TestSession do
     )
   end
 
+  @doc """
+  Changeset for resetting a test session (marking as completed so new session can be created).
+  """
+  def reset_changeset(test_session) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    test_session
+    |> change(
+      status: :completed,
+      completed_at: now
+    )
+  end
+
   defp calculate_percentage(changeset) do
     score = get_field(changeset, :score)
     total = get_field(changeset, :total_possible)

@@ -389,7 +389,6 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       >
                         <.icon name="hero-play" class="w-4 h-4 mr-1" /> Start Test
                       </.link>
-                    
                     <% :in_progress -> %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
@@ -397,10 +396,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       >
                         <.icon name="hero-play" class="w-4 h-4 mr-1" /> Continue
                       </.link>
-                    
                     <% :completed -> %>
-                      <span class="badge badge-success">Completed {attempt.score}/{attempt.max_score}</span>
-                    
+                      <span class="badge badge-success">
+                        Completed {attempt.score}/{attempt.max_score}
+                      </span>
                     <% :timed_out -> %>
                       <span class="badge badge-error">Timed Out</span>
                   <% end %>

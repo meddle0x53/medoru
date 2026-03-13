@@ -142,6 +142,7 @@ defmodule MedoruWeb.Router do
       live "/:id", ClassroomLive.Show
       live "/:id/rankings", ClassroomLive.Rankings
       live "/:id/tests/:test_id", ClassroomLive.Test
+      live "/:id/tests/:test_id/results", ClassroomLive.TestResults
     end
   end
 

@@ -116,7 +116,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> element("button[phx-value-type='multichoice']")
       |> render_click()
 
-      # Fill in the form
+      # Fill in the form with options (hidden field still accepts newline-separated values)
       view
       |> form("form", %{
         "step" => %{
@@ -275,7 +275,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> element("button[phx-value-type='multichoice']")
       |> render_click()
 
-      # Submit the form with all fields at once
+      # Submit the form with all fields at once (using hidden options field)
       view
       |> form("form", %{
         "step" => %{
@@ -300,7 +300,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
     end
 
     test "deletes a step", %{conn: conn, teacher: teacher, teacher_test: teacher_test} do
-      # Create a step first
+      # Create a step first (minimum 4 options now)
       {:ok, step} =
         Tests.create_test_step(teacher_test, %{
           order_index: 0,
@@ -308,7 +308,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :multichoice,
           question: "Test question?",
           correct_answer: "Answer",
-          options: ["Answer", "Wrong 1", "Wrong 2"],
+          options: ["Answer", "Wrong 1", "Wrong 2", "Wrong 3"],
           points: 1
         })
 
@@ -425,9 +425,11 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
       |> render_click()
 
-      # Submit and verify question is about meaning
+      # Submit and verify question is about meaning (need 4 options)
       view
-      |> form("form", %{"step" => %{"options" => "Japan\nChina\nKorea"}})
+      |> form("form", %{
+        "step" => %{"correct_answer" => "Japan", "options" => "Japan\nChina\nKorea\nVietnam"}
+      })
       |> render_submit()
 
       steps = Tests.list_test_steps(teacher_test.id)
@@ -472,9 +474,9 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
       |> render_click()
 
-      # Submit and verify question is about reading
+      # Submit and verify question is about reading (need 4 options)
       view
-      |> form("form", %{"step" => %{"options" => "日本\n中国\n韓国"}})
+      |> form("form", %{"step" => %{"correct_answer" => "日本", "options" => "日本\n中国\n韓国\nアメリカ"}})
       |> render_submit()
 
       steps = Tests.list_test_steps(teacher_test.id)
@@ -526,7 +528,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       teacher: teacher,
       teacher_test: teacher_test
     } do
-      # Create two steps
+      # Create two steps (minimum 4 options now)
       {:ok, step1} =
         Tests.create_test_step(teacher_test, %{
           order_index: 0,
@@ -534,7 +536,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :multichoice,
           question: "First question?",
           correct_answer: "Answer 1",
-          options: ["Answer 1", "Wrong 1"],
+          options: ["Answer 1", "Wrong 1a", "Wrong 1b", "Wrong 1c"],
           points: 1
         })
 
@@ -545,7 +547,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :multichoice,
           question: "Second question?",
           correct_answer: "Answer 2",
-          options: ["Answer 2", "Wrong 2"],
+          options: ["Answer 2", "Wrong 2a", "Wrong 2b", "Wrong 2c"],
           points: 1
         })
 
@@ -568,7 +570,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       teacher: teacher,
       teacher_test: teacher_test
     } do
-      # Create a step first
+      # Create a step first (minimum 4 options now)
       {:ok, _step} =
         Tests.create_test_step(teacher_test, %{
           order_index: 0,
@@ -576,7 +578,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :multichoice,
           question: "Test question?",
           correct_answer: "Answer",
-          options: ["Answer", "Wrong 1", "Wrong 2"],
+          options: ["Answer", "Wrong 1", "Wrong 2", "Wrong 3"],
           points: 1
         })
 
@@ -617,7 +619,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       teacher: teacher,
       teacher_test: teacher_test
     } do
-      # Create steps
+      # Create steps (minimum 4 options now)
       {:ok, _step1} =
         Tests.create_test_step(teacher_test, %{
           order_index: 0,
@@ -625,7 +627,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :multichoice,
           question: "Question 1?",
           correct_answer: "Answer",
-          options: ["Answer", "Wrong"],
+          options: ["Answer", "Wrong 1", "Wrong 2", "Wrong 3"],
           points: 1
         })
 

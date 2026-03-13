@@ -370,6 +370,87 @@ defmodule Medoru.ContentTest do
       assert Enum.map(words, & &1.id) |> Enum.member?(word_with_kanji.id)
     end
 
+    test "search_words/2 returns exact match 'blue' before phrases containing 'blue'" do
+      # Create the exact match word "blue" (青い) - HIGH frequency
+      blue_exact = word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 5000})
+
+      # Create phrases containing "blue" that should rank lower - but with even HIGHER frequency
+      # This simulates the real-world scenario where common phrases might outrank the base word
+      _navy_blue = word_fixture(%{text: "紺碧", meaning: "navy blue", reading: "こんぺき", usage_frequency: 10000})
+      _dark_blue = word_fixture(%{text: "紺色", meaning: "dark blue", reading: "こんいろ", usage_frequency: 8000})
+      _blue_sky = word_fixture(%{text: "青空", meaning: "blue sky", reading: "あおぞら", usage_frequency: 9000})
+
+      # Search for "blue" with limit: 10 like the LiveView does
+      results = Content.search_words("blue", limit: 10)
+
+      # The exact match "blue" should be first, even though phrases have higher usage_frequency
+      assert length(results) >= 4
+      first_result = hd(results)
+
+      # The exact match "blue" should be first
+      assert first_result.id == blue_exact.id,
+             "Expected exact match 'blue' to be first, but got '#{first_result.meaning}'"
+      assert first_result.meaning == "blue"
+    end
+
+    test "search_words/2 with limit 10 returns exact match even when DB has many words" do
+      # Create many words with "blue" in their meaning but with higher frequencies
+      # This simulates a populated database
+      variants = [
+        {"紺青", "dark blue", "こんじょう"},
+        {"水色", "light blue", "みずいろ"},
+        {"空色", "sky blue", "そらいろ"},
+        {"藍色", "indigo blue", "あいいろ"},
+        {"蔚", "azure blue", "あお"},
+        {"碧", "blue green", "あお"},
+        {"蒼", "pale blue", "あお"},
+        {"藍", "indigo", "あい"},
+        {"瑠璃", "lapis lazuli blue", "るり"},
+        {"紺", "navy blue", "こん"},
+        {"群青", "ultramarine", "ぐんじょう"},
+        {"青白", "pale blue white", "あおじろ"},
+        {"浅葱", "light blue green", "あさぎ"},
+        {"藍白", "indigo white", "あいじろ"},
+        {"天藍", "sky blue", "てんらん"}
+      ]
+
+      for {text, meaning, reading} <- variants do
+        word_fixture(%{
+          text: text,
+          meaning: meaning,
+          reading: reading,
+          usage_frequency: 10000
+        })
+      end
+
+      # Create the exact match with lower frequency
+      blue_exact = word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 100})
+
+      # Search with limit 10
+      results = Content.search_words("blue", limit: 10)
+
+      # The exact match should still appear in results and be first
+      assert length(results) <= 10
+      first_result = hd(results)
+      assert first_result.id == blue_exact.id,
+             "Expected exact match 'blue' to be first even with many high-frequency variants"
+    end
+
+    test "search_words/2 exact match appears before partial matches for common words" do
+      # Create words similar to the "one" scenario mentioned in requirements
+      one_exact = word_fixture(%{text: "一", meaning: "one", reading: "いち", usage_frequency: 2000})
+      one_person = word_fixture(%{text: "一人", meaning: "one person", reading: "ひとり", usage_frequency: 500})
+      one_day = word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
+
+      results = Content.search_words("one", limit: 10)
+
+      # Exact match should be first
+      assert length(results) >= 3
+      first_result = hd(results)
+      assert first_result.id == one_exact.id
+      assert first_result.meaning == "one"
+    end
+
     test "get_word!/1 returns the word with given id" do
       word = word_fixture()
       assert Content.get_word!(word.id).id == word.id

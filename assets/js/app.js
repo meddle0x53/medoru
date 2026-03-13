@@ -26,6 +26,8 @@ import {hooks as colocatedHooks} from "phoenix-colocated/medoru"
 import topbar from "../vendor/topbar"
 import KanjiWriting from "./hooks/kanji_writing"
 import StepSorter from "./hooks/step_sorter"
+import OptionInput from "./hooks/option_input"
+import Timer from "./hooks/timer"
 
 // Make KanjiRecognizer available globally for hooks
 import { KanjiWriter, KanjiVGParser } from "../vendor/kanji-recognizer-bundle.js"
@@ -36,7 +38,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter},
+  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer},
 })
 
 // Show progress bar on live navigation and form submits

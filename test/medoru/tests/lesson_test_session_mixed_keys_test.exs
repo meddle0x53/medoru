@@ -1,10 +1,10 @@
 defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
   @moduledoc """
   Test to verify LessonTestSession works correctly after the mixed keys fix.
-  
+
   When the bug existed, LessonTestSession used atom keys in attrs map, but
   Tests.record_step_answer/3 added string keys, causing Ecto.CastError.
-  
+
   After fix: Should return {:correct, _} or {:wrong_answer, _} successfully.
   """
   use Medoru.DataCase
@@ -53,7 +53,7 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
           question_type: :multichoice,
           question: "What is the meaning of 日本?",
           correct_answer: "Japan",
-          options: ["Japan", "China", "Korea"],
+          options: ["Japan", "China", "Korea", "USA"],
           points: 1,
           word_id: word.id
         })
@@ -61,7 +61,11 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
       %{user: user, lesson: lesson, test_record: test_record, step: step}
     end
 
-    test "submit_answer succeeds without CastError", %{user: user, test_record: test_record, step: step} do
+    test "submit_answer succeeds without CastError", %{
+      user: user,
+      test_record: test_record,
+      step: step
+    } do
       # Start a lesson test session
       {:ok, %{session: session}} = LessonTestSession.start_lesson_test(user.id, test_record.id)
 
@@ -86,14 +90,18 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
 
       # If the mixed keys bug exists, this will raise Ecto.CastError
       # If fixed, it will return successfully
-      result = LessonTestSession.submit_answer(session.id, step.id, "Japan", time_spent_seconds: 10)
-      
+      result =
+        LessonTestSession.submit_answer(session.id, step.id, "Japan", time_spent_seconds: 10)
+
       # Verify it returns a valid response tuple
       assert is_tuple(result)
       assert elem(result, 0) in [:correct, :completed, :incorrect]
     end
 
-    test "submit_writing_answer succeeds without CastError", %{user: user, test_record: test_record} do
+    test "submit_writing_answer succeeds without CastError", %{
+      user: user,
+      test_record: test_record
+    } do
       # Create a writing step
       {:ok, writing_step} =
         Tests.create_test_step(test_record, %{
@@ -109,14 +117,15 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
 
       # Writing step submission should also work without mixed keys error
       # Note: submit_writing_answer expects strokes data as 3rd arg, is_correct in opts
-      result = LessonTestSession.submit_writing_answer(
-        session.id, 
-        writing_step.id, 
-        [], 
-        time_spent_seconds: 15, 
-        is_correct: true
-      )
-      
+      result =
+        LessonTestSession.submit_writing_answer(
+          session.id,
+          writing_step.id,
+          [],
+          time_spent_seconds: 15,
+          is_correct: true
+        )
+
       # Verify it returns a valid response tuple
       assert is_tuple(result)
       assert elem(result, 0) in [:correct, :completed, :incorrect]

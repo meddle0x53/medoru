@@ -127,15 +127,23 @@ defmodule Medoru.Classrooms.ClassroomTestAttempt do
 
   @doc """
   Changeset for resetting a test attempt (teacher only).
+  Clears completion data and resets timer so the student can retake the test.
   """
   def reset_changeset(attempt, attrs) do
     attempt
     |> cast(attrs, [
       :reset_count,
       :reset_at,
-      :reset_by_id
+      :reset_by_id,
+      :test_session_id
     ])
     |> validate_required([:reset_count, :reset_at, :reset_by_id])
+    # Clear completion data so student can retake
+    |> put_change(:completed_at, nil)
+    |> put_change(:status, "in_progress")
+    # Reset timer to full time limit
+    |> put_change(:time_remaining_seconds, attempt.time_limit_seconds)
+    |> put_change(:time_spent_seconds, 0)
   end
 
   # Private functions

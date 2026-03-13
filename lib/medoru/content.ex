@@ -338,14 +338,18 @@ defmodule Medoru.Content do
 
   """
   def search_words(query, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 10)
+    limit = Keyword.get(opts, :limit, 20)
 
     if String.trim(query) == "" do
       []
     else
       search_term = "%#{query}%"
 
-      # Get all matching words
+      # Fetch a larger pool to ensure exact matches are included
+      # We need enough results to find exact matches that might be
+      # further down alphabetically but should rank higher
+      fetch_limit = max(limit * 5, 100)
+
       words =
         Word
         |> where(
@@ -354,7 +358,7 @@ defmodule Medoru.Content do
             ilike(w.reading, ^search_term) or
             ilike(w.meaning, ^search_term)
         )
-        |> limit(^limit)
+        |> limit(^fetch_limit)
         |> Repo.all()
 
       # Sort in memory for better ranking
@@ -362,19 +366,44 @@ defmodule Medoru.Content do
 
       Enum.sort_by(words, fn word ->
         meaning_lower = String.downcase(word.meaning || "")
+        text_lower = String.downcase(word.text || "")
+        reading_lower = String.downcase(word.reading || "")
 
-        # Priority: exact match (0), starts with (1), contains (2)
+        # Check for exact matches in meaning, text, or reading
+        exact_meaning = meaning_lower == query_lower
+        exact_text = text_lower == query_lower
+        exact_reading = reading_lower == query_lower
+
+        # Check for "starts with" matches
+        starts_meaning = String.starts_with?(meaning_lower, query_lower)
+        starts_text = String.starts_with?(text_lower, query_lower)
+        starts_reading = String.starts_with?(reading_lower, query_lower)
+
+        # Priority:
+        # 0: Exact match on meaning/text/reading (highest priority)
+        # 1: Starts with on meaning/text/reading
+        # 2: Contains match
         priority =
           cond do
-            meaning_lower == query_lower -> 0
-            String.starts_with?(meaning_lower, query_lower) -> 1
+            exact_meaning or exact_text or exact_reading -> 0
+            starts_meaning or starts_text or starts_reading -> 1
             true -> 2
           end
 
-        # Within same priority, sort by usage frequency (higher = better)
-        # and then by sort_score (lower = better)
-        {priority, -(word.usage_frequency || 0), word.sort_score || 999_999}
+        # For tie-breaking, prefer exact word matches over phrases
+        # Count words in the meaning (rough approximation)
+        word_count =
+          meaning_lower
+          |> String.split(~r/\s+/)
+          |> length()
+
+        # Within same priority:
+        # - Fewer words is better ("one" beats "one person")
+        # - Higher usage frequency is better
+        # - Lower sort_score is better
+        {priority, word_count, -(word.usage_frequency || 0), word.sort_score || 999_999}
       end)
+      |> Enum.take(limit)
     end
   end
 

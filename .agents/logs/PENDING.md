@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-12  
-**Completed**: 18 iterations  
-**Remaining**: 6 iterations for v0.1.0
+**Last Updated**: 2026-03-13  
+**Completed**: 22 iterations  
+**Remaining**: 7 iterations (4 HIGH, 2 MEDIUM, 1 LOWER priority)
 
 ---
 
@@ -382,23 +382,33 @@ Add full internationalization support to make the platform accessible in English
 
 ---
 
-### Iteration 26: Teacher Test Creation - Part C: Multi-Choice Step Builder
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 2 days  
-**Depends On**: Iteration 15B
-**Files to Create**:
-- `lib/medoru_web/live/teacher/test_live/steps/multichoice.ex`
+### Iteration 26: Multi-Choice Step Builder Enhancements ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-13 | **Approved**: 2026-03-13  
+**Depends On**: Iteration 25, 25B
 
-**Key Features**:
-- Word search/typeahead selection
-- Distractor word selection (alternative choices)
-- Number of choices setting (4-8)
-- Step preview mode
-- Validation: 1 correct + N distractors
+**Files Modified**:
+- ✅ `lib/medoru_web/live/teacher/test_live/edit.ex` - Tag-based options UI, validation fixes
+- ✅ `lib/medoru/tests/test_step.ex` - 4-8 options validation, correct answer mandatory
+- ✅ `lib/medoru/content.ex` - Word search ranking (exact match priority)
+- ✅ `lib/medoru_web/components/step_builder_components.ex`
+- ✅ `assets/js/hooks/option_input.js` - Enter key support
+
+**Key Features Implemented**:
+- ✅ **Validation**: Minimum 4 options, maximum 8, correct answer mandatory
+- ✅ **Tag-style options UI**: Correct answer (green, not removable), wrong answers (removable)
+- ✅ **Word search ranking**: Exact match appears before phrases (e.g., "blue" before "navy blue")
+- ✅ **Enter key support**: Adds option without submitting form
+- ✅ **Input clearing**: Field clears after adding option
+- ✅ **Flash auto-dismiss**: Messages disappear after 5 seconds
+- ✅ **Correct answer debounce**: 3-second delay before updating options
+- ✅ **No validation on open**: Form starts clean
+
+**Approved By**: User
 
 ---
 
 ### Iteration 27: Teacher Test Creation - Part D: Typing Step Builder
-**Status**: ⏳ NOT STARTED | **Priority**: 🟡 MEDIUM | **Estimated**: 1-2 days  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 1-2 days  
 **Depends On**: Iteration 15B
 **Files to Create**:
 - `lib/medoru_web/live/teacher/test_live/steps/typing.ex`
@@ -412,7 +422,7 @@ Add full internationalization support to make the platform accessible in English
 ---
 
 ### Iteration 28: Teacher Test Creation - Part E: Kanji Writing Step Builder
-**Status**: ⏳ NOT STARTED | **Priority**: 🟡 MEDIUM | **Estimated**: 1 day  
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 1 day  
 **Depends On**: Iteration 15B
 **Files to Create**:
 - `lib/medoru_web/live/teacher/test_live/steps/writing.ex`
@@ -517,15 +527,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 21/29 iterations (72%)
+**Completed**: 22/29 iterations (76%)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 15A ✅, 15B ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 29 ✅ | 11 COMPLETE |
-| 🔴 High | 26 | 1 PENDING |
-| 🟡 Medium | 13, 17 ✅, 22 ✅, 24, 27-28 | 5 PENDING |
+| 🔴 High | 14 ✅, 15A ✅, 15B ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 29 ✅ | 12 COMPLETE |
+| 🔴 High | 27-28 | 2 PENDING |
+| 🟡 Medium | 13, 24 | 2 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **7** | **10-14 days est.** |
+| **Total** | **8** | **8-12 days est.** |
 
 ---
 
@@ -541,11 +551,18 @@ Add full internationalization support to make the platform accessible in English
 7. **Iteration 22** ✅ (Kanji Writing) - Writing validation
 8. **Iteration 23** ✅ (Reading Text Input) - Text-based reading comprehension
 9. **Iteration 15A** ✅ (Test Management Core) - Teacher test CRUD
+10. **Iteration 25** ✅ (Step Builder Framework) - Base step management
+11. **Iteration 25B** ✅ (Step Builder Enhancements) - Kanji writing, smart search
+12. **Iteration 26** ✅ (Multi-Choice Step Builder) - Enhanced options UI
+13. **Iteration 29** ✅ (Classroom Publishing) - Connect tests to classrooms
 
 ### Up Next 🔴
-10. **Iteration 15B** (Step Builder Framework) - Base step management
-11. **Iteration 15C** (Multi-Choice Steps) - First step type
-12. **Iteration 29** (Classroom Publishing) - Connect tests to classrooms
+1. **Iteration 27** (Typing Step Builder) - Text input questions
+2. **Iteration 28** (Kanji Writing Step Builder) - Drawing questions
+
+Then MEDIUM priority items:
+3. **Iteration 13** (Admin Badge Management)
+4. **Iteration 24** (i18n Multi-Language)
 
 ### Future 🟡
 13. **Iteration 27-28** (Typing/Writing Steps) - Additional step types

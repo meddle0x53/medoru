@@ -968,6 +968,7 @@ defmodule Medoru.Classrooms do
 
   @doc """
   Resets a test attempt for a student (teacher only).
+  Also completes any active test session so student can start fresh.
   """
   def reset_test_attempt(attempt_id, teacher_id) do
     attempt = Repo.get!(ClassroomTestAttempt, attempt_id)
@@ -978,11 +979,17 @@ defmodule Medoru.Classrooms do
     if classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
+      # Complete the old test session and clear its association
+      if attempt.test_session_id do
+        Medoru.Tests.complete_test_session(attempt.test_session_id)
+      end
+
       attempt
       |> ClassroomTestAttempt.reset_changeset(%{
         reset_count: attempt.reset_count + 1,
         reset_at: DateTime.utc_now(),
-        reset_by_id: teacher_id
+        reset_by_id: teacher_id,
+        test_session_id: nil
       })
       |> Repo.update()
     end

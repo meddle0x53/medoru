@@ -48,21 +48,21 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   @impl true
   def handle_params(params, _url, socket) do
     tab = params["tab"] || "overview"
-    
+
     # Reload data when switching to tests tab to get fresh attempt statuses
     socket =
       if tab == "tests" do
         classroom = socket.assigns.classroom
         published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
         test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
-        
+
         socket
         |> assign(:published_tests, published_tests)
         |> assign(:test_attempts, test_attempts)
       else
         socket
       end
-    
+
     {:noreply, assign(socket, :active_tab, tab)}
   end
 
@@ -169,7 +169,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:test_attempts, Classrooms.list_classroom_test_attempts(classroom.id, limit: 100))
+         |> assign(
+           :test_attempts,
+           Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
+         )
          |> put_flash(:info, "Test reset successfully. Student can now retake it.")}
 
       {:error, :not_authorized} ->
