@@ -73,7 +73,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
-  defp resume_test_session(socket, attempt, classroom_test, classroom_id, test_id, user) do
+  defp resume_test_session(socket, attempt, _classroom_test, classroom_id, test_id, user) do
     test = Tests.get_test!(test_id)
     classroom = Classrooms.get_classroom!(classroom_id)
 
@@ -209,6 +209,12 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
+  def handle_event("submit_answer", %{"answer" => "skipped"}, socket) do
+    # User skipped a writing question - mark as incorrect
+    submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
   def handle_event("submit_answer", %{"answer" => answer}, socket) do
     step = socket.assigns.current_step
     session = socket.assigns.session
@@ -277,6 +283,96 @@ defmodule MedoruWeb.ClassroomLive.Test do
     # Silently update server state without triggering re-render
     {:noreply, socket}
   end
+
+  @impl true
+  def handle_event("kanji_complete", _params, socket) do
+    # All strokes drawn correctly - submit as correct answer
+    submit_writing_answer(socket, true, 1.0)
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => true}, socket) do
+    # Submit button clicked when kanji is complete - treat same as kanji_complete
+    handle_event("kanji_complete", %{}, socket)
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => false}, socket) do
+    # User gave up or skipped - mark as incorrect
+    submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
+  def handle_event("stroke_incorrect", _params, socket) do
+    # KanjiWriter library cleared the stroke automatically
+    {:noreply, put_flash(socket, :error, "Try again - follow the red guide")}
+  end
+
+  defp submit_writing_answer(socket, correct, accuracy) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    # Check if answer already exists for this step (prevent double submission)
+    existing_answers = Tests.list_test_step_answers(session.id, step.id)
+
+    if length(existing_answers) > 0 do
+      # Already answered - just move to next step without error
+      next_index = socket.assigns.current_step_index + 1
+
+      if next_index >= socket.assigns.total_steps do
+        complete_test(socket, session.id, attempt.id)
+      else
+        next_step = Enum.at(socket.assigns.steps, next_index)
+
+        {:noreply,
+         socket
+         |> assign(:current_step_index, next_index)
+         |> assign(:current_step, next_step)
+         |> assign(:answer, "")
+         |> assign(:show_hint, false)}
+      end
+    else
+      answer_text = if correct, do: "correct", else: "partial"
+
+      result =
+        Tests.record_step_answer(session.id, step.id, %{
+          "answer" => answer_text,
+          "time_spent_seconds" => 45,
+          "step_index" => step.order_index,
+          "is_correct" => correct,
+          "metadata" => %{"accuracy" => accuracy, "writing" => true}
+        })
+
+      case result do
+        {:ok, step_answer} ->
+          Classrooms.update_test_progress(attempt.id, %{
+            score: step_answer.points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 45
+          })
+
+          next_index = socket.assigns.current_step_index + 1
+
+          if next_index >= socket.assigns.total_steps do
+            complete_test(socket, session.id, attempt.id)
+          else
+            next_step = Enum.at(socket.assigns.steps, next_index)
+
+            {:noreply,
+             socket
+             |> assign(:current_step_index, next_index)
+             |> assign(:current_step, next_step)
+             |> assign(:answer, "")
+             |> assign(:show_hint, false)}
+          end
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to submit answer.")}
+      end
+    end
+  end
+
+
 
   defp complete_test(socket, session_id, attempt_id) do
     # Calculate final score
@@ -418,13 +514,12 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       <% end %>
                     </div>
                   <% :writing -> %>
-                    <div class="text-center py-8">
-                      <p class="text-secondary mb-4">Write the kanji in the box below:</p>
-                      <div class="w-48 h-48 mx-auto border-2 border-dashed border-base-300 rounded-lg flex items-center justify-center bg-base-200">
-                        <span class="text-secondary text-sm">Canvas drawing coming soon</span>
-                      </div>
-                      <input type="hidden" name="answer" value="written" />
-                    </div>
+                    <MedoruWeb.LessonTestLive.WritingComponent.writing_question
+                      step={@current_step}
+                      target="writing-component"
+                    />
+                    <%!-- Hidden input for form submission when skipping --%>
+                    <input type="hidden" name="answer" value="skipped" />
                   <% _ -> %>
                     <.input
                       type="text"

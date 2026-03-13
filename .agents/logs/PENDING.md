@@ -421,16 +421,23 @@ Add full internationalization support to make the platform accessible in English
 
 ---
 
-### Iteration 28: Teacher Test Creation - Part E: Kanji Writing Step Builder
-**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 1 day  
-**Depends On**: Iteration 15B
-**Files to Create**:
-- `lib/medoru_web/live/teacher/test_live/steps/writing.ex`
+### Iteration 28: Kanji Writing Step Builder & Student Test Taking ✅ COMPLETED & APPROVED
+**Status**: ✅ COMPLETED & APPROVED | **Completed**: 2026-03-13 | **Approved**: 2026-03-13 | **Depends On**: Iteration 25B
 
-**Key Features**:
-- Kanji search/selection
-- Stroke count validation
-- Preview with stroke animation
+**Files Created/Modified**:
+- ✅ `lib/medoru_web/live/teacher/test_live/edit.ex` - Enhanced kanji selection with preview
+- ✅ `lib/medoru_web/live/classroom_live/writing_component.ex` - Student writing component
+- ✅ `lib/medoru_web/live/classroom_live/test.ex` - Integrated writing component
+- ✅ `lib/medoru/tests.ex` - Preload kanji in list_test_steps
+
+**Key Features Implemented**:
+- ✅ **Kanji search/selection** - Teachers search by character, meaning, or reading
+- ✅ **Stroke count validation** - Shows warning if kanji has no stroke data
+- ✅ **Stroke animation preview** - Live preview of stroke order when selecting kanji
+- ✅ **Stroke data storage** - Saves stroke data in question_data for validation
+- ✅ **Student writing experience** - Full kanji writing canvas in classroom tests
+- ✅ **Real-time validation** - WritingValidator integration with feedback
+- ✅ **Stroke preview on wrong answers** - Shows correct strokes when student makes mistakes
 
 ---
 
@@ -527,15 +534,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 22/29 iterations (76%)
+**Completed**: 23/29 iterations (79%)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 15A ✅, 15B ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 29 ✅ | 12 COMPLETE |
-| 🔴 High | 27-28 | 2 PENDING |
+| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 28 ✅, 29 ✅ | 12 COMPLETE |
+| 🔴 High | 27, 30 | 2 PENDING |
 | 🟡 Medium | 13, 24 | 2 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **8** | **8-12 days est.** |
+| **Total** | **5** | **5-7 days est.** |
 
 ---
 
@@ -557,15 +564,18 @@ Add full internationalization support to make the platform accessible in English
 13. **Iteration 29** ✅ (Classroom Publishing) - Connect tests to classrooms
 
 ### Up Next 🔴
-1. **Iteration 27** (Typing Step Builder) - Text input questions
-2. **Iteration 28** (Kanji Writing Step Builder) - Drawing questions
+1. **Iteration 27** (Typing Step Builder) - Text input questions for teachers
+2. **Iteration 30** (Complete Test Taking) - Timer, results, auto-submit
+
+Then MEDIUM priority items:
+3. **Iteration 13** (Admin Badge Management)
+4. **Iteration 24** (i18n Multi-Language)
 
 Then MEDIUM priority items:
 3. **Iteration 13** (Admin Badge Management)
 4. **Iteration 24** (i18n Multi-Language)
 
 ### Future 🟡
-13. **Iteration 27-28** (Typing/Writing Steps) - Additional step types
 14. **Iteration 13** (Admin Badge Management) - Admin features
 15. **Iteration 24** (i18n Multi-Language) - Platform internationalization
 16. **Iteration 21** (Admin Dashboard) - Admin polish

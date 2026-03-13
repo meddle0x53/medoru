@@ -21,7 +21,9 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       data-target={@target}
     >
       <%!-- Hidden stroke data for JS library --%>
-      <div data-stroke-data={Jason.encode!(@step.question_data["strokes"] || [])} class="hidden">
+      <%!-- Use step's question_data if available, otherwise fall back to kanji's stroke_data --%>
+      <% strokes = @step.question_data["strokes"] || (@step.kanji && @step.kanji.stroke_data["strokes"]) || [] %>
+      <div data-stroke-data={Jason.encode!(strokes)} class="hidden">
       </div>
 
       <%!-- Question --%>

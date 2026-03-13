@@ -392,6 +392,7 @@ defmodule Medoru.Tests do
     TestStep
     |> where([ts], ts.test_id == ^test_id)
     |> order_by([ts], asc: ts.order_index)
+    |> preload([:kanji])
     |> Repo.all()
   end
 
@@ -921,6 +922,22 @@ defmodule Medoru.Tests do
     |> where([sa], sa.test_session_id == ^session_id)
     |> order_by([sa], asc: sa.step_index)
     |> preload(:test_step)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists all answers for a specific test step in a session.
+
+  ## Examples
+
+      iex> list_test_step_answers(session_id, step_id)
+      [%TestStepAnswer{}, ...]
+
+  """
+  def list_test_step_answers(session_id, step_id) do
+    TestStepAnswer
+    |> where([sa], sa.test_session_id == ^session_id and sa.test_step_id == ^step_id)
+    |> order_by([sa], asc: sa.inserted_at)
     |> Repo.all()
   end
 

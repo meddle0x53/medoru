@@ -186,7 +186,14 @@ const KanjiWriting = {
     })
 
     const validExpectedCount = this._state.analyzedExpected.filter(s => s !== null).length
-    this._state.validExpectedCount = validExpectedCount
+    const rawCount = expectedStrokes.length
+    
+    // Kanji always have multiple strokes (rarely just 1).
+    // If we have less than 2 strokes, the data is incomplete - don't auto-complete
+    this._state.validExpectedCount = validExpectedCount >= 2 ? validExpectedCount : 
+                                     rawCount >= 2 ? rawCount : 999
+    
+    console.log('Valid expected strokes:', this._state.validExpectedCount)
 
     // Detect viewBox size
     const viewBoxSize = (expectedStrokes[0] && expectedStrokes[0].path && expectedStrokes[0].path.includes('109')) ? 109 : 100
@@ -243,7 +250,9 @@ const KanjiWriting = {
 
       const validExpected = this._state.analyzedExpected.filter(s => s !== null)
       if (validExpected.length === 0) {
-        return { valid: true, fallback: true }
+        // No valid stroke data to compare against - reject the stroke
+        // This forces the user to skip the question rather than accepting invalid strokes
+        return { valid: false, reason: 'no_reference_data' }
       }
 
       const expected = this._state.analyzedExpected[expectedIndex]

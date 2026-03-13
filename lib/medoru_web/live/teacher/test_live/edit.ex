@@ -54,6 +54,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:word_search_query, "")
           |> assign(:available_kanji, [])
           |> assign(:kanji_search_query, "")
+          |> assign(:selected_kanji, nil)
+          |> assign(:show_kanji_preview, false)
           |> assign(:search_type, nil)
           |> assign(:new_option_text, "")
 
@@ -113,6 +115,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:available_words, [])
       |> assign(:kanji_search_query, "")
       |> assign(:available_kanji, [])
+      |> assign(:selected_kanji, nil)
+      |> assign(:show_kanji_preview, false)
       |> assign(:search_type, nil)
       |> assign(:new_option_text, "")
 
@@ -153,6 +157,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       step_params
       |> parse_options_from_params()
       |> Map.put("order_index", socket.assigns.step_count)
+
+    # Include question_data from the current changeset if it exists
+    attrs =
+      case socket.assigns.step_changeset do
+        %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
+          Map.put(attrs, "question_data", data)
+        _ ->
+          attrs
+      end
 
     case Tests.create_test_step(test, attrs) do
       {:ok, _step} ->
@@ -572,12 +585,26 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     # For the question, use the first meaning as the target word
     target_meaning = List.first(kanji.meanings) || ""
 
+    # Extract stroke data for validation
+    strokes =
+      case kanji.stroke_data do
+        %{"strokes" => s} when is_list(s) -> s
+        _ -> []
+      end
+
     updated_params = %{
       "question" => "Draw the kanji for \"#{target_meaning}\"",
       "correct_answer" => String.trim(kanji.character),
       "kanji_id" => kanji_id,
       "hints" => [],
-      "explanation" => readings_text
+      "explanation" => readings_text,
+      "question_data" => %{
+        "type" => "kanji_writing",
+        "kanji" => kanji.character,
+        "meanings" => kanji.meanings,
+        "stroke_count" => kanji.stroke_count,
+        "strokes" => strokes
+      }
     }
 
     changeset =
@@ -759,11 +786,64 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         <% end %>
                       </div>
                     <% end %>
+
+                    <%!-- Selected Kanji Info & Preview --%>
+                    <%= if @selected_kanji do %>
+                      <div class="mt-4 bg-base-200 rounded-xl p-4">
+                        <%!-- Kanji Info Header --%>
+                        <div class="flex items-center justify-between mb-4">
+                          <div class="flex items-center gap-4">
+                            <span class="text-4xl font-bold text-base-content">
+                              {@selected_kanji.character}
+                            </span>
+                            <div>
+                              <p class="text-sm text-secondary">
+                                {Enum.join(@selected_kanji.meanings, ", ")}
+                              </p>
+                              <p class="text-xs text-secondary mt-1">
+                                {case @selected_kanji.stroke_data do
+                                  %{"strokes" => s} when is_list(s) ->
+                                    "#{length(s)} strokes"
+
+                                  _ ->
+                                    "No stroke data"
+                                end} • N{@selected_kanji.jlpt_level}
+                              </p>
+                            </div>
+                          </div>
+                          <%= if @show_kanji_preview do %>
+                            <span class="badge badge-success badge-sm">Ready for writing</span>
+                          <% else %>
+                            <span class="badge badge-error badge-sm">No stroke data</span>
+                          <% end %>
+                        </div>
+
+                        <%!-- Stroke Animation Preview --%>
+                        <%= if @show_kanji_preview do %>
+                          <div class="border-t border-base-300 pt-4">
+                            <p class="text-sm font-medium text-base-content mb-3">
+                              Stroke Order Preview
+                            </p>
+                            <.live_component
+                              module={MedoruWeb.StrokeAnimator}
+                              id="kanji-writing-preview"
+                              stroke_data={@selected_kanji.stroke_data}
+                            />
+                          </div>
+                        <% else %>
+                          <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
+                            <.icon name="hero-exclamation-triangle" class="w-6 h-6 text-error mb-2" />
+                            <p class="text-sm text-error">
+                              This kanji doesn't have stroke data. Writing validation will not work for this step.
+                            </p>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </div>
                 <% end %>
 
-                <%!-- Word Search (for multichoice and reading types) --%>
-                <%= if @step_type in [:multichoice, :reading_text] do %>
+                <%= if @step_type == :multichoice or @step_type == :reading_text do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
                       Link to Word (optional)
@@ -1011,6 +1091,27 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       end
 
     Map.put(params, "hints", hints)
+  end
+
+  defp parse_options_from_params(%{"question_data" => question_data} = params) when is_map(question_data) do
+    # Already a map, just continue processing other fields
+    parse_options_from_params(Map.delete(params, "question_data"))
+  end
+
+  defp parse_options_from_params(%{"question_data" => question_data_json} = params)
+       when is_binary(question_data_json) do
+    # Parse JSON question_data from hidden field
+    decoded =
+      case Jason.decode(question_data_json) do
+        {:ok, data} when is_map(data) -> data
+        _ -> %{}
+      end
+
+    # Replace with decoded map
+    params
+    |> Map.put("question_data", decoded)
+    |> Map.delete("question_data_json")
+    |> parse_options_from_params()
   end
 
   defp parse_options_from_params(params) do
