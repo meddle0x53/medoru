@@ -191,8 +191,12 @@ defmodule Medoru.TestsTest do
       attrs = %{@valid_step_attrs | points: 2}
       assert {:error, %Ecto.Changeset{}} = Tests.create_test_step(test_record, attrs)
 
-      # Fill should be 1 or 2 points
+      # Fill can be 2 or 3 points (2 for meaning only, 3 for meaning + reading)
       attrs = %{@valid_fill_attrs | points: 3}
+      assert {:ok, %TestStep{}} = Tests.create_test_step(test_record, attrs)
+
+      # Fill with 4 points should fail
+      attrs = %{@valid_fill_attrs | points: 4}
       assert {:error, %Ecto.Changeset{}} = Tests.create_test_step(test_record, attrs)
     end
 

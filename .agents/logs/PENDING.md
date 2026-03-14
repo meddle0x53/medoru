@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-13  
-**Completed**: 22 iterations  
-**Remaining**: 7 iterations (4 HIGH, 2 MEDIUM, 1 LOWER priority)
+**Last Updated**: 2026-03-14  
+**Completed**: 23 iterations  
+**Remaining**: 8 iterations (5 HIGH, 2 MEDIUM, 1 LOWER priority)
 
 ---
 
@@ -534,15 +534,15 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 23/29 iterations (79%)
+**Completed**: 24/30 iterations (80%)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 28 ✅, 29 ✅ | 12 COMPLETE |
-| 🔴 High | 27, 30 | 2 PENDING |
+| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅ | 13 COMPLETE |
+| 🔴 High | 30, 31 | 2 PENDING |
 | 🟡 Medium | 13, 24 | 2 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **5** | **5-7 days est.** |
+| **Total** | **7** | **7-9 days est.** |
 
 ---
 
@@ -562,10 +562,11 @@ Add full internationalization support to make the platform accessible in English
 11. **Iteration 25B** ✅ (Step Builder Enhancements) - Kanji writing, smart search
 12. **Iteration 26** ✅ (Multi-Choice Step Builder) - Enhanced options UI
 13. **Iteration 29** ✅ (Classroom Publishing) - Connect tests to classrooms
+14. **Iteration 27** ✅ (Typing Step Builder) - Fill in blank questions
 
 ### Up Next 🔴
-1. **Iteration 27** (Typing Step Builder) - Text input questions for teachers
-2. **Iteration 30** (Complete Test Taking) - Timer, results, auto-submit
+1. **Iteration 30** (Complete Test Taking) - Timer, results, auto-submit
+2. **Iteration 31** (Teacher Custom Lessons) - Custom reading lessons for classrooms
 
 Then MEDIUM priority items:
 3. **Iteration 13** (Admin Badge Management)
@@ -579,6 +580,22 @@ Then MEDIUM priority items:
 14. **Iteration 13** (Admin Badge Management) - Admin features
 15. **Iteration 24** (i18n Multi-Language) - Platform internationalization
 16. **Iteration 21** (Admin Dashboard) - Admin polish
+
+---
+
+### Iteration 31: Teacher Custom Lessons
+**Status**: ⏳ NOT STARTED | **Priority**: 🔴 HIGH | **Estimated**: 3-4 days  
+**Log**: [ITERATION-31-teacher-custom-lessons.md](./ITERATION-31-teacher-custom-lessons.md)  
+**Depends On**: Iteration 29 (Classroom Publishing)
+
+**Key Features**:
+- Teachers create custom reading lessons
+- Pick words via autocomplete (reuse test builder search)
+- 1-50 words per lesson
+- Edit meanings and add examples per word
+- Publish to classrooms
+- Students study without test (mark as complete)
+- Points awarded on completion
 
 ---
 

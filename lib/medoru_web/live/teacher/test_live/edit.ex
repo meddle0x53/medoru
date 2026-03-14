@@ -5,7 +5,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   Features:
   - View all test steps in order
   - Drag-drop reordering of steps
-  - Add new steps (multichoice, reading_text, writing)
+  - Add new steps (multichoice, fill, writing)
   - Delete steps with confirmation
   - Preview step content
   - Mark test as ready when done
@@ -119,6 +119,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:show_kanji_preview, false)
       |> assign(:search_type, nil)
       |> assign(:new_option_text, "")
+      |> assign(:use_default_meaning, true)
+      |> assign(:custom_meaning, "")
+      |> assign(:selected_word, nil)
+      |> assign(:reading_answer, "")
+      |> assign(:include_reading, true)
 
     {:noreply, socket}
   end
@@ -165,6 +170,29 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           Map.put(attrs, "question_data", data)
         _ ->
           attrs
+      end
+
+    # For fill type, add reading_answer and include_reading to question_data
+    attrs =
+      if socket.assigns.step_type == :fill do
+        reading_answer = socket.assigns.reading_answer
+        include_reading = socket.assigns.include_reading
+        points = if include_reading, do: 3, else: 2
+
+        question_data = Map.get(attrs, "question_data", %{})
+        question_data = Map.put(question_data, "include_reading", include_reading)
+        question_data =
+          if include_reading && reading_answer && reading_answer != "" do
+            Map.put(question_data, "reading_answer", reading_answer)
+          else
+            question_data
+          end
+
+        attrs
+        |> Map.put("question_data", question_data)
+        |> Map.put("points", points)
+      else
+        attrs
       end
 
     case Tests.create_test_step(test, attrs) do
@@ -494,7 +522,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           {"What is the meaning of \"#{word.text}\"?", word.meaning}
 
         {_, _} ->
-          # For reading_text and other types, use default
+          # Default for fill and other types
           {"What is the meaning of \"#{word.text}\"?", word.meaning}
       end
 
@@ -534,13 +562,136 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> TestStep.changeset(updated_params)
       |> Map.put(:action, :validate)
 
+    socket =
+      socket
+      |> assign(:step_changeset, changeset)
+      |> assign(:step_form, to_form(changeset, as: :step))
+      |> assign(:word_search_query, "")
+      |> assign(:available_words, [])
+      |> assign(:search_type, nil)
+
+    # For fill type, also store selected word and reset custom meaning
+    socket =
+      if step_type == :fill do
+        socket
+        |> assign(:selected_word, word)
+        |> assign(:custom_meaning, "")
+        |> assign(:use_default_meaning, true)
+        |> assign(:reading_answer, word.reading)
+        |> assign(:include_reading, true)
+      else
+        socket
+      end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_default_meaning", _params, socket) do
+    current_value = socket.assigns.use_default_meaning
+    new_value = not current_value
+
+    # Update correct_answer based on toggle
+    selected_word = socket.assigns.selected_word
+
+    correct_answer =
+      cond do
+        new_value and selected_word ->
+          # Switching to default - use word meaning
+          selected_word.meaning
+
+        not new_value ->
+          # Switching to custom - use custom meaning if set
+          socket.assigns.custom_meaning
+
+        true ->
+          ""
+      end
+
+    # Update the changeset with new correct_answer
+    current_form = socket.assigns.step_form
+
+    updated_params = %{
+      "question" => current_form[:question].value,
+      "correct_answer" => correct_answer,
+      "word_id" => current_form[:word_id].value,
+      "hints" => current_form[:hints].value,
+      "explanation" => current_form[:explanation].value
+    }
+
+    changeset =
+      %TestStep{}
+      |> TestStep.changeset(updated_params)
+      |> Map.put(:action, :validate)
+
     {:noreply,
      socket
+     |> assign(:use_default_meaning, new_value)
      |> assign(:step_changeset, changeset)
-     |> assign(:step_form, to_form(changeset, as: :step))
-     |> assign(:word_search_query, "")
-     |> assign(:available_words, [])
-     |> assign(:search_type, nil)}
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event("update_custom_meaning", %{"value" => value}, socket) do
+    # Update custom meaning and correct_answer
+    current_form = socket.assigns.step_form
+
+    updated_params = %{
+      "question" => current_form[:question].value,
+      "correct_answer" => value,
+      "word_id" => current_form[:word_id].value,
+      "hints" => current_form[:hints].value,
+      "explanation" => current_form[:explanation].value
+    }
+
+    changeset =
+      %TestStep{}
+      |> TestStep.changeset(updated_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:custom_meaning, value)
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event("update_reading_answer", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :reading_answer, value)}
+  end
+
+  @impl true
+  def handle_event("toggle_include_reading", _params, socket) do
+    current_value = socket.assigns.include_reading
+    new_value = not current_value
+
+    # Update points based on include_reading
+    # 3 points if reading is included, 2 points if only meaning
+    new_points = if new_value, do: 3, else: 2
+
+    # Update the changeset with new points
+    current_form = socket.assigns.step_form
+
+    updated_params = %{
+      "question" => current_form[:question].value,
+      "correct_answer" => current_form[:correct_answer].value,
+      "word_id" => current_form[:word_id].value,
+      "hints" => current_form[:hints].value,
+      "explanation" => current_form[:explanation].value,
+      "points" => new_points
+    }
+
+    changeset =
+      %TestStep{}
+      |> TestStep.changeset(updated_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply,
+     socket
+     |> assign(:include_reading, new_value)
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
   end
 
   @impl true
@@ -843,7 +994,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   </div>
                 <% end %>
 
-                <%= if @step_type == :multichoice or @step_type == :reading_text do %>
+                <%= if @step_type == :multichoice or @step_type == :fill do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
                       Link to Word (optional)
@@ -877,6 +1028,94 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               <span class="text-sm text-secondary">{word.meaning}</span>
                             </div>
                           </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+
+                    <%!-- Selected Word Info for Fill Type --%>
+                    <%= if @step_type == :fill and @selected_word do %>
+                      <div class="mt-4 bg-base-200 rounded-lg p-4">
+                        <div class="flex items-center gap-4 mb-4">
+                          <span class="text-2xl font-bold">{@selected_word.text}</span>
+                          <div>
+                            <p class="text-sm text-secondary">{@selected_word.reading}</p>
+                            <p class="text-sm font-medium">{@selected_word.meaning}</p>
+                          </div>
+                        </div>
+
+                        <%!-- Include Reading Checkbox --%>
+                        <div class="flex items-center gap-3 mb-4 p-3 bg-base-100 rounded-lg">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              name="step[include_reading]"
+                              phx-click="toggle_include_reading"
+                              checked={@include_reading}
+                              class="checkbox checkbox-sm checkbox-primary"
+                            />
+                            <span class="text-sm font-medium">Also require reading in hiragana</span>
+                          </label>
+                          <span class="text-xs text-secondary">
+                            <%= if @include_reading do %>
+                              (3 points total: 2 for meaning + 1 for reading)
+                            <% else %>
+                              (2 points for meaning only)
+                            <% end %>
+                          </span>
+                        </div>
+
+                        <%!-- Default vs Custom Meaning Toggle --%>
+                        <div class="flex items-center gap-3 mb-4">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              phx-click="toggle_default_meaning"
+                              checked={@use_default_meaning}
+                              class="checkbox checkbox-sm checkbox-primary"
+                            />
+                            <span class="text-sm">Use default meaning as answer</span>
+                          </label>
+                        </div>
+
+                        <%!-- Custom Meaning Input --%>
+                        <%= if not @use_default_meaning do %>
+                          <div class="mb-4">
+                            <label class="block text-sm font-medium text-base-content mb-2">
+                              Custom Meaning Answer
+                            </label>
+                            <input
+                              type="text"
+                              name="step[custom_meaning]"
+                              value={@custom_meaning}
+                              phx-keyup="update_custom_meaning"
+                              class="input input-bordered w-full"
+                              placeholder="Enter custom meaning..."
+                            />
+                            <p class="text-xs text-secondary mt-1">
+                              Students must match this exactly (case-insensitive)
+                            </p>
+                          </div>
+                        <% end %>
+
+                        <%!-- Reading Answer (Hiragana) - Only show if include_reading is checked --%>
+                        <%= if @include_reading do %>
+                          <div>
+                            <label class="block text-sm font-medium text-base-content mb-2">
+                              Reading Answer (Hiragana)
+                              <span class="text-xs text-secondary ml-1">- students must also enter this</span>
+                            </label>
+                            <input
+                              type="text"
+                              name="step[reading_answer]"
+                              value={@reading_answer || @selected_word.reading}
+                              phx-keyup="update_reading_answer"
+                              class="input input-bordered w-full"
+                              placeholder="Enter hiragana reading (e.g., あおい)..."
+                            />
+                            <p class="text-xs text-secondary mt-1">
+                              Default from word database. Edit if you want a different reading accepted.
+                            </p>
+                          </div>
                         <% end %>
                       </div>
                     <% end %>
@@ -1056,6 +1295,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   defp format_question_type(:multichoice), do: "Multiple Choice"
   defp format_question_type(:reading_text), do: "Reading"
+  defp format_question_type(:fill), do: "Fill in Blank"
   defp format_question_type(:writing), do: "Writing"
   defp format_question_type(other), do: to_string(other)
 

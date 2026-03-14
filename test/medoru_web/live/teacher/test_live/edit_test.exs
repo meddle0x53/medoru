@@ -74,7 +74,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> render_click()
 
       assert render(view) =~ "Multiple Choice"
-      assert render(view) =~ "Reading Comprehension"
+      assert render(view) =~ "Fill in Blank"
       assert render(view) =~ "Kanji Writing"
     end
 
@@ -138,7 +138,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       assert step.options == ["Japan", "China", "Korea", "Vietnam"]
     end
 
-    test "creates a reading_text step", %{
+    test "creates a fill step", %{
       conn: conn,
       teacher: teacher,
       teacher_test: teacher_test
@@ -154,14 +154,14 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> render_click()
 
       view
-      |> element("button[phx-value-type='reading_text']")
+      |> element("button[phx-value-type='fill']")
       |> render_click()
 
       # Fill in the form
       view
       |> form("form", %{
         "step" => %{
-          "question" => "日本 - Enter meaning and reading",
+          "question" => "What is the meaning of '日本'?",
           "correct_answer" => "Japan"
         }
       })
@@ -171,9 +171,10 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       steps = Tests.list_test_steps(teacher_test.id)
       assert length(steps) == 1
       step = hd(steps)
-      assert step.question == "日本 - Enter meaning and reading"
-      assert step.question_type == :reading_text
-      assert step.points == 2
+      assert step.question == "What is the meaning of '日本'?"
+      assert step.question_type == :fill
+      assert step.points == 3
+      assert step.question_data["include_reading"] == true
     end
 
     test "creates a writing step", %{conn: conn, teacher: teacher, teacher_test: teacher_test} do

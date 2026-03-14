@@ -115,7 +115,10 @@ defmodule Medoru.Tests.TestStep do
       {:reading_text, p} when p not in [1, 2] ->
         add_error(changeset, :points, "reading text questions must be worth 1 or 2 points")
 
-      {type, p} when type in [:fill, :match, :order] and p not in [1, 2] ->
+      {:fill, p} when p not in [1, 2, 3] ->
+        add_error(changeset, :points, "fill questions must be worth 2 or 3 points")
+
+      {type, p} when type in [:match, :order] and p not in [1, 2] ->
         add_error(changeset, :points, "this question type must be worth 1 or 2 points")
 
       _ ->

@@ -111,7 +111,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:current_step, first_step)
            |> assign(:total_steps, length(steps))
            |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
-           |> assign(:answer, "")
+           |> assign(:answer, initial_answer_for_step(first_step))
            |> assign(:show_hint, false)}
 
         {:error, _} ->
@@ -139,7 +139,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:current_step, current_step)
        |> assign(:total_steps, length(steps))
        |> assign(:time_remaining, attempt.time_remaining_seconds)
-       |> assign(:answer, "")
+       |> assign(:answer, initial_answer_for_step(current_step))
        |> assign(:show_hint, false)}
     end
   end
@@ -184,7 +184,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:current_step, first_step)
              |> assign(:total_steps, length(steps))
              |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
-             |> assign(:answer, "")
+             |> assign(:answer, initial_answer_for_step(first_step))
              |> assign(:show_hint, false)}
 
           {:error, _} ->
@@ -208,10 +208,101 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
+  # Helper function to initialize answer based on step type
+  defp initial_answer_for_step(nil), do: ""
+  defp initial_answer_for_step(%{question_type: :fill}), do: %{"meaning" => "", "reading" => ""}
+  defp initial_answer_for_step(_), do: ""
+
   @impl true
   def handle_event("submit_answer", %{"answer" => "skipped"}, socket) do
     # User skipped a writing question - mark as incorrect
     submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
+  def handle_event("submit_answer", %{"answer" => answer_map}, socket) when is_map(answer_map) do
+    # Handle fill question with meaning and optional reading
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    # Extract values from form
+    meaning = answer_map["meaning"]
+    reading = answer_map["reading"]
+
+    # Check if reading is required for this step
+    include_reading = get_in(step.question_data, ["include_reading"]) || false
+
+    # Validate answers
+    correct_meaning = step.correct_answer
+    correct_reading = get_in(step.question_data, ["reading_answer"]) || ""
+
+    meaning_correct = validate_meaning(meaning, correct_meaning)
+    reading_correct = if reading, do: validate_reading(reading, correct_reading), else: false
+
+    # Calculate points based on include_reading flag
+    # If reading is included: 2 points for meaning, 1 point for reading
+    # If reading is NOT included: 2 points for meaning only
+    points_earned =
+      cond do
+        include_reading and meaning_correct and reading_correct -> 3
+        include_reading and meaning_correct -> 2
+        include_reading and reading_correct -> 1
+        not include_reading and meaning_correct -> 2
+        true -> 0
+      end
+
+    # Record the answer
+    answer_text = if include_reading and reading, do: "#{meaning} / #{reading}", else: meaning
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer_text,
+        "time_spent_seconds" => 30,
+        "step_index" => step.order_index,
+        "is_correct" => meaning_correct and (not include_reading or reading_correct),
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "meaning" => meaning,
+          "reading" => reading,
+          "meaning_correct" => meaning_correct,
+          "reading_correct" => reading_correct,
+          "correct_meaning" => correct_meaning,
+          "correct_reading" => correct_reading,
+          "include_reading" => include_reading
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        # Update attempt progress
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 30
+        })
+
+        # Move to next step or complete
+        next_index = socket.assigns.current_step_index + 1
+
+        if next_index >= socket.assigns.total_steps do
+          # Complete the test
+          complete_test(socket, session.id, attempt.id)
+        else
+          next_step = Enum.at(socket.assigns.steps, next_index)
+
+          {:noreply,
+           socket
+           |> assign(:current_step_index, next_index)
+           |> assign(:current_step, next_step)
+           |> assign(:answer, initial_answer_for_step(next_step))
+           |> assign(:show_hint, false)}
+        end
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+        {:noreply, put_flash(socket, :error, "Failed to submit answer. Please try again.")}
+    end
   end
 
   @impl true
@@ -249,12 +340,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
            socket
            |> assign(:current_step_index, next_index)
            |> assign(:current_step, next_step)
-           |> assign(:answer, "")
+           |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)}
         end
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to submit answer.")}
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer (other): #{inspect(changeset.errors)}")
+        {:noreply, put_flash(socket, :error, "Failed to submit answer. Please try again.")}
     end
   end
 
@@ -329,7 +422,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
          socket
          |> assign(:current_step_index, next_index)
          |> assign(:current_step, next_step)
-         |> assign(:answer, "")
+         |> assign(:answer, initial_answer_for_step(next_step))
          |> assign(:show_hint, false)}
       end
     else
@@ -362,7 +455,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
              socket
              |> assign(:current_step_index, next_index)
              |> assign(:current_step, next_step)
-             |> assign(:answer, "")
+             |> assign(:answer, initial_answer_for_step(next_step))
              |> assign(:show_hint, false)}
           end
 
@@ -520,6 +613,39 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     />
                     <%!-- Hidden input for form submission when skipping --%>
                     <input type="hidden" name="answer" value="skipped" />
+                  <% :fill -> %>
+                    <div class="space-y-4" id={"fill-inputs-#{@current_step.id}"}>
+                      <%!-- Hidden field to ensure answer is always a map --%>
+                      <input type="hidden" name="answer[_dummy]" value="1" />
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          Meaning (in English):
+                        </label>
+                        <.input
+                          type="text"
+                          name="answer[meaning]"
+                          id={"answer-meaning-#{@current_step.id}"}
+                          value={@answer["meaning"] || ""}
+                          placeholder="Type the meaning..."
+                          class="w-full"
+                        />
+                      </div>
+                      <%= if @current_step.question_data && @current_step.question_data["include_reading"] do %>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            Reading (in Hiragana):
+                          </label>
+                          <.input
+                            type="text"
+                            name="answer[reading]"
+                            id={"answer-reading-#{@current_step.id}"}
+                            value={@answer["reading"] || ""}
+                            placeholder="Type the hiragana reading..."
+                            class="w-full"
+                          />
+                        </div>
+                      <% end %>
+                    </div>
                   <% _ -> %>
                     <.input
                       type="text"
@@ -592,4 +718,31 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   defp format_percentage(float) when is_float(float), do: trunc(float)
   defp format_percentage(int) when is_integer(int), do: int
+
+  # Validate meaning answer (fuzzy match)
+  defp validate_meaning(answer, correct) do
+    answer_normalized = String.downcase(String.trim(answer))
+    correct_normalized = String.downcase(String.trim(correct))
+
+    # Exact match
+    answer_normalized == correct_normalized or
+      # Contains match (e.g., "blue" matches "bluish")
+      String.contains?(answer_normalized, correct_normalized) or
+      String.contains?(correct_normalized, answer_normalized)
+  end
+
+  # Validate reading answer (exact match with normalization)
+  defp validate_reading(answer, correct) do
+    answer_normalized =
+      answer
+      |> String.trim()
+      |> String.replace(~r/[\s\-]/, "")
+
+    correct_normalized =
+      correct
+      |> String.trim()
+      |> String.replace(~r/[\s\-]/, "")
+
+    answer_normalized == correct_normalized
+  end
 end

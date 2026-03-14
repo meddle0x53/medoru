@@ -968,31 +968,51 @@ defmodule Medoru.Tests do
   """
   def record_step_answer(session_id, step_id, attrs) do
     step = get_test_step(step_id)
+    step_index = attrs["step_index"]
+
+    # Check if an answer already exists for this step
+    existing_answer =
+      TestStepAnswer
+      |> where([a], a.test_session_id == ^session_id and a.step_index == ^step_index)
+      |> Repo.one()
 
     attrs =
       attrs
       |> Map.put("test_session_id", session_id)
       |> Map.put("test_step_id", step_id)
 
-    # For writing steps, is_correct is passed directly
+    # For writing steps or when is_correct is passed directly
     changeset =
       if attrs["is_correct"] != nil do
-        %TestStepAnswer{}
-        |> TestStepAnswer.changeset(%{
+        answer_data = %{
           answer: attrs["answer"],
           is_correct: attrs["is_correct"],
-          points_earned: if(attrs["is_correct"], do: step.points, else: 0),
+          points_earned: attrs["points_earned"] || if(attrs["is_correct"], do: step.points, else: 0),
           time_spent_seconds: attrs["time_spent_seconds"],
           step_index: attrs["step_index"],
+          metadata: attrs["metadata"] || %{},
           test_session_id: session_id,
           test_step_id: step_id
-        })
+        }
+
+        if existing_answer do
+          existing_answer
+          |> TestStepAnswer.changeset(answer_data)
+        else
+          %TestStepAnswer{}
+          |> TestStepAnswer.changeset(answer_data)
+        end
       else
-        %TestStepAnswer{}
-        |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+        if existing_answer do
+          existing_answer
+          |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+        else
+          %TestStepAnswer{}
+          |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+        end
       end
 
-    changeset |> Repo.insert()
+    changeset |> Repo.insert_or_update()
   end
 
   @doc """

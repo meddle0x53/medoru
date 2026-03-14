@@ -193,10 +193,10 @@ defmodule MedoruWeb.StepBuilderComponents do
         on_select={@on_select}
       />
       <.step_type_option
-        type={:reading_text}
-        icon="hero-language"
-        title="Reading Comprehension"
-        description="Students type meaning and reading"
+        type={:fill}
+        icon="hero-pencil-square"
+        title="Fill in Blank"
+        description="Students type the meaning"
         points="2 points"
         on_select={@on_select}
       />
