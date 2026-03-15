@@ -31,6 +31,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
           members = Classrooms.list_classroom_members(id)
           published_tests = Classrooms.list_classroom_tests(id, status: :active)
           user_attempts = Classrooms.list_user_test_attempts(id, user.id)
+          custom_lessons = Medoru.Content.list_classroom_custom_lessons(id)
+          lesson_progress = Classrooms.list_user_custom_lesson_progress(id, user.id)
 
           {:ok,
            socket
@@ -40,6 +42,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
            |> assign(:members, members)
            |> assign(:published_tests, published_tests)
            |> assign(:user_attempts, user_attempts)
+           |> assign(:custom_lessons, custom_lessons)
+           |> assign(:lesson_progress, lesson_progress)
            |> assign(:active_tab, "overview")}
         end
     end
@@ -150,7 +154,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <% "rankings" -> %>
               <.rankings_tab members={@members} current_user={@current_scope.current_user} />
             <% "lessons" -> %>
-              <.lessons_tab />
+              <.lessons_tab
+                classroom={@classroom}
+                custom_lessons={@custom_lessons}
+                lesson_progress={@lesson_progress}
+                current_user={@current_scope.current_user}
+              />
             <% "tests" -> %>
               <.tests_tab
                 classroom={@classroom}
@@ -297,16 +306,99 @@ defmodule MedoruWeb.ClassroomLive.Show do
     """
   end
 
+  attr :classroom, :map, required: true
+  attr :custom_lessons, :list, required: true
+  attr :lesson_progress, :list, required: true
+  attr :current_user, :map, required: true
+
   defp lessons_tab(assigns) do
     ~H"""
-    <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-      <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-base-content mb-2">Lessons Coming Soon</h3>
-      <p class="text-secondary max-w-md mx-auto">
-        Your teacher will soon be able to assign lessons to this classroom. Check back later!
-      </p>
+    <div class="space-y-4">
+      <%= if @custom_lessons == [] do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
+          <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-base-content mb-2">No Lessons Available</h3>
+          <p class="text-secondary max-w-md mx-auto">
+            Your teacher hasn't published any lessons to this classroom yet. Check back later!
+          </p>
+        </div>
+      <% else %>
+        <%= for classroom_lesson <- @custom_lessons do %>
+          <% lesson = classroom_lesson.custom_lesson %>
+          <% progress = get_lesson_progress(@lesson_progress, lesson.id) %>
+          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="card-title text-lg text-base-content mb-1">
+                    {lesson.title}
+                  </h3>
+                  <p class="text-secondary text-sm mb-3">
+                    {lesson.description || "No description"}
+                  </p>
+
+                  <div class="flex flex-wrap gap-3 text-sm">
+                    <span class="badge badge-outline badge-sm">
+                      <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
+                      {lesson.word_count} words
+                    </span>
+
+                    <%= if lesson.difficulty do %>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-signal" class="w-3 h-3 mr-1" />
+                        N{lesson.difficulty}
+                      </span>
+                    <% end %>
+
+                    <%= case progress && progress.status do %>
+                      <% "completed" -> %>
+                        <span class="badge badge-success badge-sm">
+                          <.icon name="hero-check" class="w-3 h-3 mr-1" />
+                          Completed
+                        </span>
+                      <% "in_progress" -> %>
+                        <span class="badge badge-warning badge-sm">
+                          <.icon name="hero-play" class="w-3 h-3 mr-1" />
+                          In Progress
+                        </span>
+                      <% _ -> %>
+                        <span class="badge badge-ghost badge-sm">
+                          Not Started
+                        </span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="ml-4">
+                  <%= case progress && progress.status do %>
+                    <% "completed" -> %>
+                      <span class="badge badge-success">
+                        +{progress.points_earned} pts
+                      </span>
+                    <% _ -> %>
+                      <.link
+                        navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                        class="btn btn-primary"
+                      >
+                        <%= if progress && progress.status == "in_progress" do %>
+                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> Continue
+                        <% else %>
+                          <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> Start
+                        <% end %>
+                      </.link>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
     </div>
     """
+  end
+
+  defp get_lesson_progress(progress_list, lesson_id) do
+    Enum.find(progress_list, fn p -> p.custom_lesson_id == lesson_id end)
   end
 
   attr :classroom, :map, required: true

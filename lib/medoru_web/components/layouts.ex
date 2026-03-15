@@ -81,6 +81,11 @@ defmodule MedoruWeb.Layouts do
                   <.icon name="hero-clipboard-document-list" class="w-4 h-4 mr-1" /> My Tests
                 </.link>
               </li>
+              <li class="hidden md:block">
+                <.link navigate={~p"/teacher/custom-lessons"} class="btn btn-ghost btn-sm text-secondary">
+                  <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> Custom Lessons
+                </.link>
+              </li>
             <% end %>
             <%= if @current_scope.current_user.type == "admin" do %>
               <li class="hidden md:block">

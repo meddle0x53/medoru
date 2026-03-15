@@ -1409,6 +1409,102 @@ defmodule Medoru.Classrooms do
   def add_points_to_member(_, _, 0), do: {:ok, nil}
   def add_points_to_member(_, _, points) when points < 0, do: {:ok, nil}
 
+  # ============================================================================
+  # Custom Lesson Progress (Iteration 31)
+  # ============================================================================
+
+  @doc """
+  Gets or creates progress for a custom lesson.
+  """
+  def get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id) do
+    case get_custom_lesson_progress(classroom_id, user_id, custom_lesson_id) do
+      nil ->
+        attrs = %{
+          classroom_id: classroom_id,
+          user_id: user_id,
+          custom_lesson_id: custom_lesson_id,
+          lesson_source: "custom",
+          status: "not_started"
+        }
+
+        %ClassroomLessonProgress{}
+        |> ClassroomLessonProgress.changeset(attrs)
+        |> Repo.insert()
+
+      progress ->
+        {:ok, progress}
+    end
+  end
+
+  @doc """
+  Gets custom lesson progress for a specific user.
+  """
+  def get_custom_lesson_progress(classroom_id, user_id, custom_lesson_id) do
+    ClassroomLessonProgress
+    |> where([p], p.classroom_id == ^classroom_id)
+    |> where([p], p.user_id == ^user_id)
+    |> where([p], p.custom_lesson_id == ^custom_lesson_id)
+    |> where([p], p.lesson_source == "custom")
+    |> preload([:custom_lesson])
+    |> Repo.one()
+  end
+
+  @doc """
+  Starts a custom lesson for a user.
+  """
+  def start_custom_lesson(classroom_id, user_id, custom_lesson_id) do
+    {:ok, progress} = get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
+
+    progress
+    |> ClassroomLessonProgress.start_changeset(%{})
+    |> Repo.update()
+  end
+
+  @doc """
+  Completes a custom lesson and awards points.
+
+  Points calculation:
+  - Base: 10 points per word
+  - Bonus: 20 points for completing
+  """
+  def complete_custom_lesson(classroom_id, user_id, custom_lesson_id) do
+    {:ok, progress} = get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
+
+    # Get word count for points calculation
+    custom_lesson = Medoru.Content.get_custom_lesson_with_words!(custom_lesson_id)
+    word_count = length(custom_lesson.custom_lesson_words)
+    points_earned = word_count * 10 + 20
+
+    attrs = %{
+      points_earned: points_earned
+    }
+
+    result =
+      progress
+      |> ClassroomLessonProgress.complete_changeset(attrs)
+      |> Repo.update()
+
+    # Add points to member
+    with {:ok, completed_progress} <- result,
+         {:ok, _} <- add_points_to_member(classroom_id, user_id, points_earned) do
+      {:ok, completed_progress}
+    else
+      error -> error
+    end
+  end
+
+  @doc """
+  Lists custom lesson progress for a user in a classroom.
+  """
+  def list_user_custom_lesson_progress(classroom_id, user_id) do
+    ClassroomLessonProgress
+    |> where([p], p.classroom_id == ^classroom_id and p.user_id == ^user_id)
+    |> where([p], p.lesson_source == "custom")
+    |> preload(:custom_lesson)
+    |> order_by([p], desc: p.completed_at)
+    |> Repo.all()
+  end
+
   defp maybe_generate_slug(attrs) do
     name = attrs[:name]
     slug = attrs[:slug]

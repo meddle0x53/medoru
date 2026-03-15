@@ -128,6 +128,11 @@ defmodule MedoruWeb.Router do
       live "/tests/:id", TestLive.Show
       live "/tests/:id/edit", TestLive.Edit
       live "/tests/:id/publish", TestLive.Publish
+
+      live "/custom-lessons", CustomLessonLive.Index
+      live "/custom-lessons/new", CustomLessonLive.New
+      live "/custom-lessons/:id/edit", CustomLessonLive.Edit
+      live "/custom-lessons/:id/publish", CustomLessonLive.Publish
     end
   end
 
@@ -143,6 +148,8 @@ defmodule MedoruWeb.Router do
       live "/:id/rankings", ClassroomLive.Rankings
       live "/:id/tests/:test_id", ClassroomLive.Test
       live "/:id/tests/:test_id/results", ClassroomLive.TestResults
+      live "/:id/custom-lessons/:lesson_id", ClassroomLive.CustomLesson
+      live "/:id/custom-lessons/:lesson_id/complete", ClassroomLive.CustomLessonComplete
     end
   end
 

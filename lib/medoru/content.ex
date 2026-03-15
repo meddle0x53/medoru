@@ -12,7 +12,9 @@ defmodule Medoru.Content do
     WordKanji,
     Lesson,
     LessonWord,
-    KanjiReadingExtractor
+    KanjiReadingExtractor,
+    CustomLesson,
+    CustomLessonWord
   }
 
   # Kanji Functions
@@ -1301,5 +1303,420 @@ defmodule Medoru.Content do
     case KanjiReadingExtractor.extract_all_readings(word_text, word_reading) do
       {:ok, readings} -> readings
     end
+  end
+
+  # ============================================================================
+  # Custom Lesson Functions (Iteration 31)
+  # ============================================================================
+
+  alias Medoru.Classrooms.ClassroomCustomLesson
+
+  @doc """
+  Returns the list of custom lessons for a teacher.
+
+  ## Examples
+
+      iex> list_teacher_custom_lessons(teacher_id)
+      [%CustomLesson{}, ...]
+
+  """
+  def list_teacher_custom_lessons(teacher_id, opts \\ []) do
+    status = Keyword.get(opts, :status)
+
+    CustomLesson
+    |> where([cl], cl.creator_id == ^teacher_id)
+    |> then(fn query ->
+      if status do
+        where(query, [cl], cl.status == ^status)
+      else
+        query
+      end
+    end)
+    |> order_by([cl], desc: cl.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single custom lesson.
+
+  Raises `Ecto.NoResultsError` if the CustomLesson does not exist.
+
+  ## Examples
+
+      iex> get_custom_lesson!(123)
+      %CustomLesson{}
+
+      iex> get_custom_lesson!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_custom_lesson!(id) do
+    CustomLesson
+    |> where(id: ^id)
+    |> preload(:creator)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a single custom lesson with words preloaded.
+
+  ## Examples
+
+      iex> get_custom_lesson_with_words!(123)
+      %CustomLesson{custom_lesson_words: [%CustomLessonWord{word: %Word{}}, ...]}
+
+  """
+  def get_custom_lesson_with_words!(id) do
+    CustomLesson
+    |> where(id: ^id)
+    |> preload([:creator, custom_lesson_words: :word])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Creates a custom lesson.
+
+  ## Examples
+
+      iex> create_custom_lesson(%{title: "Spring Vocabulary", creator_id: teacher_id})
+      {:ok, %CustomLesson{}}
+
+      iex> create_custom_lesson(%{title: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_custom_lesson(attrs \\ %{}) do
+    %CustomLesson{}
+    |> CustomLesson.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a custom lesson.
+
+  ## Examples
+
+      iex> update_custom_lesson(custom_lesson, %{title: "Updated Title"})
+      {:ok, %CustomLesson{}}
+
+      iex> update_custom_lesson(custom_lesson, %{title: nil})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_custom_lesson(%CustomLesson{} = custom_lesson, attrs) do
+    custom_lesson
+    |> CustomLesson.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a custom lesson.
+
+  ## Examples
+
+      iex> delete_custom_lesson(custom_lesson)
+      {:ok, %CustomLesson{}}
+
+      iex> delete_custom_lesson(custom_lesson)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_custom_lesson(%CustomLesson{} = custom_lesson) do
+    Repo.delete(custom_lesson)
+  end
+
+  @doc """
+  Publishes a custom lesson (changes status from draft to published).
+
+  ## Examples
+
+      iex> publish_custom_lesson(custom_lesson)
+      {:ok, %CustomLesson{status: "published"}}
+
+  """
+  def publish_custom_lesson(%CustomLesson{} = custom_lesson) do
+    custom_lesson
+    |> CustomLesson.publish_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Archives a custom lesson.
+
+  ## Examples
+
+      iex> archive_custom_lesson(custom_lesson)
+      {:ok, %CustomLesson{status: "archived"}}
+
+  """
+  def archive_custom_lesson(%CustomLesson{} = custom_lesson) do
+    custom_lesson
+    |> CustomLesson.archive_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking custom lesson changes.
+
+  ## Examples
+
+      iex> change_custom_lesson(custom_lesson)
+      %Ecto.Changeset{data: %CustomLesson{}}
+
+  """
+  def change_custom_lesson(%CustomLesson{} = custom_lesson, attrs \\ %{}) do
+    CustomLesson.changeset(custom_lesson, attrs)
+  end
+
+  # Custom Lesson Words
+
+  @doc """
+  Returns the list of words for a custom lesson.
+
+  ## Examples
+
+      iex> list_lesson_words(lesson_id)
+      [%CustomLessonWord{word: %Word{}}, ...]
+
+  """
+  def list_lesson_words(lesson_id) do
+    CustomLessonWord
+    |> where([lw], lw.custom_lesson_id == ^lesson_id)
+    |> order_by([lw], asc: lw.position)
+    |> preload(:word)
+    |> Repo.all()
+  end
+
+  @doc """
+  Adds a word to a custom lesson.
+
+  ## Examples
+
+      iex> add_word_to_lesson(lesson_id, word_id, %{position: 0})
+      {:ok, %CustomLessonWord{}}
+
+  """
+  def add_word_to_lesson(lesson_id, word_id, attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Map.put(:custom_lesson_id, lesson_id)
+      |> Map.put(:word_id, word_id)
+
+    result =
+      %CustomLessonWord{}
+      |> CustomLessonWord.changeset(attrs)
+      |> Repo.insert()
+
+    # Update word count
+    with {:ok, lesson_word} <- result do
+      update_lesson_word_count(lesson_id)
+      {:ok, lesson_word}
+    end
+  end
+
+  @doc """
+  Removes a word from a custom lesson.
+
+  ## Examples
+
+      iex> remove_word_from_lesson(lesson_id, word_id)
+      {:ok, %CustomLessonWord{}}
+
+  """
+  def remove_word_from_lesson(lesson_id, word_id) do
+    lesson_word =
+      CustomLessonWord
+      |> where([lw], lw.custom_lesson_id == ^lesson_id and lw.word_id == ^word_id)
+      |> Repo.one()
+
+    case lesson_word do
+      nil ->
+        {:error, :not_found}
+
+      lesson_word ->
+        result = Repo.delete(lesson_word)
+
+        with {:ok, _} <- result do
+          update_lesson_word_count(lesson_id)
+          # Reorder remaining words
+          reorder_words_after_removal(lesson_id, lesson_word.position)
+          result
+        end
+    end
+  end
+
+  @doc """
+  Reorders words in a lesson based on the provided list of word IDs.
+
+  ## Examples
+
+      iex> reorder_lesson_words(lesson_id, [word_id_1, word_id_2, word_id_3])
+      :ok
+
+  """
+  def reorder_lesson_words(lesson_id, word_ids_in_order) do
+    word_ids_in_order
+    |> Enum.with_index()
+    |> Enum.each(fn {word_id, position} ->
+      CustomLessonWord
+      |> where([lw], lw.custom_lesson_id == ^lesson_id and lw.word_id == ^word_id)
+      |> Repo.one()
+      |> case do
+        nil -> :ok
+        lesson_word ->
+          lesson_word
+          |> CustomLessonWord.reorder_changeset(position)
+          |> Repo.update()
+      end
+    end)
+
+    :ok
+  end
+
+  @doc """
+  Updates a custom lesson word's custom meaning and examples.
+
+  ## Examples
+
+      iex> update_custom_lesson_word(lesson_word, %{custom_meaning: "Custom definition", examples: ["Example 1"]})
+      {:ok, %CustomLessonWord{}}
+
+  """
+  def update_custom_lesson_word(%CustomLessonWord{} = lesson_word, attrs) do
+    lesson_word
+    |> CustomLessonWord.update_changeset(attrs)
+    |> Repo.update()
+  end
+
+  defp update_lesson_word_count(lesson_id) do
+    count =
+      CustomLessonWord
+      |> where([lw], lw.custom_lesson_id == ^lesson_id)
+      |> Repo.aggregate(:count, :id)
+
+    lesson = get_custom_lesson!(lesson_id)
+
+    lesson
+    |> CustomLesson.update_word_count_changeset(count)
+    |> Repo.update()
+  end
+
+  defp reorder_words_after_removal(lesson_id, removed_position) do
+    CustomLessonWord
+    |> where([lw], lw.custom_lesson_id == ^lesson_id and lw.position > ^removed_position)
+    |> Repo.all()
+    |> Enum.each(fn lesson_word ->
+      lesson_word
+      |> CustomLessonWord.reorder_changeset(lesson_word.position - 1)
+      |> Repo.update()
+    end)
+  end
+
+  # Publishing to Classrooms
+
+  @doc """
+  Publishes a custom lesson to a classroom.
+
+  ## Examples
+
+      iex> publish_lesson_to_classroom(lesson_id, classroom_id, teacher_id, %{due_date: ~D[2026-04-01]})
+      {:ok, %ClassroomCustomLesson{}}
+
+  """
+  def publish_lesson_to_classroom(lesson_id, classroom_id, teacher_id, attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Map.put(:custom_lesson_id, lesson_id)
+      |> Map.put(:classroom_id, classroom_id)
+      |> Map.put(:published_by_id, teacher_id)
+
+    %ClassroomCustomLesson{}
+    |> ClassroomCustomLesson.publish_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Unpublishes a lesson from a classroom.
+
+  ## Examples
+
+      iex> unpublish_lesson_from_classroom(classroom_lesson, teacher_id)
+      {:ok, %ClassroomCustomLesson{}}
+
+  """
+  def unpublish_lesson_from_classroom(%ClassroomCustomLesson{} = classroom_lesson, teacher_id) do
+    # Verify the teacher owns the classroom
+    classroom = Medoru.Classrooms.get_classroom!(classroom_lesson.classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      classroom_lesson
+      |> ClassroomCustomLesson.unpublish_changeset()
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Republishes a previously unpublished lesson to a classroom.
+
+  ## Examples
+
+      iex> republish_lesson_to_classroom(classroom_lesson, teacher_id)
+      {:ok, %ClassroomCustomLesson{}}
+
+  """
+  def republish_lesson_to_classroom(%ClassroomCustomLesson{} = classroom_lesson, teacher_id) do
+    classroom = Medoru.Classrooms.get_classroom!(classroom_lesson.classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      classroom_lesson
+      |> ClassroomCustomLesson.republish_changeset()
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Lists all custom lessons published to a classroom.
+
+  ## Examples
+
+      iex> list_classroom_custom_lessons(classroom_id)
+      [%ClassroomCustomLesson{custom_lesson: %CustomLesson{}}, ...]
+
+  """
+  def list_classroom_custom_lessons(classroom_id, opts \\ []) do
+    status = Keyword.get(opts, :status, "active")
+
+    ClassroomCustomLesson
+    |> where([ccl], ccl.classroom_id == ^classroom_id)
+    |> then(fn query ->
+      if status do
+        where(query, [ccl], ccl.status == ^status)
+      else
+        query
+      end
+    end)
+    |> order_by([ccl], desc: ccl.published_at)
+    |> preload(:custom_lesson)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a classroom custom lesson by ID.
+
+  ## Examples
+
+      iex> get_classroom_custom_lesson!(id)
+      %ClassroomCustomLesson{}
+
+  """
+  def get_classroom_custom_lesson!(id) do
+    ClassroomCustomLesson
+    |> where(id: ^id)
+    |> preload([:custom_lesson, :classroom])
+    |> Repo.one!()
   end
 end
