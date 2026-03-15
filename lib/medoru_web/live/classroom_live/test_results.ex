@@ -88,7 +88,10 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
        |> assign(:results, results)
        |> assign(:total_score, attempt.score)
        |> assign(:max_score, attempt.max_score || test.total_points)
-       |> assign(:percentage, calculate_percentage(attempt.score, attempt.max_score || test.total_points))}
+       |> assign(
+         :percentage,
+         calculate_percentage(attempt.score, attempt.max_score || test.total_points)
+       )}
     end
   end
 

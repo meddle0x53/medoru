@@ -352,19 +352,6 @@ defmodule Medoru.TestsTest do
       %{test_record: test_record, step: step, user: user, session: session}
     end
 
-    defp user_fixture do
-      email = "test#{System.unique_integer()}@example.com"
-
-      {:ok, user} =
-        Medoru.Accounts.register_user_with_oauth(%{
-          email: email,
-          provider: "google",
-          provider_uid: "uid_#{System.unique_integer()}"
-        })
-
-      user
-    end
-
     test "record_step_answer/3 records a correct answer", %{step: step, session: session} do
       attrs = %{"answer" => "Japan", "time_spent_seconds" => 30, "step_index" => 0}
 
@@ -435,19 +422,6 @@ defmodule Medoru.TestsTest do
 
       user = user_fixture()
       %{test_record: test_record, user: user}
-    end
-
-    defp user_fixture do
-      email = "test#{System.unique_integer()}@example.com"
-
-      {:ok, user} =
-        Medoru.Accounts.register_user_with_oauth(%{
-          email: email,
-          provider: "google",
-          provider_uid: "uid_#{System.unique_integer()}"
-        })
-
-      user
     end
 
     test "get_user_test_stats/1 returns user statistics", %{test_record: test_record, user: user} do

@@ -1,104 +1,120 @@
 # Iteration 30: Complete Classroom Test Taking Experience
 
-**Status**: 🚧 IN PROGRESS  
-**Started**: 2026-03-12  
+**Status**: ✅ COMPLETED & APPROVED  
+**Completed**: 2026-03-15  
+**Approved**: 2026-03-15  
 **Priority**: 🔴 HIGH
 
 ## Overview
 
-The current test-taking experience is incomplete. Students can start tests but many critical features are missing or broken.
+The classroom test-taking experience has been completed. All critical features are now working:
 
-## Issues to Fix
+## Issues Fixed
 
-### 1. Timer Not Working ⏱️
-- **Current**: Timer display shows but doesn't countdown
-- **Expected**: Live countdown, auto-submit when time reaches 0
-- **Files**: `ClassroomLive.Test`, JavaScript hook needed
+### 1. Timer Working ⏱️ ✅
+- **Status**: Timer counts down every second via JavaScript hook
+- **Implementation**: `assets/js/hooks/timer.js` handles client-side countdown
+- **Sync**: Periodic sync with server every 10 seconds
 
-### 2. No Test Results/Review Screen 📊
-- **Current**: After last question, just redirects to classroom
-- **Expected**: Results page showing:
-  - Score (X/Y points)
-  - Percentage
-  - Which answers were correct/incorrect
-  - Correct answers for wrong responses
-  - Time spent
-- **Files**: New `ClassroomLive.TestResults` LiveView
+### 2. Test Results/Review Screen 📊 ✅
+- **Status**: Results page shows complete score breakdown
+- **Features**:
+  - Score (X/Y points) with percentage
+  - Correct/incorrect marking with color coding
+  - Correct answers shown for wrong responses
+  - Time spent display
+  - Per-question points earned
+  - Explanation display when available
 
-### 3. Timer Not Recorded 📝
-- **Current**: Time remaining not updated in real-time
-- **Expected**: Track actual time spent, save to attempt
+### 3. Timer Recording 📝 ✅
+- **Status**: Time remaining synced to DB periodically
+- **Implementation**: `sync_time` event updates `time_remaining_seconds` in attempts table
 
-### 4. No Auto-Submit ⏹️
-- **Current**: Timer hits 0 but nothing happens
-- **Expected**: Auto-submit test with current answers
+### 4. Auto-Submit ⏹️ ✅
+- **Status**: Test auto-submits when timer reaches 0
+- **Implementation**: `time_up` event triggers `auto_submit_test`
+- **Result**: Redirects to results page with warning flash
 
-### 5. Step Progress Not Saved 💾
-- **Current**: If student refreshes, they lose progress
-- **Expected**: Progress saved after each answer
+### 5. Progress Saving 💾 ✅
+- **Status**: Progress saved after each answer
+- **Implementation**: `Tests.update_session_progress/3` updates `current_step_index` in test_sessions
 
-### 6. No Resume Support 🔄
-- **Current**: "Continue" button exists but may not work properly
-- **Expected**: Seamless resume from where they left off
+### 6. Resume Support 🔄 ✅
+- **Status**: Students can resume in-progress tests
+- **Implementation**: On mount, checks for existing in-progress attempt and session, resumes at correct step
 
-## Files to Create/Modify
+## Files Modified/Created
 
-### New Files
+### Existing Files Modified
+- `lib/medoru_web/live/classroom_live/test.ex` - Added progress saving, timer event handlers
+- `lib/medoru/tests.ex` - Added `update_session_progress/3` function
+- `lib/medoru/tests/test_session.ex` - Verified `progress_changeset/3` function
+
+### Files Already Existed (Verified Working)
 - `lib/medoru_web/live/classroom_live/test_results.ex` - Results/review screen
-- `assets/js/hooks/test_timer.js` - Timer countdown hook
+- `assets/js/hooks/timer.js` - Timer countdown hook
 
-### Modified Files
-- `lib/medoru_web/live/classroom_live/test.ex` - Core test taking logic
-- `lib/medoru/classrooms.ex` - Timer updates, auto-submit
-- `lib/medoru/tests.ex` - Step answer recording
-- `lib/medoru_web/components/test_components.ex` - Reusable test UI
+### New Test File
+- `test/medoru_web/live/classroom_live/test_test.exs` - Comprehensive test suite (15 tests)
 
-## Technical Tasks
+## Implementation Details
 
-1. [ ] Create JavaScript timer hook with 1-second countdown
-2. [ ] Add `tick` event handler to update time_remaining in DB
-3. [ ] Implement auto-submit when timer reaches 0
-4. [ ] Create test results LiveView with score breakdown
-5. [ ] Show correct/incorrect for each question
-6. [ ] Add progress saving after each answer
-7. [ ] Test resume functionality thoroughly
-
-## UI Mockup
-
+### Timer Hook (`assets/js/hooks/timer.js`)
+```javascript
+// Client-side countdown that updates display directly
+// Sends sync_time event every N seconds
+// Sends time_up event when timer reaches 0
 ```
-┌─────────────────────────────────────┐
-│ Test Results: Test 2               │
-│                                     │
-│ Score: 6/8 points (75%)            │
-│ Time: 4m 32s / 10m                 │
-│                                     │
-├─────────────────────────────────────┤
-│ Q1: What is 日本?                  │
-│ Your answer: Japan ✓               │
-│ Points: 1/1                        │
-├─────────────────────────────────────┤
-│ Q2: How do you read "黒色"?        │
-│ Your answer: 白色 ✗                │
-│ Correct: 黒色                       │
-│ Points: 0/1                        │
-├─────────────────────────────────────┤
-│ ... more questions ...             │
-│                                     │
-│ [Back to Classroom]                │
-└─────────────────────────────────────┘
-```
+
+### Progress Tracking
+When a student answers a question:
+1. Answer is recorded via `Tests.record_step_answer/3`
+2. Attempt progress is updated via `Classrooms.update_test_progress/2`
+3. Session progress is updated via `Tests.update_session_progress/2`
+
+### Resume Flow
+1. User navigates to test page
+2. System checks for existing in-progress attempt
+3. If found, loads session and calculates current step from `session.current_step_index`
+4. Displays test at the correct question
+
+### Auto-Submit Flow
+1. Timer hook detects time remaining <= 0
+2. Sends `time_up` event to server
+3. Server calls `auto_submit_test/3`
+4. Attempt marked as `timed_out`, score calculated
+5. Redirects to results page
 
 ## Acceptance Criteria
 
-- [ ] Timer counts down every second
-- [ ] Test auto-submits at 0 seconds
-- [ ] Results page shows score breakdown
-- [ ] Correct/incorrect clearly marked
-- [ ] Wrong answers show correct answer
-- [ ] Time spent recorded accurately
-- [ ] Can resume in-progress tests
-- [ ] Progress saved after each question
+- [x] Timer counts down every second
+- [x] Test auto-submits at 0 seconds
+- [x] Results page shows score breakdown
+- [x] Correct/incorrect clearly marked
+- [x] Wrong answers show correct answer
+- [x] Time spent recorded accurately
+- [x] Can resume in-progress tests
+- [x] Progress saved after each question
+
+## Test Coverage
+
+New test file: `test/medoru_web/live/classroom_live/test_test.exs`
+
+**15 tests covering:**
+- Mounting test page for approved members
+- Redirecting non-members and pending members
+- Submitting answers and moving to next question
+- Completing test and redirecting to results
+- Timer events (time_up, sync_time)
+- Resume in-progress tests
+- Already completed test handling
+- Test results display
+- Correct/incorrect answer display
+- Explanation display
+- Fill/typing questions
+
+All tests passing ✅
 
 ## Estimated Time
 
-2-3 days
+2-3 days (actual: ~1 day)

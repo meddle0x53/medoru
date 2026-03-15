@@ -168,6 +168,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       case socket.assigns.step_changeset do
         %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
           Map.put(attrs, "question_data", data)
+
         _ ->
           attrs
       end
@@ -181,6 +182,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
         question_data = Map.get(attrs, "question_data", %{})
         question_data = Map.put(question_data, "include_reading", include_reading)
+
         question_data =
           if include_reading && reading_answer && reading_answer != "" do
             Map.put(question_data, "reading_answer", reading_answer)
@@ -1102,7 +1104,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <div>
                             <label class="block text-sm font-medium text-base-content mb-2">
                               Reading Answer (Hiragana)
-                              <span class="text-xs text-secondary ml-1">- students must also enter this</span>
+                              <span class="text-xs text-secondary ml-1">
+                                - students must also enter this
+                              </span>
                             </label>
                             <input
                               type="text"
@@ -1333,7 +1337,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     Map.put(params, "hints", hints)
   end
 
-  defp parse_options_from_params(%{"question_data" => question_data} = params) when is_map(question_data) do
+  defp parse_options_from_params(%{"question_data" => question_data} = params)
+       when is_map(question_data) do
     # Already a map, just continue processing other fields
     parse_options_from_params(Map.delete(params, "question_data"))
   end

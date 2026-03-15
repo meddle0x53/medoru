@@ -288,6 +288,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
           # Complete the test
           complete_test(socket, session.id, attempt.id)
         else
+          # Update session progress for resume functionality
+          Tests.update_session_progress(session.id, next_index)
+
           next_step = Enum.at(socket.assigns.steps, next_index)
 
           {:noreply,
@@ -334,6 +337,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
           # Complete the test
           complete_test(socket, session.id, attempt.id)
         else
+          # Update session progress for resume functionality
+          Tests.update_session_progress(session.id, next_index)
+
           next_step = Enum.at(socket.assigns.steps, next_index)
 
           {:noreply,
@@ -464,8 +470,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
       end
     end
   end
-
-
 
   defp complete_test(socket, session_id, attempt_id) do
     # Calculate final score
@@ -725,8 +729,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
     correct_normalized = String.downcase(String.trim(correct))
 
     # Exact match
+    # Contains match (e.g., "blue" matches "bluish")
     answer_normalized == correct_normalized or
-      # Contains match (e.g., "blue" matches "bluish")
       String.contains?(answer_normalized, correct_normalized) or
       String.contains?(correct_normalized, answer_normalized)
   end

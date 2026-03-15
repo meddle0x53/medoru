@@ -709,10 +709,37 @@ defmodule Medoru.Tests do
   """
   def complete_test_session(session_id) do
     case Repo.get(TestSession, session_id) do
-      nil -> {:ok, nil}
+      nil ->
+        {:ok, nil}
+
       session ->
         session
         |> TestSession.reset_changeset()
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Updates the test session's current step index.
+  Used to track progress during test taking for resume functionality.
+
+  ## Examples
+
+      iex> update_session_progress(session_id, 3)
+      {:ok, %TestSession{current_step_index: 3}}
+
+  """
+  def update_session_progress(session_id, current_step_index, time_spent_seconds \\ nil) do
+    case Repo.get(TestSession, session_id) do
+      nil ->
+        {:error, :not_found}
+
+      session ->
+        # Use existing time_spent_seconds if not provided
+        time_spent = time_spent_seconds || session.time_spent_seconds || 0
+
+        session
+        |> TestSession.progress_changeset(current_step_index, time_spent)
         |> Repo.update()
     end
   end
@@ -987,7 +1014,8 @@ defmodule Medoru.Tests do
         answer_data = %{
           answer: attrs["answer"],
           is_correct: attrs["is_correct"],
-          points_earned: attrs["points_earned"] || if(attrs["is_correct"], do: step.points, else: 0),
+          points_earned:
+            attrs["points_earned"] || if(attrs["is_correct"], do: step.points, else: 0),
           time_spent_seconds: attrs["time_spent_seconds"],
           step_index: attrs["step_index"],
           metadata: attrs["metadata"] || %{},

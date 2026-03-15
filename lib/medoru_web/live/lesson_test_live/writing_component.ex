@@ -22,9 +22,9 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
     >
       <%!-- Hidden stroke data for JS library --%>
       <%!-- Use step's question_data if available, otherwise fall back to kanji's stroke_data --%>
-      <% strokes = @step.question_data["strokes"] || (@step.kanji && @step.kanji.stroke_data["strokes"]) || [] %>
-      <div data-stroke-data={Jason.encode!(strokes)} class="hidden">
-      </div>
+      <% strokes =
+        @step.question_data["strokes"] || (@step.kanji && @step.kanji.stroke_data["strokes"]) || [] %>
+      <div data-stroke-data={Jason.encode!(strokes)} class="hidden"></div>
 
       <%!-- Question --%>
       <div class="text-center">

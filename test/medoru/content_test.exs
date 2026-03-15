@@ -372,13 +372,19 @@ defmodule Medoru.ContentTest do
 
     test "search_words/2 returns exact match 'blue' before phrases containing 'blue'" do
       # Create the exact match word "blue" (青い) - HIGH frequency
-      blue_exact = word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 5000})
+      blue_exact =
+        word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 5000})
 
       # Create phrases containing "blue" that should rank lower - but with even HIGHER frequency
       # This simulates the real-world scenario where common phrases might outrank the base word
-      _navy_blue = word_fixture(%{text: "紺碧", meaning: "navy blue", reading: "こんぺき", usage_frequency: 10000})
-      _dark_blue = word_fixture(%{text: "紺色", meaning: "dark blue", reading: "こんいろ", usage_frequency: 8000})
-      _blue_sky = word_fixture(%{text: "青空", meaning: "blue sky", reading: "あおぞら", usage_frequency: 9000})
+      _navy_blue =
+        word_fixture(%{text: "紺碧", meaning: "navy blue", reading: "こんぺき", usage_frequency: 10000})
+
+      _dark_blue =
+        word_fixture(%{text: "紺色", meaning: "dark blue", reading: "こんいろ", usage_frequency: 8000})
+
+      _blue_sky =
+        word_fixture(%{text: "青空", meaning: "blue sky", reading: "あおぞら", usage_frequency: 9000})
 
       # Search for "blue" with limit: 10 like the LiveView does
       results = Content.search_words("blue", limit: 10)
@@ -390,6 +396,7 @@ defmodule Medoru.ContentTest do
       # The exact match "blue" should be first
       assert first_result.id == blue_exact.id,
              "Expected exact match 'blue' to be first, but got '#{first_result.meaning}'"
+
       assert first_result.meaning == "blue"
     end
 
@@ -424,7 +431,8 @@ defmodule Medoru.ContentTest do
       end
 
       # Create the exact match with lower frequency
-      blue_exact = word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 100})
+      blue_exact =
+        word_fixture(%{text: "青い", meaning: "blue", reading: "あおい", usage_frequency: 100})
 
       # Search with limit 10
       results = Content.search_words("blue", limit: 10)
@@ -432,6 +440,7 @@ defmodule Medoru.ContentTest do
       # The exact match should still appear in results and be first
       assert length(results) <= 10
       first_result = hd(results)
+
       assert first_result.id == blue_exact.id,
              "Expected exact match 'blue' to be first even with many high-frequency variants"
     end
@@ -439,8 +448,12 @@ defmodule Medoru.ContentTest do
     test "search_words/2 exact match appears before partial matches for common words" do
       # Create words similar to the "one" scenario mentioned in requirements
       one_exact = word_fixture(%{text: "一", meaning: "one", reading: "いち", usage_frequency: 2000})
-      one_person = word_fixture(%{text: "一人", meaning: "one person", reading: "ひとり", usage_frequency: 500})
-      one_day = word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
+
+      _one_person =
+        word_fixture(%{text: "一人", meaning: "one person", reading: "ひとり", usage_frequency: 500})
+
+      _one_day =
+        word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
 
       results = Content.search_words("one", limit: 10)
 
