@@ -158,70 +158,54 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 
 ---
 
-### Iteration 24: Internationalization (i18n) - Multi-Language Support
+### Iteration 24A: UI Internationalization (i18n)
 **Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
-**Depends On**: None (can be done in parallel)
+**Log**: [ITERATION-24A-ui-i18n.md](./ITERATION-24A-ui-i18n.md)
 
-**Overview**:  
-Add full internationalization support to make the platform accessible in English, Bulgarian, and Japanese. Use AI-powered translation for all UI labels, with fallback to English.
+**Overview**: Translate entire interface to Bulgarian and Japanese using Gettext. Language selector in header and settings.
 
-**Files to Create**:
-- `priv/gettext/en/LC_MESSAGES/default.po` - English source translations
-- `priv/gettext/bg/LC_MESSAGES/default.po` - Bulgarian translations
-- `priv/gettext/ja/LC_MESSAGES/default.po` - Japanese translations
-- `lib/medoru_web/live/settings_live/language_selector.ex` - Language selection component
-- `lib/medoru/i18n/translation_manager.ex` - Translation management utilities
-
-**Files Modified**:
-- `config/config.exs` - Add i18n configuration, default locale
-- `lib/medoru_web.ex` - Import Gettext macros, set locale plug
-- `lib/medoru_web/router.ex` - Add locale scope or parameter
-- `lib/medoru_web/components/core_components.ex` - Wrap all text in `gettext()` calls
-- All LiveView modules - Replace hardcoded strings with `gettext()` calls
-- All templates (.heex files) - Replace text with `{gettext("...")}`
-- `lib/medoru_web/plugs/set_locale.ex` - Set locale from session/cookie/params
+**Languages**: English (default), Bulgarian, Japanese
 
 **Key Features**:
-- **Language Selector Dropdown**: Available in header/settings
-  - 🇬🇧 English (default)
-  - 🇧🇬 Bulgarian
-  - 🇯🇵 Japanese
-- **AI-Powered Translation**: Use AI to generate initial translations for all labels
-- **Gettext Integration**: Standard Elixir i18n via `Gettext` module
-- **Locale Persistence**: Store selection in session + cookie
-- **Fallback Chain**: ja → en, bg → en (if translation missing)
-- **Translation Coverage**:
-  - All UI labels and buttons
-  - Flash messages and notifications
-  - Error messages and validations
-  - Lesson titles and descriptions (keep Japanese content, translate UI)
-  - Navigation and menus
-  - Forms and placeholders
+- Gettext-based translations (priv/gettext/)
+- Language selector in header (dropdown with flags) + settings page
+- Locale persistence: URL param → user setting → cookie → browser → default
+- All UI text wrapped in `gettext()` calls
+- User approval required for Bulgarian and Japanese translations
 
-**Translation Process**:
-1. Extract all strings using `mix gettext.extract`
-2. AI translate missing strings for bg/ja
-3. Review and refine translations
-4. Compile with `mix gettext.merge`
+**Files**: New SetLocale plug, language settings LiveView, BG/JA .po files
 
-**UI Example**:
+---
+
+### Iteration 24B: Content Translation (Kanji, Words, Lessons)
+**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
+**Log**: [ITERATION-24B-content-i18n.md](./ITERATION-24B-content-i18n.md)  
+**Depends On**: 24A
+
+**Overview**: Translate all learning content meanings to Bulgarian and Japanese. JSONB storage for extensibility.
+
+**Storage**: Add `translations` JSONB column to kanji, words, lessons tables:
 ```elixir
-# Before
-<.button>Start Lesson</.button>
-
-# After
-<.button>{gettext("Start Lesson")}</.button>
+%{
+  "bg" => %{"meanings" => [...], "meaning" => "..."},
+  "ja" => %{"meanings" => [...], "description" => "..."}
+}
 ```
 
-**Database Considerations**:
-- User preference: `users.settings["locale"]` (default: "en")
-- Guest users: cookie-based locale preference
+**Scope**:
+- Kanji meanings (array)
+- Word meanings (string)
+- System lesson titles/descriptions (custom lessons use creator's locale)
+- Example sentences and usage notes
+- Everything a Bulgarian-only speaker needs to learn Japanese
 
-**Technical Notes**:
-- Use `ex_cldr` for number/date/currency formatting if needed
-- Japanese: Consider kanji vs hiragana for different user levels
-- Bulgarian: Cyrillic support, pluralization rules
-- Keep content language (vocabulary words) in Japanese, only translate UI
+**Behavior**:
+- Bulgarian user sees all meanings in Bulgarian
+- Test questions validate against Bulgarian meanings
+- Daily tests use localized meanings
+- Fallback to English if translation missing
+
+**User Approval**: Required for both Bulgarian and Japanese content translations
 
 ---
 
@@ -533,13 +517,13 @@ Add full internationalization support to make the platform accessible in English
 
 ## 📊 Summary
 
-**Completed**: 26/30 iterations (87%)
+**Completed**: 26 iterations
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
 | 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 🟢, 32 🚧 | 15 COMPLETE, 1 IN PROGRESS |
 | 🔴 High | - | 0 PENDING |
-| 🟡 Medium | 13, 24 | 2 PENDING |
+| 🟡 Medium | 13, 24A, 24B | 3 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
 | **Total** | **6** | **6-8 days est.** |
 
@@ -564,21 +548,15 @@ Add full internationalization support to make the platform accessible in English
 14. **Iteration 27** ✅ (Typing Step Builder) - Fill in blank questions
 15. **Iteration 30** ✅ (Complete Test Taking) - Timer, results, auto-submit, resume
 
-### Up Next 🔴
-1. **Iteration 31** (Teacher Custom Lessons) - Custom reading lessons for classrooms
-
-Then MEDIUM priority items:
+### Up Next 🟡
+1. **Iteration 24A** (UI i18n) - Translate interface to Bulgarian and Japanese
+2. **Iteration 24B** (Content i18n) - Translate kanji/word/lesson meanings
 3. **Iteration 13** (Admin Badge Management)
-4. **Iteration 24** (i18n Multi-Language)
+4. **Iteration 21** (Admin Dashboard)
 
-Then MEDIUM priority items:
-3. **Iteration 13** (Admin Badge Management)
-4. **Iteration 24** (i18n Multi-Language)
-
-### Future 🟡
-14. **Iteration 13** (Admin Badge Management) - Admin features
-15. **Iteration 24** (i18n Multi-Language) - Platform internationalization
-16. **Iteration 21** (Admin Dashboard) - Admin polish
+### Optional / Future
+- **Iteration 32** (UI Polish & Mobile) - Pre-production cleanup
+- **Iteration 27** (Typing Step Builder enhancements - already partially done)
 
 ---
 
