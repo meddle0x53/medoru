@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-14  
-**Completed**: 23 iterations  
-**Remaining**: 8 iterations (5 HIGH, 2 MEDIUM, 1 LOWER priority)
+**Last Updated**: 2026-03-15  
+**Completed**: 24 iterations  
+**Remaining**: 5 iterations (3 HIGH, 2 MEDIUM priority)
 
 ---
 
@@ -159,7 +159,7 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 ---
 
 ### Iteration 24A: UI Internationalization (i18n)
-**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Status**: ✅ APPROVED | **Completed**: 2026-03-15  
 **Log**: [ITERATION-24A-ui-i18n.md](./ITERATION-24A-ui-i18n.md)
 
 **Overview**: Translate entire interface to Bulgarian and Japanese using Gettext. Language selector in header and settings.
@@ -167,20 +167,20 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 **Languages**: English (default), Bulgarian, Japanese
 
 **Key Features**:
-- Gettext-based translations (priv/gettext/)
-- Language selector in header (dropdown with flags) + settings page
-- Locale persistence: URL param → user setting → cookie → browser → default
-- All UI text wrapped in `gettext()` calls
-- User approval required for Bulgarian and Japanese translations
+- ✅ Gettext-based translations (priv/gettext/) - 707 strings
+- ✅ Language selector in header (dropdown with flags) + settings page
+- ✅ Locale persistence: URL param → cookie → browser → default
+- ✅ All UI text wrapped in `gettext()` calls
+- ✅ Bulgarian and Japanese translations approved
 
-**Files**: New SetLocale plug, language settings LiveView, BG/JA .po files
+**Files Created**: SetLocale plug, language settings LiveView, BG/JA .po files
 
 ---
 
-### Iteration 24B: Content Translation (Kanji, Words, Lessons)
+### Iteration 24B: Content Translation (Kanji, Words, Lessons) 🔴 HIGH
 **Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
 **Log**: [ITERATION-24B-content-i18n.md](./ITERATION-24B-content-i18n.md)  
-**Depends On**: 24A
+**Depends On**: 24A ✅ COMPLETED
 
 **Overview**: Translate all learning content meanings to Bulgarian and Japanese. JSONB storage for extensibility.
 
@@ -572,6 +572,57 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 - Publish to classrooms
 - Students study without test (mark as complete)
 - Points awarded on completion
+
+---
+
+## 🔴 HIGH PRIORITY (UI & Deployment)
+
+### Iteration 32: UI Polish & Mobile Responsiveness
+**Status**: ⏳ NOT STARTED | **Estimated**: 2-3 days  
+**Log**: [ITERATION-32-ui-polish-mobile.md](./ITERATION-32-ui-polish-mobile.md)  
+**Priority**: 🔴 HIGH
+
+**Key Features**:
+- Mobile-responsive design audit and fixes
+- Touch-friendly UI elements
+- Responsive navigation (hamburger menu on mobile)
+- Optimized layouts for small screens
+- Dark mode refinements
+- Accessibility improvements
+
+---
+
+### Iteration 33: Deployment & Production Setup
+**Status**: ⏳ PLANNED | **Estimated**: 3-4 days  
+**Log**: [ITERATION-33-deployment.md](./ITERATION-33-deployment.md)  
+**Priority**: 🔴 HIGH  
+**Domain**: medoru.net
+
+**Infrastructure**:
+- **Server**: VPS (to be provisioned)
+- **Domain**: medoru.net (to be purchased)
+- **SSL**: Certbot (Let's Encrypt)
+- **Reverse Proxy**: Nginx
+- **App**: Phoenix as systemd service
+- **Database**: PostgreSQL
+
+**Deployment Method**: Ansible playbook
+
+**Data Migration**:
+- ✅ Migrate: Kanji, readings, words, lessons, badges (system content)
+- ❌ Skip: Users, classrooms, custom tests, custom lessons (user data)
+
+**Secrets from Local Env**:
+- Real Google OAuth credentials
+- Database credentials
+- Phoenix secret key
+
+**Key Features**:
+- Automated deployment via Ansible
+- Nginx reverse proxy with SSL
+- Systemd service for Phoenix app
+- Database seeding from local dump
+- Production environment variables
 
 ---
 

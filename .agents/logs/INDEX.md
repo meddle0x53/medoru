@@ -19,37 +19,18 @@
 | 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
 | 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
-| 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
-| 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
-| 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
 | 13 | Admin Badge Management | ⏳ PLANNED | - |
-| 15 | Teacher Test Creation | ⏳ PLANNED | - |
+| 15 | Teacher Test Creation | ✅ APPROVED | 2026-03-15 |
 | 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
 | 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
 | 20 | Classroom Tests, Lessons & Rankings | ✅ COMPLETED | 2026-03-11 |
 | 21 | Admin Dashboard | ⏳ PLANNED | - |
-| 24 | i18n Multi-Language | ✅ APPROVED | 2026-03-15 |
+| 24A | i18n UI (Bulgarian/Japanese) | ✅ APPROVED | 2026-03-15 |
+| 24B | i18n Content Translation | ⏳ NOT STARTED | 🔴 HIGH | - |
+| 32 | UI Polish & Mobile Responsiveness | ⏳ NOT STARTED | 🔴 HIGH | - |
+| 33 | Deployment & Production Setup | ⏳ PLANNED | 🔴 HIGH | - |
 
-## Version 0.2.0 (Social Features) - Planned
-
-| # | Title | Status | Date |
-|---|-------|--------|------|
-| 22 | Friends System | ⏳ PLANNED | - |
-| 23 | Real-time Duels | ⏳ PLANNED | - |
-| 24 | Rankings & Leaderboards | ⏳ PLANNED | - |
-| 25 | Duel History & Stats | ⏳ PLANNED | - |
-| 26 | Notifications System | ⏳ PLANNED | - |
-
-## Version 0.3.0 (Content Expansion) - Planned
-
-| # | Title | Status | Date |
-|---|-------|--------|------|
-| 27 | N4 Kanji & Words | ⏳ PLANNED | - |
-| 28 | Grammar Content | ⏳ PLANNED | - |
-| 29 | Listening Exercises | ⏳ PLANNED | - |
-| 30 | Stroke Drawing | ⏳ PLANNED | - |
-
-## Future Ideas (Backlog)
+## Future Ideas (Backlog - Post v0.1.0)
 - Mobile app (React Native/Flutter)
 - AI-powered pronunciation feedback
 - Community-created lessons
@@ -60,18 +41,17 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 24A APPROVED
+- **Phase**: Iteration 24A APPROVED - Ready for 24B (HIGH)
 - **Last completed**: Iteration 24A - UI Internationalization (i18n)
-- **Current**: ⏳ 8 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 21/29 iterations for v0.1.0 (8 remaining)
+- **Current**: ⏳ 4 PENDING iterations for v0.1.0 ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 20/25 iterations for v0.1.0 (5 remaining)
 
-## ⏳ Pending Work (Priority Order)
-1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
-2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests ✅
-3. **🔴 HIGH**: Iterations 15, 20 - Classroom System (Test Creation, Lessons & Rankings)
+## ⏳ Pending Work for v0.1.0 (Priority Order)
+1. **🔴 HIGH**: Iteration 24B - Content Translation (Kanji/Word meanings → BG/JA)
+2. **🔴 HIGH**: Iteration 32 - UI Polish & Mobile Responsiveness
+3. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
 4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
-5. **🟡 MEDIUM**: ~~Iteration 24 - i18n (Bulgarian/Japanese)~~ ✅ COMPLETED
-6. **🟢 LOWER**: Iteration 21 - Admin Dashboard
+5. **🟡 MEDIUM**: Iteration 21 - Admin Dashboard
 
 See [PENDING.md](./PENDING.md) for detailed breakdown.
 
@@ -140,13 +120,12 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Review items + new words mix (up to 5 new)
 - One test per user per day
 
-### ⏳ Pending (Iterations 13, 15, 19-21, 24) - MVP Extended
+### ⏳ Pending (Iterations 13, 21, 24B, 32, 33) - MVP Extended
+- Content Translation (24B) 🔴 HIGH
+- UI Polish & Mobile (32) 🔴 HIGH
+- Deployment & Production Setup (33) 🔴 HIGH
 - Admin badge management (13)
-- Teacher test creation (15)
-- Classroom membership (19)
-- Classroom tests, lessons & rankings (20)
 - Admin dashboard (21)
-- ~~i18n Multi-Language (24)~~ ✅ APPROVED
 
 ## Environment
 
@@ -190,7 +169,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 11 - Logging Infrastructure)
+4. **Ask meddle** which iteration to work on (currently: Iteration 24B or 32 - both HIGH priority)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
