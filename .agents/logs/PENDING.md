@@ -537,7 +537,7 @@ Add full internationalization support to make the platform accessible in English
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 🟢 | 15 COMPLETE |
+| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 🟢, 32 🚧 | 15 COMPLETE, 1 IN PROGRESS |
 | 🔴 High | - | 0 PENDING |
 | 🟡 Medium | 13, 24 | 2 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
