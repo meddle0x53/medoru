@@ -1,14 +1,14 @@
 defmodule Medoru.Content.CustomLesson do
   @moduledoc """
   Schema for custom lessons created by teachers.
-  
+
   Unlike system lessons (auto-generated from Core 6000), custom lessons allow
   teachers to:
   - Select specific words from the vocabulary database
   - Customize meanings per lesson context
   - Add example sentences
   - Publish to specific classrooms
-  
+
   Students complete custom lessons by studying the material (no test required).
   """
   use Ecto.Schema
@@ -42,7 +42,15 @@ defmodule Medoru.Content.CustomLesson do
   """
   def changeset(custom_lesson, attrs) do
     custom_lesson
-    |> cast(attrs, [:title, :description, :lesson_type, :difficulty, :status, :word_count, :creator_id])
+    |> cast(attrs, [
+      :title,
+      :description,
+      :lesson_type,
+      :difficulty,
+      :status,
+      :word_count,
+      :creator_id
+    ])
     |> validate_required([:title, :lesson_type, :status, :creator_id])
     |> validate_length(:title, min: 3, max: 100)
     |> validate_length(:description, max: 500)

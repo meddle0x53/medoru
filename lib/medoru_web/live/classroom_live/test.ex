@@ -16,14 +16,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
       nil ->
         {:ok,
          socket
-         |> put_flash(:error, "You are not a member of this classroom.")
+         |> put_flash(:error, gettext("You are not a member of this classroom."))
          |> push_navigate(to: ~p"/classrooms")}
 
       membership ->
         if membership.status != :approved do
           {:ok,
            socket
-           |> put_flash(:error, "Your membership is pending approval.")
+           |> put_flash(:error, gettext("Your membership is pending approval."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
         else
           load_test_session(socket, classroom_id, test_id, user)
@@ -39,7 +39,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       is_nil(classroom_test) || classroom_test.status != :active ->
         {:ok,
          socket
-         |> put_flash(:error, "This test is not available in this classroom.")
+         |> put_flash(:error, gettext("This test is not available in this classroom."))
          |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
 
       true ->
@@ -63,7 +63,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
               existing_attempt.reset_count == 0 ->
             {:ok,
              socket
-             |> put_flash(:info, "You have already completed this test.")
+             |> put_flash(:info, gettext("You have already completed this test."))
              |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
 
           # Can start new attempt (no existing or was reset)
@@ -117,7 +117,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
         {:error, _} ->
           {:ok,
            socket
-           |> put_flash(:error, "Failed to start test session.")
+           |> put_flash(:error, gettext("Failed to start test session."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
       end
     else
@@ -190,20 +190,20 @@ defmodule MedoruWeb.ClassroomLive.Test do
           {:error, _} ->
             {:ok,
              socket
-             |> put_flash(:error, "Failed to start test session.")
+             |> put_flash(:error, gettext("Failed to start test session."))
              |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
         end
 
       {:error, :already_attempted} ->
         {:ok,
          socket
-         |> put_flash(:info, "You have already taken this test.")
+         |> put_flash(:info, gettext("You have already taken this test."))
          |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
 
       {:error, _} ->
         {:ok,
          socket
-         |> put_flash(:error, "Failed to start test.")
+         |> put_flash(:error, gettext("Failed to start test."))
          |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
     end
   end
@@ -304,7 +304,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:error, changeset} ->
         require Logger
         Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
-        {:noreply, put_flash(socket, :error, "Failed to submit answer. Please try again.")}
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
     end
   end
 
@@ -353,7 +355,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:error, changeset} ->
         require Logger
         Logger.error("Failed to submit answer (other): #{inspect(changeset.errors)}")
-        {:noreply, put_flash(socket, :error, "Failed to submit answer. Please try again.")}
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
     end
   end
 
@@ -404,7 +408,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   @impl true
   def handle_event("stroke_incorrect", _params, socket) do
     # KanjiWriter library cleared the stroke automatically
-    {:noreply, put_flash(socket, :error, "Try again - follow the red guide")}
+    {:noreply, put_flash(socket, :error, gettext("Try again - follow the red guide"))}
   end
 
   defp submit_writing_answer(socket, correct, accuracy) do
@@ -466,7 +470,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           end
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to submit answer.")}
+          {:noreply, put_flash(socket, :error, gettext("Failed to submit answer."))}
       end
     end
   end
@@ -520,7 +524,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:ok, _} ->
         {:noreply,
          socket
-         |> put_flash(:warning, "Time's up! Your test was auto-submitted.")
+         |> put_flash(:warning, gettext("Time's up! Your test was auto-submitted."))
          |> push_navigate(
            to:
              ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
@@ -543,7 +547,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
               navigate={~p"/classrooms/#{@classroom.id}?tab=tests"}
               class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-2 transition-colors"
             >
-              <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Tests
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> #{gettext("Back to Tests")}
             </.link>
             <h1 class="text-2xl font-bold text-base-content">{@test.title}</h1>
             <p class="text-secondary text-sm">{@classroom.name}</p>
@@ -565,8 +569,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
         <%!-- Progress Bar --%>
         <div class="mb-8">
           <div class="flex justify-between text-sm text-secondary mb-2">
-            <span>Question {@current_step_index + 1} of {@total_steps}</span>
-            <span>{format_percentage(@current_step_index / @total_steps * 100)}% complete</span>
+            <span>
+              {gettext("Question %{current} of %{total}",
+                current: @current_step_index + 1,
+                total: @total_steps
+              )}
+            </span>
+            <span>
+              {format_percentage(@current_step_index / @total_steps * 100)}#{gettext("% complete")}
+            </span>
           </div>
           <div class="h-2 bg-base-200 rounded-full overflow-hidden">
             <div
@@ -623,28 +634,28 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       <input type="hidden" name="answer[_dummy]" value="1" />
                       <div>
                         <label class="block text-sm font-medium text-base-content mb-2">
-                          Meaning (in English):
+                          {gettext("Meaning (in English):")}
                         </label>
                         <.input
                           type="text"
                           name="answer[meaning]"
                           id={"answer-meaning-#{@current_step.id}"}
                           value={@answer["meaning"] || ""}
-                          placeholder="Type the meaning..."
+                          placeholder={gettext("Type the meaning...")}
                           class="w-full"
                         />
                       </div>
                       <%= if @current_step.question_data && @current_step.question_data["include_reading"] do %>
                         <div>
                           <label class="block text-sm font-medium text-base-content mb-2">
-                            Reading (in Hiragana):
+                            {gettext("Reading (in Hiragana):")}
                           </label>
                           <.input
                             type="text"
                             name="answer[reading]"
                             id={"answer-reading-#{@current_step.id}"}
                             value={@answer["reading"] || ""}
-                            placeholder="Type the hiragana reading..."
+                            placeholder={gettext("Type the hiragana reading...")}
                             class="w-full"
                           />
                         </div>
@@ -655,7 +666,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       type="text"
                       name="answer"
                       value={@answer}
-                      placeholder="Type your answer..."
+                      placeholder={gettext("Type your answer...")}
                       required
                       class="w-full"
                     />
@@ -679,7 +690,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       phx-click="show_hint"
                       class="btn btn-ghost btn-sm text-info"
                     >
-                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> Show Hint
+                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> #{gettext("Show Hint")}
                     </button>
                   <% else %>
                     <div />
@@ -687,16 +698,17 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
                   <button type="submit" class="btn btn-primary">
                     <%= if @current_step_index == @total_steps - 1 do %>
-                      <.icon name="hero-check" class="w-4 h-4 mr-2" /> Finish Test
+                      <.icon name="hero-check" class="w-4 h-4 mr-2" /> #{gettext("Finish Test")}
                     <% else %>
-                      <.icon name="hero-arrow-right" class="w-4 h-4 mr-2" /> Next Question
+                      <.icon name="hero-arrow-right" class="w-4 h-4 mr-2" />
+                      #{gettext("Next Question")}
                     <% end %>
                   </button>
                 </div>
               </form>
             <% else %>
               <div class="text-center py-8">
-                <p class="text-secondary">No questions available.</p>
+                <p class="text-secondary">{gettext("No questions available.")}</p>
               </div>
             <% end %>
           </div>

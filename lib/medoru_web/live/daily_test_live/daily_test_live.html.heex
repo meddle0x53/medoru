@@ -52,8 +52,13 @@
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 mb-6">
           <%= if @current_step.question_type == :reading_text do %>
             <%!-- Reading Text Question --%>
+            <% translated_step = %{
+              @current_step
+              | question: translate_question(@current_step.question),
+                hints: Enum.map(@current_step.hints, &translate_hint/1)
+            } %>
             <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
-              step={@current_step}
+              step={translated_step}
               meaning_answer={@meaning_answer}
               reading_answer={@reading_answer}
               feedback={@feedback}
@@ -110,12 +115,8 @@
             <%!-- Multichoice Question --%>
             <%!-- Question --%>
             <div class="mb-6">
-              <div class="text-sm text-secondary uppercase tracking-wider mb-4">
-                <%= if @current_step.question_data["type"] == "word_to_meaning" do %>
-                  Select the correct meaning
-                <% else %>
-                  Select the correct reading
-                <% end %>
+              <div class="text-sm text-secondary mb-4">
+                {translate_question(@current_step.question)}
               </div>
               <h2 class="text-4xl font-bold text-primary font-japanese text-center mb-4">
                 {@current_step.question_data["word_text"]}
@@ -137,7 +138,7 @@
               <div class="bg-info/10 text-info rounded-lg p-3 mb-4">
                 <div class="flex items-center gap-2">
                   <.icon name="hero-light-bulb" class="w-5 h-5" />
-                  <span>{List.first(@current_step.hints)}</span>
+                  <span>{translate_hint(List.first(@current_step.hints))}</span>
                 </div>
               </div>
             <% end %>

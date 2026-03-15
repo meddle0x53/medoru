@@ -33,7 +33,7 @@ defmodule MedoruWeb.DailyTestLive do
         if Learning.daily_test_completed_today?(user.id) do
           {:ok,
            socket
-           |> assign(:page_title, "Daily Review Complete")
+           |> assign(:page_title, gettext("Daily Review Complete"))
            |> assign(:already_completed, true)
            |> assign(:test, test)
            |> assign(:session, nil)
@@ -42,7 +42,7 @@ defmodule MedoruWeb.DailyTestLive do
         else
           {:ok,
            socket
-           |> assign(:page_title, "Daily Review")
+           |> assign(:page_title, gettext("Daily Review"))
            |> assign(:already_completed, false)
            |> assign(:test, test)
            |> assign(:session, nil)
@@ -66,7 +66,9 @@ defmodule MedoruWeb.DailyTestLive do
          socket
          |> put_flash(
            :info,
-           "Start a lesson to begin learning Japanese! Your daily review will be available once you've learned some words."
+           gettext(
+             "Start a lesson to begin learning Japanese! Your daily review will be available once you've learned some words."
+           )
          )
          |> push_navigate(to: ~p"/lessons")}
     end
@@ -109,7 +111,7 @@ defmodule MedoruWeb.DailyTestLive do
         {:error, _reason} ->
           {:noreply,
            socket
-           |> put_flash(:error, "Could not start daily test")
+           |> put_flash(:error, gettext("Could not start daily test"))
            |> push_navigate(to: ~p"/dashboard")}
       end
     end
@@ -137,7 +139,7 @@ defmodule MedoruWeb.DailyTestLive do
     answer = socket.assigns.selected_answer
 
     if is_nil(answer) do
-      {:noreply, put_flash(socket, :error, "Please select an answer")}
+      {:noreply, put_flash(socket, :error, gettext("Please select an answer"))}
     else
       session = socket.assigns.session
       step = socket.assigns.current_step
@@ -158,7 +160,7 @@ defmodule MedoruWeb.DailyTestLive do
           end
 
         {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, "Error recording answer")}
+          {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
       end
     end
   end
@@ -169,7 +171,7 @@ defmodule MedoruWeb.DailyTestLive do
     reading = String.trim(socket.assigns.reading_answer)
 
     if meaning == "" or reading == "" do
-      {:noreply, put_flash(socket, :error, "Please enter both meaning and reading")}
+      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
     else
       session = socket.assigns.session
       step = socket.assigns.current_step
@@ -217,7 +219,7 @@ defmodule MedoruWeb.DailyTestLive do
             {:noreply, put_flash(socket, :error, "Error recording answer")}
         end
       else
-        {:noreply, put_flash(socket, :error, "Error: word not found")}
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
       end
     end
   end
@@ -488,5 +490,66 @@ defmodule MedoruWeb.DailyTestLive do
       remaining_steps: total_steps - completed_steps,
       progress: progress
     }
+  end
+
+  # Translate question messages from the database
+  def translate_question(nil), do: ""
+
+  def translate_question(question) when is_binary(question) do
+    cond do
+      String.starts_with?(question, "__MSG_WHAT_DOES_WORD_MEAN__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("What does '%{word}' mean?", word: word)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_HOW_DO_YOU_READ__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("How do you read '%{word}'?", word: word)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_TYPE_MEANING_READING__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("Type the meaning and reading for '%{word}'", word: word)
+          _ -> question
+        end
+
+      true ->
+        question
+    end
+  end
+
+  # Translate hint messages
+  def translate_hint(nil), do: nil
+
+  def translate_hint(hint) when is_binary(hint) do
+    case hint do
+      "__MSG_TYPE_ENGLISH_HIRAGANA__" ->
+        gettext("Type the English meaning and hiragana reading")
+
+      "Take your time and think about the word" ->
+        gettext("Take your time and think about the word")
+
+      _ ->
+        hint
+    end
+  end
+
+  # Translate explanation messages
+  def translate_explanation(nil), do: nil
+
+  def translate_explanation(explanation) when is_binary(explanation) do
+    case String.split(explanation, "|") do
+      ["__MSG_WORD_MEANS_READING__", word, meaning, reading] ->
+        gettext("%{word} means '%{meaning}' and is read as '%{reading}'",
+          word: word,
+          meaning: meaning,
+          reading: reading
+        )
+
+      _ ->
+        explanation
+    end
   end
 end

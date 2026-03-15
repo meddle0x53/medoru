@@ -10,6 +10,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
   """
 
   use Phoenix.Component
+  use Gettext, backend: MedoruWeb.Gettext
 
   import MedoruWeb.CoreComponents
 
@@ -48,7 +49,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
         </div>
         <%= if @show_hint do %>
           <div class="text-sm text-secondary mt-2">
-            Hint: Starts with "{hint_text(@step)}"
+            {gettext("Hint: Starts with \"%{hint}\"", hint: hint_text(@step))}
           </div>
         <% end %>
       </div>
@@ -58,15 +59,15 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
         <div class="bg-error/10 border border-error/20 rounded-xl p-4">
           <div class="flex items-center gap-2 text-error mb-2">
             <.icon name="hero-x-circle" class="w-5 h-5" />
-            <span class="font-medium">Not quite. The correct answers are:</span>
+            <span class="font-medium">{gettext("Not quite. The correct answers are:")}</span>
           </div>
           <div class="pl-7 space-y-1">
             <div class="text-base-content">
-              <span class="text-secondary">Meaning:</span>
+              <span class="text-secondary">{gettext("Meaning:")}</span>
               <span class="font-medium">{@correct_meaning}</span>
             </div>
             <div class="text-base-content">
-              <span class="text-secondary">Reading:</span>
+              <span class="text-secondary">{gettext("Reading:")}</span>
               <span class="font-medium">{@correct_reading}</span>
             </div>
           </div>
@@ -78,7 +79,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
         <%!-- Meaning Input --%>
         <div>
           <label class="block text-sm font-medium text-secondary mb-2">
-            Meaning (English):
+            {gettext("Meaning (English):")}
           </label>
           <input
             type="text"
@@ -87,7 +88,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
             value={@meaning_answer}
             phx-keyup="update_meaning"
             phx-target={@target}
-            placeholder="Type the English meaning..."
+            placeholder={gettext("Type the English meaning...")}
             disabled={@feedback == :incorrect}
             class={[
               "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
@@ -102,7 +103,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
         <%!-- Reading Input --%>
         <div>
           <label class="block text-sm font-medium text-secondary mb-2">
-            Reading (Hiragana):
+            {gettext("Reading (Hiragana):")}
           </label>
           <input
             type="text"
@@ -111,7 +112,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
             value={@reading_answer}
             phx-keyup="update_reading"
             phx-target={@target}
-            placeholder="Type the hiragana reading..."
+            placeholder={gettext("Type the hiragana reading...")}
             disabled={@feedback == :incorrect}
             class={[
               "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
@@ -122,7 +123,7 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
             ]}
           />
           <div class="text-xs text-secondary mt-1">
-            Tip: Use hiragana. Long vowels can be written as おう or おお, えい or ええ
+            {gettext("Tip: Use hiragana. Long vowels can be written as おう or おお, えい or ええ")}
           </div>
         </div>
       </div>
@@ -138,6 +139,9 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
     meaning_hint = String.first(meaning) || "?"
     reading_hint = String.first(reading) || "?"
 
-    "Meaning: #{meaning_hint}... / Reading: #{reading_hint}..."
+    gettext("Meaning: %{meaning_hint}... / Reading: %{reading_hint}...",
+      meaning_hint: meaning_hint,
+      reading_hint: reading_hint
+    )
   end
 end

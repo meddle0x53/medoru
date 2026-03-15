@@ -48,52 +48,113 @@ defmodule MedoruWeb.Layouts do
       <div class="flex-none">
         <ul class="flex items-center space-x-1 sm:space-x-2">
           <%= if @current_scope && @current_scope.current_user do %>
-            <li class="hidden sm:block">
-              <.link navigate={~p"/dashboard"} class="btn btn-ghost btn-sm text-secondary">
-                Dashboard
-              </.link>
-            </li>
-            <li class="hidden sm:block">
-              <.link navigate={~p"/lessons"} class="btn btn-ghost btn-sm text-secondary">
-                Lessons
-              </.link>
-            </li>
-            <li class="hidden md:block">
-              <.link navigate={~p"/kanji"} class="btn btn-ghost btn-sm text-secondary">
-                Kanji
-              </.link>
-            </li>
-            <li class="hidden md:block">
-              <.link navigate={~p"/words"} class="btn btn-ghost btn-sm text-secondary">
-                Words
-              </.link>
-            </li>
-            <%!-- Classrooms - available to all authenticated users --%>
-            <li class="hidden md:block">
-              <.link navigate={~p"/classrooms"} class="btn btn-ghost btn-sm text-secondary">
-                <.icon name="hero-academic-cap" class="w-4 h-4 mr-1" /> Classrooms
-              </.link>
-            </li>
-            <%!-- My Tests - for teachers and admins --%>
+            <%!-- Main Navigation --%>
+            <.nav_link
+              path="/dashboard"
+              icon={nil}
+              label={gettext("Dashboard")}
+              locale={@current_scope[:locale]}
+              class="hidden sm:block"
+            />
+            <.nav_link
+              path="/lessons"
+              icon={nil}
+              label={gettext("Lessons")}
+              locale={@current_scope[:locale]}
+              class="hidden sm:block"
+            />
+            <.nav_link
+              path="/kanji"
+              icon={nil}
+              label={gettext("Kanji")}
+              locale={@current_scope[:locale]}
+              class="hidden md:block"
+            />
+            <.nav_link
+              path="/words"
+              icon={nil}
+              label={gettext("Words")}
+              locale={@current_scope[:locale]}
+              class="hidden md:block"
+            />
+            <.nav_link
+              path="/classrooms"
+              icon="hero-academic-cap"
+              label={gettext("Classrooms")}
+              locale={@current_scope[:locale]}
+              class="hidden md:block"
+            />
+
             <%= if @current_scope.current_user.type in ["teacher", "admin"] do %>
-              <li class="hidden md:block">
-                <.link navigate={~p"/teacher/tests"} class="btn btn-ghost btn-sm text-secondary">
-                  <.icon name="hero-clipboard-document-list" class="w-4 h-4 mr-1" /> My Tests
-                </.link>
-              </li>
-              <li class="hidden md:block">
-                <.link navigate={~p"/teacher/custom-lessons"} class="btn btn-ghost btn-sm text-secondary">
-                  <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> Custom Lessons
-                </.link>
-              </li>
+              <.nav_link
+                path="/teacher/tests"
+                icon="hero-clipboard-document-list"
+                label={gettext("My Tests")}
+                locale={@current_scope[:locale]}
+                class="hidden md:block"
+              />
+              <.nav_link
+                path="/teacher/custom-lessons"
+                icon="hero-book-open"
+                label={gettext("Custom Lessons")}
+                locale={@current_scope[:locale]}
+                class="hidden md:block"
+              />
             <% end %>
+
             <%= if @current_scope.current_user.type == "admin" do %>
-              <li class="hidden md:block">
-                <.link navigate={~p"/admin/users"} class="btn btn-ghost btn-sm text-error">
-                  <.icon name="hero-shield-check" class="w-4 h-4 mr-1" /> Admin
-                </.link>
-              </li>
+              <.nav_link
+                path="/admin/users"
+                icon="hero-shield-check"
+                label={gettext("Admin")}
+                locale={@current_scope[:locale]}
+                class="hidden md:block text-error"
+              />
             <% end %>
+
+            <%!-- Language Selector --%>
+            <li class="dropdown dropdown-end">
+              <div
+                tabindex="0"
+                role="button"
+                class="btn btn-ghost btn-sm btn-circle"
+                title={gettext("Language")}
+              >
+                <span class="text-lg">{locale_flag(@current_scope[:locale])}</span>
+              </div>
+              <ul
+                tabindex="0"
+                class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 mt-2 border border-base-300"
+              >
+                <li class="menu-title px-3 py-2">
+                  <span class="text-xs text-base-content/50">{gettext("Language")}</span>
+                </li>
+                <li>
+                  <.link
+                    href={~p"/?locale=en"}
+                    class={locale_active_class(@current_scope[:locale], "en")}
+                  >
+                    <span>🇬🇧</span> {gettext("English")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    href={~p"/?locale=bg"}
+                    class={locale_active_class(@current_scope[:locale], "bg")}
+                  >
+                    <span>🇧🇬</span> {gettext("Bulgarian")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    href={~p"/?locale=ja"}
+                    class={locale_active_class(@current_scope[:locale], "ja")}
+                  >
+                    <span>🇯🇵</span> {gettext("Japanese")}
+                  </.link>
+                </li>
+              </ul>
+            </li>
 
             <%!-- Notifications Dropdown --%>
             <li class="dropdown dropdown-end">
@@ -124,7 +185,7 @@ defmodule MedoruWeb.Layouts do
                   <%!-- Static fallback for controller contexts --%>
                   <div class="py-4 text-center">
                     <.link navigate={~p"/notifications"} class="text-primary hover:underline">
-                      View all notifications →
+                      {gettext("View all")} →
                     </.link>
                   </div>
                 <% end %>
@@ -161,19 +222,32 @@ defmodule MedoruWeb.Layouts do
                 class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 mt-2 border border-base-300"
               >
                 <li class="menu-title px-3 py-2">
-                  <span class="text-xs text-base-content/50">Account</span>
+                  <span class="text-xs text-base-content/50">{gettext("Account")}</span>
                 </li>
                 <li>
                   <.link
-                    navigate={~p"/users/#{@current_scope.current_user.id}"}
+                    navigate={
+                      ~p"/users/#{@current_scope.current_user.id}?#{locale_qs(@current_scope[:locale])}"
+                    }
                     class="flex items-center gap-2"
                   >
-                    <.icon name="hero-user-circle" class="w-4 h-4" /> My Profile
+                    <.icon name="hero-user-circle" class="w-4 h-4" /> {gettext("My Profile")}
                   </.link>
                 </li>
                 <li>
-                  <.link navigate={~p"/settings/profile"} class="flex items-center gap-2">
-                    <.icon name="hero-cog-6-tooth" class="w-4 h-4" /> Settings
+                  <.link
+                    navigate={~p"/settings/profile?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-cog-6-tooth" class="w-4 h-4" /> {gettext("Settings")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    navigate={~p"/settings/language?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-language" class="w-4 h-4" /> {gettext("Language")}
                   </.link>
                 </li>
                 <div class="divider my-1"></div>
@@ -183,7 +257,9 @@ defmodule MedoruWeb.Layouts do
                     method="delete"
                     class="text-error hover:bg-error/10"
                   >
-                    <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" /> Sign out
+                    <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" /> {gettext(
+                      "Sign out"
+                    )}
                   </.link>
                 </li>
               </ul>
@@ -212,8 +288,8 @@ defmodule MedoruWeb.Layouts do
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                <span class="hidden sm:inline">Sign in with Google</span>
-                <span class="sm:hidden">Sign in</span>
+                <span class="hidden sm:inline">{gettext("Sign in with Google")}</span>
+                <span class="sm:hidden">{gettext("Sign in")}</span>
               </.link>
             </li>
           <% end %>
@@ -233,7 +309,7 @@ defmodule MedoruWeb.Layouts do
             <span>© 2025 Medoru</span>
             <span class="mx-2">·</span>
             <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
-              Data Attribution
+              {gettext("Data Attribution")}
             </.link>
           </div>
           <div class="text-xs text-secondary/60">
@@ -303,6 +379,51 @@ defmodule MedoruWeb.Layouts do
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
     </div>
+    """
+  end
+
+  # Language selector helpers
+
+  defp locale_flag(nil), do: "🇬🇧"
+  defp locale_flag("en"), do: "🇬🇧"
+  defp locale_flag("bg"), do: "🇧🇬"
+  defp locale_flag("ja"), do: "🇯🇵"
+  defp locale_flag(_), do: "🇬🇧"
+
+  defp locale_active_class(current_locale, target_locale) when current_locale == target_locale do
+    "flex items-center gap-2 active bg-primary/10 text-primary"
+  end
+
+  defp locale_active_class(_current_locale, _target_locale) do
+    "flex items-center gap-2"
+  end
+
+  defp locale_qs(nil), do: ""
+  defp locale_qs("en"), do: ""
+  defp locale_qs(locale), do: "locale=#{locale}"
+
+  # Navigation link with locale preservation
+  attr :path, :string, required: true
+  attr :label, :string, required: true
+  attr :locale, :string, default: nil
+  attr :icon, :any, default: nil
+  attr :class, :string, default: ""
+
+  defp nav_link(assigns) do
+    locale_suffix =
+      if assigns.locale && assigns.locale != "en", do: "?locale=#{assigns.locale}", else: ""
+
+    assigns = assign(assigns, :href, assigns.path <> locale_suffix)
+
+    ~H"""
+    <li class={@class}>
+      <.link navigate={@href} class="btn btn-ghost btn-sm text-secondary">
+        <%= if @icon do %>
+          <.icon name={@icon} class="w-4 h-4 mr-1" />
+        <% end %>
+        {@label}
+      </.link>
+    </li>
     """
   end
 end

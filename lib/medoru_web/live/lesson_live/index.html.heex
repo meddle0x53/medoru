@@ -2,9 +2,11 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-base-content mb-2">Lessons</h1>
+      <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Lessons")}</h1>
       <p class="text-secondary">
-        Learn vocabulary through structured lessons. Each word teaches kanji readings in context.
+        {gettext(
+          "Learn vocabulary through structured lessons. Each word teaches kanji readings in context."
+        )}
       </p>
     </div>
 
@@ -20,7 +22,7 @@
           )
         ]}
       >
-        All
+        {gettext("All")}
       </.link>
       <%= for level <- [5, 4, 3, 2, 1] do %>
         <.link
@@ -46,7 +48,7 @@
             type="text"
             name="search[query]"
             value={@search}
-            placeholder="Search lessons by title..."
+            placeholder={gettext("Search lessons by title...")}
             class="w-full px-4 py-2.5 pl-10 bg-base-100 border border-base-300 rounded-xl
                    text-base-content placeholder:text-secondary/50
                    focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -70,7 +72,7 @@
           class="px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
                  hover:bg-primary/90 transition-colors"
         >
-          Search
+          {gettext("Search")}
         </button>
         <%= if @search && @search != "" do %>
           <button
@@ -79,7 +81,7 @@
             class="px-4 py-2.5 bg-base-200 text-secondary rounded-xl font-medium
                    hover:bg-base-300 transition-colors"
           >
-            Clear
+            {gettext("Clear")}
           </button>
         <% end %>
       </form>
@@ -88,7 +90,7 @@
     <%!-- Stats --%>
     <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        {@total_count} lessons
+        {@total_count} {gettext("lessons")}
       </span>
       <%= if @difficulty do %>
         <span class="bg-base-200 px-3 py-1.5 rounded-full">
@@ -101,7 +103,7 @@
         </span>
       <% end %>
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        Page {@page} of {@total_pages}
+        {gettext("Page")} {@page} {gettext("of")} {@total_pages}
       </span>
     </div>
 
@@ -156,7 +158,7 @@
                   </h2>
                   <%= if is_completed do %>
                     <span class="bg-primary/20 text-primary px-2.5 py-0.5 rounded-full text-xs font-medium">
-                      Completed
+                      {gettext("Completed")}
                     </span>
                   <% end %>
                 </div>
@@ -227,11 +229,11 @@
                     {lesson.lesson_type}
                   </span>
                   <span class="bg-base-200 text-secondary px-2.5 py-1 rounded-lg">
-                    {length(lesson.lesson_words)} words
+                    {length(lesson.lesson_words)} {gettext("words")}
                   </span>
                   <%= if lesson_progress && !is_completed do %>
                     <span class="bg-primary/10 text-primary px-2.5 py-1 rounded-lg font-medium">
-                      {lesson_progress.progress_percentage}% complete
+                      {lesson_progress.progress_percentage}% {gettext("complete")}
                     </span>
                   <% end %>
                 </div>
@@ -260,12 +262,14 @@
     <%= if @lessons == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">No lessons found</h3>
+        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No lessons found")}</h3>
         <p class="text-secondary">
           <%= if @search && @search != "" do %>
-            No lessons match your search "{@search}". Try different keywords.
+            {gettext("No lessons match your search")} "{@search}". {gettext(
+              "Try different keywords."
+            )}
           <% else %>
-            This difficulty level doesn't have any lessons yet.
+            {gettext("This difficulty level doesn't have any lessons yet.")}
           <% end %>
         </p>
       </div>
@@ -281,7 +285,7 @@
               patch={~p"/lessons?#{page_link_params(assigns, @page - 1)}"}
               class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
             >
-              ← Prev
+              ← {gettext("Prev")}
             </.link>
           <% else %>
             <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
@@ -342,7 +346,7 @@
               patch={~p"/lessons?#{page_link_params(assigns, @page + 1)}"}
               class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
             >
-              Next →
+              {gettext("Next")} →
             </.link>
           <% else %>
             <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">

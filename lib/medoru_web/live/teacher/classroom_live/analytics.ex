@@ -9,6 +9,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
   - Top performers
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms
 
@@ -21,14 +22,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
     if classroom.teacher_id != user.id do
       {:ok,
        socket
-       |> put_flash(:error, "You don't have permission to view this analytics.")
+       |> put_flash(:error, gettext("You don't have permission to view this analytics."))
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       analytics = Classrooms.get_classroom_analytics(id)
 
       {:ok,
        socket
-       |> assign(:page_title, "Analytics - #{classroom.name}")
+       |> assign(:page_title, gettext("Analytics - %{name}", name: classroom.name))
        |> assign(:classroom, classroom)
        |> assign(:analytics, analytics)}
     end
@@ -45,36 +46,36 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
             navigate={~p"/teacher/classrooms/#{@classroom.id}"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classroom
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Classroom")}
           </.link>
 
-          <h1 class="text-3xl font-bold text-base-content">Classroom Analytics</h1>
-          <p class="text-secondary mt-1">{@classroom.name} - Performance insights</p>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Classroom Analytics")}</h1>
+          <p class="text-secondary mt-1">{@classroom.name} - {gettext("Performance insights")}</p>
         </div>
 
         <%!-- Stats Overview --%>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <.stat_card
             icon="hero-users"
-            label="Total Students"
+            label={gettext("Total Students")}
             value={@analytics.stats.total_members}
             color="blue"
           />
           <.stat_card
             icon="hero-clipboard-document-check"
-            label="Test Attempts"
+            label={gettext("Test Attempts")}
             value={@analytics.test_stats.total_attempts}
             color="green"
           />
           <.stat_card
             icon="hero-book-open"
-            label="Lessons Completed"
+            label={gettext("Lessons Completed")}
             value={@analytics.lesson_stats.total_completed}
             color="purple"
           />
           <.stat_card
             icon="hero-star"
-            label="Avg Test Score"
+            label={gettext("Avg Test Score")}
             value={@analytics.test_stats.average_score}
             color="yellow"
           />
@@ -85,32 +86,32 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
           <div class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body">
               <h2 class="card-title text-base-content flex items-center gap-2">
-                <.icon name="hero-chart-bar" class="w-5 h-5" /> Test Performance
+                <.icon name="hero-chart-bar" class="w-5 h-5" /> {gettext("Test Performance")}
               </h2>
 
               <div class="space-y-4 mt-4">
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">Total Attempts</span>
+                  <span class="text-secondary">{gettext("Total Attempts")}</span>
                   <span class="font-semibold">{@analytics.test_stats.total_attempts}</span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">Completed on Time</span>
+                  <span class="text-secondary">{gettext("Completed on Time")}</span>
                   <span class="font-semibold text-success">
                     {@analytics.test_stats.completed_on_time}
                   </span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">Timed Out</span>
+                  <span class="text-secondary">{gettext("Timed Out")}</span>
                   <span class="font-semibold text-warning">{@analytics.test_stats.timed_out}</span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">Completion Rate</span>
+                  <span class="text-secondary">{gettext("Completion Rate")}</span>
                   <span class="font-semibold">
                     {format_percentage(@analytics.test_stats.completion_rate)}%
                   </span>
                 </div>
                 <div class="flex justify-between items-center py-2">
-                  <span class="text-secondary">Average Score</span>
+                  <span class="text-secondary">{gettext("Average Score")}</span>
                   <span class="font-semibold text-primary">
                     {@analytics.test_stats.average_score}
                   </span>
@@ -123,22 +124,22 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
           <div class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body">
               <h2 class="card-title text-base-content flex items-center gap-2">
-                <.icon name="hero-book-open" class="w-5 h-5" /> Lesson Progress
+                <.icon name="hero-book-open" class="w-5 h-5" /> {gettext("Lesson Progress")}
               </h2>
 
               <div class="space-y-4 mt-4">
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">Completed</span>
+                  <span class="text-secondary">{gettext("Completed")}</span>
                   <span class="font-semibold text-success">
                     {@analytics.lesson_stats.total_completed}
                   </span>
                 </div>
                 <div class="flex justify-between items-center py-2 border-b border-base-200">
-                  <span class="text-secondary">In Progress</span>
+                  <span class="text-secondary">{gettext("In Progress")}</span>
                   <span class="font-semibold text-info">{@analytics.lesson_stats.in_progress}</span>
                 </div>
                 <div class="flex justify-between items-center py-2">
-                  <span class="text-secondary">Average Points</span>
+                  <span class="text-secondary">{gettext("Average Points")}</span>
                   <span class="font-semibold text-primary">
                     {@analytics.lesson_stats.average_points}
                   </span>
@@ -152,12 +153,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
         <div class="card bg-base-100 border border-base-300 shadow-sm mt-8">
           <div class="card-body">
             <h2 class="card-title text-base-content flex items-center gap-2 mb-4">
-              <.icon name="hero-trophy" class="w-5 h-5" /> Top Performers
+              <.icon name="hero-trophy" class="w-5 h-5" /> {gettext("Top Performers")}
             </h2>
 
             <%= if @analytics.top_performers == [] do %>
               <p class="text-secondary text-center py-8">
-                No data yet. Students need to complete tests and lessons.
+                {gettext("No data yet. Students need to complete tests and lessons.")}
               </p>
             <% else %>
               <div class="space-y-2">
@@ -170,11 +171,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                       <.icon name="hero-user" class="w-5 h-5 text-secondary" />
                     </div>
                     <div class="flex-1">
-                      <p class="font-medium text-base-content">{entry.user.name || "Anonymous"}</p>
+                      <p class="font-medium text-base-content">{entry.user.name || gettext("Anonymous")}</p>
                     </div>
                     <div class="text-right">
                       <p class="text-xl font-bold text-primary">{entry.points}</p>
-                      <p class="text-xs text-secondary">points</p>
+                      <p class="text-xs text-secondary">{gettext("points")}</p>
                     </div>
                   </div>
                 <% end %>
@@ -187,11 +188,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
         <div class="card bg-base-100 border border-base-300 shadow-sm mt-8">
           <div class="card-body">
             <h2 class="card-title text-base-content flex items-center gap-2 mb-4">
-              <.icon name="hero-clock" class="w-5 h-5" /> Recent Activity (Last 30 Days)
+              <.icon name="hero-clock" class="w-5 h-5" /> {gettext("Recent Activity (Last 30 Days)")}
             </h2>
 
             <%= if @analytics.activity == [] do %>
-              <p class="text-secondary text-center py-8">No recent activity.</p>
+              <p class="text-secondary text-center py-8">{gettext("No recent activity.")}</p>
             <% else %>
               <div class="space-y-2 max-h-96 overflow-y-auto">
                 <%= for day <- @analytics.activity do %>
@@ -202,10 +203,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                     </div>
                     <div class="flex gap-4 text-sm">
                       <span class="text-secondary">
-                        {day.attempts} attempt{if day.attempts != 1, do: "s"}
+                        {day.attempts} {if day.attempts != 1, do: gettext("attempts"), else: gettext("attempt")}
                       </span>
                       <span class="text-primary font-medium">
-                        +{day.total_points} pts
+                        +{day.total_points} {gettext("pts")}
                       </span>
                     </div>
                   </div>
@@ -219,11 +220,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
         <div class="card bg-base-100 border border-base-300 shadow-sm mt-8">
           <div class="card-body">
             <h2 class="card-title text-base-content flex items-center gap-2 mb-4">
-              <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> Recent Test Attempts
+              <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext("Recent Test Attempts")}
             </h2>
 
             <%= if @analytics.recent_attempts == [] do %>
-              <p class="text-secondary text-center py-8">No test attempts yet.</p>
+              <p class="text-secondary text-center py-8">{gettext("No test attempts yet.")}</p>
             <% else %>
               <div class="space-y-2 max-h-96 overflow-y-auto">
                 <%= for attempt <- @analytics.recent_attempts do %>
@@ -238,7 +239,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                       </div>
                       <div>
                         <p class="font-medium text-base-content">
-                          {attempt.user.name || "Anonymous"}
+                          {attempt.user.name || gettext("Anonymous")}
                         </p>
                         <p class="text-sm text-secondary">
                           {attempt.test.title}
@@ -247,9 +248,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                     </div>
                     <div class="text-right">
                       <%= if attempt.status == "timed_out" do %>
-                        <span class="badge badge-warning">Timed Out</span>
+                        <span class="badge badge-warning">{gettext("Timed Out")}</span>
                       <% else %>
-                        <p class="font-semibold text-primary">{attempt.points_earned} pts</p>
+                        <p class="font-semibold text-primary">{attempt.points_earned} {gettext("pts")}</p>
                         <p class="text-xs text-secondary">
                           {attempt.score}/{attempt.max_score}
                         </p>

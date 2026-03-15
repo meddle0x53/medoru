@@ -10,7 +10,9 @@ import Config
 config :medoru,
   ecto_repos: [Medoru.Repo],
   generators: [timestamp_type: :utc_datetime],
-  env: config_env()
+  env: config_env(),
+  default_locale: "en",
+  supported_locales: ["en", "bg", "ja"]
 
 # Configure the endpoint
 config :medoru, MedoruWeb.Endpoint,

@@ -19,12 +19,14 @@ defmodule MedoruWeb.LearnLive do
             <div class="w-24 h-24 bg-primary/15 rounded-full flex items-center justify-center mx-auto mb-6">
               <.icon name="hero-check-badge" class="w-12 h-12 text-primary" />
             </div>
-            <h1 class="text-3xl font-bold text-base-content mb-3">Ready for the Test?</h1>
+            <h1 class="text-3xl font-bold text-base-content mb-3">
+              {gettext("Ready for the Test?")}
+            </h1>
             <p class="text-lg text-secondary mb-2">
-              You've finished learning <strong>{@lesson.title}</strong>
+              {gettext("You've finished learning")} <strong>{@lesson.title}</strong>
             </p>
             <p class="text-secondary mb-8">
-              Now take the test to complete the lesson and track your progress!
+              {gettext("Now take the test to complete the lesson and track your progress!")}
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
               <.link
@@ -32,14 +34,14 @@ defmodule MedoruWeb.LearnLive do
                 class="bg-primary hover:bg-primary/90 text-primary-content px-8 py-3 rounded-xl font-medium
                        transition-all shadow-sm hover:shadow-md active:scale-[0.98] inline-flex items-center justify-center gap-2"
               >
-                <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> Take Test
+                <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> {gettext("Take Test")}
               </.link>
               <.link
                 navigate={~p"/lessons/#{@lesson.id}"}
                 class="px-8 py-3 rounded-xl font-medium text-base-content bg-base-200 hover:bg-base-300
                        transition-colors inline-flex items-center justify-center"
               >
-                Review Lesson
+                {gettext("Review Lesson")}
               </.link>
             </div>
           </div>
@@ -49,7 +51,7 @@ defmodule MedoruWeb.LearnLive do
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-3">
                 <span class="text-sm font-medium text-secondary">
-                  Word {@current_index + 1} of {length(@words)}
+                  {gettext("Word")} {@current_index + 1} {gettext("of")} {length(@words)}
                 </span>
                 <span class="text-sm text-secondary/70">
                   {@lesson.title}
@@ -59,7 +61,7 @@ defmodule MedoruWeb.LearnLive do
                 phx-click="complete_lesson"
                 class="text-sm text-secondary/70 hover:text-primary transition-colors"
               >
-                Finish Early
+                {gettext("Finish Early")}
               </button>
             </div>
             <div class="w-full bg-base-200 rounded-full h-2.5">
@@ -89,7 +91,7 @@ defmodule MedoruWeb.LearnLive do
             <%!-- Kanji Breakdown --%>
             <div class="border-t border-base-200 pt-6 mb-6">
               <h3 class="text-sm font-semibold text-secondary/80 uppercase tracking-wider mb-4">
-                Kanji Breakdown
+                {gettext("Kanji Breakdown")}
               </h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for word_kanji <- @current_word.word_kanjis do %>
@@ -134,7 +136,7 @@ defmodule MedoruWeb.LearnLive do
             <%= if length(@current_word.word_kanjis) > 0 do %>
               <div class="border-t border-base-200 pt-6">
                 <h3 class="text-sm font-semibold text-secondary/80 uppercase tracking-wider mb-4">
-                  Kanji Details
+                  {gettext("Kanji Details")}
                 </h3>
                 <div class="space-y-3">
                   <%= for word_kanji <- @current_word.word_kanjis do %>
@@ -165,12 +167,12 @@ defmodule MedoruWeb.LearnLive do
                             </div>
                             <%= if reading_type do %>
                               <div class="text-xs text-secondary/70">
-                                {reading_type} reading
+                                {reading_type} {gettext("reading")}
                               </div>
                             <% end %>
                           <% else %>
                             <div class="text-sm text-secondary/70">
-                              Reading not available
+                              {gettext("Reading not available")}
                             </div>
                           <% end %>
                         </div>
@@ -179,7 +181,7 @@ defmodule MedoruWeb.LearnLive do
                         navigate={~p"/kanji/#{word_kanji.kanji.id}"}
                         class="text-sm text-primary hover:text-primary/80 transition-colors"
                       >
-                        View Kanji →
+                        {gettext("View Kanji")} →
                       </.link>
                     </div>
                   <% end %>
@@ -197,7 +199,7 @@ defmodule MedoruWeb.LearnLive do
                      disabled:opacity-50 disabled:cursor-not-allowed
                      bg-base-200 text-base-content hover:bg-base-300 transition-colors"
             >
-              <.icon name="hero-arrow-left" class="w-5 h-5" /> Previous
+              <.icon name="hero-arrow-left" class="w-5 h-5" /> {gettext("Previous")}
             </button>
 
             <%= if @current_scope && @current_scope.current_user do %>
@@ -206,7 +208,7 @@ defmodule MedoruWeb.LearnLive do
                 class="flex items-center gap-2 px-6 py-3 rounded-xl font-medium
                        bg-primary/20 text-primary/80 hover:bg-primary/30 transition-colors"
               >
-                <.icon name="hero-check" class="w-5 h-5" /> Mark Learned
+                <.icon name="hero-check" class="w-5 h-5" /> {gettext("Mark Learned")}
               </button>
             <% end %>
 
@@ -216,9 +218,9 @@ defmodule MedoruWeb.LearnLive do
                      bg-primary text-white hover:bg-primary/80 transition-colors"
             >
               <%= if @current_index + 1 >= length(@words) do %>
-                Finish <.icon name="hero-check-circle" class="w-5 h-5" />
+                {gettext("Finish")} <.icon name="hero-check-circle" class="w-5 h-5" />
               <% else %>
-                Next <.icon name="hero-arrow-right" class="w-5 h-5" />
+                {gettext("Next")} <.icon name="hero-arrow-right" class="w-5 h-5" />
               <% end %>
             </button>
           </div>
@@ -231,7 +233,7 @@ defmodule MedoruWeb.LearnLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Learn")
+     |> assign(:page_title, gettext("Learn"))
      |> assign(:current_index, 0)
      |> assign(:lesson, nil)
      |> assign(:words, [])

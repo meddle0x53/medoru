@@ -15,7 +15,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
     if user.type not in ["teacher", "admin"] do
       {:ok,
        socket
-       |> put_flash(:error, "Only teachers can create lessons.")
+       |> put_flash(:error, gettext("Only teachers can create lessons."))
        |> push_navigate(to: ~p"/classrooms")}
     else
       changeset = Content.change_custom_lesson(%CustomLesson{})
@@ -25,7 +25,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, "New Custom Lesson")}
+    {:noreply, assign(socket, :page_title, gettext("New Custom Lesson"))}
   end
 
   @impl true
@@ -51,7 +51,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
       {:ok, lesson} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Lesson created! Now add some words.")
+         |> put_flash(:info, gettext("Lesson created! Now add some words."))
          |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/edit")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -70,10 +70,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
             navigate={~p"/teacher/custom-lessons"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Lessons
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
           </.link>
-          <h1 class="text-2xl font-bold text-base-content">Create New Lesson</h1>
-          <p class="text-secondary">Start with the basics, then add words</p>
+          <h1 class="text-2xl font-bold text-base-content">{gettext("Create New Lesson")}</h1>
+          <p class="text-secondary">{gettext("Start with the basics, then add words")}</p>
         </div>
 
         <%!-- Form --%>
@@ -91,8 +91,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                 <.input
                   field={@form[:title]}
                   type="text"
-                  label="Lesson Title"
-                  placeholder="e.g., Spring Vocabulary Set 1"
+                  label={gettext("Lesson Title")}
+                  placeholder={gettext("e.g., Spring Vocabulary Set 1")}
                   required
                 />
               </div>
@@ -102,17 +102,17 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                 <.input
                   field={@form[:description]}
                   type="textarea"
-                  label="Description (optional)"
-                  placeholder="What will students learn in this lesson?"
+                  label={gettext("Description (optional)")}
+                  placeholder={gettext("What will students learn in this lesson?")}
                   rows={3}
                 />
-                <p class="text-xs text-secondary mt-1">Maximum 500 characters</p>
+                <p class="text-xs text-secondary mt-1">{gettext("Maximum 500 characters")}</p>
               </div>
 
               <%!-- Difficulty --%>
               <div>
                 <label class="block text-sm font-medium text-base-content mb-2">
-                  Difficulty Level (optional)
+                  {gettext("Difficulty Level (optional)")}
                 </label>
                 <div class="flex gap-2">
                   <%= for level <- [5, 4, 3, 2, 1] do %>
@@ -131,7 +131,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                   <% end %>
                 </div>
                 <p class="text-xs text-secondary mt-1">
-                  Helps students find appropriate lessons. Leave blank for mixed levels.
+                  {gettext("Helps students find appropriate lessons. Leave blank for mixed levels.")}
                 </p>
               </div>
 
@@ -141,11 +141,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                   navigate={~p"/teacher/custom-lessons"}
                   class="btn btn-ghost flex-1"
                 >
-                  Cancel
+                  {gettext("Cancel")}
                 </.link>
                 <button type="submit" class="btn btn-primary flex-1">
                   <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" />
-                  Create & Add Words
+                  {gettext("Create & Add Words")}
                 </button>
               </div>
             </.form>

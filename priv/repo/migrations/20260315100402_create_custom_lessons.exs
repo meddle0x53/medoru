@@ -26,7 +26,10 @@ defmodule Medoru.Repo.Migrations.CreateCustomLessons do
       add :position, :integer, null: false
       add :custom_meaning, :text
       add :examples, {:array, :text}, default: [], null: false
-      add :custom_lesson_id, references(:custom_lessons, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :custom_lesson_id,
+          references(:custom_lessons, type: :binary_id, on_delete: :delete_all), null: false
+
       add :word_id, references(:words, type: :binary_id, on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime_usec)
@@ -42,9 +45,16 @@ defmodule Medoru.Repo.Migrations.CreateCustomLessons do
       add :status, :string, default: "active", null: false
       add :due_date, :date
       add :points_override, :integer
-      add :classroom_id, references(:classrooms, type: :binary_id, on_delete: :delete_all), null: false
-      add :custom_lesson_id, references(:custom_lessons, type: :binary_id, on_delete: :delete_all), null: false
-      add :published_by_id, references(:users, type: :binary_id, on_delete: :nilify_all), null: false
+
+      add :classroom_id, references(:classrooms, type: :binary_id, on_delete: :delete_all),
+        null: false
+
+      add :custom_lesson_id,
+          references(:custom_lessons, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :published_by_id, references(:users, type: :binary_id, on_delete: :nilify_all),
+        null: false
+
       add :published_at, :utc_datetime_usec
       add :unpublished_at, :utc_datetime_usec
 
@@ -54,7 +64,10 @@ defmodule Medoru.Repo.Migrations.CreateCustomLessons do
     create index(:classroom_custom_lessons, [:classroom_id])
     create index(:classroom_custom_lessons, [:custom_lesson_id])
     create index(:classroom_custom_lessons, [:classroom_id, :status])
-    create unique_index(:classroom_custom_lessons, [:classroom_id, :custom_lesson_id], name: :classroom_custom_lessons_unique_lesson)
+
+    create unique_index(:classroom_custom_lessons, [:classroom_id, :custom_lesson_id],
+             name: :classroom_custom_lessons_unique_lesson
+           )
 
     # Extend classroom_lesson_progress for custom lessons
     alter table(:classroom_lesson_progress) do

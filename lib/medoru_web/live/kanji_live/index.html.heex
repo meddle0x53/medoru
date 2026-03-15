@@ -2,8 +2,10 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-base-content mb-2">Kanji Browser</h1>
-      <p class="text-secondary">Browse and learn Japanese kanji organized by JLPT level</p>
+      <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Kanji Browser")}</h1>
+      <p class="text-secondary">
+        {gettext("Browse and learn Japanese kanji organized by JLPT level")}
+      </p>
     </div>
 
     <%!-- Level Selector --%>
@@ -27,7 +29,7 @@
     <%!-- Stats --%>
     <div class="mb-6 flex items-center gap-3 text-sm text-secondary">
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        {length(@kanji_list)} characters
+        {length(@kanji_list)} {gettext("characters")}
       </span>
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
         JLPT N{@jlpt_level}
@@ -59,8 +61,10 @@
     <%= if @kanji_list == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">No kanji found</h3>
-        <p class="text-secondary">This JLPT level doesn't have any kanji data yet.</p>
+        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No kanji found")}</h3>
+        <p class="text-secondary">
+          {gettext("This JLPT level doesn't have any kanji data yet.")}
+        </p>
       </div>
     <% end %>
   </div>

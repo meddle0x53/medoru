@@ -24,7 +24,7 @@ defmodule MedoruWeb.LessonTestLive.Complete do
       |> assign(:lesson, lesson)
       |> assign(:test, test)
       |> assign(:session, session)
-      |> assign(:page_title, "Test Complete - #{lesson.title}")
+      |> assign(:page_title, gettext("Test Complete - %{title}", title: lesson.title))
 
     {:ok, socket}
   end
@@ -41,9 +41,9 @@ defmodule MedoruWeb.LessonTestLive.Complete do
             <.icon name="hero-trophy" class="w-12 h-12 text-success" />
           </div>
 
-          <h1 class="text-3xl font-bold text-base-content mb-2">Lesson Complete!</h1>
+          <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Lesson Complete!")}</h1>
           <p class="text-secondary text-lg mb-8">
-            Great job completing "{@lesson.title}"
+            {gettext("Great job completing \"%{title}\"", title: @lesson.title)}
           </p>
 
           <%!-- Stats Grid --%>
@@ -53,21 +53,21 @@ defmodule MedoruWeb.LessonTestLive.Complete do
                 <div class="text-3xl font-bold text-primary mb-1">
                   {@session.percentage}%
                 </div>
-                <div class="text-sm text-secondary">Score</div>
+                <div class="text-sm text-secondary">{gettext("Score")}</div>
               </div>
 
               <div class="bg-base-50 rounded-xl p-4">
                 <div class="text-3xl font-bold text-primary mb-1">
                   {format_time(@session.time_spent_seconds)}
                 </div>
-                <div class="text-sm text-secondary">Time</div>
+                <div class="text-sm text-secondary">{gettext("Time")}</div>
               </div>
 
               <div class="bg-base-50 rounded-xl p-4">
                 <div class="text-3xl font-bold text-primary mb-1">
                   {@session.score}/{@session.total_possible}
                 </div>
-                <div class="text-sm text-secondary">Correct</div>
+                <div class="text-sm text-secondary">{gettext("Correct")}</div>
               </div>
             </div>
 
@@ -77,11 +77,12 @@ defmodule MedoruWeb.LessonTestLive.Complete do
                 <div class="flex items-center gap-3 justify-center">
                   <.icon name="hero-arrow-path" class="w-5 h-5" />
                   <span>
-                    You had {@session.metadata["wrong_answer_count"]} retry {if @session.metadata[
-                                                                                  "wrong_answer_count"
-                                                                                ] == 1,
-                                                                                do: "attempt",
-                                                                                else: "attempts"} - keep practicing to improve!
+                    {ngettext(
+                      "You had %{count} retry attempt - keep practicing to improve!",
+                      "You had %{count} retry attempts - keep practicing to improve!",
+                      @session.metadata["wrong_answer_count"],
+                      count: @session.metadata["wrong_answer_count"]
+                    )}
                   </span>
                 </div>
               </div>
@@ -94,21 +95,21 @@ defmodule MedoruWeb.LessonTestLive.Complete do
               navigate={~p"/lessons/#{@lesson.id}"}
               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
             >
-              <.icon name="hero-book-open" class="w-5 h-5" /> Review Lesson
+              <.icon name="hero-book-open" class="w-5 h-5" /> #{gettext("Review Lesson")}
             </.link>
 
             <.link
               navigate={~p"/lessons"}
               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-base-200 text-base-content rounded-xl font-medium hover:bg-base-300 transition-colors"
             >
-              <.icon name="hero-list-bullet" class="w-5 h-5" /> All Lessons
+              <.icon name="hero-list-bullet" class="w-5 h-5" /> #{gettext("All Lessons")}
             </.link>
 
             <.link
               navigate={~p"/dashboard"}
               class="inline-flex items-center justify-center gap-2 px-6 py-3 border border-base-300 text-base-content rounded-xl font-medium hover:bg-base-50 transition-colors"
             >
-              <.icon name="hero-home" class="w-5 h-5" /> Dashboard
+              <.icon name="hero-home" class="w-5 h-5" /> #{gettext("Dashboard")}
             </.link>
           </div>
         </div>
@@ -116,7 +117,7 @@ defmodule MedoruWeb.LessonTestLive.Complete do
         <%!-- Words Learned --%>
         <%= if @test.test_steps != [] do %>
           <div class="mt-8 bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6">
-            <h2 class="text-lg font-semibold text-base-content mb-4">Words Tested</h2>
+            <h2 class="text-lg font-semibold text-base-content mb-4">{gettext("Words Tested")}</h2>
             <div class="flex flex-wrap gap-2">
               <%= for word <- get_unique_words(@test.test_steps) do %>
                 <span class="px-3 py-1.5 bg-base-100 border border-base-200 rounded-lg text-sm font-medium text-base-content">

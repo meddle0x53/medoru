@@ -3,6 +3,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
   LiveView for showing a teacher test and managing its state.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Tests
   alias Medoru.Classrooms
@@ -16,7 +17,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
     if not Tests.is_test_owner?(test, user.id) do
       {:ok,
        socket
-       |> put_flash(:error, "You can only view your own tests.")
+       |> put_flash(:error, gettext("You can only view your own tests."))
        |> push_navigate(to: ~p"/teacher/tests")}
     else
       step_count = Tests.count_test_steps(test.id)
@@ -41,10 +42,10 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         {:noreply,
          socket
          |> assign(:test, updated_test)
-         |> put_flash(:info, "Test marked as ready to publish!")}
+         |> put_flash(:info, gettext("Test marked as ready to publish!"))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to update test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to update test."))}
     end
   end
 
@@ -57,10 +58,10 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         {:noreply,
          socket
          |> assign(:test, updated_test)
-         |> put_flash(:info, "Test published! Students can now take it.")}
+         |> put_flash(:info, gettext("Test published! Students can now take it."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to publish test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to publish test."))}
     end
   end
 
@@ -73,10 +74,10 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         {:noreply,
          socket
          |> assign(:test, updated_test)
-         |> put_flash(:info, "Test archived.")}
+         |> put_flash(:info, gettext("Test archived."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to archive test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to archive test."))}
     end
   end
 
@@ -91,7 +92,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             navigate={~p"/teacher/tests"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to My Tests
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to My Tests")}
           </.link>
 
           <div class="flex items-start justify-between">
@@ -101,7 +102,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                 <.setup_state_badge state={@test.setup_state} />
               </div>
               <p class="text-secondary max-w-xl">
-                {@test.description || "No description"}
+                {@test.description || gettext("No description")}
               </p>
             </div>
 
@@ -123,7 +124,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                   <button
                     phx-click="archive"
                     class="btn btn-warning"
-                    data-confirm="Archive this test? It won't be available to students anymore."
+                    data-confirm={gettext("Archive this test? It won't be available to students anymore.")}
                   >
                     <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> Archive
                   </button>
@@ -143,7 +144,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             <div class="grid grid-cols-3 gap-4">
               <div class="card bg-base-100 border border-base-300 p-4 text-center">
                 <p class="text-3xl font-bold text-base-content">{@step_count}</p>
-                <p class="text-sm text-secondary">Steps</p>
+                <p class="text-sm text-secondary">{gettext("Steps")}</p>
               </div>
               <div class="card bg-base-100 border border-base-300 p-4 text-center">
                 <p class="text-3xl font-bold text-base-content">
@@ -153,7 +154,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                     ∞
                   <% end %>
                 </p>
-                <p class="text-sm text-secondary">Time Limit</p>
+                <p class="text-sm text-secondary">{gettext("Time Limit")}</p>
               </div>
               <div class="card bg-base-100 border border-base-300 p-4 text-center">
                 <p class="text-3xl font-bold text-base-content">
@@ -163,7 +164,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                     ∞
                   <% end %>
                 </p>
-                <p class="text-sm text-secondary">Max Attempts</p>
+                <p class="text-sm text-secondary">{gettext("Max Attempts")}</p>
               </div>
             </div>
 
@@ -171,13 +172,13 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             <div class="card bg-base-100 border border-base-300 shadow-sm">
               <div class="card-body">
                 <div class="flex justify-between items-center mb-4">
-                  <h2 class="card-title text-base-content">Test Steps</h2>
+                  <h2 class="card-title text-base-content">{gettext("Test Steps")}</h2>
                   <%= if @test.setup_state == "in_progress" do %>
                     <.link
                       navigate={~p"/teacher/tests/#{@test.id}/edit"}
                       class="btn btn-primary btn-sm"
                     >
-                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Add Steps
+                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Steps")}
                     </.link>
                   <% end %>
                 </div>
@@ -188,26 +189,26 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                       name="hero-clipboard-document-list"
                       class="w-12 h-12 mx-auto mb-3 opacity-50"
                     />
-                    <p>No steps yet.</p>
+                    <p>{gettext("No steps yet.")}</p>
                     <%= if @test.setup_state == "in_progress" do %>
                       <.link
                         navigate={~p"/teacher/tests/#{@test.id}/edit"}
                         class="btn btn-primary btn-sm mt-4"
                       >
-                        Add Your First Step
+                        {gettext("Add Your First Step")}
                       </.link>
                     <% end %>
                   </div>
                 <% else %>
                   <p class="text-secondary">
-                    This test has {@step_count} step{if @step_count != 1, do: "s"}.
+                    {gettext("This test has %{count} step", count: @step_count)}{if @step_count != 1, do: gettext("s")}.
                   </p>
                   <%= if @test.setup_state == "in_progress" do %>
                     <.link
                       navigate={~p"/teacher/tests/#{@test.id}/edit"}
                       class="btn btn-ghost btn-sm mt-4"
                     >
-                      <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> Manage Steps
+                      <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Manage Steps")}
                     </.link>
                   <% end %>
                 <% end %>
@@ -220,7 +221,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             <%!-- State Info --%>
             <div class="card bg-base-100 border border-base-300 shadow-sm">
               <div class="card-body">
-                <h3 class="card-title text-base-content text-base mb-4">Test Status</h3>
+                <h3 class="card-title text-base-content text-base mb-4">{gettext("Test Status")}</h3>
                 <.state_info state={@test.setup_state} step_count={@step_count} />
               </div>
             </div>
@@ -230,16 +231,16 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
               <div class="card bg-success/10 border border-success/30">
                 <div class="card-body">
                   <h3 class="card-title text-success text-base mb-2">
-                    <.icon name="hero-check-circle" class="w-5 h-5" /> Ready to Publish
+                    <.icon name="hero-check-circle" class="w-5 h-5" /> {gettext("Ready to Publish")}
                   </h3>
                   <p class="text-sm text-base-content mb-4">
-                    Your test is complete and ready for students.
+                    {gettext("Your test is complete and ready for students.")}
                   </p>
                   <.link
                     navigate={~p"/teacher/tests/#{@test.id}/publish"}
                     class="btn btn-success btn-block"
                   >
-                    <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Publish Now
+                    <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> {gettext("Publish Now")}
                   </.link>
                 </div>
               </div>
@@ -250,7 +251,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
               <div class="card bg-base-100 border border-base-300 shadow-sm">
                 <div class="card-body">
                   <h3 class="card-title text-base-content text-base mb-4">
-                    <.icon name="hero-academic-cap" class="w-5 h-5" /> Published To
+                    <.icon name="hero-academic-cap" class="w-5 h-5" /> {gettext("Published To")}
                   </h3>
                   <div class="space-y-2">
                     <%= for classroom_test <- @published_classrooms do %>
@@ -274,7 +275,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                       navigate={~p"/teacher/tests/#{@test.id}/publish"}
                       class="btn btn-ghost btn-sm btn-block mt-4"
                     >
-                      <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> Manage Publishing
+                      <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Manage Publishing")}
                     </.link>
                   <% end %>
                 </div>
@@ -285,13 +286,13 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             <%= if @test.setup_state in ["ready", "published"] do %>
               <div class="card bg-error/5 border border-error/20">
                 <div class="card-body">
-                  <h3 class="card-title text-error text-base">Danger Zone</h3>
+                  <h3 class="card-title text-error text-base">{gettext("Danger Zone")}</h3>
                   <p class="text-sm text-secondary mb-4">
-                    Archiving removes this test from student access.
+                    {gettext("Archiving removes this test from student access.")}
                   </p>
                   <button
                     phx-click="archive"
-                    data-confirm="Are you sure you want to archive this test?"
+                    data-confirm={gettext("Are you sure you want to archive this test?")}
                     class="btn btn-error btn-outline btn-sm btn-block"
                   >
                     <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> Archive Test
@@ -312,25 +313,25 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
 
   defp setup_state_badge(%{state: "in_progress"} = assigns) do
     ~H"""
-    <span class="badge badge-info">In Progress</span>
+    <span class="badge badge-info">{gettext("In Progress")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "ready"} = assigns) do
     ~H"""
-    <span class="badge badge-warning">Ready</span>
+    <span class="badge badge-warning">{gettext("Ready")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "published"} = assigns) do
     ~H"""
-    <span class="badge badge-success">Published</span>
+    <span class="badge badge-success">{gettext("Published")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "archived"} = assigns) do
     ~H"""
-    <span class="badge badge-ghost">Archived</span>
+    <span class="badge badge-ghost">{gettext("Archived")}</span>
     """
   end
 
@@ -342,8 +343,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <span class="text-info font-bold text-sm">1</span>
         </div>
         <div>
-          <p class="font-medium text-base-content">Create Test</p>
-          <p class="text-sm text-secondary">✓ Done</p>
+          <p class="font-medium text-base-content">{gettext("Create Test")}</p>
+          <p class="text-sm text-secondary">{gettext("✓ Done")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -351,8 +352,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <span class="text-primary font-bold text-sm">2</span>
         </div>
         <div>
-          <p class="font-medium text-base-content">Add Steps</p>
-          <p class="text-sm text-secondary">Add questions to your test</p>
+          <p class="font-medium text-base-content">{gettext("Add Steps")}</p>
+          <p class="text-sm text-secondary">{gettext("Add questions to your test")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3 opacity-50">
@@ -360,8 +361,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <span class="text-secondary font-bold text-sm">3</span>
         </div>
         <div>
-          <p class="font-medium text-base-content">Publish</p>
-          <p class="text-sm text-secondary">Make it available to students</p>
+          <p class="font-medium text-base-content">{gettext("Publish")}</p>
+          <p class="text-sm text-secondary">{gettext("Make it available to students")}</p>
         </div>
       </div>
     </div>
@@ -376,8 +377,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <.icon name="hero-check" class="w-4 h-4 text-success" />
         </div>
         <div>
-          <p class="font-medium text-base-content">Create Test</p>
-          <p class="text-sm text-secondary">✓ Done</p>
+          <p class="font-medium text-base-content">{gettext("Create Test")}</p>
+          <p class="text-sm text-secondary">{gettext("✓ Done")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -386,7 +387,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Add Steps</p>
-          <p class="text-sm text-secondary">✓ {@step_count} steps added</p>
+          <p class="text-sm text-secondary">{gettext("✓ %{count} steps added", count: @step_count)}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -394,9 +395,9 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <span class="text-primary font-bold text-sm">3</span>
         </div>
         <div>
-          <p class="font-medium text-base-content">Mark as Ready</p>
+          <p class="font-medium text-base-content">{gettext("Mark as Ready")}</p>
           <button phx-click="mark_ready" class="btn btn-primary btn-sm mt-2">
-            Mark Ready
+            {gettext("Mark Ready")}
           </button>
         </div>
       </div>
@@ -412,8 +413,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <.icon name="hero-check" class="w-4 h-4 text-success" />
         </div>
         <div>
-          <p class="font-medium text-base-content">Create Test</p>
-          <p class="text-sm text-secondary">✓ Done</p>
+          <p class="font-medium text-base-content">{gettext("Create Test")}</p>
+          <p class="text-sm text-secondary">{gettext("✓ Done")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -422,7 +423,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Add Steps</p>
-          <p class="text-sm text-secondary">✓ {@step_count} steps</p>
+          <p class="text-sm text-secondary">{gettext("✓ %{count} steps", count: @step_count)}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -431,7 +432,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Publish</p>
-          <p class="text-sm text-secondary">Ready to go live!</p>
+          <p class="text-sm text-secondary">{gettext("Ready to go live!")}</p>
         </div>
       </div>
     </div>
@@ -446,8 +447,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <.icon name="hero-check" class="w-4 h-4 text-success" />
         </div>
         <div>
-          <p class="font-medium text-base-content">Create Test</p>
-          <p class="text-sm text-secondary">✓ Done</p>
+          <p class="font-medium text-base-content">{gettext("Create Test")}</p>
+          <p class="text-sm text-secondary">{gettext("✓ Done")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -465,7 +466,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Published</p>
-          <p class="text-sm text-secondary">Live and available</p>
+          <p class="text-sm text-secondary">{gettext("Live and available")}</p>
         </div>
       </div>
     </div>
@@ -481,7 +482,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Create Test</p>
-          <p class="text-sm text-secondary">Completed</p>
+          <p class="text-sm text-secondary">{gettext("Completed")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -490,7 +491,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Published</p>
-          <p class="text-sm text-secondary">Was live</p>
+          <p class="text-sm text-secondary">{gettext("Was live")}</p>
         </div>
       </div>
       <div class="flex items-start gap-3">
@@ -498,8 +499,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
           <.icon name="hero-archive-box" class="w-4 h-4 text-error" />
         </div>
         <div>
-          <p class="font-medium text-base-content">Archived</p>
-          <p class="text-sm text-secondary">No longer available</p>
+          <p class="font-medium text-base-content">{gettext("Archived")}</p>
+          <p class="text-sm text-secondary">{gettext("No longer available")}</p>
         </div>
       </div>
     </div>

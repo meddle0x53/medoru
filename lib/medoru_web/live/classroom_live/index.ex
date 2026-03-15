@@ -18,7 +18,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
     {:ok,
      socket
-     |> assign(:page_title, "My Classrooms")
+     |> assign(:page_title, gettext("My Classrooms"))
      |> assign(:user, user)
      |> assign(:invite_code, "")
      |> assign(:join_error, nil)
@@ -79,20 +79,21 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
       cond do
         is_nil(classroom) ->
-          {:noreply, assign(socket, invite_code: code, join_error: "Invalid invite code")}
+          {:noreply,
+           assign(socket, invite_code: code, join_error: gettext("Invalid invite code"))}
 
         classroom.status != :active ->
           {:noreply,
            assign(socket,
              invite_code: code,
-             join_error: "This classroom is not accepting new members"
+             join_error: gettext("This classroom is not accepting new members")
            )}
 
         Classrooms.is_member?(classroom.id, socket.assigns.user.id) ->
           {:noreply,
            assign(socket,
              invite_code: code,
-             join_error: "You are already a member of this classroom"
+             join_error: gettext("You are already a member of this classroom")
            )}
 
         true ->
@@ -116,7 +117,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
           {:ok, _membership} ->
             {:noreply,
              socket
-             |> put_flash(:info, "Application submitted! The teacher will review your request.")
+             |> put_flash(
+               :info,
+               gettext("Application submitted! The teacher will review your request.")
+             )
              |> push_patch(to: ~p"/classrooms")}
 
           {:error, :already_member} ->
@@ -133,14 +137,14 @@ defmodule MedoruWeb.ClassroomLive.Index do
     # Get the membership and delete it if it's still pending
     case Medoru.Repo.get(Medoru.Classrooms.ClassroomMembership, membership_id) do
       nil ->
-        {:noreply, put_flash(socket, :error, "Application not found.")}
+        {:noreply, put_flash(socket, :error, gettext("Application not found."))}
 
       membership ->
         if membership.user_id == socket.assigns.user.id && membership.status == :pending do
           Medoru.Repo.delete(membership)
           {:noreply, push_patch(socket, to: ~p"/classrooms")}
         else
-          {:noreply, put_flash(socket, :error, "Cannot cancel this application.")}
+          {:noreply, put_flash(socket, :error, gettext("Cannot cancel this application."))}
         end
     end
   end
@@ -173,12 +177,12 @@ defmodule MedoruWeb.ClassroomLive.Index do
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-base-content">My Classrooms</h1>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("My Classrooms")}</h1>
           <p class="text-secondary mt-1">
             <%= if @user.type in ["teacher", "admin"] do %>
-              Manage your classrooms and memberships
+              {gettext("Manage your classrooms and memberships")}
             <% else %>
-              Join classrooms to learn with others
+              {gettext("Join classrooms to learn with others")}
             <% end %>
           </p>
         </div>
@@ -188,20 +192,20 @@ defmodule MedoruWeb.ClassroomLive.Index do
           <%= if @user.type in ["teacher", "admin"] do %>
             <.stat_card
               icon="hero-building-office"
-              label="Owned"
+              label={gettext("Owned")}
               value={@owned_count}
               color="primary"
             />
           <% end %>
           <.stat_card
             icon="hero-users"
-            label="Joined"
+            label={gettext("Joined")}
             value={@joined_count}
             color="success"
           />
           <.stat_card
             icon="hero-clock"
-            label="Pending"
+            label={gettext("Pending")}
             value={length(@pending_applications)}
             color="warning"
           />
@@ -213,7 +217,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
             <div class="card-body">
               <h2 class="card-title text-warning">
                 <.icon name="hero-clock" class="w-5 h-5" />
-                Pending Applications ({length(@pending_applications)})
+                {gettext("Pending Applications")} ({length(@pending_applications)})
               </h2>
               <div class="space-y-3 mt-4">
                 <%= for membership <- @pending_applications do %>
@@ -230,11 +234,11 @@ defmodule MedoruWeb.ClassroomLive.Index do
                       </div>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span class="badge badge-warning">Pending</span>
+                      <span class="badge badge-warning">{gettext("Pending")}</span>
                       <button
                         phx-click="cancel_application"
                         phx-value-id={membership.id}
-                        data-confirm="Cancel this application?"
+                        data-confirm={gettext("Cancel this application?")}
                         class="btn btn-ghost btn-sm text-error"
                       >
                         <.icon name="hero-x-mark" class="w-4 h-4" />
@@ -250,14 +254,14 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <%!-- Join Classroom Form --%>
         <div class="card bg-base-100 border border-base-300 shadow-sm mb-8">
           <div class="card-body">
-            <h3 class="card-title text-base-content mb-4">Join a Classroom</h3>
+            <h3 class="card-title text-base-content mb-4">{gettext("Join a Classroom")}</h3>
             <form phx-change="validate_code" phx-submit="join" class="flex flex-col sm:flex-row gap-4">
               <div class="flex-1">
                 <input
                   type="text"
                   name="invite_code"
                   value={@invite_code}
-                  placeholder="Enter invite code (e.g., ABC12345)"
+                  placeholder={gettext("Enter invite code (e.g., ABC12345)")}
                   class={[
                     "input input-bordered w-full uppercase tracking-wider font-mono",
                     @join_error && "input-error",
@@ -276,7 +280,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
                 class="btn btn-primary"
                 disabled={@invite_code == "" || not is_nil(@join_error)}
               >
-                <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Apply to Join
+                <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> {gettext("Apply to Join")}
               </button>
             </form>
 
@@ -290,7 +294,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
                   <div>
                     <p class="font-medium text-base-content">{assigns.classroom_preview.name}</p>
                     <p class="text-sm text-secondary">
-                      Teacher: {display_name(
+                      {gettext("Teacher")}: {display_name(
                         assigns.classroom_preview.teacher,
                         @user.id,
                         @user.type == "admin"
@@ -308,7 +312,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
           <div class="flex justify-end mb-6">
             <.link navigate={~p"/teacher/classrooms/new"}>
               <button class="btn btn-primary">
-                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
+                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Classroom")}
               </button>
             </.link>
           </div>
@@ -318,12 +322,14 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <%= if @classrooms == [] do %>
           <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">
             <.icon name="hero-academic-cap" class="w-16 h-16 text-secondary/30 mx-auto mb-4" />
-            <h3 class="text-xl font-semibold text-base-content mb-2">No classrooms yet</h3>
+            <h3 class="text-xl font-semibold text-base-content mb-2">
+              {gettext("No classrooms yet")}
+            </h3>
             <p class="text-secondary mb-6">
               <%= if @user.type in ["teacher", "admin"] do %>
-                Create your first classroom or join one with an invite code above
+                {gettext("Create your first classroom or join one with an invite code above")}
               <% else %>
-                Join a classroom using an invite code above to start learning
+                {gettext("Join a classroom using an invite code above to start learning")}
               <% end %>
             </p>
           </div>
@@ -420,39 +426,39 @@ defmodule MedoruWeb.ClassroomLive.Index do
             <.icon name="hero-academic-cap" class="w-6 h-6 text-primary" />
           </div>
           <%= if @is_owner do %>
-            <span class="badge badge-primary">Owner</span>
+            <span class="badge badge-primary">{gettext("Owner")}</span>
           <% else %>
-            <span class="badge badge-success">Member</span>
+            <span class="badge badge-success">{gettext("Member")}</span>
           <% end %>
         </div>
 
         <h3 class="text-lg font-semibold text-base-content mb-1">{@classroom.name}</h3>
         <p class="text-sm text-secondary mb-4 line-clamp-2">
-          {@classroom.description || "No description"}
+          {@classroom.description || gettext("No description")}
         </p>
 
         <div class="text-sm text-secondary mb-4">
           <div class="flex items-center gap-1.5 mb-1">
             <.icon name="hero-user" class="w-4 h-4" />
-            <span>Teacher: {@teacher_name}</span>
+            <span>{gettext("Teacher")}: {@teacher_name}</span>
           </div>
           <div class="flex items-center gap-1.5">
             <.icon name="hero-calendar" class="w-4 h-4" />
-            <span>Created {Calendar.strftime(@classroom.inserted_at, "%b %d, %Y")}</span>
+            <span>{gettext("Created")} {Calendar.strftime(@classroom.inserted_at, "%b %d, %Y")}</span>
           </div>
         </div>
 
         <div class="card-actions justify-end pt-4 border-t border-base-200">
           <%= if @is_owner do %>
             <.link navigate={~p"/teacher/classrooms/#{@classroom.id}"} class="btn btn-primary btn-sm">
-              Manage →
+              {gettext("Manage")} →
             </.link>
           <% else %>
             <.link
               navigate={~p"/classrooms/#{@classroom.id}"}
               class="btn btn-ghost btn-sm text-primary"
             >
-              View →
+              {gettext("View")} →
             </.link>
           <% end %>
         </div>
@@ -470,19 +476,19 @@ defmodule MedoruWeb.ClassroomLive.Index do
       <div class="flex items-center gap-2">
         <%= if @page > 1 do %>
           <.link patch={~p"/classrooms?page=#{@page - 1}"} class="btn btn-ghost btn-sm">
-            ← Prev
+            ← {gettext("Prev")}
           </.link>
         <% else %>
-          <span class="btn btn-ghost btn-sm opacity-50" disabled>← Prev</span>
+          <span class="btn btn-ghost btn-sm opacity-50" disabled>← {gettext("Prev")}</span>
         <% end %>
 
         <span class="px-4 py-2 bg-base-200 rounded-lg text-base-content">
-          Page {@page} of {@total_pages}
+          {gettext("Page")} {@page} {gettext("of")} {@total_pages}
         </span>
 
         <%= if @page < @total_pages do %>
           <.link patch={~p"/classrooms?page=#{@page + 1}"} class="btn btn-ghost btn-sm">
-            Next →
+            {gettext("Next")} →
           </.link>
         <% else %>
           <span class="btn btn-ghost btn-sm opacity-50" disabled>Next →</span>

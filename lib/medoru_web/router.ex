@@ -8,6 +8,7 @@ defmodule MedoruWeb.Router do
     plug :put_root_layout, html: {MedoruWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug MedoruWeb.Plugs.SetLocale
     plug MedoruWeb.UserAuth, :fetch_current_user
     plug MedoruWeb.Plugs.RequestLogger
   end
@@ -99,6 +100,7 @@ defmodule MedoruWeb.Router do
     live_session :settings,
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/profile", SettingsLive.Profile
+      live "/language", SettingsLive.Language
     end
   end
 

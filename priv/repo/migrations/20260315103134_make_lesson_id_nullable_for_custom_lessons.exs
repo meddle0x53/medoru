@@ -7,14 +7,16 @@ defmodule Medoru.Repo.Migrations.MakeLessonIdNullableForCustomLessons do
 
     # Make lesson_id nullable to support custom lessons (which use custom_lesson_id instead)
     alter table(:classroom_lesson_progress) do
-      modify :lesson_id, references(:lessons, type: :binary_id, on_delete: :delete_all), null: true
+      modify :lesson_id, references(:lessons, type: :binary_id, on_delete: :delete_all),
+        null: true
     end
   end
 
   def down do
     # Revert to non-nullable (will fail if any null lesson_id rows exist)
     alter table(:classroom_lesson_progress) do
-      modify :lesson_id, references(:lessons, type: :binary_id, on_delete: :delete_all), null: false
+      modify :lesson_id, references(:lessons, type: :binary_id, on_delete: :delete_all),
+        null: false
     end
   end
 end

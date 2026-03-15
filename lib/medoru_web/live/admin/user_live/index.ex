@@ -41,7 +41,7 @@ defmodule MedoruWeb.Admin.UserLive.Index do
 
     {:noreply,
      socket
-     |> assign(:page_title, "Admin - Users")
+     |> assign(:page_title, gettext("Admin - Users"))
      |> assign(:users, users)
      |> assign(:page, page)
      |> assign(:total_pages, total_pages)

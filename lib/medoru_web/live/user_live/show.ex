@@ -22,7 +22,7 @@ defmodule MedoruWeb.UserLive.Show do
       nil ->
         {:ok,
          socket
-         |> put_flash(:error, "User not found.")
+         |> put_flash(:error, gettext("User not found."))
          |> push_navigate(to: ~p"/")}
 
       user ->
@@ -42,9 +42,9 @@ defmodule MedoruWeb.UserLive.Show do
   end
 
   defp profile_title(user) do
-    name = (user.profile && user.profile.display_name) || user.name || "User"
+    name = (user.profile && user.profile.display_name) || user.name || gettext("User")
 
-    "#{name}'s Profile"
+    gettext("%{name}'s Profile", name: name)
   end
 
   # Badge color mapping for Tailwind classes

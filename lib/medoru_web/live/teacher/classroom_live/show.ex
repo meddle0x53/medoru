@@ -4,6 +4,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   Includes tabs for Overview, Students, Lessons, Tests, and Settings.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   import MedoruWeb.Components.Helpers, only: [format_relative_time: 1, display_name: 3]
 
@@ -19,7 +20,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     if classroom.teacher_id != user.id do
       {:ok,
        socket
-       |> put_flash(:error, "You don't have permission to access this classroom.")
+       |> put_flash(:error, gettext("You don't have permission to access this classroom."))
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       socket = load_classroom_data(socket, classroom)
@@ -84,8 +85,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         Notifications.create_notification(%{
           user_id: approved_membership.user_id,
           type: :classroom,
-          title: "Application Approved",
-          message: "You have been approved to join #{socket.assigns.classroom.name}",
+          title: gettext("Application Approved"),
+          message:
+            gettext("You have been approved to join %{classroom}",
+              classroom: socket.assigns.classroom.name
+            ),
           data: %{classroom_id: socket.assigns.classroom.id}
         })
 
@@ -93,10 +97,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Student approved successfully!")}
+         |> put_flash(:info, gettext("Student approved successfully!"))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to approve student.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to approve student."))}
     end
   end
 
@@ -107,10 +111,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     case Classrooms.reject_membership(membership) do
       {:ok, _} ->
         socket = load_classroom_data(socket, socket.assigns.classroom)
-        {:noreply, put_flash(socket, :info, "Application rejected.")}
+        {:noreply, put_flash(socket, :info, gettext("Application rejected."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to reject application.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to reject application."))}
     end
   end
 
@@ -121,10 +125,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     case Classrooms.remove_member(membership) do
       {:ok, _} ->
         socket = load_classroom_data(socket, socket.assigns.classroom)
-        {:noreply, put_flash(socket, :info, "Student removed from classroom.")}
+        {:noreply, put_flash(socket, :info, gettext("Student removed from classroom."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to remove student.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to remove student."))}
     end
   end
 
@@ -137,10 +141,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         {:noreply,
          socket
          |> assign(:classroom, updated_classroom)
-         |> put_flash(:info, "Invite code regenerated!")}
+         |> put_flash(:info, gettext("Invite code regenerated!"))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to regenerate invite code.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to regenerate invite code."))}
     end
   end
 
@@ -153,10 +157,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         {:noreply,
          socket
          |> assign(:classroom, updated_classroom)
-         |> put_flash(:info, "Classroom closed. No new students can join.")}
+         |> put_flash(:info, gettext("Classroom closed. No new students can join."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to close classroom.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to close classroom."))}
     end
   end
 
@@ -173,13 +177,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
            :test_attempts,
            Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
          )
-         |> put_flash(:info, "Test reset successfully. Student can now retake it.")}
+         |> put_flash(:info, gettext("Test reset successfully. Student can now retake it."))}
 
       {:error, :not_authorized} ->
-        {:noreply, put_flash(socket, :error, "You are not authorized to reset this test.")}
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not authorized to reset this test."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to reset test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to reset test."))}
     end
   end
 
@@ -194,7 +199,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             navigate={~p"/teacher/classrooms"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classrooms
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Classrooms")}
           </.link>
 
           <div class="flex items-start justify-between">
@@ -203,16 +208,22 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 <h1 class="text-3xl font-bold text-base-content">{@classroom.name}</h1>
                 <.badge status={@classroom.status} />
               </div>
-              <p class="text-secondary max-w-2xl">{@classroom.description || "No description"}</p>
+              <p class="text-secondary max-w-2xl">
+                {@classroom.description || gettext("No description")}
+              </p>
             </div>
 
             <%= if @classroom.status == :active do %>
               <button
                 phx-click="close_classroom"
-                data-confirm="Are you sure you want to close this classroom? No new students will be able to join."
+                data-confirm={
+                  gettext(
+                    "Are you sure you want to close this classroom? No new students will be able to join."
+                  )
+                }
                 class="btn btn-warning btn-outline btn-sm"
               >
-                <.icon name="hero-lock-closed" class="w-4 h-4 mr-1" /> Close
+                <.icon name="hero-lock-closed" class="w-4 h-4 mr-1" /> {gettext("Close")}
               </button>
             <% end %>
           </div>
@@ -220,22 +231,27 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
         <%!-- Stats Cards --%>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <.stat_card icon="hero-users" label="Members" value={@stats.total_members} color="blue" />
+          <.stat_card
+            icon="hero-users"
+            label={gettext("Members")}
+            value={@stats.total_members}
+            color="blue"
+          />
           <.stat_card
             icon="hero-clock"
-            label="Pending"
+            label={gettext("Pending")}
             value={@stats.pending_applications}
             color="warning"
           />
           <.stat_card
             icon="hero-trophy"
-            label="Total Points"
+            label={gettext("Total Points")}
             value={@stats.total_points}
             color="purple"
           />
           <.stat_card
             icon="hero-calendar"
-            label="Created"
+            label={gettext("Created")}
             value={Calendar.strftime(@classroom.inserted_at, "%b %d")}
             color="neutral"
           />
@@ -244,23 +260,31 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <%!-- Tabs --%>
         <div class="border-b border-base-300 mb-6">
           <div class="flex gap-1">
-            <.tab_button active={@active_tab == "overview"} tab="overview" label="Overview" />
+            <.tab_button
+              active={@active_tab == "overview"}
+              tab="overview"
+              label={gettext("Overview")}
+            />
             <.tab_button
               active={@active_tab == "students"}
               tab="students"
               badge={length(@pending_memberships)}
-              label="Students"
+              label={gettext("Students")}
             />
-            <.tab_button active={@active_tab == "lessons"} tab="lessons" label="Lessons" />
-            <.tab_button active={@active_tab == "tests"} tab="tests" label="Tests" />
-            <.tab_button active={@active_tab == "settings"} tab="settings" label="Settings" />
+            <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
+            <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
+            <.tab_button
+              active={@active_tab == "settings"}
+              tab="settings"
+              label={gettext("Settings")}
+            />
           </div>
           <div class="ml-auto">
             <.link
               navigate={~p"/teacher/classrooms/#{@classroom.id}/analytics"}
               class="btn btn-primary btn-sm"
             >
-              <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> Analytics
+              <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> {gettext("Analytics")}
             </.link>
           </div>
         </div>
@@ -307,9 +331,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <%!-- Invite Code Card --%>
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
-          <h3 class="card-title text-base-content">Invite Code</h3>
+          <h3 class="card-title text-base-content">{gettext("Invite Code")}</h3>
           <p class="text-secondary mb-4">
-            Share this code with students so they can join your classroom.
+            {gettext("Share this code with students so they can join your classroom.")}
           </p>
 
           <div class="flex items-center gap-4">
@@ -317,7 +341,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               {@invite_code}
             </div>
             <button phx-click="regenerate_invite_code" class="btn btn-ghost btn-outline">
-              <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> Regenerate
+              <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Regenerate")}
             </button>
           </div>
         </div>
@@ -327,20 +351,20 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="card bg-base-100 border border-base-300 shadow-sm">
           <div class="card-body">
-            <h3 class="card-title text-base-content">Students</h3>
-            <p class="text-secondary mb-4">{@stats.total_members} approved members</p>
+            <h3 class="card-title text-base-content">{gettext("Students")}</h3>
+            <p class="text-secondary mb-4">{@stats.total_members} {gettext("approved members")}</p>
             <button phx-click="change_tab" phx-value-tab="students" class="btn btn-primary btn-sm">
-              Manage Students
+              {gettext("Manage Students")}
             </button>
           </div>
         </div>
 
         <div class="card bg-base-100 border border-base-300 shadow-sm">
           <div class="card-body">
-            <h3 class="card-title text-base-content">Classroom Rankings</h3>
-            <p class="text-secondary mb-4">View student progress and leaderboards</p>
+            <h3 class="card-title text-base-content">{gettext("Classroom Rankings")}</h3>
+            <p class="text-secondary mb-4">{gettext("View student progress and leaderboards")}</p>
             <button class="btn btn-primary btn-sm" disabled>
-              Coming Soon
+              {gettext("Coming Soon")}
             </button>
           </div>
         </div>
@@ -361,7 +385,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <div class="card bg-warning/10 border border-warning/30">
           <div class="card-body">
             <h3 class="card-title text-warning flex items-center gap-2">
-              <.icon name="hero-clock" class="w-5 h-5" /> Pending Applications ({length(@pending)})
+              <.icon name="hero-clock" class="w-5 h-5" /> {gettext("Pending Applications")} ({length(
+                @pending
+              )})
             </h3>
             <div class="space-y-3 mt-4">
               <%= for membership <- @pending do %>
@@ -380,14 +406,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="card-title text-base-content">Classroom Members</h3>
-            <span class="badge badge-ghost">{length(@members)} members</span>
+            <h3 class="card-title text-base-content">{gettext("Classroom Members")}</h3>
+            <span class="badge badge-ghost">{length(@members)} {gettext("members")}</span>
           </div>
 
           <%= if @members == [] do %>
             <div class="text-center py-8 text-secondary">
               <.icon name="hero-users" class="w-12 h-12 text-secondary/30 mx-auto mb-3" />
-              <p>No members yet. Share your invite code to get started.</p>
+              <p>{gettext("No members yet. Share your invite code to get started.")}</p>
             </div>
           <% else %>
             <div class="space-y-2">
@@ -410,9 +436,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
       <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-base-content mb-2">Lessons Coming Soon</h3>
+      <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Lessons Coming Soon")}</h3>
       <p class="text-secondary max-w-md mx-auto">
-        In the next iteration, you'll be able to assign lessons to your classroom and track student progress.
+        {gettext(
+          "In the next iteration, you'll be able to assign lessons to your classroom and track student progress."
+        )}
       </p>
     </div>
     """
@@ -429,13 +457,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
           <h3 class="card-title text-base-content mb-4">
-            <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> Published Tests
+            <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext("Published Tests")}
           </h3>
 
           <%= if @published_tests == [] do %>
-            <p class="text-secondary">No tests published to this classroom yet.</p>
+            <p class="text-secondary">{gettext("No tests published to this classroom yet.")}</p>
             <.link navigate={~p"/teacher/tests"} class="btn btn-primary btn-sm mt-4">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Publish a Test
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Publish a Test")}
             </.link>
           <% else %>
             <div class="space-y-3">
@@ -450,7 +478,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       <% end %>
                     </div>
                   </div>
-                  <span class="badge badge-success badge-sm">Active</span>
+                  <span class="badge badge-success badge-sm">{gettext("Active")}</span>
                 </div>
               <% end %>
             </div>
@@ -462,11 +490,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
           <h3 class="card-title text-base-content mb-4">
-            <.icon name="hero-users" class="w-5 h-5" /> Student Attempts
+            <.icon name="hero-users" class="w-5 h-5" /> {gettext("Student Attempts")}
           </h3>
 
           <%= if @test_attempts == [] do %>
-            <p class="text-secondary">No test attempts yet.</p>
+            <p class="text-secondary">{gettext("No test attempts yet.")}</p>
           <% else %>
             <div class="space-y-3">
               <%= for attempt <- @test_attempts do %>
@@ -484,7 +512,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       </span>
                       <%= if attempt.reset_count > 0 do %>
                         <span class="badge badge-info badge-sm">
-                          Reset {attempt.reset_count}x
+                          {gettext("Reset")} {attempt.reset_count}x
                         </span>
                       <% end %>
                     </div>
@@ -493,9 +521,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                     </p>
                     <p class="text-xs text-secondary mt-1">
                       <%= if attempt.completed_at do %>
-                        Completed {format_relative_time(attempt.completed_at)}
+                        {gettext("Completed")} {format_relative_time(attempt.completed_at)}
                       <% else %>
-                        Started {format_relative_time(attempt.started_at)}
+                        {gettext("Started")} {format_relative_time(attempt.started_at)}
                       <% end %>
                     </p>
                   </div>
@@ -505,10 +533,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                     <button
                       phx-click="reset_test"
                       phx-value-attempt_id={attempt.id}
-                      data-confirm="Reset this test for {attempt.user.name}? They will be able to retake it."
+                      data-confirm={
+                        gettext("Reset this test for %{name}? They will be able to retake it.",
+                          name: attempt.user.name
+                        )
+                      }
                       class="btn btn-warning btn-sm"
                     >
-                      <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> Reset
+                      <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Reset")}
                     </button>
                   <% end %>
                 </div>
@@ -525,26 +557,26 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
       <div class="card-body">
-        <h3 class="card-title text-base-content mb-6">Classroom Settings</h3>
+        <h3 class="card-title text-base-content mb-6">{gettext("Classroom Settings")}</h3>
 
         <div class="space-y-4">
           <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">Classroom Name</span>
+            <span class="text-secondary">{gettext("Classroom Name")}</span>
             <span class="font-medium text-base-content">{@classroom.name}</span>
           </div>
 
           <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">URL Slug</span>
+            <span class="text-secondary">{gettext("URL Slug")}</span>
             <span class="font-medium text-base-content">{@classroom.slug}</span>
           </div>
 
           <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">Status</span>
+            <span class="text-secondary">{gettext("Status")}</span>
             <.badge status={@classroom.status} />
           </div>
 
           <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">Created</span>
+            <span class="text-secondary">{gettext("Created")}</span>
             <span class="text-base-content">
               {Calendar.strftime(@classroom.inserted_at, "%B %d, %Y at %I:%M %p")}
             </span>
@@ -552,7 +584,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
           <div class="pt-4">
             <p class="text-sm text-secondary">
-              Advanced settings like editing classroom details will be available in future updates.
+              {gettext(
+                "Advanced settings like editing classroom details will be available in future updates."
+              )}
             </p>
           </div>
         </div>
@@ -647,19 +681,19 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
   defp badge(%{status: :active} = assigns) do
     ~H"""
-    <span class="badge badge-success">Active</span>
+    <span class="badge badge-success">{gettext("Active")}</span>
     """
   end
 
   defp badge(%{status: :archived} = assigns) do
     ~H"""
-    <span class="badge badge-ghost">Archived</span>
+    <span class="badge badge-ghost">{gettext("Archived")}</span>
     """
   end
 
   defp badge(%{status: :closed} = assigns) do
     ~H"""
-    <span class="badge badge-warning">Closed</span>
+    <span class="badge badge-warning">{gettext("Closed")}</span>
     """
   end
 
@@ -689,14 +723,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           phx-value-id={@membership.id}
           class="btn btn-ghost btn-sm"
         >
-          Reject
+          {gettext("Reject")}
         </button>
         <button
           phx-click="approve_member"
           phx-value-id={@membership.id}
           class="btn btn-success btn-sm"
         >
-          Approve
+          {gettext("Approve")}
         </button>
       </div>
     </div>
@@ -731,7 +765,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <button
           phx-click="remove_member"
           phx-value-id={@membership.id}
-          data-confirm="Are you sure you want to remove this student?"
+          data-confirm={gettext("Are you sure you want to remove this student?")}
           class="btn btn-ghost btn-sm text-error hover:bg-error/10"
         >
           <.icon name="hero-trash" class="w-4 h-4" />

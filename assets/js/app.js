@@ -46,6 +46,17 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+// Handle locale setting from LiveView
+window.addEventListener("phx:set_locale", e => {
+  const locale = e.detail.locale
+  if (locale) {
+    // Set cookie for 1 year
+    const expires = new Date()
+    expires.setFullYear(expires.getFullYear() + 1)
+    document.cookie = `medoru_locale=${locale};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+  }
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

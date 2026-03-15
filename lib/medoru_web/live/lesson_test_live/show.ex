@@ -28,7 +28,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:lesson, lesson)
       |> assign(:test, test)
       |> assign(:lesson_progress, lesson_progress)
-      |> assign(:page_title, "#{lesson.title} - Test")
+      |> assign(:page_title, gettext("%{title} - Test", title: lesson.title))
 
     {:ok, socket}
   end
@@ -66,7 +66,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       {:error, reason} ->
         {:noreply,
          socket
-         |> put_flash(:error, "Could not start test: #{inspect(reason)}")
+         |> put_flash(:error, gettext("Could not start test: %{reason}", reason: inspect(reason)))
          |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}")}
     end
   end
@@ -93,7 +93,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
     answer = socket.assigns.selected_answer
 
     if is_nil(answer) do
-      {:noreply, put_flash(socket, :error, "Please select an answer")}
+      {:noreply, put_flash(socket, :error, gettext("Please select an answer"))}
     else
       session = socket.assigns.session
       step = socket.assigns.current_step
@@ -147,7 +147,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
     # Validate inputs are not empty
     if meaning == "" or reading == "" do
-      {:noreply, put_flash(socket, :error, "Please enter both meaning and reading")}
+      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
     else
       session = socket.assigns.session
       step = socket.assigns.current_step
@@ -282,7 +282,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
   def handle_event("stroke_incorrect", _params, socket) do
     # KanjiWriter library cleared the stroke automatically
     # Just show a brief hint
-    {:noreply, put_flash(socket, :error, "Try again - follow the red guide")}
+    {:noreply, put_flash(socket, :error, gettext("Try again - follow the red guide"))}
   end
 
   @impl true
@@ -418,20 +418,25 @@ defmodule MedoruWeb.LessonTestLive.Show do
         <div class="mb-8">
           <div class="flex items-center gap-2 text-sm text-secondary mb-2">
             <.link navigate={~p"/lessons/#{@lesson.id}"} class="hover:text-primary transition-colors">
-              ← Back to Lesson
+              ← {gettext("Back to Lesson")}
             </.link>
           </div>
           <h1 class="text-2xl font-bold text-base-content">{@lesson.title} - Test</h1>
-          <p class="text-secondary mt-1">Test your knowledge of the words in this lesson</p>
+          <p class="text-secondary mt-1">
+            {gettext("Test your knowledge of the words in this lesson")}
+          </p>
         </div>
 
         <%!-- Progress Bar --%>
         <div class="mb-8">
           <div class="flex justify-between text-sm mb-2">
             <span class="text-secondary">
-              Question {@session_state.completed_steps + 1} of {@session_state.total_steps}
+              {gettext("Question %{current} of %{total}",
+                current: @session_state.completed_steps + 1,
+                total: @session_state.total_steps
+              )}
             </span>
-            <span class="text-secondary">{@session_state.progress}% complete</span>
+            <span class="text-secondary">{@session_state.progress}{gettext("% complete")}</span>
           </div>
           <div class="h-2 bg-base-200 rounded-full overflow-hidden">
             <div
@@ -442,7 +447,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
           </div>
           <%= if @session_state.wrong_answer_count > 0 do %>
             <div class="text-sm text-warning mt-1">
-              Retries: {@session_state.wrong_answer_count}
+              {gettext("Retries:")} {@session_state.wrong_answer_count}
             </div>
           <% end %>
         </div>
@@ -460,10 +465,10 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   <%= if @current_step.question_type == :writing do %>
                     <div class="flex items-center gap-2 text-primary">
                       <.icon name="hero-pencil" class="w-6 h-6" />
-                      <span>Writing Challenge (5 points)</span>
+                      <span>{gettext("Writing Challenge (5 points)")}</span>
                     </div>
                   <% end %>
-                  {@current_step.question}
+                  {translate_question(@current_step.question)}
                 </h2>
               </div>
 
@@ -548,19 +553,17 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   disabled={is_nil(@selected_answer)}
                   class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Submit Answer
+                  {gettext("Submit Answer")}
                 </button>
 
                 <%= if !@show_hint do %>
                   <button
                     type="button"
                     phx-click="show_hint"
-                    class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                    class="px-4 py-3 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center gap-2"
                   >
-                    <div class="flex items-center gap-2">
-                      <.icon name="hero-light-bulb" class="w-5 h-5" />
-                      <span>Hint</span>
-                    </div>
+                    <.icon name="hero-light-bulb" class="w-5 h-5" />
+                    <span>{gettext("Hint")}</span>
                   </button>
                 <% end %>
 
@@ -569,7 +572,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   phx-click="skip_question"
                   class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
                 >
-                  Skip →
+                  {gettext("Skip →")}
                 </button>
               <% end %>
 
@@ -580,19 +583,17 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   disabled={@meaning_answer == "" or @reading_answer == ""}
                   class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Submit Answer
+                  {gettext("Submit Answer")}
                 </button>
 
                 <%= if !@show_hint do %>
                   <button
                     type="button"
                     phx-click="show_hint"
-                    class="px-4 py-3 text-secondary hover:text-primary transition-colors"
+                    class="px-4 py-3 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center gap-2"
                   >
-                    <div class="flex items-center gap-2">
-                      <.icon name="hero-light-bulb" class="w-5 h-5" />
-                      <span>Hint</span>
-                    </div>
+                    <.icon name="hero-light-bulb" class="w-5 h-5" />
+                    <span>{gettext("Hint")}</span>
                   </button>
                 <% end %>
 
@@ -601,7 +602,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   phx-click="skip_question"
                   class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
                 >
-                  Skip →
+                  {gettext("Skip →")}
                 </button>
               <% end %>
 
@@ -611,7 +612,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   phx-click="continue_after_correction"
                   class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
-                  Continue →
+                  {gettext("Continue →")}
                 </button>
               <% end %>
             </div>
@@ -619,13 +620,15 @@ defmodule MedoruWeb.LessonTestLive.Show do
         <% else %>
           <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-8 text-center">
             <.icon name="hero-check-circle" class="w-16 h-16 text-success mx-auto mb-4" />
-            <h2 class="text-2xl font-bold text-base-content mb-2">Test Complete!</h2>
-            <p class="text-secondary mb-6">You've completed all questions in this lesson test.</p>
+            <h2 class="text-2xl font-bold text-base-content mb-2">{gettext("Test Complete!")}</h2>
+            <p class="text-secondary mb-6">
+              {gettext("You've completed all questions in this lesson test.")}
+            </p>
             <.link
               navigate={~p"/lessons/#{@lesson.id}"}
               class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
             >
-              Back to Lesson
+              {gettext("Back to Lesson")}
             </.link>
           </div>
         <% end %>
@@ -638,7 +641,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
               phx-click="clear_feedback"
             >
               <.icon name="hero-check-circle" class="w-5 h-5" />
-              <span class="font-medium">Correct! Well done.</span>
+              <span class="font-medium">{gettext("Correct! Well done.")}</span>
             </div>
           <% :incorrect -> %>
             <div
@@ -646,7 +649,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
               phx-click="clear_feedback"
             >
               <.icon name="hero-x-circle" class="w-5 h-5" />
-              <span class="font-medium">Not quite. Try again later!</span>
+              <span class="font-medium">{gettext("Not quite. Try again later!")}</span>
             </div>
           <% _ -> %>
         <% end %>
@@ -656,4 +659,33 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   # Convert stroke points from JSON format to tuples
+
+  # Translate question text, handling message key format
+  defp translate_question(nil), do: ""
+
+  defp translate_question("__MSG_WRITE_KANJI_FOR__|" <> meanings) do
+    gettext("Write the kanji for '%{meanings}'", meanings: meanings)
+  end
+
+  defp translate_question("__MSG_WHICH_WORD_MEANS__|" <> meaning) do
+    gettext("Which word means '%{meaning}'?", meaning: meaning)
+  end
+
+  defp translate_question("__MSG_WHICH_WORD_IS_READ__|" <> reading) do
+    gettext("Which word is read as '%{reading}'?", reading: reading)
+  end
+
+  defp translate_question("__MSG_WHAT_DOES_WORD_MEAN__|" <> word) do
+    gettext("What does '%{word}' mean?", word: word)
+  end
+
+  defp translate_question("__MSG_HOW_DO_YOU_READ__|" <> word) do
+    gettext("How do you read '%{word}'?", word: word)
+  end
+
+  defp translate_question("__MSG_TYPE_MEANING_AND_READING__|" <> word) do
+    gettext("Type the meaning and reading for '%{word}'", word: word)
+  end
+
+  defp translate_question(question), do: question
 end

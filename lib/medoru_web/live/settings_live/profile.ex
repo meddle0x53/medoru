@@ -39,7 +39,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
     {:ok,
      socket
-     |> assign(:page_title, "Profile Settings")
+     |> assign(:page_title, gettext("Profile Settings"))
      |> assign(:profile, profile)
      |> assign(:form, to_form(changeset))
      |> assign(:uploaded_files, [])
@@ -91,7 +91,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
         {:noreply,
          socket
          |> assign(:profile, updated_profile)
-         |> put_flash(:info, "Profile updated successfully.")
+         |> put_flash(:info, gettext("Profile updated successfully."))
          |> push_navigate(to: ~p"/settings/profile")}
 
       {:error, changeset} ->
@@ -116,10 +116,10 @@ defmodule MedoruWeb.SettingsLive.Profile do
         {:noreply,
          socket
          |> assign(:featured_badge, featured_badge)
-         |> put_flash(:info, "Featured badge updated.")}
+         |> put_flash(:info, gettext("Featured badge updated."))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Could not set featured badge.")}
+        {:noreply, put_flash(socket, :error, gettext("Could not set featured badge."))}
     end
   end
 
@@ -132,7 +132,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
     {:noreply,
      socket
      |> assign(:featured_badge, nil)
-     |> put_flash(:info, "Featured badge removed.")}
+     |> put_flash(:info, gettext("Featured badge removed."))}
   end
 
   # Helper functions
@@ -141,9 +141,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
   defp format_bytes(bytes) when bytes < 1_000_000, do: "#{div(bytes, 1_000)} KB"
   defp format_bytes(bytes), do: "#{Float.round(bytes / 1_000_000, 1)} MB"
 
-  defp error_to_string(:too_large), do: "File is too large (max 2MB)"
-  defp error_to_string(:too_many_files), do: "You can only upload one file"
-  defp error_to_string(:not_accepted), do: "File type not accepted (use JPG, PNG, or GIF)"
+  defp error_to_string(:too_large), do: gettext("File is too large (max 2MB)")
+  defp error_to_string(:too_many_files), do: gettext("You can only upload one file")
+  defp error_to_string(:not_accepted), do: gettext("File type not accepted (use JPG, PNG, or GIF)")
   defp error_to_string(err), do: to_string(err)
 
   # Badge color helper

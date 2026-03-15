@@ -1,5 +1,6 @@
 defmodule MedoruWeb.WordLive.Index do
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
 
@@ -93,9 +94,9 @@ defmodule MedoruWeb.WordLive.Index do
     {:noreply, push_patch(socket, to: ~p"/words?#{params}")}
   end
 
-  defp page_title(difficulty, nil), do: "JLPT N#{difficulty} Vocabulary"
-  defp page_title(difficulty, ""), do: "JLPT N#{difficulty} Vocabulary"
-  defp page_title(_difficulty, search), do: "Search: #{search}"
+  defp page_title(difficulty, nil), do: gettext("JLPT N%{level} Vocabulary", level: difficulty)
+  defp page_title(difficulty, ""), do: gettext("JLPT N%{level} Vocabulary", level: difficulty)
+  defp page_title(_difficulty, search), do: gettext("Search: %{query}", query: search)
 
   defp parse_difficulty(nil), do: nil
 

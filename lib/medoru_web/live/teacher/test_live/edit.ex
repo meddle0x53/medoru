@@ -27,14 +27,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     if not Tests.is_test_owner?(test, user.id) do
       {:ok,
        socket
-       |> put_flash(:error, "You can only edit your own tests.")
+       |> put_flash(:error, gettext("You can only edit your own tests."))
        |> push_navigate(to: ~p"/teacher/tests")}
     else
       # Only allow editing in_progress tests
       if test.setup_state != "in_progress" do
         {:ok,
          socket
-         |> put_flash(:info, "This test can no longer be edited.")
+         |> put_flash(:info, gettext("This test can no longer be edited."))
          |> push_navigate(to: ~p"/teacher/tests/#{test.id}")}
       else
         steps = Tests.list_test_steps(test.id)
@@ -211,14 +211,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          |> assign(:step_changeset, nil)
          |> assign(:step_form, nil)
          |> assign(:new_option_text, "")
-         |> put_flash(:info, "Step added successfully.")}
+         |> put_flash(:info, gettext("Step added successfully."))}
 
       {:error, changeset} ->
         {:noreply,
          socket
          |> assign(:step_changeset, changeset)
          |> assign(:step_form, to_form(changeset, as: :step))
-         |> put_flash(:error, "Failed to save step. Please check the form.")}
+         |> put_flash(:error, gettext("Failed to save step. Please check the form."))}
     end
   end
 
@@ -238,7 +238,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
        |> assign(:step_type, step.question_type)
        |> assign(:new_option_text, "")}
     else
-      {:noreply, put_flash(socket, :error, "Step not found.")}
+      {:noreply, put_flash(socket, :error, gettext("Step not found."))}
     end
   end
 
@@ -261,7 +261,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          |> assign(:editing_step, nil)
          |> assign(:step_changeset, nil)
          |> assign(:step_form, nil)
-         |> put_flash(:info, "Step updated successfully.")}
+         |> put_flash(:info, gettext("Step updated successfully."))}
 
       {:error, changeset} ->
         {:noreply,
@@ -287,13 +287,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
            |> assign(:steps, steps)
            |> assign(:step_count, length(steps))
            |> assign(:test, test)
-           |> put_flash(:info, "Step deleted.")}
+           |> put_flash(:info, gettext("Step deleted."))}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to delete step.")}
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete step."))}
       end
     else
-      {:noreply, put_flash(socket, :error, "Step not found.")}
+      {:noreply, put_flash(socket, :error, gettext("Step not found."))}
     end
   end
 
@@ -310,7 +310,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     {:noreply,
      socket
      |> assign(:steps, steps)
-     |> put_flash(:info, "Steps reordered.")}
+     |> put_flash(:info, gettext("Steps reordered."))}
   end
 
   @impl true
@@ -318,17 +318,17 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     test = socket.assigns.test
 
     if socket.assigns.step_count == 0 do
-      {:noreply, put_flash(socket, :error, "Add at least one step before marking ready.")}
+      {:noreply, put_flash(socket, :error, gettext("Add at least one step before marking ready."))}
     else
       case Tests.mark_test_ready(test) do
         {:ok, _updated_test} ->
           {:noreply,
            socket
-           |> put_flash(:info, "Test marked as ready for publishing.")
+           |> put_flash(:info, gettext("Test marked as ready for publishing."))
            |> push_navigate(to: ~p"/teacher/tests/#{test.id}")}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to update test status.")}
+          {:noreply, put_flash(socket, :error, gettext("Failed to update test status."))}
       end
     end
   end
@@ -355,7 +355,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         socket =
           socket
           |> assign(:new_option_text, "")
-          |> put_flash(:error, "This option already exists.")
+          |> put_flash(:error, gettext("This option already exists."))
 
         # Schedule flash clear after 5 seconds
         Process.send_after(self(), :clear_flash, 5000)
@@ -798,14 +798,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         <%!-- Step Builder --%>
         <div class="bg-base-100 rounded-2xl border border-base-200 p-6">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-base-content">Test Steps</h2>
+            <h2 class="text-lg font-semibold text-base-content">{gettext("Test Steps")}</h2>
             <%= if @step_count > 0 do %>
               <button
                 type="button"
                 phx-click="open_step_selector"
                 class="btn btn-primary btn-sm gap-2"
               >
-                <.icon name="hero-plus" class="w-4 h-4" /> Add Step
+                <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add Step")}
               </button>
             <% end %>
           </div>
@@ -829,7 +829,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           <div class="bg-base-100 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-base-200">
               <div class="flex items-center justify-between">
-                <h3 class="text-xl font-bold text-base-content">Add Step</h3>
+                <h3 class="text-xl font-bold text-base-content">{gettext("Add Step")}</h3>
                 <button
                   type="button"
                   phx-click="close_step_selector"
@@ -838,7 +838,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   <.icon name="hero-x-mark" class="w-5 h-5" />
                 </button>
               </div>
-              <p class="text-secondary mt-1">Choose the type of question you want to add.</p>
+              <p class="text-secondary mt-1">{gettext("Choose the type of question you want to add.")}</p>
             </div>
 
             <div class="p-6">
@@ -856,9 +856,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
               <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-base-content">
                   <%= if @editing_step do %>
-                    Edit Step
+                    {gettext("Edit Step")}
                   <% else %>
-                    New {format_question_type(@step_type)} Step
+                    {gettext("New %{type} Step", type: format_question_type(@step_type))}
                   <% end %>
                 </h3>
                 <button
@@ -889,13 +889,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%!-- Question --%>
                 <div>
                   <label class="block text-sm font-medium text-base-content mb-2">
-                    Question
+                    {gettext("Question")}
                   </label>
                   <.input
                     field={@step_form[:question]}
                     type="textarea"
                     rows="3"
-                    placeholder="Enter your question..."
+                    placeholder={gettext("Enter your question...")}
                   />
                 </div>
 
@@ -903,14 +903,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%= if @step_type == :writing do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      Select Kanji
+                      {gettext("Select Kanji")}
                     </label>
                     <input
                       type="text"
                       phx-keyup="search_kanji"
                       phx-debounce="300"
                       class="input input-bordered w-full"
-                      placeholder="Type kanji character, meaning, or reading..."
+                      placeholder={gettext("Type kanji character, meaning, or reading...")}
                       value={@kanji_search_query}
                     />
                     <%= if length(@available_kanji) > 0 do %>
@@ -965,9 +965,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                             </div>
                           </div>
                           <%= if @show_kanji_preview do %>
-                            <span class="badge badge-success badge-sm">Ready for writing</span>
+                            <span class="badge badge-success badge-sm">{gettext("Ready for writing")}</span>
                           <% else %>
-                            <span class="badge badge-error badge-sm">No stroke data</span>
+                            <span class="badge badge-error badge-sm">{gettext("No stroke data")}</span>
                           <% end %>
                         </div>
 
@@ -975,7 +975,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         <%= if @show_kanji_preview do %>
                           <div class="border-t border-base-300 pt-4">
                             <p class="text-sm font-medium text-base-content mb-3">
-                              Stroke Order Preview
+                              {gettext("Stroke Order Preview")}
                             </p>
                             <.live_component
                               module={MedoruWeb.StrokeAnimator}
@@ -987,7 +987,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
                             <.icon name="hero-exclamation-triangle" class="w-6 h-6 text-error mb-2" />
                             <p class="text-sm text-error">
-                              This kanji doesn't have stroke data. Writing validation will not work for this step.
+                              {gettext("This kanji doesn't have stroke data. Writing validation will not work for this step.")}
                             </p>
                           </div>
                         <% end %>
@@ -999,12 +999,12 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%= if @step_type == :multichoice or @step_type == :fill do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      Link to Word (optional)
+                      {gettext("Link to Word (optional)")}
                       <%= case @search_type do %>
                         <% :reading -> %>
-                          <span class="text-xs text-info ml-2">Reading search detected</span>
+                          <span class="text-xs text-info ml-2">{gettext("Reading search detected")}</span>
                         <% :meaning -> %>
-                          <span class="text-xs text-success ml-2">Meaning search detected</span>
+                          <span class="text-xs text-success ml-2">{gettext("Meaning search detected")}</span>
                         <% _ -> %>
                       <% end %>
                     </label>
@@ -1013,7 +1013,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                       phx-keyup="search_words"
                       phx-debounce="300"
                       class="input input-bordered w-full"
-                      placeholder="Type to search words..."
+                      placeholder={gettext("Type to search words...")}
                       value={@word_search_query}
                     />
                     <%= if length(@available_words) > 0 do %>
@@ -1055,13 +1055,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               checked={@include_reading}
                               class="checkbox checkbox-sm checkbox-primary"
                             />
-                            <span class="text-sm font-medium">Also require reading in hiragana</span>
+                            <span class="text-sm font-medium">{gettext("Also require reading in hiragana")}</span>
                           </label>
                           <span class="text-xs text-secondary">
                             <%= if @include_reading do %>
-                              (3 points total: 2 for meaning + 1 for reading)
+                              ({gettext("3 points total: 2 for meaning + 1 for reading")})
                             <% else %>
-                              (2 points for meaning only)
+                              ({gettext("2 points for meaning only")})
                             <% end %>
                           </span>
                         </div>
@@ -1075,7 +1075,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               checked={@use_default_meaning}
                               class="checkbox checkbox-sm checkbox-primary"
                             />
-                            <span class="text-sm">Use default meaning as answer</span>
+                            <span class="text-sm">{gettext("Use default meaning as answer")}</span>
                           </label>
                         </div>
 
@@ -1083,7 +1083,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         <%= if not @use_default_meaning do %>
                           <div class="mb-4">
                             <label class="block text-sm font-medium text-base-content mb-2">
-                              Custom Meaning Answer
+                              {gettext("Custom Meaning Answer")}
                             </label>
                             <input
                               type="text"
@@ -1091,10 +1091,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               value={@custom_meaning}
                               phx-keyup="update_custom_meaning"
                               class="input input-bordered w-full"
-                              placeholder="Enter custom meaning..."
+                              placeholder={gettext("Enter custom meaning...")}
                             />
                             <p class="text-xs text-secondary mt-1">
-                              Students must match this exactly (case-insensitive)
+                              {gettext("Students must match this exactly (case-insensitive)")}
                             </p>
                           </div>
                         <% end %>
@@ -1103,9 +1103,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         <%= if @include_reading do %>
                           <div>
                             <label class="block text-sm font-medium text-base-content mb-2">
-                              Reading Answer (Hiragana)
+                              {gettext("Reading Answer (Hiragana)")}
                               <span class="text-xs text-secondary ml-1">
-                                - students must also enter this
+                                - {gettext("students must also enter this")}
                               </span>
                             </label>
                             <input
@@ -1114,10 +1114,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               value={@reading_answer || @selected_word.reading}
                               phx-keyup="update_reading_answer"
                               class="input input-bordered w-full"
-                              placeholder="Enter hiragana reading (e.g., あおい)..."
+                              placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
                             />
                             <p class="text-xs text-secondary mt-1">
-                              Default from word database. Edit if you want a different reading accepted.
+                              {gettext("Default from word database. Edit if you want a different reading accepted.")}
                             </p>
                           </div>
                         <% end %>
@@ -1129,17 +1129,17 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%!-- Correct Answer --%>
                 <div>
                   <label class="block text-sm font-medium text-base-content mb-2">
-                    Correct Answer
+                    {gettext("Correct Answer")}
                   </label>
                   <.input
                     field={@step_form[:correct_answer]}
                     type="text"
-                    placeholder="Enter the correct answer..."
+                    placeholder={gettext("Enter the correct answer...")}
                     phx-keyup="update_correct_answer"
                     phx-debounce="3000"
                   />
                   <p class="text-xs text-secondary mt-1">
-                    Changes will update the correct option after 3 seconds of inactivity.
+                    {gettext("Changes will update the correct option after 3 seconds of inactivity.")}
                   </p>
                 </div>
 
@@ -1147,8 +1147,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%= if @step_type == :multichoice do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      Answer Options
-                      <span class="text-xs text-secondary ml-2">(4-8 options required)</span>
+                      {gettext("Answer Options")}
+                      <span class="text-xs text-secondary ml-2">({gettext("4-8 options required")})</span>
                     </label>
 
                     <% options = @step_form[:options].value || [] %>
@@ -1162,7 +1162,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-success/20 text-success border border-success/30 rounded-lg">
                           <.icon name="hero-check-circle" class="w-4 h-4" />
                           <span class="font-medium">{correct_trimmed}</span>
-                          <span class="text-xs opacity-70">(correct)</span>
+                          <span class="text-xs opacity-70">({gettext("correct")})</span>
                         </div>
                       <% end %>
 
@@ -1178,7 +1178,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               phx-click="remove_option"
                               phx-value-index={index}
                               class="text-secondary hover:text-error transition-colors"
-                              title="Remove option"
+                              title={gettext("Remove option")}
                             >
                               <.icon name="hero-x-mark" class="w-4 h-4" />
                             </button>
@@ -1189,7 +1189,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                       <%!-- Empty state --%>
                       <%= if length(options) < 4 do %>
                         <span class="text-sm text-secondary italic">
-                          Add {4 - length(options)} more option(s)
+                          {gettext("Add %{count} more option(s)", count: 4 - length(options))}
                         </span>
                       <% end %>
                     </div>
@@ -1203,7 +1203,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         phx-keyup="update_new_option"
                         phx-hook="OptionInput"
                         class="input input-bordered flex-1"
-                        placeholder="Type a wrong answer and press Enter..."
+                        placeholder={gettext("Type a wrong answer and press Enter...")}
                       />
                       <button
                         type="button"
@@ -1211,7 +1211,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         disabled={String.trim(@new_option_text) == ""}
                         class="btn btn-outline btn-sm"
                       >
-                        <.icon name="hero-plus" class="w-4 h-4" /> Add
+                        <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
                       </button>
                     </div>
 
@@ -1247,25 +1247,25 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 <%!-- Hints --%>
                 <div>
                   <label class="block text-sm font-medium text-base-content mb-2">
-                    Hint (optional)
+                    {gettext("Hint (optional)")}
                   </label>
                   <.input
                     field={@step_form[:hints]}
                     type="text"
-                    placeholder="Give students a hint..."
+                    placeholder={gettext("Give students a hint...")}
                   />
                 </div>
 
                 <%!-- Explanation --%>
                 <div>
                   <label class="block text-sm font-medium text-base-content mb-2">
-                    Explanation (shown after answering)
+                    {gettext("Explanation (shown after answering)")}
                   </label>
                   <.input
                     field={@step_form[:explanation]}
                     type="textarea"
                     rows="2"
-                    placeholder="Explain the correct answer..."
+                    placeholder={gettext("Explain the correct answer...")}
                   />
                 </div>
 
@@ -1276,13 +1276,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     phx-click="close_step_form"
                     class="btn btn-ghost"
                   >
-                    Cancel
+                    {gettext("Cancel")}
                   </button>
                   <button type="submit" class="btn btn-primary">
                     <%= if @editing_step do %>
-                      Update Step
+                      {gettext("Update Step")}
                     <% else %>
-                      Add Step
+                      {gettext("Add Step")}
                     <% end %>
                   </button>
                 </div>
@@ -1297,10 +1297,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   # Helper functions
 
-  defp format_question_type(:multichoice), do: "Multiple Choice"
-  defp format_question_type(:reading_text), do: "Reading"
-  defp format_question_type(:fill), do: "Fill in Blank"
-  defp format_question_type(:writing), do: "Writing"
+  defp format_question_type(:multichoice), do: gettext("Multiple Choice")
+  defp format_question_type(:reading_text), do: gettext("Reading")
+  defp format_question_type(:fill), do: gettext("Fill in Blank")
+  defp format_question_type(:writing), do: gettext("Writing")
   defp format_question_type(other), do: to_string(other)
 
   defp format_options_for_submission(options) when is_list(options) do

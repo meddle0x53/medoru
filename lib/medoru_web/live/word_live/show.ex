@@ -1,5 +1,6 @@
 defmodule MedoruWeb.WordLive.Show do
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
 
@@ -17,7 +18,10 @@ defmodule MedoruWeb.WordLive.Show do
     {:noreply,
      socket
      |> assign(:word, word)
-     |> assign(:page_title, "#{word.text} - #{word.meaning}")}
+     |> assign(
+       :page_title,
+       gettext("%{word} - %{meaning}", word: word.text, meaning: word.meaning)
+     )}
   end
 
   # Helper functions needed for shared templates

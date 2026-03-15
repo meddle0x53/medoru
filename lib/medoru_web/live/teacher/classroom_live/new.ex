@@ -3,6 +3,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
   LiveView for teachers to create a new classroom.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms
   alias Medoru.Classrooms.Classroom
@@ -13,7 +14,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
 
     {:ok,
      socket
-     |> assign(:page_title, "Create Classroom")
+     |> assign(:page_title, gettext("Create Classroom"))
      |> assign(:form, to_form(changeset))}
   end
 
@@ -39,7 +40,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
       {:ok, classroom} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Classroom created successfully!")
+         |> put_flash(:info, gettext("Classroom created successfully!"))
          |> push_navigate(to: ~p"/teacher/classrooms/#{classroom.id}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -58,10 +59,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
             navigate={~p"/teacher/classrooms"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classrooms
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Classrooms")}
           </.link>
-          <h1 class="text-3xl font-bold text-base-content">Create Classroom</h1>
-          <p class="text-secondary mt-1">Set up a new classroom for your students</p>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Create Classroom")}</h1>
+          <p class="text-secondary mt-1">{gettext("Set up a new classroom for your students")}</p>
         </div>
 
         <%!-- Form --%>
@@ -74,12 +75,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                   <.input
                     field={@form[:name]}
                     type="text"
-                    label="Classroom Name"
-                    placeholder="e.g., N5 Vocabulary Class"
+                    label={gettext("Classroom Name")}
+                    placeholder={gettext("e.g., N5 Vocabulary Class")}
                     required
                   />
                   <p class="text-sm text-secondary mt-1">
-                    Choose a descriptive name for your classroom
+                    {gettext("Choose a descriptive name for your classroom")}
                   </p>
                 </div>
 
@@ -88,11 +89,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                   <.input
                     field={@form[:slug]}
                     type="text"
-                    label="URL Slug (optional)"
-                    placeholder="auto-generated-from-name"
+                    label={gettext("URL Slug (optional)")}
+                    placeholder={gettext("auto-generated-from-name")}
                   />
                   <p class="text-sm text-secondary mt-1">
-                    Used in the URL. Leave blank to auto-generate from the name.
+                    {gettext("Used in the URL. Leave blank to auto-generate from the name.")}
                   </p>
                 </div>
 
@@ -101,19 +102,19 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                   <.input
                     field={@form[:description]}
                     type="textarea"
-                    label="Description"
+                    label={gettext("Description")}
                     rows="4"
-                    placeholder="Describe what students will learn in this classroom..."
+                    placeholder={gettext("Describe what students will learn in this classroom...")}
                   />
                 </div>
 
                 <%!-- Actions --%>
                 <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                   <button type="submit" class="btn btn-primary">
-                    Create Classroom
+                    {gettext("Create Classroom")}
                   </button>
                   <.link navigate={~p"/teacher/classrooms"} class="btn btn-ghost">
-                    Cancel
+                    {gettext("Cancel")}
                   </.link>
                 </div>
               </div>
@@ -124,12 +125,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
         <%!-- Tips --%>
         <div class="mt-8 bg-info/10 rounded-xl p-6 border border-info/20">
           <h3 class="text-sm font-semibold text-info mb-3 flex items-center gap-2">
-            <.icon name="hero-light-bulb" class="w-4 h-4" /> Tips for a great classroom
+            <.icon name="hero-light-bulb" class="w-4 h-4" /> {gettext("Tips for a great classroom")}
           </h3>
           <ul class="text-sm text-info/80 space-y-2">
-            <li>• Use a clear, descriptive name that students will recognize</li>
-            <li>• Write a detailed description explaining the learning goals</li>
-            <li>• You'll get an invite code to share with students after creation</li>
+            <li>• {gettext("Use a clear, descriptive name that students will recognize")}</li>
+            <li>• {gettext("Write a detailed description explaining the learning goals")}</li>
+            <li>• {gettext("You'll get an invite code to share with students after creation")}</li>
           </ul>
         </div>
       </div>

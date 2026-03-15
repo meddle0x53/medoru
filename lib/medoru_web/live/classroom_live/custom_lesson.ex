@@ -120,7 +120,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       {:ok, _} ->
         {:noreply,
          socket
-         |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete")}
+         |> push_navigate(
+           to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete"
+         )}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Failed to complete lesson.")}
@@ -200,14 +202,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               phx-click="prev"
               class={["btn btn-ghost", @current_index == 0 && "invisible"]}
             >
-              <.icon name="hero-arrow-left" class="w-5 h-5 mr-2" />
-              Previous
+              <.icon name="hero-arrow-left" class="w-5 h-5 mr-2" /> Previous
             </button>
 
             <%= if @current_index < @total_words - 1 do %>
               <button phx-click="next" class="btn btn-primary">
-                Next
-                <.icon name="hero-arrow-right" class="w-5 h-5 ml-2" />
+                Next <.icon name="hero-arrow-right" class="w-5 h-5 ml-2" />
               </button>
             <% else %>
               <button
@@ -215,8 +215,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                 data-confirm="Mark this lesson as complete?"
                 class="btn btn-success"
               >
-                <.icon name="hero-check" class="w-5 h-5 mr-2" />
-                Mark Complete
+                <.icon name="hero-check" class="w-5 h-5 mr-2" /> Mark Complete
               </button>
             <% end %>
           </div>

@@ -5,7 +5,9 @@
       navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
       class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
-      <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@kanji.jlpt_level} Kanji
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{level} Kanji",
+        level: @kanji.jlpt_level
+      )}
     </.link>
 
     <%!-- Main Kanji Card --%>
@@ -28,17 +30,17 @@
                 JLPT N{@kanji.jlpt_level}
               </span>
               <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
-                {@kanji.stroke_count} strokes
+                {@kanji.stroke_count} {gettext("strokes")}
               </span>
               <%= if @kanji.frequency do %>
                 <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
-                  Frequency: #{@kanji.frequency}
+                  {gettext("Frequency")}: #{@kanji.frequency}
                 </span>
               <% end %>
             </div>
 
             <h1 class="text-2xl font-bold text-base-content mb-2">
-              Meanings
+              {gettext("Meanings")}
             </h1>
             <p class="text-lg text-secondary mb-6">
               {Enum.join(@kanji.meanings, ", ")}
@@ -47,7 +49,7 @@
             <%= if @kanji.radicals != [] do %>
               <div class="mb-4">
                 <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
-                  Radicals
+                  {gettext("Radicals")}
                 </h2>
                 <div class="flex gap-2">
                   <%= for radical <- @kanji.radicals do %>
@@ -63,7 +65,7 @@
             <%= if @kanji.stroke_data && @kanji.stroke_data["decomposition"] do %>
               <div class="mb-4">
                 <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
-                  Decomposition
+                  {gettext("Decomposition")}
                 </h2>
                 <p class="text-secondary font-mono text-lg">
                   {@kanji.stroke_data["decomposition"]}
@@ -75,7 +77,7 @@
             <%= if @kanji.stroke_data && @kanji.stroke_data["etymology"] do %>
               <div>
                 <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
-                  Etymology
+                  {gettext("Etymology")}
                 </h2>
                 <p class="text-secondary text-sm">
                   <%= if @kanji.stroke_data["etymology"]["type"] do %>
@@ -98,16 +100,20 @@
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
             <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
-            <h2 class="text-xl font-bold text-base-content">Writing Practice</h2>
+            <h2 class="text-xl font-bold text-base-content">{gettext("Writing Practice")}</h2>
           </div>
           <button
             phx-click="toggle_writing_practice"
             class="text-sm bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-lg transition-colors"
           >
             <%= if @show_writing_practice do %>
-              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> Hide Practice
+              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> {gettext(
+                "Hide Practice"
+              )}
             <% else %>
-              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> Practice Writing
+              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> {gettext(
+                "Practice Writing"
+              )}
             <% end %>
           </button>
         </div>
@@ -127,22 +133,24 @@
               <div class="text-center py-8">
                 <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-4 rounded-2xl mb-4">
                   <.icon name="hero-check-circle" class="w-8 h-8" />
-                  <span class="text-xl font-bold">Correct!</span>
+                  <span class="text-xl font-bold">{gettext("Correct!")}</span>
                 </div>
-                <p class="text-secondary mb-4">You wrote {@kanji.character} correctly!</p>
+                <p class="text-secondary mb-4">
+                  {gettext("You wrote %{kanji} correctly!", kanji: @kanji.character)}
+                </p>
                 <div class="flex justify-center gap-3">
                   <button
                     phx-click="toggle_writing_practice"
                     phx-value-reset="true"
                     class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-xl font-medium transition-colors flex items-center gap-2"
                   >
-                    <.icon name="hero-arrow-path" class="w-5 h-5" /> Practice Again
+                    <.icon name="hero-arrow-path" class="w-5 h-5" /> {gettext("Practice Again")}
                   </button>
                   <button
                     phx-click="toggle_writing_practice"
                     class="px-6 py-3 bg-base-200 hover:bg-base-300 rounded-xl transition-colors"
                   >
-                    Close
+                    {gettext("Close")}
                   </button>
                 </div>
               </div>
@@ -150,7 +158,9 @@
               <%!-- Writing canvas --%>
               <div class="flex flex-col items-center gap-4">
                 <div class="text-center text-secondary text-sm">
-                  Draw the kanji stroke by stroke. Each stroke must be longer than 10 pixels.
+                  {gettext(
+                    "Draw the kanji stroke by stroke. Each stroke must be longer than 10 pixels."
+                  )}
                 </div>
 
                 <div
@@ -166,14 +176,14 @@
                     data-action="clear"
                     class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-secondary transition-colors flex items-center gap-2"
                   >
-                    <.icon name="hero-trash" class="w-5 h-5" /> Clear
+                    <.icon name="hero-trash" class="w-5 h-5" /> {gettext("Clear")}
                   </button>
                   <button
                     type="button"
                     data-action="submit"
                     class="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center gap-2"
                   >
-                    <.icon name="hero-check" class="w-5 h-5" /> Check
+                    <.icon name="hero-check" class="w-5 h-5" /> {gettext("Check")}
                   </button>
                 </div>
               </div>
@@ -198,9 +208,9 @@
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
           <span class="bg-accent/15 text-accent px-3 py-1 rounded-full text-sm font-medium">
-            On'yomi
+            {gettext("On'yomi")}
           </span>
-          <span class="text-sm text-secondary/70">(Chinese reading)</span>
+          <span class="text-sm text-secondary/70">{gettext("(Chinese reading)")}</span>
         </div>
 
         <%= if @on_readings != [] do %>
@@ -224,7 +234,7 @@
             <% end %>
           </div>
         <% else %>
-          <p class="text-secondary italic">No common on'yomi readings</p>
+          <p class="text-secondary italic">{gettext("No common on'yomi readings")}</p>
         <% end %>
       </div>
 
@@ -232,9 +242,9 @@
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
         <div class="flex items-center gap-2 mb-4">
           <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
-            Kun'yomi
+            {gettext("Kun'yomi")}
           </span>
-          <span class="text-sm text-secondary/70">(Japanese reading)</span>
+          <span class="text-sm text-secondary/70">{gettext("(Japanese reading)")}</span>
         </div>
 
         <%= if @kun_readings != [] do %>
@@ -258,7 +268,7 @@
             <% end %>
           </div>
         <% else %>
-          <p class="text-secondary italic">No common kun'yomi readings</p>
+          <p class="text-secondary italic">{gettext("No common kun'yomi readings")}</p>
         <% end %>
       </div>
     </div>
@@ -267,10 +277,10 @@
     <div class="mt-8">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-bold text-base-content">
-          Words Using This Kanji
+          {gettext("Words Using This Kanji")}
         </h2>
         <span class="text-sm text-secondary">
-          {@words_data.total_count} words total
+          {@words_data.total_count} {gettext("words total")}
         </span>
       </div>
 
@@ -283,11 +293,13 @@
               <div class="bg-base-200/50 px-6 py-3 border-b border-base-300">
                 <div class="flex items-center gap-3">
                   <%= if reading == "misc" do %>
-                    <span class="text-lg font-medium text-accent">Other</span>
+                    <span class="text-lg font-medium text-accent">{gettext("Other")}</span>
                   <% else %>
                     <span class="text-2xl font-medium text-accent">{reading}</span>
                   <% end %>
-                  <span class="text-sm text-secondary/70">({length(words)} words)</span>
+                  <span class="text-sm text-secondary/70">
+                    ({length(words)} {gettext("words")})
+                  </span>
                 </div>
               </div>
 
@@ -328,11 +340,11 @@
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page - 1}"}
                 class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
               >
-                ← Previous
+                ← {gettext("Previous")}
               </.link>
             <% else %>
               <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
-                ← Previous
+                ← {gettext("Previous")}
               </span>
             <% end %>
 
@@ -360,18 +372,18 @@
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page + 1}"}
                 class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
               >
-                Next →
+                {gettext("Next")} →
               </.link>
             <% else %>
               <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
-                Next →
+                {gettext("Next")} →
               </span>
             <% end %>
           </div>
         <% end %>
       <% else %>
         <div class="bg-base-200/50 rounded-xl p-8 text-center">
-          <p class="text-secondary">No words found containing this kanji.</p>
+          <p class="text-secondary">{gettext("No words found containing this kanji.")}</p>
         </div>
       <% end %>
     </div>
@@ -382,13 +394,13 @@
         navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
         class="text-secondary hover:text-primary font-medium transition-colors"
       >
-        ← Back to list
+        ← {gettext("Back to list")}
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
         <%= if @kanji_learned do %>
           <div class="flex items-center gap-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-6 py-3 rounded-xl font-medium">
-            <.icon name="hero-check-circle" class="w-5 h-5" /> Learned
+            <.icon name="hero-check-circle" class="w-5 h-5" /> {gettext("Learned")}
           </div>
         <% else %>
           <button
@@ -396,7 +408,7 @@
             class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
                    transition-all shadow-sm hover:shadow active:scale-[0.98]"
           >
-            <.icon name="hero-check" class="w-5 h-5 mr-1 inline" /> Mark as Learned
+            <.icon name="hero-check" class="w-5 h-5 mr-1 inline" /> {gettext("Mark as Learned")}
           </button>
         <% end %>
       <% end %>

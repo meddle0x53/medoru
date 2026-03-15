@@ -43,15 +43,17 @@ defmodule Medoru.Content.CustomLessonTest do
     end
 
     test "list_teacher_custom_lessons/1 returns teacher's lessons", %{teacher: teacher} do
-      {:ok, _} = Content.create_custom_lesson(%{
-        title: "Lesson 1",
-        creator_id: teacher.id
-      })
+      {:ok, _} =
+        Content.create_custom_lesson(%{
+          title: "Lesson 1",
+          creator_id: teacher.id
+        })
 
-      {:ok, _} = Content.create_custom_lesson(%{
-        title: "Lesson 2",
-        creator_id: teacher.id
-      })
+      {:ok, _} =
+        Content.create_custom_lesson(%{
+          title: "Lesson 2",
+          creator_id: teacher.id
+        })
 
       lessons = Content.list_teacher_custom_lessons(teacher.id)
       assert length(lessons) == 2
@@ -60,10 +62,11 @@ defmodule Medoru.Content.CustomLessonTest do
     test "add_word_to_lesson/3 adds a word", %{teacher: teacher} do
       word = word_fixture()
 
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Lesson with Words",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson with Words",
+          creator_id: teacher.id
+        })
 
       assert {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
 
@@ -78,10 +81,11 @@ defmodule Medoru.Content.CustomLessonTest do
     test "remove_word_from_lesson/2 removes a word", %{teacher: teacher} do
       word = word_fixture()
 
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Lesson",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson",
+          creator_id: teacher.id
+        })
 
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
       assert {:ok, _} = Content.remove_word_from_lesson(lesson.id, word.id)
@@ -93,10 +97,11 @@ defmodule Medoru.Content.CustomLessonTest do
     test "update_custom_lesson_word/2 updates word details", %{teacher: teacher} do
       word = word_fixture()
 
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Lesson",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson",
+          creator_id: teacher.id
+        })
 
       {:ok, lesson_word} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
 
@@ -114,10 +119,11 @@ defmodule Medoru.Content.CustomLessonTest do
       teacher: teacher,
       classroom: classroom
     } do
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Published Lesson",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Published Lesson",
+          creator_id: teacher.id
+        })
 
       assert {:ok, published} =
                Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
@@ -131,10 +137,11 @@ defmodule Medoru.Content.CustomLessonTest do
       teacher: teacher,
       classroom: classroom
     } do
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Classroom Lesson",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Classroom Lesson",
+          creator_id: teacher.id
+        })
 
       {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
 
@@ -151,10 +158,11 @@ defmodule Medoru.Content.CustomLessonTest do
       word1 = word_fixture()
       word2 = word_fixture()
 
-      {:ok, lesson} = Content.create_custom_lesson(%{
-        title: "Lesson",
-        creator_id: teacher.id
-      })
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson",
+          creator_id: teacher.id
+        })
 
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})

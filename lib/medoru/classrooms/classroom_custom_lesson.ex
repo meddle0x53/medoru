@@ -1,7 +1,7 @@
 defmodule Medoru.Classrooms.ClassroomCustomLesson do
   @moduledoc """
   Schema for publishing custom lessons to classrooms.
-  
+
   Similar to ClassroomTest, this manages the relationship between
   custom lessons and classrooms, including:
   - Publication status
@@ -38,7 +38,13 @@ defmodule Medoru.Classrooms.ClassroomCustomLesson do
     now = DateTime.utc_now()
 
     classroom_lesson
-    |> cast(attrs, [:classroom_id, :custom_lesson_id, :published_by_id, :due_date, :points_override])
+    |> cast(attrs, [
+      :classroom_id,
+      :custom_lesson_id,
+      :published_by_id,
+      :due_date,
+      :points_override
+    ])
     |> put_change(:status, "active")
     |> put_change(:published_at, now)
     |> put_change(:unpublished_at, nil)
@@ -47,7 +53,9 @@ defmodule Medoru.Classrooms.ClassroomCustomLesson do
     |> foreign_key_constraint(:classroom_id)
     |> foreign_key_constraint(:custom_lesson_id)
     |> foreign_key_constraint(:published_by_id)
-    |> unique_constraint([:classroom_id, :custom_lesson_id], name: :classroom_custom_lessons_unique_lesson)
+    |> unique_constraint([:classroom_id, :custom_lesson_id],
+      name: :classroom_custom_lessons_unique_lesson
+    )
   end
 
   @doc """
@@ -68,7 +76,11 @@ defmodule Medoru.Classrooms.ClassroomCustomLesson do
     now = DateTime.utc_now()
 
     classroom_lesson
-    |> cast(%{status: "active", published_at: now, unpublished_at: nil}, [:status, :published_at, :unpublished_at])
+    |> cast(%{status: "active", published_at: now, unpublished_at: nil}, [
+      :status,
+      :published_at,
+      :unpublished_at
+    ])
     |> validate_inclusion(:status, ["active"])
   end
 end

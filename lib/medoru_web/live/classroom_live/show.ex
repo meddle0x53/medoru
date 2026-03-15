@@ -17,14 +17,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
       nil ->
         {:ok,
          socket
-         |> put_flash(:error, "You are not a member of this classroom.")
+         |> put_flash(:error, gettext("You are not a member of this classroom."))
          |> push_navigate(to: ~p"/classrooms")}
 
       membership ->
         if membership.status != :approved do
           {:ok,
            socket
-           |> put_flash(:error, "Your membership is pending approval.")
+           |> put_flash(:error, gettext("Your membership is pending approval."))
            |> push_navigate(to: ~p"/classrooms")}
         else
           classroom = Classrooms.get_classroom!(id)
@@ -71,11 +71,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
       {:ok, _} ->
         {:noreply,
          socket
-         |> put_flash(:info, "You have left the classroom.")
+         |> put_flash(:info, gettext("You have left the classroom."))
          |> push_navigate(to: ~p"/classrooms")}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to leave classroom.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to leave classroom."))}
     end
   end
 
@@ -345,21 +345,18 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
                     <%= if lesson.difficulty do %>
                       <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-signal" class="w-3 h-3 mr-1" />
-                        N{lesson.difficulty}
+                        <.icon name="hero-signal" class="w-3 h-3 mr-1" /> N{lesson.difficulty}
                       </span>
                     <% end %>
 
                     <%= case progress && progress.status do %>
                       <% "completed" -> %>
                         <span class="badge badge-success badge-sm">
-                          <.icon name="hero-check" class="w-3 h-3 mr-1" />
-                          Completed
+                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> Completed
                         </span>
                       <% "in_progress" -> %>
                         <span class="badge badge-warning badge-sm">
-                          <.icon name="hero-play" class="w-3 h-3 mr-1" />
-                          In Progress
+                          <.icon name="hero-play" class="w-3 h-3 mr-1" /> In Progress
                         </span>
                       <% _ -> %>
                         <span class="badge badge-ghost badge-sm">

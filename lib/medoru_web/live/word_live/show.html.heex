@@ -5,7 +5,9 @@
       navigate={~p"/words?difficulty=#{@word.difficulty}"}
       class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
-      <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@word.difficulty} Words
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{level} Words",
+        level: @word.difficulty
+      )}
     </.link>
 
     <%!-- Main Word Card --%>
@@ -61,7 +63,7 @@
             </span>
             <%= if @word.usage_frequency && @word.usage_frequency <= 100 do %>
               <span class="bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 rounded-full text-sm">
-                Common word
+                {gettext("Common word")}
               </span>
             <% end %>
           </div>
@@ -70,7 +72,7 @@
         <%!-- Meaning --%>
         <div class="bg-base-200/50 rounded-xl p-6 mb-6">
           <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-2">
-            Meaning
+            {gettext("Meaning")}
           </h2>
           <p class="text-xl text-base-content">
             {@word.meaning}
@@ -81,7 +83,7 @@
         <%= if @word.word_kanjis != [] do %>
           <div>
             <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-4">
-              Kanji Breakdown
+              {gettext("Kanji Breakdown")}
             </h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               <%= for word_kanji <- @word.word_kanjis do %>
@@ -105,11 +107,11 @@
                       {kanji_reading}
                     </div>
                     <%= if !word_kanji.kanji_reading do %>
-                      <div class="text-xs text-secondary/50 mt-1">(inferred)</div>
+                      <div class="text-xs text-secondary/50 mt-1">({gettext("inferred")})</div>
                     <% end %>
                   <% else %>
                     <div class="text-sm text-secondary/60">
-                      No specific reading
+                      {gettext("No specific reading")}
                     </div>
                   <% end %>
                 </.link>
@@ -126,13 +128,13 @@
         navigate={~p"/words?difficulty=#{@word.difficulty}"}
         class="text-secondary hover:text-primary font-medium transition-colors"
       >
-        ← Back to list
+        ← {gettext("Back to list")}
       </.link>
 
       <%= if @current_scope && @current_scope.current_user do %>
         <button class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
                  transition-all shadow-sm hover:shadow active:scale-[0.98]">
-          Add to Study List
+          {gettext("Add to Study List")}
         </button>
       <% end %>
     </div>

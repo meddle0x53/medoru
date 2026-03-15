@@ -14,7 +14,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
     if user.type not in ["teacher", "admin"] do
       {:ok,
        socket
-       |> put_flash(:error, "Only teachers can access this page.")
+       |> put_flash(:error, gettext("Only teachers can access this page."))
        |> push_navigate(to: ~p"/classrooms")}
     else
       lessons = Content.list_teacher_custom_lessons(user.id)
@@ -35,7 +35,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
 
     {:noreply,
      socket
-     |> assign(:page_title, "My Custom Lessons")
+     |> assign(:page_title, gettext("My Custom Lessons"))
      |> assign(:lessons, lessons)
      |> assign(:current_filter, status)}
   end
@@ -63,18 +63,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
 
     # Verify ownership
     if lesson.creator_id != user.id do
-      {:noreply, put_flash(socket, :error, "You can only archive your own lessons.")}
+      {:noreply, put_flash(socket, :error, gettext("You can only archive your own lessons."))}
     else
       case Content.archive_custom_lesson(lesson) do
         {:ok, _} ->
           lessons = Content.list_teacher_custom_lessons(user.id)
+
           {:noreply,
            socket
-           |> put_flash(:info, "Lesson archived successfully.")
+           |> put_flash(:info, gettext("Lesson archived successfully."))
            |> assign(:lessons, lessons)}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to archive lesson.")}
+          {:noreply, put_flash(socket, :error, gettext("Failed to archive lesson."))}
       end
     end
   end
@@ -87,11 +88,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
         <%!-- Header --%>
         <div class="flex items-center justify-between mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-base-content">My Custom Lessons</h1>
-            <p class="text-secondary mt-1">Create and manage reading lessons for your classrooms</p>
+            <h1 class="text-3xl font-bold text-base-content">{gettext("My Custom Lessons")}</h1>
+            <p class="text-secondary mt-1">
+              {gettext("Create and manage reading lessons for your classrooms")}
+            </p>
           </div>
           <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary">
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Lesson
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Lesson")}
           </.link>
         </div>
 
@@ -100,30 +103,30 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
           <button
             phx-click="filter"
             phx-value-status="all"
-            class={["btn btn-sm", @current_filter == "all" && "btn-primary" || "btn-ghost"]}
+            class={["btn btn-sm", (@current_filter == "all" && "btn-primary") || "btn-ghost"]}
           >
-            All
+            {gettext("All")}
           </button>
           <button
             phx-click="filter"
             phx-value-status="draft"
-            class={["btn btn-sm", @current_filter == "draft" && "btn-primary" || "btn-ghost"]}
+            class={["btn btn-sm", (@current_filter == "draft" && "btn-primary") || "btn-ghost"]}
           >
-            Drafts
+            {gettext("Drafts")}
           </button>
           <button
             phx-click="filter"
             phx-value-status="published"
-            class={["btn btn-sm", @current_filter == "published" && "btn-primary" || "btn-ghost"]}
+            class={["btn btn-sm", (@current_filter == "published" && "btn-primary") || "btn-ghost"]}
           >
-            Published
+            {gettext("Published")}
           </button>
           <button
             phx-click="filter"
             phx-value-status="archived"
-            class={["btn btn-sm", @current_filter == "archived" && "btn-primary" || "btn-ghost"]}
+            class={["btn btn-sm", (@current_filter == "archived" && "btn-primary") || "btn-ghost"]}
           >
-            Archived
+            {gettext("Archived")}
           </button>
         </div>
 
@@ -132,10 +135,12 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
           <div class="card bg-base-200">
             <div class="card-body text-center py-12">
               <.icon name="hero-book-open" class="w-16 h-16 mx-auto text-base-300 mb-4" />
-              <h3 class="text-lg font-medium text-base-content">No lessons yet</h3>
-              <p class="text-secondary mt-2 mb-4">Create your first custom reading lesson</p>
+              <h3 class="text-lg font-medium text-base-content">{gettext("No lessons yet")}</h3>
+              <p class="text-secondary mt-2 mb-4">
+                {gettext("Create your first custom reading lesson")}
+              </p>
               <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary">
-                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Create Lesson
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Create Lesson")}
               </.link>
             </div>
           </div>
@@ -149,29 +154,28 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                     <h3 class="card-title text-lg text-base-content line-clamp-1">{lesson.title}</h3>
                     <%= case lesson.status do %>
                       <% "draft" -> %>
-                        <span class="badge badge-ghost badge-sm">Draft</span>
+                        <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
                       <% "published" -> %>
-                        <span class="badge badge-success badge-sm">Published</span>
+                        <span class="badge badge-success badge-sm">{gettext("Published")}</span>
                       <% "archived" -> %>
-                        <span class="badge badge-neutral badge-sm">Archived</span>
+                        <span class="badge badge-neutral badge-sm">{gettext("Archived")}</span>
                     <% end %>
                   </div>
 
                   <%!-- Description --%>
                   <p class="text-secondary text-sm line-clamp-2 mb-4">
-                    <%= lesson.description || "No description" %>
+                    {lesson.description || gettext("No description")}
                   </p>
 
                   <%!-- Meta info --%>
                   <div class="flex items-center gap-4 text-sm text-secondary mb-4">
                     <span class="flex items-center gap-1">
                       <.icon name="hero-bookmark" class="w-4 h-4" />
-                      {lesson.word_count} words
+                      {lesson.word_count} {gettext("words")}
                     </span>
                     <%= if lesson.difficulty do %>
                       <span class="flex items-center gap-1">
-                        <.icon name="hero-signal" class="w-4 h-4" />
-                        N{lesson.difficulty}
+                        <.icon name="hero-signal" class="w-4 h-4" /> N{lesson.difficulty}
                       </span>
                     <% end %>
                   </div>
@@ -196,13 +200,17 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                       <button
                         phx-click="archive"
                         phx-value-id={lesson.id}
-                        data-confirm="Archive this lesson? It will no longer be available for new students."
+                        data-confirm={
+                          gettext(
+                            "Archive this lesson? It will no longer be available for new students."
+                          )
+                        }
                         class="btn btn-ghost btn-sm text-error"
                       >
                         <.icon name="hero-archive-box" class="w-4 h-4" />
                       </button>
                     <% else %>
-                      <span class="text-sm text-secondary">Archived</span>
+                      <span class="text-sm text-secondary">{gettext("Archived")}</span>
                     <% end %>
                   </div>
                 </div>

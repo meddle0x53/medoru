@@ -2,9 +2,9 @@
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-base-content">Profile Settings</h1>
+      <h1 class="text-3xl font-bold text-base-content">{gettext("Profile Settings")}</h1>
       <p class="mt-2 text-secondary">
-        Update your public profile information.
+        {gettext("Update your public profile information.")}
       </p>
     </div>
 
@@ -20,14 +20,14 @@
           <%!-- Display Name --%>
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-medium">Display Name</span>
-              <span class="label-text-alt text-base-content/50">Required</span>
+              <span class="label-text font-medium">{gettext("Display Name")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Required")}</span>
             </label>
             <input
               type="text"
               name={@form[:display_name].name}
               value={@form[:display_name].value}
-              placeholder="How you want to be known"
+              placeholder={gettext("How you want to be known")}
               class={[
                 "input input-bordered w-full",
                 @form[:display_name].errors != [] && "input-error"
@@ -36,7 +36,7 @@
             />
             <label class="label">
               <span class="label-text-alt text-base-content/50">
-                This will be shown on your public profile and in rankings.
+                {gettext("This will be shown on your public profile and in rankings.")}
               </span>
               <span class="label-text-alt text-error">
                 {Enum.map(@form[:display_name].errors || [], &elem(&1, 0))}
@@ -47,13 +47,13 @@
           <%!-- Bio --%>
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-medium">Bio</span>
-              <span class="label-text-alt text-base-content/50">Optional</span>
+              <span class="label-text font-medium">{gettext("Bio")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Optional")}</span>
             </label>
             <textarea
               name={@form[:bio].name}
               value={@form[:bio].value}
-              placeholder="Tell us a bit about yourself..."
+              placeholder={gettext("Tell us a bit about yourself...")}
               class={[
                 "textarea textarea-bordered w-full h-32 resize-none",
                 @form[:bio].errors != [] && "textarea-error"
@@ -62,7 +62,7 @@
             >{@form[:bio].value}</textarea>
             <label class="label">
               <span class="label-text-alt text-base-content/50">
-                Brief description for your profile. Max 500 characters.
+                {gettext("Brief description for your profile. Max 500 characters.")}
               </span>
               <span class="label-text-alt">
                 {String.length(@form[:bio].value || "")}/500
@@ -73,8 +73,8 @@
           <%!-- Avatar Upload --%>
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-medium">Avatar</span>
-              <span class="label-text-alt text-base-content/50">Optional</span>
+              <span class="label-text font-medium">{gettext("Avatar")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Optional")}</span>
             </label>
 
             <%!-- Current Avatar --%>
@@ -85,7 +85,7 @@
                   alt="Current avatar"
                   class="w-20 h-20 rounded-full object-cover ring-2 ring-base-300"
                 />
-                <span class="text-sm text-base-content/60">Current avatar</span>
+                <span class="text-sm text-base-content/60">{gettext("Current avatar")}</span>
               </div>
             <% end %>
 
@@ -104,10 +104,10 @@
                   class="w-10 h-10 text-base-content/40 mx-auto mb-2"
                 />
                 <p class="text-sm text-base-content/60">
-                  Click to upload or drag and drop
+                  {gettext("Click to upload or drag and drop")}
                 </p>
                 <p class="text-xs text-base-content/40 mt-1">
-                  PNG, JPG, GIF up to 2MB
+                  {gettext("PNG, JPG, GIF up to 2MB")}
                 </p>
               </div>
             </div>
@@ -161,10 +161,10 @@
           <%!-- Submit Button --%>
           <div class="flex items-center justify-between pt-4 border-t border-base-300">
             <.link navigate={~p"/dashboard"} class="btn btn-ghost">
-              Cancel
+              {gettext("Cancel")}
             </.link>
             <button type="submit" class="btn btn-primary" disabled={@form.errors != []}>
-              <.icon name="hero-check" class="w-4 h-4 mr-2" /> Save Changes
+              <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Save Changes")}
             </button>
           </div>
         </.form>
@@ -176,10 +176,10 @@
       <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
         <div class="card-body">
           <h2 class="card-title text-lg">
-            <.icon name="hero-trophy" class="w-5 h-5 text-warning" /> Featured Badge
+            <.icon name="hero-trophy" class="w-5 h-5 text-warning" /> {gettext("Featured Badge")}
           </h2>
           <p class="text-sm text-base-content/60 mb-4">
-            Choose a badge to feature on your public profile.
+            {gettext("Choose a badge to feature on your public profile.")}
           </p>
 
           <%!-- Current Featured Badge --%>
@@ -197,7 +197,7 @@
                     </p>
                   </div>
                 </div>
-                <span class="badge badge-warning">Currently Featured</span>
+                <span class="badge badge-warning">{gettext("Currently Featured")}</span>
               </div>
             </div>
 
@@ -205,10 +205,10 @@
               phx-click="remove_featured_badge"
               class="btn btn-ghost btn-sm"
             >
-              <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> Remove Featured Badge
+              <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> {gettext("Remove Featured Badge")}
             </button>
           <% else %>
-            <p class="text-sm text-base-content/50 mb-4">No badge currently featured.</p>
+            <p class="text-sm text-base-content/50 mb-4">{gettext("No badge currently featured.")}</p>
           <% end %>
 
           <%!-- Badge Selection Grid --%>

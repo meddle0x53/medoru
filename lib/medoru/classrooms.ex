@@ -1453,7 +1453,8 @@ defmodule Medoru.Classrooms do
   Starts a custom lesson for a user.
   """
   def start_custom_lesson(classroom_id, user_id, custom_lesson_id) do
-    {:ok, progress} = get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
+    {:ok, progress} =
+      get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
 
     progress
     |> ClassroomLessonProgress.start_changeset(%{})
@@ -1468,7 +1469,8 @@ defmodule Medoru.Classrooms do
   - Bonus: 20 points for completing
   """
   def complete_custom_lesson(classroom_id, user_id, custom_lesson_id) do
-    {:ok, progress} = get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
+    {:ok, progress} =
+      get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
 
     # Get word count for points calculation
     custom_lesson = Medoru.Content.get_custom_lesson_with_words!(custom_lesson_id)

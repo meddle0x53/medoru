@@ -1562,7 +1562,9 @@ defmodule Medoru.Content do
       |> where([lw], lw.custom_lesson_id == ^lesson_id and lw.word_id == ^word_id)
       |> Repo.one()
       |> case do
-        nil -> :ok
+        nil ->
+          :ok
+
         lesson_word ->
           lesson_word
           |> CustomLessonWord.reorder_changeset(position)

@@ -3,6 +3,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
   LiveView for creating a new teacher test.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Tests
   alias Medoru.Tests.Test
@@ -15,14 +16,14 @@ defmodule MedoruWeb.Teacher.TestLive.New do
     if user.type not in ["teacher", "admin"] do
       {:ok,
        socket
-       |> put_flash(:error, "Only teachers can create tests.")
+       |> put_flash(:error, gettext("Only teachers can create tests."))
        |> push_navigate(to: ~p"/")}
     else
       changeset = Tests.change_teacher_test(%Test{})
 
       {:ok,
        socket
-       |> assign(:page_title, "Create Test")
+       |> assign(:page_title, gettext("Create Test"))
        |> assign(:form, to_form(changeset))
        |> assign(:current_user, user)}
     end
@@ -46,7 +47,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
       {:ok, test} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Test created! Now let's add some steps.")
+         |> put_flash(:info, gettext("Test created! Now let's add some steps."))
          |> push_navigate(to: ~p"/teacher/tests/#{test.id}/edit")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -65,11 +66,11 @@ defmodule MedoruWeb.Teacher.TestLive.New do
             navigate={~p"/teacher/tests"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to My Tests
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to My Tests")}
           </.link>
 
-          <h1 class="text-3xl font-bold text-base-content">Create New Test</h1>
-          <p class="text-secondary mt-1">Set up the basic test information</p>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Create New Test")}</h1>
+          <p class="text-secondary mt-1">{gettext("Set up the basic test information")}</p>
         </div>
 
         <%!-- Form --%>
@@ -85,12 +86,12 @@ defmodule MedoruWeb.Teacher.TestLive.New do
               <%!-- Title --%>
               <div>
                 <label class="label" for={@form[:title].id}>
-                  <span class="label-text">Test Title</span>
+                  <span class="label-text">{gettext("Test Title")}</span>
                 </label>
                 <.input
                   field={@form[:title]}
                   type="text"
-                  placeholder="e.g., N5 Vocabulary Quiz"
+                  placeholder={gettext("e.g., N5 Vocabulary Quiz")}
                   class="w-full"
                   phx-debounce="300"
                 />
@@ -100,13 +101,13 @@ defmodule MedoruWeb.Teacher.TestLive.New do
               <div>
                 <label class="label" for={@form[:description].id}>
                   <span class="label-text">
-                    Description <span class="text-secondary text-sm font-normal">(optional)</span>
+                    {gettext("Description")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                   </span>
                 </label>
                 <.input
                   field={@form[:description]}
                   type="textarea"
-                  placeholder="Describe what this test covers..."
+                  placeholder={gettext("Describe what this test covers...")}
                   rows="3"
                   class="w-full"
                   phx-debounce="300"
@@ -118,18 +119,18 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                 <div>
                   <label class="label" for={@form[:time_limit_seconds].id}>
                     <span class="label-text">
-                      Time Limit <span class="text-secondary text-sm font-normal">(optional)</span>
+                      {gettext("Time Limit")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                     </span>
                   </label>
                   <.input
                     field={@form[:time_limit_seconds]}
                     type="select"
                     options={time_limit_options()}
-                    prompt="No time limit"
+                    prompt={gettext("No time limit")}
                     class="w-full"
                   />
                   <p class="text-xs text-secondary mt-1">
-                    Students must complete within this time
+                    {gettext("Students must complete within this time")}
                   </p>
                 </div>
 
@@ -137,18 +138,18 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                 <div>
                   <label class="label" for={@form[:max_attempts].id}>
                     <span class="label-text">
-                      Max Attempts <span class="text-secondary text-sm font-normal">(optional)</span>
+                      {gettext("Max Attempts")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                     </span>
                   </label>
                   <.input
                     field={@form[:max_attempts]}
                     type="select"
                     options={max_attempts_options()}
-                    prompt="Unlimited"
+                    prompt={gettext("Unlimited")}
                     class="w-full"
                   />
                   <p class="text-xs text-secondary mt-1">
-                    How many times each student can take it
+                    {gettext("How many times each student can take it")}
                   </p>
                 </div>
               </div>
@@ -157,10 +158,9 @@ defmodule MedoruWeb.Teacher.TestLive.New do
               <div class="bg-info/10 border border-info/30 rounded-xl p-4 flex gap-3">
                 <.icon name="hero-information-circle" class="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
                 <div class="text-sm text-base-content">
-                  <p class="font-medium mb-1">What's next?</p>
+                  <p class="font-medium mb-1">{gettext("What's next?")}</p>
                   <p class="text-secondary">
-                    After creating the test, you'll add steps (questions).
-                    Each step can be multiple choice, typing, or kanji writing.
+                    {gettext("After creating the test, you'll add steps (questions). Each step can be multiple choice, typing, or kanji writing.")}
                   </p>
                 </div>
               </div>
@@ -169,11 +169,11 @@ defmodule MedoruWeb.Teacher.TestLive.New do
               <div class="flex justify-end gap-3 pt-4 border-t border-base-200">
                 <.link navigate={~p"/teacher/tests"}>
                   <button type="button" class="btn btn-ghost">
-                    Cancel
+                    {gettext("Cancel")}
                   </button>
                 </.link>
                 <button type="submit" class="btn btn-primary" disabled={!@form.source.valid?}>
-                  <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Test
+                  <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Test")}
                 </button>
               </div>
             </.form>

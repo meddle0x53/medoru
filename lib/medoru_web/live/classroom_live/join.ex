@@ -12,7 +12,7 @@ defmodule MedoruWeb.ClassroomLive.Join do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Join Classroom")
+     |> assign(:page_title, gettext("Join Classroom"))
      |> assign(:invite_code, "")
      |> assign(:classroom, nil)
      |> assign(:error, nil)}
@@ -31,14 +31,18 @@ defmodule MedoruWeb.ClassroomLive.Join do
       cond do
         is_nil(classroom) ->
           {:noreply,
-           assign(socket, invite_code: code, classroom: nil, error: "Invalid invite code")}
+           assign(socket,
+             invite_code: code,
+             classroom: nil,
+             error: gettext("Invalid invite code")
+           )}
 
         classroom.status != :active ->
           {:noreply,
            assign(socket,
              invite_code: code,
              classroom: nil,
-             error: "This classroom is not accepting new members"
+             error: gettext("This classroom is not accepting new members")
            )}
 
         true ->
@@ -54,21 +58,26 @@ defmodule MedoruWeb.ClassroomLive.Join do
 
     case Classrooms.get_classroom_by_invite_code(code) do
       nil ->
-        {:noreply, assign(socket, error: "Invalid invite code")}
+        {:noreply, assign(socket, error: gettext("Invalid invite code"))}
 
       classroom ->
         case Classrooms.apply_to_join(classroom.id, user.id) do
           {:ok, _membership} ->
             {:noreply,
              socket
-             |> put_flash(:info, "Application submitted! The teacher will review your request.")
+             |> put_flash(
+               :info,
+               gettext("Application submitted! The teacher will review your request.")
+             )
              |> push_navigate(to: ~p"/classrooms")}
 
           {:error, :already_member} ->
-            {:noreply, assign(socket, error: "You are already a member of this classroom")}
+            {:noreply,
+             assign(socket, error: gettext("You are already a member of this classroom"))}
 
           {:error, _changeset} ->
-            {:noreply, assign(socket, error: "Failed to join classroom. Please try again.")}
+            {:noreply,
+             assign(socket, error: gettext("Failed to join classroom. Please try again."))}
         end
     end
   end

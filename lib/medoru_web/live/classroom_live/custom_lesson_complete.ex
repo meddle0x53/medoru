@@ -33,7 +33,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
 
     # Calculate points
     word_count = length(lesson.custom_lesson_words)
-    points_earned = progress && progress.points_earned || word_count * 10 + 20
+    points_earned = (progress && progress.points_earned) || word_count * 10 + 20
 
     {:ok,
      socket
@@ -88,15 +88,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
                 navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
                 class="btn btn-primary"
               >
-                <.icon name="hero-arrow-left" class="w-5 h-5 mr-2" />
-                Back to Lessons
+                <.icon name="hero-arrow-left" class="w-5 h-5 mr-2" /> Back to Lessons
               </.link>
               <.link
                 navigate={~p"/classrooms/#{@classroom.id}/rankings"}
                 class="btn btn-ghost"
               >
-                <.icon name="hero-chart-bar" class="w-5 h-5 mr-2" />
-                View Rankings
+                <.icon name="hero-chart-bar" class="w-5 h-5 mr-2" /> View Rankings
               </.link>
             </div>
           </div>

@@ -1,5 +1,6 @@
 defmodule MedoruWeb.KanjiLive.Index do
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
 
@@ -19,7 +20,7 @@ defmodule MedoruWeb.KanjiLive.Index do
      socket
      |> assign(:jlpt_level, level)
      |> assign(:kanji_list, kanji_list)
-     |> assign(:page_title, "JLPT N#{level} Kanji")}
+     |> assign(:page_title, gettext("JLPT N%{level} Kanji", level: level))}
   end
 
   defp parse_level(nil), do: 5

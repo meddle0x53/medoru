@@ -23,14 +23,14 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
     if not Tests.is_test_owner?(test, user.id) do
       {:ok,
        socket
-       |> put_flash(:error, "You can only publish your own tests.")
+       |> put_flash(:error, gettext("You can only publish your own tests."))
        |> push_navigate(to: ~p"/teacher/tests")}
     else
       # Only allow publishing tests that are ready
       if test.setup_state not in ["ready", "published"] do
         {:ok,
          socket
-         |> put_flash(:error, "Test must be marked as ready before publishing.")
+         |> put_flash(:error, gettext("Test must be marked as ready before publishing."))
          |> push_navigate(to: ~p"/teacher/tests/#{test.id}")}
       else
         socket = load_publish_data(socket, test, user.id)
@@ -140,7 +140,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
     selected = socket.assigns.selected_classrooms
 
     if selected == [] do
-      {:noreply, put_flash(socket, :error, "Please select at least one classroom.")}
+      {:noreply, put_flash(socket, :error, gettext("Please select at least one classroom."))}
     else
       attrs = %{
         due_date: socket.assigns.due_date,
@@ -163,14 +163,14 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
       socket =
         case {successes, failures} do
           {[], [_ | _]} ->
-            put_flash(socket, :error, "Failed to publish test to selected classrooms.")
+            put_flash(socket, :error, gettext("Failed to publish test to selected classrooms."))
 
           {[_ | _], []} ->
             # Update test status to published
             Tests.publish_teacher_test(test)
 
             socket
-            |> put_flash(:info, "Test published to #{length(successes)} classroom(s)!")
+            |> put_flash(:info, gettext("Test published to %{count} classroom(s)!", count: length(successes)))
             |> load_publish_data(test, teacher_id)
             |> assign(:selected_classrooms, [])
 
@@ -180,7 +180,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
             socket
             |> put_flash(
               :warning,
-              "Published to #{length(successes)} classroom(s), but #{length(failures)} failed."
+              gettext("Published to %{success} classroom(s), but %{fail} failed.", success: length(successes), fail: length(failures))
             )
             |> load_publish_data(test, teacher_id)
             |> assign(:selected_classrooms, [])
@@ -199,18 +199,18 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
     case classroom_test do
       nil ->
-        {:noreply, put_flash(socket, :error, "Test not found in classroom.")}
+        {:noreply, put_flash(socket, :error, gettext("Test not found in classroom."))}
 
       classroom_test ->
         case Classrooms.unpublish_test_from_classroom(classroom_test, teacher_id) do
           {:ok, _} ->
             {:noreply,
              socket
-             |> put_flash(:info, "Test unpublished from classroom.")
+             |> put_flash(:info, gettext("Test unpublished from classroom."))
              |> load_publish_data(test, teacher_id)}
 
           {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Failed to unpublish test.")}
+            {:noreply, put_flash(socket, :error, gettext("Failed to unpublish test."))}
         end
     end
   end
@@ -224,18 +224,18 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
     case classroom_test do
       nil ->
-        {:noreply, put_flash(socket, :error, "Test not found in classroom.")}
+        {:noreply, put_flash(socket, :error, gettext("Test not found in classroom."))}
 
       classroom_test ->
         case Classrooms.republish_test_to_classroom(classroom_test, teacher_id) do
           {:ok, _} ->
             {:noreply,
              socket
-             |> put_flash(:info, "Test republished to classroom.")
+             |> put_flash(:info, gettext("Test republished to classroom."))
              |> load_publish_data(test, teacher_id)}
 
           {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Failed to republish test.")}
+            {:noreply, put_flash(socket, :error, gettext("Failed to republish test."))}
         end
     end
   end
@@ -251,15 +251,15 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
             navigate={~p"/teacher/tests/#{@test.id}"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Test
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Test")}
           </.link>
 
           <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-3xl font-bold text-base-content">Publish Test</h1>
+            <h1 class="text-3xl font-bold text-base-content">{gettext("Publish Test")}</h1>
             <span class="badge badge-lg badge-primary">{@test.title}</span>
           </div>
           <p class="text-secondary">
-            Choose which classrooms can access this test.
+            {gettext("Choose which classrooms can access this test.")}
           </p>
         </div>
 
@@ -272,10 +272,10 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                 <div class="card-body">
                   <h2 class="card-title text-base-content mb-4">
                     <.icon name="hero-plus-circle" class="w-5 h-5 text-primary" />
-                    Available Classrooms
+                    {gettext("Available Classrooms")}
                   </h2>
                   <p class="text-sm text-secondary mb-4">
-                    Select classrooms to publish this test to:
+                    {gettext("Select classrooms to publish this test to:")}
                   </p>
 
                   <div class="space-y-2 mb-6">
@@ -290,7 +290,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                         />
                         <div class="flex-1">
                           <p class="font-medium text-base-content">{classroom.name}</p>
-                          <p class="text-sm text-secondary">Invite code: {classroom.invite_code}</p>
+                          <p class="text-sm text-secondary">{gettext("Invite code: %{code}", code: classroom.invite_code)}</p>
                         </div>
                         <.icon name="hero-users" class="w-5 h-5 text-secondary" />
                       </label>
@@ -299,12 +299,12 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
                   <%= if @selected_classrooms != [] do %>
                     <div class="border-t border-base-300 pt-4">
-                      <h3 class="font-medium text-base-content mb-3">Publishing Options</h3>
+                      <h3 class="font-medium text-base-content mb-3">{gettext("Publishing Options")}</h3>
 
                       <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <label class="label">
-                            <span class="label-text">Due Date (optional)</span>
+                            <span class="label-text">{gettext("Due Date (optional)")}</span>
                           </label>
                           <input
                             type="datetime-local"
@@ -314,13 +314,13 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                         </div>
                         <div>
                           <label class="label">
-                            <span class="label-text">Max Attempts (optional)</span>
+                            <span class="label-text">{gettext("Max Attempts (optional)")}</span>
                           </label>
                           <input
                             type="number"
                             min="1"
                             max="10"
-                            placeholder="Unlimited"
+                            placeholder={gettext("Unlimited")}
                             phx-change="update_max_attempts"
                             class="input input-bordered w-full"
                           />
@@ -329,9 +329,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
                       <button phx-click="publish_to_selected" class="btn btn-primary btn-block">
                         <.icon name="hero-rocket-launch" class="w-5 h-5 mr-2" />
-                        Publish to {length(@selected_classrooms)} Classroom{if length(
-                                                                                 @selected_classrooms
-                                                                               ) != 1, do: "s"}
+                        {gettext("Publish to %{count} Classroom", count: length(@selected_classrooms))}{if length(@selected_classrooms) != 1, do: "s"}
                       </button>
                     </div>
                   <% end %>
@@ -345,7 +343,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                 <div class="card-body">
                   <h2 class="card-title text-base-content mb-4">
                     <.icon name="hero-check-circle" class="w-5 h-5 text-success" />
-                    Published Classrooms
+                    {gettext("Published Classrooms")}
                   </h2>
 
                   <div class="space-y-3">
@@ -357,15 +355,13 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                             <%= if classroom_test && classroom_test.due_date do %>
                               <span class="flex items-center gap-1">
                                 <.icon name="hero-calendar" class="w-4 h-4" />
-                                Due: {format_datetime(classroom_test.due_date)}
+                                {gettext("Due:")} {format_datetime(classroom_test.due_date)}
                               </span>
                             <% end %>
                             <%= if classroom_test && classroom_test.max_attempts do %>
                               <span class="flex items-center gap-1">
                                 <.icon name="hero-arrow-path" class="w-4 h-4" />
-                                {classroom_test.max_attempts} attempt{if classroom_test.max_attempts !=
-                                                                           1,
-                                                                         do: "s"}
+                                {classroom_test.max_attempts} {if classroom_test.max_attempts != 1, do: gettext("attempts"), else: gettext("attempt")}
                               </span>
                             <% end %>
                           </div>
@@ -373,10 +369,10 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                         <button
                           phx-click="unpublish"
                           phx-value-classroom_id={classroom_id}
-                          data-confirm="Unpublish this test from {classroom.name}?"
+                          data-confirm={gettext("Unpublish this test from %{name}?", name: classroom.name)}
                           class="btn btn-ghost btn-sm text-error"
                         >
-                          <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> Unpublish
+                          <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> {gettext("Unpublish")}
                         </button>
                       </div>
                     <% end %>
@@ -390,7 +386,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
               <div class="card bg-base-100 border border-base-300 shadow-sm">
                 <div class="card-body">
                   <h2 class="card-title text-base-content mb-4">
-                    <.icon name="hero-x-circle" class="w-5 h-5 text-warning" /> Previously Unpublished
+                    <.icon name="hero-x-circle" class="w-5 h-5 text-warning" /> {gettext("Previously Unpublished")}
                   </h2>
 
                   <div class="space-y-3">
@@ -398,14 +394,14 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                       <div class="flex items-center justify-between p-4 bg-warning/10 border border-warning/20 rounded-lg">
                         <div>
                           <p class="font-medium text-base-content">{classroom.name}</p>
-                          <p class="text-sm text-secondary">Previously published</p>
+                          <p class="text-sm text-secondary">{gettext("Previously published")}</p>
                         </div>
                         <button
                           phx-click="republish"
                           phx-value-classroom_id={classroom_id}
                           class="btn btn-success btn-sm"
                         >
-                          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> Republish
+                          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Republish")}
                         </button>
                       </div>
                     <% end %>
@@ -422,12 +418,12 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                     name="hero-academic-cap"
                     class="w-16 h-16 mx-auto mb-4 text-secondary opacity-50"
                   />
-                  <h3 class="text-lg font-medium text-base-content mb-2">No Classrooms Yet</h3>
+                  <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No Classrooms Yet")}</h3>
                   <p class="text-secondary mb-6">
-                    You need to create a classroom before you can publish tests.
+                    {gettext("You need to create a classroom before you can publish tests.")}
                   </p>
                   <.link navigate={~p"/teacher/classrooms/new"} class="btn btn-primary">
-                    <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
+                    <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Classroom")}
                   </.link>
                 </div>
               </div>
@@ -439,14 +435,14 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
             <%!-- Test Info --%>
             <div class="card bg-base-100 border border-base-300 shadow-sm">
               <div class="card-body">
-                <h3 class="card-title text-base text-base-content mb-4">Test Summary</h3>
+                <h3 class="card-title text-base text-base-content mb-4">{gettext("Test Summary")}</h3>
                 <div class="space-y-3">
                   <div class="flex justify-between text-sm">
-                    <span class="text-secondary">Steps:</span>
+                    <span class="text-secondary">{gettext("Steps:")}</span>
                     <span class="font-medium">{@test.total_points} points</span>
                   </div>
                   <div class="flex justify-between text-sm">
-                    <span class="text-secondary">Time Limit:</span>
+                    <span class="text-secondary">{gettext("Time Limit:")}</span>
                     <span class="font-medium">
                       <%= if @test.time_limit_seconds do %>
                         {format_duration(@test.time_limit_seconds)}
@@ -456,8 +452,8 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                     </span>
                   </div>
                   <div class="flex justify-between text-sm">
-                    <span class="text-secondary">Status:</span>
-                    <span class="badge badge-sm badge-success">Ready</span>
+                    <span class="text-secondary">{gettext("Status:")}</span>
+                    <span class="badge badge-sm badge-success">{gettext("Ready")}</span>
                   </div>
                 </div>
               </div>
@@ -467,20 +463,20 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
             <div class="card bg-info/10 border border-info/20">
               <div class="card-body">
                 <h3 class="card-title text-info text-base">
-                  <.icon name="hero-light-bulb" class="w-5 h-5" /> Tips
+                  <.icon name="hero-light-bulb" class="w-5 h-5" /> {gettext("Tips")}
                 </h3>
                 <ul class="text-sm text-base-content space-y-2 mt-2">
                   <li class="flex gap-2">
                     <.icon name="hero-check" class="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
-                    Students will see the test in their classroom
+                    {gettext("Students will see the test in their classroom")}
                   </li>
                   <li class="flex gap-2">
                     <.icon name="hero-check" class="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
-                    Due dates help students prioritize
+                    {gettext("Due dates help students prioritize")}
                   </li>
                   <li class="flex gap-2">
                     <.icon name="hero-check" class="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
-                    Max attempts prevent excessive retakes
+                    {gettext("Max attempts prevent excessive retakes")}
                   </li>
                 </ul>
               </div>

@@ -1,7 +1,7 @@
 defmodule Medoru.Content.CustomLessonWord do
   @moduledoc """
   Schema for words within a custom lesson.
-  
+
   Allows teachers to:
   - Override the default word meaning for lesson context
   - Add custom example sentences
@@ -37,7 +37,9 @@ defmodule Medoru.Content.CustomLessonWord do
     |> validate_examples()
     |> foreign_key_constraint(:custom_lesson_id)
     |> foreign_key_constraint(:word_id)
-    |> unique_constraint([:custom_lesson_id, :word_id], name: :custom_lesson_words_custom_lesson_id_word_id_index)
+    |> unique_constraint([:custom_lesson_id, :word_id],
+      name: :custom_lesson_words_custom_lesson_id_word_id_index
+    )
   end
 
   @doc """

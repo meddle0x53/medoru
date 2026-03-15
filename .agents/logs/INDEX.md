@@ -28,7 +28,7 @@
 | 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
 | 20 | Classroom Tests, Lessons & Rankings | ✅ COMPLETED | 2026-03-11 |
 | 21 | Admin Dashboard | ⏳ PLANNED | - |
-| 24 | i18n Multi-Language | ⏳ PLANNED | - |
+| 24 | i18n Multi-Language | ✅ APPROVED | 2026-03-15 |
 
 ## Version 0.2.0 (Social Features) - Planned
 
@@ -60,17 +60,17 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 15A COMPLETE - Ready for Iteration 15B+
-- **Last completed**: Iteration 20 - Classroom Tests, Lessons & Rankings
-- **Current**: ⏳ 9 PENDING iterations ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 20/29 iterations for v0.1.0 (9 remaining)
+- **Phase**: Iteration 24A APPROVED
+- **Last completed**: Iteration 24A - UI Internationalization (i18n)
+- **Current**: ⏳ 8 PENDING iterations ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 21/29 iterations for v0.1.0 (8 remaining)
 
 ## ⏳ Pending Work (Priority Order)
 1. **🔴 HIGH**: Iteration 14 - Multi-Step Test System ✅
 2. **🔴 HIGH**: Iteration 16 - Auto-Generated Daily Tests ✅
 3. **🔴 HIGH**: Iterations 15, 20 - Classroom System (Test Creation, Lessons & Rankings)
 4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
-5. **🟡 MEDIUM**: Iteration 24 - i18n (Bulgarian/Japanese)
+5. **🟡 MEDIUM**: ~~Iteration 24 - i18n (Bulgarian/Japanese)~~ ✅ COMPLETED
 6. **🟢 LOWER**: Iteration 21 - Admin Dashboard
 
 See [PENDING.md](./PENDING.md) for detailed breakdown.
@@ -146,7 +146,7 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Classroom membership (19)
 - Classroom tests, lessons & rankings (20)
 - Admin dashboard (21)
-- i18n Multi-Language (24)
+- ~~i18n Multi-Language (24)~~ ✅ APPROVED
 
 ## Environment
 
@@ -205,6 +205,6 @@ mix ecto.reset
 
 ---
 
-**Last updated**: 2026-03-11  
-**Status**: Iteration 15A COMPLETE - Iteration 15B PLANNED
-**Tests**: 397 passing
+**Last updated**: 2026-03-15  
+**Status**: Iteration 24A APPROVED
+**Tests**: 468 passing

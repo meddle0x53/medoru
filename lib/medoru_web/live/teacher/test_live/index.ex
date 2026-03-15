@@ -4,6 +4,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
   Shows a list of all tests with filtering by state.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Tests
 
@@ -15,12 +16,12 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
     if user.type not in ["teacher", "admin"] do
       {:ok,
        socket
-       |> put_flash(:error, "Only teachers can manage tests.")
+       |> put_flash(:error, gettext("Only teachers can manage tests."))
        |> push_navigate(to: ~p"/")}
     else
       {:ok,
        socket
-       |> assign(:page_title, "My Tests")
+       |> assign(:page_title, gettext("My Tests"))
        |> assign(:filter, "all")
        |> assign(:current_user, user)
        |> load_tests()}
@@ -59,14 +60,14 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
         {:ok, _} ->
           {:noreply,
            socket
-           |> put_flash(:info, "Test archived.")
+           |> put_flash(:info, gettext("Test archived."))
            |> load_tests()}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to archive test.")}
+          {:noreply, put_flash(socket, :error, gettext("Failed to archive test."))}
       end
     else
-      {:noreply, put_flash(socket, :error, "You can only archive your own tests.")}
+      {:noreply, put_flash(socket, :error, gettext("You can only archive your own tests."))}
     end
   end
 
@@ -78,12 +79,12 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
         <%!-- Header --%>
         <div class="flex justify-between items-center mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-base-content">My Tests</h1>
-            <p class="text-secondary mt-1">Create and manage your custom tests</p>
+            <h1 class="text-3xl font-bold text-base-content">{gettext("My Tests")}</h1>
+            <p class="text-secondary mt-1">{gettext("Create and manage your custom tests")}</p>
           </div>
           <.link navigate={~p"/teacher/tests/new"}>
             <button class="btn btn-primary">
-              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Test
+              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Test")}
             </button>
           </.link>
         </div>
@@ -94,34 +95,34 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
             active={@filter == "all"}
             click="filter"
             value="all"
-            label="All"
+            label={gettext("All")}
           />
           <.filter_button
             active={@filter == "in_progress"}
             click="filter"
             value="in_progress"
-            label="In Progress"
+            label={gettext("In Progress")}
             color="info"
           />
           <.filter_button
             active={@filter == "ready"}
             click="filter"
             value="ready"
-            label="Ready"
+            label={gettext("Ready")}
             color="warning"
           />
           <.filter_button
             active={@filter == "published"}
             click="filter"
             value="published"
-            label="Published"
+            label={gettext("Published")}
             color="success"
           />
           <.filter_button
             active={@filter == "archived"}
             click="filter"
             value="archived"
-            label="Archived"
+            label={gettext("Archived")}
             color="ghost"
           />
         </div>
@@ -232,33 +233,33 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       <h3 class="text-xl font-semibold text-base-content mb-2">
         <%= case @filter do %>
           <% "all" -> %>
-            No tests yet
+            {gettext("No tests yet")}
           <% "in_progress" -> %>
-            No tests in progress
+            {gettext("No tests in progress")}
           <% "ready" -> %>
-            No ready tests
+            {gettext("No ready tests")}
           <% "published" -> %>
-            No published tests
+            {gettext("No published tests")}
           <% "archived" -> %>
-            No archived tests
+            {gettext("No archived tests")}
           <% _ -> %>
-            No tests found
+            {gettext("No tests found")}
         <% end %>
       </h3>
       <p class="text-secondary mb-6">
         <%= case @filter do %>
           <% "all" -> %>
-            Create your first test to get started
+            {gettext("Create your first test to get started")}
           <% "in_progress" -> %>
-            Start creating a new test
+            {gettext("Start creating a new test")}
           <% "ready" -> %>
-            Mark some tests as ready to publish
+            {gettext("Mark some tests as ready to publish")}
           <% "published" -> %>
-            Publish a ready test to make it available
+            {gettext("Publish a ready test to make it available")}
           <% "archived" -> %>
-            Archive tests you no longer need
+            {gettext("Archive tests you no longer need")}
           <% _ -> %>
-            Try a different filter
+            {gettext("Try a different filter")}
         <% end %>
       </p>
       <%= if @filter == "all" or @filter == "in_progress" do %>
@@ -280,7 +281,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
           <.setup_state_badge state={@test.setup_state} />
           <div class="text-right">
             <p class="text-xs text-secondary">
-              {Tests.count_test_steps(@test.id)} steps
+              {Tests.count_test_steps(@test.id)} {gettext("steps")}
             </p>
           </div>
         </div>
@@ -295,7 +296,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
         </h3>
 
         <p class="text-secondary text-sm mb-4 line-clamp-2">
-          {@test.description || "No description"}
+          {@test.description || gettext("No description")}
         </p>
 
         <div class="flex items-center gap-4 text-sm text-secondary mb-4">
@@ -308,12 +309,12 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
           <%= if @test.max_attempts do %>
             <div class="flex items-center gap-1">
               <.icon name="hero-arrow-path" class="w-4 h-4" />
-              <span>{@test.max_attempts} attempts</span>
+              <span>{@test.max_attempts} {gettext("attempts")}</span>
             </div>
           <% else %>
             <div class="flex items-center gap-1">
               <.icon name="hero-infinity" class="w-4 h-4" />
-              <span>Unlimited</span>
+              <span>{gettext("Unlimited")}</span>
             </div>
           <% end %>
         </div>
@@ -322,19 +323,19 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
           <%= case @test.setup_state do %>
             <% "in_progress" -> %>
               <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary btn-sm">
-                <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> Continue Editing
+                <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Continue Editing")}
               </.link>
             <% "ready" -> %>
               <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-primary btn-sm">
-                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> Review & Publish
+                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Review & Publish")}
               </.link>
             <% "published" -> %>
               <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-success btn-sm">
-                <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> View Results
+                <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> {gettext("View Results")}
               </.link>
             <% "archived" -> %>
               <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-ghost btn-sm">
-                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> View
+                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}"
               </.link>
           <% end %>
         </div>
@@ -345,25 +346,25 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
 
   defp setup_state_badge(%{state: "in_progress"} = assigns) do
     ~H"""
-    <span class="badge badge-info">In Progress</span>
+    <span class="badge badge-info">{gettext("In Progress")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "ready"} = assigns) do
     ~H"""
-    <span class="badge badge-warning">Ready</span>
+    <span class="badge badge-warning">{gettext("Ready")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "published"} = assigns) do
     ~H"""
-    <span class="badge badge-success">Published</span>
+    <span class="badge badge-success">{gettext("Published")}</span>
     """
   end
 
   defp setup_state_badge(%{state: "archived"} = assigns) do
     ~H"""
-    <span class="badge badge-ghost">Archived</span>
+    <span class="badge badge-ghost">{gettext("Archived")}</span>
     """
   end
 

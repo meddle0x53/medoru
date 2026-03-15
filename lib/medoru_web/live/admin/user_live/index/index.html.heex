@@ -2,9 +2,9 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-base-content">User Management</h1>
+      <h1 class="text-3xl font-bold text-base-content">{gettext("User Management")}</h1>
       <p class="mt-2 text-secondary">
-        Manage user accounts and permissions. Total users: {@total_count}
+        {gettext("Manage user accounts and permissions. Total users: %{count}", count: @total_count)}
       </p>
     </div>
 
@@ -14,7 +14,7 @@
         <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <%!-- Type Filter --%>
           <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-base-content/70">Filter by type:</span>
+            <span class="text-sm font-medium text-base-content/70">{gettext("Filter by type:")}</span>
             <div class="join">
               <button
                 phx-click="filter_type"
@@ -24,7 +24,7 @@
                   if(is_nil(@type_filter), do: "btn-active btn-primary", else: "btn-ghost")
                 ]}
               >
-                All
+                {gettext("All")}
               </button>
               <button
                 phx-click="filter_type"
@@ -34,7 +34,7 @@
                   if(@type_filter == "student", do: "btn-active btn-primary", else: "btn-ghost")
                 ]}
               >
-                Students
+                {gettext("Students")}
               </button>
               <button
                 phx-click="filter_type"
@@ -44,7 +44,7 @@
                   if(@type_filter == "teacher", do: "btn-active btn-primary", else: "btn-ghost")
                 ]}
               >
-                Teachers
+                {gettext("Teachers")}
               </button>
               <button
                 phx-click="filter_type"
@@ -54,7 +54,7 @@
                   if(@type_filter == "admin", do: "btn-active btn-primary", else: "btn-ghost")
                 ]}
               >
-                Admins
+                {gettext("Admins")}
               </button>
             </div>
           </div>
@@ -70,7 +70,7 @@
                 type="text"
                 name="search[query]"
                 value={@search}
-                placeholder="Search by email or name..."
+                placeholder={gettext("Search by email or name...")}
                 class="join-item input input-sm input-bordered w-full sm:w-64"
               />
               <button type="submit" class="join-item btn btn-sm btn-primary">
@@ -83,7 +83,7 @@
                 phx-click="clear_filters"
                 class="btn btn-sm btn-ghost"
               >
-                Clear
+                {gettext("Clear")}
               </button>
             <% end %>
           </.form>
@@ -97,11 +97,11 @@
         <table class="table table-zebra">
           <thead>
             <tr class="bg-base-200/50">
-              <th class="text-base-content/70">User</th>
-              <th class="text-base-content/70">Type</th>
-              <th class="text-base-content/70">Level</th>
-              <th class="text-base-content/70">Joined</th>
-              <th class="text-base-content/70 text-right">Actions</th>
+              <th class="text-base-content/70">{gettext("User")}</th>
+              <th class="text-base-content/70">{gettext("Type")}</th>
+              <th class="text-base-content/70">{gettext("Level")}</th>
+              <th class="text-base-content/70">{gettext("Joined")}</th>
+              <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -124,7 +124,7 @@
                     </div>
                     <div>
                       <div class="font-medium text-base-content">
-                        {(user.profile && user.profile.display_name) || user.name || "No name"}
+                        {(user.profile && user.profile.display_name) || user.name || gettext("No name")}
                       </div>
                       <div class="text-sm text-base-content/60">{user.email}</div>
                     </div>
@@ -149,7 +149,7 @@
                     navigate={~p"/admin/users/#{user.id}/edit"}
                     class="btn btn-sm btn-ghost"
                   >
-                    <.icon name="hero-pencil-square" class="w-4 h-4" /> Edit
+                    <.icon name="hero-pencil-square" class="w-4 h-4" /> {gettext("Edit")}
                   </.link>
                 </td>
               </tr>
@@ -161,7 +161,7 @@
       <%= if @users == [] do %>
         <div class="p-12 text-center">
           <.icon name="hero-users" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
-          <p class="text-base-content/50">No users found matching your criteria.</p>
+          <p class="text-base-content/50">{gettext("No users found matching your criteria.")}</p>
         </div>
       <% end %>
     </div>
@@ -170,7 +170,7 @@
     <%= if @total_pages > 1 do %>
       <div class="flex items-center justify-between mt-6">
         <div class="text-sm text-base-content/60">
-          Page {@page} of {@total_pages}
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
         </div>
         <div class="join">
           <.link

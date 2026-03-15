@@ -78,9 +78,12 @@ defmodule MedoruWeb.LessonLive.Index do
     {:noreply, push_patch(socket, to: ~p"/lessons?#{params}")}
   end
 
-  defp page_title(nil, nil), do: "All Lessons"
-  defp page_title(difficulty, nil), do: "JLPT N#{difficulty} Lessons"
-  defp page_title(_difficulty, search), do: "Search: #{search}"
+  defp page_title(nil, nil), do: gettext("All Lessons")
+
+  defp page_title(difficulty, nil),
+    do: gettext("JLPT N%{difficulty} Lessons", difficulty: difficulty)
+
+  defp page_title(_difficulty, search), do: gettext("Search: %{search}", search: search)
 
   defp parse_difficulty(nil), do: nil
 

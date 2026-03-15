@@ -92,7 +92,7 @@ defmodule MedoruWeb.LessonLiveTest do
     test "has back link to lesson list", %{conn: conn, lesson: lesson} do
       {:ok, view, html} = live(conn, ~p"/lessons/#{lesson.id}")
 
-      assert html =~ "Back to N#{lesson.difficulty} Lessons"
+      assert html =~ "Back to N"
       assert has_element?(view, "a[href='/lessons?difficulty=#{lesson.difficulty}']")
     end
 

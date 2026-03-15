@@ -15,7 +15,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
     if user.type not in ["teacher", "admin"] do
       {:ok,
        socket
-       |> put_flash(:error, "Only teachers can publish lessons.")
+       |> put_flash(:error, gettext("Only teachers can publish lessons."))
        |> push_navigate(to: ~p"/classrooms")}
     else
       lesson = Content.get_custom_lesson_with_words!(id)
@@ -25,13 +25,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
         lesson.creator_id != user.id ->
           {:ok,
            socket
-           |> put_flash(:error, "You can only publish your own lessons.")
+           |> put_flash(:error, gettext("You can only publish your own lessons."))
            |> push_navigate(to: ~p"/teacher/custom-lessons")}
 
         lesson.status != "published" ->
           {:ok,
            socket
-           |> put_flash(:error, "Lesson must be published first.")
+           |> put_flash(:error, gettext("Lesson must be published first."))
            |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/edit")}
 
         true ->
@@ -54,7 +54,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, "Publish: #{socket.assigns.lesson.title}")}
+    {:noreply,
+     assign(socket, :page_title, gettext("Publish: %{title}", title: socket.assigns.lesson.title))}
   end
 
   @impl true
@@ -69,10 +70,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
         {:noreply,
          socket
          |> assign(:published_map, published_map)
-         |> put_flash(:info, "Published to classroom!")}
+         |> put_flash(:info, gettext("Published to classroom!"))}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to publish.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to publish."))}
     end
   end
 
@@ -92,13 +93,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
             {:noreply,
              socket
              |> assign(:published_map, published_map)
-             |> put_flash(:info, "Unpublished from classroom.")}
+             |> put_flash(:info, gettext("Unpublished from classroom."))}
 
           {:error, :not_authorized} ->
-            {:noreply, put_flash(socket, :error, "Not authorized.")}
+            {:noreply, put_flash(socket, :error, gettext("Not authorized."))}
 
           {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Failed to unpublish.")}
+            {:noreply, put_flash(socket, :error, gettext("Failed to unpublish."))}
         end
     end
   end
@@ -114,23 +115,23 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
             navigate={~p"/teacher/custom-lessons"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Lessons
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
           </.link>
-          <h1 class="text-2xl font-bold text-base-content">Publish Lesson</h1>
+          <h1 class="text-2xl font-bold text-base-content">{gettext("Publish Lesson")}</h1>
           <p class="text-secondary">{@lesson.title} • {length(@lesson.custom_lesson_words)} words</p>
         </div>
 
         <%!-- Classrooms List --%>
         <div class="card bg-base-100 border border-base-300">
           <div class="card-body">
-            <h2 class="card-title text-lg mb-4">Select Classrooms</h2>
+            <h2 class="card-title text-lg mb-4">{gettext("Select Classrooms")}</h2>
 
             <%= if @classrooms == [] do %>
               <div class="text-center py-8">
                 <.icon name="hero-users" class="w-12 h-12 mx-auto text-base-300 mb-4" />
-                <p class="text-secondary">You don't have any classrooms yet.</p>
+                <p class="text-secondary">{gettext("You don't have any classrooms yet.")}</p>
                 <.link navigate={~p"/teacher/classrooms/new"} class="btn btn-primary btn-sm mt-4">
-                  Create Classroom
+                  {gettext("Create Classroom")}
                 </.link>
               </div>
             <% else %>
@@ -143,7 +144,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
                       <p class="text-sm text-secondary">
                         <%= case classroom.status do %>
                           <% :active -> %>
-                            <%= published && "Published" || "Not published" %>
+                            {(published && gettext("Published")) || gettext("Not published")}
                           <% :closed -> %>
                             Closed
                           <% :archived -> %>
@@ -154,8 +155,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
                     <%= cond do %>
                       <% classroom.status != :active -> %>
-                        <span class="badge badge-neutral">Inactive</span>
-
+                        <span class="badge badge-neutral">{gettext("Inactive")}</span>
                       <% published -> %>
                         <button
                           phx-click="unpublish"
@@ -163,9 +163,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
                           class="btn btn-ghost btn-sm text-error"
                         >
                           <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
-                          Unpublish
+                          {gettext("Unpublish")}
                         </button>
-
                       <% true -> %>
                         <button
                           phx-click="publish"
@@ -173,7 +172,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
                           class="btn btn-primary btn-sm"
                         >
                           <.icon name="hero-share" class="w-4 h-4 mr-1" />
-                          Publish
+                          {gettext("Publish")}
                         </button>
                     <% end %>
                   </div>
@@ -187,11 +186,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
         <div class="alert alert-info mt-6 text-sm">
           <.icon name="hero-information-circle" class="w-5 h-5" />
           <div>
-            <p class="font-medium">What happens when you publish?</p>
+            <p class="font-medium">{gettext("What happens when you publish?")}</p>
             <ul class="list-disc list-inside mt-1 opacity-90">
-              <li>Students in the classroom can see and study the lesson</li>
-              <li>Students earn points upon completion</li>
-              <li>You can unpublish at any time</li>
+              <li>{gettext("Students in the classroom can see and study the lesson")}</li>
+              <li>{gettext("Students earn points upon completion")}</li>
+              <li>{gettext("You can unpublish at any time")}</li>
             </ul>
           </div>
         </div>

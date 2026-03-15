@@ -268,7 +268,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
       :word_to_meaning ->
         Map.merge(base_attrs, %{
           question_type: :multichoice,
-          question: "What does '#{word.text}' mean?",
+          question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
           correct_answer: word.meaning,
           points: 1,
           options: fetch_meaning_options(word),
@@ -283,7 +283,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
       :word_to_reading ->
         Map.merge(base_attrs, %{
           question_type: :multichoice,
-          question: "How do you read '#{word.text}'?",
+          question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
           correct_answer: word.reading,
           points: 1,
           options: fetch_reading_options(word),
@@ -298,12 +298,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
       :reading_text ->
         Map.merge(base_attrs, %{
           question_type: :reading_text,
-          question: "Type the meaning and reading for '#{word.text}'",
+          question: "__MSG_TYPE_MEANING_READING__|#{word.text}",
           correct_answer: Jason.encode!(%{meaning: word.meaning, reading: word.reading}),
           points: 2,
           options: [],
-          hints: ["Type the English meaning and hiragana reading"],
-          explanation: "#{word.text} means '#{word.meaning}' and is read as '#{word.reading}'",
+          hints: ["__MSG_TYPE_ENGLISH_HIRAGANA__"],
+          explanation: "__MSG_WORD_MEANS_READING__|#{word.text}|#{word.meaning}|#{word.reading}",
           question_data: %{
             type: :reading_text,
             word_text: word.text,

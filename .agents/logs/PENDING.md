@@ -523,7 +523,7 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 |----------|------------|--------|
 | 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 🟢, 32 🚧 | 15 COMPLETE, 1 IN PROGRESS |
 | 🔴 High | - | 0 PENDING |
-| 🟡 Medium | 13, 24A, 24B | 3 PENDING |
+| 🟡 Medium | 13, 24B | 2 PENDING |
 | 🟢 Lower | 21 | 1 PENDING |
 | **Total** | **6** | **6-8 days est.** |
 

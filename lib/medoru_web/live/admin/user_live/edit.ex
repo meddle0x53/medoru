@@ -22,7 +22,7 @@ defmodule MedoruWeb.Admin.UserLive.Edit do
 
     {:ok,
      socket
-     |> assign(:page_title, "Edit User - #{user.email}")
+     |> assign(:page_title, gettext("Edit User - %{email}", email: user.email))
      |> assign(:user, user)
      |> assign(:user_types, User.types())
      |> assign(:current_type, user.type)}
@@ -37,12 +37,12 @@ defmodule MedoruWeb.Admin.UserLive.Edit do
            socket
            |> assign(:user, updated_user)
            |> assign(:current_type, updated_user.type)
-           |> put_flash(:info, "User type updated to #{type}.")}
+           |> put_flash(:info, gettext("User type updated to %{type}.", type: type))}
 
         {:error, _changeset} ->
           {:noreply,
            socket
-           |> put_flash(:error, "Failed to update user type.")}
+           |> put_flash(:error, gettext("Failed to update user type."))}
       end
     else
       {:noreply, socket}

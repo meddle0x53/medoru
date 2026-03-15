@@ -235,7 +235,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :writing,
       question_type: :writing,
-      question: "Write the kanji for '#{meanings}'",
+      question: "__MSG_WRITE_KANJI_FOR__|#{meanings}",
       correct_answer: kanji.character,
       kanji_id: kanji.id,
       points: 5,
@@ -268,7 +268,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :vocabulary,
       question_type: :multichoice,
-      question: "Which word means '#{word.meaning}'?",
+      question: "__MSG_WHICH_WORD_MEANS__|#{word.meaning}",
       correct_answer: word.text,
       word_id: word.id,
       points: 1,
@@ -280,7 +280,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :vocabulary,
       question_type: :multichoice,
-      question: "Which word is read as '#{word.reading}'?",
+      question: "__MSG_WHICH_WORD_IS_READ__|#{word.reading}",
       correct_answer: word.text,
       word_id: word.id,
       points: 1,
@@ -292,7 +292,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :vocabulary,
       question_type: :multichoice,
-      question: "What does '#{word.text}' mean?",
+      question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
       correct_answer: word.meaning,
       word_id: word.id,
       points: 1,
@@ -304,7 +304,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :vocabulary,
       question_type: :multichoice,
-      question: "How do you read '#{word.text}'?",
+      question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
       correct_answer: word.reading,
       word_id: word.id,
       points: 1,
@@ -316,7 +316,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     %{
       step_type: :reading,
       question_type: :reading_text,
-      question: "Type the meaning and reading for '#{word.text}'",
+      question: "__MSG_TYPE_MEANING_AND_READING__|#{word.text}",
       correct_answer: Jason.encode!(%{meaning: word.meaning, reading: word.reading}),
       word_id: word.id,
       points: 2,

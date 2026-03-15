@@ -2,8 +2,10 @@
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-base-content mb-2">Vocabulary Browser</h1>
-      <p class="text-secondary">Browse and learn Japanese words organized by JLPT level</p>
+      <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Vocabulary Browser")}</h1>
+      <p class="text-secondary">
+        {gettext("Browse and learn Japanese words organized by JLPT level")}
+      </p>
     </div>
 
     <%!-- Difficulty Selector --%>
@@ -18,7 +20,7 @@
           )
         ]}
       >
-        All
+        {gettext("All")}
       </.link>
       <%= for level <- [5, 4, 3, 2, 1] do %>
         <.link
@@ -45,7 +47,7 @@
             type="text"
             name="search[query]"
             value={@search}
-            placeholder="Search by kanji, reading, or meaning..."
+            placeholder={gettext("Search by kanji, reading, or meaning...")}
             class="w-full px-4 py-2.5 pl-10 bg-base-100 border border-base-300 rounded-xl
                    text-base-content placeholder:text-secondary/50
                    focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
@@ -69,7 +71,7 @@
           class="px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
                  hover:bg-primary/90 transition-colors"
         >
-          Search
+          {gettext("Search")}
         </button>
         <%= if @search && @search != "" do %>
           <button
@@ -78,7 +80,7 @@
             class="px-4 py-2.5 bg-base-200 text-secondary rounded-xl font-medium
                    hover:bg-base-300 transition-colors"
           >
-            Clear
+            {gettext("Clear")}
           </button>
         <% end %>
       </form>
@@ -92,25 +94,25 @@
                  focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         >
           <option value="sort_score" selected={@sort_by == :sort_score}>
-            📚 Learning Order (Optimal) {sort_indicator(assigns, :sort_score)}
+            📚 {gettext("Learning Order (Optimal)")} {sort_indicator(assigns, :sort_score)}
           </option>
           <option value="usage_frequency" selected={@sort_by == :usage_frequency}>
-            📈 Most Common First {sort_indicator(assigns, :usage_frequency)}
+            📈 {gettext("Most Common First")} {sort_indicator(assigns, :usage_frequency)}
           </option>
           <option value="difficulty" selected={@sort_by == :difficulty}>
-            📊 JLPT Level (Easiest First) {sort_indicator(assigns, :difficulty)}
+            📊 {gettext("JLPT Level (Easiest First)")} {sort_indicator(assigns, :difficulty)}
           </option>
           <option value="text" selected={@sort_by == :text}>
-            🔤 Kanji (A-Z) {sort_indicator(assigns, :text)}
+            🔤 {gettext("Kanji (A-Z)")} {sort_indicator(assigns, :text)}
           </option>
           <option value="reading" selected={@sort_by == :reading}>
-            🗣️ Reading (A-Z) {sort_indicator(assigns, :reading)}
+            🗣️ {gettext("Reading (A-Z)")} {sort_indicator(assigns, :reading)}
           </option>
           <option value="word_type" selected={@sort_by == :word_type}>
-            📝 Type (A-Z) {sort_indicator(assigns, :word_type)}
+            📝 {gettext("Type (A-Z)")} {sort_indicator(assigns, :word_type)}
           </option>
           <option value="meaning" selected={@sort_by == :meaning}>
-            🇺🇸 Meaning (A-Z) {sort_indicator(assigns, :meaning)}
+            🇺🇸 {gettext("Meaning (A-Z)")} {sort_indicator(assigns, :meaning)}
           </option>
         </select>
         <svg
@@ -132,7 +134,7 @@
     <%!-- Stats --%>
     <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        {@total_count} words
+        {@total_count} {gettext("words")}
       </span>
       <%= if @difficulty do %>
         <span class="bg-base-200 px-3 py-1.5 rounded-full">
@@ -141,11 +143,11 @@
       <% end %>
       <%= if @search && @search != "" do %>
         <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
-          Search: "{@search}"
+          {gettext("Search")}: "{@search}"
         </span>
       <% end %>
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        Page {@page} of {@total_pages}
+        {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
       </span>
     </div>
 
@@ -238,12 +240,14 @@
     <%= if @words == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📖</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">No words found</h3>
+        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No words found")}</h3>
         <p class="text-secondary">
           <%= if @search && @search != "" do %>
-            No words match your search "{@search}". Try different keywords.
+            {gettext("No words match your search \"%{search}\". Try different keywords.",
+              search: @search
+            )}
           <% else %>
-            This difficulty level doesn't have any vocabulary yet.
+            {gettext("This difficulty level doesn't have any vocabulary yet.")}
           <% end %>
         </p>
       </div>
@@ -259,11 +263,11 @@
               patch={~p"/words?#{page_link_params(assigns, @page - 1)}"}
               class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
             >
-              ← Prev
+              ← {gettext("Prev")}
             </.link>
           <% else %>
             <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-              ← Prev
+              ← {gettext("Prev")}
             </span>
           <% end %>
 
@@ -320,11 +324,11 @@
               patch={~p"/words?#{page_link_params(assigns, @page + 1)}"}
               class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
             >
-              Next →
+              {gettext("Next")} →
             </.link>
           <% else %>
             <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-              Next →
+              {gettext("Next")} →
             </span>
           <% end %>
         </div>

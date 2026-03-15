@@ -5,14 +5,16 @@
       navigate={~p"/lessons?difficulty=#{@lesson.difficulty}"}
       class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
-      <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to N{@lesson.difficulty} Lessons
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{difficulty} Lessons",
+        difficulty: @lesson.difficulty
+      )}
     </.link>
 
     <%!-- Header --%>
     <div class="mb-8">
       <div class="flex items-center gap-3 mb-3 flex-wrap">
         <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
-          Lesson {@lesson.order_index}
+          {gettext("Lesson")} {@lesson.order_index}
         </span>
         <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
           JLPT N{@lesson.difficulty}
@@ -67,12 +69,12 @@
     <%= if @current_scope && @current_scope.current_user do %>
       <div class="bg-base-100 border border-base-300 rounded-xl p-6 mb-8">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-secondary">Your Progress</span>
+          <span class="text-sm font-medium text-secondary">{gettext("Your Progress")}</span>
           <%= if @lesson_progress && @lesson_progress.status == :completed do %>
-            <span class="text-sm text-primary font-medium">Completed!</span>
+            <span class="text-sm text-primary font-medium">{gettext("Completed!")}</span>
           <% else %>
             <span class="text-sm text-secondary/70">
-              {@learned_count}/{length(@lesson.lesson_words)} words learned
+              {@learned_count}/{length(@lesson.lesson_words)} {gettext("words learned")}
             </span>
           <% end %>
         </div>
@@ -93,7 +95,7 @@
           <div class="mt-3 text-sm text-primary flex items-center gap-2">
             <.icon name="hero-check-circle" class="w-4 h-4" />
             <span>
-              You completed this lesson on {@lesson_progress.completed_at
+              {gettext("You completed this lesson on")} {@lesson_progress.completed_at
               |> Calendar.strftime("%B %d, %Y")}
             </span>
           </div>
@@ -104,7 +106,7 @@
     <%!-- Words List --%>
     <div class="mb-8">
       <h2 class="text-lg font-semibold text-base-content mb-4">
-        Words in this Lesson ({length(@lesson.lesson_words)})
+        {gettext("Words in this Lesson")} ({length(@lesson.lesson_words)})
       </h2>
       <div class="space-y-3">
         <%= for lesson_word <- @lesson.lesson_words do %>
@@ -151,15 +153,15 @@
       >
         <%= cond do %>
           <% !@current_scope || !@current_scope.current_user -> %>
-            Preview Lesson (Sign in to Track Progress)
+            {gettext("Preview Lesson (Sign in to Track Progress)")}
           <% @lesson_progress && @lesson_progress.status == :completed -> %>
             <span class="flex items-center justify-center gap-2">
-              <.icon name="hero-check-circle" class="w-5 h-5" /> Review Lesson
+              <.icon name="hero-check-circle" class="w-5 h-5" /> {gettext("Review Lesson")}
             </span>
           <% @lesson_progress -> %>
-            Continue Learning
+            {gettext("Continue Learning")}
           <% true -> %>
-            Start Learning
+            {gettext("Start Learning")}
         <% end %>
       </.link>
 
@@ -177,9 +179,9 @@
           ]}
         >
           <%= if @lesson_progress.status == :completed do %>
-            <.icon name="hero-trophy" class="w-5 h-5" /> Retake Test
+            <.icon name="hero-trophy" class="w-5 h-5" /> {gettext("Retake Test")}
           <% else %>
-            <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> Take Test
+            <.icon name="hero-clipboard-document-check" class="w-5 h-5" /> {gettext("Take Test")}
           <% end %>
         </.link>
       <% end %>
@@ -189,7 +191,7 @@
         class="px-6 py-4 rounded-xl font-medium text-secondary bg-base-200 hover:bg-base-300
                transition-colors text-center"
       >
-        Back to Lessons
+        {gettext("Back to Lessons")}
       </.link>
     </div>
   </div>

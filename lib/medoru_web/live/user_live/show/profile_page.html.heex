@@ -22,7 +22,7 @@
           <%!-- User Info --%>
           <div class="flex-1 text-center sm:text-left">
             <h1 class="text-3xl font-bold text-base-content">
-              {(@profile && @profile.display_name) || @user.name || "Anonymous"}
+              {(@profile && @profile.display_name) || @user.name || gettext("Anonymous")}
             </h1>
             <% current_user = @current_scope.current_user %>
             <%= if current_user.id == @user.id || current_user.type == "admin" do %>
@@ -34,15 +34,15 @@
               <%= case @user.type do %>
                 <% "admin" -> %>
                   <span class="badge badge-error gap-1">
-                    <.icon name="hero-shield-check" class="w-3 h-3" /> Admin
+                    <.icon name="hero-shield-check" class="w-3 h-3" /> {gettext("Admin")}
                   </span>
                 <% "teacher" -> %>
                   <span class="badge badge-warning gap-1">
-                    <.icon name="hero-academic-cap" class="w-3 h-3" /> Teacher
+                    <.icon name="hero-academic-cap" class="w-3 h-3" /> {gettext("Teacher")}
                   </span>
                 <% _ -> %>
                   <span class="badge badge-info gap-1">
-                    <.icon name="hero-book-open" class="w-3 h-3" /> Student
+                    <.icon name="hero-book-open" class="w-3 h-3" /> {gettext("Student")}
                   </span>
               <% end %>
             </div>
@@ -56,7 +56,7 @@
 
             <%!-- Join Date --%>
             <p class="mt-4 text-sm text-base-content/50">
-              Member since {Calendar.strftime(@user.inserted_at, "%B %Y")}
+              {gettext("Member since %{date}", date: Calendar.strftime(@user.inserted_at, "%B %Y"))}
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-star" class="w-6 h-6 text-warning mb-2" />
           <p class="text-2xl font-bold">{@stats.level}</p>
-          <p class="text-sm text-base-content/60">Level</p>
+          <p class="text-sm text-base-content/60">{gettext("Level")}</p>
         </div>
       </div>
 
@@ -77,7 +77,7 @@
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-fire" class="w-6 h-6 text-orange-500 mb-2" />
           <p class="text-2xl font-bold">{@stats.current_streak}</p>
-          <p class="text-sm text-base-content/60">Day Streak</p>
+          <p class="text-sm text-base-content/60">{gettext("Day Streak")}</p>
         </div>
       </div>
 
@@ -85,7 +85,7 @@
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-book-open" class="w-6 h-6 text-blue-500 mb-2" />
           <p class="text-2xl font-bold">{@stats.total_kanji_learned}</p>
-          <p class="text-sm text-base-content/60">Kanji Learned</p>
+          <p class="text-sm text-base-content/60">{gettext("Kanji Learned")}</p>
         </div>
       </div>
 
@@ -93,7 +93,7 @@
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-document-text" class="w-6 h-6 text-green-500 mb-2" />
           <p class="text-2xl font-bold">{@stats.total_words_learned}</p>
-          <p class="text-sm text-base-content/60">Words Learned</p>
+          <p class="text-sm text-base-content/60">{gettext("Words Learned")}</p>
         </div>
       </div>
     </div>
@@ -103,16 +103,16 @@
       <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
         <div class="card-body">
           <h2 class="card-title text-lg mb-4">
-            <.icon name="hero-trophy" class="w-5 h-5 text-warning" /> Badges
+            <.icon name="hero-trophy" class="w-5 h-5 text-warning" /> {gettext("Badges")}
             <span class="text-sm font-normal text-base-content/60">
-              ({length(@user_badges)} earned)
+              ({length(@user_badges)} {gettext("earned")})
             </span>
           </h2>
 
           <%!-- Featured Badge --%>
           <%= if @featured_badge do %>
             <div class="mb-4 p-4 bg-gradient-to-r from-warning/10 to-transparent rounded-xl border border-warning/20">
-              <p class="text-sm text-base-content/60 mb-2">Featured Badge</p>
+              <p class="text-sm text-base-content/60 mb-2">{gettext("Featured Badge")}</p>
               <div class="flex items-center gap-3">
                 <div class={["p-3 rounded-xl", badge_color_class(@featured_badge.badge.color)]}>
                   <.icon name={"hero-#{@featured_badge.badge.icon}"} class="w-6 h-6" />
@@ -143,7 +143,7 @@
                   {user_badge.badge.name}
                 </p>
                 <%= if user_badge.is_featured do %>
-                  <span class="badge badge-xs badge-warning mt-1">Featured</span>
+                  <span class="badge badge-xs badge-warning mt-1">{gettext("Featured")}</span>
                 <% end %>
               </div>
             <% end %>
@@ -155,25 +155,25 @@
     <%!-- Additional Stats --%>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="card-body">
-        <h2 class="card-title text-lg mb-4">Learning Stats</h2>
+        <h2 class="card-title text-lg mb-4">{gettext("Learning Stats")}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <span class="text-base-content/70">Total XP</span>
+            <span class="text-base-content/70">{gettext("Total XP")}</span>
             <span class="font-semibold">{@stats.xp}</span>
           </div>
 
           <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <span class="text-base-content/70">Tests Completed</span>
+            <span class="text-base-content/70">{gettext("Tests Completed")}</span>
             <span class="font-semibold">{@stats.total_tests_completed}</span>
           </div>
 
           <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <span class="text-base-content/70">Longest Streak</span>
-            <span class="font-semibold">{@stats.longest_streak} days</span>
+            <span class="text-base-content/70">{gettext("Longest Streak")}</span>
+            <span class="font-semibold">{@stats.longest_streak} {gettext("days")}</span>
           </div>
 
           <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <span class="text-base-content/70">Duels Played</span>
+            <span class="text-base-content/70">{gettext("Duels Played")}</span>
             <span class="font-semibold">{@stats.total_duels_played}</span>
           </div>
         </div>

@@ -4,6 +4,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
   Shows a list of all classrooms with quick actions.
   """
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms
 
@@ -18,7 +19,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
 
     {:ok,
      socket
-     |> assign(:page_title, "My Classrooms")
+     |> assign(:page_title, gettext("My Classrooms"))
      |> assign(:classrooms, classrooms)
      |> assign(:stats_map, stats_map)}
   end
@@ -31,12 +32,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
         <%!-- Header --%>
         <div class="flex justify-between items-center mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-base-content">My Classrooms</h1>
-            <p class="text-secondary mt-1">Manage your classrooms and students</p>
+            <h1 class="text-3xl font-bold text-base-content">{gettext("My Classrooms")}</h1>
+            <p class="text-secondary mt-1">{gettext("Manage your classrooms and students")}</p>
           </div>
           <.link navigate={~p"/teacher/classrooms/new"}>
             <button class="btn btn-primary">
-              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
+              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Classroom")}
             </button>
           </.link>
         </div>
@@ -45,11 +46,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
         <%= if @classrooms == [] do %>
           <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">
             <.icon name="hero-academic-cap" class="w-16 h-16 text-secondary/30 mx-auto mb-4" />
-            <h3 class="text-xl font-semibold text-base-content mb-2">No classrooms yet</h3>
-            <p class="text-secondary mb-6">Create your first classroom to start teaching</p>
+            <h3 class="text-xl font-semibold text-base-content mb-2">
+              {gettext("No classrooms yet")}
+            </h3>
+            <p class="text-secondary mb-6">
+              {gettext("Create your first classroom to start teaching")}
+            </p>
             <.link navigate={~p"/teacher/classrooms/new"}>
               <button class="btn btn-primary">
-                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Classroom
+                <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Classroom")}
               </button>
             </.link>
           </div>
@@ -79,13 +84,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
 
         <h3 class="text-lg font-semibold text-base-content mb-1">{@classroom.name}</h3>
         <p class="text-sm text-secondary mb-4 line-clamp-2">
-          {@classroom.description || "No description"}
+          {@classroom.description || gettext("No description")}
         </p>
 
         <div class="flex items-center gap-4 text-sm text-secondary mb-4">
           <div class="flex items-center gap-1.5">
             <.icon name="hero-users" class="w-4 h-4" />
-            <span>{@stats.total_members} members</span>
+            <span>{@stats.total_members} {gettext("members")}</span>
           </div>
           <div class="flex items-center gap-1.5">
             <.icon name="hero-calendar" class="w-4 h-4" />
@@ -98,7 +103,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
             navigate={~p"/teacher/classrooms/#{@classroom.id}"}
             class="btn btn-ghost btn-sm text-primary"
           >
-            Manage Classroom →
+            {gettext("Manage Classroom")} →
           </.link>
         </div>
       </div>
@@ -108,19 +113,19 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
 
   defp badge(%{status: :active} = assigns) do
     ~H"""
-    <span class="badge badge-success">Active</span>
+    <span class="badge badge-success">{gettext("Active")}</span>
     """
   end
 
   defp badge(%{status: :archived} = assigns) do
     ~H"""
-    <span class="badge badge-ghost">Archived</span>
+    <span class="badge badge-ghost">{gettext("Archived")}</span>
     """
   end
 
   defp badge(%{status: :closed} = assigns) do
     ~H"""
-    <span class="badge badge-warning">Closed</span>
+    <span class="badge badge-warning">{gettext("Closed")}</span>
     """
   end
 end

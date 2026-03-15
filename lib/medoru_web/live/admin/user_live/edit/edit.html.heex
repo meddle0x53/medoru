@@ -6,45 +6,45 @@
         phx-click="go_back"
         class="btn btn-sm btn-ghost mb-4"
       >
-        <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> Back to Users
+        <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> {gettext("Back to Users")}
       </button>
-      <h1 class="text-3xl font-bold text-base-content">Edit User</h1>
+      <h1 class="text-3xl font-bold text-base-content">{gettext("Edit User")}</h1>
       <p class="mt-2 text-secondary">
-        Manage user permissions for {@user.email}
+        {gettext("Manage user permissions for %{email}", email: @user.email)}
       </p>
     </div>
 
     <%!-- User Info Card --%>
     <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
       <div class="card-body">
-        <h2 class="card-title text-lg mb-4">User Information</h2>
+        <h2 class="card-title text-lg mb-4">{gettext("User Information")}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="text-sm text-base-content/60">Email</label>
+            <label class="text-sm text-base-content/60">{gettext("Email")}</label>
             <p class="font-medium">{@user.email}</p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">Name</label>
-            <p class="font-medium">{@user.name || "Not set"}</p>
+            <label class="text-sm text-base-content/60">{gettext("Name")}</label>
+            <p class="font-medium">{@user.name || gettext("Not set")}</p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">Display Name</label>
+            <label class="text-sm text-base-content/60">{gettext("Display Name")}</label>
             <p class="font-medium">
-              {(@user.profile && @user.profile.display_name) || "Not set"}
+              {(@user.profile && @user.profile.display_name) || gettext("Not set")}
             </p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">Joined</label>
+            <label class="text-sm text-base-content/60">{gettext("Joined")}</label>
             <p class="font-medium">
               {Calendar.strftime(@user.inserted_at, "%B %d, %Y at %I:%M %p")}
             </p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">Level</label>
+            <label class="text-sm text-base-content/60">{gettext("Level")}</label>
             <p class="font-medium">{(@user.stats && @user.stats.level) || 1}</p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">XP</label>
+            <label class="text-sm text-base-content/60">{gettext("XP")}</label>
             <p class="font-medium">{(@user.stats && @user.stats.xp) || 0}</p>
           </div>
         </div>
@@ -54,9 +54,9 @@
     <%!-- Change Type Card --%>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="card-body">
-        <h2 class="card-title text-lg mb-4">User Type</h2>
+        <h2 class="card-title text-lg mb-4">{gettext("User Type")}</h2>
         <p class="text-secondary mb-6">
-          Select the appropriate role for this user. This determines what actions they can perform.
+          {gettext("Select the appropriate role for this user. This determines what actions they can perform.")}
         </p>
 
         <div class="space-y-3">
@@ -103,19 +103,19 @@
                     <div class="text-sm text-base-content/60">
                       <%= case type do %>
                         <% "admin" -> %>
-                          Full system access. Can manage users, content, and settings.
+                          {gettext("Full system access. Can manage users, content, and settings.")}
                         <% "teacher" -> %>
-                          Can create classrooms, lessons, and tests for students.
+                          {gettext("Can create classrooms, lessons, and tests for students.")}
                         <% "student" -> %>
-                          Can learn, take tests, and join classrooms.
+                          {gettext("Can learn, take tests, and join classrooms.")}
                         <% _ -> %>
-                          Standard user
+                          {gettext("Standard user")}
                       <% end %>
                     </div>
                   </div>
                 </div>
                 <%= if @current_type == type do %>
-                  <span class="badge badge-primary">Current</span>
+                  <span class="badge badge-primary">{gettext("Current")}</span>
                 <% end %>
               </div>
             </button>

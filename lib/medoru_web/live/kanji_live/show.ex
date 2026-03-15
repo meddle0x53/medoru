@@ -1,5 +1,6 @@
 defmodule MedoruWeb.KanjiLive.Show do
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
   alias Medoru.Learning
@@ -51,7 +52,7 @@ defmodule MedoruWeb.KanjiLive.Show do
      |> assign(:page, page)
      |> assign(:kanji_learned, kanji_learned)
      |> assign(:has_stroke_data, has_stroke_data)
-     |> assign(:page_title, "#{kanji.character} - Kanji Details")}
+     |> assign(:page_title, gettext("%{kanji} - Kanji Details", kanji: kanji.character))}
   end
 
   @impl true
@@ -79,7 +80,7 @@ defmodule MedoruWeb.KanjiLive.Show do
           {:noreply,
            socket
            |> assign(:kanji_learned, true)
-           |> put_flash(:info, "#{kanji.character} marked as learned!")}
+           |> put_flash(:info, gettext("%{kanji} marked as learned!", kanji: kanji.character))}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, "Could not mark kanji as learned.")}
@@ -112,7 +113,10 @@ defmodule MedoruWeb.KanjiLive.Show do
     {:noreply,
      socket
      |> assign(:writing_completed, true)
-     |> put_flash(:info, "Great job! You wrote #{socket.assigns.kanji.character} correctly!")}
+     |> put_flash(
+       :info,
+       gettext("Great job! You wrote %{kanji} correctly!", kanji: socket.assigns.kanji.character)
+     )}
   end
 
   @impl true
@@ -127,7 +131,7 @@ defmodule MedoruWeb.KanjiLive.Show do
      put_flash(
        socket,
        :info,
-       "Keep going! Draw all #{socket.assigns.kanji.stroke_count} strokes."
+       gettext("Keep going! Draw all %{count} strokes.", count: socket.assigns.kanji.stroke_count)
      )}
   end
 

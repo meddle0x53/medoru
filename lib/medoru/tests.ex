@@ -998,10 +998,20 @@ defmodule Medoru.Tests do
     step_index = attrs["step_index"]
 
     # Check if an answer already exists for this step
+    # Handle nil step_index safely
     existing_answer =
-      TestStepAnswer
-      |> where([a], a.test_session_id == ^session_id and a.step_index == ^step_index)
-      |> Repo.one()
+      if is_nil(step_index) do
+        TestStepAnswer
+        |> where(
+          [a],
+          a.test_session_id == ^session_id and is_nil(a.step_index) and a.test_step_id == ^step_id
+        )
+        |> Repo.one()
+      else
+        TestStepAnswer
+        |> where([a], a.test_session_id == ^session_id and a.step_index == ^step_index)
+        |> Repo.one()
+      end
 
     attrs =
       attrs
