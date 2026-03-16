@@ -24,6 +24,19 @@ description: Medoru Japanese learning platform - Elixir/Phoenix conventions, kan
 - Tailwind CSS for UI
 - Canvas API for future stroke drawing
 
+## Current Progress (Iteration 24B - Content Translation i18n)
+
+### Bulgarian Translation Status
+| Level | Total Words | Translated | Status |
+|-------|-------------|------------|--------|
+| **N5** | 3,168 | 3,168 ✅ | **100% Complete** |
+| **N4** | 6,808 | 6,808 ✅ | **100% Complete** |
+| **N3** | 135,847 | 0 | Ready to start (150-word batches) |
+
+**Completed:** All N5 and N4 words have Bulgarian translations stored in `translations->bg->meaning` JSONB field.
+
+**Next:** N3 translation (135,847 words remaining)
+
 ## Domain Architecture (Contexts)
 
 ### 1. Accounts Context (`lib/medoru/accounts/`)
@@ -368,6 +381,49 @@ This AGENTS.md covers the main Medoru platform. For related tools:
 - Must validate against Medoru content schema
 
 When working on these tools, reference this AGENTS.md for data structure requirements.
+
+## N4 Words Translation Workflow (In Progress)
+
+**Status:** Manual translation in progress - only continue when user explicitly says so
+
+### Current Approach
+Since external translation APIs are unavailable (Kimi Code key restricted), we translate N4 words **manually** using this workflow:
+
+1. **Query DB for 50 untranslated N4 words:**
+   ```bash
+   psql -d medoru_dev -t -A -F '|' -c "SELECT id, text, meaning FROM words WHERE difficulty = 4 AND (translations IS NULL OR translations->>'bg' IS NULL) ORDER BY text LIMIT 50"
+   ```
+
+2. **Extract just the meanings** and translate them to Bulgarian (pipe-separated)
+
+3. **Generate and execute SQL updates:**
+   ```sql
+   UPDATE words SET translations = COALESCE(translations, '{}') || '{"bg": {"meaning": "BULGARIAN_TEXT"}}'::jsonb WHERE id = 'UUID';
+   ```
+
+### Translation Statistics (Verified)
+| Level | Total | Translated | Verified |
+|-------|-------|------------|----------|
+| N5    | 3,168 | 3,168 ✅   | 3,168 ✅ (100% Bulgarian) |
+| N4    | 6,808 | 6,808 ✅   | 6,808 ✅ (100% Bulgarian) |
+| N3    | 135,847 | 0        | 135,847  |
+
+### N3 Translation Plan (READY TO START)
+**Approach:** Larger batches (150 words vs 50) for efficiency
+- **Batch size:** 150 words (pipe-separated format)
+- **Total batches:** ~906 (vs ~2,717 with 50-word batches)
+- **Time estimate:** ~75 hours of translation work
+- **Format:** word1 | word2 | word3 | ... → превод1 | превод2 | превод3 | ...
+
+**When ready to start:** Say "start N3 translation"
+
+### Important Notes
+- **ONLY translate when user explicitly asks** ("let's continue N4 translation")
+- **Batch size:** 50 words at a time
+- **Remaining batches:** ~136 for N4
+- **Time per batch:** ~5 minutes
+- Store translations directly in DB (not JSON files)
+- Use `psql` directly, no Mix tasks or scripts needed for the actual translation
 
 ## Boundaries
 

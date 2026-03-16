@@ -22,8 +22,11 @@ defmodule MedoruWeb.DailyTestLive do
     daily_test_live(assigns)
   end
 
+  alias Medoru.Content
+
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
 
     # Get or create daily test
@@ -33,6 +36,7 @@ defmodule MedoruWeb.DailyTestLive do
         if Learning.daily_test_completed_today?(user.id) do
           {:ok,
            socket
+           |> assign(:locale, locale)
            |> assign(:page_title, gettext("Daily Review Complete"))
            |> assign(:already_completed, true)
            |> assign(:test, test)
@@ -42,6 +46,7 @@ defmodule MedoruWeb.DailyTestLive do
         else
           {:ok,
            socket
+           |> assign(:locale, locale)
            |> assign(:page_title, gettext("Daily Review"))
            |> assign(:already_completed, false)
            |> assign(:test, test)
@@ -363,7 +368,7 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:feedback, :incorrect)
         |> assign(:meaning_error, !validation.meaning_correct)
         |> assign(:reading_error, !validation.reading_correct)
-        |> assign(:correct_meaning, word.meaning)
+        |> assign(:correct_meaning, Content.get_localized_meaning(word, socket.assigns.locale))
         |> assign(:correct_reading, word.reading)
 
       {:noreply, socket}

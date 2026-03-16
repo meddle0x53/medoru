@@ -23,8 +23,9 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
 
   ## Parameters
     * `word` - The Word struct with meaning and reading
-    * `meaning_answer` - User's English meaning answer
+    * `meaning_answer` - User's meaning answer (in their locale)
     * `reading_answer` - User's hiragana reading answer
+    * `locale` - User's locale ("en", "bg", "ja") - optional, defaults to "en"
 
   ## Returns
     `{:ok, %{meaning_correct: boolean, reading_correct: boolean}}` - Validation result
@@ -34,9 +35,12 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
       iex> validate_answer(word, "to eat", "たべる")
       {:ok, %{meaning_correct: true, reading_correct: true}}
 
+      iex> validate_answer(word, "Япония", "にほん", "bg")
+      {:ok, %{meaning_correct: true, reading_correct: true}}
+
   """
-  def validate_answer(word, meaning_answer, reading_answer) do
-    meaning_correct = validate_meaning(word.meaning, meaning_answer)
+  def validate_answer(word, meaning_answer, reading_answer, locale \\ "en") do
+    meaning_correct = validate_meaning_for_locale(word, meaning_answer, locale)
     reading_correct = validate_reading(word.reading, reading_answer)
 
     {:ok,
@@ -45,6 +49,31 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
        reading_correct: reading_correct,
        both_correct: meaning_correct and reading_correct
      }}
+  end
+
+  @doc """
+  Validates meaning against the word's meaning in the given locale.
+
+  ## Examples
+
+      iex> validate_meaning_for_locale(word, "Япония", "bg")
+      true
+
+      iex> validate_meaning_for_locale(word, "Japan", "en")
+      true
+
+  """
+  def validate_meaning_for_locale(word, user_answer, locale) when locale in ["bg", "ja"] do
+    # Get the localized meaning
+    localized_meaning = Medoru.Content.get_localized_meaning(word, locale)
+
+    # Validate against the localized meaning
+    validate_meaning(localized_meaning, user_answer)
+  end
+
+  def validate_meaning_for_locale(word, user_answer, _locale) do
+    # Default to English meaning
+    validate_meaning(word.meaning, user_answer)
   end
 
   @doc """
@@ -246,14 +275,30 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
   Generates a hint for the meaning answer.
 
   Returns the first letter(s) of the correct answer.
+  Uses localized meaning if locale is provided.
 
   ## Examples
 
       iex> meaning_hint("to eat")
       "t..."
 
+      iex> meaning_hint(word, "bg")
+      "Я..."
+
   """
-  def meaning_hint(correct_meaning) do
+  def meaning_hint(correct_meaning_or_word, locale \\ "en")
+
+  def meaning_hint(%Medoru.Content.Word{} = word, locale) when locale in ["bg", "ja"] do
+    word
+    |> Medoru.Content.get_localized_meaning(locale)
+    |> meaning_hint("en")
+  end
+
+  def meaning_hint(%Medoru.Content.Word{} = word, _locale) do
+    meaning_hint(word.meaning)
+  end
+
+  def meaning_hint(correct_meaning, _locale) when is_binary(correct_meaning) do
     correct_meaning
     |> String.trim()
     |> String.first()
@@ -262,6 +307,8 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
       first -> first <> "..."
     end
   end
+
+  def meaning_hint(_, _), do: "..."
 
   @doc """
   Generates a hint for the reading answer.

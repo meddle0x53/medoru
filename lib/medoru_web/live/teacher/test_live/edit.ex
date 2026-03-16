@@ -19,7 +19,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   alias Ecto.Changeset
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(%{"id" => id}, session, socket) do
+    locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
     test = Tests.get_test!(id)
 
@@ -41,6 +42,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
         socket =
           socket
+          |> assign(:locale, locale)
           |> assign(:page_title, "Edit #{test.title}")
           |> assign(:test, test)
           |> assign(:steps, steps)
@@ -318,7 +320,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     test = socket.assigns.test
 
     if socket.assigns.step_count == 0 do
-      {:noreply, put_flash(socket, :error, gettext("Add at least one step before marking ready."))}
+      {:noreply,
+       put_flash(socket, :error, gettext("Add at least one step before marking ready."))}
     else
       case Tests.mark_test_ready(test) do
         {:ok, _updated_test} ->
@@ -513,19 +516,22 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     step_type = socket.assigns.step_type
 
     # Generate question based on search type and step type
+    # Use localized meaning for the teacher's locale
+    localized_meaning = Content.get_localized_meaning(word, socket.assigns.locale)
+
     {question, correct_answer} =
       case {step_type, search_type} do
         {:multichoice, :reading} ->
           # User searched by reading (hiragana/katakana)
-          {"How do you read \"#{word.meaning}\"?", word.text}
+          {"How do you read \"#{localized_meaning}\"?", word.text}
 
         {:multichoice, _} ->
           # User searched by meaning (English) or other
-          {"What is the meaning of \"#{word.text}\"?", word.meaning}
+          {"What is the meaning of \"#{word.text}\"?", localized_meaning}
 
         {_, _} ->
           # Default for fill and other types
-          {"What is the meaning of \"#{word.text}\"?", word.meaning}
+          {"What is the meaning of \"#{word.text}\"?", localized_meaning}
       end
 
     # For multichoice, ensure correct_answer is in options and trimmed
@@ -599,8 +605,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     correct_answer =
       cond do
         new_value and selected_word ->
-          # Switching to default - use word meaning
-          selected_word.meaning
+          # Switching to default - use localized word meaning
+          Content.get_localized_meaning(selected_word, socket.assigns.locale)
 
         not new_value ->
           # Switching to custom - use custom meaning if set
@@ -838,7 +844,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   <.icon name="hero-x-mark" class="w-5 h-5" />
                 </button>
               </div>
-              <p class="text-secondary mt-1">{gettext("Choose the type of question you want to add.")}</p>
+              <p class="text-secondary mt-1">
+                {gettext("Choose the type of question you want to add.")}
+              </p>
             </div>
 
             <div class="p-6">
@@ -965,9 +973,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                             </div>
                           </div>
                           <%= if @show_kanji_preview do %>
-                            <span class="badge badge-success badge-sm">{gettext("Ready for writing")}</span>
+                            <span class="badge badge-success badge-sm">
+                              {gettext("Ready for writing")}
+                            </span>
                           <% else %>
-                            <span class="badge badge-error badge-sm">{gettext("No stroke data")}</span>
+                            <span class="badge badge-error badge-sm">
+                              {gettext("No stroke data")}
+                            </span>
                           <% end %>
                         </div>
 
@@ -987,7 +999,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
                             <.icon name="hero-exclamation-triangle" class="w-6 h-6 text-error mb-2" />
                             <p class="text-sm text-error">
-                              {gettext("This kanji doesn't have stroke data. Writing validation will not work for this step.")}
+                              {gettext(
+                                "This kanji doesn't have stroke data. Writing validation will not work for this step."
+                              )}
                             </p>
                           </div>
                         <% end %>
@@ -1002,9 +1016,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                       {gettext("Link to Word (optional)")}
                       <%= case @search_type do %>
                         <% :reading -> %>
-                          <span class="text-xs text-info ml-2">{gettext("Reading search detected")}</span>
+                          <span class="text-xs text-info ml-2">
+                            {gettext("Reading search detected")}
+                          </span>
                         <% :meaning -> %>
-                          <span class="text-xs text-success ml-2">{gettext("Meaning search detected")}</span>
+                          <span class="text-xs text-success ml-2">
+                            {gettext("Meaning search detected")}
+                          </span>
                         <% _ -> %>
                       <% end %>
                     </label>
@@ -1027,7 +1045,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           >
                             <div class="flex items-center justify-between">
                               <span class="font-medium">{word.text}</span>
-                              <span class="text-sm text-secondary">{word.meaning}</span>
+                              <span class="text-sm text-secondary">
+                                {Content.get_localized_meaning(word, @locale)}
+                              </span>
                             </div>
                           </button>
                         <% end %>
@@ -1041,7 +1061,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <span class="text-2xl font-bold">{@selected_word.text}</span>
                           <div>
                             <p class="text-sm text-secondary">{@selected_word.reading}</p>
-                            <p class="text-sm font-medium">{@selected_word.meaning}</p>
+                            <p class="text-sm font-medium">
+                              {Content.get_localized_meaning(@selected_word, @locale)}
+                            </p>
                           </div>
                         </div>
 
@@ -1055,7 +1077,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               checked={@include_reading}
                               class="checkbox checkbox-sm checkbox-primary"
                             />
-                            <span class="text-sm font-medium">{gettext("Also require reading in hiragana")}</span>
+                            <span class="text-sm font-medium">
+                              {gettext("Also require reading in hiragana")}
+                            </span>
                           </label>
                           <span class="text-xs text-secondary">
                             <%= if @include_reading do %>
@@ -1117,7 +1141,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
                             />
                             <p class="text-xs text-secondary mt-1">
-                              {gettext("Default from word database. Edit if you want a different reading accepted.")}
+                              {gettext(
+                                "Default from word database. Edit if you want a different reading accepted."
+                              )}
                             </p>
                           </div>
                         <% end %>
@@ -1148,7 +1174,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
                       {gettext("Answer Options")}
-                      <span class="text-xs text-secondary ml-2">({gettext("4-8 options required")})</span>
+                      <span class="text-xs text-secondary ml-2">
+                        ({gettext("4-8 options required")})
+                      </span>
                     </label>
 
                     <% options = @step_form[:options].value || [] %>

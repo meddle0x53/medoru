@@ -7,13 +7,19 @@ defmodule MedoruWeb.LessonLive.Show do
   embed_templates "*.html"
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, assign(socket, :locale, locale)}
   end
 
   @impl true
   def handle_params(%{"id" => id}, _url, socket) do
+    locale = socket.assigns.locale
     lesson = Content.get_lesson_with_words!(id)
+
+    # Get localized content
+    localized_title = Content.get_localized_lesson_title(lesson, locale)
+    localized_description = Content.get_localized_lesson_description(lesson, locale)
 
     # Fetch lesson progress if user is authenticated
     lesson_progress =
@@ -45,10 +51,12 @@ defmodule MedoruWeb.LessonLive.Show do
     {:noreply,
      socket
      |> assign(:lesson, lesson)
+     |> assign(:localized_title, localized_title)
+     |> assign(:localized_description, localized_description)
      |> assign(:lesson_progress, lesson_progress)
      |> assign(:learned_count, learned_count)
      |> assign(:progress_percentage, progress_percentage)
-     |> assign(:page_title, lesson.title)}
+     |> assign(:page_title, localized_title)}
   end
 
   # Helper for shared templates
@@ -61,5 +69,15 @@ defmodule MedoruWeb.LessonLive.Show do
       page: page
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
+  end
+
+  # Helper for template: get localized lesson title
+  def localized_lesson_title(lesson, locale) do
+    Content.get_localized_lesson_title(lesson, locale)
+  end
+
+  # Helper for template: get localized lesson description
+  def localized_lesson_description(lesson, locale) do
+    Content.get_localized_lesson_description(lesson, locale)
   end
 end

@@ -1537,4 +1537,45 @@ defmodule Medoru.Classrooms do
       Map.put(attrs, :invite_code, Classroom.generate_invite_code())
     end
   end
+
+  # ============================================================================
+  # Admin Stats Functions
+  # ============================================================================
+
+  alias Medoru.Classrooms.{ClassroomTestAttempt, ClassroomLessonProgress}
+
+  @doc """
+  Returns classroom statistics for admin dashboard.
+  """
+  def get_admin_stats do
+    total_classrooms = Repo.aggregate(Classroom, :count, :id)
+
+    classrooms_by_status =
+      Classroom
+      |> group_by([c], c.status)
+      |> select([c], {c.status, count(c.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    total_memberships = Repo.aggregate(ClassroomMembership, :count, :id)
+
+    memberships_by_status =
+      ClassroomMembership
+      |> group_by([m], m.status)
+      |> select([m], {m.status, count(m.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    total_test_attempts = Repo.aggregate(ClassroomTestAttempt, :count, :id)
+    total_lesson_completions = Repo.aggregate(ClassroomLessonProgress, :count, :id)
+
+    %{
+      total_classrooms: total_classrooms,
+      classrooms_by_status: classrooms_by_status,
+      total_memberships: total_memberships,
+      memberships_by_status: memberships_by_status,
+      total_test_attempts: total_test_attempts,
+      total_lesson_completions: total_lesson_completions
+    }
+  end
 end

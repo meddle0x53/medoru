@@ -1,0 +1,198 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <.link navigate={~p"/admin"} class="btn btn-sm btn-ghost">
+            <.icon name="hero-arrow-left" class="w-4 h-4" />
+          </.link>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Kanji Management")}</h1>
+        </div>
+        <p class="mt-1 text-secondary">
+          {gettext("Manage kanji characters. Total: %{count}", count: @total_count)}
+        </p>
+      </div>
+      <.link navigate={~p"/admin/kanji/new"} class="btn btn-primary">
+        <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Add Kanji")}
+      </.link>
+    </div>
+
+    <%!-- Filters --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <%!-- Level Filter --%>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70">
+              {gettext("Filter by level:")}
+            </span>
+            <div class="join">
+              <button
+                phx-click="filter_level"
+                phx-value-level=""
+                class={[
+                  "join-item btn btn-sm",
+                  if(is_nil(@level_filter), do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("All")}
+              </button>
+              <%= for level <- 5..1//-1 do %>
+                <button
+                  phx-click="filter_level"
+                  phx-value-level={level}
+                  class={[
+                    "join-item btn btn-sm",
+                    if(@level_filter == level, do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  N{level}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Search --%>
+          <.form
+            for={%{}}
+            phx-submit="search"
+            class="flex items-center gap-2 w-full sm:w-auto"
+          >
+            <div class="join w-full sm:w-auto">
+              <input
+                type="text"
+                name="search[query]"
+                value={@search}
+                placeholder={gettext("Search kanji or meaning...")}
+                class="join-item input input-sm input-bordered w-full sm:w-64"
+              />
+              <button type="submit" class="join-item btn btn-sm btn-primary">
+                <.icon name="hero-magnifying-glass" class="w-4 h-4" />
+              </button>
+            </div>
+            <%= if @search || @level_filter do %>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="btn btn-sm btn-ghost"
+              >
+                {gettext("Clear")}
+              </button>
+            <% end %>
+          </.form>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Kanji Grid --%>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <%= for k <- @kanji do %>
+        <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow">
+          <div class="card-body p-4">
+            <div class="flex justify-between items-start">
+              <span class={["badge badge-sm", level_badge_color(k.jlpt_level)]}>
+                N{k.jlpt_level}
+              </span>
+              <div class="flex gap-1">
+                <.link
+                  navigate={~p"/admin/kanji/#{k.id}/edit"}
+                  class="btn btn-ghost btn-xs"
+                  title={gettext("Edit")}
+                >
+                  <.icon name="hero-pencil" class="w-3 h-3" />
+                </.link>
+                <button
+                  phx-click="delete"
+                  phx-value-id={k.id}
+                  data-confirm={gettext("Are you sure you want to delete this kanji?")}
+                  class="btn btn-ghost btn-xs text-error"
+                  title={gettext("Delete")}
+                >
+                  <.icon name="hero-trash" class="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+
+            <div class="text-center py-3">
+              <div class="text-5xl font-serif text-base-content">{k.character}</div>
+            </div>
+
+            <div class="text-center">
+              <div class="text-sm text-base-content/70 truncate">
+                {Enum.join(k.meanings, ", ")}
+              </div>
+              <div class="text-xs text-base-content/50 mt-1">
+                {k.stroke_count} {gettext("strokes")}
+              </div>
+            </div>
+
+            <%= if k.translations != %{} do %>
+              <div class="flex justify-center gap-1 mt-2">
+                <%= if get_in(k.translations, ["bg", "meanings"]) do %>
+                  <span class="badge badge-xs badge-primary">BG</span>
+                <% end %>
+                <%= if get_in(k.translations, ["ja", "meanings"]) do %>
+                  <span class="badge badge-xs badge-secondary">JA</span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%= if @kanji == [] do %>
+      <div class="p-12 text-center">
+        <.icon name="hero-language" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
+        <p class="text-base-content/50">{gettext("No kanji found matching your criteria.")}</p>
+      </div>
+    <% end %>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="flex items-center justify-between mt-6">
+        <div class="text-sm text-base-content/60">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </div>
+        <div class="join">
+          <.link
+            navigate={
+              if @page > 1,
+                do: ~p"/admin/kanji?#{%{page: @page - 1, level: @level_filter, search: @search}}",
+                else: "#"
+            }
+            class={["join-item btn btn-sm", if(@page <= 1, do: "btn-disabled")]}
+          >
+            <.icon name="hero-chevron-left" class="w-4 h-4" />
+          </.link>
+          <%= for page_num <- 1..@total_pages do %>
+            <%= if abs(page_num - @page) <= 2 or page_num == 1 or page_num == @total_pages do %>
+              <.link
+                navigate={
+                  ~p"/admin/kanji?#{%{page: page_num, level: @level_filter, search: @search}}"
+                }
+                class={[
+                  "join-item btn btn-sm",
+                  if(page_num == @page, do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {page_num}
+              </.link>
+            <% end %>
+          <% end %>
+          <.link
+            navigate={
+              if @page < @total_pages,
+                do: ~p"/admin/kanji?#{%{page: @page + 1, level: @level_filter, search: @search}}",
+                else: "#"
+            }
+            class={["join-item btn btn-sm", if(@page >= @total_pages, do: "btn-disabled")]}
+          >
+            <.icon name="hero-chevron-right" class="w-4 h-4" />
+          </.link>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

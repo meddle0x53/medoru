@@ -7,8 +7,9 @@ defmodule MedoruWeb.KanjiLive.Index do
   embed_templates "*.html"
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, :jlpt_level, 5)}
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, socket |> assign(:jlpt_level, 5) |> assign(:locale, locale)}
   end
 
   @impl true
@@ -34,4 +35,15 @@ defmodule MedoruWeb.KanjiLive.Index do
 
   defp parse_level(level) when is_integer(level) and level in 1..5, do: level
   defp parse_level(_), do: 5
+
+  # Helper for template: get first localized kanji meaning
+  def localized_kanji_meaning(kanji, locale) do
+    meanings = Content.get_localized_kanji_meanings(kanji, locale)
+    List.first(meanings, "")
+  end
+
+  # Helper for template: get localized word meaning (needed for shared templates)
+  def localized_word_meaning(word, locale) do
+    Content.get_localized_meaning(word, locale)
+  end
 end

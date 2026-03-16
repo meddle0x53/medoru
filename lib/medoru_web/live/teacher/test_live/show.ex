@@ -124,7 +124,9 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                   <button
                     phx-click="archive"
                     class="btn btn-warning"
-                    data-confirm={gettext("Archive this test? It won't be available to students anymore.")}
+                    data-confirm={
+                      gettext("Archive this test? It won't be available to students anymore.")
+                    }
                   >
                     <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> Archive
                   </button>
@@ -201,7 +203,8 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                   </div>
                 <% else %>
                   <p class="text-secondary">
-                    {gettext("This test has %{count} step", count: @step_count)}{if @step_count != 1, do: gettext("s")}.
+                    {gettext("This test has %{count} step", count: @step_count)}{if @step_count != 1,
+                      do: gettext("s")}.
                   </p>
                   <%= if @test.setup_state == "in_progress" do %>
                     <.link
@@ -387,7 +390,9 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
         </div>
         <div>
           <p class="font-medium text-base-content">Add Steps</p>
-          <p class="text-sm text-secondary">{gettext("✓ %{count} steps added", count: @step_count)}</p>
+          <p class="text-sm text-secondary">
+            {gettext("✓ %{count} steps added", count: @step_count)}
+          </p>
         </div>
       </div>
       <div class="flex items-start gap-3">

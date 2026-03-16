@@ -154,7 +154,7 @@
                       else: "text-base-content group-hover:text-primary"
                     )
                   ]}>
-                    {lesson.title}
+                    {localized_lesson_title(lesson, @locale)}
                   </h2>
                   <%= if is_completed do %>
                     <span class="bg-primary/20 text-primary px-2.5 py-0.5 rounded-full text-xs font-medium">
@@ -163,7 +163,7 @@
                   <% end %>
                 </div>
                 <p class="text-secondary text-sm mb-3 line-clamp-2">
-                  {lesson.description}
+                  {localized_lesson_description(lesson, @locale)}
                 </p>
                 <div class="flex items-center gap-3 text-sm">
                   <%!-- JLPT Level Badge --%>

@@ -1,0 +1,235 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-2">
+        <.link navigate={~p"/admin/lessons"} class="btn btn-sm btn-ghost">
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+      </div>
+    </div>
+
+    <%!-- Form --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@form}
+          id="lesson-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <%!-- Basic Info --%>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+              <label class="label" for={@form[:title].id}>
+                <span class="label-text">{gettext("Title")}</span>
+              </label>
+              <.input
+                field={@form[:title]}
+                type="text"
+                placeholder={gettext("e.g., Basic Greetings")}
+              />
+              <%= for error <- @form[:title].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for={@form[:description].id}>
+              <span class="label-text">{gettext("Description")}</span>
+            </label>
+            <textarea
+              id={@form[:description].id}
+              name={@form[:description].name}
+              rows="3"
+              class="textarea textarea-bordered w-full"
+              placeholder={gettext("e.g., Learn common Japanese greetings and introductions")}
+            >{Phoenix.HTML.FormData.to_form(@form.source, []).data.description}</textarea>
+            <%= for error <- @form[:description].errors do %>
+              <p class="text-error text-sm mt-1">{format_error(error)}</p>
+            <% end %>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="label" for={@form[:difficulty].id}>
+                <span class="label-text">{gettext("JLPT Level")}</span>
+              </label>
+              <.input
+                field={@form[:difficulty]}
+                type="select"
+                options={[
+                  {gettext("N5 (Beginner)"), 5},
+                  {gettext("N4 (Basic)"), 4},
+                  {gettext("N3 (Intermediate)"), 3},
+                  {gettext("N2 (Advanced)"), 2},
+                  {gettext("N1 (Expert)"), 1}
+                ]}
+              />
+              <%= for error <- @form[:difficulty].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:lesson_type].id}>
+                <span class="label-text">{gettext("Lesson Type")}</span>
+              </label>
+              <.input
+                field={@form[:lesson_type]}
+                type="select"
+                options={@lesson_types}
+              />
+            </div>
+
+            <div>
+              <label class="label" for={@form[:order_index].id}>
+                <span class="label-text">{gettext("Order Index")}</span>
+              </label>
+              <.input
+                field={@form[:order_index]}
+                type="number"
+                min="0"
+                placeholder={gettext("e.g., 1")}
+              />
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("For ordering within the same level")}
+              </p>
+              <%= for error <- @form[:order_index].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Translations Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-globe-alt" class="w-5 h-5" />
+              {gettext("Translations")}
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <%!-- Bulgarian Translation --%>
+              <div class="p-4 bg-base-200/50 rounded-lg space-y-4">
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-primary">BG</span>
+                  <span class="font-medium">{gettext("Bulgarian")}</span>
+                </div>
+                <div>
+                  <label class="label"><span class="label-text">{gettext("Title")}</span></label>
+                  <.input
+                    field={@form[:translations]}
+                    type="text"
+                    name="lesson[translations][bg][title]"
+                    id="lesson_translations_bg_title"
+                    value={get_in(@form[:translations].value || %{}, ["bg", "title"])}
+                    placeholder={gettext("Bulgarian title")}
+                  />
+                </div>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Description")}</span>
+                  </label>
+                  <textarea
+                    name="lesson[translations][bg][description]"
+                    id="lesson_translations_bg_description"
+                    rows="2"
+                    class="textarea textarea-bordered w-full"
+                    placeholder={gettext("Bulgarian description")}
+                  >{get_in(@form[:translations].value || %{}, ["bg", "description"])}</textarea>
+                </div>
+              </div>
+
+              <%!-- Japanese Translation --%>
+              <div class="p-4 bg-base-200/50 rounded-lg space-y-4">
+                <div class="flex items-center gap-2">
+                  <span class="badge badge-secondary">JA</span>
+                  <span class="font-medium">{gettext("Japanese")}</span>
+                </div>
+                <div>
+                  <label class="label"><span class="label-text">{gettext("Title")}</span></label>
+                  <.input
+                    field={@form[:translations]}
+                    type="text"
+                    name="lesson[translations][ja][title]"
+                    id="lesson_translations_ja_title"
+                    value={get_in(@form[:translations].value || %{}, ["ja", "title"])}
+                    placeholder={gettext("Japanese title")}
+                  />
+                </div>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Description")}</span>
+                  </label>
+                  <textarea
+                    name="lesson[translations][ja][description]"
+                    id="lesson_translations_ja_description"
+                    rows="2"
+                    class="textarea textarea-bordered w-full"
+                    placeholder={gettext("Japanese description")}
+                  >{get_in(@form[:translations].value || %{}, ["ja", "description"])}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Words Section (for edit mode) --%>
+          <%= if @live_action == :edit && @lesson_words != [] do %>
+            <div class="border-t border-base-300 pt-6">
+              <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <.icon name="hero-book-open" class="w-5 h-5" />
+                {gettext("Lesson Words")}
+                <span class="text-sm font-normal text-base-content/60">
+                  ({length(@lesson_words)} {gettext("words")})
+                </span>
+              </h3>
+
+              <div class="space-y-2 max-h-64 overflow-y-auto">
+                <%= for {lw, index} <- Enum.with_index(@lesson_words) do %>
+                  <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                      <span class="text-sm text-base-content/50 w-6">{index + 1}.</span>
+                      <span class="text-lg font-medium">{lw.word.text}</span>
+                      <span class="text-sm text-base-content/60">({lw.word.reading})</span>
+                      <span class="text-sm text-base-content/70 truncate max-w-xs">
+                        {lw.word.meaning}
+                      </span>
+                    </div>
+                    <span class={["badge badge-sm", "badge-success"]}>
+                      N{lw.word.difficulty}
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+
+              <p class="text-sm text-base-content/60 mt-4">
+                <.icon name="hero-information-circle" class="w-4 h-4 inline mr-1" />
+                {gettext(
+                  "Words are managed through the lesson content system. Edit words from the Word Management page."
+                )}
+              </p>
+            </div>
+          <% end %>
+
+          <%!-- Actions --%>
+          <div class="border-t border-base-300 pt-6 flex items-center justify-end gap-4">
+            <.link navigate={~p"/admin/lessons"} class="btn btn-ghost">
+              {gettext("Cancel")}
+            </.link>
+            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              <%= if @live_action == :new do %>
+                {gettext("Create Lesson")}
+              <% else %>
+                {gettext("Update Lesson")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

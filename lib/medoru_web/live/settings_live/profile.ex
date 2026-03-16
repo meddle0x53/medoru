@@ -143,7 +143,10 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   defp error_to_string(:too_large), do: gettext("File is too large (max 2MB)")
   defp error_to_string(:too_many_files), do: gettext("You can only upload one file")
-  defp error_to_string(:not_accepted), do: gettext("File type not accepted (use JPG, PNG, or GIF)")
+
+  defp error_to_string(:not_accepted),
+    do: gettext("File type not accepted (use JPG, PNG, or GIF)")
+
   defp error_to_string(err), do: to_string(err)
 
   # Badge color helper

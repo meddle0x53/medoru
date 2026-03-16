@@ -56,7 +56,9 @@
 
             <%!-- Join Date --%>
             <p class="mt-4 text-sm text-base-content/50">
-              {gettext("Member since %{date}", date: Calendar.strftime(@user.inserted_at, "%B %Y"))}
+              {gettext("Member since %{date}",
+                date: Calendar.strftime(@user.inserted_at, "%B %Y")
+              )}
             </p>
           </div>
         </div>

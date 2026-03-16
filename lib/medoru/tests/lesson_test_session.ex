@@ -75,18 +75,24 @@ defmodule Medoru.Tests.LessonTestSession do
   Submits a reading text answer for validation.
 
   ## Parameters
-    * `meaning_answer` - User's English meaning answer
+    * `meaning_answer` - User's meaning answer (in their locale)
     * `reading_answer` - User's hiragana reading answer
-    * `opts` - Additional options
+    * `opts` - Additional options:
+      * `:locale` - User's locale for validation (default: "en")
+      * `:time_spent_seconds` - Time spent on this step
 
   ## Examples
 
       iex> submit_reading_text_answer(session_id, step_id, "to eat", "たべる")
       {:correct, %{meaning_correct: true, reading_correct: true}}
 
+      iex> submit_reading_text_answer(session_id, step_id, "Япония", "にほん", locale: "bg")
+      {:correct, %{meaning_correct: true, reading_correct: true}}
+
   """
   def submit_reading_text_answer(session_id, step_id, meaning_answer, reading_answer, opts \\ []) do
     time_spent = Keyword.get(opts, :time_spent_seconds, 0)
+    locale = Keyword.get(opts, :locale, "en")
 
     session =
       TestSession
@@ -104,14 +110,15 @@ defmodule Medoru.Tests.LessonTestSession do
         nil
       end
 
-    # Validate the answers
+    # Validate the answers with locale support
     {is_correct, validation_result} =
       if word do
         {:ok, result} =
           Medoru.Tests.ReadingAnswerValidator.validate_answer(
             word,
             meaning_answer,
-            reading_answer
+            reading_answer,
+            locale
           )
 
         {result.both_correct, result}
@@ -207,6 +214,14 @@ defmodule Medoru.Tests.LessonTestSession do
     else
       next_step = Repo.get!(TestStep, next_step_id || step_id)
 
+      # Get localized meaning for display
+      correct_meaning =
+        if word do
+          Medoru.Content.get_localized_meaning(word, locale)
+        else
+          ""
+        end
+
       {:incorrect,
        %{
          session: updated_session,
@@ -214,7 +229,7 @@ defmodule Medoru.Tests.LessonTestSession do
          remaining_count: length(new_queue),
          wrong_answer: validation_result,
          retry_position: length(new_queue),
-         correct_meaning: word && word.meaning,
+         correct_meaning: correct_meaning,
          correct_reading: word && word.reading
        }}
     end

@@ -7,7 +7,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   alias Medoru.Content
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(%{"id" => id}, session, socket) do
+    locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
 
     # Verify user is a teacher
@@ -30,6 +31,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
         {:ok,
          socket
+         |> assign(:locale, locale)
          |> assign(:lesson, lesson)
          |> assign(:lesson_words, lesson_words)
          |> assign(:word_search_query, "")
@@ -257,9 +259,12 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               <input
                                 type="text"
                                 id={"meaning-#{lesson_word.id}"}
-                                value={lesson_word.custom_meaning || lesson_word.word.meaning}
+                                value={
+                                  lesson_word.custom_meaning ||
+                                    Content.get_localized_meaning(lesson_word.word, @locale)
+                                }
                                 class="input input-bordered w-full input-sm"
-                                placeholder={lesson_word.word.meaning}
+                                placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
                               />
                             </div>
                             <div>
@@ -306,7 +311,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               <span class="text-secondary">{lesson_word.word.reading}</span>
                             </div>
                             <p class="text-base-content mt-1">
-                              {lesson_word.custom_meaning || lesson_word.word.meaning}
+                              {lesson_word.custom_meaning ||
+                                Content.get_localized_meaning(lesson_word.word, @locale)}
                             </p>
                             <%= if lesson_word.examples != [] do %>
                               <div class="mt-2 space-y-1">
@@ -375,7 +381,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                           <span class="text-lg font-jp truncate">{word.text}</span>
                           <span class="text-sm text-secondary truncate">{word.reading}</span>
                         </div>
-                        <p class="text-sm text-secondary truncate">{word.meaning}</p>
+                        <p class="text-sm text-secondary truncate">
+                          {Content.get_localized_meaning(word, @locale)}
+                        </p>
                       </div>
                       <button
                         phx-click="add_word"

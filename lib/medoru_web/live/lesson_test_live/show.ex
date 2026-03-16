@@ -6,7 +6,9 @@ defmodule MedoruWeb.LessonTestLive.Show do
   alias Medoru.Tests.LessonTestSession
 
   @impl true
-  def mount(%{"lesson_id" => lesson_id}, _session, socket) do
+  def mount(%{"lesson_id" => lesson_id}, session, socket) do
+    # Store locale from session for validation
+    locale = session["locale"] || "en"
     lesson = Content.get_lesson_with_words!(lesson_id)
     user = socket.assigns.current_scope.current_user
 
@@ -29,6 +31,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:test, test)
       |> assign(:lesson_progress, lesson_progress)
       |> assign(:page_title, gettext("%{title} - Test", title: lesson.title))
+      |> assign(:locale, locale)
 
     {:ok, socket}
   end
@@ -152,13 +155,16 @@ defmodule MedoruWeb.LessonTestLive.Show do
       session = socket.assigns.session
       step = socket.assigns.current_step
 
-      # Submit reading text answer
+      # Submit reading text answer with locale
+      locale = socket.assigns.locale
+
       case LessonTestSession.submit_reading_text_answer(
              session.id,
              step.id,
              meaning,
              reading,
-             time_spent_seconds: 15
+             time_spent_seconds: 15,
+             locale: locale
            ) do
         {:correct, result} ->
           socket =

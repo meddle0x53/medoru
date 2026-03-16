@@ -1,0 +1,260 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-2">
+        <.link navigate={~p"/admin/words"} class="btn btn-sm btn-ghost">
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+      </div>
+    </div>
+
+    <%!-- Form --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@form}
+          id="word-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <%!-- Basic Info --%>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="label" for={@form[:text].id}>
+                <span class="label-text">{gettext("Word (Japanese)")}</span>
+              </label>
+              <.input
+                field={@form[:text]}
+                type="text"
+                class="text-xl"
+                placeholder={gettext("e.g., 日本")}
+              />
+              <%= for error <- @form[:text].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:reading].id}>
+                <span class="label-text">{gettext("Reading (Hiragana/Katakana)")}</span>
+              </label>
+              <.input
+                field={@form[:reading]}
+                type="text"
+                placeholder={gettext("e.g., にほん")}
+              />
+              <%= for error <- @form[:reading].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for={@form[:meaning].id}>
+              <span class="label-text">{gettext("Meaning (English)")}</span>
+            </label>
+            <.input
+              field={@form[:meaning]}
+              type="text"
+              placeholder={gettext("e.g., Japan")}
+            />
+            <%= for error <- @form[:meaning].errors do %>
+              <p class="text-error text-sm mt-1">{format_error(error)}</p>
+            <% end %>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="label" for={@form[:difficulty].id}>
+                <span class="label-text">{gettext("JLPT Level")}</span>
+              </label>
+              <.input
+                field={@form[:difficulty]}
+                type="select"
+                options={[
+                  {gettext("N5 (Beginner)"), 5},
+                  {gettext("N4 (Basic)"), 4},
+                  {gettext("N3 (Intermediate)"), 3},
+                  {gettext("N2 (Advanced)"), 2},
+                  {gettext("N1 (Expert)"), 1}
+                ]}
+              />
+              <%= for error <- @form[:difficulty].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:word_type].id}>
+                <span class="label-text">{gettext("Word Type")}</span>
+              </label>
+              <.input
+                field={@form[:word_type]}
+                type="select"
+                options={@word_types}
+              />
+            </div>
+
+            <div>
+              <label class="label" for={@form[:usage_frequency].id}>
+                <span class="label-text">{gettext("Frequency Rank")}</span>
+              </label>
+              <.input
+                field={@form[:usage_frequency]}
+                type="number"
+                min="1"
+                placeholder={gettext("e.g., 100")}
+              />
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("Lower = more common")}
+              </p>
+            </div>
+          </div>
+
+          <%!-- Example Sentence --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-document-text" class="w-5 h-5" />
+              {gettext("Example Sentence")}
+            </h3>
+
+            <div class="space-y-4">
+              <div>
+                <label class="label" for={@form[:example_sentence].id}>
+                  <span class="label-text">{gettext("Sentence (Japanese)")}</span>
+                </label>
+                <.input
+                  field={@form[:example_sentence]}
+                  type="text"
+                  placeholder={gettext("e.g., 日本に行きたいです。")}
+                />
+              </div>
+
+              <div>
+                <label class="label" for={@form[:example_reading].id}>
+                  <span class="label-text">{gettext("Reading")}</span>
+                </label>
+                <.input
+                  field={@form[:example_reading]}
+                  type="text"
+                  placeholder={gettext("e.g., にほんにいきたいです。")}
+                />
+              </div>
+
+              <div>
+                <label class="label" for={@form[:example_meaning].id}>
+                  <span class="label-text">{gettext("Meaning (English)")}</span>
+                </label>
+                <.input
+                  field={@form[:example_meaning]}
+                  type="text"
+                  placeholder={gettext("e.g., I want to go to Japan.")}
+                />
+              </div>
+            </div>
+          </div>
+
+          <%!-- Translations Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-globe-alt" class="w-5 h-5" />
+              {gettext("Translations")}
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <%!-- Bulgarian Translation --%>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge badge-primary">BG</span>
+                  <span class="font-medium">{gettext("Bulgarian")}</span>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Meaning")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][bg][meaning]"
+                      id="word_translations_bg_meaning"
+                      value={get_in(@form[:translations].value || %{}, ["bg", "meaning"])}
+                      placeholder={gettext("Bulgarian meaning")}
+                    />
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Example")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][bg][example]"
+                      id="word_translations_bg_example"
+                      value={get_in(@form[:translations].value || %{}, ["bg", "example"])}
+                      placeholder={gettext("Bulgarian example sentence")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Japanese Translation (for Japanese explanations) --%>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge badge-secondary">JA</span>
+                  <span class="font-medium">{gettext("Japanese Explanation")}</span>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Meaning")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][ja][meaning]"
+                      id="word_translations_ja_meaning"
+                      value={get_in(@form[:translations].value || %{}, ["ja", "meaning"])}
+                      placeholder={gettext("Japanese explanation")}
+                    />
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Example")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][ja][example]"
+                      id="word_translations_ja_example"
+                      value={get_in(@form[:translations].value || %{}, ["ja", "example"])}
+                      placeholder={gettext("Japanese example")}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Actions --%>
+          <div class="border-t border-base-300 pt-6 flex items-center justify-end gap-4">
+            <.link navigate={~p"/admin/words"} class="btn btn-ghost">
+              {gettext("Cancel")}
+            </.link>
+            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              <%= if @live_action == :new do %>
+                {gettext("Create Word")}
+              <% else %>
+                {gettext("Update Word")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

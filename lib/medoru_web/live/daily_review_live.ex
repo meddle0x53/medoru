@@ -6,6 +6,7 @@ defmodule MedoruWeb.DailyReviewLive do
 
   use MedoruWeb, :live_view
 
+  alias Medoru.Content
   alias Medoru.Learning
 
   # Template is in daily_review_live/daily_review_live.html.heex
@@ -19,7 +20,8 @@ defmodule MedoruWeb.DailyReviewLive do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
 
     # Generate daily review
@@ -34,6 +36,7 @@ defmodule MedoruWeb.DailyReviewLive do
     if all_items == [] do
       {:ok,
        socket
+       |> assign(:locale, locale)
        |> assign(:page_title, "Daily Review")
        |> assign(:items, [])
        |> assign(:current_index, 0)
@@ -50,10 +53,11 @@ defmodule MedoruWeb.DailyReviewLive do
       shuffled_items = Enum.shuffle(all_items)
 
       current_item = List.first(shuffled_items)
-      {question_type, options} = generate_options(current_item)
+      {question_type, options} = generate_options(current_item, locale)
 
       {:ok,
        socket
+       |> assign(:locale, locale)
        |> assign(:page_title, "Daily Review")
        |> assign(:items, shuffled_items)
        |> assign(:current_index, 0)
@@ -80,7 +84,10 @@ defmodule MedoruWeb.DailyReviewLive do
       {:noreply, socket}
     else
       current_item = socket.assigns.current_item
-      correct_answer = get_correct_answer(current_item, socket.assigns.question_type)
+
+      correct_answer =
+        get_correct_answer(current_item, socket.assigns.question_type, socket.assigns.locale)
+
       is_correct = answer == correct_answer
 
       # Record the review in the background
@@ -136,7 +143,7 @@ defmodule MedoruWeb.DailyReviewLive do
        |> assign(:show_completion, true)}
     else
       current_item = Enum.at(socket.assigns.items, new_index)
-      {question_type, options} = generate_options(current_item)
+      {question_type, options} = generate_options(current_item, socket.assigns.locale)
 
       {:noreply,
        socket
@@ -157,7 +164,7 @@ defmodule MedoruWeb.DailyReviewLive do
 
   # Generate multiple choice options for the current item
   # Returns {question_type, options} where question_type is :meaning_to_reading or :reading_to_meaning
-  defp generate_options(item) do
+  defp generate_options(item, locale) do
     word = item.word
 
     question_type = Enum.random([:meaning_to_reading, :reading_to_meaning])
@@ -172,8 +179,9 @@ defmodule MedoruWeb.DailyReviewLive do
 
         :reading_to_meaning ->
           # Show reading, select meaning
-          correct = word.meaning
+          correct = Content.get_localized_meaning(word, locale)
           distractors = generate_distractors(word.id, :meaning)
+          # Also localize distractors if possible
           [correct | distractors] |> Enum.shuffle() |> Enum.map(&{&1, &1 == correct})
       end
 
@@ -192,11 +200,11 @@ defmodule MedoruWeb.DailyReviewLive do
     |> Medoru.Repo.all()
   end
 
-  defp get_correct_answer(item, question_type) do
+  defp get_correct_answer(item, question_type, locale) do
     # Returns the correct answer based on the question type
     case question_type do
       :meaning_to_reading -> item.word.reading
-      :reading_to_meaning -> item.word.meaning
+      :reading_to_meaning -> Content.get_localized_meaning(item.word, locale)
     end
   end
 

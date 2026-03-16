@@ -101,7 +101,8 @@ defmodule MedoruWeb.Teacher.TestLive.New do
               <div>
                 <label class="label" for={@form[:description].id}>
                   <span class="label-text">
-                    {gettext("Description")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
+                    {gettext("Description")}
+                    <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                   </span>
                 </label>
                 <.input
@@ -119,7 +120,8 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                 <div>
                   <label class="label" for={@form[:time_limit_seconds].id}>
                     <span class="label-text">
-                      {gettext("Time Limit")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
+                      {gettext("Time Limit")}
+                      <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                     </span>
                   </label>
                   <.input
@@ -138,7 +140,8 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                 <div>
                   <label class="label" for={@form[:max_attempts].id}>
                     <span class="label-text">
-                      {gettext("Max Attempts")} <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
+                      {gettext("Max Attempts")}
+                      <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
                     </span>
                   </label>
                   <.input
@@ -160,7 +163,9 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                 <div class="text-sm text-base-content">
                   <p class="font-medium mb-1">{gettext("What's next?")}</p>
                   <p class="text-secondary">
-                    {gettext("After creating the test, you'll add steps (questions). Each step can be multiple choice, typing, or kanji writing.")}
+                    {gettext(
+                      "After creating the test, you'll add steps (questions). Each step can be multiple choice, typing, or kanji writing."
+                    )}
                   </p>
                 </div>
               </div>

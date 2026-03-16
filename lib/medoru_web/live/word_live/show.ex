@@ -7,20 +7,24 @@ defmodule MedoruWeb.WordLive.Show do
   embed_templates "*.html"
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, assign(socket, :locale, locale)}
   end
 
   @impl true
   def handle_params(%{"id" => id}, _url, socket) do
     word = Content.get_word_with_kanji!(id)
+    locale = socket.assigns.locale
+    localized_meaning = Content.get_localized_meaning(word, locale)
 
     {:noreply,
      socket
      |> assign(:word, word)
+     |> assign(:localized_meaning, localized_meaning)
      |> assign(
        :page_title,
-       gettext("%{word} - %{meaning}", word: word.text, meaning: word.meaning)
+       gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
      )}
   end
 
@@ -85,4 +89,9 @@ defmodule MedoruWeb.WordLive.Show do
   defp default_order(:difficulty), do: :desc
   defp default_order(:inserted_at), do: :desc
   defp default_order(_), do: :asc
+
+  # Helper for template: get localized word meaning
+  def localized_word_meaning(word, locale) do
+    Content.get_localized_meaning(word, locale)
+  end
 end

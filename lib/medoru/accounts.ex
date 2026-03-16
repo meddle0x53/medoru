@@ -365,4 +365,42 @@ defmodule Medoru.Accounts do
   def award_badge_to_user(user_id, badge_id) do
     Gamification.award_badge(user_id, badge_id)
   end
+
+  # ============================================================================
+  # Admin Stats Functions
+  # ============================================================================
+
+  @doc """
+  Returns system statistics for admin dashboard.
+  """
+  def get_admin_stats do
+    total_users = Repo.aggregate(User, :count, :id)
+
+    users_by_type =
+      User
+      |> group_by([u], u.type)
+      |> select([u], {u.type, count(u.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    new_users_today =
+      User
+      |> where([u], fragment("?::date", u.inserted_at) == fragment("CURRENT_DATE"))
+      |> Repo.aggregate(:count, :id)
+
+    new_users_this_week =
+      User
+      |> where(
+        [u],
+        fragment("?::date", u.inserted_at) >= fragment("CURRENT_DATE - INTERVAL '7 days'")
+      )
+      |> Repo.aggregate(:count, :id)
+
+    %{
+      total_users: total_users,
+      users_by_type: users_by_type,
+      new_users_today: new_users_today,
+      new_users_this_week: new_users_this_week
+    }
+  end
 end

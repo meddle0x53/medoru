@@ -23,7 +23,8 @@ defmodule MedoruWeb.LearnLive do
               {gettext("Ready for the Test?")}
             </h1>
             <p class="text-lg text-secondary mb-2">
-              {gettext("You've finished learning")} <strong>{@lesson.title}</strong>
+              {gettext("You've finished learning")}
+              <strong>{Content.get_localized_lesson_title(@lesson, @locale)}</strong>
             </p>
             <p class="text-secondary mb-8">
               {gettext("Now take the test to complete the lesson and track your progress!")}
@@ -54,7 +55,7 @@ defmodule MedoruWeb.LearnLive do
                   {gettext("Word")} {@current_index + 1} {gettext("of")} {length(@words)}
                 </span>
                 <span class="text-sm text-secondary/70">
-                  {@lesson.title}
+                  {Content.get_localized_lesson_title(@lesson, @locale)}
                 </span>
               </div>
               <button
@@ -84,7 +85,7 @@ defmodule MedoruWeb.LearnLive do
                 {@current_word.reading}
               </div>
               <div class="text-xl text-secondary">
-                {@current_word.meaning}
+                {Content.get_localized_meaning(@current_word, @locale)}
               </div>
             </div>
 
@@ -230,9 +231,12 @@ defmodule MedoruWeb.LearnLive do
     """
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+
     {:ok,
      socket
+     |> assign(:locale, locale)
      |> assign(:page_title, gettext("Learn"))
      |> assign(:current_index, 0)
      |> assign(:lesson, nil)

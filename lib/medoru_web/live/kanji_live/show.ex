@@ -8,9 +8,12 @@ defmodule MedoruWeb.KanjiLive.Show do
   embed_templates "*.html"
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+
     {:ok,
      socket
+     |> assign(:locale, locale)
      |> assign(:show_writing_practice, false)
      |> assign(:writing_completed, false)}
   end
@@ -18,6 +21,7 @@ defmodule MedoruWeb.KanjiLive.Show do
   @impl true
   def handle_params(%{"id" => id} = params, _url, socket) do
     kanji = Content.get_kanji_with_readings!(id)
+    locale = socket.assigns.locale
 
     # Parse page parameter for words pagination
     page = parse_page(params["page"])
@@ -43,9 +47,13 @@ defmodule MedoruWeb.KanjiLive.Show do
         kanji.stroke_data != nil and
         not is_nil(kanji.stroke_data["strokes"])
 
+    # Get localized meanings
+    localized_meanings = Content.get_localized_kanji_meanings(kanji, locale)
+
     {:noreply,
      socket
      |> assign(:kanji, kanji)
+     |> assign(:localized_meanings, localized_meanings)
      |> assign(:on_readings, on_readings)
      |> assign(:kun_readings, kun_readings)
      |> assign(:words_data, words_data)
@@ -146,4 +154,15 @@ defmodule MedoruWeb.KanjiLive.Show do
 
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
+
+  # Helper for template: get localized word meaning
+  def localized_word_meaning(word, locale) do
+    Content.get_localized_meaning(word, locale)
+  end
+
+  # Helper for template: get first localized kanji meaning (needed for shared templates)
+  def localized_kanji_meaning(kanji, locale) do
+    meanings = Content.get_localized_kanji_meanings(kanji, locale)
+    List.first(meanings, "")
+  end
 end

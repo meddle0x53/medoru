@@ -1,0 +1,234 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content">{gettext("Admin Dashboard")}</h1>
+      <p class="mt-2 text-secondary">
+        {gettext("System overview and management")}
+      </p>
+    </div>
+
+    <%!-- Quick Actions --%>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <.link
+        navigate={~p"/admin/users"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <.icon name="hero-users" class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Users")}</div>
+              <div class="text-sm text-base-content/60">{gettext("Manage accounts")}</div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/admin/kanji"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+              <.icon name="hero-language" class="w-5 h-5 text-secondary" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Kanji")}</div>
+              <div class="text-sm text-base-content/60">{gettext("Manage characters")}</div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/admin/words"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+              <.icon name="hero-book-open" class="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Words")}</div>
+              <div class="text-sm text-base-content/60">{gettext("Manage vocabulary")}</div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/admin/lessons"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center">
+              <.icon name="hero-academic-cap" class="w-5 h-5 text-info" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Lessons")}</div>
+              <div class="text-sm text-base-content/60">{gettext("Manage lessons")}</div>
+            </div>
+          </div>
+        </div>
+      </.link>
+    </div>
+
+    <%!-- Stats Grid --%>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <%!-- User Stats --%>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-users" class="w-5 h-5 text-primary" />
+            {gettext("Users")}
+          </h2>
+
+          <div class="mt-4 space-y-4">
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Users")}</span>
+              <span class="text-2xl font-bold text-base-content">
+                {@user_stats.total_users}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="text-center p-2 bg-info/10 rounded-lg">
+                <div class="text-lg font-semibold text-info">
+                  {Map.get(@user_stats.users_by_type, "student", 0)}
+                </div>
+                <div class="text-xs text-base-content/60">{gettext("Students")}</div>
+              </div>
+              <div class="text-center p-2 bg-warning/10 rounded-lg">
+                <div class="text-lg font-semibold text-warning">
+                  {Map.get(@user_stats.users_by_type, "teacher", 0)}
+                </div>
+                <div class="text-xs text-base-content/60">{gettext("Teachers")}</div>
+              </div>
+              <div class="text-center p-2 bg-error/10 rounded-lg">
+                <div class="text-lg font-semibold text-error">
+                  {Map.get(@user_stats.users_by_type, "admin", 0)}
+                </div>
+                <div class="text-xs text-base-content/60">{gettext("Admins")}</div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-base-300">
+              <div class="flex justify-between text-sm">
+                <span class="text-base-content/60">{gettext("New Today")}</span>
+                <span class="font-medium">{@user_stats.new_users_today}</span>
+              </div>
+              <div class="flex justify-between text-sm mt-1">
+                <span class="text-base-content/60">{gettext("New This Week")}</span>
+                <span class="font-medium">{@user_stats.new_users_this_week}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Content Stats --%>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-book-open" class="w-5 h-5 text-secondary" />
+            {gettext("Content")}
+          </h2>
+
+          <div class="mt-4 space-y-4">
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Kanji")}</span>
+              <span class="text-2xl font-bold text-base-content">
+                {@content_stats.total_kanji}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-5 gap-1">
+              <%= for level <- 5..1//-1 do %>
+                <div class="text-center p-2 bg-base-200/50 rounded-lg">
+                  <div class="text-sm font-semibold text-base-content">
+                    N{level}
+                  </div>
+                  <div class="text-xs text-base-content/60">
+                    {Map.get(@content_stats.kanji_by_level, level, 0)}
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Words")}</span>
+              <span class="text-2xl font-bold text-base-content">
+                {@content_stats.total_words}
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Lessons")}</span>
+              <span class="text-2xl font-bold text-base-content">
+                {@content_stats.total_lessons}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Classroom Stats --%>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-academic-cap" class="w-5 h-5 text-accent" />
+            {gettext("Classrooms")}
+          </h2>
+
+          <div class="mt-4 space-y-4">
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Classrooms")}</span>
+              <span class="text-2xl font-bold text-base-content">
+                {@classroom_stats.total_classrooms}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="text-center p-2 bg-success/10 rounded-lg">
+                <div class="text-lg font-semibold text-success">
+                  {Map.get(@classroom_stats.classrooms_by_status, :active, 0)}
+                </div>
+                <div class="text-xs text-base-content/60">{gettext("Active")}</div>
+              </div>
+              <div class="text-center p-2 bg-base-200/50 rounded-lg">
+                <div class="text-lg font-semibold text-base-content">
+                  {Map.get(@classroom_stats.classrooms_by_status, :archived, 0)}
+                </div>
+                <div class="text-xs text-base-content/60">{gettext("Archived")}</div>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-base-200/50 rounded-lg">
+              <span class="text-base-content/70">{gettext("Total Members")}</span>
+              <span class="text-xl font-bold text-base-content">
+                {@classroom_stats.total_memberships}
+              </span>
+            </div>
+
+            <div class="pt-2 border-t border-base-300">
+              <div class="flex justify-between text-sm">
+                <span class="text-base-content/60">{gettext("Test Attempts")}</span>
+                <span class="font-medium">{@classroom_stats.total_test_attempts}</span>
+              </div>
+              <div class="flex justify-between text-sm mt-1">
+                <span class="text-base-content/60">{gettext("Lesson Completions")}</span>
+                <span class="font-medium">{@classroom_stats.total_lesson_completions}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

@@ -1,0 +1,911 @@
+[
+  {
+    "id": "0013ef33-dd19-404a-b822-1a6d82d4eeab",
+    "description": "N5 Lesson 1: Numbers 1-5. Learn 5 essential words.",
+    "title": "1. Numbers 1-5",
+    "order_index": 100,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "46320a1c-95d3-427d-8f72-129a94f980d0",
+    "description": "N5 Lesson 17: Daily Actions. Learn 5 essential words.",
+    "title": "17. Daily Actions",
+    "order_index": 1700,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "aec7fef3-7cf3-43fe-b4df-191fd015b6ba",
+    "description": "N5 Lesson 2: Numbers 6-10. Learn 5 essential words.",
+    "title": "2. Numbers 6-10",
+    "order_index": 200,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "ab52d77f-e7d0-4540-91e5-a90ada946a6e",
+    "description": "N5 Lesson 9: Time Words. Learn 5 essential words.",
+    "title": "9. Time Words",
+    "order_index": 900,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0fecc191-a41f-4c6f-9d23-aa2e04e9e4e7",
+    "description": "N5 Lesson 3: Basic Greetings. Learn 5 essential words.",
+    "title": "3. Basic Greetings",
+    "order_index": 300,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "e9b5e47a-8548-46da-a802-b537e45aeb10",
+    "description": "N5 Lesson 4: Self-Introduction. Learn 5 essential words.",
+    "title": "4. Self-Introduction",
+    "order_index": 400,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c055a331-16ef-4fd9-97cb-dfe866443e12",
+    "description": "N5 Lesson 5: Basic Pronouns. Learn 4 essential words.",
+    "title": "5. Basic Pronouns",
+    "order_index": 500,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "514dc9ba-c7e3-4df9-83b0-7c68e1a0f6d1",
+    "description": "N5 Lesson 6: Family Members. Learn 5 essential words.",
+    "title": "6. Family Members",
+    "order_index": 600,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "ce418b11-92fa-4fd6-a21f-7a1ffc3f8d73",
+    "description": "N5 Lesson 10: Calendar. Learn 5 essential words.",
+    "title": "10. Calendar",
+    "order_index": 1000,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "2c128343-0104-470f-bfac-425446a2e9dd",
+    "description": "N5 Lesson 7: More Family. Learn 5 essential words.",
+    "title": "7. More Family",
+    "order_index": 700,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0be0aee4-8b37-4340-bb88-b0f81a18b208",
+    "description": "N5 Lesson 8: Days of the Week. Learn 5 essential words.",
+    "title": "8. Days of the Week",
+    "order_index": 800,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "8cf43f01-dcad-4919-82a8-36f55ad224e0",
+    "description": "N5 Lesson 11: Places in Town. Learn 5 essential words.",
+    "title": "11. Places in Town",
+    "order_index": 1100,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5d6dd26b-0372-4a82-abc4-93e1f18b4fd0",
+    "description": "N5 Lesson 12: Home. Learn 5 essential words.",
+    "title": "12. Home",
+    "order_index": 1200,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "b03a654f-2d23-40dc-a60f-f47cb3cbb52c",
+    "description": "N5 Lesson 13: Food Staples. Learn 4 essential words.",
+    "title": "13. Food Staples",
+    "order_index": 1300,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "324686dc-b8b2-4163-b2b4-9d6797aacd4e",
+    "description": "N5 Lesson 14: Drinks. Learn 3 essential words.",
+    "title": "14. Drinks",
+    "order_index": 1400,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "abf95b9a-4c91-471a-a336-b602d94f6861",
+    "description": "N5 Lesson 15: Eating. Learn 4 essential words.",
+    "title": "15. Eating",
+    "order_index": 1500,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "281a3a41-97dc-420b-aa97-369b1af526e4",
+    "description": "N5 Lesson 16: Movement. Learn 5 essential words.",
+    "title": "16. Movement",
+    "order_index": 1600,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "d3d7e568-f9c2-47b1-8ee6-51927eb73c3c",
+    "description": "N5 Lesson 18: Sizes. Learn 5 essential words.",
+    "title": "18. Sizes",
+    "order_index": 1800,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1c85ccfe-36e8-4c8f-b3e1-131cf7e2bb30",
+    "description": "N5 Lesson 19: Qualities. Learn 5 essential words.",
+    "title": "19. Qualities",
+    "order_index": 1900,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "9baef635-f020-40fe-848c-d69abd0dc7dd",
+    "description": "N5 Lesson 20: Colors. Learn 5 essential words.",
+    "title": "20. Colors",
+    "order_index": 2000,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "d8243847-5058-4a36-be22-3fd34538256f",
+    "description": "N5 Lesson 21: Shopping. Learn 5 essential words.",
+    "title": "21. Shopping",
+    "order_index": 2100,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "7c305fa3-fee2-4419-ad8b-c13818e18c33",
+    "description": "N5 Lesson 22: Money. Learn 4 essential words.",
+    "title": "22. Money",
+    "order_index": 2200,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "7cf44922-f94e-49fd-a179-074745ff7b6c",
+    "description": "N5 Lesson 23: Body Parts. Learn 5 essential words.",
+    "title": "23. Body Parts",
+    "order_index": 2300,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "17d7eb6a-8eb5-4188-95b9-9d5426bbc680",
+    "description": "N5 Lesson 24: Health. Learn 5 essential words.",
+    "title": "24. Health",
+    "order_index": 2400,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "dc47e9ed-f043-4458-b291-72f4d7f3ac88",
+    "description": "N5 Lesson 25: Weather. Learn 5 essential words.",
+    "title": "25. Weather",
+    "order_index": 2500,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "2a41734c-d7af-41ef-8e9a-5f443ea48b33",
+    "description": "N5 Lesson 26: Nature. Learn 5 essential words.",
+    "title": "26. Nature",
+    "order_index": 2600,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "19d5b115-1ae5-4b91-9c72-bd5d88933b57",
+    "description": "N5 Lesson 27: School. Learn 5 essential words.",
+    "title": "27. School",
+    "order_index": 2700,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "d1d3c3e2-81b5-4948-aecd-947346cf963e",
+    "description": "N5 Lesson 28: Work. Learn 5 essential words.",
+    "title": "28. Work",
+    "order_index": 2800,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0ba3bf2a-8e3d-426a-a0c6-d86eae29de24",
+    "description": "N5 Lesson 29: Feelings. Learn 5 essential words.",
+    "title": "29. Feelings",
+    "order_index": 2900,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "4181148a-6cbf-45a8-ab3c-e1257cab060f",
+    "description": "N5 Lesson 30: Expressions. Learn 4 essential words.",
+    "title": "30. Expressions",
+    "order_index": 3000,
+    "difficulty": 5,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "f333f082-49c2-49f4-86f5-ecacac1f9810",
+    "description": "N4 Lesson 1: Numbers 11-100. Learn 4 essential words.",
+    "title": "1. Numbers 11-100",
+    "order_index": 100,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c198fa97-5e2b-4b14-8990-8111666d0985",
+    "description": "N3 Lesson 9: Academic. Learn 5 essential words.",
+    "title": "9. Academic",
+    "order_index": 900,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "6d14e55c-b2c1-4d6b-bc24-7ca754445fde",
+    "description": "N3 Lesson 19: Complex Emotions. Learn 5 essential words.",
+    "title": "19. Complex Emotions",
+    "order_index": 1900,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "8f0f7962-0052-461c-a57b-c7dc5f4ae661",
+    "description": "N3 Lesson 20: Mental States. Learn 4 essential words.",
+    "title": "20. Mental States",
+    "order_index": 2000,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "953909b5-1099-4068-ad4d-536b1df26c61",
+    "description": "N3 Lesson 31: Technology. Learn 5 essential words.",
+    "title": "31. Technology",
+    "order_index": 3100,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5c391bb1-bd12-4f08-bbf0-583da4619339",
+    "description": "N4 Lesson 2: Time Expressions. Learn 5 essential words.",
+    "title": "2. Time Expressions",
+    "order_index": 200,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "f3b0a7fd-8adf-47be-81e6-d67c609ee49a",
+    "description": "N3 Lesson 10: Research. Learn 5 essential words.",
+    "title": "10. Research",
+    "order_index": 1000,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "a3c89139-e83a-4c55-8c6a-65ad244faf96",
+    "description": "N3 Lesson 21: Psychology. Learn 5 essential words.",
+    "title": "21. Psychology",
+    "order_index": 2100,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1bf74661-0cea-43d7-9024-06da5078dba6",
+    "description": "N3 Lesson 32: Internet. Learn 5 essential words.",
+    "title": "32. Internet",
+    "order_index": 3200,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "dac64e53-559b-4fc8-b79c-03c9b10f488c",
+    "description": "N4 Lesson 3: Duration. Learn 5 essential words.",
+    "title": "3. Duration",
+    "order_index": 300,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "f60c9b72-4024-41ef-9d8a-422180a6eb24",
+    "description": "N4 Lesson 4: Changes. Learn 5 essential words.",
+    "title": "4. Changes",
+    "order_index": 400,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "fc7830c4-a970-4f6d-9c38-71ac56b96afa",
+    "description": "N4 Lesson 18: Transport. Learn 5 essential words.",
+    "title": "18. Transport",
+    "order_index": 1800,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c86c2907-26dc-49cb-9329-5256f2ed903a",
+    "description": "N4 Lesson 26: Possibility. Learn 1 essential words.",
+    "title": "26. Possibility",
+    "order_index": 2600,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "615523c6-bf73-4d26-99b7-b973d48ad773",
+    "description": "N4 Lesson 28: Study. Learn 3 essential words.",
+    "title": "28. Study",
+    "order_index": 2800,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "cfb5cec3-77f7-401c-bd02-bfd6424b72ac",
+    "description": "N3 Lesson 11: Health. Learn 5 essential words.",
+    "title": "11. Health",
+    "order_index": 1100,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5746f1dc-19ac-4ce4-b831-3de45d30ead9",
+    "description": "N3 Lesson 22: Situations. Learn 5 essential words.",
+    "title": "22. Situations",
+    "order_index": 2200,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "08d033a1-7600-4450-989b-41e015db706f",
+    "description": "N3 Lesson 23: Relations. Learn 4 essential words.",
+    "title": "23. Relations",
+    "order_index": 2300,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1dbf3566-782e-4f9b-bb01-ee16513a9bdc",
+    "description": "N3 Lesson 33: Daily Conveniences. Learn 5 essential words.",
+    "title": "33. Daily Conveniences",
+    "order_index": 3300,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "4096cfda-c7cf-4766-ab83-e7f6490c2f13",
+    "description": "N4 Lesson 5: Communication. Learn 5 essential words.",
+    "title": "5. Communication",
+    "order_index": 500,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "323ab094-0582-47c6-97ac-bf586814b7eb",
+    "description": "N4 Lesson 19: Entertainment. Learn 5 essential words.",
+    "title": "19. Entertainment",
+    "order_index": 1900,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c5dc92b2-b5d4-43c9-b5ca-105bfa524e94",
+    "description": "N4 Lesson 27: Evaluation. Learn 5 essential words.",
+    "title": "27. Evaluation",
+    "order_index": 2700,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "db055ed5-7f9b-4e61-b3f8-a5d2a390df14",
+    "description": "N4 Lesson 29: Research. Learn 5 essential words.",
+    "title": "29. Research",
+    "order_index": 2900,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "f0e6cd5d-c2fe-4720-8bf4-efd92b52a4b8",
+    "description": "N3 Lesson 2: Rights & Duties. Learn 5 essential words.",
+    "title": "2. Rights & Duties",
+    "order_index": 200,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "df8d96bc-bd75-496c-9ae8-30a85957b0a9",
+    "description": "N3 Lesson 12: Medical. Learn 5 essential words.",
+    "title": "12. Medical",
+    "order_index": 1200,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "7fff3c9e-424e-4ebe-8fb4-1c3eed5664a5",
+    "description": "N3 Lesson 24: Logic. Learn 5 essential words.",
+    "title": "24. Logic",
+    "order_index": 2400,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "8601d823-6978-4aff-97a1-97b9a7ff4383",
+    "description": "N3 Lesson 34: Art. Learn 5 essential words.",
+    "title": "34. Art",
+    "order_index": 3400,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c5c5b5ec-127d-4cf9-8ec8-c24d2c3202c3",
+    "description": "N4 Lesson 6: Work Actions. Learn 5 essential words.",
+    "title": "6. Work Actions",
+    "order_index": 600,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c0677fc2-ca95-40ab-a4fc-f8212e305cf2",
+    "description": "N4 Lesson 7: Emotions 1. Learn 4 essential words.",
+    "title": "7. Emotions 1",
+    "order_index": 700,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "6ec68497-907a-4200-a254-e4f5e849a659",
+    "description": "N4 Lesson 8: Emotions 2. Learn 4 essential words.",
+    "title": "8. Emotions 2",
+    "order_index": 800,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "9a0a1e53-eb63-4317-872d-c1341d0f2b08",
+    "description": "N4 Lesson 11: Amount. Learn 5 essential words.",
+    "title": "11. Amount",
+    "order_index": 1100,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5b8d1d22-39ab-401e-89c2-460081143551",
+    "description": "N4 Lesson 12: Degree. Learn 4 essential words.",
+    "title": "12. Degree",
+    "order_index": 1200,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "690cbbf8-2306-4bef-8ffd-be43b137e972",
+    "description": "N4 Lesson 20: Sports. Learn 5 essential words.",
+    "title": "20. Sports",
+    "order_index": 2000,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "6b59b961-2526-4e0a-abc7-463227e2ac3e",
+    "description": "N4 Lesson 30: Language. Learn 5 essential words.",
+    "title": "30. Language",
+    "order_index": 3000,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "051271ec-63f3-41f5-8cca-64e24e5112b7",
+    "description": "N4 Lesson 34: Body More. Learn 5 essential words.",
+    "title": "34. Body More",
+    "order_index": 3400,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "740c952e-90cb-4c43-b0b4-084b3cdb33af",
+    "description": "N4 Lesson 35: Symptoms. Learn 4 essential words.",
+    "title": "35. Symptoms",
+    "order_index": 3500,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "e49c214c-162e-4fad-bd47-4d4519b9a017",
+    "description": "N3 Lesson 3: Government. Learn 5 essential words.",
+    "title": "3. Government",
+    "order_index": 300,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "98e2a20c-c17f-4ab7-8d03-1f9a1d6761a7",
+    "description": "N3 Lesson 13: Body & Mind. Learn 5 essential words.",
+    "title": "13. Body & Mind",
+    "order_index": 1300,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "6521fec6-f020-43bd-a9dd-f35b5ac82e52",
+    "description": "N3 Lesson 25: Career. Learn 5 essential words.",
+    "title": "25. Career",
+    "order_index": 2500,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "6c455177-2cfb-4971-97ed-44fddea1a1ca",
+    "description": "N3 Lesson 35: Tradition. Learn 5 essential words.",
+    "title": "35. Tradition",
+    "order_index": 3500,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0d8f3bd2-20cf-4ebc-b166-698b560232b8",
+    "description": "N4 Lesson 9: Thinking. Learn 5 essential words.",
+    "title": "9. Thinking",
+    "order_index": 900,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "a4ca11e7-89f4-4d09-9e47-ffd714938f89",
+    "description": "N4 Lesson 13: People. Learn 5 essential words.",
+    "title": "13. People",
+    "order_index": 1300,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0b899b6a-534b-44b0-bcf4-6fe027e71ec5",
+    "description": "N4 Lesson 21: Hobbies. Learn 5 essential words.",
+    "title": "21. Hobbies",
+    "order_index": 2100,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "68745a5e-b0cd-440a-947a-3449d2fafcd4",
+    "description": "N4 Lesson 23: Difficulties. Learn 3 essential words.",
+    "title": "23. Difficulties",
+    "order_index": 2300,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "07ba727e-c0f8-4437-97d6-e8d9c9cd9a8e",
+    "description": "N4 Lesson 25: Agree/Disagree. Learn 3 essential words.",
+    "title": "25. Agree/Disagree",
+    "order_index": 2500,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "576180b7-e7d4-4488-892b-16ea98505626",
+    "description": "N4 Lesson 31: Office. Learn 5 essential words.",
+    "title": "31. Office",
+    "order_index": 3100,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "2e5eac7d-df5d-4fc4-b685-6c486a61c663",
+    "description": "N3 Lesson 4: Economy. Learn 5 essential words.",
+    "title": "4. Economy",
+    "order_index": 400,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "ce974cea-ec2e-43f9-8678-8c80aed85d99",
+    "description": "N3 Lesson 14: Nature. Learn 5 essential words.",
+    "title": "14. Nature",
+    "order_index": 1400,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "364ce776-ea5c-40be-aaba-2641701e924d",
+    "description": "N3 Lesson 26: Work Life. Learn 5 essential words.",
+    "title": "26. Work Life",
+    "order_index": 2600,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0a06d6c5-bd0f-4dda-bf97-d5a0923a7032",
+    "description": "N3 Lesson 36: Language. Learn 5 essential words.",
+    "title": "36. Language",
+    "order_index": 3600,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c7351793-2265-4905-bb40-f2749cd466a8",
+    "description": "N4 Lesson 10: Quality. Learn 5 essential words.",
+    "title": "10. Quality",
+    "order_index": 1000,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0c6e11d3-e2ab-4055-9854-18b3c5d161c0",
+    "description": "N4 Lesson 14: Relationships. Learn 5 essential words.",
+    "title": "14. Relationships",
+    "order_index": 1400,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "033d0444-cdef-4ad5-a88d-aa4fe67d29e0",
+    "description": "N4 Lesson 15: Society. Learn 4 essential words.",
+    "title": "15. Society",
+    "order_index": 1500,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "793a1b90-c6a5-42ff-b171-e7454444f540",
+    "description": "N4 Lesson 22: Trouble. Learn 5 essential words.",
+    "title": "22. Trouble",
+    "order_index": 2200,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1c41f817-98dc-436f-844c-3aa39741c4d3",
+    "description": "N4 Lesson 24: Safety. Learn 5 essential words.",
+    "title": "24. Safety",
+    "order_index": 2400,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "489871ce-bd21-4230-8622-b1428e465add",
+    "description": "N4 Lesson 32: Business. Learn 5 essential words.",
+    "title": "32. Business",
+    "order_index": 3200,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "53d26499-d52e-4964-ac3c-5d4d2eeb9c0f",
+    "description": "N4 Lesson 33: Technology. Learn 4 essential words.",
+    "title": "33. Technology",
+    "order_index": 3300,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "950cfd85-4a69-44b6-a98d-e46084da028a",
+    "description": "N3 Lesson 1: Politics. Learn 5 essential words.",
+    "title": "1. Politics",
+    "order_index": 100,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1356dd16-4da1-47c0-a18e-2ada311f963c",
+    "description": "N3 Lesson 5: Finance. Learn 5 essential words.",
+    "title": "5. Finance",
+    "order_index": 500,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5aa62f99-340f-4367-a18e-7461f57f3cac",
+    "description": "N3 Lesson 15: Environment. Learn 5 essential words.",
+    "title": "15. Environment",
+    "order_index": 1500,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "debc8d5d-de4d-47dd-98f7-3d269f3325f7",
+    "description": "N3 Lesson 27: Skills. Learn 5 essential words.",
+    "title": "27. Skills",
+    "order_index": 2700,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "93047acd-41c3-4ece-95a3-abae560b3be9",
+    "description": "N3 Lesson 8: University. Learn 5 essential words.",
+    "title": "8. University",
+    "order_index": 800,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "0921ba6e-b816-45cb-a760-57800e7c4b93",
+    "description": "N3 Lesson 18: Media. Learn 5 essential words.",
+    "title": "18. Media",
+    "order_index": 1800,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "785e8b2c-5969-4d53-8e38-89fa70806350",
+    "description": "N3 Lesson 30: Services. Learn 5 essential words.",
+    "title": "30. Services",
+    "order_index": 3000,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "1ba9757d-808d-4f27-9742-fdf2a32587b6",
+    "description": "N4 Lesson 16: Household. Learn 5 essential words.",
+    "title": "16. Household",
+    "order_index": 1600,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "c9a8f833-30bd-4f30-b5bb-a18af950e903",
+    "description": "N4 Lesson 17: Daily Routine. Learn 5 essential words.",
+    "title": "17. Daily Routine",
+    "order_index": 1700,
+    "difficulty": 4,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "5fe0f6ef-c720-413a-aa30-6f829fb25526",
+    "description": "N3 Lesson 7: Company. Learn 5 essential words.",
+    "title": "7. Company",
+    "order_index": 700,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "77ae9c0c-6711-4392-8deb-8db763da33c9",
+    "description": "N3 Lesson 17: Expression. Learn 5 essential words.",
+    "title": "17. Expression",
+    "order_index": 1700,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "dfd65c7e-4144-4428-b548-e7fe3654a8d8",
+    "description": "N3 Lesson 29: Events. Learn 5 essential words.",
+    "title": "29. Events",
+    "order_index": 2900,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "315cc97b-60cf-4582-ab84-dc2c97459f1d",
+    "description": "N3 Lesson 6: Business. Learn 5 essential words.",
+    "title": "6. Business",
+    "order_index": 600,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "cea9c1ca-e4b7-4cc6-82fc-3b3dd57ed056",
+    "description": "N3 Lesson 16: Information. Learn 5 essential words.",
+    "title": "16. Information",
+    "order_index": 1600,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  },
+  {
+    "id": "b062187c-8b4c-4beb-936e-d22a485a7e97",
+    "description": "N3 Lesson 28: Community. Learn 5 essential words.",
+    "title": "28. Community",
+    "order_index": 2800,
+    "difficulty": 3,
+    "lesson_type": "reading",
+    "translations": {}
+  }
+]

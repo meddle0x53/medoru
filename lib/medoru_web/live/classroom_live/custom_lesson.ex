@@ -8,7 +8,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   alias Medoru.Content
 
   @impl true
-  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, _session, socket) do
+  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
+    locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
 
     # Verify user is an approved member
@@ -26,12 +27,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
            |> put_flash(:error, "Your membership is pending approval.")
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
         else
-          load_lesson(socket, classroom_id, lesson_id, user)
+          load_lesson(socket, classroom_id, lesson_id, user, locale)
         end
     end
   end
 
-  defp load_lesson(socket, classroom_id, lesson_id, user) do
+  defp load_lesson(socket, classroom_id, lesson_id, user, locale) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
@@ -62,6 +63,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
       {:ok,
        socket
+       |> assign(:locale, locale)
        |> assign(:classroom, classroom)
        |> assign(:lesson, lesson)
        |> assign(:lesson_words, lesson_words)
@@ -74,7 +76,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, socket.assigns.lesson.title)}
+    {:noreply,
+     assign(
+       socket,
+       :page_title,
+       Content.get_localized_lesson_title(socket.assigns.lesson, socket.assigns.locale)
+     )}
   end
 
   @impl true
@@ -143,7 +150,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Lessons
           </.link>
           <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-base-content">{@lesson.title}</h1>
+            <h1 class="text-2xl font-bold text-base-content">
+              {Content.get_localized_lesson_title(@lesson, @locale)}
+            </h1>
             <span class="text-secondary">
               {@current_index + 1} / {@total_words}
             </span>
@@ -179,7 +188,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
               <%!-- Meaning --%>
               <div class="text-2xl text-base-content mb-8">
-                {@current_word.custom_meaning || @current_word.word.meaning}
+                {@current_word.custom_meaning ||
+                  Content.get_localized_meaning(@current_word.word, @locale)}
               </div>
 
               <%!-- Examples --%>

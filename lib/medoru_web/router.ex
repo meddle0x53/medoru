@@ -164,8 +164,22 @@ defmodule MedoruWeb.Router do
         {MedoruWeb.UserAuth, :require_authenticated_user},
         {MedoruWeb.Plugs.Admin, :default}
       ] do
+      live "/", DashboardLive
+
       live "/users", UserLive.Index
       live "/users/:id/edit", UserLive.Edit
+
+      live "/kanji", KanjiLive.Index
+      live "/kanji/new", KanjiLive.Form, :new
+      live "/kanji/:id/edit", KanjiLive.Form, :edit
+
+      live "/words", WordLive.Index
+      live "/words/new", WordLive.Form, :new
+      live "/words/:id/edit", WordLive.Form, :edit
+
+      live "/lessons", LessonLive.Index
+      live "/lessons/new", LessonLive.Form, :new
+      live "/lessons/:id/edit", LessonLive.Form, :edit
     end
   end
 

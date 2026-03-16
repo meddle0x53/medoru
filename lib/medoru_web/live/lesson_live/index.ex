@@ -9,8 +9,9 @@ defmodule MedoruWeb.LessonLive.Index do
   @per_page 20
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, assign(socket, :locale, locale)}
   end
 
   @impl true
@@ -125,5 +126,15 @@ defmodule MedoruWeb.LessonLive.Index do
       page: page
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
+  end
+
+  # Helper for template: get localized lesson title
+  def localized_lesson_title(lesson, locale) do
+    Content.get_localized_lesson_title(lesson, locale)
+  end
+
+  # Helper for template: get localized lesson description
+  def localized_lesson_description(lesson, locale) do
+    Content.get_localized_lesson_description(lesson, locale)
   end
 end

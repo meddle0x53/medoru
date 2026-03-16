@@ -104,7 +104,7 @@ defmodule MedoruWeb.Layouts do
 
             <%= if @current_scope.current_user.type == "admin" do %>
               <.nav_link
-                path="/admin/users"
+                path="/admin"
                 icon="hero-shield-check"
                 label={gettext("Admin")}
                 locale={@current_scope[:locale]}
@@ -221,6 +221,17 @@ defmodule MedoruWeb.Layouts do
                 tabindex="0"
                 class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 mt-2 border border-base-300"
               >
+                <%= if @current_scope.current_user.type == "admin" do %>
+                  <li class="menu-title px-3 py-2">
+                    <span class="text-xs text-base-content/50">{gettext("Administration")}</span>
+                  </li>
+                  <li>
+                    <.link navigate={~p"/admin"} class="flex items-center gap-2 text-error">
+                      <.icon name="hero-shield-check" class="w-4 h-4" /> {gettext("Admin Dashboard")}
+                    </.link>
+                  </li>
+                  <div class="divider my-1"></div>
+                <% end %>
                 <li class="menu-title px-3 py-2">
                   <span class="text-xs text-base-content/50">{gettext("Account")}</span>
                 </li>

@@ -90,7 +90,9 @@
                 <div class="text-xl text-base-content/80">
                   <%= if @question_type == :meaning_to_reading do %>
                     <%!-- Asking for reading, show meaning as hint --%>
-                    <span class="text-secondary">{@current_item.word.meaning}</span>
+                    <span class="text-secondary">
+                      {Content.get_localized_meaning(@current_item.word, @locale)}
+                    </span>
                   <% else %>
                     <%!-- Asking for meaning, show reading as hint --%>
                     <span class="text-secondary font-japanese">{@current_item.word.reading}</span>

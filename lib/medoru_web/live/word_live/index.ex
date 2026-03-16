@@ -9,8 +9,9 @@ defmodule MedoruWeb.WordLive.Index do
   @per_page 30
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, :difficulty, 5)}
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, socket |> assign(:difficulty, 5) |> assign(:locale, locale)}
   end
 
   @impl true
@@ -221,5 +222,10 @@ defmodule MedoruWeb.WordLive.Index do
     else
       ""
     end
+  end
+
+  # Helper for template: get localized word meaning
+  def localized_word_meaning(word, locale) do
+    Content.get_localized_meaning(word, locale)
   end
 end

@@ -1,8 +1,8 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-15  
-**Completed**: 24 iterations  
-**Remaining**: 5 iterations (3 HIGH, 2 MEDIUM priority)
+**Last Updated**: 2026-03-16  
+**Completed**: 26 iterations  
+**Remaining**: 2 iterations (1 MEDIUM in progress, 1 MEDIUM pending)
 
 ---
 
@@ -177,35 +177,45 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 
 ---
 
-### Iteration 24B: Content Translation (Kanji, Words, Lessons) 🔴 HIGH
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
+### Iteration 24B: Content Translation (Kanji, Words, Lessons) 🚧 IN PROGRESS
+**Status**: 🚧 IN PROGRESS | **Started**: 2026-03-16  
 **Log**: [ITERATION-24B-content-i18n.md](./ITERATION-24B-content-i18n.md)  
 **Depends On**: 24A ✅ COMPLETED
 
-**Overview**: Translate all learning content meanings to Bulgarian and Japanese. JSONB storage for extensibility.
+**Overview**: Translate all learning content meanings to Bulgarian. JSONB storage for extensibility.
 
-**Storage**: Add `translations` JSONB column to kanji, words, lessons tables:
+**Progress**:
+| Level | Status | Translated |
+|-------|--------|------------|
+| N5 | ✅ Complete | 3,168 words |
+| N4 | ✅ Complete | 6,808 words |
+| **N3** | **🚧 IN PROGRESS** | **0 / 135,847 words** |
+| Kanji | ✅ Complete | 2,212 kanji |
+| Lessons | ✅ Complete | 101 lessons |
+
+**Storage**: `translations` JSONB column on kanji, words, lessons tables:
 ```elixir
 %{
-  "bg" => %{"meanings" => [...], "meaning" => "..."},
-  "ja" => %{"meanings" => [...], "description" => "..."}
+  "bg" => %{"meanings" => [...], "meaning" => "..."}
 }
 ```
 
-**Scope**:
-- Kanji meanings (array)
-- Word meanings (string)
-- System lesson titles/descriptions (custom lessons use creator's locale)
-- Example sentences and usage notes
-- Everything a Bulgarian-only speaker needs to learn Japanese
+**Completed Translations**:
+| Level | Words | Status |
+|-------|-------|--------|
+| **N5** | 3,168 | ✅ 100% Bulgarian |
+| **N4** | 6,808 | ✅ 100% Bulgarian |
+| **Kanji** | 2,212 | ✅ 100% Bulgarian |
+| **Lessons** | 101 | ✅ 100% Bulgarian |
+| **N3** | 135,847 | ⏳ Ready to start |
+
+**Total**: 10,089 words + 2,212 kanji + 101 lessons translated
 
 **Behavior**:
 - Bulgarian user sees all meanings in Bulgarian
 - Test questions validate against Bulgarian meanings
 - Daily tests use localized meanings
 - Fallback to English if translation missing
-
-**User Approval**: Required for both Bulgarian and Japanese content translations
 
 ---
 
@@ -481,37 +491,17 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 
 ---
 
-### Iteration 21: Admin Dashboard & System Management
-**Status**: ⏳ NOT STARTED | **Estimated**: 3-4 days  
-**Depends On**: All above
-**Files to Create**:
-- `lib/medoru_web/live/admin/dashboard_live.ex` - Main admin dashboard
-- `lib/medoru_web/live/admin/content_live/kanji.ex` - Kanji management
-- `lib/medoru_web/live/admin/content_live/kanji_form.ex` - Add/edit kanji
-- `lib/medoru_web/live/admin/content_live/words.ex` - Word management
-- `lib/medoru_web/live/admin/content_live/word_form.ex` - Add/edit words
-- `lib/medoru_web/live/admin/content_live/lessons.ex`
-- `lib/medoru_web/live/admin/classrooms_live.ex`
-- `lib/medoru_web/live/admin/settings_live.ex`
+### Iteration 21: Admin Dashboard & System Management ✅ COMPLETED
+**Status**: ✅ COMPLETED | **Completed**: 2026-03-16 | **Approved**: 2026-03-16  
+**Log**: [ITERATION-21-admin-dashboard.md](./ITERATION-21-admin-dashboard.md)
 
-**Key Features**:
-- System stats (users, content, activity)
-- **Vocabulary Management**:
-  - List all words with search/filter
-  - Add new word with kanji linkage
-  - Edit word text, meaning, reading
-  - Delete word with confirmation
-  - Bulk import from CSV
-- **Kanji Management**:
-  - List all kanji (N1-N5 filter)
-  - Add new kanji with meanings, readings, stroke count
-  - Edit kanji details and readings
-  - Delete kanji
-  - Upload stroke data (SVG)
-- Content CRUD for lessons
-- Badge management
-- Classroom oversight
-- System settings
+**Completed Features**:
+- ✅ Admin Dashboard with system stats (users, content, classrooms)
+- ✅ Kanji Management (list, create, edit, delete, translations)
+- ✅ Kanji Readings Management (add, edit, delete on/kun readings)
+- ✅ Word Management (list, create, edit, delete, translations)
+- ✅ Lesson Management (list, create, edit, delete, translations)
+- ✅ Admin navigation in header and user dropdown
 
 ---
 
@@ -521,11 +511,11 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
-| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 🟢, 32 🚧 | 15 COMPLETE, 1 IN PROGRESS |
-| 🔴 High | - | 0 PENDING |
-| 🟡 Medium | 13, 24B | 2 PENDING |
-| 🟢 Lower | 21 | 1 PENDING |
-| **Total** | **6** | **6-8 days est.** |
+| 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 21 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 ✅ | 16 COMPLETE |
+| 🔴 High | 32 | 1 PENDING |
+| 🟡 Medium | 17 ✅, 24A ✅, 24B 🚧 | 2 COMPLETE, 1 IN PROGRESS |
+| 🟡 Medium | 13 | 1 PENDING |
+| **Total** | **2** | **3-5 days est.** |
 
 ---
 
@@ -548,15 +538,18 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 14. **Iteration 27** ✅ (Typing Step Builder) - Fill in blank questions
 15. **Iteration 30** ✅ (Complete Test Taking) - Timer, results, auto-submit, resume
 
-### Up Next 🟡
-1. **Iteration 24A** (UI i18n) - Translate interface to Bulgarian and Japanese
-2. **Iteration 24B** (Content i18n) - Translate kanji/word/lesson meanings
-3. **Iteration 13** (Admin Badge Management)
-4. **Iteration 21** (Admin Dashboard)
+### In Progress 🚧
+1. **Iteration 24B** (Content i18n) 🚧 - Translate N3 words to Bulgarian (0 / 135,847 words)
 
-### Optional / Future
-- **Iteration 32** (UI Polish & Mobile) - Pre-production cleanup
-- **Iteration 27** (Typing Step Builder enhancements - already partially done)
+### Up Next 🟡
+1. **Iteration 13** (Admin Badge Management) - CRUD for badges
+2. **Iteration 32** (UI Polish & Mobile) - Pre-production cleanup
+3. **Iteration 33** (Deployment) - Production setup
+
+### Completed ✅
+1. **Iteration 24A** (UI i18n) ✅ - Translate interface to Bulgarian and Japanese
+2. **Iteration 21** (Admin Dashboard) ✅ - Full admin content management
+3. All other previous iterations (14, 15A, 16, 17, 18, 19, 20, 22, 23, 25, 25B, 26, 27, 28, 29, 30, 31)
 
 ---
 

@@ -171,7 +171,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                       <.icon name="hero-user" class="w-5 h-5 text-secondary" />
                     </div>
                     <div class="flex-1">
-                      <p class="font-medium text-base-content">{entry.user.name || gettext("Anonymous")}</p>
+                      <p class="font-medium text-base-content">
+                        {entry.user.name || gettext("Anonymous")}
+                      </p>
                     </div>
                     <div class="text-right">
                       <p class="text-xl font-bold text-primary">{entry.points}</p>
@@ -203,7 +205,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                     </div>
                     <div class="flex gap-4 text-sm">
                       <span class="text-secondary">
-                        {day.attempts} {if day.attempts != 1, do: gettext("attempts"), else: gettext("attempt")}
+                        {day.attempts} {if day.attempts != 1,
+                          do: gettext("attempts"),
+                          else: gettext("attempt")}
                       </span>
                       <span class="text-primary font-medium">
                         +{day.total_points} {gettext("pts")}
@@ -220,7 +224,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
         <div class="card bg-base-100 border border-base-300 shadow-sm mt-8">
           <div class="card-body">
             <h2 class="card-title text-base-content flex items-center gap-2 mb-4">
-              <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext("Recent Test Attempts")}
+              <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext(
+                "Recent Test Attempts"
+              )}
             </h2>
 
             <%= if @analytics.recent_attempts == [] do %>
@@ -250,7 +256,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Analytics do
                       <%= if attempt.status == "timed_out" do %>
                         <span class="badge badge-warning">{gettext("Timed Out")}</span>
                       <% else %>
-                        <p class="font-semibold text-primary">{attempt.points_earned} {gettext("pts")}</p>
+                        <p class="font-semibold text-primary">
+                          {attempt.points_earned} {gettext("pts")}
+                        </p>
                         <p class="text-xs text-secondary">
                           {attempt.score}/{attempt.max_score}
                         </p>

@@ -1721,4 +1721,275 @@ defmodule Medoru.Content do
     |> preload([:custom_lesson, :classroom])
     |> Repo.one!()
   end
+
+  # ============================================================================
+  # Localization Functions (Iteration 24B)
+  # ============================================================================
+
+  @doc """
+  Gets the localized meaning for a word.
+
+  Falls back to English if translation not available for the given locale.
+
+  ## Examples
+
+      iex> get_localized_meaning(word, "bg")
+      "Япония"
+
+      iex> get_localized_meaning(word, "en")
+      "Japan"
+
+  """
+  def get_localized_meaning(%Word{} = word, locale) when locale in ["bg", "ja"] do
+    word.translations
+    |> Map.get(locale, %{})
+    |> Map.get("meaning")
+    |> case do
+      nil -> word.meaning
+      "" -> word.meaning
+      meaning -> meaning
+    end
+  end
+
+  def get_localized_meaning(%Word{} = word, _), do: word.meaning
+
+  @doc """
+  Gets the localized meanings for a kanji.
+
+  Falls back to English if translation not available for the given locale.
+
+  ## Examples
+
+      iex> get_localized_kanji_meanings(kanji, "bg")
+      ["слънце", "ден", "Япония"]
+
+  """
+  def get_localized_kanji_meanings(%Kanji{} = kanji, locale) when locale in ["bg", "ja"] do
+    kanji.translations
+    |> Map.get(locale, %{})
+    |> Map.get("meanings")
+    |> case do
+      nil -> kanji.meanings
+      [] -> kanji.meanings
+      meanings -> meanings
+    end
+  end
+
+  def get_localized_kanji_meanings(%Kanji{} = kanji, _), do: kanji.meanings
+
+  @doc """
+  Gets the localized title for a lesson.
+
+  Falls back to English if translation not available.
+
+  ## Examples
+
+      iex> get_localized_lesson_title(lesson, "bg")
+      "Числата 1-10"
+
+  """
+  def get_localized_lesson_title(%Lesson{} = lesson, locale) when locale in ["bg", "ja"] do
+    lesson.translations
+    |> Map.get(locale, %{})
+    |> Map.get("title")
+    |> case do
+      nil -> lesson.title
+      "" -> lesson.title
+      title -> title
+    end
+  end
+
+  def get_localized_lesson_title(%Lesson{} = lesson, _), do: lesson.title
+
+  @doc """
+  Gets the localized description for a lesson.
+
+  Falls back to English if translation not available.
+
+  ## Examples
+
+      iex> get_localized_lesson_description(lesson, "bg")
+      "Научете основните числа..."
+
+  """
+  def get_localized_lesson_description(%Lesson{} = lesson, locale) when locale in ["bg", "ja"] do
+    lesson.translations
+    |> Map.get(locale, %{})
+    |> Map.get("description")
+    |> case do
+      nil -> lesson.description
+      "" -> lesson.description
+      description -> description
+    end
+  end
+
+  def get_localized_lesson_description(%Lesson{} = lesson, _), do: lesson.description
+
+  @doc """
+  Checks if a word's meaning matches the query in the given locale.
+
+  Used for answer validation in tests - compares against the user's
+  current language preference.
+
+  ## Examples
+
+      iex> meaning_matches?(word, "Япония", "bg")
+      true
+
+      iex> meaning_matches?(word, "Japan", "en")
+      true
+
+  """
+  def meaning_matches?(%Word{} = word, query, locale) when locale in ["bg", "ja"] do
+    localized_meaning = get_localized_meaning(word, locale)
+
+    # Normalize for comparison
+    normalized_query = normalize_for_comparison(query)
+    normalized_meaning = normalize_for_comparison(localized_meaning)
+
+    # Check for exact match or containment
+    normalized_meaning == normalized_query or
+      String.contains?(normalized_meaning, normalized_query) or
+      String.contains?(normalized_query, normalized_meaning)
+  end
+
+  def meaning_matches?(%Word{} = word, query, _locale) do
+    # Default to English comparison
+    normalized_query = normalize_for_comparison(query)
+    normalized_meaning = normalize_for_comparison(word.meaning)
+
+    normalized_meaning == normalized_query or
+      String.contains?(normalized_meaning, normalized_query) or
+      String.contains?(normalized_query, normalized_meaning)
+  end
+
+  defp normalize_for_comparison(text) when is_binary(text) do
+    text
+    |> String.downcase()
+    |> String.trim()
+    # Remove common punctuation
+    |> String.replace(~r/[.,;:!?()\[\]]/, "")
+  end
+
+  defp normalize_for_comparison(_), do: ""
+
+  @doc """
+  Searches words using localized meaning for the given locale.
+
+  When locale is "bg" or "ja", searches within translations JSONB column
+  in addition to the English meaning field.
+
+  ## Examples
+
+      iex> search_words_localized("Япония", "bg", limit: 10)
+      [%Word{}, ...]
+
+  """
+  def search_words_localized(query, locale, opts \\ [])
+
+  def search_words_localized(query, locale, opts) when locale in ["bg", "ja"] do
+    limit = Keyword.get(opts, :limit, 20)
+
+    if String.trim(query) == "" do
+      []
+    else
+      search_term = "%#{query}%"
+
+      # Search in translations JSONB and English meaning
+      Word
+      |> where(
+        [w],
+        ilike(w.text, ^search_term) or
+          ilike(w.reading, ^search_term) or
+          ilike(w.meaning, ^search_term) or
+          fragment("?->?->>? ILIKE ?", w.translations, ^locale, "meaning", ^search_term)
+      )
+      |> order_by([w], asc: w.sort_score)
+      |> limit(^limit)
+      |> Repo.all()
+    end
+  end
+
+  def search_words_localized(query, _locale, opts) do
+    # Fallback to regular search
+    search_words(query, opts)
+  end
+
+  @doc """
+  Searches kanji using localized meanings for the given locale.
+
+  ## Examples
+
+      iex> search_kanji_localized("слънце", "bg", limit: 10)
+      [%Kanji{}, ...]
+
+  """
+  def search_kanji_localized(query, locale, opts \\ [])
+
+  def search_kanji_localized(query, locale, opts) when locale in ["bg", "ja"] do
+    limit = Keyword.get(opts, :limit, 10)
+
+    if String.trim(query) == "" do
+      []
+    else
+      # Search by character or in translations
+      Kanji
+      |> where(
+        [k],
+        ilike(k.character, ^query) or
+          fragment("?->?->>? ILIKE ?", k.translations, ^locale, "meanings", ^"%#{query}%")
+      )
+      |> order_by([k], asc: k.jlpt_level, desc: k.frequency)
+      |> limit(^limit)
+      |> preload(:kanji_readings)
+      |> Repo.all()
+    end
+  end
+
+  def search_kanji_localized(query, _locale, opts) do
+    search_kanji(query, opts)
+  end
+
+  # ============================================================================
+  # Admin Stats Functions
+  # ============================================================================
+
+  @doc """
+  Returns content statistics for admin dashboard.
+  """
+  def get_admin_stats do
+    total_kanji = Repo.aggregate(Kanji, :count, :id)
+    total_words = Repo.aggregate(Word, :count, :id)
+    total_lessons = Repo.aggregate(Lesson, :count, :id)
+
+    kanji_by_level =
+      Kanji
+      |> group_by([k], k.jlpt_level)
+      |> select([k], {k.jlpt_level, count(k.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    words_by_difficulty =
+      Word
+      |> group_by([w], w.difficulty)
+      |> select([w], {w.difficulty, count(w.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    lessons_by_difficulty =
+      Lesson
+      |> group_by([l], l.difficulty)
+      |> select([l], {l.difficulty, count(l.id)})
+      |> Repo.all()
+      |> Enum.into(%{})
+
+    %{
+      total_kanji: total_kanji,
+      total_words: total_words,
+      total_lessons: total_lessons,
+      kanji_by_level: kanji_by_level,
+      words_by_difficulty: words_by_difficulty,
+      lessons_by_difficulty: lessons_by_difficulty
+    }
+  end
 end
