@@ -119,54 +119,55 @@
         </div>
 
         <%= if @show_writing_practice do %>
-          <%!-- Force remount by changing ID when completed state changes --%>
-          <div id={"writing-practice-#{@writing_completed}"} phx-hook="KanjiWriting" class="mt-4">
-            <%!-- Hidden stroke data for JS --%>
-            <div
-              data-stroke-data={Jason.encode!(@kanji.stroke_data["strokes"] || [])}
-              class="hidden"
-            >
-            </div>
-
-            <%= if @writing_completed do %>
-              <%!-- Success state --%>
-              <div class="text-center py-8">
-                <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-4 rounded-2xl mb-4">
-                  <.icon name="hero-check-circle" class="w-8 h-8" />
-                  <span class="text-xl font-bold">{gettext("Correct!")}</span>
-                </div>
-                <p class="text-secondary mb-4">
-                  {gettext("You wrote %{kanji} correctly!", kanji: @kanji.character)}
-                </p>
-                <div class="flex justify-center gap-3">
-                  <button
-                    phx-click="toggle_writing_practice"
-                    phx-value-reset="true"
-                    class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-xl font-medium transition-colors flex items-center gap-2"
-                  >
-                    <.icon name="hero-arrow-path" class="w-5 h-5" /> {gettext("Practice Again")}
-                  </button>
-                  <button
-                    phx-click="toggle_writing_practice"
-                    class="px-6 py-3 bg-base-200 hover:bg-base-300 rounded-xl transition-colors"
-                  >
-                    {gettext("Close")}
-                  </button>
-                </div>
+          <%= if @writing_completed do %>
+            <%!-- Success state (outside hook to prevent canvas destruction) --%>
+            <div class="text-center py-8">
+              <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-4 rounded-2xl mb-4">
+                <.icon name="hero-check-circle" class="w-8 h-8" />
+                <span class="text-xl font-bold">{gettext("Correct!")}</span>
               </div>
-            <% else %>
+              <p class="text-secondary mb-4">
+                {gettext("You wrote %{kanji} correctly!", kanji: @kanji.character)}
+              </p>
+              <div class="flex justify-center gap-3">
+                <button
+                  phx-click="toggle_writing_practice"
+                  phx-value-reset="true"
+                  class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-xl font-medium transition-colors flex items-center gap-2"
+                >
+                  <.icon name="hero-arrow-path" class="w-5 h-5" /> {gettext("Practice Again")}
+                </button>
+                <button
+                  phx-click="toggle_writing_practice"
+                  class="px-6 py-3 bg-base-200 hover:bg-base-300 rounded-xl transition-colors"
+                >
+                  {gettext("Close")}
+                </button>
+              </div>
+            </div>
+          <% else %>
+            <%!-- Writing practice area with hook --%>
+            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4">
+              <%!-- Hidden stroke data for JS --%>
+              <div
+                data-stroke-data={Jason.encode!(@kanji.stroke_data["strokes"] || [])}
+                class="hidden"
+              >
+              </div>
+
               <%!-- Writing canvas --%>
               <div class="flex flex-col items-center gap-4">
                 <div class="text-center text-secondary text-sm">
                   {gettext(
-                    "Draw the kanji stroke by stroke. Each stroke must be longer than 10 pixels."
+                    "Draw the kanji stroke by stroke. Yellow hint shows after wrong strokes."
                   )}
                 </div>
 
                 <div
                   id="writing-canvas-container"
-                  class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden"
-                  style="width: 300px; height: 300px;"
+                  class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container"
+                  style="width: min(300px, 80vw); height: min(300px, 80vw); max-width: 300px; max-height: 300px;"
+                  phx-update="ignore"
                 >
                 </div>
 
@@ -187,8 +188,8 @@
                   </button>
                 </div>
               </div>
-            <% end %>
-          </div>
+            </div>
+          <% end %>
         <% else %>
           <%!-- Show stroke animator when not practicing --%>
           <div class="mt-4">

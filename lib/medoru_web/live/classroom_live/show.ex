@@ -85,46 +85,46 @@ defmodule MedoruWeb.ClassroomLive.Show do
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
-        <div class="mb-8">
+        <div class="mb-6 sm:mb-8">
           <.link
             navigate={~p"/classrooms"}
-            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-3 sm:mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to My Classrooms
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to My Classrooms")}
           </.link>
 
-          <div class="flex items-start justify-between">
-            <div>
-              <h1 class="text-3xl font-bold text-base-content">{@classroom.name}</h1>
-              <p class="text-secondary max-w-2xl mt-2">
-                {@classroom.description || "No description"}
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <h1 class="text-2xl sm:text-3xl font-bold text-base-content truncate">{@classroom.name}</h1>
+              <p class="text-secondary max-w-2xl mt-1 sm:mt-2 text-sm sm:text-base">
+                {@classroom.description || gettext("No description")}
               </p>
             </div>
 
             <button
               phx-click="leave_classroom"
-              data-confirm="Are you sure you want to leave this classroom?"
-              class="btn btn-error btn-outline btn-sm"
+              data-confirm={gettext("Are you sure you want to leave this classroom?")}
+              class="btn btn-error btn-outline btn-sm self-start"
             >
-              <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" /> Leave
+              <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" /> {gettext("Leave")}
             </button>
           </div>
         </div>
 
         <%!-- My Stats Card --%>
-        <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-8">
-          <div class="card-body">
-            <div class="flex items-center gap-4">
-              <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
-                <.icon name="hero-trophy" class="w-8 h-8 text-primary" />
+        <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 sm:mb-8">
+          <div class="card-body p-4 sm:p-6">
+            <div class="flex items-center gap-3 sm:gap-4">
+              <div class="w-12 h-12 sm:w-16 sm:h-16 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
+                <.icon name="hero-trophy" class="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
               </div>
-              <div>
-                <p class="text-sm text-secondary">My Points</p>
-                <p class="text-3xl font-bold text-base-content">{@membership.points}</p>
+              <div class="min-w-0">
+                <p class="text-xs sm:text-sm text-secondary">{gettext("My Points")}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-base-content">{@membership.points}</p>
               </div>
               <div class="ml-auto text-right">
-                <p class="text-sm text-secondary">Rank</p>
-                <p class="text-2xl font-bold text-base-content">
+                <p class="text-xs sm:text-sm text-secondary">{gettext("Rank")}</p>
+                <p class="text-xl sm:text-2xl font-bold text-base-content">
                   #{get_rank(@members, @current_scope.current_user.id)}
                 </p>
               </div>
@@ -132,13 +132,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
           </div>
         </div>
 
-        <%!-- Tabs --%>
-        <div class="border-b border-base-300 mb-6">
-          <div class="flex gap-1">
-            <.tab_button active={@active_tab == "overview"} tab="overview" label="Overview" />
-            <.tab_button active={@active_tab == "rankings"} tab="rankings" label="Rankings" />
-            <.tab_button active={@active_tab == "lessons"} tab="lessons" label="Lessons" />
-            <.tab_button active={@active_tab == "tests"} tab="tests" label="Tests" />
+        <%!-- Tabs - Scrollable on mobile --%>
+        <div class="border-b border-base-300 mb-6 overflow-x-auto">
+          <div class="flex gap-1 min-w-max">
+            <.tab_button active={@active_tab == "overview"} tab="overview" label={gettext("Overview")} />
+            <.tab_button active={@active_tab == "rankings"} tab="rankings" label={gettext("Rankings")} />
+            <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
+            <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
           </div>
         </div>
 
@@ -252,28 +252,28 @@ defmodule MedoruWeb.ClassroomLive.Show do
   defp rankings_tab(assigns) do
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm">
-      <div class="card-body">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="card-title text-base-content">Classroom Rankings</h3>
+      <div class="card-body p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <h3 class="card-title text-lg sm:text-xl text-base-content">{gettext("Classroom Rankings")}</h3>
           <.link
             navigate={~p"/classrooms/#{@current_user.id}/rankings"}
-            class="btn btn-primary btn-sm"
+            class="btn btn-primary btn-sm w-full sm:w-auto"
           >
-            <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> Full Rankings
+            <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> {gettext("Full Rankings")}
           </.link>
         </div>
         <%= if @members == [] do %>
-          <p class="text-secondary">No members yet.</p>
+          <p class="text-secondary">{gettext("No members yet.")}</p>
         <% else %>
           <div class="space-y-2">
             <%= for {member, index} <- Enum.with_index(@members, 1) do %>
               <div class={[
-                "flex items-center justify-between p-4 rounded-xl",
+                "flex items-center justify-between p-3 sm:p-4 rounded-xl",
                 member.user_id == @current_user.id && "bg-primary/10 border border-primary/30"
               ]}>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                   <span class={[
-                    "w-10 h-10 rounded-xl flex items-center justify-center font-bold",
+                    "w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-bold text-sm shrink-0",
                     index == 1 && "bg-yellow-100 text-yellow-700",
                     index == 2 && "bg-gray-200 text-gray-700",
                     index == 3 && "bg-orange-100 text-orange-700",
@@ -281,22 +281,22 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   ]}>
                     {index}
                   </span>
-                  <div class="w-10 h-10 bg-base-200 rounded-full flex items-center justify-center">
-                    <.icon name="hero-user" class="w-5 h-5 text-secondary" />
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 bg-base-200 rounded-full flex items-center justify-center shrink-0">
+                    <.icon name="hero-user" class="w-4 h-4 sm:w-5 sm:h-5 text-secondary" />
                   </div>
-                  <div>
-                    <p class={member.user_id == @current_user.id && "font-medium text-base-content"}>
+                  <div class="min-w-0">
+                    <p class={["text-sm sm:text-base truncate", member.user_id == @current_user.id && "font-medium text-base-content"]}>
                       {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                       <%= if member.user_id == @current_user.id do %>
-                        <span class="badge badge-primary badge-sm ml-2">You</span>
+                        <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">{gettext("You")}</span>
                       <% end %>
                     </p>
-                    <p class="text-sm text-secondary">
-                      Joined {Calendar.strftime(member.joined_at || member.inserted_at, "%b %d, %Y")}
+                    <p class="text-xs sm:text-sm text-secondary">
+                      {gettext("Joined")} {Calendar.strftime(member.joined_at || member.inserted_at, "%b %d, %Y")}
                     </p>
                   </div>
                 </div>
-                <span class="font-bold text-lg text-base-content">{member.points} pts</span>
+                <span class="font-bold text-base sm:text-lg text-base-content ml-2 shrink-0">{member.points} {gettext("pts")}</span>
               </div>
             <% end %>
           </div>
@@ -313,13 +313,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp lessons_tab(assigns) do
     ~H"""
-    <div class="space-y-4">
+    <div class="space-y-3 sm:space-y-4">
       <%= if @custom_lessons == [] do %>
-        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-          <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-          <h3 class="text-xl font-semibold text-base-content mb-2">No Lessons Available</h3>
-          <p class="text-secondary max-w-md mx-auto">
-            Your teacher hasn't published any lessons to this classroom yet. Check back later!
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
+          <.icon name="hero-book-open" class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4" />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">{gettext("No Lessons Available")}</h3>
+          <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
+            {gettext("Your teacher hasn't published any lessons to this classroom yet. Check back later!")}
           </p>
         </div>
       <% else %>
@@ -327,20 +327,20 @@ defmodule MedoruWeb.ClassroomLive.Show do
           <% lesson = classroom_lesson.custom_lesson %>
           <% progress = get_lesson_progress(@lesson_progress, lesson.id) %>
           <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h3 class="card-title text-lg text-base-content mb-1">
+            <div class="card-body p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                <div class="flex-1 min-w-0">
+                  <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
                     {lesson.title}
                   </h3>
-                  <p class="text-secondary text-sm mb-3">
-                    {lesson.description || "No description"}
+                  <p class="text-secondary text-sm mb-2 sm:mb-3">
+                    {lesson.description || gettext("No description")}
                   </p>
 
-                  <div class="flex flex-wrap gap-3 text-sm">
+                  <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
                     <span class="badge badge-outline badge-sm">
                       <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
-                      {lesson.word_count} words
+                      {lesson.word_count} {gettext("words")}
                     </span>
 
                     <%= if lesson.difficulty do %>
@@ -352,35 +352,35 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <%= case progress && progress.status do %>
                       <% "completed" -> %>
                         <span class="badge badge-success badge-sm">
-                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> Completed
+                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
                         </span>
                       <% "in_progress" -> %>
                         <span class="badge badge-warning badge-sm">
-                          <.icon name="hero-play" class="w-3 h-3 mr-1" /> In Progress
+                          <.icon name="hero-play" class="w-3 h-3 mr-1" /> {gettext("In Progress")}
                         </span>
                       <% _ -> %>
                         <span class="badge badge-ghost badge-sm">
-                          Not Started
+                          {gettext("Not Started")}
                         </span>
                     <% end %>
                   </div>
                 </div>
 
-                <div class="ml-4">
+                <div class="sm:ml-4 self-start sm:self-auto">
                   <%= case progress && progress.status do %>
                     <% "completed" -> %>
                       <span class="badge badge-success">
-                        +{progress.points_earned} pts
+                        +{progress.points_earned} {gettext("pts")}
                       </span>
                     <% _ -> %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
-                        class="btn btn-primary"
+                        class="btn btn-primary btn-sm sm:btn-md"
                       >
                         <%= if progress && progress.status == "in_progress" do %>
-                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> Continue
+                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
                         <% else %>
-                          <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> Start
+                          <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}
                         <% end %>
                       </.link>
                   <% end %>
@@ -405,47 +405,47 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp tests_tab(assigns) do
     ~H"""
-    <div class="space-y-4">
+    <div class="space-y-3 sm:space-y-4">
       <%= if @published_tests == [] do %>
-        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-          <.icon name="hero-clipboard-document-list" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-          <h3 class="text-xl font-semibold text-base-content mb-2">No Tests Available</h3>
-          <p class="text-secondary max-w-md mx-auto">
-            Your teacher hasn't published any tests to this classroom yet. Check back later!
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
+          <.icon name="hero-clipboard-document-list" class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4" />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">{gettext("No Tests Available")}</h3>
+          <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
+            {gettext("Your teacher hasn't published any tests to this classroom yet. Check back later!")}
           </p>
         </div>
       <% else %>
         <%= for classroom_test <- @published_tests do %>
           <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h3 class="card-title text-lg text-base-content mb-1">
+            <div class="card-body p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                <div class="flex-1 min-w-0">
+                  <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
                     {classroom_test.test.title}
                   </h3>
-                  <p class="text-secondary text-sm mb-3">
-                    {classroom_test.test.description || "No description"}
+                  <p class="text-secondary text-sm mb-2 sm:mb-3">
+                    {classroom_test.test.description || gettext("No description")}
                   </p>
 
-                  <div class="flex flex-wrap gap-3 text-sm">
+                  <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
                     <span class="badge badge-outline badge-sm">
                       <.icon name="hero-clock" class="w-3 h-3 mr-1" />
                       <%= if classroom_test.test.time_limit_seconds do %>
                         {format_duration(classroom_test.test.time_limit_seconds)}
                       <% else %>
-                        No time limit
+                        {gettext("No time limit")}
                       <% end %>
                     </span>
 
                     <span class="badge badge-outline badge-sm">
                       <.icon name="hero-star" class="w-3 h-3 mr-1" />
-                      {classroom_test.test.total_points} points
+                      {classroom_test.test.total_points} {gettext("points")}
                     </span>
 
                     <%= if classroom_test.max_attempts do %>
                       <span class="badge badge-outline badge-sm">
                         <.icon name="hero-arrow-path" class="w-3 h-3 mr-1" />
-                        {classroom_test.max_attempts} attempt{classroom_test.max_attempts != 1 && "s"}
+                        {classroom_test.max_attempts} {if classroom_test.max_attempts != 1, do: gettext("attempts"), else: gettext("attempt")}
                       </span>
                     <% end %>
 
@@ -459,38 +459,38 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       ]}>
                         <.icon name="hero-calendar" class="w-3 h-3 mr-1" />
                         <%= if is_overdue do %>
-                          Overdue
+                          {gettext("Overdue")}
                         <% else %>
-                          Due {Calendar.strftime(classroom_test.due_date, "%b %d")}
+                          {gettext("Due")} {Calendar.strftime(classroom_test.due_date, "%b %d")}
                         <% end %>
                       </span>
                     <% end %>
                   </div>
                 </div>
 
-                <div class="ml-4">
+                <div class="sm:ml-4 self-start sm:self-auto">
                   <% attempt = get_attempt_for_test(@user_attempts, classroom_test.test_id) %>
                   <%= case get_test_status(@classroom.id, @current_user.id, classroom_test.test_id, attempt) do %>
                     <% :not_started -> %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
-                        class="btn btn-primary"
+                        class="btn btn-primary btn-sm sm:btn-md"
                       >
-                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> Start Test
+                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start Test")}
                       </.link>
                     <% :in_progress -> %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
-                        class="btn btn-warning"
+                        class="btn btn-warning btn-sm sm:btn-md"
                       >
-                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> Continue
+                        <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
                       </.link>
                     <% :completed -> %>
                       <span class="badge badge-success">
-                        Completed {attempt.score}/{attempt.max_score}
+                        {gettext("Completed")} {attempt.score}/{attempt.max_score}
                       </span>
                     <% :timed_out -> %>
-                      <span class="badge badge-error">Timed Out</span>
+                      <span class="badge badge-error">{gettext("Timed Out")}</span>
                   <% end %>
                 </div>
               </div>
@@ -555,7 +555,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
       phx-click="change_tab"
       phx-value-tab={@tab}
       class={[
-        "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+        "px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
         @active && "border-primary text-primary",
         !@active && "border-transparent text-secondary hover:text-base-content hover:border-base-300"
       ]}

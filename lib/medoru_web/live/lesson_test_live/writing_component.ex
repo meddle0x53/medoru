@@ -39,12 +39,13 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
         </p>
       </div>
 
-      <%!-- Writing Canvas Container (SVG created by KanjiWriter) --%>
+      <%!-- Writing Canvas Container --%>
       <div class="flex justify-center">
         <div
           id={"writing-canvas-container-#{@step.id}"}
-          class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container"
-          style="width: 300px; height: 300px;"
+          class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container relative"
+          style="width: min(300px, 80vw); height: min(300px, 80vw); max-width: 300px; max-height: 300px;"
+          phx-update="ignore"
         >
         </div>
       </div>

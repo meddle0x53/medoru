@@ -45,7 +45,9 @@ const KanjiWriting = {
       drawnStrokes: [],
       expectedStrokes: expectedStrokes,
       ctx: null,
-      canvas: null
+      canvas: null,
+      showingHint: false,
+      showingGrid: false
     }
 
     // Parse SVG path - handles KanjiVG format with bezier curves
@@ -177,12 +179,12 @@ const KanjiWriting = {
       }
     }
 
-    // Analyze expected strokes
+    // Analyze expected strokes - store both analyzed data AND original path
     this._state.analyzedExpected = expectedStrokes.map(s => {
       const points = parsePath(s.path)
       const analyzed = analyzeStroke(points)
       if (!analyzed) return null
-      return { ...analyzed, index: s.index }
+      return { ...analyzed, index: s.index, originalPath: s.path, originalPoints: points }
     })
 
     const validExpectedCount = this._state.analyzedExpected.filter(s => s !== null).length
@@ -197,7 +199,10 @@ const KanjiWriting = {
 
     // Detect viewBox size
     const viewBoxSize = (expectedStrokes[0] && expectedStrokes[0].path && expectedStrokes[0].path.includes('109')) ? 109 : 100
+    // Kanji draws slightly to the left and up from center
     this._state.scale = 300 / viewBoxSize
+    this._state.offsetX = -15  // Shift 15px left
+    this._state.offsetY = -15  // Shift 15px up
 
     // Create canvas
     const canvas = document.createElement('canvas')
@@ -210,19 +215,27 @@ const KanjiWriting = {
     const ctx = canvas.getContext('2d')
     this._state.ctx = ctx
 
-    // Draw grid
+    // Clear canvas (no grid)
+    const clearCanvas = () => {
+      ctx.clearRect(0, 0, 300, 300)
+    }
+
+    // Draw grid lines (center cross and diagonals)
     const drawGrid = () => {
       ctx.strokeStyle = '#e5e7eb'
       ctx.lineWidth = 1
       ctx.beginPath()
+      // Horizontal center
       ctx.moveTo(0, 150); ctx.lineTo(300, 150)
+      // Vertical center
       ctx.moveTo(150, 0); ctx.lineTo(150, 300)
+      // Diagonals
       ctx.moveTo(0, 0); ctx.lineTo(300, 300)
       ctx.moveTo(300, 0); ctx.lineTo(0, 300)
       ctx.stroke()
     }
 
-    drawGrid()
+    clearCanvas()
 
     const getPoint = (e) => {
       const rect = canvas.getBoundingClientRect()
@@ -234,8 +247,8 @@ const KanjiWriting = {
 
     const toKanjiVGCoords = (canvasX, canvasY) => {
       return {
-        x: canvasX / this._state.scale,
-        y: canvasY / this._state.scale
+        x: (canvasX - this._state.offsetX) / this._state.scale,
+        y: (canvasY - this._state.offsetY) / this._state.scale
       }
     }
 
@@ -316,10 +329,76 @@ const KanjiWriting = {
       return { valid: true }
     }
 
+    // Snap user's stroke to exactly match the expected (yellow) stroke
+    this.snapStrokeToExpected = (userPoints, expected) => {
+      if (!expected || !expected.originalPoints || expected.originalPoints.length < 2) {
+        return userPoints
+      }
+      
+      const scale = this._state.scale
+      const expectedPoints = expected.originalPoints
+      
+      // Map each user point to the corresponding point on the expected stroke
+      // This makes the green stroke exactly overlay the yellow hint
+      const snapped = userPoints.map((p, i) => {
+        // Find the corresponding index in expected points
+        const ratio = userPoints.length > 1 ? i / (userPoints.length - 1) : 0
+        const expectedIndex = Math.min(Math.floor(ratio * expectedPoints.length), expectedPoints.length - 1)
+        const expPoint = expectedPoints[expectedIndex]
+        
+        // Return the exact expected position (scaled to canvas with offset)
+        return {
+          x: expPoint.x * scale + this._state.offsetX,
+          y: expPoint.y * scale + this._state.offsetY
+        }
+      })
+      
+      return snapped
+    }
+
+    // Draw yellow hint stroke
+    const drawHintStroke = () => {
+      if (!this._state.showingHint) return
+      if (this._state.currentStroke >= this._state.analyzedExpected.length) return
+      
+      const expected = this._state.analyzedExpected[this._state.currentStroke]
+      if (!expected || !expected.originalPoints) return
+
+      // Draw the actual expected stroke path in yellow
+      ctx.save()
+      ctx.strokeStyle = '#fbbf24'  // amber-400
+      ctx.lineWidth = 5
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.globalAlpha = 0.7
+      
+      const points = expected.originalPoints
+      const scale = this._state.scale
+      const offsetX = this._state.offsetX
+      const offsetY = this._state.offsetY
+      
+      ctx.beginPath()
+      ctx.moveTo(points[0].x * scale + offsetX, points[0].y * scale + offsetY)
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x * scale + offsetX, points[i].y * scale + offsetY)
+      }
+      ctx.stroke()
+      
+      ctx.restore()
+    }
+
     // Redraw all strokes
     const redrawStrokes = () => {
       ctx.clearRect(0, 0, 300, 300)
-      drawGrid()
+      clearCanvas()
+      
+      // Draw grid if showing (hint button toggles this)
+      if (this._state.showingGrid) {
+        drawGrid()
+      }
+      
+      // Draw yellow hint if showing
+      drawHintStroke()
 
       ctx.strokeStyle = '#22c55e'
       ctx.lineWidth = 4
@@ -372,7 +451,14 @@ const KanjiWriting = {
         const validation = validateStroke(this._state.points, this._state.currentStroke)
 
         if (validation.valid) {
-          this._state.drawnStrokes.push([...this._state.points])
+          // CORRECT STROKE - snap to expected and save
+          this._state.showingHint = false
+          
+          // Get expected stroke for snapping
+          const expected = this._state.analyzedExpected[this._state.currentStroke]
+          const snappedPoints = this.snapStrokeToExpected(this._state.points, expected)
+          
+          this._state.drawnStrokes.push(snappedPoints)
           this._state.currentStroke++
           redrawStrokes()
 
@@ -380,6 +466,10 @@ const KanjiWriting = {
             setTimeout(() => this.pushEvent('kanji_complete', {}), 300)
           }
         } else {
+          // WRONG STROKE - show hint
+          this._state.showingHint = true
+          
+          // Show wrong stroke in red temporarily
           ctx.strokeStyle = '#ef4444'
           ctx.beginPath()
           ctx.moveTo(this._state.points[0].x, this._state.points[0].y)
@@ -388,6 +478,7 @@ const KanjiWriting = {
           }
           ctx.stroke()
 
+          // Redraw with hint after short delay
           setTimeout(() => redrawStrokes(), 300)
         }
 
@@ -405,6 +496,8 @@ const KanjiWriting = {
     this._handlers.clear = () => {
       this._state.currentStroke = 0
       this._state.drawnStrokes = []
+      this._state.showingHint = false
+      this._state.showingGrid = false
       redrawStrokes()
     }
     if (this._clearBtn) {
@@ -420,6 +513,16 @@ const KanjiWriting = {
     }
     if (this._submitBtn) {
       this._submitBtn.addEventListener('click', this._handlers.submit)
+    }
+
+    // Hint button - toggles grid lines
+    this._hintBtn = this.el.querySelector('[data-action="hint"]')
+    this._handlers.hint = () => {
+      this._state.showingGrid = !this._state.showingGrid
+      redrawStrokes()
+    }
+    if (this._hintBtn) {
+      this._hintBtn.addEventListener('click', this._handlers.hint)
     }
 
     console.log('Setup complete')
@@ -439,6 +542,9 @@ const KanjiWriting = {
     }
     if (this._submitBtn && this._handlers && this._handlers.submit) {
       this._submitBtn.removeEventListener('click', this._handlers.submit)
+    }
+    if (this._hintBtn && this._handlers && this._handlers.hint) {
+      this._hintBtn.removeEventListener('click', this._handlers.hint)
     }
 
     // Clear state

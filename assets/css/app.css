@@ -175,3 +175,17 @@
 .stroke-animator input[type="range"]::-moz-range-thumb:hover {
   transform: scale(1.1);
 }
+
+/* Kanji Writing Canvas Styles */
+.writing-canvas-container {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.writing-canvas-container canvas {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  display: block;
+}

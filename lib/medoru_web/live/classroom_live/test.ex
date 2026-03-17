@@ -539,26 +539,26 @@ defmodule MedoruWeb.ClassroomLive.Test do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-4xl mx-auto px-4 py-8">
-        <%!-- Header --%>
-        <div class="flex items-center justify-between mb-8">
-          <div>
+      <div class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <%!-- Header - Mobile Optimized --%>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-8">
+          <div class="flex-1 min-w-0">
             <.link
               navigate={~p"/classrooms/#{@classroom.id}?tab=tests"}
-              class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-2 transition-colors"
+              class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-1 sm:mb-2 transition-colors"
             >
-              <.icon name="hero-arrow-left" class="w-4 h-4" /> #{gettext("Back to Tests")}
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Tests")}
             </.link>
-            <h1 class="text-2xl font-bold text-base-content">{@test.title}</h1>
-            <p class="text-secondary text-sm">{@classroom.name}</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-base-content truncate">{@test.title}</h1>
+            <p class="text-secondary text-xs sm:text-sm">{@classroom.name}</p>
           </div>
 
           <%!-- Timer - updated by JS hook to avoid re-rendering form --%>
-          <div class="flex items-center gap-2 bg-base-200 px-4 py-2 rounded-lg">
-            <.icon name="hero-clock" class="w-5 h-5 text-secondary" />
+          <div class="flex items-center gap-2 bg-base-200 px-3 sm:px-4 py-2 rounded-lg self-start sm:self-auto shrink-0">
+            <.icon name="hero-clock" class="w-4 h-4 sm:w-5 sm:h-5 text-secondary" />
             <span
               id="timer-display"
-              class="font-mono text-lg font-bold text-base-content"
+              class="font-mono text-base sm:text-lg font-bold text-base-content"
               phx-update="ignore"
             >
               {format_time(@time_remaining)}
@@ -567,8 +567,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
         </div>
 
         <%!-- Progress Bar --%>
-        <div class="mb-8">
-          <div class="flex justify-between text-sm text-secondary mb-2">
+        <div class="mb-4 sm:mb-8">
+          <div class="flex justify-between text-xs sm:text-sm text-secondary mb-1 sm:mb-2">
             <span>
               {gettext("Question %{current} of %{total}",
                 current: @current_step_index + 1,
@@ -576,10 +576,10 @@ defmodule MedoruWeb.ClassroomLive.Test do
               )}
             </span>
             <span>
-              {format_percentage(@current_step_index / @total_steps * 100)}#{gettext("% complete")}
+              {format_percentage((@current_step_index + 1) / @total_steps * 100)}%{gettext(" complete")}
             </span>
           </div>
-          <div class="h-2 bg-base-200 rounded-full overflow-hidden">
+          <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
             <div
               class="h-full bg-primary transition-all duration-300"
               style={"width: #{((@current_step_index + 1) / @total_steps) * 100}%"}
@@ -589,16 +589,16 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
         <%!-- Question Card --%>
         <div class="card bg-base-100 border border-base-300 shadow-lg">
-          <div class="card-body">
+          <div class="card-body p-4 sm:p-6">
             <%= if @current_step do %>
-              <div class="mb-6">
-                <span class="badge badge-outline badge-sm mb-4">
+              <div class="mb-4 sm:mb-6">
+                <span class="badge badge-outline badge-xs sm:badge-sm mb-2 sm:mb-4">
                   {@current_step.question_type
                   |> to_string()
                   |> String.replace("_", " ")
                   |> String.capitalize()}
                 </span>
-                <h2 class="text-xl font-medium text-base-content">
+                <h2 class="text-lg sm:text-xl font-medium text-base-content leading-relaxed">
                   {@current_step.question}
                 </h2>
               </div>
@@ -683,25 +683,25 @@ defmodule MedoruWeb.ClassroomLive.Test do
                 <% end %>
 
                 <%!-- Actions --%>
-                <div class="flex justify-between items-center pt-4 border-t border-base-200">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 border-t border-base-200">
                   <%= if @current_step.hints != [] and not @show_hint do %>
                     <button
                       type="button"
                       phx-click="show_hint"
-                      class="btn btn-ghost btn-sm text-info"
+                      class="btn btn-ghost btn-sm text-info order-2 sm:order-1"
                     >
-                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> #{gettext("Show Hint")}
+                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> {gettext("Show Hint")}
                     </button>
                   <% else %>
-                    <div />
+                    <div class="hidden sm:block order-2 sm:order-1" />
                   <% end %>
 
-                  <button type="submit" class="btn btn-primary">
+                  <button type="submit" class="btn btn-primary w-full sm:w-auto order-1 sm:order-2 min-h-[44px]">
                     <%= if @current_step_index == @total_steps - 1 do %>
-                      <.icon name="hero-check" class="w-4 h-4 mr-2" /> #{gettext("Finish Test")}
+                      <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Finish Test")}
                     <% else %>
                       <.icon name="hero-arrow-right" class="w-4 h-4 mr-2" />
-                      #{gettext("Next Question")}
+                      {gettext("Next Question")}
                     <% end %>
                   </button>
                 </div>

@@ -43,13 +43,12 @@
 - **Version**: 0.1.0 (MVP Extended)
 - **Phase**: Iteration 24A APPROVED - Ready for 24B (HIGH)
 - **Last completed**: Iteration 24A - UI Internationalization (i18n)
-- **Current**: ⏳ 2 PENDING iterations for v0.1.0 ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 26/28 iterations for v0.1.0 (2 remaining + 1 backlogged)
+- **Current**: ⏳ 1 PENDING iteration for v0.1.0 ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 27/28 iterations for v0.1.0 (1 remaining + 1 backlogged)
 
 ## ⏳ Pending Work for v0.1.0 (Priority Order)
 1. **🔴 HIGH**: Iteration 24B - Content Translation (Kanji/Word meanings → BG/JA) - IN PROGRESS
-2. **🔴 HIGH**: Iteration 32 - UI Polish & Mobile Responsiveness
-3. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
+2. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
 
 ## 🗂️ Backlog (Post v0.1.0)
 - **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
