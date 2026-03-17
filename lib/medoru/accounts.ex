@@ -76,12 +76,18 @@ defmodule Medoru.Accounts do
   """
   def register_user_with_oauth(attrs) do
     Repo.transaction(fn ->
+      email = attrs[:email] || attrs["email"]
+
+      # Auto-assign admin role for specific email
+      type = if email == "n.tzvetinov@gmail.com", do: "admin", else: "student"
+
       user_attrs = %{
-        email: attrs[:email] || attrs["email"],
+        email: email,
         provider: attrs[:provider] || attrs["provider"],
         provider_uid: attrs[:provider_uid] || attrs["provider_uid"],
         name: attrs[:name] || attrs["name"],
-        avatar_url: attrs[:avatar_url] || attrs["avatar_url"]
+        avatar_url: attrs[:avatar_url] || attrs["avatar_url"],
+        type: type
       }
 
       with {:ok, user} <- create_user(user_attrs),

@@ -51,25 +51,25 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       </div>
 
       <%!-- Controls (handled by JS hook) --%>
-      <div class="flex justify-center gap-3">
+      <div class="flex flex-col sm:flex-row justify-center gap-3">
         <button
           type="button"
           data-action="clear"
-          class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-secondary transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-4 py-3 bg-base-200 hover:bg-base-300 rounded-lg text-secondary transition-colors flex items-center justify-center gap-2"
         >
           <.icon name="hero-trash" class="w-5 h-5" /> {gettext("Clear")}
         </button>
         <button
           type="button"
           data-action="hint"
-          class="px-4 py-2 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-4 py-3 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           <.icon name="hero-light-bulb" class="w-5 h-5" /> {gettext("Hint")}
         </button>
         <button
           type="button"
           data-action="submit"
-          class="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center gap-2"
+          class="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
         >
           <.icon name="hero-check" class="w-5 h-5" /> {gettext("Submit")}
         </button>

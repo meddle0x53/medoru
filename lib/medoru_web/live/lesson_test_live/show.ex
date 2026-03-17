@@ -251,11 +251,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
   @impl true
   def handle_event("clear_feedback", _params, socket) do
-    {:noreply,
-     socket
-     |> assign(:feedback, nil)
-     |> assign(:meaning_error, false)
-     |> assign(:reading_error, false)}
+    {:noreply, clear_feedback(socket)}
   end
 
   @impl true
@@ -367,6 +363,15 @@ defmodule MedoruWeb.LessonTestLive.Show do
      |> assign(:preview_kanji, nil)}
   end
 
+  defp clear_feedback(socket) do
+    socket
+    |> assign(:feedback, nil)
+    |> assign(:meaning_error, false)
+    |> assign(:reading_error, false)
+    |> assign(:correct_meaning, nil)
+    |> assign(:correct_reading, nil)
+  end
+
   defp handle_submit_result(submit_result, step, socket) do
     case submit_result do
       {:correct, result} ->
@@ -422,9 +427,13 @@ defmodule MedoruWeb.LessonTestLive.Show do
       <div class="max-w-3xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <div class="flex items-center gap-2 text-sm text-secondary mb-2">
-            <.link navigate={~p"/lessons/#{@lesson.id}"} class="hover:text-primary transition-colors">
-              ← {gettext("Back to Lesson")}
+          <div class="mb-4">
+            <.link
+              navigate={~p"/lessons/#{@lesson.id}"}
+              class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 border-2 border-base-300 bg-base-100 hover:bg-base-200 text-base-content rounded-xl font-medium transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-5 h-5" />
+              {gettext("Back to Lesson")}
             </.link>
           </div>
           <h1 class="text-2xl font-bold text-base-content">{@lesson.title} - Test</h1>
@@ -551,22 +560,22 @@ defmodule MedoruWeb.LessonTestLive.Show do
             <% end %>
 
             <%!-- Actions --%>
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-col sm:flex-row gap-3">
               <%= if @current_step.question_type == :multichoice do %>
                 <button
                   type="button"
                   phx-click="submit_answer"
                   disabled={is_nil(@selected_answer)}
-                  class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}
                 </button>
 
-                <%= if !@show_hint do %>
+                <%= if @current_step.question_type == :writing and !@show_hint do %>
                   <button
                     type="button"
                     phx-click="show_hint"
-                    class="px-4 py-3 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center gap-2"
+                    class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                   >
                     <.icon name="hero-light-bulb" class="w-5 h-5" />
                     <span>{gettext("Hint")}</span>
@@ -576,7 +585,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                 <button
                   type="button"
                   phx-click="skip_question"
-                  class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
                 >
                   {gettext("Skip →")}
                 </button>
@@ -587,16 +596,16 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   type="button"
                   phx-click="submit_reading_text"
                   disabled={@meaning_answer == "" or @reading_answer == ""}
-                  class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}
                 </button>
 
-                <%= if !@show_hint do %>
+                <%= if @current_step.question_type == :writing and !@show_hint do %>
                   <button
                     type="button"
                     phx-click="show_hint"
-                    class="px-4 py-3 bg-info/20 hover:bg-info/30 text-info rounded-lg transition-colors flex items-center gap-2"
+                    class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[48px]"
                   >
                     <.icon name="hero-light-bulb" class="w-5 h-5" />
                     <span>{gettext("Hint")}</span>
@@ -606,7 +615,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                 <button
                   type="button"
                   phx-click="skip_question"
-                  class="px-4 py-3 text-secondary hover:text-primary transition-colors ml-auto"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
                 >
                   {gettext("Skip →")}
                 </button>
@@ -645,6 +654,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
             <div
               class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-success text-success-content px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-2"
               phx-click="clear_feedback"
+              phx-hook="AutoDismiss"
+              id="feedback-toast-correct"
             >
               <.icon name="hero-check-circle" class="w-5 h-5" />
               <span class="font-medium">{gettext("Correct! Well done.")}</span>
@@ -653,6 +664,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
             <div
               class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-error text-error-content px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-2"
               phx-click="clear_feedback"
+              phx-hook="AutoDismiss"
+              id="feedback-toast-incorrect"
             >
               <.icon name="hero-x-circle" class="w-5 h-5" />
               <span class="font-medium">{gettext("Not quite. Try again later!")}</span>

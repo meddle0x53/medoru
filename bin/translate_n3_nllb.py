@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Translate all N3 words using Facebook NLLB-200-3.3B
-High quality, resumable, saves progress every 500 words
+Translate all N3 words using Facebook NLLB-200-1.3B
+Good quality, resumable, saves progress every 500 words
 """
 
 import json
@@ -37,87 +37,10 @@ def get_remaining_words():
     print(f"   Found {len(words)} words to translate")
     return words
 
-def translate_batch(model, tokenizer, device, words, batch_size=32):
-    """Translate a batch of words"""
-    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-    import torch
-    
-    results = []
-    total = len(words)
-    
-    for i in range(0, total, batch_size):
-        batch = words[i:i+batch_size]
-        texts = [w["meaning"] for w in batch]
-        
-        # Tokenize
-        inputs = tokenizer(
-            texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=512,
-            src_lang="eng_Latn"
-        )
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-        
-        # Translate
-        with torch.no_grad():
-            tokens = model.generate(
-                **inputs,
-                forced_bos_token_id=tokenizer.lang_code_to_id["bul_Cyrl"]
-            )
-        
-        # Decode
-        translations = tokenizer.batch_decode(tokens, skip_special_tokens=True)
-        
-        # Store
-        for word, trans in zip(batch, translations):
-            results.append({
-                "id": word["id"],
-                "text": word["text"],
-                "en": word["meaning"],
-                "bg": trans
-            })
-        
-        # Progress
-        progress = min(i + batch_size, total)
-        if progress % 100 == 0 or progress == total:
-            print(f"   Translated: {progress}/{total} ({progress/total*100:.1f}%)")
-    
-    return results
-
-def import_to_db(translations, batch_size=100):
-    """Import translations to database"""
-    print("📥 Importing to database...")
-    
-    total = len(translations)
-    for i in range(0, total, batch_size):
-        batch = translations[i:i+batch_size]
-        
-        sql_parts = []
-        for t in batch:
-            bg = t["bg"].replace("'", "''").replace("\\", "\\\\")
-            sql_parts.append(
-                f"UPDATE words SET translations = COALESCE(translations, '{{}}') || '{{\"bg\": {{\"meaning\": \"{bg}\"}}}}'::jsonb WHERE id = '{t['id']}'::uuid;"
-            )
-        
-        sql = "\n".join(sql_parts)
-        subprocess.run(
-            ["psql", "-d", "medoru_dev", "-c", sql],
-            capture_output=True
-        )
-        
-        progress = min(i + batch_size, total)
-        if progress % 500 == 0 or progress == total:
-            print(f"   Imported: {progress}/{total}")
-
 def main():
     print("=" * 70)
-    print("🌐 N3 Translation with NLLB-200-3.3B")
+    print("🌐 N3 Translation with NLLB-200-1.3B (5GB)")
     print("=" * 70)
-    print()
-    print("This will translate ALL remaining N3 words.")
-    print("Estimated time: 6-8 hours for 135K words")
     print()
     
     # Dependencies
@@ -132,44 +55,33 @@ def main():
         import torch
         import psutil
     
-    # RAM check
+    # Check RAM
     ram_gb = psutil.virtual_memory().total / (1024**3)
-    print(f"💾 RAM: {ram_gb:.1f}GB")
-    if ram_gb < 14:
-        print()
-        print("⚠️  WARNING: NLLB-3.3B needs ~12-16GB RAM")
-        print("   You have {:.1f}GB which may be insufficient".format(ram_gb))
-        print()
-        print("Options:")
-        print("  1. Use NLLB-200-1.3B (5GB, good quality)")
-        print("     Edit this script: change model_name to 'facebook/nllb-200-1.3B'")
-        print()
-        print("  2. Close other applications and try anyway")
-        print()
-        confirm = input("Continue? (yes/no): ")
-        if confirm.lower() != "yes":
-            return
+    print(f"💾 RAM: {ram_gb:.1f}GB ✓")
+    print()
     
     # Load model
-    print()
-    print("📦 Loading Facebook NLLB-200-3.3B...")
-    print("   (Downloads ~13GB on first run)")
+    print("📦 Loading Facebook NLLB-200-1.3B...")
+    print("   (Downloads ~5GB on first run, ~10 min)")
+    print("   Loading into memory (takes 2-3 min)...")
     print()
     
-    model_name = "facebook/nllb-200-3.3B"
+    model_name = "facebook/nllb-200-1.3B"
     
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     except Exception as e:
         print(f"❌ Error loading model: {e}")
-        print("   Try: pip install transformers==4.35.0 sentencepiece")
         return
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     model = model.to(device)
     print(f"✅ Model loaded on {device}")
     print()
+    
+    # Bulgarian token ID
+    bulgarian_id = 256033  # bul_Cyrl
     
     # Get words
     words = get_remaining_words()
@@ -179,7 +91,7 @@ def main():
     
     print()
     
-    # Progress file
+    # Progress tracking
     progress_file = Path("data/export/n3_nllb_progress.json")
     start_idx = 0
     
@@ -191,6 +103,7 @@ def main():
     
     # Translate in chunks
     chunk_size = 500
+    batch_size = 32
     total = len(words)
     start_time = datetime.now()
     
@@ -198,11 +111,33 @@ def main():
         chunk = words[i:i+chunk_size]
         print(f"\n🔄 Chunk {i//chunk_size + 1}/{(total+chunk_size-1)//chunk_size} ({len(chunk)} words)")
         
-        # Translate
-        translations = translate_batch(model, tokenizer, device, chunk, batch_size=32)
+        # Translate this chunk
+        translations = []
+        for j in range(0, len(chunk), batch_size):
+            batch = chunk[j:j+batch_size]
+            texts = [w["meaning"] for w in batch]
+            
+            inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=512, src_lang="eng_Latn")
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            with torch.no_grad():
+                tokens = model.generate(**inputs, forced_bos_token_id=bulgarian_id, max_length=128)
+            
+            batch_trans = tokenizer.batch_decode(tokens, skip_special_tokens=True)
+            
+            for word, trans in zip(batch, batch_trans):
+                translations.append({"id": word["id"], "bg": trans})
+            
+            progress = min(j + batch_size, len(chunk))
+            if progress % 100 == 0 or progress == len(chunk):
+                print(f"   Progress: {progress}/{len(chunk)}")
         
-        # Import
-        import_to_db(translations)
+        # Import to DB
+        print("   Importing to database...")
+        for t in translations:
+            bg = t["bg"].replace("'", "''").replace("\\", "\\\\")
+            sql = f"UPDATE words SET translations = COALESCE(translations, '{{}}') || '{{\"bg\": {{\"meaning\": \"{bg}\"}}}}'::jsonb WHERE id = '{t['id']}'::uuid;"
+            subprocess.run(["psql", "-d", "medoru_dev", "-c", sql], capture_output=True)
         
         # Save progress
         if progress_file.exists():
@@ -216,11 +151,13 @@ def main():
         
         # Stats
         elapsed = (datetime.now() - start_time).total_seconds()
-        rate = (i + len(chunk)) / elapsed * 60 if elapsed > 0 else 0
-        remaining = (total - i - len(chunk)) / rate * 60 if rate > 0 else 0
+        done = i + len(chunk)
+        rate = done / elapsed * 3600 if elapsed > 0 else 0  # words per hour
+        remaining_hours = (total - done) / rate if rate > 0 else 0
         
-        print(f"   Rate: {rate:.0f} words/min")
-        print(f"   ETA: {remaining/60:.1f} hours remaining")
+        print(f"   Completed: {done}/{total} ({done/total*100:.1f}%)")
+        print(f"   Rate: {rate:.0f} words/hour")
+        print(f"   ETA: {remaining_hours:.1f} hours")
     
     # Cleanup
     if progress_file.exists():

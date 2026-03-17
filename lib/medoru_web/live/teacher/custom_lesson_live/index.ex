@@ -86,20 +86,20 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
     <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-base-content">{gettext("My Custom Lessons")}</h1>
-            <p class="text-secondary mt-1">
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{gettext("My Custom Lessons")}</h1>
+            <p class="text-secondary mt-1 text-sm sm:text-base">
               {gettext("Create and manage reading lessons for your classrooms")}
             </p>
           </div>
-          <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary">
+          <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary w-full sm:w-auto">
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Lesson")}
           </.link>
         </div>
 
         <%!-- Filters --%>
-        <div class="flex gap-2 mb-6">
+        <div class="flex flex-wrap gap-2 mb-6">
           <button
             phx-click="filter"
             phx-value-status="all"
@@ -147,11 +147,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
         <% else %>
           <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <%= for lesson <- @lessons do %>
-              <div class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow">
-                <div class="card-body">
+              <div class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow flex flex-col h-full">
+                <div class="card-body flex flex-col flex-1">
                   <%!-- Header with status badge --%>
-                  <div class="flex items-start justify-between mb-2">
-                    <h3 class="card-title text-lg text-base-content line-clamp-1">{lesson.title}</h3>
+                  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                    <h3 class="card-title text-base sm:text-lg text-base-content line-clamp-1">{lesson.title}</h3>
                     <%= case lesson.status do %>
                       <% "draft" -> %>
                         <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
@@ -181,33 +181,32 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                   </div>
 
                   <%!-- Actions --%>
-                  <div class="card-actions justify-end">
+                  <div class="card-actions justify-start sm:justify-end mt-auto pt-2">
                     <%= if lesson.status != "archived" do %>
                       <.link
                         navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"}
-                        class="btn btn-ghost btn-sm"
+                        class="btn btn-ghost btn-sm flex-1 sm:flex-none"
                       >
-                        <.icon name="hero-pencil" class="w-4 h-4" />
+                        <.icon name="hero-pencil" class="w-4 h-4 sm:mr-1" />
+                        <span class="hidden sm:inline">{gettext("Edit")}</span>
                       </.link>
                       <%= if lesson.status == "published" do %>
                         <.link
                           navigate={~p"/teacher/custom-lessons/#{lesson.id}/publish"}
-                          class="btn btn-ghost btn-sm"
+                          class="btn btn-ghost btn-sm flex-1 sm:flex-none"
                         >
-                          <.icon name="hero-share" class="w-4 h-4" />
+                          <.icon name="hero-share" class="w-4 h-4 sm:mr-1" />
+                          <span class="hidden sm:inline">{gettext("Share")}</span>
                         </.link>
                       <% end %>
                       <button
                         phx-click="archive"
                         phx-value-id={lesson.id}
-                        data-confirm={
-                          gettext(
-                            "Archive this lesson? It will no longer be available for new students."
-                          )
-                        }
-                        class="btn btn-ghost btn-sm text-error"
+                        data-confirm={gettext("Archive this lesson? It will no longer be available for new students.")}
+                        class="btn btn-ghost btn-sm text-error flex-1 sm:flex-none"
                       >
-                        <.icon name="hero-archive-box" class="w-4 h-4" />
+                        <.icon name="hero-archive-box" class="w-4 h-4 sm:mr-1" />
+                        <span class="hidden sm:inline">{gettext("Archive")}</span>
                       </button>
                     <% else %>
                       <span class="text-sm text-secondary">{gettext("Archived")}</span>

@@ -5,9 +5,13 @@
         <div class="w-16 h-16 sm:w-24 sm:h-24 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
           <.icon name="hero-check-circle" class="w-8 h-8 sm:w-12 sm:h-12 text-success" />
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold text-base-content mb-2">{gettext("Daily Review Complete!")} 🎉</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
+          {gettext("Daily Review Complete!")} 🎉
+        </h1>
         <p class="text-secondary mb-4 sm:mb-6 text-sm sm:text-base">
-          {gettext("You've already completed your daily review today. Great job keeping up with your studies!")}
+          {gettext(
+            "You've already completed your daily review today. Great job keeping up with your studies!"
+          )}
         </p>
         <div class="flex gap-3 sm:gap-4 justify-center">
           <.link
@@ -22,12 +26,17 @@
       <%!-- Header --%>
       <div class="mb-4 sm:mb-8">
         <div class="flex items-center gap-2 text-xs sm:text-sm text-secondary mb-1 sm:mb-2">
-          <.link navigate={~p"/dashboard"} class="hover:text-primary transition-colors flex items-center gap-1">
+          <.link
+            navigate={~p"/dashboard"}
+            class="hover:text-primary transition-colors flex items-center gap-1"
+          >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Dashboard")}
           </.link>
         </div>
         <h1 class="text-xl sm:text-2xl font-bold text-base-content">{gettext("Daily Review")}</h1>
-        <p class="text-secondary mt-1 text-sm sm:text-base">{gettext("Keep your streak going with today's review")}</p>
+        <p class="text-secondary mt-1 text-sm sm:text-base">
+          {gettext("Keep your streak going with today's review")}
+        </p>
       </div>
 
       <%= if @current_step do %>
@@ -73,22 +82,22 @@
             />
 
             <%!-- Actions for Reading Text --%>
-            <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
+            <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
               <%= if @feedback != :incorrect do %>
                 <button
                   type="button"
                   phx-click="submit_reading_text"
                   disabled={@meaning_answer == "" or @reading_answer == ""}
-                  class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] order-1"
+                  class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
                 >
                   {gettext("Submit Answer")}
                 </button>
 
-                <%= if !@show_hint do %>
+                <%= if @current_step.question_type == :writing and !@show_hint do %>
                   <button
                     type="button"
                     phx-click="show_hint"
-                    class="px-3 sm:px-4 py-2.5 sm:py-3 text-secondary hover:text-primary transition-colors min-h-[44px] order-3 sm:order-2"
+                    class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors min-h-[48px] order-3 sm:order-2"
                   >
                     <div class="flex items-center justify-center gap-2">
                       <.icon name="hero-light-bulb" class="w-5 h-5" />
@@ -100,14 +109,14 @@
                 <button
                   type="button"
                   phx-click="skip_question"
-                  class="px-3 sm:px-4 py-2.5 sm:py-3 text-secondary hover:text-primary transition-colors sm:ml-auto min-h-[44px] order-2 sm:order-3"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
                 >
                   {gettext("Skip →")}
                 </button>
               <% else %>
                 <button
                   type="button"
-                  phx-click="skip_question"
+                  phx-click="continue_after_correction"
                   class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
                 >
                   {gettext("Continue →")}
@@ -131,7 +140,10 @@
                 </p>
               <% else %>
                 <p class="text-center text-secondary text-sm sm:text-base">
-                  {gettext("Meaning:")} {@current_step.question_data["word_meaning"]}
+                  {gettext("Meaning:")} {localize_question_data_meaning(
+                    @current_step.question_data,
+                    @locale
+                  )}
                 </p>
               <% end %>
             </div>
@@ -149,6 +161,10 @@
             <%!-- Answer Options --%>
             <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
               <%= for option <- @current_step.options do %>
+                <% display_option =
+                  if @current_step.question_data["type"] == "word_to_meaning",
+                    do: localize_option(option, @locale),
+                    else: option %>
                 <button
                   type="button"
                   phx-click="select_answer"
@@ -175,28 +191,30 @@
                         <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
                       <% end %>
                     </div>
-                    <span class="text-base-content font-medium text-sm sm:text-base">{option}</span>
+                    <span class="text-base-content font-medium text-sm sm:text-base">
+                      {display_option}
+                    </span>
                   </div>
                 </button>
               <% end %>
             </div>
 
             <%!-- Actions --%>
-            <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+            <div class="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 phx-click="submit_answer"
                 disabled={is_nil(@selected_answer)}
-                class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] order-1"
+                class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
               >
                 {gettext("Submit Answer")}
               </button>
 
-              <%= if !@show_hint do %>
+              <%= if @current_step.question_type == :writing and !@show_hint do %>
                 <button
                   type="button"
                   phx-click="show_hint"
-                  class="px-3 sm:px-4 py-2.5 sm:py-3 text-secondary hover:text-primary transition-colors min-h-[44px] order-3 sm:order-2"
+                  class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors min-h-[48px] order-3 sm:order-2"
                 >
                   <div class="flex items-center justify-center gap-2">
                     <.icon name="hero-light-bulb" class="w-5 h-5" />
@@ -208,7 +226,7 @@
               <button
                 type="button"
                 phx-click="skip_question"
-                class="px-3 sm:px-4 py-2.5 sm:py-3 text-secondary hover:text-primary transition-colors sm:ml-auto min-h-[44px] order-2 sm:order-3"
+                class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
               >
                 {gettext("Skip →")}
               </button>
@@ -218,8 +236,13 @@
       <% else %>
         <%!-- Empty/Complete State --%>
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 sm:p-8 text-center">
-          <.icon name="hero-check-circle" class="w-12 h-12 sm:w-16 sm:h-16 text-success mx-auto mb-3 sm:mb-4" />
-          <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-2">{gettext("Test Complete!")}</h2>
+          <.icon
+            name="hero-check-circle"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-success mx-auto mb-3 sm:mb-4"
+          />
+          <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
+            {gettext("Test Complete!")}
+          </h2>
           <p class="text-secondary mb-4 sm:mb-6 text-sm sm:text-base">
             {gettext("You've completed all questions in today's daily review.")}
           </p>
@@ -238,6 +261,8 @@
           <div
             class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 bg-success text-success-content px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg flex items-center gap-2 sm:gap-3 animate-in slide-in-from-bottom-2 z-50 max-w-[calc(100vw-2rem)]"
             phx-click="clear_feedback"
+            phx-hook="AutoDismiss"
+            id="feedback-toast-correct"
           >
             <.icon name="hero-check-circle" class="w-5 h-5 shrink-0" />
             <span class="font-medium text-sm sm:text-base">{gettext("Correct! Well done.")}</span>
@@ -246,9 +271,13 @@
           <div
             class="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 bg-error text-error-content px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl shadow-lg flex items-center gap-2 sm:gap-3 animate-in slide-in-from-bottom-2 z-50 max-w-[calc(100vw-2rem)]"
             phx-click="clear_feedback"
+            phx-hook="AutoDismiss"
+            id="feedback-toast-incorrect"
           >
             <.icon name="hero-x-circle" class="w-5 h-5 shrink-0" />
-            <span class="font-medium text-sm sm:text-base">{gettext("Not quite. Keep going!")}</span>
+            <span class="font-medium text-sm sm:text-base">
+              {gettext("Not quite. Keep going!")}
+            </span>
           </div>
         <% _ -> %>
       <% end %>

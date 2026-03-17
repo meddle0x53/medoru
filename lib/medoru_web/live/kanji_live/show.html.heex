@@ -94,6 +94,25 @@
       </div>
     </div>
 
+    <%!-- Mark as Learned Button --%>
+    <%= if @current_scope && @current_scope.current_user do %>
+      <div class="mb-8">
+        <%= if @kanji_learned do %>
+          <div class="flex items-center justify-center gap-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-6 py-4 rounded-xl font-medium w-full">
+            <.icon name="hero-check-circle" class="w-5 h-5" /> {gettext("Learned")}
+          </div>
+        <% else %>
+          <button
+            phx-click="mark_kanji_learned"
+            class="w-full bg-primary hover:bg-primary/90 text-primary-content px-6 py-4 rounded-xl font-medium
+                   transition-all shadow-sm hover:shadow active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <.icon name="hero-check" class="w-5 h-5" /> {gettext("Mark as Learned")}
+          </button>
+        <% end %>
+      </div>
+    <% end %>
+
     <%!-- Writing Practice Section (if stroke data available) --%>
     <%= if @has_stroke_data do %>
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 mb-8">
@@ -334,50 +353,75 @@
 
         <%!-- Pagination --%>
         <%= if @words_data.total_pages > 1 do %>
-          <div class="mt-6 flex items-center justify-center gap-2">
+          <div class="mt-6 flex items-center justify-center gap-1 sm:gap-2">
+            <%!-- First Page --%>
+            <%= if @page > 1 do %>
+              <.link
+                patch={~p"/kanji/#{@kanji.id}?page=1"}
+                class="px-2 sm:px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all text-sm"
+                title={gettext("First page")}
+              >
+                <.icon name="hero-chevron-double-left" class="w-4 h-4" />
+                <span class="hidden sm:inline ml-1">{gettext("First")}</span>
+              </.link>
+            <% else %>
+              <span class="px-2 sm:px-3 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed text-sm">
+                <.icon name="hero-chevron-double-left" class="w-4 h-4" />
+                <span class="hidden sm:inline ml-1">{gettext("First")}</span>
+              </span>
+            <% end %>
+
             <%!-- Previous Page --%>
             <%= if @page > 1 do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page - 1}"}
-                class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
+                class="px-2 sm:px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all text-sm"
               >
-                ← {gettext("Previous")}
+                <.icon name="hero-chevron-left" class="w-4 h-4 sm:mr-1" />
+                <span class="hidden sm:inline">{gettext("Previous")}</span>
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
-                ← {gettext("Previous")}
+              <span class="px-2 sm:px-3 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed text-sm">
+                <.icon name="hero-chevron-left" class="w-4 h-4 sm:mr-1" />
+                <span class="hidden sm:inline">{gettext("Previous")}</span>
               </span>
             <% end %>
 
-            <%!-- Page Numbers --%>
-            <div class="flex items-center gap-1">
-              <%= for page_num <- 1..@words_data.total_pages do %>
-                <%= if page_num == @page do %>
-                  <span class="px-4 py-2 rounded-lg bg-primary text-primary-content font-medium shadow-sm">
-                    {page_num}
-                  </span>
-                <% else %>
-                  <.link
-                    patch={~p"/kanji/#{@kanji.id}?page=#{page_num}"}
-                    class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
-                  >
-                    {page_num}
-                  </.link>
-                <% end %>
-              <% end %>
-            </div>
+            <%!-- Page Info --%>
+            <span class="px-3 sm:px-4 py-2 rounded-lg bg-primary/10 text-primary font-medium text-sm min-w-[80px] text-center">
+              {@page} / {@words_data.total_pages}
+            </span>
 
             <%!-- Next Page --%>
             <%= if @page < @words_data.total_pages do %>
               <.link
                 patch={~p"/kanji/#{@kanji.id}?page=#{@page + 1}"}
-                class="px-4 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all"
+                class="px-2 sm:px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all text-sm"
               >
-                {gettext("Next")} →
+                <span class="hidden sm:inline">{gettext("Next")}</span>
+                <.icon name="hero-chevron-right" class="w-4 h-4 sm:ml-1" />
               </.link>
             <% else %>
-              <span class="px-4 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed">
-                {gettext("Next")} →
+              <span class="px-2 sm:px-3 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed text-sm">
+                <span class="hidden sm:inline">{gettext("Next")}</span>
+                <.icon name="hero-chevron-right" class="w-4 h-4 sm:ml-1" />
+              </span>
+            <% end %>
+
+            <%!-- Last Page --%>
+            <%= if @page < @words_data.total_pages do %>
+              <.link
+                patch={~p"/kanji/#{@kanji.id}?page=#{@words_data.total_pages}"}
+                class="px-2 sm:px-3 py-2 rounded-lg bg-base-100 border border-base-300 text-secondary hover:bg-base-200 hover:border-primary/30 transition-all text-sm"
+                title={gettext("Last page")}
+              >
+                <span class="hidden sm:inline mr-1">{gettext("Last")}</span>
+                <.icon name="hero-chevron-double-right" class="w-4 h-4" />
+              </.link>
+            <% else %>
+              <span class="px-2 sm:px-3 py-2 rounded-lg bg-base-200/50 text-secondary/40 cursor-not-allowed text-sm">
+                <span class="hidden sm:inline mr-1">{gettext("Last")}</span>
+                <.icon name="hero-chevron-double-right" class="w-4 h-4" />
               </span>
             <% end %>
           </div>
@@ -389,30 +433,14 @@
       <% end %>
     </div>
 
-    <%!-- Navigation & Actions --%>
-    <div class="mt-8 flex justify-between items-center">
+    <%!-- Navigation --%>
+    <div class="mt-8">
       <.link
         navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
-        class="text-secondary hover:text-primary font-medium transition-colors"
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
       >
-        ← {gettext("Back to list")}
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}
       </.link>
-
-      <%= if @current_scope && @current_scope.current_user do %>
-        <%= if @kanji_learned do %>
-          <div class="flex items-center gap-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-6 py-3 rounded-xl font-medium">
-            <.icon name="hero-check-circle" class="w-5 h-5" /> {gettext("Learned")}
-          </div>
-        <% else %>
-          <button
-            phx-click="mark_kanji_learned"
-            class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
-                   transition-all shadow-sm hover:shadow active:scale-[0.98]"
-          >
-            <.icon name="hero-check" class="w-5 h-5 mr-1 inline" /> {gettext("Mark as Learned")}
-          </button>
-        <% end %>
-      <% end %>
     </div>
   </div>
 </Layouts.app>

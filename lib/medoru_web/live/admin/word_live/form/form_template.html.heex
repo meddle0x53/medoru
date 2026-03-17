@@ -256,5 +256,79 @@
         </.form>
       </div>
     </div>
+
+    <%!-- Kanji Readings Section (Edit only) - Outside main form --%>
+    <%= if @live_action == :edit and @word_kanjis_with_readings != [] do %>
+      <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+        <div class="card-body">
+          <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <.icon name="hero-language" class="w-5 h-5" />
+            {gettext("Kanji Readings Used")}
+          </h3>
+
+          <div class="space-y-4">
+            <%= for {word_kanji, readings} <- @word_kanjis_with_readings do %>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="text-3xl font-medium text-primary">
+                    {word_kanji.kanji.character}
+                  </span>
+                  <span class="text-sm text-secondary">
+                    {gettext("Position")} #{word_kanji.position + 1}
+                  </span>
+                </div>
+
+                <.form
+                  for={%{}}
+                  phx-change="update_word_kanji_reading"
+                  class="flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+                >
+                  <input type="hidden" name="word_kanji_id" value={word_kanji.id} />
+
+                  <div class="flex-1 w-full">
+                    <label class="label">
+                      <span class="label-text">{gettext("Reading used in this word")}</span>
+                    </label>
+                    <select
+                      name="reading_id"
+                      class="select select-bordered w-full"
+                    >
+                      <option value="" selected={is_nil(word_kanji.kanji_reading_id)}>
+                        {gettext("-- Select a reading --")}
+                      </option>
+                      <%= for reading <- readings do %>
+                        <option
+                          value={reading.id}
+                          selected={word_kanji.kanji_reading_id == reading.id}
+                        >
+                          {String.upcase(to_string(reading.reading_type))}: {reading.reading} ({reading.romaji})
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
+
+                  <button type="submit" class="btn btn-sm btn-primary">
+                    <.icon name="hero-check" class="w-4 h-4" />
+                    <span class="hidden sm:inline">{gettext("Update")}</span>
+                  </button>
+                </.form>
+
+                <%= if word_kanji.kanji_reading do %>
+                  <div class="mt-2 text-sm text-success flex items-center gap-2">
+                    <.icon name="hero-check-circle" class="w-4 h-4" />
+                    {gettext("Currently using")}: <strong>{word_kanji.kanji_reading.reading}</strong>
+                  </div>
+                <% else %>
+                  <div class="mt-2 text-sm text-warning flex items-center gap-2">
+                    <.icon name="hero-exclamation-triangle" class="w-4 h-4" />
+                    {gettext("No specific reading set")}
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </Layouts.app>

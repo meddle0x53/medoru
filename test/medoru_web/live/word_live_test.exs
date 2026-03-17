@@ -94,23 +94,6 @@ defmodule MedoruWeb.WordLiveTest do
       assert html =~ "Common word"
     end
 
-    test "shows add to study list button for authenticated user", %{
-      conn: conn,
-      word: word,
-      user: user
-    } do
-      conn = log_in_user(conn, user)
-      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
-
-      assert html =~ "Add to Study List"
-    end
-
-    test "does not show study list button for anonymous user", %{conn: conn, word: word} do
-      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
-
-      refute html =~ "Add to Study List"
-    end
-
     test "404 for non-existent word", %{conn: conn} do
       assert_raise Ecto.NoResultsError, fn ->
         live(conn, ~p"/words/#{Ecto.UUID.generate()}")

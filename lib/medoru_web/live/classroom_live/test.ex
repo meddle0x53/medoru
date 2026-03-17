@@ -576,7 +576,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
               )}
             </span>
             <span>
-              {format_percentage((@current_step_index + 1) / @total_steps * 100)}%{gettext(" complete")}
+              {format_percentage((@current_step_index + 1) / @total_steps * 100)}%{gettext(
+                " complete"
+              )}
             </span>
           </div>
           <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
@@ -683,26 +685,32 @@ defmodule MedoruWeb.ClassroomLive.Test do
                 <% end %>
 
                 <%!-- Actions --%>
-                <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4 pt-4 border-t border-base-200">
-                  <%= if @current_step.hints != [] and not @show_hint do %>
-                    <button
-                      type="button"
-                      phx-click="show_hint"
-                      class="btn btn-ghost btn-sm text-info order-2 sm:order-1"
-                    >
-                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> {gettext("Show Hint")}
-                    </button>
-                  <% else %>
-                    <div class="hidden sm:block order-2 sm:order-1" />
-                  <% end %>
-
-                  <button type="submit" class="btn btn-primary w-full sm:w-auto order-1 sm:order-2 min-h-[44px]">
+                <div class="flex flex-col sm:flex-row justify-between items-stretch gap-3 pt-4 border-t border-base-200">
+                  <button type="submit" class="w-full sm:w-auto btn btn-primary order-1 min-h-[48px]">
                     <%= if @current_step_index == @total_steps - 1 do %>
                       <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Finish Test")}
                     <% else %>
                       <.icon name="hero-arrow-right" class="w-4 h-4 mr-2" />
                       {gettext("Next Question")}
                     <% end %>
+                  </button>
+
+                  <%= if @current_step.question_type == :writing and @current_step.hints != [] and not @show_hint do %>
+                    <button
+                      type="button"
+                      phx-click="show_hint"
+                      class="w-full sm:w-auto btn btn-ghost btn-sm text-info order-3 sm:order-2"
+                    >
+                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> {gettext("Show Hint")}
+                    </button>
+                  <% end %>
+
+                  <button
+                    type="button"
+                    phx-click="skip_question"
+                    class="w-full sm:w-auto sm:ml-auto btn btn-outline order-2 sm:order-3 min-h-[48px]"
+                  >
+                    {gettext("Skip →")}
                   </button>
                 </div>
               </form>

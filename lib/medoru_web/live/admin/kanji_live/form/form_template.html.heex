@@ -126,7 +126,9 @@
                   type="text"
                   name="kanji[translations][bg][meanings]"
                   id="kanji_translations_bg_meanings"
-                  value={format_meanings(get_in(@form[:translations].value || %{}, ["bg", "meanings"]))}
+                  value={
+                    format_meanings(get_in(@form[:translations].value || %{}, ["bg", "meanings"]))
+                  }
                   placeholder={gettext("Bulgarian meanings, comma-separated")}
                 />
               </div>
@@ -142,7 +144,9 @@
                   type="text"
                   name="kanji[translations][ja][meanings]"
                   id="kanji_translations_ja_meanings"
-                  value={format_meanings(get_in(@form[:translations].value || %{}, ["ja", "meanings"]))}
+                  value={
+                    format_meanings(get_in(@form[:translations].value || %{}, ["ja", "meanings"]))
+                  }
                   placeholder={gettext("Japanese meanings, comma-separated")}
                 />
               </div>

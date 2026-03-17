@@ -62,7 +62,8 @@ defmodule MedoruWeb.DailyTestLive do
            |> assign(:meaning_error, false)
            |> assign(:reading_error, false)
            |> assign(:correct_meaning, nil)
-           |> assign(:correct_reading, nil)}
+           |> assign(:correct_reading, nil)
+           |> assign(:next_step, nil)}
         end
 
       {:error, :no_items_available} ->
@@ -110,6 +111,7 @@ defmodule MedoruWeb.DailyTestLive do
             |> assign(:reading_error, false)
             |> assign(:correct_meaning, nil)
             |> assign(:correct_reading, nil)
+            |> assign(:next_step, nil)
 
           {:noreply, socket}
 
@@ -190,11 +192,14 @@ defmodule MedoruWeb.DailyTestLive do
         end
 
       if word do
+        locale = socket.assigns.locale
+
         {:ok, validation} =
           Medoru.Tests.ReadingAnswerValidator.validate_answer(
             word,
             meaning,
-            reading
+            reading,
+            locale
           )
 
         # Record the answer
@@ -285,7 +290,7 @@ defmodule MedoruWeb.DailyTestLive do
 
   @impl true
   def handle_event("clear_feedback", _params, socket) do
-    {:noreply, assign(socket, :feedback, nil)}
+    {:noreply, clear_feedback(socket)}
   end
 
   @impl true
@@ -294,8 +299,53 @@ defmodule MedoruWeb.DailyTestLive do
   end
 
   @impl true
+  def handle_event("continue_after_correction", _params, socket) do
+    session = socket.assigns.session
+    next_step = socket.assigns.next_step
+
+    if next_step do
+      {:ok, updated_session} =
+        Tests.progress_session(
+          session,
+          session.current_step_index + 1,
+          session.time_spent_seconds + 15
+        )
+
+      socket =
+        socket
+        |> assign(:session, updated_session)
+        |> assign(:current_step, next_step)
+        |> assign(:session_state, calculate_session_state(updated_session))
+        |> assign(:selected_answer, nil)
+        |> assign(:meaning_answer, "")
+        |> assign(:reading_answer, "")
+        |> assign(:show_hint, false)
+        |> assign(:feedback, nil)
+        |> assign(:meaning_error, false)
+        |> assign(:reading_error, false)
+        |> assign(:correct_meaning, nil)
+        |> assign(:correct_reading, nil)
+        |> assign(:next_step, nil)
+
+      {:noreply, socket}
+    else
+      # Complete test
+      complete_test(socket)
+    end
+  end
+
+  @impl true
   def handle_event("start_new_test", _params, socket) do
     {:noreply, push_navigate(socket, to: ~p"/daily-test")}
+  end
+
+  defp clear_feedback(socket) do
+    socket
+    |> assign(:feedback, nil)
+    |> assign(:meaning_error, false)
+    |> assign(:reading_error, false)
+    |> assign(:correct_meaning, nil)
+    |> assign(:correct_reading, nil)
   end
 
   # Private functions
@@ -344,38 +394,19 @@ defmodule MedoruWeb.DailyTestLive do
 
   defp handle_incorrect_reading_text(socket, step, validation, word) do
     session = socket.assigns.session
-
-    # Still advance to next step (daily test doesn't have adaptive retry)
     next_step = get_next_step(session, step)
 
-    if next_step do
-      {:ok, updated_session} =
-        Tests.progress_session(
-          session,
-          session.current_step_index + 1,
-          session.time_spent_seconds + 15
-        )
+    # Don't advance immediately - show correction first
+    socket =
+      socket
+      |> assign(:feedback, :incorrect)
+      |> assign(:meaning_error, !validation.meaning_correct)
+      |> assign(:reading_error, !validation.reading_correct)
+      |> assign(:correct_meaning, Content.get_localized_meaning(word, socket.assigns.locale))
+      |> assign(:correct_reading, word.reading)
+      |> assign(:next_step, next_step)
 
-      socket =
-        socket
-        |> assign(:session, updated_session)
-        |> assign(:current_step, next_step)
-        |> assign(:session_state, calculate_session_state(updated_session))
-        |> assign(:selected_answer, nil)
-        |> assign(:meaning_answer, "")
-        |> assign(:reading_answer, "")
-        |> assign(:show_hint, false)
-        |> assign(:feedback, :incorrect)
-        |> assign(:meaning_error, !validation.meaning_correct)
-        |> assign(:reading_error, !validation.reading_correct)
-        |> assign(:correct_meaning, Content.get_localized_meaning(word, socket.assigns.locale))
-        |> assign(:correct_reading, word.reading)
-
-      {:noreply, socket}
-    else
-      # Complete test even with incorrect last answer
-      complete_test(socket)
-    end
+    {:noreply, socket}
   end
 
   defp handle_incorrect_answer(socket, step) do
@@ -556,5 +587,31 @@ defmodule MedoruWeb.DailyTestLive do
       _ ->
         explanation
     end
+  end
+
+  # Helper to get localized meaning for a word (used in template for multichoice options)
+  def localize_option(option_text, locale) when locale in ["bg", "ja"] do
+    # Try to find the word by its English meaning and get localized version
+    # This is a best-effort approach for display purposes
+    case Content.get_word_by_meaning(option_text) do
+      nil -> option_text
+      word -> Content.get_localized_meaning(word, locale)
+    end
+  end
+
+  def localize_option(option_text, _locale), do: option_text
+
+  # Helper to get localized meaning from question_data
+  def localize_question_data_meaning(question_data, locale) when locale in ["bg", "ja"] do
+    word_meaning = question_data["word_meaning"]
+
+    case Content.get_word_by_meaning(word_meaning) do
+      nil -> word_meaning
+      word -> Content.get_localized_meaning(word, locale)
+    end
+  end
+
+  def localize_question_data_meaning(question_data, _locale) do
+    question_data["word_meaning"]
   end
 end

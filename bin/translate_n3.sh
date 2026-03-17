@@ -11,15 +11,15 @@ psql -d medoru_dev -t -c "SELECT COUNT(*) FROM words WHERE difficulty = 3 AND tr
 echo ""
 echo "Translation Options:"
 echo ""
-echo "  1) Test NLLB-200-3.3B (100 words)"
-echo "     • Best quality, ~13GB download"
-echo "     • Tests on 100 random words first"
+echo "  1) Test NLLB-200-1.3B (10 words)"
+echo "     • Good quality, ~5GB download"
+echo "     • Tests on 10 words first"
 echo "     • Takes ~10 minutes"
 echo ""
-echo "  2) Run NLLB-200-3.3B Full Translation"
-echo "     • Best quality for all 135K words"
-echo "     • Requires 16GB+ RAM"
-echo "     • Takes 6-8 hours"
+echo "  2) Run NLLB-200-1.3B Full Translation"
+echo "     • Good quality for all 135K words"
+echo "     • Requires 8GB+ RAM"
+echo "     • Takes 3-4 hours"
 echo "     • Resumable if interrupted"
 echo ""
 echo "  3) Check Status"
@@ -33,7 +33,7 @@ read -p "Enter choice (1-4): " choice
 
 case $choice in
   1)
-    python3 bin/test_nllb_100.py
+    python3 bin/test_nllb_1.3b.py
     ;;
   2)
     python3 bin/translate_n3_nllb.py

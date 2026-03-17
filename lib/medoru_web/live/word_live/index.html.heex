@@ -93,9 +93,6 @@
                  text-base-content appearance-none cursor-pointer
                  focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         >
-          <option value="sort_score" selected={@sort_by == :sort_score}>
-            📚 {gettext("Learning Order (Optimal)")} {sort_indicator(assigns, :sort_score)}
-          </option>
           <option value="usage_frequency" selected={@sort_by == :usage_frequency}>
             📈 {gettext("Most Common First")} {sort_indicator(assigns, :usage_frequency)}
           </option>

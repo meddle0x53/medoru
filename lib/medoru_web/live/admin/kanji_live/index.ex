@@ -104,6 +104,10 @@ defmodule MedoruWeb.Admin.KanjiLive.Index do
     level = Keyword.get(opts, :level)
     search = Keyword.get(opts, :search)
 
+    # Handle empty string as nil
+    level = if is_binary(level) and level != "", do: String.to_integer(level), else: level
+    level = if level in [nil, ""], do: nil, else: level
+
     query = Kanji
 
     # Apply level filter

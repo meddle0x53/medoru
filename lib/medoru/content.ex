@@ -345,65 +345,85 @@ defmodule Medoru.Content do
     if String.trim(query) == "" do
       []
     else
+      query_lower = String.downcase(query)
       search_term = "%#{query}%"
 
-      # Fetch a larger pool to ensure exact matches are included
-      # We need enough results to find exact matches that might be
-      # further down alphabetically but should rank higher
-      fetch_limit = max(limit * 5, 100)
-
-      words =
+      # First, get exact matches on text or reading (highest priority)
+      # This ensures exact matches are never cut off by the limit
+      exact_matches =
         Word
         |> where(
           [w],
-          ilike(w.text, ^search_term) or
-            ilike(w.reading, ^search_term) or
-            ilike(w.meaning, ^search_term)
+          w.text == ^query or w.reading == ^query
         )
-        |> limit(^fetch_limit)
         |> Repo.all()
 
-      # Sort in memory for better ranking
-      query_lower = String.downcase(query)
+      # Then get partial matches, excluding exact matches to avoid duplicates
+      exact_ids = Enum.map(exact_matches, & &1.id)
+      partial_limit = max(limit * 5, 100)
+
+      partial_matches =
+        if length(exact_matches) >= limit do
+          # If we have enough exact matches, don't need partials
+          []
+        else
+          Word
+          |> where(
+            [w],
+            w.id not in ^exact_ids and
+              (ilike(w.text, ^search_term) or
+                 ilike(w.reading, ^search_term) or
+                 ilike(w.meaning, ^search_term))
+          )
+          |> limit(^partial_limit)
+          |> Repo.all()
+        end
+
+      # Combine and sort
+      words = exact_matches ++ partial_matches
 
       Enum.sort_by(words, fn word ->
         meaning_lower = String.downcase(word.meaning || "")
         text_lower = String.downcase(word.text || "")
         reading_lower = String.downcase(word.reading || "")
 
-        # Check for exact matches in meaning, text, or reading
-        exact_meaning = meaning_lower == query_lower
+        # Check for exact matches in text or reading (highest priority)
         exact_text = text_lower == query_lower
         exact_reading = reading_lower == query_lower
+        exact_meaning = meaning_lower == query_lower
 
         # Check for "starts with" matches
-        starts_meaning = String.starts_with?(meaning_lower, query_lower)
         starts_text = String.starts_with?(text_lower, query_lower)
         starts_reading = String.starts_with?(reading_lower, query_lower)
+        starts_meaning = String.starts_with?(meaning_lower, query_lower)
 
-        # Priority:
-        # 0: Exact match on meaning/text/reading (highest priority)
-        # 1: Starts with on meaning/text/reading
-        # 2: Contains match
+        # Priority (lower number = higher priority):
+        # 0: Exact match on text (e.g., "一" for query "一")
+        # 1: Exact match on reading (e.g., "いち" for query "いち")
+        # 2: Exact match on meaning
+        # 3: Starts with on text/reading
+        # 4: Starts with on meaning
+        # 5: Contains match
         priority =
           cond do
-            exact_meaning or exact_text or exact_reading -> 0
-            starts_meaning or starts_text or starts_reading -> 1
-            true -> 2
+            exact_text -> 0
+            exact_reading -> 1
+            exact_meaning -> 2
+            starts_text or starts_reading -> 3
+            starts_meaning -> 4
+            true -> 5
           end
 
-        # For tie-breaking, prefer exact word matches over phrases
-        # Count words in the meaning (rough approximation)
-        word_count =
-          meaning_lower
-          |> String.split(~r/\s+/)
-          |> length()
+        # For tie-breaking within exact matches:
+        # - Shorter text is better (exact match "一" beats "一日")
+        # - Higher usage frequency is better
+        text_len = String.length(word.text || "")
 
         # Within same priority:
-        # - Fewer words is better ("one" beats "one person")
+        # - Shorter text length (for exact matches)
         # - Higher usage frequency is better
         # - Lower sort_score is better
-        {priority, word_count, -(word.usage_frequency || 0), word.sort_score || 999_999}
+        {priority, text_len, -(word.usage_frequency || 0), word.sort_score || 999_999}
       end)
       |> Enum.take(limit)
     end
@@ -459,12 +479,12 @@ defmodule Medoru.Content do
     * `:per_page` - Items per page (default: 30)
     * `:search` - Search term for text, reading, or meaning (default: nil)
     * `:difficulty` - Filter by JLPT level 1-5 (default: nil)
-    * `:sort_by` - Sort field: `:text`, `:reading`, `:meaning`, `:difficulty`, `:word_type`, `:inserted_at`, `:usage_frequency`, `:sort_score` (default: :sort_score)
+    * `:sort_by` - Sort field: `:text`, `:reading`, `:meaning`, `:difficulty`, `:word_type`, `:inserted_at`, `:usage_frequency` (default: :usage_frequency)
     * `:sort_order` - Sort order: `:asc` or `:desc` (default: :asc)
 
   ## Learning Order (Default)
 
-  By default, words are sorted by sort_score (ascending) which combines frequency
+  By default, words are sorted by usage_frequency (ascending) showing most common words first
   and visual complexity. This shows the most common, simplest words first - optimal
   for learning: single kanji → kanji+kana → 2 kanji → complex patterns.
 
@@ -482,7 +502,7 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     search = Keyword.get(opts, :search)
     difficulty = Keyword.get(opts, :difficulty)
-    sort_by = Keyword.get(opts, :sort_by, :sort_score)
+    sort_by = Keyword.get(opts, :sort_by, :usage_frequency)
     sort_order = Keyword.get(opts, :sort_order, :asc)
 
     # Build base query
@@ -570,17 +590,18 @@ defmodule Medoru.Content do
       |> select([wk], count(wk.id))
       |> Repo.one()
 
-    # Get paginated word_kanjis with preloaded data
+    # Get paginated word_kanjis with preloaded data, ordered by word frequency
     word_kanjis =
       WordKanji
       |> where(kanji_id: ^kanji_id)
-      |> order_by([wk], asc: wk.word_id)
+      |> join(:inner, [wk], w in assoc(wk, :word))
+      |> order_by([wk, w], asc: w.usage_frequency)
       |> limit(^per_page)
       |> offset(^offset)
       |> preload([:word, :kanji_reading])
       |> Repo.all()
 
-    # Group by reading (kanji_reading.reading or "kun"/"on" if no specific reading)
+    # Group by reading (kanji_reading.reading or "misc" if no specific reading)
     grouped =
       word_kanjis
       |> Enum.group_by(fn wk ->
@@ -590,13 +611,10 @@ defmodule Medoru.Content do
         end
       end)
       |> Enum.map(fn {reading, wks} ->
-        # Sort words within each group by frequency
-        sorted_words =
-          wks
-          |> Enum.map(& &1.word)
-          |> Enum.sort_by(& &1.usage_frequency)
+        # Words are already sorted by frequency from the query
+        words = Enum.map(wks, & &1.word)
 
-        {reading, sorted_words}
+        {reading, words}
       end)
       |> Enum.into(%{})
 
@@ -624,6 +642,29 @@ defmodule Medoru.Content do
 
   """
   def get_word!(id), do: Repo.get!(Word, id)
+
+  @doc """
+  Gets a word by its English meaning.
+
+  Returns `nil` if no word is found with that meaning.
+
+  ## Examples
+
+      iex> get_word_by_meaning("to eat")
+      %Word{}
+
+      iex> get_word_by_meaning("nonexistent")
+      nil
+
+  """
+  def get_word_by_meaning(meaning) when is_binary(meaning) do
+    Word
+    |> where([w], w.meaning == ^meaning)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  def get_word_by_meaning(_), do: nil
 
   @doc """
   Gets a single word with its kanji and readings preloaded.
@@ -1801,6 +1842,9 @@ defmodule Medoru.Content do
 
   def get_localized_lesson_title(%Lesson{} = lesson, _), do: lesson.title
 
+  # Custom lessons don't have translations yet, just return the title
+  def get_localized_lesson_title(%Medoru.Content.CustomLesson{} = lesson, _), do: lesson.title
+
   @doc """
   Gets the localized description for a lesson.
 
@@ -1824,6 +1868,9 @@ defmodule Medoru.Content do
   end
 
   def get_localized_lesson_description(%Lesson{} = lesson, _), do: lesson.description
+
+  # Custom lessons don't have translations yet, just return the description
+  def get_localized_lesson_description(%Medoru.Content.CustomLesson{} = lesson, _), do: lesson.description
 
   @doc """
   Checks if a word's meaning matches the query in the given locale.

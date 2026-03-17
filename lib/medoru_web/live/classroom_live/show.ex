@@ -95,7 +95,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div class="flex-1 min-w-0">
-              <h1 class="text-2xl sm:text-3xl font-bold text-base-content truncate">{@classroom.name}</h1>
+              <h1 class="text-2xl sm:text-3xl font-bold text-base-content truncate">
+                {@classroom.name}
+              </h1>
               <p class="text-secondary max-w-2xl mt-1 sm:mt-2 text-sm sm:text-base">
                 {@classroom.description || gettext("No description")}
               </p>
@@ -135,8 +137,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
         <%!-- Tabs - Scrollable on mobile --%>
         <div class="border-b border-base-300 mb-6 overflow-x-auto">
           <div class="flex gap-1 min-w-max">
-            <.tab_button active={@active_tab == "overview"} tab="overview" label={gettext("Overview")} />
-            <.tab_button active={@active_tab == "rankings"} tab="rankings" label={gettext("Rankings")} />
+            <.tab_button
+              active={@active_tab == "overview"}
+              tab="overview"
+              label={gettext("Overview")}
+            />
+            <.tab_button
+              active={@active_tab == "rankings"}
+              tab="rankings"
+              label={gettext("Rankings")}
+            />
             <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
             <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
           </div>
@@ -254,7 +264,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-          <h3 class="card-title text-lg sm:text-xl text-base-content">{gettext("Classroom Rankings")}</h3>
+          <h3 class="card-title text-lg sm:text-xl text-base-content">
+            {gettext("Classroom Rankings")}
+          </h3>
           <.link
             navigate={~p"/classrooms/#{@current_user.id}/rankings"}
             class="btn btn-primary btn-sm w-full sm:w-auto"
@@ -285,18 +297,28 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <.icon name="hero-user" class="w-4 h-4 sm:w-5 sm:h-5 text-secondary" />
                   </div>
                   <div class="min-w-0">
-                    <p class={["text-sm sm:text-base truncate", member.user_id == @current_user.id && "font-medium text-base-content"]}>
+                    <p class={[
+                      "text-sm sm:text-base truncate",
+                      member.user_id == @current_user.id && "font-medium text-base-content"
+                    ]}>
                       {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                       <%= if member.user_id == @current_user.id do %>
-                        <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">{gettext("You")}</span>
+                        <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">
+                          {gettext("You")}
+                        </span>
                       <% end %>
                     </p>
                     <p class="text-xs sm:text-sm text-secondary">
-                      {gettext("Joined")} {Calendar.strftime(member.joined_at || member.inserted_at, "%b %d, %Y")}
+                      {gettext("Joined")} {Calendar.strftime(
+                        member.joined_at || member.inserted_at,
+                        "%b %d, %Y"
+                      )}
                     </p>
                   </div>
                 </div>
-                <span class="font-bold text-base sm:text-lg text-base-content ml-2 shrink-0">{member.points} {gettext("pts")}</span>
+                <span class="font-bold text-base sm:text-lg text-base-content ml-2 shrink-0">
+                  {member.points} {gettext("pts")}
+                </span>
               </div>
             <% end %>
           </div>
@@ -316,10 +338,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
     <div class="space-y-3 sm:space-y-4">
       <%= if @custom_lessons == [] do %>
         <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
-          <.icon name="hero-book-open" class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4" />
-          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">{gettext("No Lessons Available")}</h3>
+          <.icon
+            name="hero-book-open"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4"
+          />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">
+            {gettext("No Lessons Available")}
+          </h3>
           <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
-            {gettext("Your teacher hasn't published any lessons to this classroom yet. Check back later!")}
+            {gettext(
+              "Your teacher hasn't published any lessons to this classroom yet. Check back later!"
+            )}
           </p>
         </div>
       <% else %>
@@ -408,10 +437,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
     <div class="space-y-3 sm:space-y-4">
       <%= if @published_tests == [] do %>
         <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
-          <.icon name="hero-clipboard-document-list" class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4" />
-          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">{gettext("No Tests Available")}</h3>
+          <.icon
+            name="hero-clipboard-document-list"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4"
+          />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">
+            {gettext("No Tests Available")}
+          </h3>
           <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
-            {gettext("Your teacher hasn't published any tests to this classroom yet. Check back later!")}
+            {gettext(
+              "Your teacher hasn't published any tests to this classroom yet. Check back later!"
+            )}
           </p>
         </div>
       <% else %>
@@ -445,7 +481,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <%= if classroom_test.max_attempts do %>
                       <span class="badge badge-outline badge-sm">
                         <.icon name="hero-arrow-path" class="w-3 h-3 mr-1" />
-                        {classroom_test.max_attempts} {if classroom_test.max_attempts != 1, do: gettext("attempts"), else: gettext("attempt")}
+                        {classroom_test.max_attempts} {if classroom_test.max_attempts != 1,
+                          do: gettext("attempts"),
+                          else: gettext("attempt")}
                       </span>
                     <% end %>
 

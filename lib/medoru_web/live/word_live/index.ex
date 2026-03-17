@@ -129,7 +129,7 @@ defmodule MedoruWeb.WordLive.Index do
   defp parse_search(""), do: nil
   defp parse_search(search), do: String.trim(search)
 
-  defp parse_sort_by(nil), do: :sort_score
+  defp parse_sort_by(nil), do: :usage_frequency
 
   defp parse_sort_by(sort_by) when is_binary(sort_by) do
     case sort_by do
@@ -139,13 +139,11 @@ defmodule MedoruWeb.WordLive.Index do
       "difficulty" -> :difficulty
       "word_type" -> :word_type
       "usage_frequency" -> :usage_frequency
-      "sort_score" -> :sort_score
-      "inserted_at" -> :inserted_at
-      _ -> :sort_score
+      _ -> :usage_frequency
     end
   end
 
-  defp parse_sort_by(_), do: :sort_score
+  defp parse_sort_by(_), do: :usage_frequency
 
   defp parse_sort_order(nil), do: :asc
 

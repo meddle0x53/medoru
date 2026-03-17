@@ -131,8 +131,9 @@ defmodule MedoruWeb.Layouts do
               phx-click-away={JS.hide(to: "#mobile-nav-drawer")}
             >
               <%!-- Backdrop --%>
-              <div class="absolute inset-0 bg-black/50" phx-click={JS.hide(to: "#mobile-nav-drawer")}></div>
-              
+              <div class="absolute inset-0 bg-black/50" phx-click={JS.hide(to: "#mobile-nav-drawer")}>
+              </div>
+
               <%!-- Drawer Panel --%>
               <nav class="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-base-100 shadow-2xl flex flex-col">
                 <%!-- Drawer Header --%>
@@ -170,7 +171,9 @@ defmodule MedoruWeb.Layouts do
                             @current_scope.current_user.profile.display_name) ||
                           @current_scope.current_user.name || @current_scope.current_user.email}
                       </p>
-                      <p class="text-xs text-secondary capitalize">{@current_scope.current_user.type}</p>
+                      <p class="text-xs text-secondary capitalize">
+                        {@current_scope.current_user.type}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -180,40 +183,113 @@ defmodule MedoruWeb.Layouts do
                   <div class="px-4 py-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                     {gettext("Learning")}
                   </div>
-                  <.mobile_nav_link path="/dashboard" icon="hero-home" label={gettext("Dashboard")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/lessons" icon="hero-book-open" label={gettext("Lessons")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/kanji" icon="hero-language" label={gettext("Kanji")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/words" icon="hero-document-text" label={gettext("Words")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/daily-test" icon="hero-calendar" label={gettext("Daily Test")} locale={@current_scope[:locale]} />
-                  
+                  <.mobile_nav_link
+                    path="/dashboard"
+                    icon="hero-home"
+                    label={gettext("Dashboard")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/lessons"
+                    icon="hero-book-open"
+                    label={gettext("Lessons")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/kanji"
+                    icon="hero-language"
+                    label={gettext("Kanji")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/words"
+                    icon="hero-document-text"
+                    label={gettext("Words")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/daily-test"
+                    icon="hero-calendar"
+                    label={gettext("Daily Test")}
+                    locale={@current_scope[:locale]}
+                  />
+
                   <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                     {gettext("Social")}
                   </div>
-                  <.mobile_nav_link path="/classrooms" icon="hero-academic-cap" label={gettext("Classrooms")} locale={@current_scope[:locale]} />
+                  <.mobile_nav_link
+                    path="/classrooms"
+                    icon="hero-academic-cap"
+                    label={gettext("Classrooms")}
+                    locale={@current_scope[:locale]}
+                  />
 
                   <%= if @current_scope.current_user.type in ["teacher", "admin"] do %>
                     <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                       {gettext("Teacher")}
                     </div>
-                    <.mobile_nav_link path="/teacher/classrooms" icon="hero-users" label={gettext("My Classrooms")} locale={@current_scope[:locale]} />
-                    <.mobile_nav_link path="/teacher/tests" icon="hero-clipboard-document-list" label={gettext("My Tests")} locale={@current_scope[:locale]} />
-                    <.mobile_nav_link path="/teacher/custom-lessons" icon="hero-book-open" label={gettext("Custom Lessons")} locale={@current_scope[:locale]} />
+                    <.mobile_nav_link
+                      path="/teacher/classrooms"
+                      icon="hero-users"
+                      label={gettext("My Classrooms")}
+                      locale={@current_scope[:locale]}
+                    />
+                    <.mobile_nav_link
+                      path="/teacher/tests"
+                      icon="hero-clipboard-document-list"
+                      label={gettext("My Tests")}
+                      locale={@current_scope[:locale]}
+                    />
+                    <.mobile_nav_link
+                      path="/teacher/custom-lessons"
+                      icon="hero-book-open"
+                      label={gettext("Custom Lessons")}
+                      locale={@current_scope[:locale]}
+                    />
                   <% end %>
 
                   <%= if @current_scope.current_user.type == "admin" do %>
                     <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                       {gettext("Admin")}
                     </div>
-                    <.mobile_nav_link path="/admin" icon="hero-shield-check" label={gettext("Admin Dashboard")} locale={@current_scope[:locale]} class="text-error" />
+                    <.mobile_nav_link
+                      path="/admin"
+                      icon="hero-shield-check"
+                      label={gettext("Admin Dashboard")}
+                      locale={@current_scope[:locale]}
+                      class="text-error"
+                    />
                   <% end %>
                 </div>
 
                 <%!-- Drawer Footer --%>
                 <div class="border-t border-base-300 p-4 space-y-1">
-                  <.mobile_nav_link path="/users/#{@current_scope.current_user.id}" icon="hero-user-circle" label={gettext("My Profile")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/settings/profile" icon="hero-cog-6-tooth" label={gettext("Settings")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/settings/language" icon="hero-language" label={gettext("Language")} locale={@current_scope[:locale]} />
-                  <.mobile_nav_link path="/auth/logout" icon="hero-arrow-right-on-rectangle" label={gettext("Sign out")} locale={@current_scope[:locale]} method="delete" class="text-error" />
+                  <.mobile_nav_link
+                    path="/users/#{@current_scope.current_user.id}"
+                    icon="hero-user-circle"
+                    label={gettext("My Profile")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/settings/profile"
+                    icon="hero-cog-6-tooth"
+                    label={gettext("Settings")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/settings/language"
+                    icon="hero-language"
+                    label={gettext("Language")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/auth/logout"
+                    icon="hero-arrow-right-on-rectangle"
+                    label={gettext("Sign out")}
+                    locale={@current_scope[:locale]}
+                    method="delete"
+                    class="text-error"
+                  />
                 </div>
               </nav>
             </div>
@@ -468,7 +544,11 @@ defmodule MedoruWeb.Layouts do
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} aria-live="polite" class="fixed top-4 right-4 z-50 space-y-4 w-[calc(100vw-2rem)] max-w-md">
+    <div
+      id={@id}
+      aria-live="polite"
+      class="fixed top-4 right-4 z-50 space-y-4 w-[calc(100vw-2rem)] max-w-md"
+    >
       <.flash kind={:info} flash={@flash} />
       <.flash kind={:error} flash={@flash} />
 
@@ -566,7 +646,10 @@ defmodule MedoruWeb.Layouts do
       <.link
         href={@href}
         method="delete"
-        class={["flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-base-200 transition-colors", @class]}
+        class={[
+          "flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-base-200 transition-colors",
+          @class
+        ]}
         phx-click={JS.hide(to: "#mobile-nav-drawer")}
       >
         <.icon name={@icon} class="w-5 h-5 opacity-70" />
@@ -575,7 +658,10 @@ defmodule MedoruWeb.Layouts do
     <% else %>
       <.link
         navigate={@href}
-        class={["flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-base-200 transition-colors", @class]}
+        class={[
+          "flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-base-200 transition-colors",
+          @class
+        ]}
         phx-click={JS.hide(to: "#mobile-nav-drawer")}
       >
         <.icon name={@icon} class="w-5 h-5 opacity-70" />

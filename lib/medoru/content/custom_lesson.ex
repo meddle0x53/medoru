@@ -52,7 +52,7 @@ defmodule Medoru.Content.CustomLesson do
       :creator_id
     ])
     |> validate_required([:title, :lesson_type, :status, :creator_id])
-    |> validate_length(:title, min: 3, max: 100)
+    |> validate_length(:title, min: 1, max: 100)
     |> validate_length(:description, max: 500)
     |> validate_inclusion(:lesson_type, ["reading"])
     |> validate_inclusion(:status, ["draft", "published", "archived"])

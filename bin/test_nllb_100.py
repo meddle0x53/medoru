@@ -31,7 +31,6 @@ def main():
     print("=" * 70)
     print()
     
-    # Install deps if needed
     try:
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
         import torch
@@ -43,22 +42,21 @@ def main():
         import torch
         import psutil
     
-    # Check RAM
     ram_gb = psutil.virtual_memory().total / (1024**3)
     print(f"💾 RAM: {ram_gb:.1f}GB")
-    if ram_gb < 16:
-        print("⚠️  Warning: NLLB-3.3B needs ~12-16GB RAM")
-        print("   Consider using NLLB-200-1.3B instead (~5GB)")
     print()
     
     # Load model
     print("📦 Loading facebook/nllb-200-3.3B...")
-    print("   (Downloads ~13GB on first run, ~30 min)")
-    print()
     
     model_name = "facebook/nllb-200-3.3B"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
@@ -75,13 +73,19 @@ def main():
     translations = []
     batch_size = 10
     
+    # Get Bulgarian token ID
+    bulgarian_token = "bul_Cyrl"
+    
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i+batch_size]
         inputs = tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=512, src_lang="eng_Latn")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         
+        # Use correct token for Bulgarian
+        forced_bos = tokenizer.lang_code_to_id[bulgarian_token] if hasattr(tokenizer, 'lang_code_to_id') else tokenizer.convert_tokens_to_ids(bulgarian_token)
+        
         with torch.no_grad():
-            tokens = model.generate(**inputs, forced_bos_token_id=tokenizer.lang_code_to_id["bul_Cyrl"])
+            tokens = model.generate(**inputs, forced_bos_token_id=forced_bos)
         
         translations.extend(tokenizer.batch_decode(tokens, skip_special_tokens=True))
         print(f"  {min(i+batch_size, len(texts))}/{len(texts)}", end="\r")
@@ -101,8 +105,7 @@ def main():
     
     for w, t in zip(words, translations):
         result = {"en": w["en"], "bg": t}
-        # Check if translation looks reasonable
-        if len(t) < 3 or t == w["en"] or t.startswith("http"):
+        if len(t) < 3 or t == w["en"] or "?" in t:
             questionable.append(result)
         else:
             good.append(result)
@@ -120,7 +123,7 @@ def main():
     if questionable:
         print("Questionable:")
         print("-" * 70)
-        for r in questionable[:3]:
+        for r in questionable[:5]:
             print(f"  {r['en'][:45]:45s} → {r['bg'][:45]}")
     
     print()
@@ -132,8 +135,8 @@ def main():
         print("   Run full translation with:")
         print("   python3 bin/translate_n3_nllb.py")
     elif len(good) >= 70:
-        print("⚠️  Quality is ACCEPTABLE but some may need review")
-        print("   Consider the 1.3B model for faster processing")
+        print("⚠️  Quality is ACCEPTABLE")
+        print("   Consider reviewing some translations")
     else:
         print("❌ Quality is POOR")
         print("   Consider DeepL API for better results")

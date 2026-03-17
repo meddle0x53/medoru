@@ -37,6 +37,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
          |> assign(:word_search_query, "")
          |> assign(:word_search_results, [])
          |> assign(:editing_word_id, nil)
+         |> assign(:editing_custom_meaning, nil)
+         |> assign(:editing_examples, nil)
          |> assign(:publish_modal_open, false)}
       end
     end
@@ -55,7 +57,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def handle_event("word_search", %{"query" => query}, socket) do
     results =
-      if String.length(query) >= 2 do
+      if String.length(query) >= 1 do
         Content.search_words(query, limit: 10)
       else
         []
@@ -124,16 +126,30 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
   @impl true
   def handle_event("edit_word", %{"id" => id}, socket) do
-    {:noreply, assign(socket, :editing_word_id, id)}
+    lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
+    
+    {:noreply,
+     socket
+     |> assign(:editing_word_id, id)
+     |> assign(:editing_custom_meaning, lesson_word.custom_meaning)
+     |> assign(:editing_examples, Enum.join(lesson_word.examples || [], "\n"))}
+  end
+  
+  @impl true
+  def handle_event("update_editing_meaning", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :editing_custom_meaning, value)}
+  end
+  
+  @impl true
+  def handle_event("update_editing_examples", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :editing_examples, value)}
   end
 
   @impl true
-  def handle_event(
-        "save_word",
-        %{"id" => id, "custom_meaning" => meaning, "examples" => examples},
-        socket
-      ) do
+  def handle_event("save_word", %{"id" => id}, socket) do
     lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
+    meaning = socket.assigns.editing_custom_meaning
+    examples = socket.assigns.editing_examples
 
     # Parse examples (split by newline, remove empty)
     examples_list =
@@ -154,7 +170,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
         {:noreply,
          socket
          |> assign(:lesson_words, lesson_words)
-         |> assign(:editing_word_id, nil)}
+         |> assign(:editing_word_id, nil)
+         |> assign(:editing_custom_meaning, nil)
+         |> assign(:editing_examples, nil)}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update word."))}
@@ -191,7 +209,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
+    <Layouts.app flash={%{}} current_scope={@current_scope}>
       <div class="max-w-4xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
@@ -259,10 +277,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               <input
                                 type="text"
                                 id={"meaning-#{lesson_word.id}"}
-                                value={
-                                  lesson_word.custom_meaning ||
-                                    Content.get_localized_meaning(lesson_word.word, @locale)
-                                }
+                                value={@editing_custom_meaning}
+                                phx-change="update_editing_meaning"
                                 class="input input-bordered w-full input-sm"
                                 placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
                               />
@@ -273,10 +289,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               </label>
                               <textarea
                                 id={"examples-#{lesson_word.id}"}
+                                phx-change="update_editing_examples"
                                 class="textarea textarea-bordered w-full textarea-sm"
                                 rows={3}
                                 placeholder={gettext("Add example sentences using this word...")}
-                              >{Enum.join(lesson_word.examples || [], "\n")}</textarea>
+                              >{@editing_examples}</textarea>
                             </div>
                           </div>
                         </div>
@@ -290,8 +307,6 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                           <button
                             phx-click="save_word"
                             phx-value-id={lesson_word.id}
-                            phx-value-custom_meaning={JS.exec("##meaning-#{lesson_word.id}", "value")}
-                            phx-value-examples={JS.exec("##examples-#{lesson_word.id}", "value")}
                             class="btn btn-primary btn-sm"
                           >
                             Save
@@ -375,8 +390,16 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                 <%!-- Results --%>
                 <div class="space-y-2 max-h-96 overflow-y-auto">
                   <%= for word <- @word_search_results do %>
-                    <div class="flex items-center justify-between p-2 hover:bg-base-200 rounded-lg group">
-                      <div class="min-w-0">
+                    <div class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg">
+                      <button
+                        phx-click="add_word"
+                        phx-value-word_id={word.id}
+                        class="btn btn-ghost btn-sm flex-shrink-0"
+                        disabled={length(@lesson_words) >= 50}
+                      >
+                        <.icon name="hero-plus" class="w-4 h-4" />
+                      </button>
+                      <div class="min-w-0 flex-1">
                         <div class="flex items-baseline gap-2">
                           <span class="text-lg font-jp truncate">{word.text}</span>
                           <span class="text-sm text-secondary truncate">{word.reading}</span>
@@ -385,14 +408,6 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                           {Content.get_localized_meaning(word, @locale)}
                         </p>
                       </div>
-                      <button
-                        phx-click="add_word"
-                        phx-value-word_id={word.id}
-                        class="btn btn-ghost btn-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        disabled={length(@lesson_words) >= 50}
-                      >
-                        <.icon name="hero-plus" class="w-4 h-4" />
-                      </button>
                     </div>
                   <% end %>
                 </div>
@@ -409,11 +424,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
               </div>
             </div>
 
-            <%!-- Tips --%>
-            <div class="alert alert-info text-sm">
-              <.icon name="hero-information-circle" class="w-5 h-5" />
-              <span>{gettext("Tip: Drag words to reorder them")}</span>
-            </div>
+
           </div>
         </div>
       </div>

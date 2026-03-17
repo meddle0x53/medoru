@@ -58,29 +58,39 @@ defmodule Medoru.Content.Kanji do
 
   defp parse_field_meanings(attrs, field) do
     case Map.get(attrs, field) do
-      nil -> attrs
+      nil ->
+        attrs
+
       meanings when is_binary(meanings) ->
         parsed =
           meanings
           |> String.split(",")
           |> Enum.map(&String.trim/1)
           |> Enum.reject(&(&1 == ""))
+
         Map.put(attrs, field, parsed)
-      _ -> attrs
+
+      _ ->
+        attrs
     end
   end
 
   defp parse_translation_meanings(attrs, locale) do
     case get_in(attrs, ["translations", locale, "meanings"]) do
-      nil -> attrs
+      nil ->
+        attrs
+
       meanings when is_binary(meanings) ->
         parsed =
           meanings
           |> String.split(",")
           |> Enum.map(&String.trim/1)
           |> Enum.reject(&(&1 == ""))
+
         put_in(attrs, ["translations", locale, "meanings"], parsed)
-      _ -> attrs
+
+      _ ->
+        attrs
     end
   end
 

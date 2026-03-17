@@ -47,16 +47,28 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     |> assign(:page_title, gettext("Add New Word"))
     |> assign(:word, %Word{})
     |> assign(:form, to_form(changeset))
+    |> assign(:word_kanjis_with_readings, [])
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    word = Content.get_word!(id)
+    word = Content.get_word_with_kanji!(id)
     changeset = Content.change_word(word)
+
+    # Load kanji readings for each kanji in the word
+    word_kanjis_with_readings =
+      word.word_kanjis
+      |> Enum.sort_by(& &1.position)
+      |> Enum.map(fn wk ->
+        kanji = wk.kanji
+        readings = Content.list_readings_for_kanji(kanji.id)
+        {wk, readings}
+      end)
 
     socket
     |> assign(:page_title, gettext("Edit Word - %{text}", text: word.text))
     |> assign(:word, word)
     |> assign(:form, to_form(changeset))
+    |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
   end
 
   @impl true
@@ -72,6 +84,45 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   @impl true
   def handle_event("save", %{"word" => word_params}, socket) do
     save_word(socket, socket.assigns.live_action, word_params)
+  end
+
+  @impl true
+  def handle_event(
+        "update_word_kanji_reading",
+        %{"word_kanji_id" => word_kanji_id, "reading_id" => reading_id},
+        socket
+      ) do
+    word_kanji = Content.get_word_kanji!(word_kanji_id)
+
+    # Handle "nil" as actually nil (no reading selected)
+    reading_id = if reading_id == "nil" or reading_id == "", do: nil, else: reading_id
+
+    attrs = %{kanji_reading_id: reading_id}
+
+    case Content.update_word_kanji(word_kanji, attrs) do
+      {:ok, _updated_word_kanji} ->
+        # Reload word with updated word_kanjis
+        word = Content.get_word_with_kanji!(socket.assigns.word.id)
+
+        # Reload kanji readings
+        word_kanjis_with_readings =
+          word.word_kanjis
+          |> Enum.sort_by(& &1.position)
+          |> Enum.map(fn wk ->
+            kanji = wk.kanji
+            readings = Content.list_readings_for_kanji(kanji.id)
+            {wk, readings}
+          end)
+
+        {:noreply,
+         socket
+         |> assign(:word, word)
+         |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
+         |> put_flash(:info, gettext("Reading updated successfully"))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update reading"))}
+    end
   end
 
   defp save_word(socket, :new, word_params) do

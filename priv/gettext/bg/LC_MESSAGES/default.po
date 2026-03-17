@@ -631,7 +631,7 @@ msgstr "Максимум 500 символа"
 #: lib/medoru_web/live/classroom_live/test.ex:637
 #, elixir-autogen, elixir-format
 msgid "Meaning (in English):"
-msgstr "Значение (на английски):"
+msgstr "Значение (на български):"
 
 #: lib/medoru_web/live/classroom_live/index.ex:21
 #: lib/medoru_web/live/classroom_live/index.ex:180
@@ -1294,7 +1294,7 @@ msgstr "Отдели си време и помисли за думата"
 #: lib/medoru_web/live/daily_test_live.ex:529
 #, elixir-autogen, elixir-format
 msgid "Type the English meaning and hiragana reading"
-msgstr "Въведете английското значение и четенето на хирагана"
+msgstr "Въведете българското значение и четенето на хирагана"
 
 #: lib/medoru_web/live/daily_test_live.ex:514
 #: lib/medoru_web/live/lesson_test_live/show.ex:687
@@ -1794,7 +1794,7 @@ msgstr "Подсказка: Започва с \"%{hint}\""
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:82
 #, elixir-autogen, elixir-format
 msgid "Meaning (English):"
-msgstr "Значение (на английски):"
+msgstr "Значение (на български):"
 
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:66
 #, elixir-autogen, elixir-format

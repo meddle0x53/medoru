@@ -123,20 +123,13 @@
     </div>
 
     <%!-- Navigation --%>
-    <div class="mt-8 flex justify-between items-center">
+    <div class="mt-8">
       <.link
         navigate={~p"/words?difficulty=#{@word.difficulty}"}
-        class="text-secondary hover:text-primary font-medium transition-colors"
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
       >
-        ← {gettext("Back to list")}
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}
       </.link>
-
-      <%= if @current_scope && @current_scope.current_user do %>
-        <button class="bg-primary hover:bg-primary/90 text-primary-content px-6 py-3 rounded-xl font-medium
-                 transition-all shadow-sm hover:shadow active:scale-[0.98]">
-          {gettext("Add to Study List")}
-        </button>
-      <% end %>
     </div>
   </div>
 </Layouts.app>

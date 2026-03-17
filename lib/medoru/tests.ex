@@ -995,6 +995,16 @@ defmodule Medoru.Tests do
   """
   def record_step_answer(session_id, step_id, attrs) do
     step = get_test_step(step_id)
+
+    # Normalize attrs to string keys to avoid mixed key types
+    attrs =
+      attrs
+      |> Enum.map(fn
+        {k, v} when is_atom(k) -> {Atom.to_string(k), v}
+        {k, v} -> {k, v}
+      end)
+      |> Enum.into(%{})
+
     step_index = attrs["step_index"]
 
     # Check if an answer already exists for this step
