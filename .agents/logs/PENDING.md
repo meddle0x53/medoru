@@ -2,7 +2,8 @@
 
 **Last Updated**: 2026-03-16  
 **Completed**: 26 iterations  
-**Remaining**: 2 iterations (1 MEDIUM in progress, 1 MEDIUM pending)
+**Remaining**: 2 iterations for v0.1.0 (1 in progress, 1 pending)
+**Backlogged**: 1 iteration (13 - Admin Badge Management)
 
 ---
 
@@ -54,6 +55,22 @@
 ---
 
 ## 🟡 MEDIUM PRIORITY (Content Expansion)
+
+### Iteration 13: Admin Badge Management
+**Status**: ⏳ BACKLOGGED (Post v0.1.0) | **Estimated**: 1-2 days  
+**Note**: Moved to future version backlog - not required for v0.1.0 MVP
+
+**Files to Create**:
+- `lib/medoru_web/live/admin/badge_live/index.ex`
+- `lib/medoru_web/live/admin/badge_live/edit.ex`
+- Update `lib/medoru/gamification.ex` - Add admin functions
+
+**Key Features**:
+- CRUD for badges in admin panel
+- Manual badge award to users
+- Badge statistics view
+
+---
 
 ### Iteration 17: Vocabulary Lesson System ✅ COMPLETED | **APPROVED**
 **Status**: ✅ COMPLETED | **Completed**: 2026-03-09 | **Approved**: 2026-03-09  
@@ -507,15 +524,17 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 
 ## 📊 Summary
 
-**Completed**: 26 iterations
+**Completed**: 26 iterations  
+**Remaining for v0.1.0**: 2 iterations  
+**Backlogged**: 1 iteration (13 - Admin Badge Management)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
 | 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 21 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 ✅ | 16 COMPLETE |
-| 🔴 High | 32 | 1 PENDING |
+| 🔴 High | 32, 33 | 2 PENDING |
 | 🟡 Medium | 17 ✅, 24A ✅, 24B 🚧 | 2 COMPLETE, 1 IN PROGRESS |
-| 🟡 Medium | 13 | 1 PENDING |
-| **Total** | **2** | **3-5 days est.** |
+| 🟡 Medium | 13 | 1 BACKLOGGED (Post v0.1.0) |
+| **Total v0.1.0** | **3** | **7-10 days est.** |
 
 ---
 
@@ -542,14 +561,24 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 1. **Iteration 24B** (Content i18n) 🚧 - Translate N3 words to Bulgarian (0 / 135,847 words)
 
 ### Up Next 🟡
-1. **Iteration 13** (Admin Badge Management) - CRUD for badges
-2. **Iteration 32** (UI Polish & Mobile) - Pre-production cleanup
-3. **Iteration 33** (Deployment) - Production setup
+1. **Iteration 32** (UI Polish & Mobile) - Pre-production cleanup
+2. **Iteration 33** (Deployment) - Production setup
 
 ### Completed ✅
 1. **Iteration 24A** (UI i18n) ✅ - Translate interface to Bulgarian and Japanese
 2. **Iteration 21** (Admin Dashboard) ✅ - Full admin content management
 3. All other previous iterations (14, 15A, 16, 17, 18, 19, 20, 22, 23, 25, 25B, 26, 27, 28, 29, 30, 31)
+
+---
+
+## 🗂️ Backlog (Post v0.1.0)
+
+### Iteration 13: Admin Badge Management
+**Status**: ⏳ BACKLOGGED  
+**Priority**: 🟡 MEDIUM  
+**Planned For**: v0.2.0 or later
+
+**Reason**: Admin can already manage content (kanji, words, lessons) via the dashboard. Badge management is a nice-to-have but not critical for MVP launch.
 
 ---
 

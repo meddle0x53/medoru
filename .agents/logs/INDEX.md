@@ -19,12 +19,12 @@
 | 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
 | 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
-| 13 | Admin Badge Management | ⏳ PLANNED | - |
+| 13 | Admin Badge Management | ⏳ BACKLOGGED | Post v0.1.0 |
 | 15 | Teacher Test Creation | ✅ APPROVED | 2026-03-15 |
 | 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
 | 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
 | 20 | Classroom Tests, Lessons & Rankings | ✅ COMPLETED | 2026-03-11 |
-| 21 | Admin Dashboard | ⏳ PLANNED | - |
+| 21 | Admin Dashboard | ✅ COMPLETED | 2026-03-16 |
 | 24A | i18n UI (Bulgarian/Japanese) | ✅ APPROVED | 2026-03-15 |
 | 24B | i18n Content Translation | ⏳ NOT STARTED | 🔴 HIGH | - |
 | 32 | UI Polish & Mobile Responsiveness | ⏳ NOT STARTED | 🔴 HIGH | - |
@@ -43,15 +43,16 @@
 - **Version**: 0.1.0 (MVP Extended)
 - **Phase**: Iteration 24A APPROVED - Ready for 24B (HIGH)
 - **Last completed**: Iteration 24A - UI Internationalization (i18n)
-- **Current**: ⏳ 4 PENDING iterations for v0.1.0 ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 20/25 iterations for v0.1.0 (5 remaining)
+- **Current**: ⏳ 2 PENDING iterations for v0.1.0 ([see PENDING.md](./PENDING.md))
+- **Overall Progress**: 26/28 iterations for v0.1.0 (2 remaining + 1 backlogged)
 
 ## ⏳ Pending Work for v0.1.0 (Priority Order)
-1. **🔴 HIGH**: Iteration 24B - Content Translation (Kanji/Word meanings → BG/JA)
+1. **🔴 HIGH**: Iteration 24B - Content Translation (Kanji/Word meanings → BG/JA) - IN PROGRESS
 2. **🔴 HIGH**: Iteration 32 - UI Polish & Mobile Responsiveness
 3. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
-4. **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
-5. **🟡 MEDIUM**: Iteration 21 - Admin Dashboard
+
+## 🗂️ Backlog (Post v0.1.0)
+- **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
 
 See [PENDING.md](./PENDING.md) for detailed breakdown.
 
@@ -120,12 +121,10 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Review items + new words mix (up to 5 new)
 - One test per user per day
 
-### ⏳ Pending (Iterations 13, 21, 24B, 32, 33) - MVP Extended
-- Content Translation (24B) 🔴 HIGH
+### ⏳ Pending (Iterations 24B, 32, 33) - MVP Extended
+- Content Translation (24B) 🔴 HIGH - IN PROGRESS
 - UI Polish & Mobile (32) 🔴 HIGH
 - Deployment & Production Setup (33) 🔴 HIGH
-- Admin badge management (13)
-- Admin dashboard (21)
 
 ## Environment
 

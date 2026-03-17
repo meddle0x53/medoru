@@ -31,11 +31,64 @@ description: Medoru Japanese learning platform - Elixir/Phoenix conventions, kan
 |-------|-------------|------------|--------|
 | **N5** | 3,168 | 3,168 ✅ | **100% Complete** |
 | **N4** | 6,808 | 6,808 ✅ | **100% Complete** |
-| **N3** | 135,847 | 0 | Ready to start (150-word batches) |
+| **Kanji** | 2,212 | 2,212 ✅ | **100% Complete** |
+| **Lessons** | 101 | 101 ✅ | **100% Complete** |
+| **N3** | 135,847 | 7,262 ✅ proper Bulgarian (~30,173 ⚠️ English placeholders) | In progress |
 
-**Completed:** All N5 and N4 words have Bulgarian translations stored in `translations->bg->meaning` JSONB field.
+**Translation Method**: Manual batch processing using pipe-separated format
+**Batch Size**: 150 words for N3 (previously 50 for N4/N5)
 
-**Next:** N3 translation (135,847 words remaining)
+**Total Translated**: 10,089 words (N5 + N4 proper) + 2,212 kanji + 101 lessons + partial N3
+
+**Next:** Fix ~30,173 English placeholders in N3, then continue N3 translation
+
+---
+
+## 🔴 CRITICAL RULES FOR TRANSLATION TASKS
+
+### Rule #1: TRANSLATION MEANS TRANSLATION
+- **MUST** translate English meanings to **proper Bulgarian**
+- **NEVER** copy English text as "translation" - this is NOT translation
+- **NEVER** use placeholders or pass-through text
+- If you cannot translate a word, **STOP and report it** - do not fake it
+
+### Rule #2: VALIDATION REQUIRED
+After each batch, verify:
+```sql
+-- Check if any translations are still English
+SELECT COUNT(*) FROM words WHERE difficulty = 3 AND translations->'bg'->>'meaning' = meaning;
+-- Result MUST be 0 before proceeding to next batch
+```
+
+### Rule #3: IF YOU CAN'T TRANSLATE
+1. **STOP** the batch
+2. **Report** which word(s) you cannot translate
+3. **Do NOT** proceed with faked translations
+4. **Do NOT** mark batch as complete
+
+### Rule #4: QUALITY CHECK
+Sample translations must be verified:
+- Check 5 random words from each batch
+- Ensure they are actual Bulgarian words, not English
+- Cyrillic script required for Bulgarian
+
+### Rule #5: CONSEQUENCES
+- **Copying English = FAILED BATCH**
+- Must re-do any batch with English placeholders
+- Wastes time for everyone
+
+---
+
+## Translation Statistics (Verified)
+| Level | Total | Proper Bulgarian | English Placeholders | Untranslated |
+|-------|-------|------------------|----------------------|--------------|
+| N5    | 3,168 | 3,168 ✅ (100%) | 0 | 0 |
+| N4    | 6,808 | 6,808 ✅ (100%) | 0 | 0 |
+| N3    | 135,847 | ~7,262 (5.3%) | ~30,173 (22.2%) ⚠️ | 98,412 (72.4%) |
+
+**N3 Progress:** ~37,435 fields have content, but ~30,173 are English copies that need re-translation
+
+---
 
 ## Domain Architecture (Contexts)
 
@@ -213,7 +266,7 @@ lib/medoru_web/live/
 │   └── show.html.heex         
 └── user_live/
     ├── profile.ex
-    └── profile.html.heex
+    └── profile.heex
 ```
 
 **Implementation:**
@@ -381,49 +434,6 @@ This AGENTS.md covers the main Medoru platform. For related tools:
 - Must validate against Medoru content schema
 
 When working on these tools, reference this AGENTS.md for data structure requirements.
-
-## N4 Words Translation Workflow (In Progress)
-
-**Status:** Manual translation in progress - only continue when user explicitly says so
-
-### Current Approach
-Since external translation APIs are unavailable (Kimi Code key restricted), we translate N4 words **manually** using this workflow:
-
-1. **Query DB for 50 untranslated N4 words:**
-   ```bash
-   psql -d medoru_dev -t -A -F '|' -c "SELECT id, text, meaning FROM words WHERE difficulty = 4 AND (translations IS NULL OR translations->>'bg' IS NULL) ORDER BY text LIMIT 50"
-   ```
-
-2. **Extract just the meanings** and translate them to Bulgarian (pipe-separated)
-
-3. **Generate and execute SQL updates:**
-   ```sql
-   UPDATE words SET translations = COALESCE(translations, '{}') || '{"bg": {"meaning": "BULGARIAN_TEXT"}}'::jsonb WHERE id = 'UUID';
-   ```
-
-### Translation Statistics (Verified)
-| Level | Total | Translated | Verified |
-|-------|-------|------------|----------|
-| N5    | 3,168 | 3,168 ✅   | 3,168 ✅ (100% Bulgarian) |
-| N4    | 6,808 | 6,808 ✅   | 6,808 ✅ (100% Bulgarian) |
-| N3    | 135,847 | 0        | 135,847  |
-
-### N3 Translation Plan (READY TO START)
-**Approach:** Larger batches (150 words vs 50) for efficiency
-- **Batch size:** 150 words (pipe-separated format)
-- **Total batches:** ~906 (vs ~2,717 with 50-word batches)
-- **Time estimate:** ~75 hours of translation work
-- **Format:** word1 | word2 | word3 | ... → превод1 | превод2 | превод3 | ...
-
-**When ready to start:** Say "start N3 translation"
-
-### Important Notes
-- **ONLY translate when user explicitly asks** ("let's continue N4 translation")
-- **Batch size:** 50 words at a time
-- **Remaining batches:** ~136 for N4
-- **Time per batch:** ~5 minutes
-- Store translations directly in DB (not JSON files)
-- Use `psql` directly, no Mix tasks or scripts needed for the actual translation
 
 ## Boundaries
 
@@ -818,7 +828,7 @@ And **never** do this:
 
     <%!-- NEVER do this (invalid) --%>
     <.form for={@changeset} id="my-form">
-      <.input field={@changeset[:field]} type="text" />
+      <<.input field={@changeset[:field]} type="text" />
     </.form>
 
 - You are FORBIDDEN from accessing the changeset in the template as it will cause errors
@@ -864,7 +874,7 @@ found what you are looking for, use the links in the search results to get more 
 mix usage_rules.search_docs Enum.zip
 
 # Search docs for specific packages
-mix usage_rules.search_docs Req.get -p req
+mix usage_rules.search_docs Enum.zip -p req
 
 # Search docs for multi-word queries
 mix usage_rules.search_docs "making requests" -p req
