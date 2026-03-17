@@ -171,16 +171,16 @@ defmodule Medoru.Content.CustomLessonTest do
       {:ok, _} =
         Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
 
-      # Points should be: 2 words * 10 + 20 = 40
+      # Points should be: 2 words * 1 + 1 = 3
       assert {:ok, progress} =
                Classrooms.complete_custom_lesson(classroom.id, student.id, lesson.id)
 
-      assert progress.points_earned == 40
+      assert progress.points_earned == 3
       assert progress.status == "completed"
 
       # Check member points updated
       membership = Classrooms.get_user_membership(classroom.id, student.id)
-      assert membership.points == 40
+      assert membership.points == 3
     end
   end
 end

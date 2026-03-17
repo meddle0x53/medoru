@@ -17,14 +17,14 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       nil ->
         {:ok,
          socket
-         |> put_flash(:error, "You are not a member of this classroom.")
+         |> put_flash(:error, gettext("You are not a member of this classroom."))
          |> push_navigate(to: ~p"/classrooms")}
 
       membership ->
         if membership.status != :approved do
           {:ok,
            socket
-           |> put_flash(:error, "Your membership is pending approval.")
+           |> put_flash(:error, gettext("Your membership is pending approval."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
         else
           load_lesson(socket, classroom_id, lesson_id, user, locale)
@@ -43,7 +43,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     if lesson_id not in lesson_ids do
       {:ok,
        socket
-       |> put_flash(:error, "This lesson is not available in this classroom.")
+       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
        |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     else
       # Get or create progress
@@ -122,8 +122,30 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     classroom_id = socket.assigns.classroom.id
     user = socket.assigns.current_scope.current_user
     lesson_id = socket.assigns.lesson.id
+    lesson = socket.assigns.lesson
 
-    case Classrooms.complete_custom_lesson(classroom_id, user.id, lesson_id) do
+    # Check if test is required
+    if lesson.requires_test and lesson.test_id do
+      # Check if test is already completed
+      case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
+        nil ->
+          # Redirect to test
+          {:noreply,
+           socket
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test")}
+
+        _session ->
+          # Test already completed, mark lesson complete
+          complete_lesson(socket, classroom_id, user.id, lesson_id)
+      end
+    else
+      # No test required, mark lesson complete
+      complete_lesson(socket, classroom_id, user.id, lesson_id)
+    end
+  end
+
+  defp complete_lesson(socket, classroom_id, user_id, lesson_id) do
+    case Classrooms.complete_custom_lesson(classroom_id, user_id, lesson_id) do
       {:ok, _} ->
         {:noreply,
          socket
@@ -132,7 +154,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
          )}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to complete lesson.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to complete lesson."))}
     end
   end
 
@@ -147,7 +169,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Lessons
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
           </.link>
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-base-content">
@@ -192,7 +214,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                   Content.get_localized_meaning(@current_word.word, @locale)}
               </div>
 
-              <%!-- Examples --%>
+              <%!-- {gettext("Examples")} --%>
               <%= if @current_word.examples != [] do %>
                 <div class="border-t border-base-200 pt-6 mt-6">
                   <h3 class="text-sm font-medium text-secondary mb-4">Examples</h3>
@@ -220,13 +242,22 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                 Next <.icon name="hero-arrow-right" class="w-5 h-5 ml-2" />
               </button>
             <% else %>
-              <button
-                phx-click="complete"
-                data-confirm="Mark this lesson as complete?"
-                class="btn btn-success"
-              >
-                <.icon name="hero-check" class="w-5 h-5 mr-2" /> Mark Complete
-              </button>
+              <%= if @lesson.requires_test and @lesson.test_id do %>
+                <button
+                  phx-click="complete"
+                  class="btn btn-success"
+                >
+                  <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> {gettext("Take Test")}
+                </button>
+              <% else %>
+                <button
+                  phx-click="complete"
+                  data-confirm={gettext("Mark this lesson as complete?")}
+                  class="btn btn-success"
+                >
+                  <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Mark Complete")}
+                </button>
+              <% end %>
             <% end %>
           </div>
         <% end %>

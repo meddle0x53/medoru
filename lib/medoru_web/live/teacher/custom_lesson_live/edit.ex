@@ -39,7 +39,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
          |> assign(:editing_word_id, nil)
          |> assign(:editing_custom_meaning, nil)
          |> assign(:editing_examples, nil)
-         |> assign(:publish_modal_open, false)}
+         |> assign(:publish_modal_open, false)
+         |> assign(:test_settings_changed, false)}
       end
     end
   end
@@ -185,6 +186,88 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("toggle_requires_test", _params, socket) do
+    lesson = socket.assigns.lesson
+    new_value = !lesson.requires_test
+
+    # If enabling test and lesson is published but has no test, generate one
+    test_result =
+      if new_value and lesson.status == "published" and is_nil(lesson.test_id) do
+        Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
+          lesson.id,
+          include_writing: lesson.include_writing
+        )
+      else
+        {:ok, nil}
+      end
+
+    case test_result do
+      {:ok, _} ->
+        case Content.update_custom_lesson(lesson, %{requires_test: new_value}) do
+          {:ok, _updated_lesson} ->
+            # Reload to get test_id if test was generated
+            updated_lesson = Content.get_custom_lesson!(lesson.id)
+
+            {:noreply,
+             socket
+             |> assign(:lesson, updated_lesson)
+             |> assign(:test_settings_changed, true)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to update test setting."))}
+        end
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to generate test: %{reason}", reason: inspect(reason)))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_include_writing", _params, socket) do
+    lesson = socket.assigns.lesson
+
+    # Only allow toggling if requires_test is true
+    if not lesson.requires_test do
+      {:noreply, put_flash(socket, :error, gettext("Enable test requirement first."))}
+    else
+      new_value = !lesson.include_writing
+
+      # If lesson is published and has a test, regenerate with new writing setting
+      test_result =
+        if lesson.status == "published" and not is_nil(lesson.test_id) do
+          Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
+            lesson.id,
+            include_writing: new_value
+          )
+        else
+          {:ok, nil}
+        end
+
+      case test_result do
+        {:ok, _} ->
+          case Content.update_custom_lesson(lesson, %{include_writing: new_value}) do
+            {:ok, _updated_lesson} ->
+              # Reload to get updated test
+              updated_lesson = Content.get_custom_lesson!(lesson.id)
+
+              {:noreply,
+               socket
+               |> assign(:lesson, updated_lesson)
+               |> assign(:test_settings_changed, true)}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to update writing setting."))}
+          end
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Failed to regenerate test: %{reason}", reason: inspect(reason)))}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("publish", _params, socket) do
     lesson = socket.assigns.lesson
 
@@ -192,16 +275,37 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
     if lesson.word_count < 1 do
       {:noreply, put_flash(socket, :error, gettext("Add at least 1 word before publishing."))}
     else
-      # Mark as published
-      case Content.publish_custom_lesson(lesson) do
-        {:ok, lesson} ->
-          {:noreply,
-           socket
-           |> assign(:lesson, lesson)
-           |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+      # Generate test if required and not already generated
+      test_result =
+        if lesson.requires_test and is_nil(lesson.test_id) do
+          Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
+            lesson.id,
+            include_writing: lesson.include_writing
+          )
+        else
+          {:ok, nil}
+        end
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+      case test_result do
+        {:ok, _test} ->
+          # Reload lesson to get updated test_id
+          lesson = Content.get_custom_lesson!(lesson.id)
+
+          # Mark as published
+          case Content.publish_custom_lesson(lesson) do
+            {:ok, lesson} ->
+              {:noreply,
+               socket
+               |> assign(:lesson, lesson)
+               |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+          end
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("Failed to generate test: %{reason}", reason: inspect(reason)))}
       end
     end
   end
@@ -424,7 +528,63 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
               </div>
             </div>
 
+            <%!-- Test Settings --%>
+            <div class="card bg-base-100 border border-base-300">
+              <div class="card-body p-4">
+                <h3 class="font-semibold text-base-content mb-4">
+                  <.icon name="hero-pencil-square" class="w-5 h-5 mr-1 inline" />
+                  {gettext("Test Settings")}
+                </h3>
 
+                <div class="space-y-4">
+                  <%!-- Require Test --%>
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@lesson.requires_test}
+                      phx-click="toggle_requires_test"
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Require test to complete")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Students must pass a test to finish the lesson")}
+                      </div>
+                    </div>
+                  </label>
+
+                  <%!-- Include Writing --%>
+                  <label class={["flex items-start gap-3 cursor-pointer", not @lesson.requires_test && "opacity-50"]}>
+                    <input
+                      type="checkbox"
+                      checked={@lesson.include_writing}
+                      disabled={not @lesson.requires_test}
+                      phx-click="toggle_include_writing"
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Include kanji writing")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Add drawing steps for kanji in lesson words")}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <%= if @test_settings_changed do %>
+                  <div class="mt-4 p-3 bg-info/10 rounded-lg">
+                    <p class="text-xs text-info flex items-center gap-2">
+                      <.icon name="hero-information-circle" class="w-4 h-4" />
+                      <%= if @lesson.status == "published" do %>
+                        {gettext("Settings saved. Changes will apply to new students.")}
+                      <% else %>
+                        {gettext("Settings saved. Test will be generated on publish.")}
+                      <% end %>
+                    </p>
+                  </div>
+                <% end %>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -151,6 +151,7 @@ defmodule MedoruWeb.Router do
       live "/:id/tests/:test_id", ClassroomLive.Test
       live "/:id/tests/:test_id/results", ClassroomLive.TestResults
       live "/:id/custom-lessons/:lesson_id", ClassroomLive.CustomLesson
+      live "/:id/custom-lessons/:lesson_id/test", ClassroomLive.CustomLessonTest
       live "/:id/custom-lessons/:lesson_id/complete", ClassroomLive.CustomLessonComplete
     end
   end

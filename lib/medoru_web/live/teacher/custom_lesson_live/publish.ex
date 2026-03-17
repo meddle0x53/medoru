@@ -36,7 +36,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
         true ->
           classrooms = Classrooms.list_teacher_classrooms(user.id)
-          published = Content.list_classroom_custom_lessons(lesson.id, status: nil)
+          published = Content.list_lesson_classroom_publications(lesson.id, status: "active")
 
           published_map =
             published
@@ -71,6 +71,20 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
          socket
          |> assign(:published_map, published_map)
          |> put_flash(:info, gettext("Published to classroom!"))}
+
+      {:error, :already_published} ->
+        # Refresh the published_map to show current state
+        published = Content.list_lesson_classroom_publications(socket.assigns.lesson.id, status: "active")
+
+        published_map =
+          published
+          |> Enum.map(fn pc -> {pc.classroom_id, pc} end)
+          |> Enum.into(%{})
+
+        {:noreply,
+         socket
+         |> assign(:published_map, published_map)
+         |> put_flash(:info, gettext("Already published to this classroom."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to publish."))}

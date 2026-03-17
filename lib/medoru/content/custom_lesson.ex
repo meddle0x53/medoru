@@ -17,6 +17,7 @@ defmodule Medoru.Content.CustomLesson do
   alias Medoru.Accounts.User
   alias Medoru.Content.CustomLessonWord
   alias Medoru.Classrooms.ClassroomCustomLesson
+  alias Medoru.Tests.Test
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -28,7 +29,12 @@ defmodule Medoru.Content.CustomLesson do
     field :status, :string, default: "draft"
     field :word_count, :integer, default: 0
 
+    # Test configuration
+    field :requires_test, :boolean, default: false
+    field :include_writing, :boolean, default: false
+
     belongs_to :creator, User
+    belongs_to :test, Test
     has_many :custom_lesson_words, CustomLessonWord, preload_order: [asc: :position]
     has_many :words, through: [:custom_lesson_words, :word]
     has_many :classroom_custom_lessons, ClassroomCustomLesson
@@ -49,7 +55,9 @@ defmodule Medoru.Content.CustomLesson do
       :difficulty,
       :status,
       :word_count,
-      :creator_id
+      :creator_id,
+      :requires_test,
+      :include_writing
     ])
     |> validate_required([:title, :lesson_type, :status, :creator_id])
     |> validate_length(:title, min: 1, max: 100)

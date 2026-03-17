@@ -135,6 +135,49 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                 </p>
               </div>
 
+              <%!-- Test Options --%>
+              <div class="border-t border-base-200 pt-4">
+                <label class="block text-sm font-medium text-base-content mb-3">
+                  {gettext("Test Options")}
+                </label>
+                <div class="space-y-3">
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="custom_lesson[requires_test]"
+                      value="true"
+                      checked={@form[:requires_test].value == true or @form[:requires_test].value == "true"}
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <span class="block text-sm font-medium text-base-content">
+                        {gettext("Require test to complete lesson")}
+                      </span>
+                      <span class="block text-xs text-secondary">
+                        {gettext("Students must pass a test before the lesson is marked complete")}
+                      </span>
+                    </div>
+                  </label>
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="custom_lesson[include_writing]"
+                      value="true"
+                      checked={@form[:include_writing].value == true or @form[:include_writing].value == "true"}
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <span class="block text-sm font-medium text-base-content">
+                        {gettext("Include kanji writing practice")}
+                      </span>
+                      <span class="block text-xs text-secondary">
+                        {gettext("Add writing steps for kanji in the lesson words")}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <%!-- Submit --%>
               <div class="flex gap-4 pt-4 border-t border-base-200">
                 <.link

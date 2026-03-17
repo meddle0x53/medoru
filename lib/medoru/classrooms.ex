@@ -1465,8 +1465,8 @@ defmodule Medoru.Classrooms do
   Completes a custom lesson and awards points.
 
   Points calculation:
-  - Base: 10 points per word
-  - Bonus: 20 points for completing
+  - Base: 1 point per word
+  - Bonus: 1 point for completing
   """
   def complete_custom_lesson(classroom_id, user_id, custom_lesson_id) do
     {:ok, progress} =
@@ -1475,7 +1475,7 @@ defmodule Medoru.Classrooms do
     # Get word count for points calculation
     custom_lesson = Medoru.Content.get_custom_lesson_with_words!(custom_lesson_id)
     word_count = length(custom_lesson.custom_lesson_words)
-    points_earned = word_count * 10 + 20
+    points_earned = word_count * 1 + 1
 
     attrs = %{
       points_earned: points_earned

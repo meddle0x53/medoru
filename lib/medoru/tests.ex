@@ -699,8 +699,29 @@ defmodule Medoru.Tests do
   """
   def get_test_session_with_answers(id) do
     TestSession
-    |> preload([:test, test_step_answers: :test_step])
+    |> preload([test: :test_steps, test_step_answers: :test_step])
     |> Repo.get(id)
+  end
+
+  @doc """
+  Gets a completed test session for a user and test.
+  Returns nil if no completed session exists.
+
+  ## Examples
+
+      iex> get_completed_test_session(user_id, test_id)
+      %TestSession{}
+
+      iex> get_completed_test_session(user_id, test_id)
+      nil
+
+  """
+  def get_completed_test_session(user_id, test_id) do
+    TestSession
+    |> where(user_id: ^user_id, test_id: ^test_id, status: :completed)
+    |> order_by(desc: :completed_at)
+    |> limit(1)
+    |> Repo.one()
   end
 
   @doc """
