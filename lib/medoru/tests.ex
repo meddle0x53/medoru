@@ -108,7 +108,7 @@ defmodule Medoru.Tests do
   """
   def get_test!(id) do
     Test
-    |> preload(:test_steps)
+    |> preload(test_steps: [:kanji, :word])
     |> Repo.get!(id)
   end
 
@@ -699,7 +699,7 @@ defmodule Medoru.Tests do
   """
   def get_test_session_with_answers(id) do
     TestSession
-    |> preload([test: :test_steps, test_step_answers: :test_step])
+    |> preload([test: [test_steps: [:kanji, :word]], test_step_answers: [test_step: [:kanji, :word]]])
     |> Repo.get(id)
   end
 
@@ -1014,8 +1014,9 @@ defmodule Medoru.Tests do
       {:ok, %TestStepAnswer{is_correct: true, points_earned: 2}}
 
   """
-  def record_step_answer(session_id, step_id, attrs) do
+  def record_step_answer(session_id, step_id, attrs, opts \\ []) do
     step = get_test_step(step_id)
+    locale = Keyword.get(opts, :locale, "en")
 
     # Normalize attrs to string keys to avoid mixed key types
     attrs =
@@ -1049,6 +1050,9 @@ defmodule Medoru.Tests do
       |> Map.put("test_session_id", session_id)
       |> Map.put("test_step_id", step_id)
 
+    # Determine correct answer - use localized meaning if applicable
+    correct_answer = get_localized_correct_answer(step, locale)
+
     # For writing steps or when is_correct is passed directly
     changeset =
       if attrs["is_correct"] != nil do
@@ -1074,14 +1078,39 @@ defmodule Medoru.Tests do
       else
         if existing_answer do
           existing_answer
-          |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points)
         else
           %TestStepAnswer{}
-          |> TestStepAnswer.answer_changeset(attrs, step.correct_answer, step.points)
+          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points)
         end
       end
 
     changeset |> Repo.insert_or_update()
+  end
+
+  # Get correct answer for validation
+  # NOTE: We use the stored correct_answer (English) for validation, not the localized version
+  # The UI displays localized meanings, but the underlying values are still English
+  # This ensures the answer submitted (English) matches the correct_answer (English)
+  defp get_localized_correct_answer(step, _locale) do
+    step.correct_answer
+  end
+
+  # Check if the step question is meaning-based
+  defp is_meaning_question?(step) do
+    # Meaning-based questions have the meaning as the correct answer
+    # word_to_meaning: "What does X mean?" -> correct_answer is meaning
+    # meaning_to_word: "Which word means Y?" -> correct_answer is word (not meaning)
+    cond do
+      # word_to_meaning has word text in question, meaning as answer
+      String.starts_with?(step.question || "", "__MSG_WHAT_DOES_WORD_MEAN__|") -> true
+      # Check question_data for step type info
+      get_in(step.question_data, ["step_type"]) == "word_to_meaning" -> true
+      # Heuristic: if question asks "Which word means", then answers are words (not meanings)
+      String.starts_with?(step.question || "", "__MSG_WHICH_WORD_MEANS__|") -> false
+      # Default: not a meaning question
+      true -> false
+    end
   end
 
   @doc """

@@ -8,8 +8,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
   alias Medoru.Content
 
   @impl true
-  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, _session, socket) do
+  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
+    practice = params["practice"] == "true"
 
     # Verify membership
     case Classrooms.get_user_membership(classroom_id, user.id) do
@@ -20,32 +21,34 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
          |> push_navigate(to: ~p"/classrooms")}
 
       _membership ->
-        load_completion(socket, classroom_id, lesson_id, user)
+        load_completion(socket, classroom_id, lesson_id, user, practice)
     end
   end
 
-  defp load_completion(socket, classroom_id, lesson_id, user) do
+  defp load_completion(socket, classroom_id, lesson_id, user, practice \\ false) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
-    # Get the completed progress
+    # Get the completed progress (if any)
     progress = Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id)
 
-    # Calculate points
+    # Calculate points (only show actual earned points, not practice)
     word_count = length(lesson.custom_lesson_words)
-    points_earned = (progress && progress.points_earned) || word_count * 10 + 20
+    points_earned = if practice, do: 0, else: (progress && progress.points_earned) || 0
 
     {:ok,
      socket
      |> assign(:classroom, classroom)
      |> assign(:lesson, lesson)
      |> assign(:word_count, word_count)
-     |> assign(:points_earned, points_earned)}
+     |> assign(:points_earned, points_earned)
+     |> assign(:practice, practice)}
   end
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {:noreply, assign(socket, :page_title, "Lesson Complete!")}
+    title = if socket.assigns[:practice], do: "Practice Complete!", else: "Lesson Complete!"
+    {:noreply, assign(socket, :page_title, title)}
   end
 
   @impl true
@@ -61,26 +64,45 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
             </div>
 
             <%!-- Title --%>
-            <h1 class="text-3xl font-bold text-base-content mb-2">Lesson Complete!</h1>
-            <p class="text-xl text-secondary mb-6">{@lesson.title}</p>
+            <%= if @practice do %>
+              <h1 class="text-3xl font-bold text-base-content mb-2">Practice Complete!</h1>
+              <p class="text-xl text-secondary mb-6">{@lesson.title}</p>
 
-            <%!-- Stats --%>
-            <div class="flex justify-center gap-8 mb-8">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-primary">{@word_count}</div>
-                <div class="text-sm text-secondary">Words Learned</div>
+              <%!-- Practice Stats --%>
+              <div class="flex justify-center gap-8 mb-8">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-primary">{@word_count}</div>
+                  <div class="text-sm text-secondary">Words Reviewed</div>
+                </div>
               </div>
-              <div class="text-center">
-                <div class="text-3xl font-bold text-primary">+{@points_earned}</div>
-                <div class="text-sm text-secondary">Points Earned</div>
-              </div>
-            </div>
 
-            <%!-- Progress Message --%>
-            <div class="alert alert-success mb-8">
-              <.icon name="hero-trophy" class="w-5 h-5" />
-              <span>Great job! Keep up the good work!</span>
-            </div>
+              <%!-- Practice Message --%>
+              <div class="alert alert-info mb-8">
+                <.icon name="hero-arrow-path" class="w-5 h-5" />
+                <span>Practice mode - no points awarded. Review anytime!</span>
+              </div>
+            <% else %>
+              <h1 class="text-3xl font-bold text-base-content mb-2">Lesson Complete!</h1>
+              <p class="text-xl text-secondary mb-6">{@lesson.title}</p>
+
+              <%!-- Stats --%>
+              <div class="flex justify-center gap-8 mb-8">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-primary">{@word_count}</div>
+                  <div class="text-sm text-secondary">Words Learned</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-primary">+{@points_earned}</div>
+                  <div class="text-sm text-secondary">Points Earned</div>
+                </div>
+              </div>
+
+              <%!-- Progress Message --%>
+              <div class="alert alert-success mb-8">
+                <.icon name="hero-trophy" class="w-5 h-5" />
+                <span>Great job! Keep up the good work!</span>
+              </div>
+            <% end %>
 
             <%!-- Actions --%>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">

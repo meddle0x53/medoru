@@ -174,6 +174,7 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
       question_data: %{
         type: :kanji_writing,
         kanji: kanji.character,
+        kanji_id: kanji.id,
         meanings: kanji.meanings,
         stroke_count: kanji.stroke_count,
         strokes: strokes
@@ -245,13 +246,20 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
 
   # Add distractor options to a step
   defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
-    distractors = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+    {distractors, distractor_ids} = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
     options = [step.correct_answer | distractors] |> Enum.shuffle()
+    option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
-    Map.put(step, :options, options)
+    # Ensure question_data exists before adding option_word_ids
+    question_data = Map.get(step, :question_data) || %{}
+
+    step
+    |> Map.put(:options, options)
+    |> Map.put(:question_data, Map.put(question_data, :option_word_ids, option_word_ids))
   end
 
   # Fetch distractor words based on step type
+  # Returns {distractor_values, distractor_word_ids}
   defp fetch_distractors(
          correct_word,
          count,
@@ -269,20 +277,24 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
       end
 
     # Get distractors from the pool (excluding the correct word)
+    # Keep word_ids for meaning-based questions to enable localization
     pool_distractors =
       distractor_pool
       |> Enum.reject(&(&1.id == correct_word.id))
-      |> Enum.map(&Map.get(&1, distractor_field))
-      |> Enum.reject(&is_nil/1)
       |> Enum.take(count)
 
+    values = Enum.map(pool_distractors, &Map.get(&1, distractor_field))
+    ids = Enum.map(pool_distractors, & &1.id)
+
     # If we don't have enough from the pool, supplement with generic distractors
-    if length(pool_distractors) >= count do
-      Enum.take(pool_distractors, count)
+    if length(values) >= count do
+      {Enum.take(values, count), Enum.take(ids, count)}
     else
-      needed = count - length(pool_distractors)
-      additional = generate_generic_distractors(needed, distractor_field)
-      pool_distractors ++ additional
+      needed = count - length(values)
+      additional_values = generate_generic_distractors(needed, distractor_field)
+      # Generic distractors don't have word_ids, use nil
+      additional_ids = List.duplicate(nil, needed)
+      {values ++ additional_values, ids ++ additional_ids}
     end
   end
 

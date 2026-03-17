@@ -59,6 +59,22 @@ defmodule Medoru.Content do
   def get_kanji!(id), do: Repo.get!(Kanji, id)
 
   @doc """
+  Gets a single kanji by ID.
+
+  Returns `nil` if the kanji does not exist.
+
+  ## Examples
+
+      iex> get_kanji("123e4567-e89b-12d3-a456-426614174000")
+      %Kanji{}
+
+      iex> get_kanji("non-existent-id")
+      nil
+
+  """
+  def get_kanji(id), do: Repo.get(Kanji, id)
+
+  @doc """
   Gets a single kanji by character.
 
   Returns `nil` if the Kanji does not exist.
@@ -642,6 +658,22 @@ defmodule Medoru.Content do
 
   """
   def get_word!(id), do: Repo.get!(Word, id)
+
+  @doc """
+  Gets a single word by ID.
+
+  Returns `nil` if the word does not exist.
+
+  ## Examples
+
+      iex> get_word("123e4567-e89b-12d3-a456-426614174000")
+      %Word{}
+
+      iex> get_word("non-existent-id")
+      nil
+
+  """
+  def get_word(id), do: Repo.get(Word, id)
 
   @doc """
   Gets a word by its English meaning.

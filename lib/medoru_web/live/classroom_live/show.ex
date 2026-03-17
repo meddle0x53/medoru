@@ -404,9 +404,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 <div class="sm:ml-4 self-start sm:self-auto">
                   <%= case progress && progress.status do %>
                     <% "completed" -> %>
-                      <span class="badge badge-success">
-                        +{progress.points_earned} {gettext("pts")}
-                      </span>
+                      <div class="flex items-center gap-2">
+                        <span class="badge badge-success">
+                          +{progress.points_earned} {gettext("pts")}
+                        </span>
+                        <.link
+                          navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                          class="btn btn-secondary btn-sm"
+                        >
+                          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
+                        </.link>
+                      </div>
                     <% _ -> %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}

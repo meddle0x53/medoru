@@ -12,6 +12,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
 
   attr :step, :map, required: true
   attr :target, :any, required: true
+  attr :locale, :string, default: "en"
 
   def writing_question(assigns) do
     ~H"""
@@ -30,7 +31,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       <%!-- Question --%>
       <div class="text-center">
         <h2 class="text-2xl font-bold text-base-content mb-2">
-          {translate_question(@step.question)}
+          {translate_question(@step, @locale)}
         </h2>
         <p class="text-secondary text-lg">
           <%= if @step.question_data["stroke_count"] do %>
@@ -108,7 +109,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
 
       <div class="mt-4 text-center">
         <p class="text-sm text-secondary mb-4">
-          <strong>{gettext("Meanings")}:</strong> {Enum.join(@kanji.meanings || [], ", ")} •
+          <strong>{gettext("Meanings")}:</strong> {get_localized_meanings(@kanji, @locale)} •
           <strong>{gettext("Strokes")}:</strong> {@kanji.stroke_count}
         </p>
         <button
@@ -124,11 +125,55 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
   end
 
   # Translate question text, handling message key format
-  defp translate_question(nil), do: ""
+  defp translate_question(nil, _locale), do: ""
 
-  defp translate_question("__MSG_WRITE_KANJI_FOR__|" <> meanings) do
-    gettext("Write the kanji for '%{meanings}'", meanings: meanings)
+  defp translate_question(step, locale) when is_map(step) do
+    question = step.question || ""
+    
+    case question do
+      "__MSG_WRITE_KANJI_FOR__|" <> _ ->
+        # Get localized meanings for the question
+        meanings = get_localized_meanings_for_step(step, locale)
+        gettext("Write the kanji for '%{meanings}'", meanings: meanings)
+      
+      _ -> 
+        question
+    end
   end
 
-  defp translate_question(question), do: question
+  defp translate_question(question, _locale) when is_binary(question), do: question
+
+  # Get localized meanings for display
+  defp get_localized_meanings(kanji, locale) do
+    localized = Medoru.Content.get_localized_kanji_meanings(kanji, locale)
+    Enum.join(localized, ", ")
+  end
+
+  # Get localized meanings for the step question
+  defp get_localized_meanings_for_step(step, locale) do
+    # Try to get kanji from step
+    kanji = case step.kanji do
+      %Ecto.Association.NotLoaded{} -> nil
+      nil -> nil
+      k -> k
+    end
+    
+    if kanji do
+      get_localized_meanings(kanji, locale)
+    else
+      # Fallback to stored meanings in question_data
+      qd = step.question_data || %{}
+      stored = qd["meanings"] || qd[:meanings] || []
+      
+      if stored != [] do
+        Enum.join(stored, ", ")
+      else
+        # Last resort: extract from question string
+        case String.split(step.question || "", "|") do
+          [_, m] -> m
+          _ -> ""
+        end
+      end
+    end
+  end
 end

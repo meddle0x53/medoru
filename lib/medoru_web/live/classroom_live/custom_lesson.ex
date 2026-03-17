@@ -11,6 +11,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
     locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
+    practice = session["practice"] == true
 
     # Verify user is an approved member
     case Classrooms.get_user_membership(classroom_id, user.id) do
@@ -27,12 +28,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
            |> put_flash(:error, gettext("Your membership is pending approval."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
         else
-          load_lesson(socket, classroom_id, lesson_id, user, locale)
+          load_lesson(socket, classroom_id, lesson_id, user, locale, practice)
         end
     end
   end
 
-  defp load_lesson(socket, classroom_id, lesson_id, user, locale) do
+  defp load_lesson(socket, classroom_id, lesson_id, user, locale, practice \\ false) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
@@ -46,15 +47,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
        |> put_flash(:error, gettext("This lesson is not available in this classroom."))
        |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     else
-      # Get or create progress
-      progress =
-        case Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id) do
-          nil ->
-            {:ok, prog} = Classrooms.start_custom_lesson(classroom_id, user.id, lesson_id)
-            prog
+      # Get existing progress (don't create new one in practice mode)
+      progress = Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id)
+      is_completed = progress && progress.status == "completed"
 
-          prog ->
-            prog
+      # In practice mode, we can always access the lesson
+      # For new lessons, create progress
+      progress =
+        if is_nil(progress) and not practice do
+          {:ok, prog} = Classrooms.start_custom_lesson(classroom_id, user.id, lesson_id)
+          prog
+        else
+          progress
         end
 
       lesson_words = Content.list_lesson_words(lesson_id)
@@ -68,6 +72,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
        |> assign(:lesson, lesson)
        |> assign(:lesson_words, lesson_words)
        |> assign(:progress, progress)
+       |> assign(:is_completed, is_completed)
+       |> assign(:practice, practice)
        |> assign(:current_index, current_index)
        |> assign(:current_word, current_word)
        |> assign(:total_words, length(lesson_words))}
@@ -123,24 +129,37 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     user = socket.assigns.current_scope.current_user
     lesson_id = socket.assigns.lesson.id
     lesson = socket.assigns.lesson
+    practice = socket.assigns.practice
 
-    # Check if test is required
-    if lesson.requires_test and lesson.test_id do
-      # Check if test is already completed
-      case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
-        nil ->
-          # Redirect to test
-          {:noreply,
-           socket
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test")}
-
-        _session ->
-          # Test already completed, mark lesson complete
-          complete_lesson(socket, classroom_id, user.id, lesson_id)
-      end
+    # In practice mode, just show completion without awarding points
+    if practice do
+      {:noreply,
+       socket
+       |> push_navigate(
+         to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?practice=true"
+       )}
     else
-      # No test required, mark lesson complete
-      complete_lesson(socket, classroom_id, user.id, lesson_id)
+      # Check if test is required
+      if lesson.requires_test and lesson.test_id do
+        # Check if test is already completed
+        case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
+          nil ->
+            # Redirect to test
+            {:noreply,
+             socket
+             |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test")}
+
+          _session ->
+            # Test already completed, show already completed message
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("You've already completed this lesson. Use Practice Mode to review."))
+             |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
+        end
+      else
+        # No test required, mark lesson complete
+        complete_lesson(socket, classroom_id, user.id, lesson_id)
+      end
     end
   end
 
@@ -242,21 +261,48 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                 Next <.icon name="hero-arrow-right" class="w-5 h-5 ml-2" />
               </button>
             <% else %>
-              <%= if @lesson.requires_test and @lesson.test_id do %>
-                <button
-                  phx-click="complete"
-                  class="btn btn-success"
-                >
-                  <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> {gettext("Take Test")}
-                </button>
-              <% else %>
-                <button
-                  phx-click="complete"
-                  data-confirm={gettext("Mark this lesson as complete?")}
-                  class="btn btn-success"
-                >
-                  <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Mark Complete")}
-                </button>
+              <%= cond do %>
+                <% @practice -> %>
+                  <%!-- Practice mode: show review complete button --%>
+                  <button
+                    phx-click="complete"
+                    class="btn btn-primary"
+                  >
+                    <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Finish Review")}
+                  </button>
+                <% @is_completed -> %>
+                  <%!-- Already completed: show practice mode button --%>
+                  <%= if @lesson.requires_test and @lesson.test_id do %>
+                    <.link
+                      navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{@lesson.id}/test?practice=true"}
+                      class="btn btn-secondary"
+                    >
+                      <.icon name="hero-arrow-path" class="w-5 h-5 mr-2" /> {gettext("Practice Test")}
+                    </.link>
+                  <% end %>
+                  <.link
+                    navigate={~p"/classrooms/#{@classroom.id}"}
+                    class="btn btn-ghost ml-2"
+                  >
+                    {gettext("Back to Classroom")}
+                  </.link>
+                <% @lesson.requires_test and @lesson.test_id -> %>
+                  <%!-- First time: take test --%>
+                  <button
+                    phx-click="complete"
+                    class="btn btn-success"
+                  >
+                    <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> {gettext("Take Test")}
+                  </button>
+                <% true -> %>
+                  <%!-- First time: mark complete --%>
+                  <button
+                    phx-click="complete"
+                    data-confirm={gettext("Mark this lesson as complete?")}
+                    class="btn btn-success"
+                  >
+                    <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Mark Complete")}
+                  </button>
               <% end %>
             <% end %>
           </div>
