@@ -1,0 +1,188 @@
+---
+# Common server setup
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install essential packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - build-essential
+      - unzip
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - ufw
+      - fail2ban
+    state: present
+
+- name: Configure timezone
+  ansible.builtin.timezone:
+    name: Europe/Sofia
+
+- name: Create medoru user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    home: "{{ app_home }}"
+    shell: /bin/bash
+    system: yes
+    create_home: yes
+
+- name: Create application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ app_home }}"
+    - "{{ app_home }}/current"
+    - "{{ app_home }}/releases"
+    - "{{ app_home }}/logs"
+
+- name: Configure firewall - allow SSH
+  ansible.builtin.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Configure firewall - allow HTTP
+  ansible.builtin.ufw:
+    rule: allow
+    port: '80'
+    proto: tcp
+
+- name: Configure firewall - allow HTTPS
+  ansible.builtin.ufw:
+    rule: allow
+    port: '443'
+    proto: tcp
+
+- name: Set default UFW policy (deny incoming)
+  ansible.builtin.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set default UFW policy (allow outgoing)
+  ansible.builtin.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Enable firewall
+  ansible.builtin.ufw:
+    state: enabled
+
+- name: Install Erlang dependencies
+  ansible.builtin.apt:
+    name:
+      - libssl-dev
+      - libncurses5-dev
+      - libncursesw5-dev
+    state: present
+
+- name: Check if swap exists
+  ansible.builtin.shell: swapon -s | wc -l
+  register: swap_check
+  changed_when: false
+
+- name: Create swap file
+  ansible.builtin.command: fallocate -l 2G /swapfile
+  when: swap_check.stdout == "0"
+
+- name: Set swap permissions
+  ansible.builtin.file:
+    path: /swapfile
+    mode: '0600'
+  when: swap_check.stdout == "0"
+
+- name: Make swap
+  ansible.builtin.command: mkswap /swapfile
+  when: swap_check.stdout == "0"
+
+- name: Enable swap
+  ansible.builtin.command: swapon /swapfile
+  when: swap_check.stdout == "0"
+
+- name: Add swap to fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: '/swapfile none swap sw 0 0'
+  when: swap_check.stdout == "0"
+
+- name: Install Erlang (required for kiex)
+  ansible.builtin.apt:
+    name:
+      - erlang
+    state: present
+
+- name: Remove apt-installed Elixir (we'll use kiex)
+  ansible.builtin.apt:
+    name:
+      - elixir
+    state: absent
+
+- name: Install kiex (Elixir version manager)
+  ansible.builtin.shell: |
+    curl -fsSL https://raw.githubusercontent.com/taylor/kiex/master/install | bash
+  args:
+    creates: "{{ app_home }}/.kiex/bin/kiex"
+  become_user: "{{ app_user }}"
+
+- name: Install Elixir 1.17.0 via kiex
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex install 1.17.0 || true
+  args:
+    executable: /bin/bash
+  become_user: "{{ app_user }}"
+  register: kiex_install
+  changed_when: "'Installed Elixir version' in kiex_install.stdout"
+
+- name: Find installed Elixir version path
+  ansible.builtin.find:
+    paths: "{{ app_home }}/.kiex/elixirs"
+    patterns: "elixir-1.17.0*"
+    file_type: directory
+  become_user: "{{ app_user }}"
+  register: elixir_path
+
+- name: Set Elixir 1.17.0 as default
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use {{ elixir_path.files[0].path | basename }} --default
+  args:
+    executable: /bin/bash
+  become_user: "{{ app_user }}"
+  when: elixir_path.files | length > 0
+  ignore_errors: yes
+
+- name: Add kiex to .bashrc
+  ansible.builtin.lineinfile:
+    path: "{{ app_home }}/.bashrc"
+    line: 'source $HOME/.kiex/scripts/kiex'
+    create: yes
+    mode: '0644'
+  become_user: "{{ app_user }}"
+
+- name: Install Node.js (for asset building)
+  ansible.builtin.shell: |
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+  args:
+    creates: /usr/bin/node
+
+- name: Verify Node.js installation
+  ansible.builtin.command: node --version
+  register: node_version
+  changed_when: false
+
+- name: Display Node.js version
+  ansible.builtin.debug:
+    msg: "Node.js version: {{ node_version.stdout }}"

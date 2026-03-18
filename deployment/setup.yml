@@ -1,0 +1,81 @@
+---
+# Setup playbook for Medoru production server
+# Run this once to set up the server
+# Usage: ansible-playbook -i inventory/production setup.yml -K
+#
+# Environment variables (set before running):
+#   DB_PASSWORD         - PostgreSQL password for meddle user
+#   SECRET_KEY_BASE     - Phoenix secret key (generate with: mix phx.gen.secret)
+#   GOOGLE_CLIENT_ID    - Google OAuth Client ID
+#   GOOGLE_CLIENT_SECRET- Google OAuth Client Secret
+#
+# Example:
+#   DB_PASSWORD=mypass SECRET_KEY_BASE=xxx GOOGLE_CLIENT_ID=yyy GOOGLE_CLIENT_SECRET=zzz \
+#     ansible-playbook -i inventory/production setup.yml -K
+
+- name: Setup Medoru Production Server
+  hosts: medoru
+  become: yes
+
+  pre_tasks:
+    - name: Check required environment variables
+      ansible.builtin.fail:
+        msg: "Missing required environment variable: {{ item }}"
+      when: lookup('env', item) == ''
+      loop:
+        - DB_PASSWORD
+        - SECRET_KEY_BASE
+        - GOOGLE_CLIENT_ID
+        - GOOGLE_CLIENT_SECRET
+
+    - name: Set variables from environment
+      ansible.builtin.set_fact:
+        db_password: "{{ lookup('env', 'DB_PASSWORD') }}"
+        secret_key_base: "{{ lookup('env', 'SECRET_KEY_BASE') }}"
+        google_client_id: "{{ lookup('env', 'GOOGLE_CLIENT_ID') }}"
+        google_client_secret: "{{ lookup('env', 'GOOGLE_CLIENT_SECRET') }}"
+
+    - name: Create medoru config directory
+      ansible.builtin.file:
+        path: /etc/medoru
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Save environment variables to systemd service
+      ansible.builtin.template:
+        src: roles/medoru/templates/medoru.service.env.j2
+        dest: /etc/medoru/medoru.env
+        owner: root
+        group: root
+        mode: '0600'
+
+  roles:
+    - common
+    - postgres
+    - certbot
+    - nginx
+    - medoru
+
+  post_tasks:
+    - name: Display setup complete message
+      ansible.builtin.debug:
+        msg:
+          - "=== Setup Complete ==="
+          - ""
+          - "Medoru has been deployed and is running!"
+          - ""
+          - "Application URL: https://medoru.net"
+          - ""
+          - "Next steps:"
+          - "1. Restore the database manually using pg_restore (if you have a backup)"
+          - "   pg_restore -U meddle -d medoru_prod /path/to/backup.dump"
+          - ""
+          - "2. Or create an admin user:"
+          - "   sudo /opt/medoru/current/bin/medoru eval 'Medoru.Release.make_admin(\"your@email.com\")'"
+          - ""
+          - "Environment file saved to: /etc/medoru/medoru.env"
+          - ""
+          - "To deploy updates, run:"
+          - "  ansible-playbook -i inventory/production update.yml -K"

@@ -1,257 +1,119 @@
 # Iteration 33: Deployment & Production Setup
 
-**Status**: ⏳ PLANNED  
+**Status**: 🚧 IN PROGRESS  
+**Started**: 2026-03-18  
 **Priority**: 🔴 HIGH  
-**Estimated**: 3-4 days  
-**Depends On**: All v0.1.0 iterations complete
+**Domain**: medoru.net  
+**Server IP**: 178.104.91.176
 
 ## Overview
 
-Deploy Medoru to production server with full infrastructure setup: domain, SSL, systemd service, nginx reverse proxy, and database migration. Domain: **medoru.net**
+Deploy Medoru to production server at medoru.net using Ansible for automated infrastructure setup.
 
-## Infrastructure Requirements
+## Completed ✅
 
-### Server Setup
-- **Domain**: medoru.net
-- **SSL**: Certbot (Let's Encrypt)
-- **Web Server**: Nginx (reverse proxy)
-- **App Server**: Elixir/Phoenix as systemd service
-- **Database**: PostgreSQL
-- **Server**: VPS (to be provisioned)
+### 1. Ansible Deployment Infrastructure
+**Files Created:**
+- `deployment/inventory/production` - Server inventory (medoru.net)
+- `deployment/group_vars/medoru.yml` - Production variables
+- `deployment/setup.yml` - Initial server setup playbook
+- `deployment/update.yml` - Application update playbook
+- `deployment/build-release.sh` - Release build script
+- `deployment/deploy.sh` - Deployment helper script
+- `deployment/README.md` - Deployment documentation
 
-## Deployment Method
+### 2. Server Roles
 
-### Ansible Playbook Structure
-```
-deploy/
-├── ansible/
-│   ├── inventory/
-│   │   └── production.yml       # Server IP, SSH key
-│   ├── group_vars/
-│   │   └── all.yml              # Secrets (from local env)
-│   ├── playbook.yml             # Main deployment playbook
-│   └── roles/
-│       ├── common/              # System updates, deps
-│       ├── postgres/            # PostgreSQL setup
-│       ├── nginx/               # Reverse proxy + SSL
-│       ├── app/                 # Phoenix app deployment
-│       └── certbot/             # SSL certificates
-```
+#### Common Role
+- ✅ Firewall (UFW) - ports 22, 80, 443 open
+- ✅ Essential packages installed
+- ✅ Medoru user created
+- ✅ Application directories created
 
-## Secrets & Environment Variables
+#### PostgreSQL Role
+- ✅ PostgreSQL 16 installed (server + client)
+- ✅ Database `medoru_prod` created
+- ✅ User `meddle` with CREATEDB privileges
+- ✅ python3-psycopg2 installed
 
-### Local Development → Production
-Copy from local `.env` to server environment:
+#### Nginx Role
+- ✅ Nginx installed
+- ✅ SSL reverse proxy configured
+- ✅ HTTP → HTTPS redirect
+- ✅ WebSocket support
+- ✅ Security headers (HSTS, X-Frame-Options, etc.)
+
+#### Certbot Role
+- ✅ Certbot installed
+- ✅ Self-signed certificate fallback (due to DNSSEC issues)
+- ⚠️ Let's Encrypt certificate pending DNS fix
+
+#### Medoru Role
+- ✅ Systemd service configured
+- ✅ Environment file template
+- ✅ Service directories created
+- ✅ Service enabled
+
+### 3. Environment Variables Support
+Setup now uses environment variables:
+- `DB_PASSWORD` - PostgreSQL password
+- `SECRET_KEY_BASE` - Phoenix secret
+- `GOOGLE_CLIENT_ID` - OAuth client ID
+- `GOOGLE_CLIENT_SECRET` - OAuth client secret
+
+## In Progress 🚧
+
+### DNS Issues
+**Problem**: Domain `medoru.net` nameservers changed to:
+- NS1.REGISTRANT-VERIFICATION.COM
+- NS2.REGISTRANT-VERIFICATION.COM
+
+**Impact**: 
+- Domain points to wrong IP (212.123.41.108 instead of 178.104.91.176)
+- Let's Encrypt SSL certificate cannot be issued
+- Site not accessible via domain
+
+**Status**: Under investigation - likely domain verification issue with registrar (Ascio Technologies)
+
+## Pending ⏳
+
+1. **Fix DNS/nameservers**
+   - Restore correct nameservers
+   - Point A record to 178.104.91.176
+
+2. **Obtain SSL Certificate**
+   - Once DNS is fixed, run certbot
+   - Replace self-signed certificate
+
+3. **Deploy Application**
+   - Build release
+   - Copy to server
+   - Restore database
+   - Start service
+
+## Commands
 
 ```bash
-# Google OAuth (real credentials)
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+# Build release
+./deployment/build-release.sh
 
-# Database (production)
-DATABASE_URL=postgres://medoru:SECRET@localhost/medoru_prod
+# Setup server (with env vars)
+DB_PASSWORD=xxx SECRET_KEY_BASE=yyy GOOGLE_CLIENT_ID=zzz GOOGLE_CLIENT_SECRET=www \
+  ansible-playbook -i deployment/inventory/production deployment/setup.yml -K
 
-# Phoenix
-SECRET_KEY_BASE=  # Generate new: mix phx.gen.secret
-PHX_HOST=medoru.net
-PHX_PORT=4000
-
-# Other
-POOL_SIZE=10
+# Deploy update
+ansible-playbook -i deployment/inventory/production deployment/update.yml -K
 ```
 
-## Database Migration Strategy
+## Blockers
 
-### Data to Migrate (Seed to Production)
-```bash
-# Dump from local
-pg_dump medoru_dev \
-  --table=kanji \
-  --table=kanji_readings \
-  --table=words \
-  --table=word_kanjis \
-  --table=lessons \
-  --table=lesson_kanjis \
-  --table=lesson_words \
-  --table=badges \
-  --data-only \
-  > content_seed.sql
+- 🔴 **DNS/nameserver issue** - Domain not pointing to correct server
 
-# Restore on production
-psql medoru_prod < content_seed.sql
-```
+## Next Steps
 
-### Data NOT to Migrate
-- Users (start fresh in production)
-- User profiles/stats
-- Classrooms (custom content)
-- Custom tests
-- Test sessions/answers
-- Notifications
-
-## Deployment Steps
-
-### 1. Server Provisioning
-```bash
-# Ansible tasks:
-- Create deploy user
-- Install Erlang, Elixir, Node.js
-- Install PostgreSQL
-- Install Nginx
-- Configure firewall (ufw: 22, 80, 443, 4000 local)
-```
-
-### 2. Database Setup
-```bash
-# Ansible tasks:
-- Create medoru_prod database
-- Create medoru user
-- Set password from secrets
-- Grant privileges
-- Run migrations: mix ecto.migrate
-- Seed content (kanji, words, lessons, badges)
-```
-
-### 3. Application Deployment
-```bash
-# Ansible tasks:
-- Clone/pull from git
-- Install deps: mix deps.get
-- Compile: MIX_ENV=prod mix compile
-- Build assets: mix assets.deploy
-- Generate release: mix phx.gen.release
-- Create systemd service file
-- Start/restart service
-```
-
-### 4. Nginx + SSL
-```bash
-# Ansible tasks:
-- Configure nginx site for medoru.net
-- Reverse proxy to localhost:4000
-- Certbot: obtain SSL certificate
-- Auto-renewal cron job
-- Force HTTPS redirect
-```
-
-## Nginx Configuration
-
-```nginx
-# /etc/nginx/sites-available/medoru
-server {
-    listen 80;
-    server_name medoru.net www.medoru.net;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name medoru.net www.medoru.net;
-
-    ssl_certificate /etc/letsencrypt/live/medoru.net/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/medoru.net/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:4000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-## Systemd Service
-
-```ini
-# /etc/systemd/system/medoru.service
-[Unit]
-Description=Medoru Phoenix Application
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-User=medoru
-WorkingDirectory=/opt/medoru
-Environment=MIX_ENV=prod
-Environment=PHX_HOST=medoru.net
-Environment=DATABASE_URL=...
-Environment=SECRET_KEY_BASE=...
-Environment=GOOGLE_CLIENT_ID=...
-Environment=GOOGLE_CLIENT_SECRET=...
-ExecStart=/opt/medoru/bin/medoru start
-ExecStop=/opt/medoru/bin/medoru stop
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## Checklist
-
-### Pre-Deployment
-- [ ] Server provisioned (VPS)
-- [ ] Domain medoru.net purchased
-- [ ] DNS A record pointing to server
-- [ ] Real Google OAuth credentials obtained
-- [ ] Ansible playbook written
-- [ ] Content seed dump tested locally
-
-### Deployment
-- [ ] Run ansible playbook
-- [ ] Verify PostgreSQL running
-- [ ] Verify migrations complete
-- [ ] Verify content seeded
-- [ ] Verify systemd service running
-- [ ] Verify nginx serving requests
-- [ ] Verify SSL certificate valid
-- [ ] Verify Google OAuth works (real credentials)
-
-### Post-Deployment
-- [ ] Create first admin user
-- [ ] Smoke test all critical paths
-- [ ] Monitor logs for errors
-- [ ] Document any issues
-
-## Files to Create
-
-```
-deploy/
-├── ansible/
-│   ├── ansible.cfg
-│   ├── inventory/
-│   │   └── production.yml
-│   ├── group_vars/
-│   │   └── all.yml (encrypted with ansible-vault)
-│   ├── playbook.yml
-│   └── roles/
-│       ├── common/
-│       │   └── tasks/main.yml
-│       ├── postgres/
-│       │   └── tasks/main.yml
-│       ├── nginx/
-│       │   ├── tasks/main.yml
-│       │   └── templates/medoru.conf.j2
-│       ├── app/
-│       │   └── tasks/main.yml
-│       └── certbot/
-│           └── tasks/main.yml
-├── scripts/
-│   ├── dump_content.sh      # Dump kanji/words/lessons
-│   └── restore_content.sh   # Restore to production
-└── README.md                # Deployment instructions
-```
-
-## User Approval Required
-- [ ] Review ansible playbook structure
-- [ ] Confirm domain: medoru.net
-- [ ] Confirm data migration scope (what to include/exclude)
-- [ ] Approve deployment approach
-
-## Notes
-- PostgreSQL version: Match local (14+ recommended)
-- Elixir/OTP versions: Match local development
-- Use distillery or mix release for production builds
-- Consider database backup strategy post-deployment
+1. Contact domain registrar (Ascio) or DNS provider
+2. Restore correct nameserver configuration
+3. Verify domain points to 178.104.91.176
+4. Re-run certbot to obtain SSL certificate
+5. Deploy application release
+6. Restore database from dump

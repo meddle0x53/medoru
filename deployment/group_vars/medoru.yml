@@ -1,0 +1,24 @@
+---
+# Production variables for medoru.net
+# Sensitive values are provided via environment variables
+
+# Domain
+domain: medoru.net
+
+# Application
+app_name: medoru
+app_user: medoru
+app_group: medoru
+app_home: /opt/medoru
+app_port: 4000
+
+# Source code repository
+git_repo: https://github.com/meddle0x53/medoru.git
+git_branch: master
+
+# Database (password set via DB_PASSWORD env var)
+db_name: medoru_prod
+db_user: meddle
+
+# SSL
+email: n.tzvetinov@gmail.com

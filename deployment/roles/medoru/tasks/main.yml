@@ -1,0 +1,173 @@
+---
+# Medoru application setup and build
+
+- name: Create medoru config directory
+  ansible.builtin.file:
+    path: /etc/medoru
+    state: directory
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Create systemd service file
+  ansible.builtin.template:
+    src: medoru.service.j2
+    dest: /etc/systemd/system/medoru.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload systemd
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Create release directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+  loop:
+    - "{{ app_home }}"
+    - "{{ app_home }}/releases"
+    - "{{ app_home }}/logs"
+
+- name: Clone medoru source code
+  ansible.builtin.git:
+    repo: "{{ git_repo | default('https://github.com/nikolayku/medoru.git') }}"
+    dest: "{{ app_home }}/source"
+    version: "{{ git_branch | default('main') }}"
+    force: yes
+  become_user: "{{ app_user }}"
+
+- name: Install Hex package manager
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    mix local.hex --force
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    creates: "{{ app_home }}/.mix/archives/hex-*"
+
+- name: Install Rebar
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    mix local.rebar --force
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    creates: "{{ app_home }}/.mix/rebar*"
+
+- name: Install mix dependencies
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    export MIX_ENV=prod
+    mix deps.get --only prod
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    chdir: "{{ app_home }}/source"
+    creates: "{{ app_home }}/source/deps/phoenix"
+
+- name: Compile application
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    export MIX_ENV=prod
+    mix compile
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    chdir: "{{ app_home }}/source"
+    creates: "{{ app_home }}/source/_build/prod/lib/medoru"
+
+- name: Build assets
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    export MIX_ENV=prod
+    mix assets.deploy
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    chdir: "{{ app_home }}/source"
+    creates: "{{ app_home }}/source/priv/static/assets/app.css"
+
+- name: Build release
+  ansible.builtin.shell: |
+    source $HOME/.kiex/scripts/kiex
+    kiex use 1.17.0-25
+    export MIX_ENV=prod
+    mix release --overwrite
+  become_user: "{{ app_user }}"
+  args:
+    executable: /bin/bash
+    chdir: "{{ app_home }}/source"
+    creates: "{{ app_home }}/source/_build/prod/rel/medoru/bin/medoru"
+
+- name: Stop medoru service before deployment
+  ansible.builtin.systemd:
+    name: medoru
+    state: stopped
+  ignore_errors: yes
+
+- name: Deploy release to current
+  ansible.builtin.shell: |
+    rm -rf {{ app_home }}/current
+    cp -r {{ app_home }}/source/_build/prod/rel/medoru {{ app_home }}/current
+    chown -R {{ app_user }}:{{ app_group }} {{ app_home }}/current
+  args:
+    creates: "{{ app_home }}/current/bin/medoru"
+
+- name: Create tmp directory for app
+  ansible.builtin.file:
+    path: "{{ app_home }}/current/tmp"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+
+- name: Run database migrations
+  ansible.builtin.shell: |
+    export $(cat /etc/medoru/medoru.env | xargs)
+    {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
+  become_user: "{{ app_user }}"
+  register: migration_result
+  changed_when: true
+  ignore_errors: yes
+  timeout: 300
+
+- name: Display migration output
+  ansible.builtin.debug:
+    msg: "Migration result: {{ migration_result.stdout | default('No output') }}"
+
+- name: Start medoru service
+  ansible.builtin.systemd:
+    name: medoru
+    state: started
+    enabled: yes
+
+- name: Wait for application to be ready
+  ansible.builtin.uri:
+    url: http://127.0.0.1:4000/
+    status_code: 200
+  register: health_check
+  until: health_check.status == 200
+  retries: 15
+  delay: 3
+  ignore_errors: yes
+
+- name: Display deployment status
+  ansible.builtin.debug:
+    msg:
+      - "=== Medoru Deployment Complete ==="
+      - ""
+      - "Application URL: https://{{ domain }}"
+      - "Health check: {{ 'PASSED' if health_check.status == 200 else 'FAILED - check logs' }}"
+      - ""
+      - "View logs: sudo journalctl -u medoru -f"

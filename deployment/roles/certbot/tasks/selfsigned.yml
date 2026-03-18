@@ -1,0 +1,51 @@
+---
+# Create self-signed certificate as temporary solution
+# when DNSSEC issues prevent Let's Encrypt validation
+
+- name: Create SSL directory
+  ansible.builtin.file:
+    path: /etc/ssl/medoru
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Generate self-signed SSL certificate
+  ansible.builtin.command:
+    cmd: >
+      openssl req -x509 -nodes -days 365 -newkey rsa:2048
+      -keyout /etc/ssl/medoru/medoru.net.key
+      -out /etc/ssl/medoru/medoru.net.crt
+      -subj "/C=BG/ST=Sofia/L=Sofia/O=Medoru/CN={{ domain }}"
+    creates: /etc/ssl/medoru/medoru.net.crt
+
+- name: Set proper permissions on private key
+  ansible.builtin.file:
+    path: /etc/ssl/medoru/medoru.net.key
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Display warning
+  ansible.builtin.debug:
+    msg:
+      - "================================================"
+      - "WARNING: Using self-signed SSL certificate!"
+      - "================================================"
+      - ""
+      - "Your domain has DNSSEC issues that prevent"
+      - "Let's Encrypt from validating. To fix:"
+      - ""
+      - "Option 1: Fix DNSSEC at your DNS provider"
+      - "  - Check DNSKEY records are properly configured"
+      - "  - Or disable DNSSEC temporarily"
+      - ""
+      - "Option 2: Use DNS challenge instead of HTTP"
+      - "  - Requires API access to your DNS provider"
+      - ""
+      - "Option 3: Use Cloudflare or similar proxy"
+      - "  - They handle SSL automatically"
+      - ""
+      - "Once fixed, run: certbot certonly --force-renewal -d {{ domain }}"
+      - ""
+      - "================================================"

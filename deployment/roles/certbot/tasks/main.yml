@@ -1,0 +1,60 @@
+---
+# Certbot and SSL certificate setup
+
+- name: Install Certbot
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+
+- name: Check if certificate already exists
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
+  register: cert_exists
+
+- name: Create webroot directory for ACME challenge
+  ansible.builtin.file:
+    path: /var/www/certbot
+    state: directory
+    mode: '0755'
+
+- name: Obtain SSL certificate
+  ansible.builtin.command:
+    cmd: >
+      certbot certonly
+      --non-interactive
+      --agree-tos
+      --email {{ email }}
+      --webroot
+      --webroot-path /var/www/certbot
+      -d {{ domain }}
+  when: not cert_exists.stat.exists
+  register: certbot_result
+  ignore_errors: yes
+
+- name: Include self-signed certificate fallback
+  ansible.builtin.include_tasks: selfsigned.yml
+  when: 
+    - not cert_exists.stat.exists
+    - certbot_result is failed
+
+- name: Set certificate path fact
+  ansible.builtin.set_fact:
+    ssl_cert_path: >
+      {{ '/etc/letsencrypt/live/' + domain + '/fullchain.pem'
+         if cert_exists.stat.exists or certbot_result is succeeded
+         else '/etc/ssl/medoru/' + domain + '.crt' }}
+    ssl_key_path: >
+      {{ '/etc/letsencrypt/live/' + domain + '/privkey.pem'
+         if cert_exists.stat.exists or certbot_result is succeeded
+         else '/etc/ssl/medoru/' + domain + '.key' }}
+
+- name: Set up automatic renewal (only for Let's Encrypt)
+  ansible.builtin.cron:
+    name: "Certbot renewal"
+    minute: "0"
+    hour: "3"
+    job: "certbot renew --quiet --deploy-hook 'systemctl reload nginx'"
+    user: root
+  when: cert_exists.stat.exists or certbot_result is succeeded

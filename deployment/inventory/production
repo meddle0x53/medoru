@@ -1,0 +1,11 @@
+[medoru]
+medoru.net ansible_host=178.104.91.176
+
+[medoru:vars]
+ansible_user=meddle
+ansible_ssh_private_key_file=~/.ssh/id_ghub_ed25519
+ansible_python_interpreter=/usr/bin/python3
+ansible_become=yes
+ansible_become_method=sudo
+# If sudo requires password, use: ansible_become_pass=YOUR_SUDO_PASSWORD
+# Or run: ansible-playbook -K ... to prompt for sudo password

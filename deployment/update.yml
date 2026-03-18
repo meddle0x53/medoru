@@ -1,0 +1,124 @@
+---
+# Update playbook for Medoru
+# Run this to deploy a new release
+# Usage: ansible-playbook -i inventory/production update.yml -K
+
+- name: Update Medoru Application
+  hosts: medoru
+  become: yes
+
+  tasks:
+    - name: Pull latest source code
+      ansible.builtin.git:
+        repo: "{{ git_repo | default('https://github.com/nikolayku/medoru.git') }}"
+        dest: "{{ app_home }}/source"
+        version: "{{ git_branch | default('main') }}"
+        force: yes
+      become_user: "{{ app_user }}"
+
+    - name: Install mix dependencies
+      ansible.builtin.shell: |
+        source $HOME/.kiex/scripts/kiex
+        kiex use 1.17.0-25
+        export MIX_ENV=prod
+        mix deps.get --only prod
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ app_home }}/source"
+
+    - name: Compile application
+      ansible.builtin.shell: |
+        source $HOME/.kiex/scripts/kiex
+        kiex use 1.17.0-25
+        export MIX_ENV=prod
+        mix compile
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ app_home }}/source"
+
+    - name: Build assets
+      ansible.builtin.shell: |
+        source $HOME/.kiex/scripts/kiex
+        kiex use 1.17.0-25
+        export MIX_ENV=prod
+        mix assets.deploy
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ app_home }}/source"
+
+    - name: Build release
+      ansible.builtin.shell: |
+        source $HOME/.kiex/scripts/kiex
+        kiex use 1.17.0-25
+        export MIX_ENV=prod
+        mix release --overwrite
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ app_home }}/source"
+
+    - name: Backup current release
+      ansible.builtin.command:
+        cmd: "cp -r /opt/medoru/current /opt/medoru/current.backup.{{ ansible_date_time.epoch }}"
+      ignore_errors: yes
+      when: "ansible_facts['stat']['/opt/medoru/current']['exists'] | default(false)"
+
+    - name: Stop medoru service
+      ansible.builtin.systemd:
+        name: medoru
+        state: stopped
+
+    - name: Deploy release to current
+      ansible.builtin.shell: |
+        rm -rf {{ app_home }}/current
+        cp -r {{ app_home }}/source/_build/prod/rel/medoru {{ app_home }}/current
+        chown -R {{ app_user }}:{{ app_group }} {{ app_home }}/current
+
+    - name: Create tmp directory
+      ansible.builtin.file:
+        path: /opt/medoru/current/tmp
+        state: directory
+        owner: medoru
+        group: medoru
+        mode: '0755'
+
+    - name: Run database migrations
+      ansible.builtin.shell: |
+        export $(cat /etc/medoru/medoru.env | xargs)
+        {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
+      become_user: "{{ app_user }}"
+      register: migration_result
+      changed_when: "'migrations completed' in migration_result.stdout | lower"
+
+    - name: Display migration output
+      ansible.builtin.debug:
+        msg: "{{ migration_result.stdout }}"
+
+    - name: Start medoru service
+      ansible.builtin.systemd:
+        name: medoru
+        state: started
+        enabled: yes
+
+    - name: Wait for application to be ready
+      ansible.builtin.uri:
+        url: http://127.0.0.1:4000/
+        status_code: 200
+      register: health_check
+      until: health_check.status == 200
+      retries: 15
+      delay: 3
+      ignore_errors: yes
+
+    - name: Display deployment status
+      ansible.builtin.debug:
+        msg:
+          - "=== Update Complete ==="
+          - ""
+          - "Application URL: https://medoru.net"
+          - "Health check: {{ 'PASSED' if health_check.status == 200 else 'FAILED - check logs' }}"
+          - ""
+          - "View logs: sudo journalctl -u medoru -f"

@@ -1,0 +1,13 @@
+# Deployment artifacts
+medoru_release.tar.gz
+*.retry
+
+# Ansible vault files (if used)
+*.vault.yml
+*.vault
+
+# Local inventory overrides
+inventory/local*
+
+# Environment files (should be provided manually)
+group_vars/secrets.yml

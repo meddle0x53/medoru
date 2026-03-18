@@ -91,6 +91,7 @@ defmodule Medoru.MixProject do
         version: "0.1.0",
         applications: [medoru: :permanent],
         overlays: ["rel/overlays"],
+        include_erts: false,
         steps: [:assemble, :tar]
       ]
     ]

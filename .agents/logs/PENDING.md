@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-03-18  
 **Completed**: 29 iterations  
-**Remaining**: 1 iteration for v0.1.0 (Iteration 33 - Deployment)
+**In Progress**: 1 iteration (Iteration 33 - Deployment)
 **Backlogged**: 1 iteration (13 - Admin Badge Management)
 
 ---
@@ -525,16 +525,16 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 ## 📊 Summary
 
 **Completed**: 29 iterations  
-**Remaining for v0.1.0**: 1 iteration  
+**In Progress**: 1 iteration (33 - Deployment)  
 **Backlogged**: 1 iteration (13 - Admin Badge Management)
 
 | Priority | Iterations | Status |
 |----------|------------|--------|
 | 🔴 High | 14 ✅, 15A ✅, 16 ✅, 18 ✅, 19 ✅, 20 ✅, 21 ✅, 23 ✅, 25 ✅, 25B ✅, 26 ✅, 27 ✅, 28 ✅, 29 ✅, 30 ✅, 31 ✅, 32 ✅ | 17 COMPLETE |
-| 🔴 High | 33 | 1 PENDING |
+| 🔴 High | 33 🚧 | 1 IN PROGRESS |
 | 🟡 Medium | 17 ✅, 24A ✅, 24B ✅ | 3 COMPLETE |
 | 🟡 Medium | 13 | 1 BACKLOGGED (Post v0.1.0) |
-| **Total v0.1.0** | **1** | **3-4 days est.** |
+| **Total v0.1.0** | **1** | **Blocked by DNS** |
 
 ---
 
@@ -558,7 +558,7 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 15. **Iteration 30** ✅ (Complete Test Taking) - Timer, results, auto-submit, resume
 
 ### Up Next 🟡
-1. **Iteration 33** (Deployment) - Production setup - LAST ITERATION FOR v0.1.0!
+1. **Iteration 33** (Deployment) - 🚧 IN PROGRESS - Blocked by DNS issue
 
 ### Completed ✅
 1. **Iteration 24A** (UI i18n) ✅ - Translate interface to Bulgarian and Japanese
@@ -613,36 +613,44 @@ mix medoru.generate_lessons_v7  # 300 topic-based lessons
 ---
 
 ### Iteration 33: Deployment & Production Setup
-**Status**: ⏳ PLANNED | **Estimated**: 3-4 days  
+**Status**: 🚧 IN PROGRESS | **Started**: 2026-03-18  
 **Log**: [ITERATION-33-deployment.md](./ITERATION-33-deployment.md)  
 **Priority**: 🔴 HIGH  
-**Domain**: medoru.net
+**Domain**: medoru.net  
+**Server**: 178.104.91.176
 
 **Infrastructure**:
-- **Server**: VPS (to be provisioned)
-- **Domain**: medoru.net (to be purchased)
-- **SSL**: Certbot (Let's Encrypt)
-- **Reverse Proxy**: Nginx
-- **App**: Phoenix as systemd service
-- **Database**: PostgreSQL
+- ✅ **Server**: VPS provisioned (178.104.91.176)
+- ⚠️ **Domain**: medoru.net (DNS/nameserver issues)
+- ⚠️ **SSL**: Self-signed (Let's Encrypt pending DNS fix)
+- ✅ **Reverse Proxy**: Nginx configured
+- ✅ **App**: Systemd service ready
+- ✅ **Database**: PostgreSQL installed and configured
 
-**Deployment Method**: Ansible playbook
+**Deployment Method**: Ansible playbook ✅
+
+**Completed**:
+- ✅ Ansible deployment infrastructure
+- ✅ PostgreSQL 16 + client
+- ✅ Nginx with SSL reverse proxy
+- ✅ Systemd service configuration
+- ✅ Firewall (UFW) with ports 22, 80, 443
+- ✅ Self-signed SSL certificate (temporary)
+
+**Blockers**:
+- 🔴 DNS nameservers changed to registrant-verification.com
+- 🔴 Domain not pointing to correct IP
+- 🔴 Let's Encrypt SSL cannot be issued
+
+**Next Steps**:
+1. Fix DNS/nameserver configuration
+2. Obtain Let's Encrypt SSL certificate
+3. Deploy application release
+4. Restore database from dump
 
 **Data Migration**:
-- ✅ Migrate: Kanji, readings, words, lessons, badges (system content)
-- ❌ Skip: Users, classrooms, custom tests, custom lessons (user data)
-
-**Secrets from Local Env**:
-- Real Google OAuth credentials
-- Database credentials
-- Phoenix secret key
-
-**Key Features**:
-- Automated deployment via Ansible
-- Nginx reverse proxy with SSL
-- Systemd service for Phoenix app
-- Database seeding from local dump
-- Production environment variables
+- ✅ Ready: Kanji, readings, words, lessons (prod dump created)
+- ❌ Skip: Users, classrooms, custom tests (user data)
 
 ---
 

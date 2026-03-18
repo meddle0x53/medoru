@@ -1,0 +1,40 @@
+[Unit]
+Description=Medoru Phoenix Application
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_home }}/current
+
+# Load environment variables from external file
+EnvironmentFile=/etc/medoru/medoru.env
+
+# Runtime environment
+Environment=MIX_ENV=prod
+Environment=LANG=en_US.UTF-8
+Environment=PORT={{ app_port }}
+
+# Phoenix release bin directory
+ExecStart={{ app_home }}/current/bin/medoru start
+ExecStop={{ app_home }}/current/bin/medoru stop
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ app_home }}/current/tmp
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=medoru
+
+[Install]
+WantedBy=multi-user.target

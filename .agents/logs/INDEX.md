@@ -28,7 +28,7 @@
 | 24A | i18n UI (Bulgarian/Japanese) | ✅ APPROVED | 2026-03-15 |
 | 24B | i18n Content Translation | ✅ APPROVED | 2026-03-18 |
 | 32 | UI Polish & Mobile Responsiveness | ✅ APPROVED | 2026-03-18 |
-| 33 | Deployment & Production Setup | ⏳ PLANNED | 🔴 HIGH | - |
+| 33 | Deployment & Production Setup | 🚧 IN PROGRESS | 🔴 HIGH | - |
 
 ## Future Ideas (Backlog - Post v0.1.0)
 - Mobile app (React Native/Flutter)
@@ -41,10 +41,10 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 32 APPROVED - Ready for 33 (Deployment)
+- **Phase**: Iteration 33 IN PROGRESS - Deployment to medoru.net
 - **Last completed**: Iteration 32 - UI Polish & Mobile
-- **Current**: ⏳ 1 PENDING iteration for v0.1.0
-- **Overall Progress**: 29/30 iterations for v0.1.0 (1 remaining + 1 backlogged)
+- **Current**: 🚧 Deployment in progress - DNS issues being resolved
+- **Overall Progress**: 29/30 iterations for v0.1.0 (1 in progress + 1 backlogged)
 
 ## ⏳ Pending Work for v0.1.0
 1. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
@@ -181,5 +181,6 @@ mix ecto.reset
 ---
 
 **Last updated**: 2026-03-18  
-**Status**: Iteration 32 APPROVED
+**Status**: Iteration 33 IN PROGRESS (Deployment)
 **Tests**: 468 passing
+**Blocker**: DNS/nameserver issue
