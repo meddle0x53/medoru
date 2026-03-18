@@ -10,9 +10,9 @@
   tasks:
     - name: Pull latest source code
       ansible.builtin.git:
-        repo: "{{ git_repo | default('https://github.com/nikolayku/medoru.git') }}"
+        repo: "{{ git_repo }}"
         dest: "{{ app_home }}/source"
-        version: "{{ git_branch | default('main') }}"
+        version: "{{ git_branch }}"
         force: yes
       become_user: "{{ app_user }}"
 
@@ -60,30 +60,49 @@
         executable: /bin/bash
         chdir: "{{ app_home }}/source"
 
+    - name: Check if current release exists
+      ansible.builtin.stat:
+        path: "{{ app_home }}/current"
+      register: current_release_stat
+
     - name: Backup current release
       ansible.builtin.command:
-        cmd: "cp -r /opt/medoru/current /opt/medoru/current.backup.{{ ansible_date_time.epoch }}"
+        cmd: "cp -r {{ app_home }}/current {{ app_home }}/current.backup.{{ ansible_date_time.epoch }}"
+      when: current_release_stat.stat.exists
       ignore_errors: yes
-      when: "ansible_facts['stat']['/opt/medoru/current']['exists'] | default(false)"
 
     - name: Stop medoru service
       ansible.builtin.systemd:
         name: medoru
         state: stopped
 
+    - name: Remove old current release
+      ansible.builtin.file:
+        path: "{{ app_home }}/current"
+        state: absent
+
     - name: Deploy release to current
-      ansible.builtin.shell: |
-        rm -rf {{ app_home }}/current
-        cp -r {{ app_home }}/source/_build/prod/rel/medoru {{ app_home }}/current
-        chown -R {{ app_user }}:{{ app_group }} {{ app_home }}/current
+      ansible.builtin.copy:
+        src: "{{ app_home }}/source/_build/prod/rel/medoru"
+        dest: "{{ app_home }}/current"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+        remote_src: yes
 
     - name: Create tmp directory
       ansible.builtin.file:
-        path: /opt/medoru/current/tmp
+        path: "{{ app_home }}/current/tmp"
         state: directory
-        owner: medoru
-        group: medoru
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
         mode: '0755'
+
+    - name: Fix permissions on env file
+      ansible.builtin.file:
+        path: /etc/medoru/medoru.env
+        group: "{{ app_group }}"
+        mode: '0640'
 
     - name: Run database migrations
       ansible.builtin.shell: |
@@ -91,11 +110,13 @@
         {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
       become_user: "{{ app_user }}"
       register: migration_result
-      changed_when: "'migrations completed' in migration_result.stdout | lower"
+      changed_when: true
+      ignore_errors: yes
+      timeout: 300
 
     - name: Display migration output
       ansible.builtin.debug:
-        msg: "{{ migration_result.stdout }}"
+        msg: "Migration result: {{ migration_result.stdout | default('No output') }}"
 
     - name: Start medoru service
       ansible.builtin.systemd:

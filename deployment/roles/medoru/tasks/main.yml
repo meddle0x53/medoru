@@ -138,19 +138,29 @@
     group: "{{ app_group }}"
     mode: '0640'
 
-- name: Run database migrations
+- name: Check if database has existing tables
+  ansible.builtin.shell: |
+    export $(cat /etc/medoru/medoru.env | xargs)
+    psql "$DATABASE_URL" -tc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null | head -1 || echo "0"
+  become_user: "{{ app_user }}"
+  register: table_count
+  changed_when: false
+  failed_when: false
+
+- name: Run database migrations (if database exists)
   ansible.builtin.shell: |
     export $(cat /etc/medoru/medoru.env | xargs)
     {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
   become_user: "{{ app_user }}"
   register: migration_result
   changed_when: true
-  ignore_errors: yes
+  failed_when: false
   timeout: 300
+  when: table_count.stdout | default('0') | trim | int > 0
 
 - name: Display migration output
   ansible.builtin.debug:
-    msg: "Migration result: {{ migration_result.stdout | default('No output') }}"
+    msg: "Migration result: {{ migration_result.stdout | default('Skipped or No output') }}"
 
 - name: Start medoru service
   ansible.builtin.systemd:
