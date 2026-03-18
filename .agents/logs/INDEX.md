@@ -26,8 +26,8 @@
 | 20 | Classroom Tests, Lessons & Rankings | ✅ COMPLETED | 2026-03-11 |
 | 21 | Admin Dashboard | ✅ COMPLETED | 2026-03-16 |
 | 24A | i18n UI (Bulgarian/Japanese) | ✅ APPROVED | 2026-03-15 |
-| 24B | i18n Content Translation | ⏳ NOT STARTED | 🔴 HIGH | - |
-| 32 | UI Polish & Mobile Responsiveness | ⏳ NOT STARTED | 🔴 HIGH | - |
+| 24B | i18n Content Translation | ✅ APPROVED | 2026-03-18 |
+| 32 | UI Polish & Mobile Responsiveness | ✅ APPROVED | 2026-03-18 |
 | 33 | Deployment & Production Setup | ⏳ PLANNED | 🔴 HIGH | - |
 
 ## Future Ideas (Backlog - Post v0.1.0)
@@ -41,14 +41,13 @@
 
 ## Current State
 - **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 24A APPROVED - Ready for 24B (HIGH)
-- **Last completed**: Iteration 24A - UI Internationalization (i18n)
-- **Current**: ⏳ 1 PENDING iteration for v0.1.0 ([see PENDING.md](./PENDING.md))
-- **Overall Progress**: 27/28 iterations for v0.1.0 (1 remaining + 1 backlogged)
+- **Phase**: Iteration 32 APPROVED - Ready for 33 (Deployment)
+- **Last completed**: Iteration 32 - UI Polish & Mobile
+- **Current**: ⏳ 1 PENDING iteration for v0.1.0
+- **Overall Progress**: 29/30 iterations for v0.1.0 (1 remaining + 1 backlogged)
 
-## ⏳ Pending Work for v0.1.0 (Priority Order)
-1. **🔴 HIGH**: Iteration 24B - Content Translation (Kanji/Word meanings → BG/JA) - IN PROGRESS
-2. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
+## ⏳ Pending Work for v0.1.0
+1. **🔴 HIGH**: Iteration 33 - Deployment & Production Setup (medoru.net)
 
 ## 🗂️ Backlog (Post v0.1.0)
 - **🟡 MEDIUM**: Iteration 13 - Admin Badge Management
@@ -120,8 +119,7 @@ See [PENDING.md](./PENDING.md) for detailed breakdown.
 - Review items + new words mix (up to 5 new)
 - One test per user per day
 
-### ⏳ Pending (Iterations 24B, 32, 33) - MVP Extended
-- Content Translation (24B) 🔴 HIGH - IN PROGRESS
+### ⏳ Pending (Iterations 32, 33) - MVP Extended
 - UI Polish & Mobile (32) 🔴 HIGH
 - Deployment & Production Setup (33) 🔴 HIGH
 
@@ -167,7 +165,7 @@ mix ecto.reset
 1. **Always read this INDEX first** to understand current state
 2. **Check the latest ITERATION-XX-*.md** for detailed implementation notes
 3. **Verify database is running** before starting work
-4. **Ask meddle** which iteration to work on (currently: Iteration 24B or 32 - both HIGH priority)
+4. **Ask meddle** which iteration to work on (currently: Iteration 33 - Deployment)
 5. **Follow the workflow** from `.agents/skills/medoru-workflow/SKILL.md`
 
 ## Important Files
@@ -182,6 +180,6 @@ mix ecto.reset
 
 ---
 
-**Last updated**: 2026-03-15  
-**Status**: Iteration 24A APPROVED
+**Last updated**: 2026-03-18  
+**Status**: Iteration 32 APPROVED
 **Tests**: 468 passing
