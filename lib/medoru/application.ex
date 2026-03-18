@@ -31,7 +31,7 @@ defmodule Medoru.Application do
 
   # Configure logging backends based on environment
   defp configure_logging do
-    env = Application.get_env(:medoru, :env, Mix.env())
+    env = Application.get_env(:medoru, :env, :prod)
 
     if env == :prod do
       # Add file backend in production

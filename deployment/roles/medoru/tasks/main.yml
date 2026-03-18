@@ -132,6 +132,12 @@
     group: "{{ app_group }}"
     mode: '0755'
 
+- name: Fix permissions on env file
+  ansible.builtin.file:
+    path: /etc/medoru/medoru.env
+    group: "{{ app_group }}"
+    mode: '0640'
+
 - name: Run database migrations
   ansible.builtin.shell: |
     export $(cat /etc/medoru/medoru.env | xargs)

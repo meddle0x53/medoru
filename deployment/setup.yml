@@ -48,8 +48,8 @@
         src: roles/medoru/templates/medoru.service.env.j2
         dest: /etc/medoru/medoru.env
         owner: root
-        group: root
-        mode: '0600'
+        group: "{{ app_group }}"
+        mode: '0640'
 
   roles:
     - common
