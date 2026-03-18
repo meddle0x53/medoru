@@ -1096,23 +1096,6 @@ defmodule Medoru.Tests do
     step.correct_answer
   end
 
-  # Check if the step question is meaning-based
-  defp is_meaning_question?(step) do
-    # Meaning-based questions have the meaning as the correct answer
-    # word_to_meaning: "What does X mean?" -> correct_answer is meaning
-    # meaning_to_word: "Which word means Y?" -> correct_answer is word (not meaning)
-    cond do
-      # word_to_meaning has word text in question, meaning as answer
-      String.starts_with?(step.question || "", "__MSG_WHAT_DOES_WORD_MEAN__|") -> true
-      # Check question_data for step type info
-      get_in(step.question_data, ["step_type"]) == "word_to_meaning" -> true
-      # Heuristic: if question asks "Which word means", then answers are words (not meanings)
-      String.starts_with?(step.question || "", "__MSG_WHICH_WORD_MEANS__|") -> false
-      # Default: not a meaning question
-      true -> false
-    end
-  end
-
   @doc """
   Updates a step answer (e.g., for manual grading or corrections).
 

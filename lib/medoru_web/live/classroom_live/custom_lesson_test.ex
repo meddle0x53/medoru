@@ -19,14 +19,14 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
       nil ->
         {:ok,
          socket
-         |> put_flash(:error, "You are not a member of this classroom.")
+         |> put_flash(:error, gettext("You are not a member of this classroom."))
          |> push_navigate(to: ~p"/classrooms")}
 
       membership ->
         if membership.status != :approved do
           {:ok,
            socket
-           |> put_flash(:error, "Your membership is pending approval.")
+           |> put_flash(:error, gettext("Your membership is pending approval."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
         else
           load_test(socket, classroom_id, lesson_id, user, locale, practice)
@@ -34,7 +34,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     end
   end
 
-  defp load_test(socket, classroom_id, lesson_id, user, locale, practice \\ false) do
+  defp load_test(socket, classroom_id, lesson_id, user, locale, practice) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
@@ -45,7 +45,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     if lesson_id not in lesson_ids do
       {:ok,
        socket
-       |> put_flash(:error, "This lesson is not available in this classroom.")
+       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
        |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     else
       # Check if test is required and exists
@@ -89,7 +89,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
             {:error, _reason} ->
               {:ok,
                socket
-               |> put_flash(:error, "Could not start test.")
+               |> put_flash(:error, gettext("Could not start test."))
                |> push_navigate(
                  to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}"
                )}

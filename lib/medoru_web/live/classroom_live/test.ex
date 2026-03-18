@@ -500,7 +500,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
          )}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to complete test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to complete test."))}
     end
   end
 
@@ -531,7 +531,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
          )}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to submit test.")}
+        {:noreply, put_flash(socket, :error, gettext("Failed to submit test."))}
     end
   end
 

@@ -33,7 +33,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
-  defp load_lesson(socket, classroom_id, lesson_id, user, locale, practice \\ false) do
+  defp load_lesson(socket, classroom_id, lesson_id, user, locale, practice) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 

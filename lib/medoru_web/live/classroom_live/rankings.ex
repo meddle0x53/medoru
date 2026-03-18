@@ -18,7 +18,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
     if not Classrooms.is_approved_member?(classroom_id, user.id) do
       {:ok,
        socket
-       |> put_flash(:error, "You must be a member to view rankings.")
+       |> put_flash(:error, gettext("You must be a member to view rankings."))
        |> push_navigate(to: ~p"/classrooms")}
     else
       classroom = Classrooms.get_classroom!(classroom_id)

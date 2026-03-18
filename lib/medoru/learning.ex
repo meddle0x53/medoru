@@ -376,6 +376,88 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Tracks that a user has learned multiple words.
+
+  Takes a list of word_ids and marks them all as learned.
+  Skips words that are already learned.
+
+  ## Examples
+
+      iex> track_words_learned(user_id, [word_id1, word_id2])
+      {:ok, [%UserProgress{}, ...]}
+
+  """
+  def track_words_learned(user_id, word_ids) when is_list(word_ids) do
+    results =
+      word_ids
+      |> Enum.map(&track_word_learned(user_id, &1))
+      |> Enum.filter(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:ok, progress} -> progress end)
+
+    {:ok, results}
+  end
+
+  @doc """
+  Tracks that a user has learned multiple kanji.
+
+  Takes a list of kanji_ids and marks them all as learned.
+  Skips kanji that are already learned.
+
+  ## Examples
+
+      iex> track_kanji_learned_batch(user_id, [kanji_id1, kanji_id2])
+      {:ok, [%UserProgress{}, ...]}
+
+  """
+  def track_kanji_learned_batch(user_id, kanji_ids) when is_list(kanji_ids) do
+    results =
+      kanji_ids
+      |> Enum.map(&track_kanji_learned(user_id, &1))
+      |> Enum.filter(fn
+        {:ok, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {:ok, progress} -> progress end)
+
+    {:ok, results}
+  end
+
+  @doc """
+  Gets the list of already learned word IDs for a user.
+
+  ## Examples
+
+      iex> list_learned_word_ids(user_id)
+      ["word-id-1", "word-id-2"]
+
+  """
+  def list_learned_word_ids(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
+    |> select([up], up.word_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the list of already learned kanji IDs for a user.
+
+  ## Examples
+
+      iex> list_learned_kanji_ids(user_id)
+      ["kanji-id-1", "kanji-id-2"]
+
+  """
+  def list_learned_kanji_ids(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+    |> select([up], up.kanji_id)
+    |> Repo.all()
+  end
+
+  @doc """
   Updates the mastery level for a kanji.
 
   ## Examples
