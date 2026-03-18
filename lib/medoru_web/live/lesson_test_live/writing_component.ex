@@ -86,6 +86,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
   end
 
   attr :kanji, :map, required: true
+  attr :locale, :string, default: "en"
 
   def stroke_preview(assigns) do
     ~H"""
