@@ -121,8 +121,7 @@
     rm -rf {{ app_home }}/current
     cp -r {{ app_home }}/source/_build/prod/rel/medoru {{ app_home }}/current
     chown -R {{ app_user }}:{{ app_group }} {{ app_home }}/current
-  args:
-    creates: "{{ app_home }}/current/bin/medoru"
+    chmod -R 755 {{ app_home }}/current
 
 - name: Create tmp directory for app
   ansible.builtin.file:
@@ -135,6 +134,7 @@
 - name: Fix permissions on env file
   ansible.builtin.file:
     path: /etc/medoru/medoru.env
+    owner: root
     group: "{{ app_group }}"
     mode: '0640'
 
@@ -149,9 +149,19 @@
 
 - name: Run database migrations (if database exists)
   ansible.builtin.shell: |
-    export $(cat /etc/medoru/medoru.env | xargs)
-    {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
-  become_user: "{{ app_user }}"
+    # Read env vars as root and pass them to medoru user
+    export DATABASE_URL=$(grep DATABASE_URL /etc/medoru/medoru.env | cut -d= -f2-)
+    export SECRET_KEY_BASE=$(grep SECRET_KEY_BASE /etc/medoru/medoru.env | cut -d= -f2-)
+    export GOOGLE_CLIENT_ID=$(grep GOOGLE_CLIENT_ID /etc/medoru/medoru.env | cut -d= -f2-)
+    export GOOGLE_CLIENT_SECRET=$(grep GOOGLE_CLIENT_SECRET /etc/medoru/medoru.env | cut -d= -f2-)
+    export PHX_HOST=$(grep PHX_HOST /etc/medoru/medoru.env | cut -d= -f2-)
+    export PORT=$(grep PORT /etc/medoru/medoru.env | cut -d= -f2-)
+    export POOL_SIZE=$(grep POOL_SIZE /etc/medoru/medoru.env | cut -d= -f2-)
+    export PHX_SERVER=true
+    # Run as medoru with preserved env vars
+    sudo -E -u {{ app_user }} {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"
+  args:
+    chdir: "{{ app_home }}/current"
   register: migration_result
   changed_when: true
   failed_when: false
