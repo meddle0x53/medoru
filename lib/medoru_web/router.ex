@@ -36,6 +36,8 @@ defmodule MedoruWeb.Router do
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
       live "/attribution", SettingsLive.Attribution
+      live "/privacy", PrivacyLive
+      live "/cookies", CookiesLive
     end
   end
 
@@ -101,6 +103,7 @@ defmodule MedoruWeb.Router do
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/profile", SettingsLive.Profile
       live "/language", SettingsLive.Language
+      live "/data-privacy", SettingsLive.DataPrivacy
     end
   end
 

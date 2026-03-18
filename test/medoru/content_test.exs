@@ -469,9 +469,14 @@ defmodule Medoru.ContentTest do
       ichi_exact = word_fixture(%{text: "一", meaning: "one", reading: "いち", usage_frequency: 100})
 
       # Create compound words containing "一" with higher frequencies
-      _one_person = word_fixture(%{text: "一人", meaning: "one person", reading: "ひとり", usage_frequency: 500})
-      _one_day = word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
-      _first_month = word_fixture(%{text: "一月", meaning: "January", reading: "いちがつ", usage_frequency: 600})
+      _one_person =
+        word_fixture(%{text: "一人", meaning: "one person", reading: "ひとり", usage_frequency: 500})
+
+      _one_day =
+        word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
+
+      _first_month =
+        word_fixture(%{text: "一月", meaning: "January", reading: "いちがつ", usage_frequency: 600})
 
       # Search for the kanji "一"
       results = Content.search_words("一", limit: 10)
@@ -479,8 +484,10 @@ defmodule Medoru.ContentTest do
       # The exact kanji match "一" should be first
       assert length(results) >= 3
       first_result = hd(results)
+
       assert first_result.id == ichi_exact.id,
              "Expected exact kanji match '一' to be first, but got '#{first_result.text}'"
+
       assert first_result.text == "一"
     end
 
@@ -489,9 +496,14 @@ defmodule Medoru.ContentTest do
       ichi_exact = word_fixture(%{text: "一", meaning: "one", reading: "いち", usage_frequency: 100})
 
       # Create words with similar readings (containing "いち") with higher frequencies
-      _one_day = word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
-      _first_month = word_fixture(%{text: "一月", meaning: "January", reading: "いちがつ", usage_frequency: 600})
-      _market = word_fixture(%{text: "市場", meaning: "market", reading: "いちば", usage_frequency: 500})
+      _one_day =
+        word_fixture(%{text: "一日", meaning: "one day", reading: "いちにち", usage_frequency: 800})
+
+      _first_month =
+        word_fixture(%{text: "一月", meaning: "January", reading: "いちがつ", usage_frequency: 600})
+
+      _market =
+        word_fixture(%{text: "市場", meaning: "market", reading: "いちば", usage_frequency: 500})
 
       # Search for the reading "いち"
       results = Content.search_words("いち", limit: 10)
@@ -499,8 +511,10 @@ defmodule Medoru.ContentTest do
       # The exact reading match "一" (いち) should be first
       assert length(results) >= 3
       first_result = hd(results)
+
       assert first_result.id == ichi_exact.id,
              "Expected exact reading match '一' (いち) to be first, but got '#{first_result.text}' (#{first_result.reading})"
+
       assert first_result.reading == "いち"
     end
 

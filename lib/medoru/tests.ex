@@ -699,7 +699,10 @@ defmodule Medoru.Tests do
   """
   def get_test_session_with_answers(id) do
     TestSession
-    |> preload([test: [test_steps: [:kanji, :word]], test_step_answers: [test_step: [:kanji, :word]]])
+    |> preload(
+      test: [test_steps: [:kanji, :word]],
+      test_step_answers: [test_step: [:kanji, :word]]
+    )
     |> Repo.get(id)
   end
 

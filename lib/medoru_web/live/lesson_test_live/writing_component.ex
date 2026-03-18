@@ -129,14 +129,14 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
 
   defp translate_question(step, locale) when is_map(step) do
     question = step.question || ""
-    
+
     case question do
       "__MSG_WRITE_KANJI_FOR__|" <> _ ->
         # Get localized meanings for the question
         meanings = get_localized_meanings_for_step(step, locale)
         gettext("Write the kanji for '%{meanings}'", meanings: meanings)
-      
-      _ -> 
+
+      _ ->
         question
     end
   end
@@ -152,19 +152,20 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
   # Get localized meanings for the step question
   defp get_localized_meanings_for_step(step, locale) do
     # Try to get kanji from step
-    kanji = case step.kanji do
-      %Ecto.Association.NotLoaded{} -> nil
-      nil -> nil
-      k -> k
-    end
-    
+    kanji =
+      case step.kanji do
+        %Ecto.Association.NotLoaded{} -> nil
+        nil -> nil
+        k -> k
+      end
+
     if kanji do
       get_localized_meanings(kanji, locale)
     else
       # Fallback to stored meanings in question_data
       qd = step.question_data || %{}
       stored = qd["meanings"] || qd[:meanings] || []
-      
+
       if stored != [] do
         Enum.join(stored, ", ")
       else

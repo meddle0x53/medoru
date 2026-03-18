@@ -52,21 +52,20 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
       if not lesson.requires_test or is_nil(lesson.test_id) do
         {:ok,
          socket
-         |> push_navigate(
-           to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}"
-         )}
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}")}
       else
         # In practice mode, always allow test; otherwise check if already completed
         already_completed = Tests.get_completed_test_session(user.id, lesson.test_id) != nil
-        
+
         if already_completed and not practice do
           # Already completed and not in practice mode, go back to lesson
           {:ok,
            socket
-           |> put_flash(:info, gettext("You've already completed this test. Use Practice Mode to review."))
-           |> push_navigate(
-             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}"
-           )}
+           |> put_flash(
+             :info,
+             gettext("You've already completed this test. Use Practice Mode to review.")
+           )
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}")}
         else
           # Start a new test session
           # In practice mode, we still create a session but won't complete the lesson
@@ -90,9 +89,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
               {:ok,
                socket
                |> put_flash(:error, gettext("Could not start test."))
-               |> push_navigate(
-                 to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}"
-               )}
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}")}
           end
         end
       end
@@ -101,13 +98,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    title = 
+    title =
       if socket.assigns[:practice] do
         gettext("Practice Test: %{title}", title: socket.assigns.lesson.title)
       else
         gettext("Test: %{title}", title: socket.assigns.lesson.title)
       end
-    
+
     {:noreply,
      assign(
        socket,
@@ -296,9 +293,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
       # Navigate to completion page
       {:noreply,
        socket
-       |> push_navigate(
-         to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete"
-       )}
+       |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete")}
     end
   end
 
@@ -353,7 +348,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   # Check if the step question has meaning as the answer (for display localization)
   defp is_meaning_question?(step) do
     qd = step.question_data || %{}
-    
+
     cond do
       # word_to_meaning: "What does X mean?" -> correct_answer is meaning
       String.starts_with?(step.question || "", "__MSG_WHAT_DOES_WORD_MEAN__|") -> true
@@ -372,15 +367,17 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   defp translate_question(step, locale) when is_map(step) do
     question = step.question || ""
-    
+
     cond do
       String.starts_with?(question, "__MSG_WHAT_DOES_WORD_MEAN__|") ->
         case String.split(question, "|") do
-          [_, word_text] -> 
+          [_, word_text] ->
             word_text
             |> localize_word_text(step.word_id, locale)
             |> then(&gettext("What does '%{word}' mean?", word: &1))
-          _ -> question
+
+          _ ->
+            question
         end
 
       String.starts_with?(question, "__MSG_HOW_DO_YOU_READ__|") ->
@@ -391,11 +388,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
       String.starts_with?(question, "__MSG_WHICH_WORD_MEANS__|") ->
         case String.split(question, "|") do
-          [_, _meaning] -> 
+          [_, _meaning] ->
             # Look up localized meaning for the question
             meaning = get_localized_meaning_from_step(step, locale)
             gettext("Which word means '%{meaning}'?", meaning: meaning)
-          _ -> question
+
+          _ ->
+            question
         end
 
       String.starts_with?(question, "__MSG_WHICH_WORD_IS_READ__|") ->
@@ -406,11 +405,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
       String.starts_with?(question, "__MSG_WRITE_KANJI_FOR__|") ->
         case String.split(question, "|") do
-          [_, _meanings] -> 
+          [_, _meanings] ->
             # Look up localized kanji meanings
             meanings = get_localized_kanji_meanings(step, locale)
             gettext("Write the kanji for '%{meanings}'", meanings: meanings)
-          _ -> question
+
+          _ ->
+            question
         end
 
       true ->
@@ -423,6 +424,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   # Localize word text (for questions that show word text)
   defp localize_word_text(text, nil, _locale), do: text
+
   defp localize_word_text(text, word_id, _locale) do
     case Medoru.Content.get_word(word_id) do
       nil -> text
@@ -438,6 +440,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
           nil -> step.correct_answer || ""
           word -> Medoru.Content.get_localized_meaning(word, locale)
         end
+
       true ->
         step.correct_answer || ""
     end
@@ -446,19 +449,21 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   # Get localized kanji meanings
   defp get_localized_kanji_meanings(step, locale) do
     # First check if kanji is already loaded on the step
-    kanji = case step.kanji do
-      %Ecto.Association.NotLoaded{} -> nil
-      nil -> nil
-      k -> k
-    end
-    
+    kanji =
+      case step.kanji do
+        %Ecto.Association.NotLoaded{} -> nil
+        nil -> nil
+        k -> k
+      end
+
     # If kanji is loaded, use it directly
     if kanji do
       localized = Medoru.Content.get_localized_kanji_meanings(kanji, locale)
-      
+
       if localized == kanji.meanings do
         # No Bulgarian translation found, use stored meanings (not kanji.meanings)
         stored = get_stored_meanings(step)
+
         if stored != [] do
           Enum.join(stored, ", ")
         else
@@ -470,20 +475,22 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     else
       # Try stored meanings first (even before looking up kanji)
       stored = get_stored_meanings(step)
-      
+
       if stored != [] do
         # We have stored meanings, now try to localize them
-        kanji_id = step.kanji_id || 
-                   get_in(step.question_data || %{}, ["kanji_id"]) ||
-                   get_in(step.question_data || %{}, [:kanji_id])
-        
+        kanji_id =
+          step.kanji_id ||
+            get_in(step.question_data || %{}, ["kanji_id"]) ||
+            get_in(step.question_data || %{}, [:kanji_id])
+
         if kanji_id do
           case Medoru.Content.get_kanji(kanji_id) do
-            nil -> 
+            nil ->
               Enum.join(stored, ", ")
+
             fetched_kanji ->
               localized = Medoru.Content.get_localized_kanji_meanings(fetched_kanji, locale)
-              
+
               if localized == fetched_kanji.meanings do
                 # No Bulgarian translation, use stored (same as English)
                 Enum.join(stored, ", ")
@@ -496,14 +503,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
         end
       else
         # No stored meanings, try looking up kanji
-        kanji_id = step.kanji_id || 
-                   get_in(step.question_data || %{}, ["kanji_id"]) ||
-                   get_in(step.question_data || %{}, [:kanji_id])
-        
+        kanji_id =
+          step.kanji_id ||
+            get_in(step.question_data || %{}, ["kanji_id"]) ||
+            get_in(step.question_data || %{}, [:kanji_id])
+
         if kanji_id do
           case Medoru.Content.get_kanji(kanji_id) do
-            nil -> 
+            nil ->
               step.correct_answer || ""
+
             fetched_kanji ->
               localized = Medoru.Content.get_localized_kanji_meanings(fetched_kanji, locale)
               Enum.join(localized, ", ")
@@ -514,15 +523,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
       end
     end
   end
-  
+
   defp get_stored_meanings(step) do
     qd = step.question_data || %{}
-    
+
     # Debug logging
     # IO.inspect(qd, label: "question_data")
-    
+
     meanings = get_in(qd, [:meanings]) || get_in(qd, ["meanings"]) || []
-    
+
     # Ensure it's a list
     List.wrap(meanings)
   end

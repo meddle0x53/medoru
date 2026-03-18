@@ -1950,7 +1950,8 @@ defmodule Medoru.Content do
   def get_localized_lesson_description(%Lesson{} = lesson, _), do: lesson.description
 
   # Custom lessons don't have translations yet, just return the description
-  def get_localized_lesson_description(%Medoru.Content.CustomLesson{} = lesson, _), do: lesson.description
+  def get_localized_lesson_description(%Medoru.Content.CustomLesson{} = lesson, _),
+    do: lesson.description
 
   @doc """
   Checks if a word's meaning matches the query in the given locale.

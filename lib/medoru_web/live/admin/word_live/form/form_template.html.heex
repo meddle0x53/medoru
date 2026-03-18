@@ -316,7 +316,8 @@
                 <%= if word_kanji.kanji_reading do %>
                   <div class="mt-2 text-sm text-success flex items-center gap-2">
                     <.icon name="hero-check-circle" class="w-4 h-4" />
-                    {gettext("Currently using")}: <strong>{word_kanji.kanji_reading.reading}</strong>
+                    {gettext("Currently using")}:
+                    <strong>{word_kanji.kanji_reading.reading}</strong>
                   </div>
                 <% else %>
                   <div class="mt-2 text-sm text-warning flex items-center gap-2">

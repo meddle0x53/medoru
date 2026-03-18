@@ -437,6 +437,14 @@ defmodule MedoruWeb.Layouts do
                 </li>
                 <li>
                   <.link
+                    navigate={~p"/settings/data-privacy?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-shield-check" class="w-4 h-4" /> {gettext("Data & Privacy")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
                     navigate={~p"/settings/language?#{locale_qs(@current_scope[:locale])}"}
                     class="flex items-center gap-2"
                   >
@@ -501,6 +509,14 @@ defmodule MedoruWeb.Layouts do
           <div class="text-sm text-secondary">
             <span>© 2025 Medoru</span>
             <span class="mx-2">·</span>
+            <.link navigate={~p"/privacy"} class="hover:text-primary transition-colors">
+              {gettext("Privacy")}
+            </.link>
+            <span class="mx-2">·</span>
+            <.link navigate={~p"/cookies"} class="hover:text-primary transition-colors">
+              {gettext("Cookies")}
+            </.link>
+            <span class="mx-2">·</span>
             <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
               {gettext("Data Attribution")}
             </.link>
@@ -529,6 +545,42 @@ defmodule MedoruWeb.Layouts do
     </footer>
 
     <.flash_group flash={@flash} />
+
+    <%!-- Cookie Consent Banner --%>
+    <div
+      id="cookie-banner"
+      class="fixed bottom-0 left-0 right-0 z-50 bg-base-200 border-t border-base-300 p-4 shadow-lg hidden"
+      data-cookie-banner
+    >
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex-1 text-sm">
+          <p class="text-base-content">
+            {gettext("We use cookies to enhance your learning experience.")}
+            <.link navigate={~p"/privacy"} class="link link-primary">
+              {gettext("Privacy Policy")}
+            </.link>
+            {gettext("and")}
+            <.link navigate={~p"/cookies"} class="link link-primary">
+              {gettext("Cookie Policy")}
+            </.link>
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            id="cookie-reject"
+            class="btn btn-ghost btn-sm"
+          >
+            {gettext("Reject")}
+          </button>
+          <button
+            id="cookie-accept"
+            class="btn btn-primary btn-sm"
+          >
+            {gettext("Accept All")}
+          </button>
+        </div>
+      </div>
+    </div>
     """
   end
 

@@ -96,7 +96,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    title = if socket.assigns[:practice], do: gettext("Practice Complete!"), else: gettext("Lesson Complete!")
+    title =
+      if socket.assigns[:practice],
+        do: gettext("Practice Complete!"),
+        else: gettext("Lesson Complete!")
+
     {:noreply, assign(socket, :page_title, title)}
   end
 
@@ -166,7 +170,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
 
             <%!-- Title --%>
             <%= if @practice do %>
-              <h1 class="text-3xl font-bold text-base-content mb-2 text-center">{gettext("Practice Complete!")}</h1>
+              <h1 class="text-3xl font-bold text-base-content mb-2 text-center">
+                {gettext("Practice Complete!")}
+              </h1>
               <p class="text-xl text-secondary mb-6 text-center">{@lesson.title}</p>
 
               <%!-- Practice Stats --%>
@@ -183,7 +189,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
                 <span>{gettext("Practice mode - no points awarded. Review anytime!")}</span>
               </div>
             <% else %>
-              <h1 class="text-3xl font-bold text-base-content mb-2 text-center">{gettext("Lesson Complete!")}</h1>
+              <h1 class="text-3xl font-bold text-base-content mb-2 text-center">
+                {gettext("Lesson Complete!")}
+              </h1>
               <p class="text-xl text-secondary mb-6 text-center">{@lesson.title}</p>
 
               <%!-- Stats --%>
@@ -277,7 +285,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
                   <%= if @lesson_words == [] and @all_kanji == [] do %>
                     <div class="alert alert-info">
                       <.icon name="hero-information-circle" class="w-5 h-5" />
-                      <span>{gettext("All words and kanji from this lesson are already in your study list!")}</span>
+                      <span>
+                        {gettext(
+                          "All words and kanji from this lesson are already in your study list!"
+                        )}
+                      </span>
                     </div>
                   <% end %>
 
@@ -297,7 +309,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
             <%= if @marked_as_learned do %>
               <div class="alert alert-success mb-8">
                 <.icon name="hero-check-circle" class="w-5 h-5" />
-                <span>{gettext("Items added to your study list! They will appear in your daily reviews.")}</span>
+                <span>
+                  {gettext("Items added to your study list! They will appear in your daily reviews.")}
+                </span>
               </div>
             <% end %>
 

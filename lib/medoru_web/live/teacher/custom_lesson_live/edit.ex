@@ -128,19 +128,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def handle_event("edit_word", %{"id" => id}, socket) do
     lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
-    
+
     {:noreply,
      socket
      |> assign(:editing_word_id, id)
      |> assign(:editing_custom_meaning, lesson_word.custom_meaning)
      |> assign(:editing_examples, Enum.join(lesson_word.examples || [], "\n"))}
   end
-  
+
   @impl true
   def handle_event("update_editing_meaning", %{"value" => value}, socket) do
     {:noreply, assign(socket, :editing_custom_meaning, value)}
   end
-  
+
   @impl true
   def handle_event("update_editing_examples", %{"value" => value}, socket) do
     {:noreply, assign(socket, :editing_examples, value)}
@@ -219,7 +219,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
       {:error, reason} ->
         {:noreply,
-         put_flash(socket, :error, gettext("Failed to generate test: %{reason}", reason: inspect(reason)))}
+         put_flash(
+           socket,
+           :error,
+           gettext("Failed to generate test: %{reason}", reason: inspect(reason))
+         )}
     end
   end
 
@@ -262,7 +266,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
         {:error, reason} ->
           {:noreply,
-           put_flash(socket, :error, gettext("Failed to regenerate test: %{reason}", reason: inspect(reason)))}
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to regenerate test: %{reason}", reason: inspect(reason))
+           )}
       end
     end
   end
@@ -305,7 +313,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
         {:error, reason} ->
           {:noreply,
-           put_flash(socket, :error, gettext("Failed to generate test: %{reason}", reason: inspect(reason)))}
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to generate test: %{reason}", reason: inspect(reason))
+           )}
       end
     end
   end
@@ -554,7 +566,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                   </label>
 
                   <%!-- Include Writing --%>
-                  <label class={["flex items-start gap-3 cursor-pointer", not @lesson.requires_test && "opacity-50"]}>
+                  <label class={[
+                    "flex items-start gap-3 cursor-pointer",
+                    not @lesson.requires_test && "opacity-50"
+                  ]}>
                     <input
                       type="checkbox"
                       checked={@lesson.include_writing}

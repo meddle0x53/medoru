@@ -147,13 +147,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             # Redirect to test
             {:noreply,
              socket
-             |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test")}
+             |> push_navigate(
+               to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test"
+             )}
 
           _session ->
             # Test already completed, show already completed message
             {:noreply,
              socket
-             |> put_flash(:info, gettext("You've already completed this lesson. Use Practice Mode to review."))
+             |> put_flash(
+               :info,
+               gettext("You've already completed this lesson. Use Practice Mode to review.")
+             )
              |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
         end
       else
@@ -274,7 +279,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                   <%!-- Already completed: show practice mode button --%>
                   <%= if @lesson.requires_test and @lesson.test_id do %>
                     <.link
-                      navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{@lesson.id}/test?practice=true"}
+                      navigate={
+                        ~p"/classrooms/#{@classroom.id}/custom-lessons/#{@lesson.id}/test?practice=true"
+                      }
                       class="btn btn-secondary"
                     >
                       <.icon name="hero-arrow-path" class="w-5 h-5 mr-2" /> {gettext("Practice Test")}

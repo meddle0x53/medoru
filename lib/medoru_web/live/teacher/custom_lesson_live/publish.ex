@@ -74,7 +74,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
       {:error, :already_published} ->
         # Refresh the published_map to show current state
-        published = Content.list_lesson_classroom_publications(socket.assigns.lesson.id, status: "active")
+        published =
+          Content.list_lesson_classroom_publications(socket.assigns.lesson.id, status: "active")
 
         published_map =
           published

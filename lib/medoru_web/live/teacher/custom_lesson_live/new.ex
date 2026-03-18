@@ -146,7 +146,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                       type="checkbox"
                       name="custom_lesson[requires_test]"
                       value="true"
-                      checked={@form[:requires_test].value == true or @form[:requires_test].value == "true"}
+                      checked={
+                        @form[:requires_test].value == true or @form[:requires_test].value == "true"
+                      }
                       class="checkbox checkbox-primary mt-0.5"
                     />
                     <div>
@@ -163,7 +165,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                       type="checkbox"
                       name="custom_lesson[include_writing]"
                       value="true"
-                      checked={@form[:include_writing].value == true or @form[:include_writing].value == "true"}
+                      checked={
+                        @form[:include_writing].value == true or
+                          @form[:include_writing].value == "true"
+                      }
                       class="checkbox checkbox-primary mt-0.5"
                     />
                     <div>

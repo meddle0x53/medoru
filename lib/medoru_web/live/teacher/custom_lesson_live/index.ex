@@ -88,7 +88,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
         <%!-- Header --%>
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{gettext("My Custom Lessons")}</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
+              {gettext("My Custom Lessons")}
+            </h1>
             <p class="text-secondary mt-1 text-sm sm:text-base">
               {gettext("Create and manage reading lessons for your classrooms")}
             </p>
@@ -151,7 +153,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                 <div class="card-body flex flex-col flex-1">
                   <%!-- Header with status badge --%>
                   <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                    <h3 class="card-title text-base sm:text-lg text-base-content line-clamp-1">{lesson.title}</h3>
+                    <h3 class="card-title text-base sm:text-lg text-base-content line-clamp-1">
+                      {lesson.title}
+                    </h3>
                     <%= case lesson.status do %>
                       <% "draft" -> %>
                         <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
@@ -202,7 +206,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                       <button
                         phx-click="archive"
                         phx-value-id={lesson.id}
-                        data-confirm={gettext("Archive this lesson? It will no longer be available for new students.")}
+                        data-confirm={
+                          gettext(
+                            "Archive this lesson? It will no longer be available for new students."
+                          )
+                        }
                         class="btn btn-ghost btn-sm text-error flex-1 sm:flex-none"
                       >
                         <.icon name="hero-archive-box" class="w-4 h-4 sm:mr-1" />

@@ -379,7 +379,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <% end %>
 
                     <%= if lesson.requires_test do %>
-                      <span class="badge badge-info badge-sm" title={gettext("Requires test to complete")}>
+                      <span
+                        class="badge badge-info badge-sm"
+                        title={gettext("Requires test to complete")}
+                      >
                         <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
                       </span>
                     <% end %>

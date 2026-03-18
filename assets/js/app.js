@@ -58,6 +58,81 @@ window.addEventListener("phx:set_locale", e => {
   }
 })
 
+// Handle data export download
+window.addEventListener("phx:download-data", e => {
+  const { filename, content } = e.detail
+  const blob = new Blob([content], { type: 'application/json' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  window.URL.revokeObjectURL(url)
+  document.body.removeChild(a)
+})
+
+// Cookie Consent Management
+const COOKIE_CONSENT_KEY = 'medoru_cookie_consent'
+
+function getCookieConsent() {
+  const match = document.cookie.match(new RegExp('(^| )' + COOKIE_CONSENT_KEY + '=([^;]+)'))
+  return match ? match[2] : null
+}
+
+function setCookieConsent(consent) {
+  const expires = new Date()
+  expires.setFullYear(expires.getFullYear() + 1)
+  document.cookie = `${COOKIE_CONSENT_KEY}=${consent};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+}
+
+function showCookieBanner() {
+  const banner = document.getElementById('cookie-banner')
+  if (banner) {
+    banner.classList.remove('hidden')
+  }
+}
+
+function hideCookieBanner() {
+  const banner = document.getElementById('cookie-banner')
+  if (banner) {
+    banner.classList.add('hidden')
+  }
+}
+
+function initCookieConsent() {
+  const consent = getCookieConsent()
+  if (!consent) {
+    showCookieBanner()
+  } else {
+    hideCookieBanner()
+  }
+
+  // Accept button
+  const acceptBtn = document.getElementById('cookie-accept')
+  if (acceptBtn) {
+    acceptBtn.addEventListener('click', () => {
+      setCookieConsent('accepted')
+      hideCookieBanner()
+    })
+  }
+
+  // Reject button
+  const rejectBtn = document.getElementById('cookie-reject')
+  if (rejectBtn) {
+    rejectBtn.addEventListener('click', () => {
+      setCookieConsent('rejected')
+      hideCookieBanner()
+    })
+  }
+}
+
+// Initialize on initial page load
+document.addEventListener('DOMContentLoaded', initCookieConsent)
+
+// Re-initialize after LiveView navigation
+window.addEventListener('phx:page-loading-stop', initCookieConsent)
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

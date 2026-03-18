@@ -246,7 +246,9 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
 
   # Add distractor options to a step
   defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
-    {distractors, distractor_ids} = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+    {distractors, distractor_ids} =
+      fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+
     options = [step.correct_answer | distractors] |> Enum.shuffle()
     option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
