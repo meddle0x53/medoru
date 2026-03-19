@@ -234,10 +234,9 @@ const KanjiWriting = {
     const validExpectedCount = this._state.analyzedExpected.filter(s => s !== null).length
     const rawCount = expectedStrokes.length
     
-    // Kanji always have multiple strokes (rarely just 1).
-    // If we have less than 2 strokes, the data is incomplete - don't auto-complete
-    this._state.validExpectedCount = validExpectedCount >= 2 ? validExpectedCount : 
-                                     rawCount >= 2 ? rawCount : 999
+    // Use the actual stroke count (including single-stroke kanji like 一)
+    this._state.validExpectedCount = validExpectedCount > 0 ? validExpectedCount : 
+                                     rawCount > 0 ? rawCount : 0
     
     console.log('Valid expected strokes:', this._state.validExpectedCount)
 
@@ -298,12 +297,12 @@ const KanjiWriting = {
 
     // Validate drawn stroke
     const validateStroke = (drawnPoints, expectedIndex) => {
-      if (drawnPoints.length < 3) return { valid: false, reason: 'too_short' }
+      if (drawnPoints.length < 2) return { valid: false, reason: 'too_short' }
 
       const vgPoints = drawnPoints.map(p => toKanjiVGCoords(p.x, p.y))
       const drawn = analyzeStroke(vgPoints)
 
-      if (!drawn || drawn.length < 5) return { valid: false, reason: 'too_short' }
+      if (!drawn || drawn.length < 3) return { valid: false, reason: 'too_short' }
 
       const validExpected = this._state.analyzedExpected.filter(s => s !== null)
       if (validExpected.length === 0) {
@@ -355,12 +354,21 @@ const KanjiWriting = {
       }
 
       if (drawn.directionality && expected.directionality) {
-        if (drawn.direction === 'horizontal' || drawn.direction === 'vertical') {
-          if (drawn.directionality !== expected.directionality) {
-            return { valid: false, reason: 'wrong_directionality' }
+        if (drawn.direction === 'horizontal') {
+          // For horizontal strokes, allow either left-to-right or right-to-left
+          const isExpectedHorizontal = expected.directionality.includes('left-to-right') || 
+                                       expected.directionality.includes('right-to-left')
+          if (!isExpectedHorizontal) {
+            return { valid: false, reason: 'wrong_direction' }
           }
-        }
-        if (drawn.direction.startsWith('diagonal')) {
+        } else if (drawn.direction === 'vertical') {
+          // For vertical strokes, allow either top-to-bottom or bottom-to-top
+          const isExpectedVertical = expected.directionality.includes('top-to-bottom') || 
+                                     expected.directionality.includes('bottom-to-top')
+          if (!isExpectedVertical) {
+            return { valid: false, reason: 'wrong_direction' }
+          }
+        } else if (drawn.direction.startsWith('diagonal')) {
           const drawnParts = drawn.directionality.split('-')
           const expectedParts = expected.directionality.split('-')
           const match = drawnParts.some(p => expectedParts.includes(p))
@@ -490,12 +498,22 @@ const KanjiWriting = {
         if (!this._state.isDrawing) return
         this._state.isDrawing = false
 
-        if (this._state.points.length < 3) {
+        if (this._state.points.length < 2) {
           this._state.points = []
           return
         }
 
+        // Debug logging for single-stroke kanji
+        const isSingleStroke = this._state.expectedStrokes.length === 1
+        if (isSingleStroke) {
+          console.log('Stroke drawn:', this._state.points.length, 'points')
+        }
+
         const validation = validateStroke(this._state.points, this._state.currentStroke)
+        
+        if (isSingleStroke) {
+          console.log('Validation result:', validation)
+        }
 
         if (validation.valid) {
           // CORRECT STROKE - snap to expected and save
