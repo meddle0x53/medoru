@@ -121,6 +121,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
     writing_steps = generate_writing_steps(words)
 
     # Get distractor pool: same lesson + previous lessons
+    # Pass lesson_id only - we'll filter current word per-step
     distractor_pool = build_distractor_pool(lesson_id, words)
 
     # For each word, generate multichoice steps and flatten
@@ -157,15 +158,20 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
     if lesson do
       # Same lesson words (highest priority - most confusing)
+      # Include ALL words from same lesson - the correct word will be filtered per-step
+      # Randomize to ensure variety across test regenerations
       same_lesson_words =
         LessonWord
-        |> where([lw], lw.lesson_id == ^lesson_id and lw.word_id not in ^current_word_ids)
+        |> where([lw], lw.lesson_id == ^lesson_id)
         |> preload(:word)
+        |> order_by(fragment("RANDOM()"))
         |> limit(20)
         |> Repo.all()
         |> Enum.map(& &1.word)
 
       # Previous lessons words (already learned)
+      # Exclude current lesson words to avoid duplicates
+      # Randomize to ensure variety across test regenerations
       previous_lesson_words =
         LessonWord
         |> join(:inner, [lw], l in Lesson, on: lw.lesson_id == l.id)
@@ -175,6 +181,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
         )
         |> where([lw], lw.word_id not in ^current_word_ids)
         |> preload(:word)
+        |> order_by(fragment("RANDOM()"))
         |> limit(30)
         |> Repo.all()
         |> Enum.map(& &1.word)
@@ -336,13 +343,15 @@ defmodule Medoru.Tests.LessonTestGenerator do
   # Add distractor options to a step
   defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
     distractors = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+    # Shuffle options so correct answer isn't always in same position
     options = [step.correct_answer | distractors] |> Enum.shuffle()
 
     Map.put(step, :options, options)
   end
 
   # Fetch distractor words based on step type
-  # Priority: 1) Same lesson words, 2) Previous lesson words, 3) Next lesson words, 4) Generic fallback
+  # Priority: 1) Same lesson words, 2) Previous lesson words, 3) Generic fallback
+  # Randomly samples from the pool to ensure variety across questions
   defp fetch_distractors(
          correct_word,
          count,
@@ -359,13 +368,15 @@ defmodule Medoru.Tests.LessonTestGenerator do
           :meaning
       end
 
-    # Get distractors from the pool (prioritized: same lesson > previous lessons > next lessons)
+    # Get distractors from the pool - randomly sample for variety
+    # Filter out the correct word first, then shuffle and take random sample
     pool_distractors =
       distractor_pool
       |> Enum.reject(&(&1.id == correct_word.id))
+      |> Enum.shuffle()
+      |> Enum.take(count)
       |> Enum.map(&Map.get(&1, distractor_field))
       |> Enum.reject(&is_nil/1)
-      |> Enum.take(count)
 
     # If we have enough from the pool, use them
     if length(pool_distractors) >= count do

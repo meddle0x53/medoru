@@ -69,12 +69,22 @@ defmodule MedoruWeb.SettingsLive.Profile do
     # Handle avatar upload if present
     avatar_url =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
-        # For now, we'll just use the path as a placeholder
-        # In production, you'd upload to S3 or similar
-        dest = Path.join(["priv/static/uploads/avatars", entry.client_name])
-        File.mkdir_p!(Path.dirname(dest))
-        File.cp!(path, dest)
-        {:ok, "/uploads/avatars/#{entry.client_name}"}
+        # Get absolute path to priv/static directory
+        static_dir = Application.app_dir(:medoru, "priv/static")
+        upload_dir = Path.join(static_dir, "uploads/avatars")
+        dest = Path.join(upload_dir, entry.client_name)
+
+        # Create directory with proper error handling
+        case File.mkdir_p(upload_dir) do
+          :ok ->
+            File.cp!(path, dest)
+            {:ok, "/uploads/avatars/#{entry.client_name}"}
+
+          {:error, reason} ->
+            require Logger
+            Logger.error("Failed to create avatar upload directory: #{inspect(reason)}")
+            {:error, "Failed to save avatar"}
+        end
       end)
       |> List.first()
 
