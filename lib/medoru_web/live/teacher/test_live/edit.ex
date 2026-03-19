@@ -81,7 +81,18 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   @impl true
   def handle_event("select_step_type", %{"type" => type_str}, socket) do
-    type = String.to_existing_atom(type_str)
+    # Validate step type to prevent crashes
+    type =
+      case type_str do
+        "multichoice" -> :multichoice
+        "fill" -> :fill
+        "writing" -> :writing
+        "match" -> :match
+        "order" -> :order
+        "reading_text" -> :reading_text
+        _ -> :multichoice
+      end
+
     _test = socket.assigns.test
 
     # Calculate next order index

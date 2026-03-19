@@ -472,7 +472,10 @@ defmodule MedoruWeb.LessonTestLive.Show do
           <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 mb-6">
             <%!-- Show stroke preview after wrong answer --%>
             <%= if @show_stroke_preview && @preview_kanji do %>
-              <MedoruWeb.LessonTestLive.WritingComponent.stroke_preview kanji={@preview_kanji} locale={@locale} />
+              <MedoruWeb.LessonTestLive.WritingComponent.stroke_preview
+                kanji={@preview_kanji}
+                locale={@locale}
+              />
             <% else %>
               <%!-- Question --%>
               <div class="mb-6">

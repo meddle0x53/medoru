@@ -133,8 +133,17 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
       true
     else
       # Check if both have slashes - compare as sets (order-independent)
-      correct_parts = String.split(correct_reading, "/") |> Enum.map(&String.trim/1) |> Enum.map(&normalize_kana/1) |> Enum.sort()
-      answer_parts = String.split(user_answer, "/") |> Enum.map(&String.trim/1) |> Enum.map(&normalize_kana/1) |> Enum.sort()
+      correct_parts =
+        String.split(correct_reading, "/")
+        |> Enum.map(&String.trim/1)
+        |> Enum.map(&normalize_kana/1)
+        |> Enum.sort()
+
+      answer_parts =
+        String.split(user_answer, "/")
+        |> Enum.map(&String.trim/1)
+        |> Enum.map(&normalize_kana/1)
+        |> Enum.sort()
 
       if correct_parts == answer_parts do
         true

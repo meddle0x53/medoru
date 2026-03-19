@@ -184,7 +184,8 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="font-medium text-base-content truncate">
-                    {(user.profile && user.profile.display_name) || user.name || gettext("No name")}
+                    {(user.profile && user.profile.display_name) || user.name ||
+                      gettext("No name")}
                   </span>
                   <span class={["badge badge-sm", type_badge_color(user.type)]}>
                     {String.capitalize(user.type)}

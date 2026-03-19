@@ -526,7 +526,7 @@ defmodule Medoru.Content do
       # Apply difficulty filter if specified
       filtered_words =
         if difficulty do
-          Enum.filter(all_words, & &1.difficulty == difficulty)
+          Enum.filter(all_words, &(&1.difficulty == difficulty))
         else
           all_words
         end
@@ -1703,33 +1703,40 @@ defmodule Medoru.Content do
 
   """
   def publish_lesson_to_classroom(lesson_id, classroom_id, teacher_id, attrs \\ %{}) do
-    # Check if already published (any status)
-    existing =
-      ClassroomCustomLesson
-      |> where(classroom_id: ^classroom_id, custom_lesson_id: ^lesson_id)
-      |> Repo.one()
+    # Verify teacher owns the classroom
+    classroom = Medoru.Classrooms.get_classroom!(classroom_id)
 
-    case existing do
-      nil ->
-        # Create new published record
-        attrs =
-          attrs
-          |> Map.put(:custom_lesson_id, lesson_id)
-          |> Map.put(:classroom_id, classroom_id)
-          |> Map.put(:published_by_id, teacher_id)
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      # Check if already published (any status)
+      existing =
+        ClassroomCustomLesson
+        |> where(classroom_id: ^classroom_id, custom_lesson_id: ^lesson_id)
+        |> Repo.one()
 
-        %ClassroomCustomLesson{}
-        |> ClassroomCustomLesson.publish_changeset(attrs)
-        |> Repo.insert()
+      case existing do
+        nil ->
+          # Create new published record
+          attrs =
+            attrs
+            |> Map.put(:custom_lesson_id, lesson_id)
+            |> Map.put(:classroom_id, classroom_id)
+            |> Map.put(:published_by_id, teacher_id)
 
-      %{status: "unpublished"} = classroom_lesson ->
-        # Republish existing record
-        classroom_lesson
-        |> ClassroomCustomLesson.republish_changeset()
-        |> Repo.update()
+          %ClassroomCustomLesson{}
+          |> ClassroomCustomLesson.publish_changeset(attrs)
+          |> Repo.insert()
 
-      _ ->
-        {:error, :already_published}
+        %{status: "unpublished"} = classroom_lesson ->
+          # Republish existing record
+          classroom_lesson
+          |> ClassroomCustomLesson.republish_changeset()
+          |> Repo.update()
+
+        _ ->
+          {:error, :already_published}
+      end
     end
   end
 

@@ -87,6 +87,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
          |> assign(:published_map, published_map)
          |> put_flash(:info, gettext("Already published to this classroom."))}
 
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You can only publish to your own classrooms."))}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to publish."))}
     end

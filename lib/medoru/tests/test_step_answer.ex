@@ -113,7 +113,9 @@ defmodule Medoru.Tests.TestStepAnswer do
     |> String.replace(~r/\s+/, " ")
   end
 
-  def normalize_answer(answer), do: answer
+  def normalize_answer(nil), do: ""
+
+  def normalize_answer(answer), do: to_string(answer)
 
   @doc """
   Applies penalties to points based on attempts and hints used.
