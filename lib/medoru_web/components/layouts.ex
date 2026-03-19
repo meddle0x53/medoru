@@ -45,7 +45,7 @@ defmodule MedoruWeb.Layouts do
         <%= if @current_scope && @current_scope.current_user do %>
           <button
             type="button"
-            class="lg:hidden btn btn-ghost btn-sm btn-circle -ml-2"
+            class="xl:hidden btn btn-ghost btn-sm btn-circle -ml-2"
             phx-click={JS.toggle(to: "#mobile-nav-drawer")}
             aria-label={gettext("Menu")}
           >

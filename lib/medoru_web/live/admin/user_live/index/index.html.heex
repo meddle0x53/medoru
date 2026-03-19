@@ -13,13 +13,13 @@
     <%!-- Filters --%>
     <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
       <div class="card-body">
-        <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div class="flex flex-col gap-4">
           <%!-- Type Filter --%>
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-base-content/70">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
               {gettext("Filter by type:")}
             </span>
-            <div class="join">
+            <div class="join join-horizontal flex-wrap">
               <button
                 phx-click="filter_type"
                 phx-value-type=""
@@ -67,7 +67,7 @@
           <.form
             for={%{}}
             phx-submit="search"
-            class="flex items-center gap-2 w-full sm:w-auto"
+            class="flex items-center gap-2 w-full"
           >
             <div class="join w-full sm:w-auto">
               <input
@@ -94,11 +94,11 @@
         </div>
       </div>
     </div>
-
-    <%!-- Users Table --%>
-    <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="table table-zebra">
+    <%!-- Users Table (Desktop) / Cards (Mobile) --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <%!-- Desktop Table --%>
+      <div class="hidden md:block overflow-x-auto">
+        <table class="table table-zebra w-full">
           <thead>
             <tr class="bg-base-200/50">
               <th class="text-base-content/70">{gettext("User")}</th>
@@ -161,6 +161,58 @@
             <% end %>
           </tbody>
         </table>
+      </div>
+
+      <%!-- Mobile Cards --%>
+      <div class="md:hidden divide-y divide-base-200">
+        <%= for user <- @users do %>
+          <div class="p-4 hover:bg-base-200/50">
+            <div class="flex items-start gap-3">
+              <div class="avatar placeholder flex-shrink-0">
+                <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                  <%= if user.profile && user.profile.display_name do %>
+                    <span class="text-sm">
+                      {String.first(user.profile.display_name) |> String.upcase()}
+                    </span>
+                  <% else %>
+                    <span class="text-sm">
+                      {String.first(user.name || user.email) |> String.upcase()}
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-medium text-base-content truncate">
+                    {(user.profile && user.profile.display_name) || user.name || gettext("No name")}
+                  </span>
+                  <span class={["badge badge-sm", type_badge_color(user.type)]}>
+                    {String.capitalize(user.type)}
+                  </span>
+                </div>
+                <div class="text-sm text-base-content/60 truncate">{user.email}</div>
+                <div class="flex items-center gap-3 mt-2 text-sm text-secondary">
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-star" class="w-4 h-4 text-warning" />
+                    <span class="font-medium">{(user.stats && user.stats.level) || 1}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <.icon name="hero-calendar" class="w-4 h-4" />
+                    <span>{Calendar.strftime(user.inserted_at, "%b %d, %Y")}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-shrink-0">
+                <.link
+                  navigate={~p"/admin/users/#{user.id}/edit"}
+                  class="btn btn-ghost btn-xs"
+                >
+                  <.icon name="hero-pencil-square" class="w-4 h-4" />
+                </.link>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
 
       <%= if @users == [] do %>

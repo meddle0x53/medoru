@@ -146,6 +146,8 @@ Kimi pricing (as of March 2025):
 - Each batch (~50 items): ~500-1000 tokens
 - Estimated total: ~$1.50-3.00 for all content
 
+In the end I did it using local medium LLM
+
 ## Testing
 
 Dry run to see what would be translated without calling API:

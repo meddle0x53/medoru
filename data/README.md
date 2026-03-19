@@ -2,9 +2,6 @@
 
 Python sub-project for collecting and processing Japanese language data for the Medoru platform.
 
-📊 **Development Status:** See [INDEX.md](INDEX.md) for detailed milestone tracking  
-📁 **Milestones:** See [milestones/](milestones/) for detailed documentation
-
 ## Overview
 
 This pipeline collects kanji and vocabulary data from various open sources, processes it, and exports seed files for the Medoru Elixir/Phoenix application.
@@ -24,7 +21,6 @@ This pipeline collects kanji and vocabulary data from various open sources, proc
 ```
 data/
 ├── src/medoru_data/       # Main Python package
-│   ├── spiders/           # Data collection modules
 │   ├── parsers/           # Data parsing utilities
 │   ├── exporters/         # Export to Medoru format
 │   └── db/                # Database models
@@ -159,52 +155,6 @@ medoru-data export-full --level all --output seeds/kanji_all_full.json
 - **Character decomposition** ✅
 - **Etymology/hints** ✅
 
-## Development Milestones
-
-### Milestone 1: KanjiVG Integration ✅
-- [x] Download KanjiVG SVG files
-- [x] Parse SVG stroke paths
-- [x] Export to Medoru JSON format
-- [x] Attribution handling
-
-### Milestone 2: KANJIDIC2 Integration ✅
-- [x] Download KANJIDIC2 XML
-- [x] Parse kanji metadata (meanings, readings, stroke count, JLPT level)
-- [x] Filter by JLPT levels
-- [x] Export to Medoru seed format
-- [x] Romaji generation for readings
-
-### Milestone 3: Comprehensive Kanji Data with N5-N1 Levels ✅
-- [x] Download from davidluzgouveia/kanji-data
-- [x] New JLPT levels (N5-N1) mapping
-- [x] Stroke counts
-- [x] Complete readings with romaji
-- [x] Frequency and grade information
-- [x] Export all levels N5-N1
-
-### Milestone 4: Combined Kanji Data with Stroke Animation ✅
-- [x] Cross-reference kanji-data (N5-N1 levels) with KanjiVG (stroke data)
-- [x] 100% stroke data coverage for all JLPT levels
-- [x] Combined export with metadata + stroke SVG paths
-- [x] Ready for stroke animation in Medoru
-
-### Milestone 5: Radical Data from Make Me A Hanzi ✅
-- [x] Download from skishore/makemeahanzi
-- [x] Extract radical information for each kanji
-- [x] Character decomposition data
-- [x] Etymology/hint information
-- [x] Full combined export (metadata + strokes + radicals)
-
-### Milestone 6: JMdict Integration ✅
-- [x] Download JMdict (215,000+ entries)
-- [x] Parse word entries (kanji forms, readings, senses, POS tags)
-- [x] Cross-reference with kanji
-- [x] Export to Medoru word format
-- [x] Word type classification (noun, verb, adjective, etc.)
-- [x] JLPT level calculation based on kanji
-- [x] CLI: `export-for-seeding`, `export-all-for-seeding`
-- [x] Elixir mix task: `mix medoru.seed_words`
-
 ### JMdict Word Export
 ```bash
 # Download JMdict
@@ -219,11 +169,6 @@ medoru-data jmdict export-for-kanji --kanji "日,月,火,水,木" --output seeds
 # Show statistics
 medoru-data jmdict stats
 ```
-
-### Milestone 7: Example Sentences (Planned)
-- [ ] Integrate Tatoeba corpus
-- [ ] Match sentences to kanji/words
-- [ ] Difficulty grading
 
 ## License
 

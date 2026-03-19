@@ -35,13 +35,13 @@ function show_help() {
 
 function check_env_vars() {
     local missing=()
-    
+
     for var in DB_PASSWORD SECRET_KEY_BASE GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
         if [ -z "${!var}" ]; then
             missing+=($var)
         fi
     done
-    
+
     if [ ${#missing[@]} -ne 0 ]; then
         echo -e "${RED}Error: Missing required environment variables:${NC}"
         for var in "${missing[@]}"; do
@@ -62,14 +62,14 @@ function build_release() {
 function run_setup() {
     echo -e "${YELLOW}Running setup...${NC}"
     check_env_vars
-    
+
     echo -e "${GREEN}Environment variables set:${NC}"
     echo "  DB_PASSWORD=***"
     echo "  SECRET_KEY_BASE=${SECRET_KEY_BASE:0:10}..."
     echo "  GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:0:20}..."
     echo "  GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:0:10}..."
     echo ""
-    
+
     ansible-playbook -i "$INVENTORY" "$SCRIPT_DIR/setup.yml" -K
 }
 
