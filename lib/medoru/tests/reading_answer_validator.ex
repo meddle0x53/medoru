@@ -124,13 +124,36 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
   """
   def validate_reading(correct_reading, user_answer)
       when is_binary(correct_reading) and is_binary(user_answer) do
+    # Check if user answer matches the full correct reading (for "よん/し" == "よん/し")
+    # Also handle different order: "し/よん" should match "よん/し"
     correct_normalized = normalize_kana(correct_reading)
     answer_normalized = normalize_kana(user_answer)
 
-    # Direct normalized match
-    # Generate all acceptable variations and check
-    correct_normalized == answer_normalized or
-      variations_match?(correct_reading, user_answer)
+    if correct_normalized == answer_normalized do
+      true
+    else
+      # Check if both have slashes - compare as sets (order-independent)
+      correct_parts = String.split(correct_reading, "/") |> Enum.map(&String.trim/1) |> Enum.map(&normalize_kana/1) |> Enum.sort()
+      answer_parts = String.split(user_answer, "/") |> Enum.map(&String.trim/1) |> Enum.map(&normalize_kana/1) |> Enum.sort()
+
+      if correct_parts == answer_parts do
+        true
+      else
+        # Split correct reading on "/" to handle multiple readings like "よん/し"
+        alternative_readings = String.split(correct_reading, "/")
+
+        # Check if user answer matches any of the alternative readings
+        Enum.any?(alternative_readings, fn reading ->
+          reading = String.trim(reading)
+          reading_normalized = normalize_kana(reading)
+
+          # Direct normalized match
+          # Generate all acceptable variations and check
+          reading_normalized == answer_normalized or
+            variations_match?(reading, user_answer)
+        end)
+      end
+    end
   end
 
   def validate_reading(_, _), do: false

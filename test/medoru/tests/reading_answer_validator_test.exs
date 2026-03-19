@@ -64,6 +64,26 @@ defmodule Medoru.Tests.ReadingAnswerValidatorTest do
     test "rejects kanji input" do
       assert ReadingAnswerValidator.validate_reading("たべる", "食べる") == false
     end
+
+    test "accepts either reading when multiple readings separated by slash" do
+      assert ReadingAnswerValidator.validate_reading("よん/し", "よん") == true
+      assert ReadingAnswerValidator.validate_reading("よん/し", "し") == true
+    end
+
+    test "accepts full reading with slash in any order" do
+      assert ReadingAnswerValidator.validate_reading("よん/し", "よん/し") == true
+      assert ReadingAnswerValidator.validate_reading("よん/し", "し/よん") == true
+    end
+
+    test "trims whitespace around readings with slash" do
+      assert ReadingAnswerValidator.validate_reading("よん / し", "よん") == true
+      assert ReadingAnswerValidator.validate_reading("よん/し", " し ") == true
+    end
+
+    test "supports kana variations with multiple readings" do
+      assert ReadingAnswerValidator.validate_reading("とう/とお", "とう") == true
+      assert ReadingAnswerValidator.validate_reading("とう/とお", "とお") == true
+    end
   end
 
   describe "validate_answer/3" do

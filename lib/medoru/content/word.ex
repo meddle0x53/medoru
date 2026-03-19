@@ -109,12 +109,14 @@ defmodule Medoru.Content.Word do
   end
 
   # Check if text contains only kana (hiragana/katakana)
+  # Also allows "/" for multiple readings (e.g., "よん/し")
   defp valid_kana_only?(text) do
     String.to_charlist(text)
     |> Enum.all?(fn cp ->
       (cp >= 0x3040 and cp <= 0x309F) or
         (cp >= 0x30A0 and cp <= 0x30FF) or
-        cp == 0x30FC
+        cp == 0x30FC or
+        cp == 0x002F
     end)
   end
 end
