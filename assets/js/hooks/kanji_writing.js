@@ -115,6 +115,50 @@ const KanjiWriting = {
               points.push({x: currentX, y: currentY})
             }
             break
+          case 'S':
+            // Smooth cubic bezier - takes 4 params (cp2x, cp2y, x, y)
+            if (i + 4 < tokens.length) {
+              i += 3
+              const x = parseFloat(tokens[i])
+              const y = parseFloat(tokens[++i])
+              currentX = isRelative ? currentX + x : x
+              currentY = isRelative ? currentY + y : y
+              points.push({x: currentX, y: currentY})
+            }
+            break
+          case 'Q':
+            // Quadratic bezier - takes 4 params (cpx, cpy, x, y)
+            if (i + 4 < tokens.length) {
+              i += 3
+              const x = parseFloat(tokens[i])
+              const y = parseFloat(tokens[++i])
+              currentX = isRelative ? currentX + x : x
+              currentY = isRelative ? currentY + y : y
+              points.push({x: currentX, y: currentY})
+            }
+            break
+          case 'T':
+            // Smooth quadratic bezier - takes 2 params (x, y)
+            if (i + 2 < tokens.length) {
+              i += 1
+              const x = parseFloat(tokens[i])
+              const y = parseFloat(tokens[++i])
+              currentX = isRelative ? currentX + x : x
+              currentY = isRelative ? currentY + y : y
+              points.push({x: currentX, y: currentY})
+            }
+            break
+          case 'A':
+            // Arc - takes 7 params (rx, ry, rotation, large-arc, sweep, x, y)
+            if (i + 7 < tokens.length) {
+              i += 6
+              const x = parseFloat(tokens[i])
+              const y = parseFloat(tokens[++i])
+              currentX = isRelative ? currentX + x : x
+              currentY = isRelative ? currentY + y : y
+              points.push({x: currentX, y: currentY})
+            }
+            break
         }
       }
 
@@ -356,15 +400,14 @@ const KanjiWriting = {
       return snapped
     }
 
-    // Draw yellow hint stroke
+    // Draw yellow hint stroke using curved SVG path
     const drawHintStroke = () => {
       if (!this._state.showingHint) return
       if (this._state.currentStroke >= this._state.analyzedExpected.length) return
       
       const expected = this._state.analyzedExpected[this._state.currentStroke]
-      if (!expected || !expected.originalPoints) return
+      if (!expected || !expected.originalPath) return
 
-      // Draw the actual expected stroke path in yellow
       ctx.save()
       ctx.strokeStyle = '#fbbf24'  // amber-400
       ctx.lineWidth = 5
@@ -372,22 +415,16 @@ const KanjiWriting = {
       ctx.lineJoin = 'round'
       ctx.globalAlpha = 0.7
       
-      const points = expected.originalPoints
-      const scale = this._state.scale
-      const offsetX = this._state.offsetX
-      const offsetY = this._state.offsetY
-      
-      ctx.beginPath()
-      ctx.moveTo(points[0].x * scale + offsetX, points[0].y * scale + offsetY)
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x * scale + offsetX, points[i].y * scale + offsetY)
-      }
-      ctx.stroke()
+      // Use Path2D for curved stroke rendering
+      ctx.translate(this._state.offsetX, this._state.offsetY)
+      ctx.scale(this._state.scale, this._state.scale)
+      const path = new Path2D(expected.originalPath)
+      ctx.stroke(path)
       
       ctx.restore()
     }
 
-    // Redraw all strokes
+    // Redraw all strokes - completed strokes use curved paths
     const redrawStrokes = () => {
       ctx.clearRect(0, 0, 300, 300)
       clearCanvas()
@@ -406,13 +443,23 @@ const KanjiWriting = {
       ctx.lineJoin = 'round'
 
       for (const stroke of this._state.drawnStrokes) {
-        if (stroke.length < 2) continue
-        ctx.beginPath()
-        ctx.moveTo(stroke[0].x, stroke[0].y)
-        for (let i = 1; i < stroke.length; i++) {
-          ctx.lineTo(stroke[i].x, stroke[i].y)
+        if (stroke.type === 'curved' && stroke.path) {
+          // Draw curved stroke using Path2D
+          ctx.save()
+          ctx.translate(this._state.offsetX, this._state.offsetY)
+          ctx.scale(this._state.scale, this._state.scale)
+          const path = new Path2D(stroke.path)
+          ctx.stroke(path)
+          ctx.restore()
+        } else if (Array.isArray(stroke) && stroke.length >= 2) {
+          // Legacy: point-based drawing
+          ctx.beginPath()
+          ctx.moveTo(stroke[0].x, stroke[0].y)
+          for (let i = 1; i < stroke.length; i++) {
+            ctx.lineTo(stroke[i].x, stroke[i].y)
+          }
+          ctx.stroke()
         }
-        ctx.stroke()
       }
     }
 
@@ -456,9 +503,11 @@ const KanjiWriting = {
           
           // Get expected stroke for snapping
           const expected = this._state.analyzedExpected[this._state.currentStroke]
-          const snappedPoints = this.snapStrokeToExpected(this._state.points, expected)
-          
-          this._state.drawnStrokes.push(snappedPoints)
+          // Store the SVG path for curved rendering instead of snapped points
+          this._state.drawnStrokes.push({
+            type: 'curved',
+            path: expected.originalPath
+          })
           this._state.currentStroke++
           redrawStrokes()
 

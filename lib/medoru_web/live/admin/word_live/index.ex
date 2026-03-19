@@ -24,16 +24,28 @@ defmodule MedoruWeb.Admin.WordLive.Index do
 
   @impl true
   def handle_params(params, _url, socket) do
-    page = String.to_integer(params["page"] || "1")
+    page =
+      case Integer.parse(params["page"] || "1") do
+        {n, _} when n > 0 -> n
+        _ -> 1
+      end
+
     difficulty_filter = params["difficulty"]
     search = params["search"]
+
+    difficulty =
+      if difficulty_filter && difficulty_filter != "" do
+        String.to_integer(difficulty_filter)
+      else
+        nil
+      end
 
     result =
       Content.list_words_paginated(
         page: page,
         per_page: @per_page,
         search: search,
-        difficulty: if(difficulty_filter, do: String.to_integer(difficulty_filter), else: nil)
+        difficulty: difficulty
       )
 
     {:noreply,

@@ -518,51 +518,55 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     search = Keyword.get(opts, :search)
     difficulty = Keyword.get(opts, :difficulty)
-    sort_by = Keyword.get(opts, :sort_by, :usage_frequency)
-    sort_order = Keyword.get(opts, :sort_order, :asc)
 
-    # Build base query
-    query = Word
+    if search && search != "" do
+      # Use search_words for exact match priority, then paginate
+      all_words = search_words(search, limit: 10_000)
 
-    # Apply difficulty filter
-    query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+      # Apply difficulty filter if specified
+      filtered_words =
+        if difficulty do
+          Enum.filter(all_words, & &1.difficulty == difficulty)
+        else
+          all_words
+        end
 
-    # Apply search filter (case-insensitive ILIKE for PostgreSQL)
-    query =
-      if search && search != "" do
-        search_term = "%#{search}%"
+      total_count = length(filtered_words)
+      total_pages = max(ceil(total_count / per_page), 1)
+      offset = (page - 1) * per_page
+      words = Enum.slice(filtered_words, offset, per_page)
 
-        where(
-          query,
-          [w],
-          ilike(w.text, ^search_term) or
-            ilike(w.reading, ^search_term) or
-            ilike(w.meaning, ^search_term)
-        )
-      else
+      %{
+        words: words,
+        total_count: total_count,
+        total_pages: total_pages,
+        current_page: min(page, total_pages),
+        per_page: per_page
+      }
+    else
+      # No search - use simple database pagination
+      query = Word
+      query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+
+      total_count = query |> select([w], count(w.id)) |> Repo.one()
+      total_pages = max(ceil(total_count / per_page), 1)
+      offset = (page - 1) * per_page
+
+      words =
         query
-      end
+        |> order_by([w], asc: w.usage_frequency)
+        |> limit(^per_page)
+        |> offset(^offset)
+        |> Repo.all()
 
-    # Get total count for pagination
-    total_count = query |> select([w], count(w.id)) |> Repo.one()
-    total_pages = ceil(total_count / per_page)
-
-    # Apply sorting
-    query = order_by(query, [w], [{^sort_order, ^sort_by}])
-
-    # Apply pagination
-    offset = (page - 1) * per_page
-    query = query |> limit(^per_page) |> offset(^offset)
-
-    words = Repo.all(query)
-
-    %{
-      words: words,
-      total_count: total_count,
-      total_pages: total_pages,
-      current_page: page,
-      per_page: per_page
-    }
+      %{
+        words: words,
+        total_count: total_count,
+        total_pages: total_pages,
+        current_page: min(page, total_pages),
+        per_page: per_page
+      }
+    end
   end
 
   @doc """
