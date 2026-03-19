@@ -32,6 +32,8 @@ defmodule Medoru.Tests do
   """
 
   import Ecto.Query, warn: false
+  require Logger
+
   alias Medoru.Repo
   alias Medoru.Tests.{Test, TestStep, TestSession, TestStepAnswer}
   alias Medoru.Learning
@@ -787,6 +789,8 @@ defmodule Medoru.Tests do
       ts.user_id == ^user_id and ts.test_id == ^test_id and
         ts.status in [:started, :in_progress]
     )
+    |> order_by(desc: :inserted_at)
+    |> limit(1)
     |> preload([:test, test_step_answers: :test_step])
     |> Repo.one()
   end
@@ -823,6 +827,9 @@ defmodule Medoru.Tests do
 
   """
   def start_test_session(user_id, test_id) do
+    # Clean up any duplicate active sessions (keep only the most recent)
+    cleanup_duplicate_sessions(user_id, test_id)
+
     # Check for existing active session
     case get_active_session(user_id, test_id) do
       nil ->
@@ -872,6 +879,31 @@ defmodule Medoru.Tests do
         else
           {:ok, existing_session}
         end
+    end
+  end
+
+  # Clean up duplicate active sessions, keeping only the most recent
+  defp cleanup_duplicate_sessions(user_id, test_id) do
+    # Find all active sessions for this user/test
+    active_sessions =
+      TestSession
+      |> where(
+        [ts],
+        ts.user_id == ^user_id and ts.test_id == ^test_id and
+          ts.status in [:started, :in_progress]
+      )
+      |> order_by(desc: :inserted_at)
+      |> Repo.all()
+
+    # If there are more than 1, complete all but the most recent
+    if length(active_sessions) > 1 do
+      [_most_recent | duplicates] = active_sessions
+
+      Enum.each(duplicates, fn session ->
+        session
+        |> Ecto.Changeset.change(status: :completed, completed_at: DateTime.utc_now())
+        |> Repo.update()
+      end)
     end
   end
 
@@ -1056,6 +1088,9 @@ defmodule Medoru.Tests do
     # Determine correct answer - use localized meaning if applicable
     correct_answer = get_localized_correct_answer(step, locale)
 
+    # Get question_data for word_id-based validation (needed for localized content)
+    question_data = step.question_data || %{}
+
     # For writing steps or when is_correct is passed directly
     changeset =
       if attrs["is_correct"] != nil do
@@ -1081,10 +1116,10 @@ defmodule Medoru.Tests do
       else
         if existing_answer do
           existing_answer
-          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points)
+          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points, question_data)
         else
           %TestStepAnswer{}
-          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points)
+          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points, question_data)
         end
       end
 

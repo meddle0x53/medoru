@@ -67,7 +67,7 @@ defmodule Medoru.Tests.TestStepAnswer do
   @doc """
   Changeset for recording an answer to a test step.
   """
-  def answer_changeset(test_step_answer, attrs, correct_answer, max_points) do
+  def answer_changeset(test_step_answer, attrs, correct_answer, max_points, question_data \\ %{}) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     changeset =
@@ -88,7 +88,8 @@ defmodule Medoru.Tests.TestStepAnswer do
     attempts = get_field(changeset, :attempts) || 1
     hints_used = get_field(changeset, :hints_used) || 0
 
-    is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
+    # Check if we should use word_id-based validation (for localized content)
+    is_correct = validate_answer(answer, correct_answer, question_data)
 
     # Calculate points with penalties
     points_earned =
@@ -101,6 +102,42 @@ defmodule Medoru.Tests.TestStepAnswer do
     changeset
     |> put_change(:is_correct, is_correct)
     |> put_change(:points_earned, points_earned)
+  end
+
+  @doc """
+  Validates an answer, using word_id comparison when option_word_ids are available.
+  This fixes the locale mismatch issue where stored correct_answer is in English
+  but the student sees and selects a translated option.
+  """
+  def validate_answer(answer, correct_answer, question_data) do
+    option_word_ids = question_data["option_word_ids"] || question_data[:option_word_ids]
+    options = question_data["options"] || question_data[:options]
+
+    if option_word_ids && options && length(option_word_ids) == length(options) do
+      # Find the index of the student's answer in options (answer is the English text value)
+      selected_index = Enum.find_index(options, &normalize_equals(&1, answer))
+
+      # Find the index of the correct answer in options (correct_answer is also English text)
+      correct_index = Enum.find_index(options, &normalize_equals(&1, correct_answer))
+
+      if selected_index && correct_index do
+        # Compare word_ids at the same indices
+        selected_word_id = Enum.at(option_word_ids, selected_index)
+        correct_word_id = Enum.at(option_word_ids, correct_index)
+
+        selected_word_id == correct_word_id
+      else
+        # Fallback to text comparison if indices not found
+        normalize_answer(answer) == normalize_answer(correct_answer)
+      end
+    else
+      # Standard text comparison for non-localized questions
+      normalize_answer(answer) == normalize_answer(correct_answer)
+    end
+  end
+
+  defp normalize_equals(a, b) do
+    normalize_answer(a) == normalize_answer(b)
   end
 
   @doc """

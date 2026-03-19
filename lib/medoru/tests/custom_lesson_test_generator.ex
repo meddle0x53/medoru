@@ -249,15 +249,27 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
     {distractors, distractor_ids} =
       fetch_distractors(correct_word, distractor_count, step, distractor_pool)
 
-    options = [step.correct_answer | distractors] |> Enum.shuffle()
-    option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
+    # Create pairs of {option, word_id} and shuffle together to maintain alignment
+    pairs =
+      [{step.correct_answer, correct_word.id} | Enum.zip(distractors, distractor_ids)]
+      |> Enum.shuffle()
 
-    # Ensure question_data exists before adding option_word_ids
+    # Unzip the pairs back into separate lists
+    {options, option_word_ids} = Enum.unzip(pairs)
+
+    # Ensure question_data exists before adding option_word_ids and options
+    # Store both options (text) and option_word_ids for locale-aware validation
     question_data = Map.get(step, :question_data) || %{}
 
     step
     |> Map.put(:options, options)
-    |> Map.put(:question_data, Map.put(question_data, :option_word_ids, option_word_ids))
+    |> Map.put(
+      :question_data,
+      Map.merge(question_data, %{
+        option_word_ids: option_word_ids,
+        options: options
+      })
+    )
   end
 
   # Fetch distractor words based on step type

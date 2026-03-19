@@ -35,7 +35,7 @@ defmodule MedoruWeb.StrokeAnimator do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="stroke-animator" id={@id}>
+    <div class="stroke-animator" id={@id} phx-hook="StrokeAnimator" phx-target={@myself}>
       <div class="flex flex-col lg:flex-row gap-6">
         <%!-- SVG Canvas --%>
         <div class="flex-shrink-0">
@@ -47,7 +47,7 @@ defmodule MedoruWeb.StrokeAnimator do
                      linear-gradient(to bottom, rgba(128,128,128,0.05) 1px, transparent 1px);
                      background-size: 25% 25%, 25% 25%;"
             >
-              <%!-- Completed strokes (dimmed) --%>
+              <%!-- Completed strokes (sakura pink) --%>
               <%= for stroke <- @completed_strokes do %>
                 <path
                   d={stroke["path"]}
@@ -56,7 +56,7 @@ defmodule MedoruWeb.StrokeAnimator do
                   stroke-width="3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="text-base-content/30"
+                  class="text-pink-200"
                 />
               <% end %>
 
@@ -210,43 +210,6 @@ defmodule MedoruWeb.StrokeAnimator do
               <% end %>
             </div>
           </div>
-
-          <%!-- Settings --%>
-          <div class="mt-4 bg-base-100 border border-base-300 rounded-xl p-4 shadow-sm">
-            <h3 class="font-semibold text-base-content mb-3">Settings</h3>
-
-            <div class="space-y-4">
-              <%!-- Speed Control --%>
-              <div>
-                <label class="text-sm text-secondary flex items-center justify-between">
-                  <span>Animation Speed</span>
-                  <span class="font-medium">{format_speed(@speed)}x</span>
-                </label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3"
-                  step="0.5"
-                  value={@speed}
-                  phx-change="set_speed"
-                  phx-target={@myself}
-                  class="range range-sm range-primary w-full mt-2"
-                />
-              </div>
-
-              <%!-- Show Numbers Toggle --%>
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={@show_numbers}
-                  phx-click="toggle_numbers"
-                  phx-target={@myself}
-                  class="checkbox checkbox-primary checkbox-sm"
-                />
-                <span class="text-sm text-secondary">Show stroke numbers</span>
-              </label>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -285,16 +248,6 @@ defmodule MedoruWeb.StrokeAnimator do
   @impl true
   def handle_event("toggle_loop", _, socket) do
     {:noreply, update(socket, :loop, &not/1)}
-  end
-
-  @impl true
-  def handle_event("set_speed", %{"value" => speed}, socket) do
-    {:noreply, assign(socket, :speed, String.to_float(speed))}
-  end
-
-  @impl true
-  def handle_event("toggle_numbers", _, socket) do
-    {:noreply, update(socket, :show_numbers, &not/1)}
   end
 
   # Helper functions
@@ -343,10 +296,6 @@ defmodule MedoruWeb.StrokeAnimator do
 
   defp stroke_progress(_, _), do: 0
 
-  defp format_speed(speed) do
-    :erlang.float_to_binary(speed, decimals: 1)
-  end
-
   defp start_animation(socket) do
     socket =
       if socket.assigns.current_stroke == 0 do
@@ -361,15 +310,41 @@ defmodule MedoruWeb.StrokeAnimator do
   defp advance_stroke(socket) do
     current = socket.assigns.current_stroke
     strokes = socket.assigns.strokes
+    total = length(strokes)
 
-    if current > 0 and current <= length(strokes) do
-      completed = Enum.at(strokes, current - 1)
+    cond do
+      # Normal case: advancing through strokes
+      current > 0 and current < total ->
+        completed = Enum.at(strokes, current - 1)
 
+        socket
+        |> update(:completed_strokes, &[completed | &1])
+        |> update(:current_stroke, &(&1 + 1))
+
+      # Last stroke completed
+      current == total ->
+        completed = Enum.at(strokes, current - 1)
+
+        socket
+        |> update(:completed_strokes, &[completed | &1])
+        |> update(:current_stroke, &(&1 + 1))
+        |> maybe_restart_animation()
+
+      # Beyond last stroke (shouldn't happen normally)
+      true ->
+        socket
+    end
+  end
+
+  defp maybe_restart_animation(socket) do
+    if socket.assigns.loop do
+      # Auto-restart if loop is enabled
       socket
-      |> update(:completed_strokes, &[completed | &1])
-      |> update(:current_stroke, &(&1 + 1))
+      |> assign(:current_stroke, 1)
+      |> assign(:completed_strokes, [])
     else
-      socket
+      # Stop playing if not looping
+      assign(socket, :is_playing, false)
     end
   end
 

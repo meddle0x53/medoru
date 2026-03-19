@@ -342,16 +342,31 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
   # Add distractor options to a step
   defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
-    distractors = fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+    {distractors, distractor_ids} =
+      fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+
     # Shuffle options so correct answer isn't always in same position
     options = [step.correct_answer | distractors] |> Enum.shuffle()
+    option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
-    Map.put(step, :options, options)
+    # Store option_word_ids and options for locale-aware validation
+    question_data = Map.get(step, :question_data) || %{}
+
+    step
+    |> Map.put(:options, options)
+    |> Map.put(
+      :question_data,
+      Map.merge(question_data, %{
+        option_word_ids: option_word_ids,
+        options: options
+      })
+    )
   end
 
   # Fetch distractor words based on step type
   # Priority: 1) Same lesson words, 2) Previous lesson words, 3) Generic fallback
   # Randomly samples from the pool to ensure variety across questions
+  # Returns {distractor_values, distractor_word_ids}
   defp fetch_distractors(
          correct_word,
          count,
@@ -369,56 +384,65 @@ defmodule Medoru.Tests.LessonTestGenerator do
       end
 
     # Get distractors from the pool - randomly sample for variety
-    # Filter out the correct word first, then shuffle and take random sample
-    pool_distractors =
+    # Keep both the word and the value for word_id tracking
+    selected_words =
       distractor_pool
       |> Enum.reject(&(&1.id == correct_word.id))
       |> Enum.shuffle()
       |> Enum.take(count)
-      |> Enum.map(&Map.get(&1, distractor_field))
-      |> Enum.reject(&is_nil/1)
+
+    pool_values =
+      Enum.map(selected_words, &Map.get(&1, distractor_field)) |> Enum.reject(&is_nil/1)
+
+    pool_ids = Enum.map(selected_words, & &1.id)
 
     # If we have enough from the pool, use them
-    if length(pool_distractors) >= count do
-      Enum.take(pool_distractors, count)
+    if length(pool_values) >= count do
+      {Enum.take(pool_values, count), Enum.take(pool_ids, count)}
     else
       # Otherwise, supplement with words from same difficulty (but not in current curriculum)
-      needed = count - length(pool_distractors)
+      needed = count - length(pool_values)
 
       existing_ids = [correct_word.id | Enum.map(distractor_pool, & &1.id)]
 
-      additional_distractors =
+      additional_words =
         Word
         |> where([w], w.id not in ^existing_ids and w.difficulty == ^correct_word.difficulty)
         |> where([w], not is_nil(field(w, ^distractor_field)))
         |> limit(^needed)
         |> order_by(fragment("RANDOM()"))
-        |> select([w], field(w, ^distractor_field))
         |> Repo.all()
 
-      all_distractors = pool_distractors ++ additional_distractors
-      pad_distractors(all_distractors, count, distractor_field)
+      additional_values = Enum.map(additional_words, &Map.get(&1, distractor_field))
+      additional_ids = Enum.map(additional_words, & &1.id)
+
+      all_values = pool_values ++ additional_values
+      all_ids = pool_ids ++ additional_ids
+      pad_distractors(all_values, all_ids, count, distractor_field)
     end
   end
 
   # Pad with generic distractors if not enough found
-  defp pad_distractors(distractors, count, _field) when length(distractors) >= count do
-    Enum.take(distractors, count)
+  defp pad_distractors(values, ids, count, _field) when length(values) >= count do
+    {Enum.take(values, count), Enum.take(ids, count)}
   end
 
-  defp pad_distractors(distractors, count, :meaning) do
+  defp pad_distractors(values, ids, count, :meaning) do
     generic = ["to do something", "something", "place", "person", "time", "action", "object"]
-    distractors ++ Enum.take(generic, count - length(distractors))
+    needed = count - length(values)
+    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
   end
 
-  defp pad_distractors(distractors, count, :text) do
+  defp pad_distractors(values, ids, count, :text) do
     generic = ["あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ"]
-    distractors ++ Enum.take(generic, count - length(distractors))
+    needed = count - length(values)
+    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
   end
 
-  defp pad_distractors(distractors, count, :reading) do
+  defp pad_distractors(values, ids, count, :reading) do
     generic = ["ああ", "いい", "うう", "ええ", "おお", "かか", "きき", "くく"]
-    distractors ++ Enum.take(generic, count - length(distractors))
+    needed = count - length(values)
+    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
   end
 
   # Helper functions for Japanese character detection
