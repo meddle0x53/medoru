@@ -108,43 +108,62 @@ defmodule MedoruWeb.Admin.KanjiLive.Index do
     level = if is_binary(level) and level != "", do: String.to_integer(level), else: level
     level = if level in [nil, ""], do: nil, else: level
 
-    query = Kanji
+    base_query = Kanji
 
     # Apply level filter
-    query = if level, do: where(query, jlpt_level: ^level), else: query
+    base_query = if level, do: where(base_query, jlpt_level: ^level), else: base_query
 
-    # Apply search filter - searches in character, meanings, and readings
-    # Exact character matches are prioritized
-    query =
+    # Build search query (for both count and data)
+    {search_query, count_query} =
       if search && search != "" do
         search_term = "%#{search}%"
         search_lower = String.downcase(search)
 
-        # Join with readings to search there too
-        query
-        |> join(:left, [k], r in assoc(k, :kanji_readings), as: :readings)
-        |> where(
-          [k, readings: r],
-          ilike(k.character, ^search_term) or
-            fragment(
-              "EXISTS (SELECT 1 FROM unnest(?) AS m WHERE LOWER(m) LIKE ?)",
-              k.meanings,
-              ^"%#{search_lower}%"
-            ) or
-            ilike(r.reading, ^search_term) or
-            ilike(r.romaji, ^search_term)
-        )
-        # Prioritize: exact character match > partial matches
-        |> order_by([k],
-          desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", k.character, ^search)
-        )
-        |> distinct([k], k.id)
+        # Query for searching with joins
+        sq =
+          base_query
+          |> join(:left, [k], r in assoc(k, :kanji_readings), as: :readings)
+          |> where(
+            [k, readings: r],
+            ilike(k.character, ^search_term) or
+              fragment(
+                "EXISTS (SELECT 1 FROM unnest(?) AS m WHERE LOWER(m) LIKE ?)",
+                k.meanings,
+                ^"%#{search_lower}%"
+              ) or
+              ilike(r.reading, ^search_term) or
+              ilike(r.romaji, ^search_term)
+          )
+          # Prioritize: exact character match > partial matches
+          |> order_by([k],
+            desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", k.character, ^search)
+          )
+          |> distinct([k], k.id)
+
+        # Count query - use subquery to count distinct kanji IDs
+        cq =
+          from(k in Kanji,
+            left_join: r in assoc(k, :kanji_readings),
+            where:
+              ilike(k.character, ^search_term) or
+                fragment(
+                  "EXISTS (SELECT 1 FROM unnest(?) AS m WHERE LOWER(m) LIKE ?)",
+                  k.meanings,
+                  ^"%#{search_lower}%"
+                ) or
+                ilike(r.reading, ^search_term) or
+                ilike(r.romaji, ^search_term),
+            select: count(fragment("DISTINCT ?", k.id))
+          )
+          |> then(&if level, do: where(&1, jlpt_level: ^level), else: &1)
+
+        {sq, cq}
       else
-        query
+        {base_query, select(base_query, [k], count(k.id))}
       end
 
     # Get total count
-    total_count = query |> select([k], count(k.id)) |> Repo.one()
+    total_count = count_query |> Repo.one()
     total_pages = max(1, ceil(total_count / per_page_count))
 
     # Calculate offset
@@ -152,7 +171,7 @@ defmodule MedoruWeb.Admin.KanjiLive.Index do
 
     # Apply ordering and pagination
     kanji =
-      query
+      search_query
       |> order_by([k], asc: k.jlpt_level, desc: k.frequency)
       |> limit(^per_page_count)
       |> offset(^offset)
