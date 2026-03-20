@@ -87,6 +87,7 @@
     source $HOME/.kiex/scripts/kiex
     kiex use 1.17.0-25
     export MIX_ENV=prod
+    export UPLOADS_DIR={{ uploads_dir | default('/var/opt/medoru/uploads') }}
     mix compile
   become_user: "{{ app_user }}"
   args:
@@ -111,6 +112,7 @@
     source $HOME/.kiex/scripts/kiex
     kiex use 1.17.0-25
     export MIX_ENV=prod
+    export UPLOADS_DIR={{ uploads_dir | default('/var/opt/medoru/uploads') }}
     mix release --overwrite
   become_user: "{{ app_user }}"
   args:
