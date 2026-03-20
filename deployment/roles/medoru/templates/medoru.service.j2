@@ -29,7 +29,7 @@ RestartSec=5
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths={{ app_home }}/current/tmp
+ReadWritePaths={{ app_home }}/current/tmp {{ uploads_dir | default('/var/opt/medoru/uploads') }}
 
 # Logging
 StandardOutput=journal

@@ -70,9 +70,16 @@ defmodule MedoruWeb.SettingsLive.Profile do
     # Handle avatar upload if present
     avatar_url =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
-        # Get configured uploads directory (env var or default)
-        uploads_dir = Application.get_env(:medoru, :uploads_dir, "/tmp/medoru/uploads")
+        # Get uploads directory from env var or application config
+        uploads_dir =
+          System.get_env("UPLOADS_DIR") ||
+            Application.get_env(:medoru, :uploads_dir) ||
+            "/var/opt/medoru/uploads"
+
         upload_dir = Path.join(uploads_dir, "avatars")
+
+        require Logger
+        Logger.info("Avatar upload: uploads_dir=#{uploads_dir}, upload_dir=#{upload_dir}")
 
         # Generate unique filename to avoid collisions
         ext = Path.extname(entry.client_name) |> String.downcase()
@@ -87,11 +94,14 @@ defmodule MedoruWeb.SettingsLive.Profile do
         case File.mkdir_p(upload_dir) do
           :ok ->
             File.cp!(path, dest)
+            Logger.info("Avatar saved successfully to: #{dest}")
             {:ok, "/uploads/avatars/#{unique_name}"}
 
           {:error, reason} ->
-            require Logger
-            Logger.error("Failed to create avatar upload directory: #{inspect(reason)}")
+            Logger.error(
+              "Failed to create avatar upload directory '#{upload_dir}': #{inspect(reason)}"
+            )
+
             {:error, "Failed to save avatar"}
         end
       end)
