@@ -231,7 +231,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 ]}>
                   <div class="flex items-center gap-3">
                     <span class={[
-                      "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm",
+                      "w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm shrink-0",
                       index == 1 && "bg-yellow-100 text-yellow-700",
                       index == 2 && "bg-gray-200 text-gray-700",
                       index == 3 && "bg-orange-100 text-orange-700",
@@ -239,16 +239,34 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     ]}>
                       {index}
                     </span>
-                    <span class={
+                    <% avatar_src = (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                    <%= if avatar_src do %>
+                      <div class="avatar shrink-0">
+                        <div class="w-8 h-8 rounded-full">
+                          <img src={avatar_src} alt="" class="object-cover" />
+                        </div>
+                      </div>
+                    <% else %>
+                      <div class="avatar placeholder shrink-0">
+                        <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
+                          <% initial = if member.user.profile && member.user.profile.display_name,
+                            do: String.first(member.user.profile.display_name) |> String.upcase(),
+                            else: String.first(member.user.name || member.user.email) |> String.upcase() %>
+                          <span class="text-xs">{initial}</span>
+                        </div>
+                      </div>
+                    <% end %>
+                    <span class={[
+                      "truncate",
                       member.user_id == @current_user.id && "font-medium text-base-content"
-                    }>
+                    ]}>
                       {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                       <%= if member.user_id == @current_user.id do %>
                         <span class="badge badge-primary badge-sm ml-2">You</span>
                       <% end %>
                     </span>
                   </div>
-                  <span class="font-semibold text-base-content">{member.points} pts</span>
+                  <span class="font-semibold text-base-content shrink-0">{member.points} pts</span>
                 </div>
               <% end %>
             </div>
@@ -293,9 +311,23 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   ]}>
                     {index}
                   </span>
-                  <div class="w-8 h-8 sm:w-10 sm:h-10 bg-base-200 rounded-full flex items-center justify-center shrink-0">
-                    <.icon name="hero-user" class="w-4 h-4 sm:w-5 sm:h-5 text-secondary" />
-                  </div>
+                  <% avatar_src = (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                  <%= if avatar_src do %>
+                    <div class="avatar shrink-0">
+                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
+                        <img src={avatar_src} alt="" class="object-cover" />
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="avatar placeholder shrink-0">
+                      <div class="bg-primary text-primary-content rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                        <% initial = if member.user.profile && member.user.profile.display_name,
+                          do: String.first(member.user.profile.display_name) |> String.upcase(),
+                          else: String.first(member.user.name || member.user.email) |> String.upcase() %>
+                        <span class="text-xs sm:text-sm">{initial}</span>
+                      </div>
+                    </div>
+                  <% end %>
                   <div class="min-w-0">
                     <p class={[
                       "text-sm sm:text-base truncate",

@@ -113,19 +113,28 @@
               <tr class="hover:bg-base-200/50">
                 <td>
                   <div class="flex items-center gap-3">
-                    <div class="avatar placeholder">
-                      <div class="bg-primary text-primary-content rounded-full w-10">
-                        <%= if user.profile && user.profile.display_name do %>
-                          <span class="text-sm">
-                            {String.first(user.profile.display_name) |> String.upcase()}
-                          </span>
-                        <% else %>
-                          <span class="text-sm">
-                            {String.first(user.name || user.email) |> String.upcase()}
-                          </span>
-                        <% end %>
+                    <% avatar_src = (user.profile && user.profile.avatar) || user.avatar_url %>
+                    <%= if avatar_src do %>
+                      <div class="avatar">
+                        <div class="w-10 rounded-full">
+                          <img src={avatar_src} alt="" class="object-cover" />
+                        </div>
                       </div>
-                    </div>
+                    <% else %>
+                      <div class="avatar placeholder">
+                        <div class="bg-primary text-primary-content rounded-full w-10">
+                          <%= if user.profile && user.profile.display_name do %>
+                            <span class="text-sm">
+                              {String.first(user.profile.display_name) |> String.upcase()}
+                            </span>
+                          <% else %>
+                            <span class="text-sm">
+                              {String.first(user.name || user.email) |> String.upcase()}
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
                     <div>
                       <div class="font-medium text-base-content">
                         {(user.profile && user.profile.display_name) || user.name ||
@@ -168,19 +177,28 @@
         <%= for user <- @users do %>
           <div class="p-4 hover:bg-base-200/50">
             <div class="flex items-start gap-3">
-              <div class="avatar placeholder flex-shrink-0">
-                <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
-                  <%= if user.profile && user.profile.display_name do %>
-                    <span class="text-sm">
-                      {String.first(user.profile.display_name) |> String.upcase()}
-                    </span>
-                  <% else %>
-                    <span class="text-sm">
-                      {String.first(user.name || user.email) |> String.upcase()}
-                    </span>
-                  <% end %>
+              <% avatar_src = (user.profile && user.profile.avatar) || user.avatar_url %>
+              <%= if avatar_src do %>
+                <div class="avatar flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full">
+                    <img src={avatar_src} alt="" class="object-cover" />
+                  </div>
                 </div>
-              </div>
+              <% else %>
+                <div class="avatar placeholder flex-shrink-0">
+                  <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+                    <%= if user.profile && user.profile.display_name do %>
+                      <span class="text-sm">
+                        {String.first(user.profile.display_name) |> String.upcase()}
+                      </span>
+                    <% else %>
+                      <span class="text-sm">
+                        {String.first(user.name || user.email) |> String.upcase()}
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <span class="font-medium text-base-content truncate">

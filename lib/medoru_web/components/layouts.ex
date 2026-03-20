@@ -154,9 +154,13 @@ defmodule MedoruWeb.Layouts do
                 <%!-- User Info in Drawer --%>
                 <div class="p-4 bg-base-200/50 border-b border-base-300">
                   <div class="flex items-center gap-3">
-                    <%= if @current_scope.current_user.avatar_url do %>
+                    <%= if (@current_scope.current_user.profile && @current_scope.current_user.profile.avatar) || @current_scope.current_user.avatar_url do %>
+                      <% avatar_src =
+                        (@current_scope.current_user.profile &&
+                           @current_scope.current_user.profile.avatar) ||
+                          @current_scope.current_user.avatar_url %>
                       <img
-                        src={@current_scope.current_user.avatar_url}
+                        src={avatar_src}
                         alt="Avatar"
                         class="w-12 h-12 rounded-full ring-2 ring-base-300"
                       />
@@ -381,9 +385,12 @@ defmodule MedoruWeb.Layouts do
                 role="button"
                 class="flex items-center gap-2 btn btn-ghost btn-sm p-1 h-auto"
               >
-                <%= if @current_scope.current_user.avatar_url do %>
+                <%= if (@current_scope.current_user.profile && @current_scope.current_user.profile.avatar) || @current_scope.current_user.avatar_url do %>
+                  <% avatar_src =
+                    (@current_scope.current_user.profile && @current_scope.current_user.profile.avatar) ||
+                      @current_scope.current_user.avatar_url %>
                   <img
-                    src={@current_scope.current_user.avatar_url}
+                    src={avatar_src}
                     alt="Avatar"
                     class="w-8 h-8 rounded-full ring-2 ring-base-200"
                   />

@@ -264,7 +264,7 @@ defmodule Medoru.Classrooms do
     ClassroomMembership
     |> where([m], m.classroom_id == ^classroom_id and m.status == :pending)
     |> order_by([m], asc: m.inserted_at)
-    |> preload([:user])
+    |> preload(user: [:profile])
     |> Repo.all()
   end
 
@@ -281,7 +281,7 @@ defmodule Medoru.Classrooms do
     ClassroomMembership
     |> where([m], m.classroom_id == ^classroom_id and m.status == :approved)
     |> order_by([m], desc: m.points)
-    |> preload([:user])
+    |> preload(user: [:profile])
     |> Repo.all()
   end
 

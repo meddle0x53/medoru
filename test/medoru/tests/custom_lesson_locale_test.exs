@@ -149,7 +149,9 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
                    "answer" => answer,
                    "time_spent_seconds" => 10,
                    "step_index" => 0
-                 }, locale: "bg")
+                 },
+                 locale: "bg"
+               )
 
       # Should be marked correct
       assert step_answer.is_correct == true,
@@ -169,7 +171,9 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
                    "answer" => wrong_answer,
                    "time_spent_seconds" => 10,
                    "step_index" => 0
-                 }, locale: "bg")
+                 },
+                 locale: "bg"
+               )
 
       assert wrong_step_answer.is_correct == false,
              "Should be marked incorrect when answer is wrong"

@@ -705,9 +705,23 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     ~H"""
     <div class="flex items-center justify-between bg-base-100 rounded-xl p-4 border border-base-300">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-base-200 rounded-full flex items-center justify-center">
-          <.icon name="hero-user" class="w-5 h-5 text-secondary" />
-        </div>
+        <% avatar_src = (@membership.user.profile && @membership.user.profile.avatar) || @membership.user.avatar_url %>
+        <%= if avatar_src do %>
+          <div class="avatar">
+            <div class="w-10 h-10 rounded-full">
+              <img src={avatar_src} alt="" class="object-cover" />
+            </div>
+          </div>
+        <% else %>
+          <div class="avatar placeholder">
+            <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+              <% initial = if @membership.user.profile && @membership.user.profile.display_name,
+                do: String.first(@membership.user.profile.display_name) |> String.upcase(),
+                else: String.first(@membership.user.name || @membership.user.email) |> String.upcase() %>
+              <span class="text-sm">{initial}</span>
+            </div>
+          </div>
+        <% end %>
         <div>
           <p class="font-medium text-base-content">
             {display_name(@membership.user, @current_user.id, @is_admin)}
@@ -745,9 +759,23 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     ~H"""
     <div class="flex items-center justify-between p-4 hover:bg-base-200/50 rounded-xl transition-colors">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-base-200 rounded-full flex items-center justify-center">
-          <.icon name="hero-user" class="w-5 h-5 text-secondary" />
-        </div>
+        <% avatar_src = (@membership.user.profile && @membership.user.profile.avatar) || @membership.user.avatar_url %>
+        <%= if avatar_src do %>
+          <div class="avatar">
+            <div class="w-10 h-10 rounded-full">
+              <img src={avatar_src} alt="" class="object-cover" />
+            </div>
+          </div>
+        <% else %>
+          <div class="avatar placeholder">
+            <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
+              <% initial = if @membership.user.profile && @membership.user.profile.display_name,
+                do: String.first(@membership.user.profile.display_name) |> String.upcase(),
+                else: String.first(@membership.user.name || @membership.user.email) |> String.upcase() %>
+              <span class="text-sm">{initial}</span>
+            </div>
+          </div>
+        <% end %>
         <div>
           <p class="font-medium text-base-content">
             {display_name(@membership.user, @current_user.id, @is_admin)}

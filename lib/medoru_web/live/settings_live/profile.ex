@@ -6,6 +6,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   alias Medoru.Accounts
   alias Medoru.Gamification
+  alias Phoenix.LiveView.JS
 
   embed_templates "profile/*"
 
@@ -98,9 +99,20 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
     case Accounts.update_profile(profile, profile_params) do
       {:ok, updated_profile} ->
+        # Refresh the current user to update avatar in header
+        user = socket.assigns.current_scope.current_user
+        refreshed_user = Accounts.get_user_with_profile(user.id)
+        unread_count = Medoru.Notifications.count_unread_notifications(user.id)
+        locale = socket.assigns.current_scope.locale
+
         {:noreply,
          socket
          |> assign(:profile, updated_profile)
+         |> assign(:current_scope, %{
+           current_user: refreshed_user,
+           unread_count: unread_count,
+           locale: locale
+         })
          |> put_flash(:info, gettext("Profile updated successfully."))
          |> push_navigate(to: ~p"/settings/profile")}
 
