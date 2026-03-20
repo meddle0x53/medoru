@@ -28,10 +28,12 @@ defmodule MedoruWeb.Endpoint do
     raise_on_missing_only: code_reloading?
 
   # Serve uploaded files from external directory (configured via UPLOADS_DIR env var)
+  # Uses init_mode: :runtime to get the path at runtime rather than compile time
   plug Plug.Static,
     at: "/uploads",
-    from: {:medoru, :uploads_dir},
-    gzip: false
+    from: Application.get_env(:medoru, :uploads_dir, "/var/opt/medoru/uploads"),
+    gzip: false,
+    init_mode: :runtime
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
