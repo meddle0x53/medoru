@@ -105,24 +105,34 @@ defmodule Medoru.Tests.TestStep do
     question_type = get_field(changeset, :question_type)
     points = get_field(changeset, :points)
 
-    case {question_type, points} do
-      {:multichoice, p} when p != 1 ->
-        add_error(changeset, :points, "multiple choice questions must be worth 1 point")
+    changeset =
+      case {question_type, points} do
+        {:multichoice, p} when p != 1 ->
+          add_error(changeset, :points, "multiple choice questions must be worth 1 point")
 
-      {:writing, p} when p != 5 ->
-        add_error(changeset, :points, "writing questions must be worth 5 points")
+        {:writing, p} when p != 5 ->
+          add_error(changeset, :points, "writing questions must be worth 5 points")
 
-      {:reading_text, p} when p not in [1, 2] ->
-        add_error(changeset, :points, "reading text questions must be worth 1 or 2 points")
+        {:reading_text, p} when p not in [1, 2] ->
+          add_error(changeset, :points, "reading text questions must be worth 1 or 2 points")
 
-      {:fill, p} when p not in [1, 2, 3] ->
-        add_error(changeset, :points, "fill questions must be worth 2 or 3 points")
+        {:fill, p} when p not in [1, 2, 3] ->
+          add_error(changeset, :points, "fill questions must be worth 2 or 3 points")
 
-      {type, p} when type in [:match, :order] and p not in [1, 2] ->
-        add_error(changeset, :points, "this question type must be worth 1 or 2 points")
+        {type, p} when type in [:match, :order] and p not in [1, 2] ->
+          add_error(changeset, :points, "this question type must be worth 1 or 2 points")
 
-      _ ->
-        changeset
+        _ ->
+          changeset
+      end
+
+    # Writing questions require a kanji_id
+    kanji_id = get_field(changeset, :kanji_id)
+
+    if question_type == :writing and is_nil(kanji_id) do
+      add_error(changeset, :kanji_id, "writing questions require a kanji to be selected")
+    else
+      changeset
     end
   end
 

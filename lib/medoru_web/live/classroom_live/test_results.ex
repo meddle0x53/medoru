@@ -98,6 +98,21 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
   defp calculate_percentage(score, max) when max > 0, do: trunc(score / max * 100)
   defp calculate_percentage(_, _), do: 0
 
+  # Format seconds into MM:SS or HH:MM:SS
+  defp format_duration(seconds) when is_integer(seconds) and seconds >= 0 do
+    hours = div(seconds, 3600)
+    mins = div(rem(seconds, 3600), 60)
+    secs = rem(seconds, 60)
+
+    if hours > 0 do
+      "#{hours}:#{String.pad_leading("#{mins}", 2, "0")}:#{String.pad_leading("#{secs}", 2, "0")}"
+    else
+      "#{mins}:#{String.pad_leading("#{secs}", 2, "0")}"
+    end
+  end
+
+  defp format_duration(_), do: "0:00"
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -133,6 +148,11 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
 
             <p class="text-xl text-base-content">
               {@total_score} <span class="text-secondary">/ {@max_score}</span> points
+            </p>
+
+            <p class="text-sm text-secondary mt-2">
+              <.icon name="hero-clock" class="w-4 h-4 inline mr-1" />
+              {gettext("Time spent:")} {format_duration(@attempt.time_spent_seconds)}
             </p>
 
             <div class="mt-4">

@@ -112,7 +112,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:total_steps, length(steps))
            |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
            |> assign(:answer, initial_answer_for_step(first_step))
-           |> assign(:show_hint, false)}
+           |> assign(:show_hint, false)
+           |> assign(:writing_start_time, writing_start_time(first_step))}
 
         {:error, _} ->
           {:ok,
@@ -140,7 +141,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:total_steps, length(steps))
        |> assign(:time_remaining, attempt.time_remaining_seconds)
        |> assign(:answer, initial_answer_for_step(current_step))
-       |> assign(:show_hint, false)}
+       |> assign(:show_hint, false)
+       |> assign(:writing_start_time, writing_start_time(current_step))}
     end
   end
 
@@ -217,6 +219,59 @@ defmodule MedoruWeb.ClassroomLive.Test do
   def handle_event("submit_answer", %{"answer" => "skipped"}, socket) do
     # User skipped a writing question - mark as incorrect
     submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
+  def handle_event("skip_question", _params, socket) do
+    # User clicked skip button - mark as incorrect and move to next
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    # Record the skipped answer as incorrect
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => "skipped",
+        "time_spent_seconds" => 10,
+        "step_index" => step.order_index,
+        "is_correct" => false,
+        "points_earned" => 0,
+        "metadata" => %{"skipped" => true}
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        # Update attempt progress
+        Classrooms.update_test_progress(attempt.id, %{
+          score: 0,
+          time_spent_seconds: attempt.time_spent_seconds + 10
+        })
+
+        # Move to next step or complete
+        next_index = socket.assigns.current_step_index + 1
+
+        if next_index >= socket.assigns.total_steps do
+          complete_test(socket, session.id, attempt.id)
+        else
+          Tests.update_session_progress(session.id, next_index)
+          next_step = Enum.at(socket.assigns.steps, next_index)
+
+          {:noreply,
+           socket
+           |> assign(:current_step_index, next_index)
+           |> assign(:current_step, next_step)
+           |> assign(:answer, initial_answer_for_step(next_step))
+           |> assign(:show_hint, false)
+           |> assign(:writing_start_time, writing_start_time(next_step))}
+        end
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to skip question: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to skip question. Please try again."))}
+    end
   end
 
   @impl true
@@ -298,7 +353,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:current_step_index, next_index)
            |> assign(:current_step, next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
-           |> assign(:show_hint, false)}
+           |> assign(:show_hint, false)
+           |> assign(:writing_start_time, writing_start_time(next_step))}
         end
 
       {:error, changeset} ->
@@ -349,7 +405,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:current_step_index, next_index)
            |> assign(:current_step, next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
-           |> assign(:show_hint, false)}
+           |> assign(:show_hint, false)
+           |> assign(:writing_start_time, writing_start_time(next_step))}
         end
 
       {:error, changeset} ->
@@ -433,25 +490,50 @@ defmodule MedoruWeb.ClassroomLive.Test do
          |> assign(:current_step_index, next_index)
          |> assign(:current_step, next_step)
          |> assign(:answer, initial_answer_for_step(next_step))
-         |> assign(:show_hint, false)}
+         |> assign(:show_hint, false)
+         |> assign(:writing_start_time, nil)}
       end
     else
+      # Calculate time spent on this writing step
+      start_time = socket.assigns[:writing_start_time]
+
+      time_spent_seconds =
+        if start_time do
+          DateTime.diff(DateTime.utc_now(), start_time, :second)
+        else
+          # Default if no start time tracked
+          45
+        end
+
+      # Calculate score based on correctness and time
+      points_earned =
+        if correct do
+          calculate_writing_score(step, time_spent_seconds)
+        else
+          0
+        end
+
       answer_text = if correct, do: "correct", else: "partial"
 
       result =
         Tests.record_step_answer(session.id, step.id, %{
           "answer" => answer_text,
-          "time_spent_seconds" => 45,
+          "time_spent_seconds" => time_spent_seconds,
           "step_index" => step.order_index,
           "is_correct" => correct,
-          "metadata" => %{"accuracy" => accuracy, "writing" => true}
+          "points_earned" => points_earned,
+          "metadata" => %{
+            "accuracy" => accuracy,
+            "writing" => true,
+            "time_spent" => time_spent_seconds
+          }
         })
 
       case result do
-        {:ok, step_answer} ->
+        {:ok, _step_answer} ->
           Classrooms.update_test_progress(attempt.id, %{
-            score: step_answer.points_earned,
-            time_spent_seconds: attempt.time_spent_seconds + 45
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + time_spent_seconds
           })
 
           next_index = socket.assigns.current_step_index + 1
@@ -466,13 +548,36 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:current_step_index, next_index)
              |> assign(:current_step, next_step)
              |> assign(:answer, initial_answer_for_step(next_step))
-             |> assign(:show_hint, false)}
+             |> assign(:show_hint, false)
+             |> assign(:writing_start_time, nil)}
           end
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to submit answer."))}
       end
     end
+  end
+
+  # Calculate writing score based on time and stroke count
+  # Wrong answer = 0 points
+  # Correct answer = 5 points with time decay based on stroke count
+  defp calculate_writing_score(step, time_spent_seconds) do
+    # Get stroke count from step data
+    stroke_count = step.question_data["stroke_count"] || 4
+
+    # Determine decay interval based on stroke count (more generous timing)
+    interval_seconds =
+      cond do
+        stroke_count <= 4 -> 8
+        stroke_count <= 8 -> 12
+        stroke_count <= 12 -> 15
+        stroke_count <= 17 -> 20
+        true -> 30
+      end
+
+    # Calculate points: 5 - (time_spent / interval), minimum 0
+    points = 5 - div(time_spent_seconds, interval_seconds)
+    max(points, 0)
   end
 
   defp complete_test(socket, session_id, attempt_id) do
@@ -769,4 +874,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     answer_normalized == correct_normalized
   end
+
+  # Return current time for writing steps, nil for other types
+  defp writing_start_time(%{question_type: :writing}), do: DateTime.utc_now()
+  defp writing_start_time(_), do: nil
 end

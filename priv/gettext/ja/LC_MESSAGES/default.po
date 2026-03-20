@@ -5391,3 +5391,8 @@ msgstr "他の人と一緒に学び、ランキングで競うために教室に
 #, elixir-autogen, elixir-format
 msgid "Go to Classrooms"
 msgstr "教室へ移動"
+
+#: lib/medoru_web/live/classroom_live/test_results.ex:148
+#, elixir-autogen, elixir-format
+msgid "Time spent:"
+msgstr "所要時間:"

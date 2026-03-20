@@ -1518,7 +1518,7 @@ msgstr "Управлявайте"
 #: lib/medoru_web/live/teacher/test_live/index.ex:338
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View"
-msgstr "Вижте всички"
+msgstr "Влезте"
 
 #: lib/medoru_web/live/admin/kanji_live/index/index.html.heex:80
 #: lib/medoru_web/live/admin/lesson_live/index/index.html.heex:83
@@ -4909,7 +4909,7 @@ msgstr "Ранг"
 #: lib/medoru_web/live/classroom_live/show.ex:148
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Rankings"
-msgstr "Значения"
+msgstr "Потребителска класация"
 
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:42
 #, elixir-autogen, elixir-format, fuzzy
@@ -5053,12 +5053,12 @@ msgstr "Говорене"
 #: lib/medoru_web/live/classroom_live/show.ex:426
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Start"
-msgstr "Започнато"
+msgstr "Започнете"
 
 #: lib/medoru_web/live/classroom_live/show.ex:531
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Start Test"
-msgstr "Започнато"
+msgstr "Започнете"
 
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:83
 #, elixir-autogen, elixir-format
@@ -5392,3 +5392,9 @@ msgstr "Присъединете се или създайте класни ст�
 #, elixir-autogen, elixir-format
 msgid "Go to Classrooms"
 msgstr "Към класните стаи"
+
+#: lib/medoru_web/live/classroom_live/test_results.ex:148
+#, elixir-autogen, elixir-format
+msgid "Time spent:"
+msgstr "Прекарано време:"
+
