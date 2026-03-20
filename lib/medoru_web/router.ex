@@ -17,6 +17,13 @@ defmodule MedoruWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # QA API pipeline - has session support but no CSRF for testing
+  pipeline :qa_api do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug :put_secure_browser_headers
+  end
+
   pipeline :require_authenticated_user do
     plug MedoruWeb.UserAuth, :require_authenticated_user
   end
@@ -205,6 +212,25 @@ defmodule MedoruWeb.Router do
 
       live_dashboard "/dashboard", metrics: MedoruWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+
+  # QA Routes - Only available in QA environment
+  if Application.compile_env(:medoru, :qa_mode, false) do
+    scope "/qa", MedoruWeb.QA do
+      pipe_through :browser
+
+      get "/bypass", BypassController, :index
+      post "/bypass/login", BypassController, :login
+      post "/bypass/logout", BypassController, :logout
+    end
+
+    scope "/qa", MedoruWeb.QA do
+      pipe_through :qa_api
+
+      post "/bypass/api/login", BypassController, :api_login
+      get "/bypass/api/users", BypassController, :list_users
+      get "/health", BypassController, :health
     end
   end
 end

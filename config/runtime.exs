@@ -28,8 +28,14 @@ if System.get_env("GOOGLE_CLIENT_ID") do
     client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
 end
 
-config :medoru, MedoruWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+# Configure port - QA uses 4001 by default, others use PORT env var or 4000
+if config_env() == :qa do
+  config :medoru, MedoruWeb.Endpoint,
+    http: [port: String.to_integer(System.get_env("PORT", "4001"))]
+else
+  config :medoru, MedoruWeb.Endpoint,
+    http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+end
 
 if config_env() == :prod do
   database_url =

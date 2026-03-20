@@ -143,7 +143,7 @@ defmodule MedoruWeb.Layouts do
                   </.link>
                   <button
                     type="button"
-                    class="btn btn-ghost btn-sm btn-circle"
+                    class="btn btn-ghost btn-sm sm:btn-md btn-circle touch-target"
                     phx-click={JS.hide(to: "#mobile-nav-drawer")}
                     aria-label={gettext("Close menu")}
                   >
@@ -303,7 +303,7 @@ defmodule MedoruWeb.Layouts do
               <div
                 tabindex="0"
                 role="button"
-                class="btn btn-ghost btn-sm btn-circle"
+                class="btn btn-ghost btn-sm sm:btn-md btn-circle touch-target"
                 title={gettext("Language")}
               >
                 <span class="text-lg">{locale_flag(@current_scope[:locale])}</span>
@@ -347,9 +347,9 @@ defmodule MedoruWeb.Layouts do
               <div
                 tabindex="0"
                 role="button"
-                class="btn btn-ghost btn-sm btn-circle relative"
+                class="btn btn-ghost btn-sm sm:btn-md btn-circle relative touch-target"
               >
-                <.icon name="hero-bell" class="w-5 h-5 text-secondary" />
+                <.icon name="hero-bell" class="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                 <%= if @current_scope.unread_count > 0 do %>
                   <span class="badge badge-xs badge-error absolute -top-1 -right-1">
                     {@current_scope.unread_count}
@@ -383,7 +383,7 @@ defmodule MedoruWeb.Layouts do
               <div
                 tabindex="0"
                 role="button"
-                class="flex items-center gap-2 btn btn-ghost btn-sm p-1 h-auto"
+                class="flex items-center gap-2 btn btn-ghost btn-sm sm:btn-md p-1 sm:p-2 h-auto touch-target"
               >
                 <%= if (@current_scope.current_user.profile && @current_scope.current_user.profile.avatar) || @current_scope.current_user.avatar_url do %>
                   <% avatar_src =
@@ -392,11 +392,11 @@ defmodule MedoruWeb.Layouts do
                   <img
                     src={avatar_src}
                     alt="Avatar"
-                    class="w-8 h-8 rounded-full ring-2 ring-base-200"
+                    class="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-base-200"
                   />
                 <% else %>
-                  <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
-                    <.icon name="hero-user" class="w-4 h-4 text-primary" />
+                  <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+                    <.icon name="hero-user" class="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   </div>
                 <% end %>
                 <span class="text-sm text-secondary hidden lg:block max-w-[120px] truncate">

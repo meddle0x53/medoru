@@ -154,11 +154,15 @@
           </div>
 
           <%!-- Actions --%>
-          <div class="border-t border-base-300 pt-6 flex items-center justify-end gap-4">
-            <.link navigate={~p"/admin/kanji"} class="btn btn-ghost">
+          <div class="border-t border-base-300 pt-6 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
+            <.link navigate={~p"/admin/kanji"} class="btn btn-ghost w-full sm:w-auto">
               {gettext("Cancel")}
             </.link>
-            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+            <button
+              type="submit"
+              class="btn btn-primary w-full sm:w-auto"
+              phx-disable-with={gettext("Saving...")}
+            >
               <.icon name="hero-check" class="w-4 h-4 mr-2" />
               <%= if @live_action == :new do %>
                 {gettext("Create Kanji")}
@@ -172,7 +176,7 @@
         <%!-- Readings Section (for edit mode) - OUTSIDE the kanji form --%>
         <%= if @live_action == :edit do %>
           <div class="border-t border-base-300 pt-6 mt-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <h3 class="text-lg font-semibold flex items-center gap-2">
                 <.icon name="hero-speaker-wave" class="w-5 h-5" />
                 {gettext("Readings")}
@@ -183,7 +187,7 @@
               <button
                 type="button"
                 phx-click="show_new_reading"
-                class="btn btn-sm btn-primary"
+                class="btn btn-sm btn-primary w-full sm:w-auto"
                 disabled={@new_reading != nil}
               >
                 <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Reading")}
@@ -348,8 +352,8 @@
                   </div>
                 <% else %>
                   <%!-- Reading Display --%>
-                  <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
-                    <div class="flex items-center gap-3">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-base-200/50 rounded-lg gap-2">
+                    <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
                       <span class={[
                         "badge",
                         if(reading.reading_type == :on,
@@ -367,25 +371,25 @@
                         </span>
                       <% end %>
                     </div>
-                    <div class="flex gap-1">
+                    <div class="flex gap-1 sm:gap-2 self-end sm:self-auto">
                       <button
                         type="button"
                         phx-click="edit_reading"
                         phx-value-id={reading.id}
-                        class="btn btn-ghost btn-xs"
+                        class="btn btn-ghost btn-sm min-h-[36px] min-w-[36px]"
                         title={gettext("Edit")}
                       >
-                        <.icon name="hero-pencil" class="w-3 h-3" />
+                        <.icon name="hero-pencil" class="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         phx-click="delete_reading"
                         phx-value-id={reading.id}
                         data-confirm={gettext("Are you sure you want to delete this reading?")}
-                        class="btn btn-ghost btn-xs text-error"
+                        class="btn btn-ghost btn-sm min-h-[36px] min-w-[36px] text-error"
                         title={gettext("Delete")}
                       >
-                        <.icon name="hero-trash" class="w-3 h-3" />
+                        <.icon name="hero-trash" class="w-4 h-4" />
                       </button>
                     </div>
                   </div>

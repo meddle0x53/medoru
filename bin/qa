@@ -1,0 +1,108 @@
+#!/bin/bash
+#
+# QA Testing Helper Script
+#
+# Usage:
+#   bin/qa setup      - Setup QA database and install dependencies
+#   bin/qa server     - Start QA server
+#   bin/qa test       - Run all tests
+#   bin/qa test:ui    - Run tests in UI mode
+#   bin/qa seed       - Reseed test data
+#   bin/qa reset      - Reset QA database and reseed
+#
+
+set -e
+
+QA_DIR="$(cd "$(dirname "$0")/.." && pwd)/qa"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+case "${1:-}" in
+  setup)
+    echo "🚀 Setting up QA environment..."
+    
+    echo "📦 Installing JS dependencies..."
+    cd "$QA_DIR"
+    npm install
+    npx playwright install
+    
+    echo "🗄️  Creating QA database..."
+    cd "$PROJECT_ROOT"
+    mix ecto.create -c qa.exs || true
+    MIX_ENV=qa mix ecto.migrate
+    
+    echo "🌱 Seeding test data..."
+    MIX_ENV=qa mix run priv/repo/qa_seeds.exs
+    
+    echo "✅ QA setup complete!"
+    echo ""
+    echo "Start the QA server: bin/qa server"
+    echo "Run tests: bin/qa test"
+    ;;
+    
+  server)
+    echo "🚀 Starting QA server on http://localhost:4001"
+    echo "   (Dev server can still run on http://localhost:4000)"
+    echo ""
+    MIX_ENV=qa mix phx.server
+    ;;
+    
+  test)
+    echo "🧪 Running QA tests..."
+    cd "$QA_DIR"
+    npx playwright test "${@:2}"
+    ;;
+    
+  test:ui)
+    echo "🎭 Opening Playwright UI mode..."
+    cd "$QA_DIR"
+    npx playwright test --ui
+    ;;
+    
+  test:debug)
+    echo "🐛 Running tests in debug mode..."
+    cd "$QA_DIR"
+    npx playwright test --debug
+    ;;
+    
+  seed)
+    echo "🌱 Seeding QA database..."
+    MIX_ENV=qa mix run priv/repo/qa_seeds.exs
+    ;;
+    
+  reset)
+    echo "🗑️  Dropping QA database..."
+    mix ecto.drop -c qa.exs || true
+    
+    echo "🗄️  Recreating QA database..."
+    mix ecto.create -c qa.exs
+    MIX_ENV=qa mix ecto.migrate
+    
+    echo "🌱 Seeding test data..."
+    MIX_ENV=qa mix run priv/repo/qa_seeds.exs
+    
+    echo "✅ QA database reset complete!"
+    ;;
+    
+  *)
+    echo "Medoru QA Testing Helper"
+    echo ""
+    echo "Usage: bin/qa <command>"
+    echo ""
+    echo "Commands:"
+    echo "  setup      Setup QA environment (db, deps, seed)"
+    echo "  server     Start QA server on port 4001"
+    echo "  test       Run all tests"
+    echo "  test:ui    Run tests with Playwright UI"
+    echo "  test:debug Run tests in debug mode"
+    echo "  seed       Reseed test data"
+    echo "  reset      Reset QA database and reseed"
+    echo ""
+    echo "Examples:"
+    echo "  bin/qa setup"
+    echo "  bin/qa server"
+    echo "  bin/qa test"
+    echo "  bin/qa test scenarios/auth.spec.ts"
+    ;;
+esac

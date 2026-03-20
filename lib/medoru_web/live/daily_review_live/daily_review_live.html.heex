@@ -101,7 +101,7 @@
               </div>
 
               <%!-- Answer Options --%>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 answer-grid">
                 <%= for {option, is_correct} <- @options do %>
                   <button
                     type="button"
@@ -109,7 +109,7 @@
                     phx-value-answer={option}
                     disabled={@show_result}
                     class={[
-                      "btn btn-lg h-auto py-6 text-lg transition-all duration-200",
+                      "btn btn-lg h-auto py-5 sm:py-6 text-base sm:text-lg transition-all duration-200 min-h-[56px] touch-target",
                       cond do
                         not @show_result -> "btn-outline hover:btn-primary"
                         @selected_answer == option and is_correct -> "btn-success"
@@ -147,7 +147,7 @@
                 <button
                   type="button"
                   phx-click="next_question"
-                  class="btn btn-primary btn-lg w-full"
+                  class="btn btn-primary btn-lg w-full min-h-[56px] touch-target"
                 >
                   <%= if @current_index + 1 >= @total_count do %>
                     <.icon name="hero-flag" class="w-5 h-5 mr-2" /> Finish Review

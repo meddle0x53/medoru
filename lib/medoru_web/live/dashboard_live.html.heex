@@ -95,6 +95,38 @@
       />
     </div>
 
+    <%!-- Classrooms Section --%>
+    <div class="card bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 mb-8">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0">
+              <.icon name="hero-users" class="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-base-content">
+                {gettext("Your Classrooms")}
+              </h2>
+              <p class="text-base-content/70">
+                {gettext(
+                  "Join or create classrooms to learn with others and compete on leaderboards."
+                )}
+              </p>
+            </div>
+          </div>
+
+          <.link
+            navigate={~p"/classrooms"}
+            class="btn btn-primary h-auto py-3 px-6 min-h-[48px] whitespace-nowrap"
+          >
+            <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" />
+            {gettext("Go to Classrooms")}
+          </.link>
+        </div>
+      </div>
+    </div>
+
+
     <%!-- Quick Actions --%>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <.action_card

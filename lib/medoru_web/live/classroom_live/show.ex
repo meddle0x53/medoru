@@ -239,7 +239,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     ]}>
                       {index}
                     </span>
-                    <% avatar_src = (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                    <% avatar_src =
+                      (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
                     <%= if avatar_src do %>
                       <div class="avatar shrink-0">
                         <div class="w-8 h-8 rounded-full">
@@ -249,9 +250,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <% else %>
                       <div class="avatar placeholder shrink-0">
                         <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
-                          <% initial = if member.user.profile && member.user.profile.display_name,
-                            do: String.first(member.user.profile.display_name) |> String.upcase(),
-                            else: String.first(member.user.name || member.user.email) |> String.upcase() %>
+                          <% initial =
+                            if member.user.profile && member.user.profile.display_name,
+                              do: String.first(member.user.profile.display_name) |> String.upcase(),
+                              else:
+                                String.first(member.user.name || member.user.email) |> String.upcase() %>
                           <span class="text-xs">{initial}</span>
                         </div>
                       </div>
@@ -311,7 +314,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   ]}>
                     {index}
                   </span>
-                  <% avatar_src = (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                  <% avatar_src =
+                    (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
                   <%= if avatar_src do %>
                     <div class="avatar shrink-0">
                       <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
@@ -321,9 +325,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   <% else %>
                     <div class="avatar placeholder shrink-0">
                       <div class="bg-primary text-primary-content rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                        <% initial = if member.user.profile && member.user.profile.display_name,
-                          do: String.first(member.user.profile.display_name) |> String.upcase(),
-                          else: String.first(member.user.name || member.user.email) |> String.upcase() %>
+                        <% initial =
+                          if member.user.profile && member.user.profile.display_name,
+                            do: String.first(member.user.profile.display_name) |> String.upcase(),
+                            else:
+                              String.first(member.user.name || member.user.email) |> String.upcase() %>
                         <span class="text-xs sm:text-sm">{initial}</span>
                       </div>
                     </div>

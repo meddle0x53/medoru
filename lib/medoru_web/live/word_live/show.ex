@@ -3,6 +3,7 @@ defmodule MedoruWeb.WordLive.Show do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Learning
 
   embed_templates "*.html"
 
@@ -18,14 +19,44 @@ defmodule MedoruWeb.WordLive.Show do
     locale = socket.assigns.locale
     localized_meaning = Content.get_localized_meaning(word, locale)
 
+    # Check if user has learned this word (if authenticated)
+    word_learned =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        Learning.word_learned?(socket.assigns.current_scope.current_user.id, word.id)
+      else
+        false
+      end
+
     {:noreply,
      socket
      |> assign(:word, word)
      |> assign(:localized_meaning, localized_meaning)
+     |> assign(:word_learned, word_learned)
      |> assign(
        :page_title,
        gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
      )}
+  end
+
+  @impl true
+  def handle_event("mark_word_learned", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      user_id = socket.assigns.current_scope.current_user.id
+      word = socket.assigns.word
+
+      case Learning.track_word_learned(user_id, word.id) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:word_learned, true)
+           |> put_flash(:info, gettext("%{word} marked as learned!", word: word.text))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Could not mark word as learned.")}
+      end
+    else
+      {:noreply, socket}
+    end
   end
 
   # Helper functions needed for shared templates

@@ -790,6 +790,88 @@ And **never** do this:
 
 <!-- phoenix:liveview-end -->
 
+## QA Testing with Playwright
+
+The project includes a comprehensive E2E testing suite in the `/qa` directory using Playwright.
+
+### Quick Start
+
+```bash
+# Setup everything (one-time)
+bin/qa setup
+
+# Start QA server (runs on port 4001, separate from dev on 4000)
+bin/qa server
+
+# In another terminal, run tests
+bin/qa test
+
+# Or use UI mode for debugging
+bin/qa test:ui
+```
+
+### QA Environment
+
+- **Port**: 4001 (dev runs on 4000 simultaneously)
+- **Database**: `medoru_qa` (isolated from dev/test/prod)
+- **Config**: `config/qa.exs`
+- **Auth**: OAuth bypass for test users (via `/qa/bypass`)
+
+### Test Users (Pre-seeded)
+
+| Email | Type | Description |
+|-------|------|-------------|
+| `admin@qa.test` | admin | Full admin access |
+| `teacher@qa.test` | teacher | Teacher with classrooms |
+| `student@qa.test` | student | Regular student |
+| `studentadvanced@qa.test` | student | Advanced (50 lessons, 15-day streak) |
+| `studentnew@qa.test` | student | New student (3 lessons) |
+
+See `qa/fixtures/users.ts` for all 18 test users.
+
+### Writing QA Scenarios
+
+1. Create a file in `qa/scenarios/`:
+```typescript
+import { test, expect } from '@playwright/test';
+import { TEST_USERS } from '../fixtures/users';
+import { createAuthHelper, navigateTo } from '../helpers';
+
+test('description', async ({ page }) => {
+  const auth = createAuthHelper(page);
+  await auth.login(TEST_USERS.student);
+  await navigateTo(page, 'dashboard');
+  await expect(page.locator('h1')).toContainText('Dashboard');
+});
+```
+
+2. Run the test:
+```bash
+npx playwright test scenarios/my-test.spec.ts --headed
+```
+
+### QA Commands
+
+```bash
+bin/qa setup       # Setup QA environment
+bin/qa server      # Start QA server
+bin/qa test        # Run all tests
+bin/qa test:ui     # UI mode for debugging
+bin/qa seed        # Reseed test data
+bin/qa reset       # Reset DB and reseed
+```
+
+### Mix Aliases
+
+```bash
+mix qa.setup       # Setup DB and seed
+mix qa.seed        # Just seed data
+mix ecto.qa        # Create/migrate QA DB
+mix ecto.reset.qa  # Reset QA DB
+```
+
+See `qa/README.md` for full documentation.
+
 <!-- usage_rules-start -->
 ## usage_rules usage
 _A dev tool for Elixir projects to gather LLM usage rules from dependencies_

@@ -526,14 +526,14 @@ defmodule MedoruWeb.LessonTestLive.Show do
               <%!-- Multichoice Step --%>
               <%= if @current_step.question_type == :multichoice do %>
                 <%!-- Answer Options for Multichoice --%>
-                <div class="space-y-3 mb-6">
+                <div class="space-y-3 mb-6 answer-grid">
                   <%= for option <- @current_step.options do %>
                     <button
                       type="button"
                       phx-click="select_answer"
                       phx-value-answer={option}
                       class={[
-                        "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
+                        "w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-200 min-h-[56px] touch-target",
                         if @selected_answer == option do
                           "border-primary bg-primary/5"
                         else
@@ -543,7 +543,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                     >
                       <div class="flex items-center gap-3">
                         <div class={[
-                          "w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                          "w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center shrink-0",
                           if @selected_answer == option do
                             "border-primary bg-primary"
                           else
@@ -551,10 +551,12 @@ defmodule MedoruWeb.LessonTestLive.Show do
                           end
                         ]}>
                           <%= if @selected_answer == option do %>
-                            <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
+                            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white"></div>
                           <% end %>
                         </div>
-                        <span class="text-base-content font-medium">{option}</span>
+                        <span class="text-base-content font-medium text-base sm:text-lg">
+                          {option}
+                        </span>
                       </div>
                     </button>
                   <% end %>

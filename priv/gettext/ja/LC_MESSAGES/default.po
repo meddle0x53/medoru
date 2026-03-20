@@ -5376,3 +5376,18 @@ msgstr "選択した項目を学習済みとしてマークしました！"
 #, elixir-autogen, elixir-format
 msgid "You must be a member to view rankings."
 msgstr "ランキングを表示するにはメンバーである必要があります。"
+
+#: lib/medoru_web/live/dashboard_live.html.heex:14
+#, elixir-autogen, elixir-format
+msgid "Your Classrooms"
+msgstr "あなたの教室"
+
+#: lib/medoru_web/live/dashboard_live.html.heex:21
+#, elixir-autogen, elixir-format
+msgid "Join or create classrooms to learn with others and compete on leaderboards."
+msgstr "他の人と一緒に学び、ランキングで競うために教室に参加または作成しましょう。"
+
+#: lib/medoru_web/live/dashboard_live.html.heex:28
+#, elixir-autogen, elixir-format
+msgid "Go to Classrooms"
+msgstr "教室へ移動"

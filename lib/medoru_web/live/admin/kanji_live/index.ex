@@ -113,17 +113,32 @@ defmodule MedoruWeb.Admin.KanjiLive.Index do
     # Apply level filter
     query = if level, do: where(query, jlpt_level: ^level), else: query
 
-    # Apply search filter
+    # Apply search filter - searches in character, meanings, and readings
+    # Exact character matches are prioritized
     query =
       if search && search != "" do
         search_term = "%#{search}%"
+        search_lower = String.downcase(search)
 
+        # Join with readings to search there too
         query
+        |> join(:left, [k], r in assoc(k, :kanji_readings), as: :readings)
         |> where(
-          [k],
+          [k, readings: r],
           ilike(k.character, ^search_term) or
-            fragment("? && ?", k.meanings, ^[search])
+            fragment(
+              "EXISTS (SELECT 1 FROM unnest(?) AS m WHERE LOWER(m) LIKE ?)",
+              k.meanings,
+              ^"%#{search_lower}%"
+            ) or
+            ilike(r.reading, ^search_term) or
+            ilike(r.romaji, ^search_term)
         )
+        # Prioritize: exact character match > partial matches
+        |> order_by([k],
+          desc: fragment("CASE WHEN ? = ? THEN 1 ELSE 0 END", k.character, ^search)
+        )
+        |> distinct([k], k.id)
       else
         query
       end

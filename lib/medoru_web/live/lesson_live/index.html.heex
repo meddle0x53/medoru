@@ -15,7 +15,7 @@
       <.link
         patch={~p"/lessons"}
         class={[
-          "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
+          "px-4 sm:px-5 py-2.5 rounded-xl font-medium transition-all duration-200 min-h-[44px] touch-target",
           if(is_nil(@difficulty),
             do: "bg-primary text-primary-content shadow-md",
             else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
@@ -28,7 +28,7 @@
         <.link
           patch={~p"/lessons?#{page_link_params(assigns, 1) |> Keyword.put(:difficulty, level)}"}
           class={[
-            "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
+            "px-4 sm:px-5 py-2.5 rounded-xl font-medium transition-all duration-200 min-h-[44px] touch-target",
             if(@difficulty == level,
               do: "bg-primary text-primary-content shadow-md",
               else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
@@ -69,8 +69,8 @@
         </div>
         <button
           type="submit"
-          class="px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
-                 hover:bg-primary/90 transition-colors"
+          class="px-4 sm:px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
+                 hover:bg-primary/90 transition-colors min-h-[44px] touch-target"
         >
           {gettext("Search")}
         </button>
@@ -79,7 +79,7 @@
             type="button"
             phx-click="clear_search"
             class="px-4 py-2.5 bg-base-200 text-secondary rounded-xl font-medium
-                   hover:bg-base-300 transition-colors"
+                   hover:bg-base-300 transition-colors min-h-[44px] touch-target"
           >
             {gettext("Clear")}
           </button>
@@ -283,13 +283,13 @@
           <%= if @page > 1 do %>
             <.link
               patch={~p"/lessons?#{page_link_params(assigns, @page - 1)}"}
-              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+              class="px-3 sm:px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors min-h-[44px] touch-target flex items-center"
             >
-              ← {gettext("Prev")}
+              <span class="hidden sm:inline">← </span>{gettext("Prev")}
             </.link>
           <% else %>
-            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-              ← Prev
+            <span class="px-3 sm:px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed min-h-[44px] flex items-center">
+              <span class="hidden sm:inline">← </span>Prev
             </span>
           <% end %>
 
@@ -303,7 +303,7 @@
             <%= if start_page > 1 do %>
               <.link
                 patch={~p"/lessons?#{page_link_params(assigns, 1)}"}
-                class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                class="px-3 sm:px-4 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
               >
                 1
               </.link>
@@ -314,13 +314,13 @@
 
             <%= for p <- start_page..end_page do %>
               <%= if p == @page do %>
-                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                <span class="px-3 sm:px-4 py-2 bg-primary text-primary-content rounded-lg font-medium min-h-[44px] min-w-[44px] flex items-center justify-center">
                   {p}
                 </span>
               <% else %>
                 <.link
                   patch={~p"/lessons?#{page_link_params(assigns, p)}"}
-                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                  class="px-3 sm:px-4 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
                 >
                   {p}
                 </.link>
@@ -333,7 +333,7 @@
               <% end %>
               <.link
                 patch={~p"/lessons?#{page_link_params(assigns, @total_pages)}"}
-                class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                class="px-3 sm:px-4 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center touch-target"
               >
                 {@total_pages}
               </.link>
@@ -344,13 +344,13 @@
           <%= if @page < @total_pages do %>
             <.link
               patch={~p"/lessons?#{page_link_params(assigns, @page + 1)}"}
-              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+              class="px-3 sm:px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors min-h-[44px] touch-target flex items-center"
             >
-              {gettext("Next")} →
+              {gettext("Next")}<span class="hidden sm:inline"> →</span>
             </.link>
           <% else %>
-            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-              Next →
+            <span class="px-3 sm:px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed min-h-[44px] flex items-center">
+              Next<span class="hidden sm:inline"> →</span>
             </span>
           <% end %>
         </div>

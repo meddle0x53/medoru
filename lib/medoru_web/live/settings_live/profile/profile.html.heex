@@ -29,7 +29,7 @@
               value={@form[:display_name].value}
               placeholder={gettext("How you want to be known")}
               class={[
-                "input input-bordered w-full",
+                "input input-bordered w-full min-h-[44px] text-base",
                 @form[:display_name].errors != [] && "input-error"
               ]}
               maxlength="50"
@@ -55,7 +55,7 @@
               value={@form[:bio].value}
               placeholder={gettext("Tell us a bit about yourself...")}
               class={[
-                "textarea textarea-bordered w-full h-32 resize-none",
+                "textarea textarea-bordered w-full h-32 resize-none text-base",
                 @form[:bio].errors != [] && "textarea-error"
               ]}
               maxlength="500"
@@ -163,8 +163,12 @@
             <.link navigate={~p"/dashboard"} class="btn btn-ghost">
               {gettext("Cancel")}
             </.link>
-            <button type="submit" class="btn btn-primary" disabled={@form.errors != []}>
-              <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Save Changes")}
+            <button
+              type="submit"
+              class="btn btn-primary w-full sm:w-auto min-h-[48px] touch-target"
+              disabled={@form.errors != []}
+            >
+              <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Save Changes")}
             </button>
           </div>
         </.form>

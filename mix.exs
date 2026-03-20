@@ -33,6 +33,7 @@ defmodule Medoru.MixProject do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:qa), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
   # Specifies your project dependencies.
@@ -108,6 +109,10 @@ defmodule Medoru.MixProject do
       setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.qa": ["ecto.create -c qa.exs", "ecto.migrate -c qa.exs"],
+      "ecto.reset.qa": ["ecto.drop -c qa.exs", "ecto.qa"],
+      "qa.seed": ["run priv/repo/qa_seeds.exs"],
+      "qa.setup": ["ecto.reset.qa", "qa.seed"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind medoru", "esbuild medoru"],
