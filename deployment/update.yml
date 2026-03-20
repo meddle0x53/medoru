@@ -91,6 +91,14 @@
         group: "{{ app_group }}"
         mode: '0755'
 
+    - name: Ensure uploads directory exists
+      ansible.builtin.file:
+        path: "{{ uploads_dir | default('/var/opt/medoru/uploads') }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+
     - name: Fix permissions on env file
       ansible.builtin.file:
         path: /etc/medoru/medoru.env
@@ -108,6 +116,7 @@
         export PHX_HOST=$(grep PHX_HOST /etc/medoru/medoru.env | cut -d= -f2-)
         export PORT=$(grep PORT /etc/medoru/medoru.env | cut -d= -f2-)
         export POOL_SIZE=$(grep POOL_SIZE /etc/medoru/medoru.env | cut -d= -f2-)
+        export UPLOADS_DIR=$(grep UPLOADS_DIR /etc/medoru/medoru.env | cut -d= -f2-)
         export PHX_SERVER=true
         # Run as medoru with preserved env vars
         sudo -E -u {{ app_user }} {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"

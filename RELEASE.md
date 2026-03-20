@@ -157,7 +157,29 @@ export PORT=4000
 # OAuth (if using)
 export GOOGLE_CLIENT_ID="..."
 export GOOGLE_CLIENT_SECRET="..."
+
+# File uploads (avatars, etc.)
+export UPLOADS_DIR="/var/opt/medoru/uploads"
 ```
+
+### Uploads Directory
+
+The `UPLOADS_DIR` environment variable specifies where uploaded files (like user avatars) are stored. 
+
+**Important:** This directory must:
+- Exist and be writable by the application user
+- Be outside the release directory (releases are read-only)
+- Be persisted across deployments
+
+**Example setup:**
+```bash
+# Create uploads directory
+sudo mkdir -p /var/opt/medoru/uploads
+sudo chown -R medoru:medoru /var/opt/medoru/uploads
+chmod 755 /var/opt/medoru/uploads
+```
+
+If not set, the default is `/var/opt/medoru/uploads`.
 
 ## Systemd Service
 

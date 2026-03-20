@@ -82,6 +82,9 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  # Configure uploads directory - use environment variable or default to system temp
+  config :medoru, :uploads_dir, System.get_env("UPLOADS_DIR") || "/var/opt/medoru/uploads"
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

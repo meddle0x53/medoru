@@ -34,6 +34,14 @@
     - "{{ app_home }}/releases"
     - "{{ app_home }}/logs"
 
+- name: Create uploads directory
+  ansible.builtin.file:
+    path: "{{ uploads_dir | default('/var/opt/medoru/uploads') }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: '0755'
+
 - name: Clone medoru source code
   ansible.builtin.git:
     repo: "{{ git_repo | default('https://github.com/nikolayku/medoru.git') }}"
@@ -157,6 +165,7 @@
     export PHX_HOST=$(grep PHX_HOST /etc/medoru/medoru.env | cut -d= -f2-)
     export PORT=$(grep PORT /etc/medoru/medoru.env | cut -d= -f2-)
     export POOL_SIZE=$(grep POOL_SIZE /etc/medoru/medoru.env | cut -d= -f2-)
+    export UPLOADS_DIR=$(grep UPLOADS_DIR /etc/medoru/medoru.env | cut -d= -f2-)
     export PHX_SERVER=true
     # Run as medoru with preserved env vars
     sudo -E -u {{ app_user }} {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"

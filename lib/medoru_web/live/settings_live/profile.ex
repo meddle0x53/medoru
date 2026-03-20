@@ -70,16 +70,24 @@ defmodule MedoruWeb.SettingsLive.Profile do
     # Handle avatar upload if present
     avatar_url =
       consume_uploaded_entries(socket, :avatar, fn %{path: path}, entry ->
-        # Get absolute path to priv/static directory
-        static_dir = Application.app_dir(:medoru, "priv/static")
-        upload_dir = Path.join(static_dir, "uploads/avatars")
-        dest = Path.join(upload_dir, entry.client_name)
+        # Get configured uploads directory (env var or default)
+        uploads_dir = Application.get_env(:medoru, :uploads_dir, "/tmp/medoru/uploads")
+        upload_dir = Path.join(uploads_dir, "avatars")
+
+        # Generate unique filename to avoid collisions
+        ext = Path.extname(entry.client_name) |> String.downcase()
+        timestamp = System.system_time(:millisecond)
+
+        unique_name =
+          "#{timestamp}_#{:crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)}#{ext}"
+
+        dest = Path.join(upload_dir, unique_name)
 
         # Create directory with proper error handling
         case File.mkdir_p(upload_dir) do
           :ok ->
             File.cp!(path, dest)
-            {:ok, "/uploads/avatars/#{entry.client_name}"}
+            {:ok, "/uploads/avatars/#{unique_name}"}
 
           {:error, reason} ->
             require Logger

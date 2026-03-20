@@ -63,6 +63,9 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Default uploads directory (override in runtime.exs for production)
+config :medoru, :uploads_dir, Path.join(File.cwd!(), "priv/static/uploads")
+
 # Configure Ueberauth
 config :ueberauth, Ueberauth,
   providers: [
