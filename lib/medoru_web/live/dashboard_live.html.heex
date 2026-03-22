@@ -87,12 +87,14 @@
         icon="book-open"
         color="blue"
       />
-      <.stat_card
-        label={gettext("Words Learned")}
-        value={@stats.total_words_learned}
-        icon="document-text"
-        color="green"
-      />
+      <.link navigate={~p"/users/#{@user.id}/words"} class="block">
+        <.stat_card
+          label={gettext("Words Learned")}
+          value={@stats.total_words_learned}
+          icon="document-text"
+          color="green"
+        />
+      </.link>
     </div>
 
     <%!-- Classrooms Section --%>

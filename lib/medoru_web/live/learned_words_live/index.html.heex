@@ -1,0 +1,155 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-2">
+        <.link navigate={~p"/users/#{@user.id}"} class="text-secondary hover:text-primary transition-colors">
+          <.icon name="hero-arrow-left" class="w-5 h-5" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">
+          {gettext("%{name}'s Learned Words", name: @user.name || @user.email)}
+        </h1>
+      </div>
+      <p class="text-secondary">
+        {gettext("All %{count} words that have been learned", count: @total_count)}
+      </p>
+    </div>
+
+    <%!-- Stats --%>
+    <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        {@total_count} {gettext("words learned")}
+      </span>
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+      </span>
+    </div>
+
+    <%!-- Words Grid --%>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <%= for word <- @words do %>
+        <.link
+          navigate={~p"/words/#{word.id}"}
+          class="group block"
+        >
+          <div class="bg-rose-50/60 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/40 rounded-xl p-5
+                      shadow-sm hover:shadow-md hover:border-rose-300/60 dark:hover:border-rose-700/50 hover:-translate-y-0.5 transition-all duration-200">
+            <div class="flex items-baseline justify-between mb-2">
+              <span class="text-2xl font-medium text-base-content group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                {word.text}
+              </span>
+              <span class="text-sm text-secondary/70 font-medium">
+                {word.reading}
+              </span>
+            </div>
+            <p class="text-secondary text-sm line-clamp-2 mb-3">
+              {localized_word_meaning(word, @locale)}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class={[
+                "px-2 py-0.5 rounded text-xs font-medium capitalize",
+                case word.word_type do
+                  :noun -> "bg-blue-100/80 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                  :verb -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                  :adjective -> "bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                  :adverb -> "bg-purple-100/80 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                  :particle -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                  :pronoun -> "bg-pink-100/80 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300"
+                  :counter -> "bg-teal-100/80 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300"
+                  :expression -> "bg-indigo-100/80 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                  _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+                end
+              ]}>
+                {word.word_type}
+              </span>
+              <span class={[
+                "px-2 py-0.5 rounded text-xs font-medium",
+                case word.difficulty do
+                  5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                  4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+                  3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                  2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                  1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                  _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+                end
+              ]}>
+                N{word.difficulty}
+              </span>
+            </div>
+          </div>
+        </.link>
+      <% end %>
+    </div>
+
+    <%!-- Empty State --%>
+    <%= if @words == [] do %>
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">📚</div>
+        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No words learned yet")}</h3>
+        <p class="text-secondary mb-6">
+          {gettext("Start learning by completing lessons or browsing vocabulary.")}
+        </p>
+        <.link
+          navigate={~p"/lessons"}
+          class="inline-flex items-center px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+        >
+          <.icon name="hero-book-open" class="w-5 h-5 mr-2" />
+          {gettext("Start Learning")}
+        </.link>
+      </div>
+    <% end %>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          <%= if @page > 1 do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page - 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              ← {gettext("Prev")}
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              ← {gettext("Prev")}
+            </span>
+          <% end %>
+
+          <div class="flex items-center gap-1">
+            <%= for p <- max(1, @page - 2)..min(@total_pages, @page + 2) do %>
+              <%= if p == @page do %>
+                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                  {p}
+                </span>
+              <% else %>
+                <button
+                  phx-click="change_page"
+                  phx-value-page={p}
+                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                >
+                  {p}
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%= if @page < @total_pages do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page + 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              {gettext("Next")} →
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              {gettext("Next")} →
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

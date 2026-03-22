@@ -3,6 +3,7 @@ defmodule MedoruWeb.WordLive.Index do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Learning
 
   embed_templates "*.html"
 
@@ -11,7 +12,19 @@ defmodule MedoruWeb.WordLive.Index do
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
-    {:ok, socket |> assign(:difficulty, 5) |> assign(:locale, locale)}
+    
+    # Get learned word IDs if user is logged in
+    learned_word_ids =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        Learning.list_learned_word_ids(socket.assigns.current_scope.current_user.id)
+      else
+        []
+      end
+    
+    {:ok, socket 
+     |> assign(:difficulty, 5) 
+     |> assign(:locale, locale)
+     |> assign(:learned_word_ids, learned_word_ids)}
   end
 
   @impl true

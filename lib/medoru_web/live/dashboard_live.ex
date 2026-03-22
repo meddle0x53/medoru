@@ -51,17 +51,18 @@ defmodule MedoruWeb.DashboardLive do
 
   defp stat_card(assigns) do
     ~H"""
-    <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 hover:shadow-md hover:border-primary/20 transition-all duration-200">
+    <div class="bg-base-100 rounded-xl shadow-sm border border-base-300 p-6 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group">
       <div class="flex items-center">
         <div class={[
-          "flex-shrink-0 p-3 rounded-xl",
-          stat_card_icon_bg(@color)
+          "flex-shrink-0 p-3 rounded-xl transition-colors",
+          stat_card_icon_bg(@color),
+          "group-hover:bg-opacity-80"
         ]}>
           <.icon name={"hero-#{@icon}"} class={["h-6 w-6", stat_card_icon_color(@color)]} />
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-secondary/70">{@label}</p>
-          <p class="text-2xl font-bold text-base-content">{@value}</p>
+          <p class="text-sm font-medium text-secondary/70 group-hover:text-secondary transition-colors">{@label}</p>
+          <p class="text-2xl font-bold text-base-content group-hover:text-primary transition-colors">{@value}</p>
         </div>
       </div>
     </div>

@@ -8,8 +8,8 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
 
-  # Helper to set up a user with a started lesson and word
-  defp setup_user_with_lesson_and_word(_) do
+  # Helper to set up a user with a completed lesson and word
+  defp setup_user_with_completed_lesson_and_word(_) do
     user = user_fixture()
     lesson = lesson_fixture()
     word = word_fixture()
@@ -17,17 +17,21 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
     # Associate word with lesson
     lesson_word_fixture(lesson, word)
 
-    # Start the lesson for the user
+    # Start and complete the lesson for the user
     {:ok, _} = Learning.start_lesson(user.id, lesson.id)
+    {:ok, _} = Learning.complete_lesson(user.id, lesson.id)
 
     %{user: user, lesson: lesson, word: word}
   end
 
+
+
   describe "get_or_create_daily_test/1" do
-    setup :setup_user_with_lesson_and_word
+    setup :setup_user_with_completed_lesson_and_word
 
     test "creates a new daily test when none exists", %{user: user, word: word} do
       # Track the word first so it can be included in the test
+      # (word is already eligible because lesson is completed)
       {:ok, _} = Learning.track_word_learned(user.id, word.id)
 
       assert {:ok, test} = DailyTestGenerator.get_or_create_daily_test(user.id)
@@ -61,7 +65,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   describe "daily_test_completed_today?/1" do
-    setup :setup_user_with_lesson_and_word
+    setup :setup_user_with_completed_lesson_and_word
 
     test "returns false when no daily test has been completed", %{user: user} do
       refute DailyTestGenerator.daily_test_completed_today?(user.id)
@@ -95,7 +99,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   describe "get_todays_daily_test/1" do
-    setup :setup_user_with_lesson_and_word
+    setup :setup_user_with_completed_lesson_and_word
 
     test "returns nil when no daily test exists for today", %{user: user} do
       assert DailyTestGenerator.get_todays_daily_test(user.id) == nil
@@ -127,7 +131,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   describe "generate_daily_test/1" do
-    setup :setup_user_with_lesson_and_word
+    setup :setup_user_with_completed_lesson_and_word
 
     test "generates test with review items", %{user: user, word: word} do
       # Track word and create review schedule
@@ -170,22 +174,24 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert length(test.test_steps) >= 2
     end
 
-    test "includes all learned words regardless of lesson status", %{user: user, word: word} do
-      # Track the word from the started lesson
+    test "only includes words from completed lessons or reviewed words", %{user: user, word: word} do
+      # The word from the completed lesson (from setup) should appear
       {:ok, _} = Learning.track_word_learned(user.id, word.id)
 
-      # Create another word and track it
+      # Create another word that's NOT in any completed lesson
       other_word = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
-
-      # Track the other word (should now appear in daily test since we include all learned words)
       {:ok, _} = Learning.track_word_learned(user.id, other_word.id)
+      # This word has mastery_level 0 and no completed lesson, so should NOT appear
 
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
 
-      # Should have steps for both tracked words
       word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
+
+      # Word from completed lesson should appear
       assert word.id in word_ids_in_test
-      assert other_word.id in word_ids_in_test
+
+      # Word not in any completed lesson should NOT appear
+      refute other_word.id in word_ids_in_test
     end
 
     test "returns error when no words have been learned" do
@@ -194,6 +200,95 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
 
       # User has no UserProgress entries, so should get no_items_available
       assert {:error, :no_items_available} = DailyTestGenerator.generate_daily_test(new_user.id)
+    end
+
+    test "new user can review words from completed lesson but not incomplete lesson" do
+      # Create a new user
+      user = user_fixture()
+
+      # Create Lesson 1 (completed)
+      lesson1 = lesson_fixture()
+      word1 = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+      word2 = word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"})
+      lesson_word_fixture(lesson1, word1, position: 0)
+      lesson_word_fixture(lesson1, word2, position: 1)
+
+      # Create Lesson 2 (incomplete - just started)
+      lesson2 = lesson_fixture()
+      word3 = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
+      word4 = word_fixture(%{text: "犬", reading: "いぬ", meaning: "dog"})
+      lesson_word_fixture(lesson2, word3, position: 0)
+      lesson_word_fixture(lesson2, word4, position: 1)
+
+      # User starts and completes Lesson 1
+      {:ok, _} = Learning.start_lesson(user.id, lesson1.id)
+      {:ok, _} = Learning.complete_lesson(user.id, lesson1.id)
+
+      # Track words from lesson 1 (words are "learned" when completing lesson)
+      {:ok, _} = Learning.track_word_learned(user.id, word1.id)
+      {:ok, _} = Learning.track_word_learned(user.id, word2.id)
+
+      # User starts Lesson 2 but doesn't complete it
+      {:ok, _} = Learning.start_lesson(user.id, lesson2.id)
+
+      # Track words from lesson 2 (user viewed them but lesson not completed)
+      {:ok, _} = Learning.track_word_learned(user.id, word3.id)
+      {:ok, _} = Learning.track_word_learned(user.id, word4.id)
+
+      # Daily test should include words from completed lesson (word1, word2)
+      # but NOT from incomplete lesson (word3, word4)
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
+
+      # Words from completed lesson should appear
+      assert word1.id in word_ids_in_test, "Words from completed lesson should appear in daily test"
+      assert word2.id in word_ids_in_test, "Words from completed lesson should appear in daily test"
+
+      # Words from incomplete lesson should NOT appear
+      refute word3.id in word_ids_in_test, "Words from incomplete lesson should NOT appear in daily test"
+      refute word4.id in word_ids_in_test, "Words from incomplete lesson should NOT appear in daily test"
+    end
+
+    test "new user flow: complete lesson then take daily test with lesson words" do
+      # Create a new user
+      user = user_fixture()
+
+      # Create a lesson with 3 words (valid Japanese)
+      lesson = lesson_fixture()
+      words = [
+        word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"}),
+        word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"}),
+        word_fixture(%{text: "先生", reading: "せんせい", meaning: "teacher"})
+      ]
+
+      Enum.with_index(words, fn word, idx ->
+        lesson_word_fixture(lesson, word, position: idx)
+      end)
+
+      # User starts lesson
+      {:ok, _} = Learning.start_lesson(user.id, lesson.id)
+
+      # Track all words (simulating viewing them during lesson)
+      Enum.each(words, fn word ->
+        {:ok, _} = Learning.track_word_learned(user.id, word.id)
+      end)
+
+      # User completes the lesson
+      {:ok, _} = Learning.complete_lesson(user.id, lesson.id)
+
+      # Now daily test should be available with the lesson words
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+      assert test.test_type == :daily
+      assert length(test.test_steps) > 0
+
+      # All lesson words should be in the test
+      word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
+      assert length(word_ids_in_test) == 3
+
+      Enum.each(words, fn word ->
+        assert word.id in word_ids_in_test, "Each lesson word should be in the daily test"
+      end)
     end
   end
 end

@@ -18,26 +18,36 @@ defmodule MedoruWeb.UserLive.Show do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    case Accounts.get_user(id) do
-      nil ->
+    # Handle binary_id (UUID) casting
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} ->
+        case Accounts.get_user(uuid) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, gettext("User not found."))
+             |> push_navigate(to: ~p"/")}
+
+          user ->
+            user = Accounts.get_user_with_profile!(user.id)
+            user_badges = Gamification.list_user_badges(user.id)
+            featured_badge = Gamification.get_featured_badge(user.id)
+
+            {:ok,
+             socket
+             |> assign(:page_title, profile_title(user))
+             |> assign(:user, user)
+             |> assign(:profile, user.profile)
+             |> assign(:stats, user.stats)
+             |> assign(:user_badges, user_badges)
+             |> assign(:featured_badge, featured_badge)}
+        end
+
+      :error ->
         {:ok,
          socket
-         |> put_flash(:error, gettext("User not found."))
+         |> put_flash(:error, gettext("Invalid user ID."))
          |> push_navigate(to: ~p"/")}
-
-      user ->
-        user = Accounts.get_user_with_profile!(user.id)
-        user_badges = Gamification.list_user_badges(user.id)
-        featured_badge = Gamification.get_featured_badge(user.id)
-
-        {:ok,
-         socket
-         |> assign(:page_title, profile_title(user))
-         |> assign(:user, user)
-         |> assign(:profile, user.profile)
-         |> assign(:stats, user.stats)
-         |> assign(:user_badges, user_badges)
-         |> assign(:featured_badge, featured_badge)}
     end
   end
 

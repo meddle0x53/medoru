@@ -40,6 +40,7 @@ defmodule MedoruWeb.Router do
       live "/kanji/:id", KanjiLive.Show
       live "/words", WordLive.Index
       live "/words/:id", WordLive.Show
+      live "/users/:id/words", LearnedWordsLive.Index
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
       live "/attribution", SettingsLive.Attribution
@@ -129,7 +130,10 @@ defmodule MedoruWeb.Router do
     pipe_through [:browser, :require_authenticated_user]
 
     live_session :teacher,
-      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      on_mount: [
+        {MedoruWeb.UserAuth, :require_authenticated_user},
+        {MedoruWeb.Plugs.Teacher, :default}
+      ] do
       live "/classrooms", ClassroomLive.Index
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show

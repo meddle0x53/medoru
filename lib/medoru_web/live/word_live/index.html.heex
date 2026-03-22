@@ -151,14 +151,28 @@
     <%!-- Words Grid --%>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <%= for word <- @words do %>
+        <% is_learned = word.id in @learned_word_ids %>
         <.link
           navigate={~p"/words/#{word.id}"}
           class="group block"
         >
-          <div class="bg-base-100 border border-base-300 rounded-xl p-5
-                      shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
+          <div class={[
+            "rounded-xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border",
+            if is_learned do
+              "bg-rose-50/60 dark:bg-rose-900/20 border-rose-200/60 dark:border-rose-800/40 hover:border-rose-300/60 dark:hover:border-rose-700/50"
+            else
+              "bg-base-100 border-base-300 hover:border-primary/30"
+            end
+          ]}>
             <div class="flex items-baseline justify-between mb-2">
-              <span class="text-2xl font-medium text-base-content group-hover:text-primary transition-colors">
+              <span class={[
+                "text-2xl font-medium transition-colors",
+                if is_learned do
+                  "text-base-content group-hover:text-rose-600 dark:group-hover:text-rose-400"
+                else
+                  "text-base-content group-hover:text-primary"
+                end
+              ]}>
                 {word.text}
               </span>
               <span class="text-sm text-secondary/70 font-medium">

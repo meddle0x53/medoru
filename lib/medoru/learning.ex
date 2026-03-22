@@ -442,6 +442,44 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Counts the total number of words learned by a user.
+
+  ## Examples
+
+      iex> count_learned_words(user_id)
+      42
+
+  """
+  def count_learned_words(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Gets the list of learned words for a user with pagination.
+
+  ## Examples
+
+      iex> list_learned_words(user_id, limit: 30, offset: 0)
+      [%Word{}, ...]
+
+  """
+  def list_learned_words(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 30)
+    offset = Keyword.get(opts, :offset, 0)
+
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
+    |> join(:inner, [up], w in Word, on: w.id == up.word_id)
+    |> order_by([up, w], desc: up.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> select([up, w], w)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets the list of already learned kanji IDs for a user.
 
   ## Examples
@@ -962,7 +1000,15 @@ defmodule Medoru.Learning do
   @doc """
   Gets new words for a user that haven't been scheduled for review yet.
 
-  These are words the user has learned but haven't reviewed yet.
+  Words are eligible if they meet ANY of these criteria:
+  1. mastery_level >= 1 (has been reviewed at least once)
+  2. times_reviewed > 0 (has been reviewed at least once)
+  3. Belongs to a COMPLETED lesson (allows new users to review lesson words)
+
+  This ensures:
+  - New users can review words from lessons they just completed
+  - Words from incomplete lessons don't appear in daily tests
+  - Already-reviewed words continue to appear based on SRS schedule
 
   ## Examples
 
@@ -973,9 +1019,23 @@ defmodule Medoru.Learning do
   def get_new_words_for_review(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 5)
 
+    # Get word IDs from completed lessons
+    completed_lesson_word_ids =
+      from(lw in "lesson_words",
+        join: lp in LessonProgress,
+        on: lp.lesson_id == lw.lesson_id,
+        where: lp.user_id == ^user_id and lp.status == :completed,
+        select: lw.word_id
+      )
+
     query =
       from up in UserProgress,
         where: up.user_id == ^user_id and not is_nil(up.word_id),
+        # Words are eligible if reviewed, OR from a completed lesson
+        where:
+          up.mastery_level >= 1 or
+            up.times_reviewed > 0 or
+            up.word_id in subquery(completed_lesson_word_ids),
         left_join: rs in ReviewSchedule,
         on: rs.user_progress_id == up.id,
         where: is_nil(rs.id) or rs.repetitions == 0,
