@@ -16,15 +16,15 @@ defmodule Medoru.Tests.LessonTestGenerator do
   alias Medoru.Content.{Lesson, LessonWord, Word}
   alias Medoru.Tests
 
-  # Question types to generate per word
-  @step_types [
-    :meaning_to_word,
-    :reading_to_word,
-    :word_to_meaning,
-    :word_to_reading,
-    :reading_text,
-    :image_to_meaning
-  ]
+
+  # Mapping from user preference strings to internal step types
+  @preference_to_type %{
+    "word_to_meaning" => :word_to_meaning,
+    "word_to_reading" => :word_to_reading,
+    "reading_text" => :reading_text,
+    "image_to_meaning" => :image_to_meaning,
+    "kanji_writing" => :kanji_writing
+  }
 
   @doc """
   Generates or updates a test for a lesson.
@@ -34,6 +34,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
   ## Options
     * `:steps_per_word` - Number of steps to generate per word (default: 3)
     * `:distractor_count` - Number of wrong options per question (default: 3)
+    * `:user_preferences` - List of preferred step types from user profile (e.g., ["word_to_meaning", "reading_text"])
 
   ## Examples
 
@@ -43,10 +44,14 @@ defmodule Medoru.Tests.LessonTestGenerator do
       iex> generate_lesson_test(lesson_id, steps_per_word: 4)
       {:ok, %Test{}}
 
+      iex> generate_lesson_test(lesson_id, user_preferences: ["word_to_meaning", "kanji_writing"])
+      {:ok, %Test{}}
+
   """
   def generate_lesson_test(lesson_id, opts \\ []) do
     steps_per_word = Keyword.get(opts, :steps_per_word, 3)
     distractor_count = Keyword.get(opts, :distractor_count, 3)
+    user_preferences = Keyword.get(opts, :user_preferences)
 
     # Get lesson with words and their kanji
     lesson =
@@ -78,7 +83,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
       with {:ok, test} <- Tests.create_test(test_attrs),
            {:ok, _steps} <-
-             generate_steps(test, words, steps_per_word, distractor_count, lesson.id),
+             generate_steps(test, words, steps_per_word, distractor_count, lesson.id, user_preferences),
            {:ok, updated_test} <- Tests.ready_test(test) do
         # Update lesson with test reference
         lesson
@@ -117,24 +122,35 @@ defmodule Medoru.Tests.LessonTestGenerator do
   end
 
   # Generates test steps for all words
-  defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id) do
-    # Get unique kanji from all words for writing steps
-    writing_steps = generate_writing_steps(words)
-
+  defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id, user_preferences) do
     # Get distractor pool: same lesson + previous lessons
     # Pass lesson_id only - we'll filter current word per-step
     distractor_pool = build_distractor_pool(lesson_id, words)
+
+    # Build list of available step types from user preferences or defaults
+    available_types = get_available_step_types(user_preferences)
+
+    # Separate multichoice types from writing (handled separately)
+    multichoice_types = Enum.reject(available_types, &(&1 == :kanji_writing))
 
     # For each word, generate multichoice steps and flatten
     multichoice_steps =
       words
       |> Enum.flat_map(fn word ->
         word
-        |> generate_word_steps(steps_per_word)
+        |> generate_word_steps(steps_per_word, multichoice_types)
         |> Enum.map(fn step ->
           add_distractors(step, word, distractor_count, distractor_pool)
         end)
       end)
+
+    # Generate writing steps separately if kanji_writing is in user preferences
+    writing_steps =
+      if :kanji_writing in available_types do
+        generate_writing_steps(words)
+      else
+        []
+      end
 
     # Combine all steps, shuffle, and assign order indices
     all_steps =
@@ -261,10 +277,30 @@ defmodule Medoru.Tests.LessonTestGenerator do
     }
   end
 
+  # Get available step types based on user preferences
+  # If no preferences, use all types except image_to_meaning and kanji_writing (require special handling)
+  defp get_available_step_types(nil) do
+    # Default: exclude image_to_meaning and kanji_writing as they require special handling/fallbacks
+    [:meaning_to_word, :reading_to_word, :word_to_meaning, :word_to_reading, :reading_text]
+  end
+
+  defp get_available_step_types(preferences) when is_list(preferences) do
+    # Map user preference strings to internal types
+    preferences
+    |> Enum.map(&Map.get(@preference_to_type, &1))
+    |> Enum.reject(&is_nil/1)
+    |> case do
+      [] -> get_available_step_types(nil)
+      types -> types
+    end
+  end
+
   # Generate steps for a single word
-  defp generate_word_steps(word, steps_per_word) do
-    # Select random step types for this word
-    selected_types = Enum.take_random(@step_types, steps_per_word)
+  defp generate_word_steps(word, steps_per_word, available_types) do
+    # Select random step types for this word from available types
+    # Ensure we don't try to select more than available
+    count = min(steps_per_word, length(available_types))
+    selected_types = Enum.take_random(available_types, count)
 
     Enum.map(selected_types, fn step_type ->
       build_step_data(word, step_type)

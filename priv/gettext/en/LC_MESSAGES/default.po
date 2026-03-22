@@ -5543,3 +5543,23 @@ msgstr ""
 #, elixir-autogen, elixir-format
 msgid "Look at the image carefully"
 msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Kanji Writing"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Draw kanji with correct stroke order (3 points)"
+msgstr ""
+
+#: lib/medoru/learning/daily_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Remember the stroke order"
+msgstr ""
+
+#: lib/medoru/learning/daily_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Start from top-left"
+msgstr ""

@@ -1,8 +1,7 @@
 defmodule MedoruWeb.LessonTestLive.Show do
   use MedoruWeb, :live_view
 
-  alias Medoru.Content
-  alias Medoru.Tests
+  alias Medoru.{Accounts, Content, Tests}
   alias Medoru.Tests.LessonTestSession
 
   @impl true
@@ -12,6 +11,9 @@ defmodule MedoruWeb.LessonTestLive.Show do
     lesson = Content.get_lesson_with_words!(lesson_id)
     user = socket.assigns.current_scope.current_user
 
+    # Get user preferences for test step types
+    user_preferences = get_user_test_preferences(user.id)
+
     # Always regenerate test to ensure fresh distractors
     # Archive old test if exists
     if lesson.test_id do
@@ -19,8 +21,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
       Tests.archive_test(old_test)
     end
 
-    # Generate new test
-    {:ok, test} = Tests.generate_lesson_test(lesson_id)
+    # Generate new test with user preferences
+    {:ok, test} = Tests.generate_lesson_test(lesson_id, user_preferences: user_preferences)
 
     # Check if user has started this lesson
     lesson_progress = Medoru.Learning.get_lesson_progress(user.id, lesson_id)
@@ -768,4 +770,12 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   defp translate_question(question), do: question
+
+  # Get user's test step type preferences for lesson tests
+  defp get_user_test_preferences(user_id) do
+    case Accounts.get_user_profile(user_id) do
+      nil -> nil
+      profile -> profile.daily_test_step_types
+    end
+  end
 end

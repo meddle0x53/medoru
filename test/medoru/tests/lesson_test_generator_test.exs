@@ -234,4 +234,100 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
       assert results.failed == 0
     end
   end
+
+  describe "user_preferences option" do
+    test "filters step types based on user preferences" do
+      # Create lesson with words
+      lesson = lesson_fixture(%{title: "Test Lesson", difficulty: 5})
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん", difficulty: 5})
+
+      {:ok, _} =
+        Content.create_lesson_word(%{lesson_id: lesson.id, word_id: word.id, position: 0})
+
+      # Generate with limited preferences (only word_to_meaning)
+      {:ok, test} =
+        LessonTestGenerator.generate_lesson_test(lesson.id,
+          user_preferences: ["word_to_meaning"]
+        )
+
+      steps = Medoru.Tests.list_test_steps(test.id)
+
+      # Should only have word_to_meaning steps
+      multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
+      assert length(multichoice_steps) > 0
+
+      # All questions should match word_to_meaning format (message key format)
+      for step <- multichoice_steps do
+        assert String.contains?(step.question, "__MSG_WHAT_DOES_WORD_MEAN__")
+      end
+    end
+
+    test "includes writing steps when kanji_writing in preferences" do
+      # Create lesson with words that have kanji
+      lesson = lesson_fixture(%{title: "Test Lesson", difficulty: 5})
+
+      # Create a kanji with stroke data
+      kanji = Medoru.ContentFixtures.kanji_fixture(%{
+        character: "日",
+        stroke_count: 4,
+        stroke_data: %{
+          "strokes" => [
+            %{"path" => "M10,10 L50,10"},
+            %{"path" => "M50,10 L50,50"}
+          ]
+        }
+      })
+
+      word = word_fixture(%{text: "日", meaning: "sun", reading: "ひ", difficulty: 5})
+
+      # Create word_kanji association
+      {:ok, _} =
+        Medoru.Repo.insert(%Medoru.Content.WordKanji{
+          word_id: word.id,
+          kanji_id: kanji.id,
+          position: 0
+        })
+
+      {:ok, _} =
+        Content.create_lesson_word(%{lesson_id: lesson.id, word_id: word.id, position: 0})
+
+      # Generate with kanji_writing in preferences (also include some multichoice types)
+      {:ok, test} =
+        LessonTestGenerator.generate_lesson_test(lesson.id,
+          user_preferences: ["word_to_meaning", "kanji_writing"]
+        )
+
+      steps = Medoru.Tests.list_test_steps(test.id)
+      writing_steps = Enum.filter(steps, &(&1.question_type == :writing))
+
+      # Should have at least one writing step
+      assert length(writing_steps) >= 1
+    end
+
+    test "uses all default step types when no preferences provided" do
+      # Create lesson with words (need enough words for defaults)
+      lesson = lesson_fixture(%{title: "Test Lesson", difficulty: 5})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん", difficulty: 5})
+      word2 = word_fixture(%{text: "学校", meaning: "school", reading: "がっこう", difficulty: 5})
+      word3 = word_fixture(%{text: "先生", meaning: "teacher", reading: "せんせい", difficulty: 5})
+
+      {:ok, _} =
+        Content.create_lesson_word(%{lesson_id: lesson.id, word_id: word1.id, position: 0})
+
+      {:ok, _} =
+        Content.create_lesson_word(%{lesson_id: lesson.id, word_id: word2.id, position: 1})
+
+      {:ok, _} =
+        Content.create_lesson_word(%{lesson_id: lesson.id, word_id: word3.id, position: 2})
+
+      # Generate without preferences (uses defaults)
+      {:ok, test} = LessonTestGenerator.generate_lesson_test(lesson.id)
+
+      steps = Medoru.Tests.list_test_steps(test.id)
+      multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
+
+      # Should have multiple types of questions (defaults produce many steps)
+      assert length(multichoice_steps) >= 6
+    end
+  end
 end

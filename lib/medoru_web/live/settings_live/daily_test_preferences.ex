@@ -20,7 +20,8 @@ defmodule MedoruWeb.SettingsLive.DailyTestPreferences do
       %{id: "word_to_meaning", label: gettext("Word to Meaning"), icon: "hero-book-open", description: gettext("Show a Japanese word and select the English meaning")},
       %{id: "word_to_reading", label: gettext("Word to Reading"), icon: "hero-language", description: gettext("Show a Japanese word and select the hiragana reading")},
       %{id: "reading_text", label: gettext("Type Meaning & Reading"), icon: "hero-pencil", description: gettext("Type both the English meaning and hiragana reading")},
-      %{id: "image_to_meaning", label: gettext("Image to Meaning"), icon: "hero-photo", description: gettext("Show a Japanese word and select from image options")}
+      %{id: "image_to_meaning", label: gettext("Image to Meaning"), icon: "hero-photo", description: gettext("Show a Japanese word and select from image options")},
+      %{id: "kanji_writing", label: gettext("Kanji Writing"), icon: "hero-paint-brush", description: gettext("Draw kanji with correct stroke order (3 points)")}
     ]
 
     {:ok,

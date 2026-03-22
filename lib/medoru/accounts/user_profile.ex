@@ -42,7 +42,7 @@ defmodule Medoru.Accounts.UserProfile do
 
   defp validate_daily_test_step_types(changeset) do
     types = get_field(changeset, :daily_test_step_types) || []
-    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
+    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning", "kanji_writing"]
 
     if types == [] do
       add_error(changeset, :daily_test_step_types, "must select at least one question type")

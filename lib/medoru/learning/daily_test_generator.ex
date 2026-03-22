@@ -434,14 +434,101 @@ defmodule Medoru.Learning.DailyTestGenerator do
               }
             })
         end
+
+      "kanji_writing" ->
+        # Try to build a writing step from the word's kanji
+        case build_writing_step_for_word(word) do
+          {:ok, step_attrs} ->
+            Map.merge(base_attrs, step_attrs)
+
+          {:error, :no_kanji} ->
+            # Fallback to word_to_reading if no kanji
+            Map.merge(base_attrs, %{
+              question_type: :multichoice,
+              question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
+              correct_answer: word.reading,
+              points: 1,
+              options: fetch_reading_options(word),
+              question_data: %{
+                word_text: word.text,
+                word_meaning: word.meaning,
+                type: :word_to_reading,
+                is_new_word: is_new,
+                fallback_from_writing: true
+              }
+            })
+        end
     end)
+  end
+
+  # Build a writing step for a word using its first kanji
+  defp build_writing_step_for_word(word) do
+    # Ensure word_kanjis is loaded
+    word_with_kanji =
+      case word.word_kanjis do
+        %Ecto.Association.NotLoaded{} ->
+          Medoru.Content.get_word_with_kanji!(word.id)
+
+        _ ->
+          word
+      end
+
+    # Get first kanji with stroke data
+    kanji =
+      word_with_kanji.word_kanjis
+      |> Enum.map(& &1.kanji)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.find(&has_stroke_data?/1)
+
+    case kanji do
+      nil ->
+        {:error, :no_kanji}
+
+      kanji ->
+        meanings = Enum.join(kanji.meanings || [], ", ")
+
+        # Extract stroke paths from kanji.stroke_data
+        strokes =
+          case kanji.stroke_data do
+            %{"strokes" => s} when is_list(s) -> s
+            _ -> []
+          end
+
+        {:ok,
+         %{
+           step_type: :writing,
+           question_type: :writing,
+           question: "__MSG_WRITE_KANJI_FOR__|#{meanings}",
+           correct_answer: kanji.character,
+           kanji_id: kanji.id,
+           points: 3,
+           hints: ["Remember the stroke order", "Start from top-left"],
+           explanation: "The kanji '#{kanji.character}' means #{meanings}",
+           question_data: %{
+             type: :kanji_writing,
+             kanji: kanji.character,
+             meanings: kanji.meanings,
+             stroke_count: kanji.stroke_count,
+             strokes: strokes
+           },
+           options: []
+         }}
+    end
+  end
+
+  # Check if kanji has stroke data for writing practice
+  defp has_stroke_data?(kanji) do
+    case kanji.stroke_data do
+      %{"strokes" => strokes} when is_list(strokes) and length(strokes) > 0 -> true
+      _ -> false
+    end
   end
 
   # Select question types for a word based on user preferences
   # If no preferences set, use defaults
   defp select_question_types(_is_new, user_step_types) when is_list(user_step_types) do
     # Filter to only valid types and ensure at least one
-    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
+    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning", "kanji_writing"]
     types = Enum.filter(user_step_types, &(&1 in valid_types))
 
     if types == [] do

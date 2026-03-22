@@ -5564,3 +5564,23 @@ msgstr "デイリーテストのリセットは管理者のみ可能です。"
 #, elixir-autogen, elixir-format
 msgid "Look at the image carefully"
 msgstr "画像をよく見てください"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Kanji Writing"
+msgstr "漢字の書き方"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Draw kanji with correct stroke order (3 points)"
+msgstr "正しい筆順で漢字を書く（3ポイント）"
+
+#: lib/medoru/learning/daily_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Remember the stroke order"
+msgstr "筆順を覚えてください"
+
+#: lib/medoru/learning/daily_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Start from top-left"
+msgstr "左上から始めてください"
