@@ -4,7 +4,26 @@ This document outlines the long-term development plan for Medoru.
 
 ---
 
-## Version 0.1.0 - MVP (Current)
+## Version 0.1.2 - Small Improvements
+
+**Status**: 📝 Planning  
+**Plan**: [PLAN-v0.1.2.md](./PLAN-v0.1.2.md)
+
+**Goal:** Bug fixes and small UX improvements
+
+**Features:**
+- Daily test step type preferences (user-configurable)
+- Fix daily tests showing unlearned words
+- Public access to kanji/words for anonymous users
+- Language switching for non-logged-in users
+- Word picture uploads (admin)
+
+---
+
+## Version 0.1.0 - MVP ✅ COMPLETE
+
+**Status**: ✅ Released 2026-03-18  
+**Iterations**: 33 complete
 
 **Goal:** Core learning platform with content, progress tracking, and classroom support
 
@@ -46,26 +65,37 @@ This document outlines the long-term development plan for Medoru.
 
 **Target Users:** Individual learners, classrooms, teachers
 
+**Next Priority**: See [PENDING.md](./PENDING.md)
+
 ---
 
-## Version 0.2.0 - Social Features
+## Version 0.2.0 - Social Features & Games ⬅️ CURRENT PLAN
 
-**Goal:** Make learning social and competitive
+**Status**: 📝 Planning  
+**Plan**: [PLAN-v0.2.0.md](./PLAN-v0.2.0.md)
+
+**Goal:** Make learning social and competitive with real-time classroom games
 
 **Features:**
-- Friends system (add, remove, view profiles)
-- Real-time 1v1 duels
-- Global and friend leaderboards
-- Duel history and statistics
-- In-app notifications
+- 🎮 **Games System** - Extensible game engine with memory cards (first game type)
+- 💬 **Real-time Chat** - Classroom chat during games and general use
+- 🏷️ **User Tags & Following** - Find users by interests, follow their progress
+- 📊 **User Levels** - Level up based on activity (daily tests, games, lessons)
+- 🏅 **Badge System Fixes** - Featured badges visible everywhere
+
+**Game Types (Extensible Architecture):**
+- Memory Cards (v0.2.0) - Team-based card matching with word challenges
+- Quiz Battle (future)
+- Kanji Race (future)
+- Word Chain (future)
 
 **Technical Changes:**
 - Phoenix PubSub for real-time features
 - Presence tracking
-- Background job processing (Oban)
-- ELO ranking system
+- Game type plugin system (behaviours)
+- WebSocket channels for games and chat
 
-**Target Users:** Competitive learners, study groups
+**Target Users:** Competitive learners, classroom students, study groups
 
 ---
 

@@ -1,6 +1,24 @@
 # Medoru Development Logs
 
-## Version 0.1.0 (MVP) - Current
+## Version 0.1.2 (In Planning)
+
+**Status**: 📝 Planning Phase  
+**Plan**: [PLAN-v0.1.2.md](./PLAN-v0.1.2.md)
+
+| # | Title | Status | Notes |
+|---|-------|--------|-------|
+| - | Daily Test Preferences | 📝 PLANNED | User-configurable step types |
+| - | Fix Daily Tests Bug | 📝 PLANNED | Unlearned words showing |
+| - | Public Kanji/Words Access | 📝 PLANNED | For anonymous users |
+| - | Anonymous Language Switching | 📝 PLANNED | Header language selector |
+| - | Word Picture Upload | 📝 PLANNED | Admin upload 1-3 images |
+
+---
+
+## Version 0.1.0 (MVP) - ✅ COMPLETE
+
+**Status**: ✅ Released 2026-03-18  
+**Live**: https://medoru.net
 
 | # | Title | Status | Date |
 |---|-------|--------|------|
@@ -19,7 +37,7 @@
 | 14 | Multi-Step Test System | ✅ APPROVED | 2026-03-08 |
 | 16 | Auto-Generated Daily Tests | ✅ APPROVED | 2026-03-09 |
 | 17 | Vocabulary Lesson System | ✅ COMPLETED | 2026-03-08 |
-| 13 | Admin Badge Management | ⏳ BACKLOGGED | Post v0.1.0 |
+| 13 | Admin Badge Management | ⏳ BACKLOGGED | Post v0.1.x |
 | 15 | Teacher Test Creation | ✅ APPROVED | 2026-03-15 |
 | 18 | Classroom Core | ✅ APPROVED | 2026-03-11 |
 | 19 | Classroom Membership | ✅ APPROVED | 2026-03-11 |
@@ -30,7 +48,28 @@
 | 32 | UI Polish & Mobile Responsiveness | ✅ APPROVED | 2026-03-18 |
 | 33 | Deployment & Production Setup | ✅ APPROVED | 2026-03-18 |
 
-## Future Ideas (Backlog - Post v0.1.0)
+## Version 0.2.0 (In Planning)
+
+**Status**: 📝 Planning Phase  
+**Plan**: [PLAN-v0.2.0.md](./PLAN-v0.2.0.md)
+
+| Epic | Title | Status | Notes |
+|------|-------|--------|-------|
+| 1 | Real-Time Infrastructure | 📝 PLANNED | PubSub, Presence, Channels |
+| 2 | Game Engine Architecture | 📝 PLANNED | Extensible plugin system |
+| 3 | Memory Cards Game | 📝 PLANNED | First game type |
+| 4 | Real-Time Chat | 📝 PLANNED | Classroom chat |
+| 5 | User Tags & Following | 📝 PLANNED | Social features |
+| 6 | User Level System | 📝 PLANNED | XP and leveling |
+| 7 | Badge System Fixes | 📝 PLANNED | Featured badge display |
+
+---
+
+## Future Ideas (Backlog - Post v0.2.0)
+- More game types (Quiz Battle, Kanji Race, Word Chain)
+- Private messaging between users
+- Activity feed from followed users
+- Push notifications
 - Mobile app (React Native/Flutter)
 - AI-powered pronunciation feedback
 - Community-created lessons
@@ -40,14 +79,17 @@
 - API for third-party integrations
 
 ## Current State
-- **Version**: 0.1.0 (MVP Extended)
-- **Phase**: Iteration 33 IN PROGRESS - Deployment to medoru.net
-- **Last completed**: Iteration 32 - UI Polish & Mobile
-- **Current**: 🚧 Deployment in progress - DNS issues being resolved
-- **Overall Progress**: 29/30 iterations for v0.1.0 (1 in progress + 1 backlogged)
+- **Version**: 0.1.2 (Planning Phase)
+- **Phase**: Planning v0.1.2 features
+- **Last completed**: v0.1.0 - MVP (33 iterations)
+- **Current**: 📝 Planning v0.1.2 improvements
+- **Plan**: [PLAN-v0.1.2.md](./PLAN-v0.1.2.md)
 
 ## ✅ v0.1.0 COMPLETE
 All iterations for v0.1.0 have been completed and approved. The application is live at https://medoru.net
+
+## 📝 v0.1.2 IN PLANNING
+See [PLAN-v0.1.2.md](./PLAN-v0.1.2.md) for detailed planning.
 
 ## 🗂️ Backlog (Post v0.1.0)
 - **🟡 MEDIUM**: Iteration 13 - Admin Badge Management

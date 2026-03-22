@@ -335,7 +335,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
               </.link>
             <% "archived" -> %>
               <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-ghost btn-sm">
-                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}"
+                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
               </.link>
           <% end %>
         </div>

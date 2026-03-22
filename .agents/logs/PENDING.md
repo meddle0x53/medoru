@@ -1,8 +1,46 @@
 # ⏳ Pending Iterations - Phase 1 (v0.1.0 MVP)
 
-**Last Updated**: 2026-03-18  
-**Completed**: 29 iterations  
-**In Progress**: 1 iteration (Iteration 33 - Deployment)
+**Last Updated**: 2026-03-22  
+**Completed**: 33 iterations (v0.1.0 COMPLETE)  
+**In Progress**: v0.1.2 planning
+
+---
+
+## 🚀 Version 0.1.2 (In Planning)
+
+**Status**: 📝 Planning Phase  
+**Plan**: [PLAN-v0.1.2.md](./PLAN-v0.1.2.md)
+
+### Planned Features
+1. **Daily Test Step Type Preferences** - Users choose which test types appear (multichoice, fill-in, kanji writing)
+2. **Fix Daily Tests Bug** - Prevent unlearned words from appearing in daily tests
+3. **Public Kanji/Words Access** - Ensure full access for non-logged-in users
+4. **Anonymous Language Switching** - Language selector for all users
+5. **Word Picture Upload** - Admin can upload 1-3 pictures per word
+
+---
+
+## 🚀 Version 0.2.0 - Social & Games (Planning)
+
+**Status**: 📝 Planning Phase  
+**Plan**: [PLAN-v0.2.0.md](./PLAN-v0.2.0.md)
+
+### Planned Epics
+1. **Real-Time Infrastructure** - PubSub, Presence, WebSocket channels
+2. **Game Engine** - Extensible plugin architecture for multiple game types
+3. **Memory Cards Game** - First game: team-based word matching with steals
+4. **Classroom Chat** - Real-time chat during games and general use
+5. **User Tags & Following** - Interest tags, user search, following system
+6. **User Levels** - XP system based on all activities
+7. **Badge System Fixes** - Featured badge display everywhere
+
+---
+
+## ✅ Version 0.1.0 - COMPLETE
+
+**Completed**: 33 iterations  
+**Released**: 2026-03-18  
+**Live**: https://medoru.net  
 **Backlogged**: 1 iteration (13 - Admin Badge Management)
 
 ---
