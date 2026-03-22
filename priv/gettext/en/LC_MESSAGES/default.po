@@ -1332,6 +1332,7 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:388
 #: lib/medoru_web/live/daily_test_live.ex:544
 #: lib/medoru_web/live/lesson_test_live/show.ex:702
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "How do you read '%{word}'?"
 msgstr ""
@@ -1348,6 +1349,7 @@ msgstr ""
 
 #: lib/medoru_web/live/daily_test_live.ex:550
 #: lib/medoru_web/live/lesson_test_live/show.ex:706
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "Type the meaning and reading for '%{word}'"
 msgstr ""
@@ -1355,6 +1357,7 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:382
 #: lib/medoru_web/live/daily_test_live.ex:538
 #: lib/medoru_web/live/lesson_test_live/show.ex:698
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "What does '%{word}' mean?"
 msgstr ""
@@ -5374,4 +5377,169 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/rankings.ex:21
 #, elixir-autogen, elixir-format
 msgid "You must be a member to view rankings."
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Daily Test Preferences"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Choose which question types to include in your daily review tests."
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Question Types"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Word to Meaning"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select the English meaning"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Word to Reading"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select the hiragana reading"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Type Meaning & Reading"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Type both the English meaning and hiragana reading"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "You must have at least one question type selected."
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Save Preferences"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "How this works:"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Your daily test will randomly select from your chosen question types. New words will start with easier question types, while review words include more challenging ones based on your progress."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Word Image"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Current image:"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Upload new image (300×300px recommended)"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Accepted formats: JPG, PNG, WebP. Max size: 500KB"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "File is too large (max 500KB)"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "You can only upload 1 file"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Invalid file type (use JPG, PNG, or WebP)"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Upload failed"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Image to Meaning"
+msgstr ""
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select from image options"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Admin Actions"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset Daily Test"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "User has a daily test today with %{count} items. Reset to allow retaking."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "No daily test found for today."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset Test"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Daily test reset successfully. User can now generate a new test."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No daily test found for this user today."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to reset daily test."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Only admins can reset daily tests."
+msgstr ""
+
+#: lib/medoru/tests/lesson_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Look at the image carefully"
 msgstr ""

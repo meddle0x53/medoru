@@ -32,7 +32,14 @@ defmodule MedoruWeb.Admin.WordLive.Form do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :word_types, @word_types)}
+    {:ok,
+     socket
+     |> assign(:word_types, @word_types)
+     |> allow_upload(:image,
+       accept: ~w(.jpg .jpeg .png .webp),
+       max_entries: 1,
+       max_file_size: 500_000
+     )}
   end
 
   @impl true
@@ -87,6 +94,11 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
+  @impl true
   def handle_event(
         "update_word_kanji_reading",
         %{"word_kanji_id" => word_kanji_id, "reading_id" => reading_id},
@@ -126,6 +138,8 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   defp save_word(socket, :new, word_params) do
+    word_params = handle_image_upload(socket, word_params)
+
     case Content.create_word(word_params) do
       {:ok, _word} ->
         {:noreply,
@@ -139,6 +153,8 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   defp save_word(socket, :edit, word_params) do
+    word_params = handle_image_upload(socket, word_params)
+
     case Content.update_word(socket.assigns.word, word_params) do
       {:ok, word} ->
         changeset = Content.change_word(word)
@@ -154,8 +170,42 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     end
   end
 
+  # Handle image upload and return updated params with image_path
+  defp handle_image_upload(socket, word_params) do
+    case consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
+           # Generate unique filename
+           ext = Path.extname(entry.client_name) |> String.downcase()
+           filename = "#{Ecto.UUID.generate()}#{ext}"
+           
+           # Destination path in priv/static/uploads/word_images/
+           dest_dir = Path.join([Application.app_dir(:medoru), "priv", "static", "uploads", "word_images"])
+           File.mkdir_p!(dest_dir)
+           dest_path = Path.join(dest_dir, filename)
+           
+           # Copy file
+           File.cp!(path, dest_path)
+           
+           # Return relative path for database
+           {:ok, "/uploads/word_images/#{filename}"}
+         end) do
+      [] ->
+        # No new upload, keep existing image_path if editing
+        word_params
+
+      [image_path | _] ->
+        # New image uploaded
+        Map.put(word_params, "image_path", image_path)
+    end
+  end
+
   # Helper function to format Ecto changeset errors for display
   def format_error({message, _metadata}) when is_binary(message), do: message
   def format_error(message) when is_binary(message), do: message
   def format_error(_), do: gettext("Invalid value")
+
+  # Helper function to format upload errors
+  defp error_to_string(:too_large), do: gettext("File is too large (max 500KB)")
+  defp error_to_string(:too_many_files), do: gettext("You can only upload 1 file")
+  defp error_to_string(:not_accepted), do: gettext("Invalid file type (use JPG, PNG, or WebP)")
+  defp error_to_string(_), do: gettext("Upload failed")
 end

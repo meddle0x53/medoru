@@ -112,6 +112,7 @@ defmodule MedoruWeb.Router do
       live "/profile", SettingsLive.Profile
       live "/language", SettingsLive.Language
       live "/data-privacy", SettingsLive.DataPrivacy
+      live "/daily-test-preferences", SettingsLive.DailyTestPreferences
     end
   end
 

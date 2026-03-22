@@ -6,6 +6,7 @@ defmodule MedoruWeb.UserLive.Show do
 
   alias Medoru.Accounts
   alias Medoru.Gamification
+  alias Medoru.Learning
 
   embed_templates "show/*"
 
@@ -30,17 +31,39 @@ defmodule MedoruWeb.UserLive.Show do
 
           user ->
             user = Accounts.get_user_with_profile!(user.id)
+            cached_stats = Accounts.get_or_create_user_stats(user.id)
+            
+            # Calculate real stats from actual data
+            streak = Learning.get_daily_streak(user.id)
+            current_streak = if streak, do: streak.current_streak, else: 0
+            longest_streak = if streak, do: streak.longest_streak, else: 0
+            
+            real_stats = %{
+              level: cached_stats.level,
+              xp: cached_stats.xp,
+              current_streak: current_streak,
+              longest_streak: longest_streak,
+              total_kanji_learned: Learning.count_learned_kanji(user.id),
+              total_words_learned: Learning.count_learned_words(user.id),
+              total_tests_completed: cached_stats.total_tests_completed,
+              total_duels_played: cached_stats.total_duels_played
+            }
+            
             user_badges = Gamification.list_user_badges(user.id)
             featured_badge = Gamification.get_featured_badge(user.id)
+            
+            # Get daily test status for admin reset feature
+            daily_test_status = Learning.get_daily_test_status(user.id)
 
             {:ok,
              socket
              |> assign(:page_title, profile_title(user))
              |> assign(:user, user)
              |> assign(:profile, user.profile)
-             |> assign(:stats, user.stats)
+             |> assign(:stats, real_stats)
              |> assign(:user_badges, user_badges)
-             |> assign(:featured_badge, featured_badge)}
+             |> assign(:featured_badge, featured_badge)
+             |> assign(:daily_test_status, daily_test_status)}
         end
 
       :error ->
@@ -55,6 +78,40 @@ defmodule MedoruWeb.UserLive.Show do
     name = (user.profile && user.profile.display_name) || user.name || gettext("User")
 
     gettext("%{name}'s Profile", name: name)
+  end
+
+  @impl true
+  def handle_event("reset_daily_test", _params, socket) do
+    user = socket.assigns.user
+    current_user = socket.assigns.current_scope.current_user
+
+    # Only admins can reset daily tests
+    if current_user.type == "admin" do
+      case Learning.delete_user_daily_test(user.id) do
+        {:ok, :deleted} ->
+          # Refresh daily test status
+          daily_test_status = Learning.get_daily_test_status(user.id)
+          
+          {:noreply,
+           socket
+           |> assign(:daily_test_status, daily_test_status)
+           |> put_flash(:info, gettext("Daily test reset successfully. User can now generate a new test."))}
+
+        {:ok, :no_test_found} ->
+          {:noreply,
+           socket
+           |> put_flash(:warning, gettext("No daily test found for this user today."))}
+
+        {:error, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Failed to reset daily test."))}
+      end
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Only admins can reset daily tests."))}
+    end
   end
 
   # Badge color mapping for Tailwind classes

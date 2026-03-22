@@ -160,6 +160,12 @@
                 </td>
                 <td class="text-right">
                   <.link
+                    navigate={~p"/users/#{user.id}"}
+                    class="btn btn-sm btn-ghost"
+                  >
+                    <.icon name="hero-user" class="w-4 h-4" /> {gettext("Profile")}
+                  </.link>
+                  <.link
                     navigate={~p"/admin/users/#{user.id}/edit"}
                     class="btn btn-sm btn-ghost"
                   >
@@ -221,10 +227,18 @@
                   </div>
                 </div>
               </div>
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 flex gap-1">
+                <.link
+                  navigate={~p"/users/#{user.id}"}
+                  class="btn btn-ghost btn-xs"
+                  title={gettext("View Profile")}
+                >
+                  <.icon name="hero-user" class="w-4 h-4" />
+                </.link>
                 <.link
                   navigate={~p"/admin/users/#{user.id}/edit"}
                   class="btn btn-ghost btn-xs"
+                  title={gettext("Edit")}
                 >
                   <.icon name="hero-pencil-square" class="w-4 h-4" />
                 </.link>

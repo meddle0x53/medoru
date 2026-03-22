@@ -167,6 +167,54 @@ defmodule Medoru.Learning.DailyTestGenerator do
     {:ok, %{archived: archived_count}}
   end
 
+  @doc """
+  Deletes today's daily test for a user.
+  This allows the user to generate a fresh daily test.
+  Only admins should use this function.
+
+  ## Examples
+
+      iex> delete_todays_daily_test(user_id)
+      {:ok, :deleted}
+
+      iex> delete_todays_daily_test(user_id_without_test)
+      {:ok, :no_test_found}
+
+  """
+  def delete_todays_daily_test(user_id) do
+    today = Date.utc_today()
+    beginning_of_day = DateTime.new!(today, ~T[00:00:00])
+    end_of_day = DateTime.new!(today, ~T[23:59:59])
+
+    # Find today's daily test
+    test =
+      Test
+      |> where([t], t.test_type == :daily and t.creator_id == ^user_id)
+      |> where([t], t.inserted_at >= ^beginning_of_day and t.inserted_at <= ^end_of_day)
+      |> limit(1)
+      |> Repo.one()
+
+    case test do
+      nil ->
+        {:ok, :no_test_found}
+
+      %Test{id: test_id} ->
+        # Use Ecto.UUID.cast to ensure proper binary format
+        {:ok, test_id_binary} = Ecto.UUID.cast(test_id)
+        
+        # Delete test steps using proper query
+        Repo.delete_all(from(ts in "test_steps", where: ts.test_id == type(^test_id_binary, :binary_id)))
+        
+        # Delete test sessions
+        Repo.delete_all(from(s in "test_sessions", where: s.test_id == type(^test_id_binary, :binary_id)))
+        
+        # Delete the test
+        Repo.delete(test)
+        
+        {:ok, :deleted}
+    end
+  end
+
   # Private functions
 
   # Get new words that are available for the daily test
@@ -216,56 +264,93 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   # Create the daily test with steps
   defp create_daily_test(user_id, test_items) do
-    # Archive old daily tests first
-    archive_old_daily_tests(user_id)
+    # Validate test_items is not empty
+    if test_items == [] do
+      {:error, :no_items_available}
+    else
+      # Archive old daily tests first
+      archive_old_daily_tests(user_id)
 
-    # Create the test
-    test_attrs = %{
-      title: "Daily Review - #{Date.utc_today()}",
-      description:
-        "Daily review with #{length(test_items)} words (#{count_reviews(test_items)} reviews, #{count_new(test_items)} new)",
-      test_type: :daily,
-      status: :published,
-      is_system: true,
-      creator_id: user_id,
-      metadata: %{
-        daily_test_date: Date.to_iso8601(Date.utc_today())
-      }
-    }
+      # Get user preferences for daily test step types
+      user_step_types = get_user_step_types(user_id)
 
-    with {:ok, test} <- Tests.create_test(test_attrs),
-         {:ok, _steps} <- create_test_steps(test, test_items),
-         {:ok, ready_test} <- Tests.ready_test(test) do
-      # Preload test_steps before returning
-      {:ok, Repo.preload(ready_test, :test_steps)}
+      # Pre-validate that steps will be generated
+      steps_count =
+        test_items
+        |> Enum.flat_map(&build_word_steps(&1, user_step_types))
+        |> length()
+
+      if steps_count == 0 do
+        {:error, :no_questions_generated}
+      else
+        # Create the test
+        test_attrs = %{
+          title: "Daily Review - #{Date.utc_today()}",
+          description:
+            "Daily review with #{length(test_items)} words (#{count_reviews(test_items)} reviews, #{count_new(test_items)} new)",
+          test_type: :daily,
+          status: :published,
+          is_system: true,
+          creator_id: user_id,
+          metadata: %{
+            daily_test_date: Date.to_iso8601(Date.utc_today())
+          }
+        }
+
+        with {:ok, test} <- Tests.create_test(test_attrs),
+             {:ok, _steps} <- create_test_steps(test, test_items, user_step_types),
+             {:ok, ready_test} <- Tests.ready_test(test) do
+          # Preload test_steps before returning
+          {:ok, Repo.preload(ready_test, :test_steps)}
+        end
+      end
+    end
+  end
+
+  # Get user's preferred step types for daily tests
+  defp get_user_step_types(user_id) do
+    alias Medoru.Accounts.UserProfile
+
+    UserProfile
+    |> where([p], p.user_id == ^user_id)
+    |> select([p], p.daily_test_step_types)
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      types when is_list(types) -> types
+      _ -> nil
     end
   end
 
   # Create test steps for all test items
-  defp create_test_steps(test, test_items) do
+  defp create_test_steps(test, test_items, user_step_types) do
     steps =
       test_items
-      |> Enum.flat_map(&build_word_steps/1)
+      |> Enum.flat_map(&build_word_steps(&1, user_step_types))
       |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
 
-    Tests.create_test_steps(test, steps)
+    # Validate that we have at least one step
+    if steps == [] do
+      {:error, :no_questions_generated}
+    else
+      Tests.create_test_steps(test, steps)
+    end
   end
 
   # Build steps for a single word (mix of multichoice and reading_text)
-  # Randomly assigns question types to create variety
-  defp build_word_steps(%{word: word, is_new: is_new}) do
+  # Uses user preferences if available, otherwise random variety
+  defp build_word_steps(%{word: word, is_new: is_new}, user_step_types) do
     base_attrs = %{
       word_id: word.id,
       step_type: :vocabulary,
       hints: ["Take your time and think about the word"]
     }
 
-    # Randomly decide which question types to include
-    # Options: multichoice meaning, multichoice reading, reading_text (input)
-    question_types = select_question_types(is_new)
+    # Use user preferences or default selection
+    question_types = select_question_types(is_new, user_step_types)
 
     Enum.map(question_types, fn
-      :word_to_meaning ->
+      "word_to_meaning" ->
         Map.merge(base_attrs, %{
           question_type: :multichoice,
           question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
@@ -280,7 +365,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
           }
         })
 
-      :word_to_reading ->
+      "word_to_reading" ->
         Map.merge(base_attrs, %{
           question_type: :multichoice,
           question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
@@ -295,7 +380,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
           }
         })
 
-      :reading_text ->
+      "reading_text" ->
         Map.merge(base_attrs, %{
           question_type: :reading_text,
           question: "__MSG_TYPE_MEANING_READING__|#{word.text}",
@@ -312,26 +397,77 @@ defmodule Medoru.Learning.DailyTestGenerator do
             is_new_word: is_new
           }
         })
+
+      "image_to_meaning" ->
+        # Try to get image-based options, fallback to text if not enough
+        case fetch_image_options(word) do
+          {:ok, options} ->
+            Map.merge(base_attrs, %{
+              question_type: :multichoice,
+              question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
+              correct_answer: word.meaning,
+              points: 1,
+              options: Enum.map(options, & &1.meaning),
+              question_data: %{
+                word_text: word.text,
+                word_reading: word.reading,
+                type: :image_to_meaning,
+                is_new_word: is_new,
+                image_options: Enum.map(options, &%{meaning: &1.meaning, image_path: &1.image_path})
+              }
+            })
+
+          {:error, :not_enough_images} ->
+            # Fallback to text-based meaning question
+            Map.merge(base_attrs, %{
+              question_type: :multichoice,
+              question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
+              correct_answer: word.meaning,
+              points: 1,
+              options: fetch_meaning_options(word),
+              question_data: %{
+                word_text: word.text,
+                word_reading: word.reading,
+                type: :word_to_meaning,
+                is_new_word: is_new,
+                fallback_from_image: true
+              }
+            })
+        end
     end)
   end
 
-  # Select question types for a word
-  # New words: 2 multichoice questions (easier)
-  # Review words: mix of multichoice and reading_text (more challenging)
-  defp select_question_types(is_new) do
+  # Select question types for a word based on user preferences
+  # If no preferences set, use defaults
+  defp select_question_types(_is_new, user_step_types) when is_list(user_step_types) do
+    # Filter to only valid types and ensure at least one
+    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
+    types = Enum.filter(user_step_types, &(&1 in valid_types))
+
+    if types == [] do
+      ["word_to_meaning", "word_to_reading"]
+    else
+      # Randomly select 2 different types if available
+      types
+      |> Enum.shuffle()
+      |> Enum.take(2)
+    end
+  end
+
+  defp select_question_types(is_new, nil) do
     case is_new do
       true ->
         # New words get 2 multichoice questions
-        [:word_to_meaning, :word_to_reading]
+        ["word_to_meaning", "word_to_reading"]
 
       false ->
         # Review words get variety:
         # 50%: 1 multichoice + 1 reading_text
         # 50%: 2 multichoice
         if :rand.uniform() > 0.5 do
-          [:word_to_meaning, :reading_text]
+          ["word_to_meaning", "reading_text"]
         else
-          [:word_to_reading, :reading_text]
+          ["word_to_reading", "reading_text"]
         end
     end
   end
@@ -360,6 +496,35 @@ defmodule Medoru.Learning.DailyTestGenerator do
       |> Repo.all()
 
     [word.reading | distractors] |> Enum.shuffle()
+  end
+
+  # Fetch image options with distractors
+  # Returns {:ok, [%{meaning: ..., image_path: ...}, ...]} or {:error, :not_enough_images}
+  defp fetch_image_options(word) do
+    # Check if the target word has an image
+    target_word = Word |> where([w], w.id == ^word.id and not is_nil(w.image_path)) |> Repo.one()
+
+    if is_nil(target_word) do
+      {:error, :not_enough_images}
+    else
+      # Get distractors that have images
+      distractors =
+        Word
+        |> where([w], w.id != ^word.id and w.difficulty == ^word.difficulty)
+        |> where([w], not is_nil(w.image_path))
+        |> order_by(fragment("RANDOM()"))
+        |> limit(@distractor_count)
+        |> select([w], %{meaning: w.meaning, image_path: w.image_path})
+        |> Repo.all()
+
+      # Need at least 3 distractors + 1 correct = 4 total
+      if length(distractors) < @distractor_count do
+        {:error, :not_enough_images}
+      else
+        options = [%{meaning: word.meaning, image_path: word.image_path} | distractors]
+        {:ok, Enum.shuffle(options)}
+      end
+    end
   end
 
   # Count reviews in test items

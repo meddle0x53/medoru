@@ -15,6 +15,18 @@
       <div class="p-8">
         <%!-- Word Header --%>
         <div class="text-center mb-8">
+          <%!-- Word Image (300x300px) --%>
+          <%= if @word.image_path do %>
+            <div class="mb-6">
+              <img
+                src={@word.image_path}
+                alt={@word.text}
+                class="w-full max-w-[300px] h-auto mx-auto rounded-2xl border border-base-300 shadow-sm"
+                loading="lazy"
+              />
+            </div>
+          <% end %>
+
           <div class="inline-block">
             <h1 class="text-5xl md:text-6xl font-medium text-base-content mb-4">
               {@word.text}

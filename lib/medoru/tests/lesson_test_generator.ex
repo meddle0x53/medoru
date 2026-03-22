@@ -22,7 +22,8 @@ defmodule Medoru.Tests.LessonTestGenerator do
     :reading_to_word,
     :word_to_meaning,
     :word_to_reading,
-    :reading_text
+    :reading_text,
+    :image_to_meaning
   ]
 
   @doc """
@@ -340,27 +341,135 @@ defmodule Medoru.Tests.LessonTestGenerator do
     }
   end
 
+  defp build_step_data(word, :image_to_meaning) do
+    %{
+      step_type: :vocabulary,
+      question_type: :multichoice,
+      question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
+      correct_answer: word.meaning,
+      word_id: word.id,
+      points: 1,
+      hints: ["Look at the image carefully"],
+      question_data: %{
+        type: :image_to_meaning,
+        word_text: word.text,
+        word_reading: word.reading,
+        image_path: word.image_path
+      }
+    }
+  end
+
   # Add distractor options to a step
   defp add_distractors(step, correct_word, distractor_count, distractor_pool) do
-    {distractors, distractor_ids} =
-      fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+    # Check if this is an image-based question
+    is_image_question = get_in(step, [:question_data, :type]) == :image_to_meaning
 
-    # Shuffle options so correct answer isn't always in same position
-    options = [step.correct_answer | distractors] |> Enum.shuffle()
-    option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
+    if is_image_question do
+      add_image_distractors(step, correct_word, distractor_count, distractor_pool)
+    else
+      {distractors, distractor_ids} =
+        fetch_distractors(correct_word, distractor_count, step, distractor_pool)
 
-    # Store option_word_ids and options for locale-aware validation
-    question_data = Map.get(step, :question_data) || %{}
+      # Shuffle options so correct answer isn't always in same position
+      options = [step.correct_answer | distractors] |> Enum.shuffle()
+      option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
-    step
-    |> Map.put(:options, options)
-    |> Map.put(
-      :question_data,
-      Map.merge(question_data, %{
-        option_word_ids: option_word_ids,
-        options: options
-      })
-    )
+      # Store option_word_ids and options for locale-aware validation
+      question_data = Map.get(step, :question_data) || %{}
+
+      step
+      |> Map.put(:options, options)
+      |> Map.put(
+        :question_data,
+        Map.merge(question_data, %{
+          option_word_ids: option_word_ids,
+          options: options
+        })
+      )
+    end
+  end
+
+  # Add image-based distractors for image_to_meaning questions
+  defp add_image_distractors(step, correct_word, distractor_count, distractor_pool) do
+    # Fetch distractor words that have images
+    {distractor_images, distractor_ids} =
+      fetch_image_distractors(correct_word, distractor_count, distractor_pool)
+
+    # Check if we have enough image distractors
+    if length(distractor_images) < distractor_count do
+      # Not enough images - convert to regular word_to_meaning question
+      question_data =
+        step
+        |> Map.get(:question_data, %{})
+        |> Map.put(:type, :word_to_meaning)
+        |> Map.put(:fallback_from_image, true)
+
+      # Fetch regular text distractors
+      {distractors, distractor_ids} =
+        fetch_distractors(correct_word, distractor_count, step, distractor_pool)
+
+      options = [step.correct_answer | distractors] |> Enum.shuffle()
+      option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
+
+      step
+      |> Map.put(:question_data, Map.merge(question_data, %{options: options, option_word_ids: option_word_ids}))
+      |> Map.put(:options, options)
+    else
+      # Build image options with correct answer first
+      correct_image = %{meaning: step.correct_answer, image_path: correct_word.image_path}
+      all_images = [correct_image | distractor_images]
+
+      # Shuffle images and track positions
+      shuffled_images = Enum.shuffle(all_images)
+      shuffled_meanings = Enum.map(shuffled_images, & &1.meaning)
+      shuffled_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
+
+      question_data =
+        step
+        |> Map.get(:question_data, %{})
+        |> Map.put(:image_options, shuffled_images)
+        |> Map.put(:option_word_ids, shuffled_ids)
+        |> Map.put(:options, shuffled_meanings)
+
+      step
+      |> Map.put(:options, shuffled_meanings)
+      |> Map.put(:question_data, question_data)
+    end
+  end
+
+  # Fetch distractor words with images
+  defp fetch_image_distractors(correct_word, count, distractor_pool) do
+    # Filter pool for words with images
+    words_with_images =
+      distractor_pool
+      |> Enum.reject(&(&1.id == correct_word.id))
+      |> Enum.filter(& &1.image_path)
+      |> Enum.shuffle()
+      |> Enum.take(count)
+
+    images = Enum.map(words_with_images, &%{meaning: &1.meaning, image_path: &1.image_path})
+    ids = Enum.map(words_with_images, & &1.id)
+
+    # If not enough from pool, try to get more from database
+    if length(images) < count do
+      needed = count - length(images)
+      existing_ids = [correct_word.id | Enum.map(distractor_pool, & &1.id)]
+
+      additional_words =
+        Word
+        |> where([w], w.id not in ^existing_ids and w.difficulty == ^correct_word.difficulty)
+        |> where([w], not is_nil(w.image_path))
+        |> limit(^needed)
+        |> order_by(fragment("RANDOM()"))
+        |> Repo.all()
+
+      additional_images = Enum.map(additional_words, &%{meaning: &1.meaning, image_path: &1.image_path})
+      additional_ids = Enum.map(additional_words, & &1.id)
+
+      {images ++ additional_images, ids ++ additional_ids}
+    else
+      {images, ids}
+    end
   end
 
   # Fetch distractor words based on step type

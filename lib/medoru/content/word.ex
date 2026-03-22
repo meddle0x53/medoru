@@ -36,6 +36,8 @@ defmodule Medoru.Content.Word do
     field :example_meaning, :string
     # Translations: %{"bg" => %{"meaning" => "..."}, "ja" => %{"meaning" => "..."}}
     field :translations, :map, default: %{}
+    # Image path for word illustration (stored in priv/static/uploads/word_images/)
+    field :image_path, :string
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
 
@@ -57,7 +59,8 @@ defmodule Medoru.Content.Word do
       :example_sentence,
       :example_reading,
       :example_meaning,
-      :translations
+      :translations,
+      :image_path
     ])
     |> validate_required([:text, :meaning, :reading, :difficulty])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)

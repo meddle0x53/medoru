@@ -458,6 +458,14 @@ defmodule MedoruWeb.Layouts do
                     <.icon name="hero-language" class="w-4 h-4" /> {gettext("Language")}
                   </.link>
                 </li>
+                <li>
+                  <.link
+                    navigate={~p"/settings/daily-test-preferences?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-clipboard-document-check" class="w-4 h-4" /> {gettext("Daily Test")}
+                  </.link>
+                </li>
                 <div class="divider my-1"></div>
                 <li>
                   <.link

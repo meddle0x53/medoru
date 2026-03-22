@@ -181,5 +181,42 @@
         </div>
       </div>
     </div>
+
+    <%!-- Admin Actions --%>
+    <%= if @current_scope.current_user.type == "admin" do %>
+      <div class="card bg-base-100 shadow-sm border border-error/30 mt-6">
+        <div class="card-body">
+          <h2 class="card-title text-lg mb-4 text-error">
+            <.icon name="hero-shield-check" class="w-5 h-5" />
+            {gettext("Admin Actions")}
+          </h2>
+          
+          <div class="space-y-4">
+            <%!-- Daily Test Reset --%>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-error/5 rounded-lg border border-error/10">
+              <div>
+                <p class="font-medium text-base-content">{gettext("Reset Daily Test")}</p>
+                <p class="text-sm text-secondary">
+                  <%= if @daily_test_status.has_test do %>
+                    {gettext("User has a daily test today with %{count} items. Reset to allow retaking.", count: @daily_test_status.total_items)}
+                  <% else %>
+                    {gettext("No daily test found for today.")}
+                  <% end %>
+                </p>
+              </div>
+              <button
+                type="button"
+                phx-click="reset_daily_test"
+                disabled={not @daily_test_status.has_test}
+                class="btn btn-error btn-sm"
+              >
+                <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" />
+                {gettext("Reset Test")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </Layouts.app>

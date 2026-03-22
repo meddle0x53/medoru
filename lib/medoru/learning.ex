@@ -457,6 +457,21 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Counts the total number of kanji learned by a user.
+
+  ## Examples
+
+      iex> count_learned_kanji(user_id)
+      42
+
+  """
+  def count_learned_kanji(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
   Gets the list of learned words for a user with pagination.
 
   ## Examples
@@ -1243,5 +1258,22 @@ defmodule Medoru.Learning do
         total_items: 0
       }
     end
+  end
+
+  @doc """
+  Deletes today's daily test for a user.
+  Admin-only function to reset a user's daily test.
+
+  ## Examples
+
+      iex> delete_user_daily_test(user_id)
+      {:ok, :deleted}
+
+      iex> delete_user_daily_test(user_id_without_test)
+      {:ok, :no_test_found}
+
+  """
+  def delete_user_daily_test(user_id) do
+    Medoru.Learning.DailyTestGenerator.delete_todays_daily_test(user_id)
   end
 end

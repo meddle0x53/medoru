@@ -42,7 +42,7 @@ defmodule MedoruWeb.QA.BypassController do
       nil ->
         conn
         |> put_flash(:error, "User not found")
-        |> redirect(to: ~p"/qa/bypass")
+        |> redirect(to: "/qa/bypass")
 
       user ->
         conn
@@ -62,7 +62,7 @@ defmodule MedoruWeb.QA.BypassController do
       nil ->
         conn
         |> put_flash(:error, "User not found")
-        |> redirect(to: ~p"/qa/bypass")
+        |> redirect(to: "/qa/bypass")
 
       user ->
         conn
@@ -117,7 +117,7 @@ defmodule MedoruWeb.QA.BypassController do
     conn
     |> configure_session(drop: true)
     |> put_flash(:info, "Logged out")
-    |> redirect(to: ~p"/qa/bypass")
+    |> redirect(to: "/qa/bypass")
   end
 
   @doc """

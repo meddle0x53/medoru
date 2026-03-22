@@ -5,6 +5,7 @@ defmodule MedoruWeb.DailyTestLive.Complete do
   """
 
   use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.{Learning, Tests}
 
@@ -153,7 +154,7 @@ defmodule MedoruWeb.DailyTestLive.Complete do
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-base-content truncate">
-                      {answer.test_step.question}
+                      {translate_question(answer.test_step.question)}
                     </div>
                     <div class="text-sm text-secondary">
                       Your answer: {answer.answer}
@@ -206,4 +207,32 @@ defmodule MedoruWeb.DailyTestLive.Complete do
   end
 
   defp calculate_percentage(_, _), do: 0
+
+  # Translate question messages from the database
+  defp translate_question(nil), do: ""
+
+  defp translate_question(question) when is_binary(question) do
+    cond do
+      String.starts_with?(question, "__MSG_WHAT_DOES_WORD_MEAN__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("What does '%{word}' mean?", word: word)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_HOW_DO_YOU_READ__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("How do you read '%{word}'?", word: word)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_TYPE_MEANING_READING__|") ->
+        case String.split(question, "|") do
+          [_, word] -> gettext("Type the meaning and reading for '%{word}'", word: word)
+          _ -> question
+        end
+
+      true ->
+        question
+    end
+  end
 end

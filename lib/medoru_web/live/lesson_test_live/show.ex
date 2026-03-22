@@ -525,39 +525,95 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
               <%!-- Multichoice Step --%>
               <%= if @current_step.question_type == :multichoice do %>
+                <% is_image_question = @current_step.question_data["type"] == "image_to_meaning" %>
+                <% image_options = @current_step.question_data["image_options"] %>
+                
                 <%!-- Answer Options for Multichoice --%>
-                <div class="space-y-3 mb-6 answer-grid">
-                  <%= for option <- @current_step.options do %>
+                <div class={[
+                  "mb-6",
+                  if is_image_question do
+                    "grid grid-cols-2 gap-3 sm:gap-4"
+                  else
+                    "space-y-3 answer-grid"
+                  end
+                ]}>
+                  <%= for {option, index} <- Enum.with_index(@current_step.options) do %>
+                    <% is_selected = @selected_answer == option %>
+                    <% image_data = if is_image_question, do: Enum.at(image_options || [], index), else: nil %>
+                    
                     <button
                       type="button"
                       phx-click="select_answer"
                       phx-value-answer={option}
                       class={[
-                        "w-full text-left p-4 sm:p-5 rounded-xl border-2 transition-all duration-200 min-h-[56px] touch-target",
-                        if @selected_answer == option do
-                          "border-primary bg-primary/5"
+                        "transition-all duration-200 min-h-[56px] touch-target",
+                        if is_image_question do
+                          "relative rounded-xl border-2 overflow-hidden aspect-square"
                         else
+                          "w-full text-left p-4 sm:p-5 rounded-xl border-2"
+                        end,
+                        if is_image_question and is_selected do
+                          "border-primary ring-2 ring-primary"
+                        end,
+                        if is_image_question and not is_selected do
+                          "border-base-200 hover:border-primary/50 hover:shadow-md"
+                        end,
+                        if not is_image_question and is_selected do
+                          "border-primary bg-primary/5"
+                        end,
+                        if not is_image_question and not is_selected do
                           "border-base-200 hover:border-primary/50 hover:bg-base-50"
                         end
                       ]}
                     >
-                      <div class="flex items-center gap-3">
+                      <%= if is_image_question do %>
+                        <%!-- Image Option --%>
+                        <%= if image_data && image_data["image_path"] do %>
+                          <img
+                            src={image_data["image_path"]}
+                            alt={option}
+                            class="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        <% else %>
+                          <div class="w-full h-full flex items-center justify-center bg-base-200">
+                            <span class="text-secondary text-sm text-center px-2">{option}</span>
+                          </div>
+                        <% end %>
+                        
+                        <%!-- Selection Indicator --%>
                         <div class={[
-                          "w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center shrink-0",
-                          if @selected_answer == option do
+                          "absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-white/90 backdrop-blur",
+                          if is_selected do
                             "border-primary bg-primary"
                           else
                             "border-base-300"
                           end
                         ]}>
-                          <%= if @selected_answer == option do %>
-                            <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white"></div>
+                          <%= if is_selected do %>
+                            <.icon name="hero-check" class="w-4 h-4 text-white" />
                           <% end %>
                         </div>
-                        <span class="text-base-content font-medium text-base sm:text-lg">
-                          {option}
-                        </span>
-                      </div>
+                      <% else %>
+                        <%!-- Text Option --%>
+                        <div class="flex items-center gap-3">
+                          <div class={[
+                            "w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center shrink-0",
+                            if is_selected do
+                              "border-primary bg-primary"
+                            else
+                              "border-base-300"
+                          end
+                          ]}>
+                            <%= if is_selected do %>
+                              <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white"></div>
+                            <% end %>
+                          </div>
+                          <span class="text-base-content font-medium text-base sm:text-lg">
+                            {option}
+                          </span>
+                        </div>
+                      <% end %>
                     </button>
                   <% end %>
                 </div>

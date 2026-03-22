@@ -1331,6 +1331,7 @@ msgstr "%{word}は「%{meaning}」という意味で、「%{reading}」と読み
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:388
 #: lib/medoru_web/live/daily_test_live.ex:544
 #: lib/medoru_web/live/lesson_test_live/show.ex:702
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "How do you read '%{word}'?"
 msgstr "「%{word}」はどう読みますか？"
@@ -1347,6 +1348,7 @@ msgstr "英語の意味とひらがなの読み方を入力してください"
 
 #: lib/medoru_web/live/daily_test_live.ex:550
 #: lib/medoru_web/live/lesson_test_live/show.ex:706
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "Type the meaning and reading for '%{word}'"
 msgstr "「%{word}」の意味と読み方を入力してください"
@@ -1354,9 +1356,10 @@ msgstr "「%{word}」の意味と読み方を入力してください"
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:382
 #: lib/medoru_web/live/daily_test_live.ex:538
 #: lib/medoru_web/live/lesson_test_live/show.ex:698
+#: lib/medoru_web/live/daily_test_live/complete.ex
 #, elixir-autogen, elixir-format
 msgid "What does '%{word}' mean?"
-msgstr "「%{word}」は何という意味ですか？"
+msgstr "「%{word}」の意味は何ですか？"
 
 #: lib/medoru_web/live/classroom_live/index.ex:283
 #, elixir-autogen, elixir-format
@@ -5396,3 +5399,168 @@ msgstr "教室へ移動"
 #, elixir-autogen, elixir-format
 msgid "Time spent:"
 msgstr "所要時間:"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Daily Test Preferences"
+msgstr "デイリーテストの設定"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Choose which question types to include in your daily review tests."
+msgstr "デイリーテストに含める問題タイプを選択してください。"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Question Types"
+msgstr "問題タイプ"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Word to Meaning"
+msgstr "単語→意味"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select the English meaning"
+msgstr "日本語の単語を表示し、英語の意味を選択"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Word to Reading"
+msgstr "単語→読み方"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select the hiragana reading"
+msgstr "日本語の単語を表示し、ひらがなの読み方を選択"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Type Meaning & Reading"
+msgstr "意味と読み方を入力"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Type both the English meaning and hiragana reading"
+msgstr "英語の意味とひらがなの読み方の両方を入力"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "You must have at least one question type selected."
+msgstr "少なくとも1つの問題タイプを選択する必要があります。"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Save Preferences"
+msgstr "設定を保存"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "How this works:"
+msgstr "仕組み："
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Your daily test will randomly select from your chosen question types. New words will start with easier question types, while review words include more challenging ones based on your progress."
+msgstr "デイリーテストでは、選択した問題タイプからランダムに出題されます。新しい単語は簡単な問題タイプから始まり、復習単語は進捗に応じてより難易度の高い問題が含まれます。"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Word Image"
+msgstr "単語の画像"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Current image:"
+msgstr "現在の画像："
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Upload new image (300×300px recommended)"
+msgstr "新しい画像をアップロード（推奨300×300px）"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Accepted formats: JPG, PNG, WebP. Max size: 500KB"
+msgstr "対応形式：JPG、PNG、WebP。最大サイズ：500KB"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "File is too large (max 500KB)"
+msgstr "ファイルが大きすぎます（最大500KB）"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "You can only upload 1 file"
+msgstr "アップロードできるファイルは1つだけです"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Invalid file type (use JPG, PNG, or WebP)"
+msgstr "無効なファイル形式（JPG、PNG、WebPを使用）"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex
+#, elixir-autogen, elixir-format
+msgid "Upload failed"
+msgstr "アップロードに失敗しました"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Image to Meaning"
+msgstr "画像→意味"
+
+#: lib/medoru_web/live/settings_live/daily_test_preferences.ex
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and select from image options"
+msgstr "日本語の単語を表示し、画像から選択"
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Admin Actions"
+msgstr "管理者アクション"
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset Daily Test"
+msgstr "デイリーテストをリセット"
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "User has a daily test today with %{count} items. Reset to allow retaking."
+msgstr "ユーザーは今日%{count}問のデイリーテストがあります。再受験できるようにリセットします。"
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "No daily test found for today."
+msgstr "今日のデイリーテストは見つかりません。"
+
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex
+#, elixir-autogen, elixir-format
+msgid "Reset Test"
+msgstr "テストをリセット"
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Daily test reset successfully. User can now generate a new test."
+msgstr "デイリーテストをリセットしました。ユーザーは新しいテストを生成できます。"
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No daily test found for this user today."
+msgstr "このユーザーには今日のデイリーテストが見つかりません。"
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to reset daily test."
+msgstr "デイリーテストのリセットに失敗しました。"
+
+#: lib/medoru_web/live/user_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Only admins can reset daily tests."
+msgstr "デイリーテストのリセットは管理者のみ可能です。"
+
+#: lib/medoru/tests/lesson_test_generator.ex
+#, elixir-autogen, elixir-format
+msgid "Look at the image carefully"
+msgstr "画像をよく見てください"

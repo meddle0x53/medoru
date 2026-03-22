@@ -159,28 +159,77 @@
             <% end %>
 
             <%!-- Answer Options --%>
-            <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-              <%= for option <- @current_step.options do %>
+            <div class={[
+              "mb-4 sm:mb-6",
+              if @current_step.question_data["type"] == "image_to_meaning" do
+                "grid grid-cols-2 gap-3 sm:gap-4"
+              else
+                "space-y-2 sm:space-y-3"
+              end
+            ]}>
+              <%= for {option, index} <- Enum.with_index(@current_step.options) do %>
                 <% display_option =
-                  if @current_step.question_data["type"] == "word_to_meaning",
-                    do: localize_option(option, @locale),
-                    else: option %>
+                  cond do
+                    @current_step.question_data["type"] == "word_to_meaning" ->
+                      localize_option(option, @locale)
+                    @current_step.question_data["type"] == "image_to_meaning" ->
+                      option
+                    true ->
+                      option
+                  end %>
+                <% image_data =
+                  if @current_step.question_data["type"] == "image_to_meaning" do
+                    @current_step.question_data["image_options"] |> Enum.at(index)
+                  else
+                    nil
+                  end %>
+                <% is_image_type = @current_step.question_data["type"] == "image_to_meaning" %>
+                <% is_selected = @selected_answer == option %>
                 <button
                   type="button"
                   phx-click="select_answer"
                   phx-value-answer={option}
                   class={[
-                    "w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px]",
-                    if @selected_answer == option do
-                      "border-primary bg-primary/5"
+                    "transition-all duration-200 min-h-[48px]",
+                    if is_image_type do
+                      "relative rounded-xl border-2 overflow-hidden aspect-square"
                     else
+                      "w-full text-left p-3 sm:p-4 rounded-xl border-2"
+                    end,
+                    if is_image_type and is_selected do
+                      "border-primary ring-2 ring-primary"
+                    end,
+                    if is_image_type and not is_selected do
+                      "border-base-200 hover:border-primary/50 hover:shadow-md"
+                    end,
+                    if not is_image_type and is_selected do
+                      "border-primary bg-primary/5"
+                    end,
+                    if not is_image_type and not is_selected do
                       "border-base-200 hover:border-primary/50 hover:bg-base-50"
                     end
                   ]}
                 >
-                  <div class="flex items-center gap-3">
+                  <%= if @current_step.question_data["type"] == "image_to_meaning" do %>
+                    <%!-- Image Option --%>
+                    <%= if image_data && image_data["image_path"] do %>
+                      <img
+                        src={image_data["image_path"]}
+                        alt={display_option}
+                        class="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    <% else %>
+                      <div class="w-full h-full flex items-center justify-center bg-base-200">
+                        <span class="text-secondary text-sm text-center px-2">
+                          {display_option}
+                        </span>
+                      </div>
+                    <% end %>
+                    
+                    <%!-- Selection Indicator (top-right corner) --%>
                     <div class={[
-                      "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                      "absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-white/90 backdrop-blur",
                       if @selected_answer == option do
                         "border-primary bg-primary"
                       else
@@ -188,13 +237,29 @@
                       end
                     ]}>
                       <%= if @selected_answer == option do %>
-                        <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
+                        <.icon name="hero-check" class="w-4 h-4 text-white" />
                       <% end %>
                     </div>
-                    <span class="text-base-content font-medium text-sm sm:text-base">
-                      {display_option}
-                    </span>
-                  </div>
+                  <% else %>
+                    <%!-- Text Option --%>
+                    <div class="flex items-center gap-3">
+                      <div class={[
+                        "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                        if @selected_answer == option do
+                          "border-primary bg-primary"
+                        else
+                          "border-base-300"
+                        end
+                      ]}>
+                        <%= if @selected_answer == option do %>
+                          <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
+                        <% end %>
+                      </div>
+                      <span class="text-base-content font-medium text-sm sm:text-base">
+                        {display_option}
+                      </span>
+                    </div>
+                  <% end %>
                 </button>
               <% end %>
             </div>

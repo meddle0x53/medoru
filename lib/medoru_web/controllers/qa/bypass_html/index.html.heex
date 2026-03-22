@@ -29,7 +29,7 @@
         <%= for user <- @users do %>
           <.form
             for={%{}}
-            action={~p"/qa/bypass/login"}
+            action="/qa/bypass/login"
             method="post"
             class="block"
           >

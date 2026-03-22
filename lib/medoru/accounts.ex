@@ -227,6 +227,15 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
+  Gets a user profile by user id, returns nil if not found.
+  """
+  def get_user_profile(user_id) do
+    UserProfile
+    |> where(user_id: ^user_id)
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a user with their profile and stats by display name.
   Returns nil if not found.
   """
@@ -282,6 +291,15 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
+  Updates user's daily test step type preferences.
+  """
+  def update_user_daily_test_preferences(user_id, step_types) when is_list(step_types) do
+    profile = get_profile_by_user!(user_id)
+
+    update_profile(profile, %{daily_test_step_types: step_types})
+  end
+
+  @doc """
   Gets user stats by user id.
   """
   def get_stats_by_user!(user_id) do
@@ -297,6 +315,21 @@ defmodule Medoru.Accounts do
     %UserStats{user_id: user.id}
     |> UserStats.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Gets or creates user stats for a user.
+  """
+  def get_or_create_user_stats(user_id) do
+    case Repo.get_by(UserStats, user_id: user_id) do
+      nil ->
+        %UserStats{user_id: user_id}
+        |> UserStats.changeset(%{})
+        |> Repo.insert!()
+
+      stats ->
+        stats
+    end
   end
 
   @doc """
