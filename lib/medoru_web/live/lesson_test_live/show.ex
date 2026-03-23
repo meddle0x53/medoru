@@ -542,6 +542,13 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   <%= for {option, index} <- Enum.with_index(@current_step.options) do %>
                     <% is_selected = @selected_answer == option %>
                     <% image_data = if is_image_question, do: Enum.at(image_options || [], index), else: nil %>
+                    <% question_type = @current_step.question_data["type"] %>
+                    <% display_option =
+                      if question_type in ["word_to_meaning", "image_to_meaning"] do
+                        localize_option(option, @locale)
+                      else
+                        option
+                      end %>
                     
                     <button
                       type="button"
@@ -573,13 +580,13 @@ defmodule MedoruWeb.LessonTestLive.Show do
                         <%= if image_data && image_data["image_path"] do %>
                           <img
                             src={image_data["image_path"]}
-                            alt={option}
+                            alt={display_option}
                             class="w-full h-full object-cover"
                             loading="lazy"
                           />
                         <% else %>
                           <div class="w-full h-full flex items-center justify-center bg-base-200">
-                            <span class="text-secondary text-sm text-center px-2">{option}</span>
+                            <span class="text-secondary text-sm text-center px-2">{display_option}</span>
                           </div>
                         <% end %>
                         
@@ -612,7 +619,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                             <% end %>
                           </div>
                           <span class="text-base-content font-medium text-base sm:text-lg">
-                            {option}
+                            {display_option}
                           </span>
                         </div>
                       <% end %>
@@ -778,4 +785,15 @@ defmodule MedoruWeb.LessonTestLive.Show do
       profile -> profile.daily_test_step_types
     end
   end
+
+  # Localize option text for display (for meaning-based options)
+  def localize_option(option_text, locale) when locale in ["bg", "ja"] do
+    # Try to find the word by its English meaning and get localized version
+    case Medoru.Content.get_word_by_meaning(option_text) do
+      nil -> option_text
+      word -> Medoru.Content.get_localized_meaning(word, locale)
+    end
+  end
+
+  def localize_option(option_text, _locale), do: option_text
 end

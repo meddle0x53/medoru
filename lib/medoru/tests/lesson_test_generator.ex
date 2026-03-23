@@ -431,8 +431,10 @@ defmodule Medoru.Tests.LessonTestGenerator do
     {distractor_images, distractor_ids} =
       fetch_image_distractors(correct_word, distractor_count, distractor_pool)
 
-    # Check if we have enough image distractors
-    if length(distractor_images) < distractor_count do
+    # Check if the correct word has an image AND we have enough image distractors
+    correct_word_has_image = correct_word.image_path != nil
+    
+    if not correct_word_has_image or length(distractor_images) < distractor_count do
       # Not enough images - convert to regular word_to_meaning question
       question_data =
         step

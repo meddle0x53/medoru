@@ -43,7 +43,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         socket =
           socket
           |> assign(:locale, locale)
-          |> assign(:page_title, "Edit #{test.title}")
+          |> assign(:page_title, gettext("Edit %{title}", title: test.title))
           |> assign(:test, test)
           |> assign(:steps, steps)
           |> assign(:step_count, length(steps))
@@ -60,6 +60,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:show_kanji_preview, false)
           |> assign(:search_type, nil)
           |> assign(:new_option_text, "")
+          |> assign(:option_word_ids, [])
+          |> assign(:option_word_search_query, "")
+          |> assign(:available_option_words, [])
 
         {:ok, socket}
       end
@@ -85,6 +88,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     type =
       case type_str do
         "multichoice" -> :multichoice
+        "picture_multichoice" -> :picture_multichoice
         "fill" -> :fill
         "writing" -> :writing
         "match" -> :match
@@ -148,7 +152,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:show_step_form, false)
      |> assign(:step_changeset, nil)
      |> assign(:step_form, nil)
-     |> assign(:new_option_text, "")}
+     |> assign(:new_option_text, "")
+     |> assign(:option_word_ids, [])
+     |> assign(:option_word_search_query, "")
+     |> assign(:available_option_words, [])}
   end
 
   @impl true
@@ -169,6 +176,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_event("save_step", %{"step" => step_params}, socket) do
     test = socket.assigns.test
+    step_type = socket.assigns.step_type
 
     # Parse options from textarea (newline-separated)
     attrs =
@@ -188,7 +196,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
     # For fill type, add reading_answer and include_reading to question_data
     attrs =
-      if socket.assigns.step_type == :fill do
+      if step_type == :fill do
         reading_answer = socket.assigns.reading_answer
         include_reading = socket.assigns.include_reading
         points = if include_reading, do: 3, else: 2
@@ -210,28 +218,47 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         attrs
       end
 
-    case Tests.create_test_step(test, attrs) do
-      {:ok, _step} ->
-        steps = Tests.list_test_steps(test.id)
-        test = Tests.get_test!(test.id)
+    # For picture_multichoice, validate all words have images
+    attrs_result =
+      if step_type == :picture_multichoice do
+        validate_picture_multichoice_words(attrs, socket.assigns[:option_word_ids] || [])
+      else
+        {:ok, attrs}
+      end
 
+    case attrs_result do
+      {:error, error_message} ->
         {:noreply,
          socket
-         |> assign(:steps, steps)
-         |> assign(:step_count, length(steps))
-         |> assign(:test, test)
-         |> assign(:show_step_form, false)
-         |> assign(:step_changeset, nil)
-         |> assign(:step_form, nil)
-         |> assign(:new_option_text, "")
-         |> put_flash(:info, gettext("Step added successfully."))}
+         |> put_flash(:error, error_message)}
 
-      {:error, changeset} ->
-        {:noreply,
-         socket
-         |> assign(:step_changeset, changeset)
-         |> assign(:step_form, to_form(changeset, as: :step))
-         |> put_flash(:error, gettext("Failed to save step. Please check the form."))}
+      {:ok, attrs} ->
+        case Tests.create_test_step(test, attrs) do
+          {:ok, _step} ->
+            steps = Tests.list_test_steps(test.id)
+            test = Tests.get_test!(test.id)
+
+            {:noreply,
+             socket
+             |> assign(:steps, steps)
+             |> assign(:step_count, length(steps))
+             |> assign(:test, test)
+             |> assign(:show_step_form, false)
+             |> assign(:step_changeset, nil)
+             |> assign(:step_form, nil)
+             |> assign(:new_option_text, "")
+             |> assign(:option_word_ids, [])
+             |> assign(:option_word_search_query, "")
+             |> assign(:available_option_words, [])
+             |> put_flash(:info, gettext("Step added successfully."))}
+
+          {:error, changeset} ->
+            {:noreply,
+             socket
+             |> assign(:step_changeset, changeset)
+             |> assign(:step_form, to_form(changeset, as: :step))
+             |> put_flash(:error, gettext("Failed to save step. Please check the form."))}
+        end
     end
   end
 
@@ -358,6 +385,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       current_form = socket.assigns.step_form
       existing_options = current_form[:options].value || []
       correct_answer = current_form[:correct_answer].value
+      step_type = socket.assigns.step_type
 
       # Don't add if already exists (case-insensitive check)
       already_exists =
@@ -389,6 +417,18 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           "kanji_id" => current_form[:kanji_id].value
         }
 
+        # For picture_multichoice, also track option_word_ids
+        socket =
+          if step_type == :picture_multichoice do
+            # Initialize option_word_ids if not exists
+            current_word_ids = socket.assigns[:option_word_ids] || %{}
+            # We don't have a word_id here - just text was typed
+            # This will be filled in when a word is selected from search
+            assign(socket, :option_word_ids, current_word_ids)
+          else
+            socket
+          end
+
         changeset =
           %TestStep{}
           |> TestStep.changeset(updated_params)
@@ -410,9 +450,23 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     index = String.to_integer(index)
     current_form = socket.assigns.step_form
     existing_options = current_form[:options].value || []
+    step_type = socket.assigns.step_type
 
     # Remove option at index
     new_options = List.delete_at(existing_options, index)
+
+    # For picture_multichoice, also remove the corresponding word_id
+    # Note: option_word_ids includes correct word at index 0, options don't
+    # So we need to add 1 to the index to get the correct position in option_word_ids
+    socket =
+      if step_type == :picture_multichoice do
+        option_word_ids = socket.assigns[:option_word_ids] || []
+        # +1 because option_word_ids[0] is the correct answer
+        new_word_ids = List.delete_at(option_word_ids, index + 1)
+        assign(socket, :option_word_ids, new_word_ids)
+      else
+        socket
+      end
 
     updated_params = %{
       "question" => current_form[:question].value,
@@ -518,6 +572,81 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   end
 
   @impl true
+  def handle_event("search_option_words", %{"value" => query}, socket) do
+    # For picture_multichoice - search words with images only
+    words =
+      if String.length(query) >= 1 do
+        Content.search_words(query, limit: 10)
+        |> Enum.filter(&(&1.image_path && &1.image_path != ""))
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:option_word_search_query, query)
+     |> assign(:available_option_words, words)}
+  end
+
+  @impl true
+  def handle_event("select_option_word", %{"word-id" => word_id}, socket) do
+    # For picture_multichoice - add a word as a wrong option
+    word = Content.get_word!(word_id)
+    current_form = socket.assigns.step_form
+    existing_options = current_form[:options].value || []
+    correct_answer = current_form[:correct_answer].value
+    option_word_ids = socket.assigns[:option_word_ids] || []
+
+    localized_meaning = Content.get_localized_meaning(word, socket.assigns.locale)
+    trimmed_meaning = String.trim(localized_meaning)
+
+    # Don't add if already exists
+    already_exists =
+      Enum.any?(existing_options, fn opt ->
+        String.downcase(String.trim(opt)) == String.downcase(trimmed_meaning)
+      end)
+
+    if already_exists do
+      socket =
+        socket
+        |> assign(:option_word_search_query, "")
+        |> assign(:available_option_words, [])
+        |> put_flash(:error, gettext("This option already exists."))
+
+      Process.send_after(self(), :clear_flash, 5000)
+
+      {:noreply, socket}
+    else
+      # Add the word's meaning as option and track its word_id
+      new_options = existing_options ++ [trimmed_meaning]
+      new_option_word_ids = option_word_ids ++ [word_id]
+
+      updated_params = %{
+        "question" => current_form[:question].value,
+        "correct_answer" => correct_answer,
+        "word_id" => current_form[:word_id].value,
+        "options" => new_options,
+        "hints" => current_form[:hints].value,
+        "explanation" => current_form[:explanation].value,
+        "kanji_id" => current_form[:kanji_id].value
+      }
+
+      changeset =
+        %TestStep{}
+        |> TestStep.changeset(updated_params)
+        |> Map.put(:action, :validate)
+
+      {:noreply,
+       socket
+       |> assign(:step_changeset, changeset)
+       |> assign(:step_form, to_form(changeset, as: :step))
+       |> assign(:option_word_ids, new_option_word_ids)
+       |> assign(:option_word_search_query, "")
+       |> assign(:available_option_words, [])}
+    end
+  end
+
+  @impl true
   def handle_event("select_word", %{"word-id" => word_id}, socket) do
     word = Content.get_word!(word_id)
     search_type = socket.assigns.search_type
@@ -534,15 +663,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       case {step_type, search_type} do
         {:multichoice, :reading} ->
           # User searched by reading (hiragana/katakana)
-          {"How do you read \"#{localized_meaning}\"?", word.text}
+          {gettext("How do you read '%{meaning}'?", meaning: localized_meaning), word.text}
 
         {:multichoice, _} ->
           # User searched by meaning (English) or other
-          {"What is the meaning of \"#{word.text}\"?", localized_meaning}
+          {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
 
         {_, _} ->
           # Default for fill and other types
-          {"What is the meaning of \"#{word.text}\"?", localized_meaning}
+          {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
       end
 
     # For multichoice, ensure correct_answer is in options and trimmed
@@ -556,7 +685,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> Enum.reject(&(&1 == ""))
 
     options =
-      if step_type == :multichoice do
+      if step_type in [:multichoice, :picture_multichoice] do
         # Don't duplicate if already exists
         if trimmed_answer in cleaned_options do
           cleaned_options
@@ -588,6 +717,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:word_search_query, "")
       |> assign(:available_words, [])
       |> assign(:search_type, nil)
+
+    # For picture_multichoice, store the correct word_id as first in option_word_ids
+    socket =
+      if step_type == :picture_multichoice do
+        assign(socket, :option_word_ids, [word_id])
+      else
+        socket
+      end
 
     # For fill type, also store selected word and reset custom meaning
     socket =
@@ -747,9 +884,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     readings_text =
       case {on_readings, kun_readings} do
         {[], []} -> ""
-        {on, []} -> "On: #{Enum.join(on, ", ")}"
-        {[], kun} -> "Kun: #{Enum.join(kun, ", ")}"
-        {on, kun} -> "On: #{Enum.join(on, ", ")}, Kun: #{Enum.join(kun, ", ")}"
+        {on, []} -> gettext("On: %{readings}", readings: Enum.join(on, ", "))
+        {[], kun} -> gettext("Kun: %{readings}", readings: Enum.join(kun, ", "))
+        {on, kun} ->
+          gettext("On: %{on_readings}, Kun: %{kun_readings}",
+            on_readings: Enum.join(on, ", "),
+            kun_readings: Enum.join(kun, ", ")
+          )
       end
 
     # For the question, use the first meaning as the target word
@@ -763,7 +904,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       end
 
     updated_params = %{
-      "question" => "Draw the kanji for \"#{target_meaning}\"",
+      "question" => gettext("Draw the kanji for '%{meaning}'", meaning: target_meaning),
       "correct_answer" => String.trim(kanji.character),
       "kanji_id" => kanji_id,
       "hints" => [],
@@ -975,10 +1116,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               <p class="text-xs text-secondary mt-1">
                                 {case @selected_kanji.stroke_data do
                                   %{"strokes" => s} when is_list(s) ->
-                                    "#{length(s)} strokes"
+                                    gettext("%{count} strokes", count: length(s))
 
                                   _ ->
-                                    "No stroke data"
+                                    gettext("No stroke data")
                                 end} • N{@selected_kanji.jlpt_level}
                               </p>
                             </div>
@@ -1010,9 +1151,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
                             <.icon name="hero-exclamation-triangle" class="w-6 h-6 text-error mb-2" />
                             <p class="text-sm text-error">
-                              {gettext(
-                                "This kanji doesn't have stroke data. Writing validation will not work for this step."
-                              )}
+                              {gettext("This kanji doesn't have stroke data. Writing validation will not work for this step.")}
                             </p>
                           </div>
                         <% end %>
@@ -1021,10 +1160,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   </div>
                 <% end %>
 
-                <%= if @step_type == :multichoice or @step_type == :fill do %>
+                <%= if @step_type in [:multichoice, :picture_multichoice, :fill] do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      {gettext("Link to Word (optional)")}
+                      <%= if @step_type == :picture_multichoice do %>
+                        {gettext("Link to Word (required for picture questions)")}
+                      <% else %>
+                        {gettext("Link to Word (optional)")}
+                      <% end %>
                       <%= case @search_type do %>
                         <% :reading -> %>
                           <span class="text-xs text-info ml-2">
@@ -1152,9 +1295,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
                             />
                             <p class="text-xs text-secondary mt-1">
-                              {gettext(
-                                "Default from word database. Edit if you want a different reading accepted."
-                              )}
+                              {gettext("Default from word database. Edit if you want a different reading accepted.")}
                             </p>
                           </div>
                         <% end %>
@@ -1180,11 +1321,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   </p>
                 </div>
 
-                <%!-- Options for multichoice --%>
-                <%= if @step_type == :multichoice do %>
+                <%!-- Options for multichoice and picture_multichoice --%>
+                <%= if @step_type in [:multichoice, :picture_multichoice] do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-2">
-                      {gettext("Answer Options")}
+                      <%= if @step_type == :picture_multichoice do %>
+                        {gettext("Answer Options (must be words with images)")}
+                      <% else %>
+                        {gettext("Answer Options")}
+                      <% end %>
                       <span class="text-xs text-secondary ml-2">
                         ({gettext("4-8 options required")})
                       </span>
@@ -1234,25 +1379,65 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     </div>
 
                     <%!-- Add new option input --%>
-                    <div class="flex gap-2">
-                      <input
-                        type="text"
-                        id="new-option-input"
-                        value={@new_option_text}
-                        phx-keyup="update_new_option"
-                        phx-hook="OptionInput"
-                        class="input input-bordered flex-1"
-                        placeholder={gettext("Type a wrong answer and press Enter...")}
-                      />
-                      <button
-                        type="button"
-                        phx-click="add_option"
-                        disabled={String.trim(@new_option_text) == ""}
-                        class="btn btn-outline btn-sm"
-                      >
-                        <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
-                      </button>
-                    </div>
+                    <%= if @step_type == :picture_multichoice do %>
+                      <%!-- For picture_multichoice: search and select words with images --%>
+                      <div>
+                        <label class="block text-xs font-medium text-secondary mb-1">
+                          {gettext("Search for a word with image to add as option")}
+                        </label>
+                        <input
+                          type="text"
+                          phx-keyup="search_option_words"
+                          phx-debounce="300"
+                          class="input input-bordered w-full"
+                          placeholder={gettext("Type to search words with images...")}
+                          value={@option_word_search_query}
+                        />
+                        <%= if length(@available_option_words) > 0 do %>
+                          <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                            <%= for word <- @available_option_words do %>
+                              <button
+                                type="button"
+                                phx-click="select_option_word"
+                                phx-value-word-id={word.id}
+                                class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors flex items-center gap-3"
+                              >
+                                <%= if word.image_path do %>
+                                  <img src={word.image_path} alt={word.text} class="w-10 h-10 object-cover rounded" />
+                                <% end %>
+                                <div>
+                                  <span class="font-medium">{word.text}</span>
+                                  <span class="text-sm text-secondary ml-2">
+                                    {Content.get_localized_meaning(word, @locale)}
+                                  </span>
+                                </div>
+                              </button>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <%!-- For regular multichoice: type text --%>
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          id="new-option-input"
+                          value={@new_option_text}
+                          phx-keyup="update_new_option"
+                          phx-hook="OptionInput"
+                          class="input input-bordered flex-1"
+                          placeholder={gettext("Type a wrong answer and press Enter...")}
+                        />
+                        <button
+                          type="button"
+                          phx-click="add_option"
+                          disabled={String.trim(@new_option_text) == ""}
+                          class="btn btn-outline btn-sm"
+                        >
+                          <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
+                        </button>
+                      </div>
+                    <% end %>
 
                     <%!-- Validation messages --%>
                     <%= if @step_changeset && @step_changeset.errors[:options] do %>
@@ -1337,6 +1522,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   # Helper functions
 
   defp format_question_type(:multichoice), do: gettext("Multiple Choice")
+  defp format_question_type(:picture_multichoice), do: gettext("Picture Multiple Choice")
   defp format_question_type(:reading_text), do: gettext("Reading")
   defp format_question_type(:fill), do: gettext("Fill in Blank")
   defp format_question_type(:writing), do: gettext("Writing")
@@ -1425,6 +1611,92 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       # If mostly ASCII letters, it's likely a meaning search
       String.match?(query, ~r/^[a-zA-Z\s'-]+$/) -> :meaning
       true -> :mixed
+    end
+  end
+
+  # Validates that all words in a picture_multichoice step have images
+  # option_word_ids is a list where:
+  #   - index 0 is the correct answer word_id
+  #   - index 1+ are the wrong option word_ids
+  # Returns {:ok, attrs_with_question_data} or {:error, error_message}
+  defp validate_picture_multichoice_words(attrs, option_word_ids) do
+    _correct_answer = attrs["correct_answer"] || ""
+    options = attrs["options"] || []
+
+    # Validate we have word_ids for all options
+    # options includes correct answer + wrong options
+    # option_word_ids should match the count of options
+    expected_count = length(options)
+
+    if length(option_word_ids) < expected_count do
+      missing_count = expected_count - length(option_word_ids)
+
+      error =
+        gettext(
+          "Missing word links for %{count} option(s). Please search and select words for all options.",
+          count: missing_count
+        )
+
+      {:error, error}
+    else
+      # Fetch all words and check for images
+      words =
+        option_word_ids
+        |> Enum.map(&Content.get_word/1)
+        |> Enum.reject(&is_nil/1)
+
+      words_missing_images =
+        words
+        |> Enum.filter(fn word ->
+          is_nil(word.image_path) or word.image_path == ""
+        end)
+
+      case words_missing_images do
+        [] ->
+          # All words have images - build question_data
+          # Get word details for display
+          correct_word = List.first(words)
+
+          image_options =
+            words
+            |> Enum.map(fn word ->
+              %{
+                "word_id" => word.id,
+                "word_text" => word.text,
+                "image_path" => word.image_path
+              }
+            end)
+
+          # Build question_data for image_to_meaning
+          question_data = %{
+            "type" => "image_to_meaning",
+            "word_text" => correct_word.text,
+            "word_reading" => correct_word.reading,
+            "option_word_ids" => option_word_ids,
+            "image_options" => image_options
+          }
+
+          # Update attrs with question_data and word_id
+          attrs =
+            attrs
+            |> Map.put("question_data", question_data)
+            |> Map.put("word_id", correct_word.id)
+            |> Map.put("question_type", "multichoice")
+
+          {:ok, attrs}
+
+        missing_words ->
+          # Some words don't have images
+          word_texts = Enum.map(missing_words, & &1.text)
+
+          error =
+            gettext(
+              "The following words don't have images: %{words}. Please select words with images.",
+              words: Enum.join(word_texts, ", ")
+            )
+
+          {:error, error}
+      end
     end
   end
 end

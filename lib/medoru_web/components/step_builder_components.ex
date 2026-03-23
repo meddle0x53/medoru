@@ -121,6 +121,7 @@ defmodule MedoruWeb.StepBuilderComponents do
   def step_type_badge(assigns) do
     colors = %{
       multichoice: "bg-blue-100 text-blue-800",
+      picture_multichoice: "bg-indigo-100 text-indigo-800",
       fill: "bg-purple-100 text-purple-800",
       match: "bg-green-100 text-green-800",
       order: "bg-orange-100 text-orange-800",
@@ -130,6 +131,7 @@ defmodule MedoruWeb.StepBuilderComponents do
 
     labels = %{
       multichoice: "Multiple Choice",
+      picture_multichoice: "Picture Choice",
       fill: "Fill in Blank",
       match: "Matching",
       order: "Order",
@@ -188,7 +190,15 @@ defmodule MedoruWeb.StepBuilderComponents do
         type={:multichoice}
         icon="hero-list-bullet"
         title="Multiple Choice"
-        description="Students select from options"
+        description="Students select from text options"
+        points="1 point"
+        on_select={@on_select}
+      />
+      <.step_type_option
+        type={:picture_multichoice}
+        icon="hero-photo"
+        title="Picture Multiple Choice"
+        description="Students select from image options"
         points="1 point"
         on_select={@on_select}
       />

@@ -179,4 +179,134 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
              "Should be marked incorrect when answer is wrong"
     end
   end
+
+  describe "custom lesson test with images" do
+    setup do
+      # Create teacher
+      teacher = user_fixture_with_registration(%{type: "teacher"})
+
+      # Create a custom lesson with words that have images
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Food Vocabulary",
+          creator_id: teacher.id,
+          status: "published",
+          requires_test: true
+        })
+
+      # Create words with images
+      word1 = word_fixture(%{
+        text: "りんご",
+        meaning: "apple",
+        reading: "りんご",
+        difficulty: 5,
+        image_path: "/uploads/word_images/apple.png"
+      })
+
+      word2 = word_fixture(%{
+        text: "みかん",
+        meaning: "orange",
+        reading: "みかん",
+        difficulty: 5,
+        image_path: "/uploads/word_images/orange.png"
+      })
+
+      word3 = word_fixture(%{
+        text: "バナナ",
+        meaning: "banana",
+        reading: "バナナ",
+        difficulty: 5,
+        image_path: "/uploads/word_images/banana.png"
+      })
+
+      word4 = word_fixture(%{
+        text: "ぶどう",
+        meaning: "grape",
+        reading: "ぶどう",
+        difficulty: 5,
+        image_path: "/uploads/word_images/grape.png"
+      })
+
+      # Add words to lesson
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word3.id, %{position: 2})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word4.id, %{position: 3})
+
+      %{teacher: teacher, lesson: lesson, words: [word1, word2, word3, word4]}
+    end
+
+    test "generates image_to_meaning questions when words have images", %{
+      lesson: lesson,
+      words: _words
+    } do
+      # Generate test with enough steps to likely include image questions
+      {:ok, test} = CustomLessonTestGenerator.generate_lesson_test(lesson.id, steps_per_word: 5)
+
+      # Get test steps
+      steps = Medoru.Tests.list_test_steps(test.id)
+
+      # Find image questions
+      image_steps =
+        Enum.filter(steps, fn step ->
+          get_in(step.question_data, ["type"]) == "image_to_meaning" or
+            get_in(step.question_data, [:type]) == :image_to_meaning
+        end)
+
+      # Should have at least one image question when words have images
+      assert length(image_steps) >= 1, "Should generate image questions when words have images"
+
+      # Verify image questions have image_options
+      for step <- image_steps do
+        image_options = get_in(step.question_data, ["image_options"]) || get_in(step.question_data, [:image_options])
+        assert image_options != nil, "Image question should have image_options"
+        assert length(image_options) >= 2, "Should have at least 2 image options"
+      end
+    end
+
+    test "handles words without images gracefully", %{
+      teacher: teacher
+    } do
+      # Create a lesson with words that don't have images
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Small Vocabulary No Images",
+          creator_id: teacher.id,
+          status: "published",
+          requires_test: true
+        })
+
+      word1 = word_fixture(%{
+        text: "山",
+        meaning: "mountain",
+        reading: "やま",
+        difficulty: 5,
+        image_path: nil
+      })
+
+      word2 = word_fixture(%{
+        text: "川",
+        meaning: "river",
+        reading: "かわ",
+        difficulty: 5,
+        image_path: nil
+      })
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+
+      # Generate test - should work even without images
+      {:ok, test} = CustomLessonTestGenerator.generate_lesson_test(lesson.id, steps_per_word: 3)
+
+      steps = Medoru.Tests.list_test_steps(test.id)
+
+      # All multichoice steps should be valid with options
+      multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
+
+      for step <- multichoice_steps do
+        assert length(step.options) >= 2, "Each question should have at least 2 options"
+        assert step.correct_answer in step.options, "Correct answer should be in options"
+      end
+    end
+  end
 end

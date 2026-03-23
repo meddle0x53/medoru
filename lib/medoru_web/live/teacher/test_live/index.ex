@@ -77,20 +77,20 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
           <div>
-            <h1 class="text-3xl font-bold text-base-content">{gettext("My Tests")}</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{gettext("My Tests")}</h1>
             <p class="text-secondary mt-1">{gettext("Create and manage your custom tests")}</p>
           </div>
-          <.link navigate={~p"/teacher/tests/new"}>
-            <button class="btn btn-primary">
+          <.link navigate={~p"/teacher/tests/new"} class="w-full sm:w-auto">
+            <button class="btn btn-primary w-full sm:w-auto">
               <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Test")}
             </button>
           </.link>
         </div>
 
         <%!-- Filters --%>
-        <div class="flex gap-2 mb-6 flex-wrap">
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible sm:pb-0">
           <.filter_button
             active={@filter == "all"}
             click="filter"
@@ -152,7 +152,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       phx-click={@click}
       phx-value-state={@value}
       class={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        "px-3 sm:px-4 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
         @active && "bg-info text-info-content",
         !@active && "bg-base-200 text-base-content hover:bg-base-300"
       ]}
@@ -168,7 +168,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       phx-click={@click}
       phx-value-state={@value}
       class={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        "px-3 sm:px-4 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
         @active && "bg-warning text-warning-content",
         !@active && "bg-base-200 text-base-content hover:bg-base-300"
       ]}
@@ -184,7 +184,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       phx-click={@click}
       phx-value-state={@value}
       class={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        "px-3 sm:px-4 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
         @active && "bg-success text-success-content",
         !@active && "bg-base-200 text-base-content hover:bg-base-300"
       ]}
@@ -200,7 +200,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       phx-click={@click}
       phx-value-state={@value}
       class={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        "px-3 sm:px-4 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
         @active && "bg-base-300 text-base-content",
         !@active && "bg-base-200 text-base-content hover:bg-base-300"
       ]}
@@ -216,7 +216,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       phx-click={@click}
       phx-value-state={@value}
       class={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        "px-3 sm:px-4 py-2 sm:py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
         @active && "bg-primary text-primary-content",
         !@active && "bg-base-200 text-base-content hover:bg-base-300"
       ]}
@@ -263,8 +263,8 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
         <% end %>
       </p>
       <%= if @filter == "all" or @filter == "in_progress" do %>
-        <.link navigate={~p"/teacher/tests/new"}>
-          <button class="btn btn-primary">
+        <.link navigate={~p"/teacher/tests/new"} class="w-full sm:w-auto">
+          <button class="btn btn-primary w-full sm:w-auto">
             <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Test
           </button>
         </.link>
@@ -319,22 +319,22 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
           <% end %>
         </div>
 
-        <div class="card-actions justify-end">
+        <div class="card-actions justify-end mt-4">
           <%= case @test.setup_state do %>
             <% "in_progress" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary btn-sm">
+              <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary btn-sm w-full sm:w-auto">
                 <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Continue Editing")}
               </.link>
             <% "ready" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-primary btn-sm">
+              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-primary btn-sm w-full sm:w-auto">
                 <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Review & Publish")}
               </.link>
             <% "published" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-success btn-sm">
+              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-success btn-sm w-full sm:w-auto">
                 <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> {gettext("View Results")}
               </.link>
             <% "archived" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-ghost btn-sm">
+              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-ghost btn-sm w-full sm:w-auto">
                 <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
               </.link>
           <% end %>

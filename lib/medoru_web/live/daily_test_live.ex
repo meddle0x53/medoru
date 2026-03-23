@@ -294,6 +294,58 @@ defmodule MedoruWeb.DailyTestLive do
   end
 
   @impl true
+  def handle_event("kanji_complete", _params, socket) do
+    # Kanji writing completed successfully - mark as correct
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    attrs = %{
+      answer: "completed",
+      time_spent_seconds: 30,
+      step_index: session.current_step_index,
+      is_correct: true,
+      points_earned: step.points
+    }
+
+    case Tests.record_step_answer(session.id, step.id, attrs) do
+      {:ok, _step_answer} ->
+        handle_correct_answer(socket, step)
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+    end
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => true}, socket) do
+    # Submit button clicked when kanji is complete - treat same as kanji_complete
+    handle_event("kanji_complete", %{}, socket)
+  end
+
+  @impl true
+  def handle_event("submit_writing", %{"completed" => false}, socket) do
+    # User gave up or skipped - mark as incorrect
+    session = socket.assigns.session
+    step = socket.assigns.current_step
+
+    attrs = %{
+      answer: "incomplete",
+      time_spent_seconds: 30,
+      step_index: session.current_step_index,
+      is_correct: false,
+      points_earned: 0
+    }
+
+    case Tests.record_step_answer(session.id, step.id, attrs) do
+      {:ok, _step_answer} ->
+        handle_incorrect_answer(socket, step)
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+    end
+  end
+
+  @impl true
   def handle_event("finish", _params, socket) do
     {:noreply, push_navigate(socket, to: ~p"/dashboard")}
   end
@@ -548,6 +600,12 @@ defmodule MedoruWeb.DailyTestLive do
       String.starts_with?(question, "__MSG_TYPE_MEANING_READING__|") ->
         case String.split(question, "|") do
           [_, word] -> gettext("Type the meaning and reading for '%{word}'", word: word)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_WRITE_KANJI_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meanings] -> gettext("Write the kanji for '%{meanings}'", meanings: meanings)
           _ -> question
         end
 

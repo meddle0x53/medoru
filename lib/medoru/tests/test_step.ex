@@ -93,6 +93,7 @@ defmodule Medoru.Tests.TestStep do
   def default_points(question_type) do
     case question_type do
       :multichoice -> 1
+      :picture_multichoice -> 1
       :fill -> 2
       :match -> 2
       :order -> 2
@@ -109,6 +110,9 @@ defmodule Medoru.Tests.TestStep do
       case {question_type, points} do
         {:multichoice, p} when p != 1 ->
           add_error(changeset, :points, "multiple choice questions must be worth 1 point")
+
+        {:picture_multichoice, p} when p != 1 ->
+          add_error(changeset, :points, "picture multiple choice questions must be worth 1 point")
 
         {:writing, p} when p != 5 ->
           add_error(changeset, :points, "writing questions must be worth 5 points")

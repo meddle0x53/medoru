@@ -49,7 +49,7 @@
                 total: @session_state.total_steps
               )}
             </span>
-            <span class="text-secondary">{@session_state.progress}%{gettext(" complete")}</span>
+            <span class="text-secondary">{@session_state.progress}{gettext(" complete")}</span>
           </div>
           <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
             <div
@@ -62,68 +62,119 @@
 
         <%!-- Question Card --%>
         <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6 mb-4 sm:mb-6">
-          <%= if @current_step.question_type == :reading_text do %>
-            <%!-- Reading Text Question --%>
-            <% translated_step = %{
-              @current_step
-              | question: translate_question(@current_step.question),
-                hints: Enum.map(@current_step.hints, &translate_hint/1)
-            } %>
-            <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
-              step={translated_step}
-              meaning_answer={@meaning_answer}
-              reading_answer={@reading_answer}
-              feedback={@feedback}
-              show_hint={@show_hint}
-              meaning_error={@meaning_error}
-              reading_error={@reading_error}
-              correct_meaning={@correct_meaning}
-              correct_reading={@correct_reading}
-            />
+          <%= cond do %>
+            <% @current_step.question_type == :writing -> %>
+              <%!-- Writing Question (Kanji Drawing) --%>
+              <div class="mb-4 sm:mb-6">
+                <div class="flex items-center gap-2 text-primary mb-3">
+                  <.icon name="hero-pencil" class="w-5 h-5" />
+                  <span class="text-sm font-medium">{gettext("Writing Challenge (3 points)")}</span>
+                </div>
+                <h2 class="text-xl font-semibold text-base-content leading-relaxed">
+                  {translate_question(@current_step.question)}
+                </h2>
+              </div>
 
-            <%!-- Actions for Reading Text --%>
-            <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
-              <%= if @feedback != :incorrect do %>
-                <button
-                  type="button"
-                  phx-click="submit_reading_text"
-                  disabled={@meaning_answer == "" or @reading_answer == ""}
-                  class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
-                >
-                  {gettext("Submit Answer")}
-                </button>
+              <%!-- Hint --%>
+              <%= if @show_hint && List.first(@current_step.hints) do %>
+                <div class="bg-info/10 text-info rounded-lg p-3 mb-4">
+                  <div class="flex items-center gap-2">
+                    <.icon name="hero-light-bulb" class="w-5 h-5" />
+                    <span>{List.first(@current_step.hints)}</span>
+                  </div>
+                </div>
+              <% end %>
 
-                <%= if @current_step.question_type == :writing and !@show_hint do %>
+              <%!-- Writing Canvas Component --%>
+              <MedoruWeb.LessonTestLive.WritingComponent.writing_question
+                step={@current_step}
+                target="writing-component"
+              />
+
+              <%!-- Actions for Writing --%>
+              <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                <%= if @feedback != :incorrect do %>
+                  <%= if !@show_hint do %>
+                    <button
+                      type="button"
+                      phx-click="show_hint"
+                      class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors min-h-[48px]"
+                    >
+                      <div class="flex items-center justify-center gap-2">
+                        <.icon name="hero-light-bulb" class="w-5 h-5" />
+                        <span>{gettext("Hint")}</span>
+                      </div>
+                    </button>
+                  <% end %>
+
                   <button
                     type="button"
-                    phx-click="show_hint"
-                    class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors min-h-[48px] order-3 sm:order-2"
+                    phx-click="skip_question"
+                    class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
                   >
-                    <div class="flex items-center justify-center gap-2">
-                      <.icon name="hero-light-bulb" class="w-5 h-5" />
-                      <span>{gettext("Hint")}</span>
-                    </div>
+                    {gettext("Skip →")}
+                  </button>
+                <% else %>
+                  <button
+                    type="button"
+                    phx-click="continue_after_correction"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                  >
+                    {gettext("Continue →")}
                   </button>
                 <% end %>
+              </div>
 
-                <button
-                  type="button"
-                  phx-click="skip_question"
-                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
-                >
-                  {gettext("Skip →")}
-                </button>
-              <% else %>
-                <button
-                  type="button"
-                  phx-click="continue_after_correction"
-                  class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
-                >
-                  {gettext("Continue →")}
-                </button>
-              <% end %>
-            </div>
-          <% else %>
+            <% @current_step.question_type == :reading_text -> %>
+              <%!-- Reading Text Question --%>
+              <% translated_step = %{
+                @current_step
+                | question: translate_question(@current_step.question),
+                  hints: Enum.map(@current_step.hints, &translate_hint/1)
+              } %>
+              <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                step={translated_step}
+                meaning_answer={@meaning_answer}
+                reading_answer={@reading_answer}
+                feedback={@feedback}
+                show_hint={@show_hint}
+                meaning_error={@meaning_error}
+                reading_error={@reading_error}
+                correct_meaning={@correct_meaning}
+                correct_reading={@correct_reading}
+              />
+
+              <%!-- Actions for Reading Text --%>
+              <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                <%= if @feedback != :incorrect do %>
+                  <button
+                    type="button"
+                    phx-click="submit_reading_text"
+                    disabled={@meaning_answer == "" or @reading_answer == ""}
+                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+
+                  <button
+                    type="button"
+                    phx-click="skip_question"
+                    class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
+                  >
+                    {gettext("Skip →")}
+                  </button>
+                <% else %>
+                  <button
+                    type="button"
+                    phx-click="continue_after_correction"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                  >
+                    {gettext("Continue →")}
+                  </button>
+                <% end %>
+              </div>
+
+            <% true -> %>
             <%!-- Multichoice Question --%>
             <%!-- Question --%>
             <div class="mb-4 sm:mb-6">
@@ -274,19 +325,6 @@
               >
                 {gettext("Submit Answer")}
               </button>
-
-              <%= if @current_step.question_type == :writing and !@show_hint do %>
-                <button
-                  type="button"
-                  phx-click="show_hint"
-                  class="w-full sm:w-auto px-4 py-3 bg-info/10 hover:bg-info/20 text-info rounded-xl transition-colors min-h-[48px] order-3 sm:order-2"
-                >
-                  <div class="flex items-center justify-center gap-2">
-                    <.icon name="hero-light-bulb" class="w-5 h-5" />
-                    <span>{gettext("Hint")}</span>
-                  </div>
-                </button>
-              <% end %>
 
               <button
                 type="button"
