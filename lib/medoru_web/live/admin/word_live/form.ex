@@ -172,19 +172,22 @@ defmodule MedoruWeb.Admin.WordLive.Form do
 
   # Handle image upload and return updated params with image_path
   defp handle_image_upload(socket, word_params) do
+    # Get uploads directory from config (respects UPLOADS_DIR env var)
+    uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
     case consume_uploaded_entries(socket, :image, fn %{path: path}, entry ->
            # Generate unique filename
            ext = Path.extname(entry.client_name) |> String.downcase()
            filename = "#{Ecto.UUID.generate()}#{ext}"
-           
-           # Destination path in priv/static/uploads/word_images/
-           dest_dir = Path.join([Application.app_dir(:medoru), "priv", "static", "uploads", "word_images"])
+
+           # Destination path in configured uploads directory
+           dest_dir = Path.join(uploads_dir, "word_images")
            File.mkdir_p!(dest_dir)
            dest_path = Path.join(dest_dir, filename)
-           
+
            # Copy file
            File.cp!(path, dest_path)
-           
+
            # Return relative path for database
            {:ok, "/uploads/word_images/#{filename}"}
          end) do
