@@ -267,16 +267,17 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
       lesson = lesson_fixture(%{title: "Test Lesson", difficulty: 5})
 
       # Create a kanji with stroke data
-      kanji = Medoru.ContentFixtures.kanji_fixture(%{
-        character: "日",
-        stroke_count: 4,
-        stroke_data: %{
-          "strokes" => [
-            %{"path" => "M10,10 L50,10"},
-            %{"path" => "M50,10 L50,50"}
-          ]
-        }
-      })
+      kanji =
+        Medoru.ContentFixtures.kanji_fixture(%{
+          character: "日",
+          stroke_count: 4,
+          stroke_data: %{
+            "strokes" => [
+              %{"path" => "M10,10 L50,10"},
+              %{"path" => "M50,10 L50,50"}
+            ]
+          }
+        })
 
       word = word_fixture(%{text: "日", meaning: "sun", reading: "ひ", difficulty: 5})
 

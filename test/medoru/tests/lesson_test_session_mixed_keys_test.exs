@@ -102,6 +102,9 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
       user: user,
       test_record: test_record
     } do
+      # Create a kanji for the writing step
+      kanji = Medoru.ContentFixtures.kanji_fixture(%{character: "日"})
+
       # Create a writing step
       {:ok, writing_step} =
         Tests.create_test_step(test_record, %{
@@ -110,7 +113,8 @@ defmodule Medoru.Tests.LessonTestSessionMixedKeysTest do
           question_type: :writing,
           question: "Draw the kanji for 日",
           correct_answer: "日",
-          points: 5
+          points: 5,
+          kanji_id: kanji.id
         })
 
       {:ok, %{session: session}} = LessonTestSession.start_lesson_test(user.id, test_record.id)

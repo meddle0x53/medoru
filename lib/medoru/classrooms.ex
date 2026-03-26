@@ -72,7 +72,7 @@ defmodule Medoru.Classrooms do
   def get_classroom!(id) do
     Classroom
     |> Repo.get!(id)
-    |> Repo.preload([:teacher, memberships: [:user]])
+    |> Repo.preload([teacher: [:profile], memberships: [user: [:profile]]])
   end
 
   @doc """
@@ -215,6 +215,66 @@ defmodule Medoru.Classrooms do
     classroom
     |> Classroom.changeset(%{invite_code: Classroom.generate_invite_code()})
     |> Repo.update()
+  end
+
+  @doc """
+  Deletes a classroom permanently (only for archived classrooms).
+
+  ## Examples
+
+      iex> delete_classroom(classroom)
+      {:ok, %Classroom{}}
+
+      iex> delete_classroom(active_classroom)
+      {:error, :not_archived}
+
+  """
+  def delete_classroom(%Classroom{} = classroom) do
+    if classroom.status == :archived do
+      Repo.delete(classroom)
+    else
+      {:error, :not_archived}
+    end
+  end
+
+  @doc """
+  Lists all classrooms including archived (for admin use).
+
+  ## Options
+    * `:status` - Filter by status (:active, :closed, :archived, or nil for all)
+    * `:teacher_id` - Filter by teacher
+
+  ## Examples
+
+      iex> list_all_classrooms()
+      [%Classroom{}, ...]
+
+      iex> list_all_classrooms(status: :archived)
+      [%Classroom{}, ...]
+
+  """
+  def list_all_classrooms(opts \\ []) do
+    status = Keyword.get(opts, :status)
+    teacher_id = Keyword.get(opts, :teacher_id)
+
+    Classroom
+    |> then(fn query ->
+      if status do
+        where(query, [c], c.status == ^status)
+      else
+        query
+      end
+    end)
+    |> then(fn query ->
+      if teacher_id do
+        where(query, [c], c.teacher_id == ^teacher_id)
+      else
+        query
+      end
+    end)
+    |> order_by([c], desc: c.inserted_at)
+    |> preload(teacher: [:profile])
+    |> Repo.all()
   end
 
   @doc """

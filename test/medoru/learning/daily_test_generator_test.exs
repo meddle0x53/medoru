@@ -24,8 +24,6 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
     %{user: user, lesson: lesson, word: word}
   end
 
-
-
   describe "get_or_create_daily_test/1" do
     setup :setup_user_with_completed_lesson_and_word
 
@@ -242,12 +240,18 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
 
       # Words from completed lesson should appear
-      assert word1.id in word_ids_in_test, "Words from completed lesson should appear in daily test"
-      assert word2.id in word_ids_in_test, "Words from completed lesson should appear in daily test"
+      assert word1.id in word_ids_in_test,
+             "Words from completed lesson should appear in daily test"
+
+      assert word2.id in word_ids_in_test,
+             "Words from completed lesson should appear in daily test"
 
       # Words from incomplete lesson should NOT appear
-      refute word3.id in word_ids_in_test, "Words from incomplete lesson should NOT appear in daily test"
-      refute word4.id in word_ids_in_test, "Words from incomplete lesson should NOT appear in daily test"
+      refute word3.id in word_ids_in_test,
+             "Words from incomplete lesson should NOT appear in daily test"
+
+      refute word4.id in word_ids_in_test,
+             "Words from incomplete lesson should NOT appear in daily test"
     end
 
     test "new user flow: complete lesson then take daily test with lesson words" do
@@ -256,6 +260,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
 
       # Create a lesson with 3 words (valid Japanese)
       lesson = lesson_fixture()
+
       words = [
         word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"}),
         word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"}),

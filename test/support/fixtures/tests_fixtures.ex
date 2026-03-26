@@ -12,7 +12,7 @@ defmodule Medoru.TestsFixtures do
   """
   def teacher_fixture(attrs \\ %{}) do
     attrs
-    |> Enum.into(%{user_type: "teacher"})
+    |> Enum.into(%{type: "teacher"})
     |> AccountsFixtures.user_fixture_with_registration()
   end
 

@@ -4,26 +4,56 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Kanji Browser")}</h1>
       <p class="text-secondary">
-        {gettext("Browse and learn Japanese kanji organized by JLPT level")}
+        {gettext(
+          "Browse and learn Japanese kanji organized by JLPT level or Japanese school grade"
+        )}
       </p>
     </div>
 
-    <%!-- Level Selector --%>
-    <div class="flex flex-wrap gap-2 mb-8">
-      <%= for level <- [5, 4, 3, 2, 1] do %>
-        <.link
-          patch={~p"/kanji?level=#{level}"}
-          class={[
-            "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
-            if(@jlpt_level == level,
-              do: "bg-primary text-primary-content shadow-md",
-              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
-            )
-          ]}
-        >
-          N{level}
-        </.link>
-      <% end %>
+    <%!-- JLPT Level Selector --%>
+    <div class="mb-2">
+      <span class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2 block">
+        {gettext("JLPT Level")}
+      </span>
+      <div class="flex flex-wrap gap-2">
+        <%= for level <- [5, 4, 3, 2, 1] do %>
+          <.link
+            patch={~p"/kanji?level=#{level}"}
+            class={[
+              "px-5 py-2.5 rounded-xl font-medium transition-all duration-200",
+              if(@filter_type == :jlpt && @jlpt_level == level,
+                do: "bg-primary text-primary-content shadow-md",
+                else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+              )
+            ]}
+          >
+            N{level}
+          </.link>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- School Level Selector (SL1-SL6) --%>
+    <div class="mb-8">
+      <span class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2 block">
+        {gettext("Japanese School Level")}
+      </span>
+      <div class="flex flex-wrap gap-2">
+        <%= for level <- 1..6 do %>
+          <.link
+            patch={~p"/kanji?sl=#{level}"}
+            class={[
+              "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+              if(@filter_type == :school && @school_level == level,
+                do: "bg-secondary text-secondary-content shadow-md",
+                else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-secondary"
+              )
+            ]}
+          >
+            SL{level}
+          </.link>
+        <% end %>
+      </div>
     </div>
 
     <%!-- Stats --%>
@@ -31,13 +61,24 @@
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
         {length(@kanji_list)} {gettext("characters")}
       </span>
-      <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        JLPT N{@jlpt_level}
-      </span>
+      <%= if @filter_type == :jlpt do %>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          JLPT N{@jlpt_level}
+        </span>
+      <% else %>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          {gettext("School Level")} SL{@school_level}
+          <%= if @school_level == 1 do %>
+            (1st grade)
+          <% else %>
+            ({@school_level}th grade)
+          <% end %>
+        </span>
+      <% end %>
     </div>
 
     <%!-- Kanji Grid --%>
-    <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+    <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10 gap-3">
       <%= for kanji <- @kanji_list do %>
         <.link
           navigate={~p"/kanji/#{kanji.id}"}

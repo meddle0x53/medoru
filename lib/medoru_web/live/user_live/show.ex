@@ -32,12 +32,12 @@ defmodule MedoruWeb.UserLive.Show do
           user ->
             user = Accounts.get_user_with_profile!(user.id)
             cached_stats = Accounts.get_or_create_user_stats(user.id)
-            
+
             # Calculate real stats from actual data
             streak = Learning.get_daily_streak(user.id)
             current_streak = if streak, do: streak.current_streak, else: 0
             longest_streak = if streak, do: streak.longest_streak, else: 0
-            
+
             real_stats = %{
               level: cached_stats.level,
               xp: cached_stats.xp,
@@ -48,10 +48,10 @@ defmodule MedoruWeb.UserLive.Show do
               total_tests_completed: cached_stats.total_tests_completed,
               total_duels_played: cached_stats.total_duels_played
             }
-            
+
             user_badges = Gamification.list_user_badges(user.id)
             featured_badge = Gamification.get_featured_badge(user.id)
-            
+
             # Get daily test status for admin reset feature
             daily_test_status = Learning.get_daily_test_status(user.id)
 
@@ -91,11 +91,14 @@ defmodule MedoruWeb.UserLive.Show do
         {:ok, :deleted} ->
           # Refresh daily test status
           daily_test_status = Learning.get_daily_test_status(user.id)
-          
+
           {:noreply,
            socket
            |> assign(:daily_test_status, daily_test_status)
-           |> put_flash(:info, gettext("Daily test reset successfully. User can now generate a new test."))}
+           |> put_flash(
+             :info,
+             gettext("Daily test reset successfully. User can now generate a new test.")
+           )}
 
         {:ok, :no_test_found} ->
           {:noreply,

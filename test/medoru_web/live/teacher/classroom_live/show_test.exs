@@ -125,7 +125,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.ShowTest do
 
       # Student tries to access teacher classroom page
       result = live(conn, ~p"/teacher/classrooms/#{classroom.id}")
-      assert {:error, {:live_redirect, %{to: "/teacher/classrooms"}}} = result
+
+      assert {:error,
+              {:redirect,
+               %{
+                 to: "/dashboard",
+                 flash: %{"error" => "You must be a teacher to access this page."}
+               }}} = result
     end
 
     test "email is visible for own profile", %{

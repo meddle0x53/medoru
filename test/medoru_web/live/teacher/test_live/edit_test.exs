@@ -178,6 +178,12 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
     end
 
     test "creates a writing step", %{conn: conn, teacher: teacher, teacher_test: teacher_test} do
+      # Create a kanji for the writing step (with readings for search to work)
+      kanji = kanji_fixture(%{character: "日", meanings: ["sun", "day"], stroke_count: 4})
+
+      _reading =
+        kanji_reading_fixture(kanji.id, %{reading: "ニチ", reading_type: :on, romaji: "nichi"})
+
       {:ok, view, _html} =
         conn
         |> log_in_user(teacher)
@@ -192,15 +198,31 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       |> element("button[phx-value-type='writing']")
       |> render_click()
 
-      # Fill in the form
+      # Search for kanji via UI (simulates user typing)
       view
-      |> form("form", %{
-        "step" => %{
-          "question" => "Write the kanji for 'sun'",
-          "correct_answer" => "日"
-        }
-      })
-      |> render_submit()
+      |> element("input[phx-keyup='search_kanji']")
+      |> render_keyup(%{value: "日"})
+
+      # Select the kanji from dropdown
+      view
+      |> element("button[phx-click='select_kanji'][phx-value-kanji-id='#{kanji.id}']")
+      |> render_click()
+
+      # Fill in the form (kanji_id is now set via hidden field from selected_kanji)
+      html =
+        view
+        |> form("form", %{
+          "step" => %{
+            "question" => "Write the kanji for 'sun'",
+            "correct_answer" => "日"
+          }
+        })
+        |> render_submit()
+
+      # Check for flash error message
+      if html =~ "Failed to save" do
+        flunk("Form submission failed: #{html}")
+      end
 
       # Verify in database
       steps = Tests.list_test_steps(teacher_test.id)
@@ -209,6 +231,7 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       assert step.question == "Write the kanji for 'sun'"
       assert step.question_type == :writing
       assert step.points == 5
+      assert step.kanji_id == kanji.id
     end
 
     test "word selection clears dropdown and preserves other fields", %{
@@ -620,6 +643,9 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       teacher: teacher,
       teacher_test: teacher_test
     } do
+      # Create a kanji for writing step
+      kanji = Medoru.ContentFixtures.kanji_fixture()
+
       # Create steps (minimum 4 options now)
       {:ok, _step1} =
         Tests.create_test_step(teacher_test, %{
@@ -639,7 +665,8 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
           question_type: :writing,
           question: "Write kanji?",
           correct_answer: "日",
-          points: 5
+          points: 5,
+          kanji_id: kanji.id
         })
 
       # Reload test to get updated stats

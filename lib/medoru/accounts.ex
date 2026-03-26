@@ -78,8 +78,13 @@ defmodule Medoru.Accounts do
     Repo.transaction(fn ->
       email = attrs[:email] || attrs["email"]
 
-      # Auto-assign admin role for specific email
-      type = if email == "n.tzvetinov@gmail.com", do: "admin", else: "student"
+      # Auto-assign admin role for specific email, otherwise use provided type or default to student
+      type =
+        cond do
+          email == "n.tzvetinov@gmail.com" -> "admin"
+          attrs[:type] || attrs["type"] -> attrs[:type] || attrs["type"]
+          true -> "student"
+        end
 
       user_attrs = %{
         email: email,

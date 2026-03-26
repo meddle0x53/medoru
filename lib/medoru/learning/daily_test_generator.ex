@@ -201,16 +201,20 @@ defmodule Medoru.Learning.DailyTestGenerator do
       %Test{id: test_id} ->
         # Use Ecto.UUID.cast to ensure proper binary format
         {:ok, test_id_binary} = Ecto.UUID.cast(test_id)
-        
+
         # Delete test steps using proper query
-        Repo.delete_all(from(ts in "test_steps", where: ts.test_id == type(^test_id_binary, :binary_id)))
-        
+        Repo.delete_all(
+          from(ts in "test_steps", where: ts.test_id == type(^test_id_binary, :binary_id))
+        )
+
         # Delete test sessions
-        Repo.delete_all(from(s in "test_sessions", where: s.test_id == type(^test_id_binary, :binary_id)))
-        
+        Repo.delete_all(
+          from(s in "test_sessions", where: s.test_id == type(^test_id_binary, :binary_id))
+        )
+
         # Delete the test
         Repo.delete(test)
-        
+
         {:ok, :deleted}
     end
   end
@@ -413,7 +417,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
                 word_reading: word.reading,
                 type: :image_to_meaning,
                 is_new_word: is_new,
-                image_options: Enum.map(options, &%{meaning: &1.meaning, image_path: &1.image_path})
+                image_options:
+                  Enum.map(options, &%{meaning: &1.meaning, image_path: &1.image_path})
               }
             })
 
@@ -528,7 +533,14 @@ defmodule Medoru.Learning.DailyTestGenerator do
   # If no preferences set, use defaults
   defp select_question_types(_is_new, user_step_types) when is_list(user_step_types) do
     # Filter to only valid types and ensure at least one
-    valid_types = ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning", "kanji_writing"]
+    valid_types = [
+      "word_to_meaning",
+      "word_to_reading",
+      "reading_text",
+      "image_to_meaning",
+      "kanji_writing"
+    ]
+
     types = Enum.filter(user_step_types, &(&1 in valid_types))
 
     if types == [] do

@@ -61,8 +61,12 @@ defmodule MedoruWeb.DashboardLive do
           <.icon name={"hero-#{@icon}"} class={["h-6 w-6", stat_card_icon_color(@color)]} />
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-secondary/70 group-hover:text-secondary transition-colors">{@label}</p>
-          <p class="text-2xl font-bold text-base-content group-hover:text-primary transition-colors">{@value}</p>
+          <p class="text-sm font-medium text-secondary/70 group-hover:text-secondary transition-colors">
+            {@label}
+          </p>
+          <p class="text-2xl font-bold text-base-content group-hover:text-primary transition-colors">
+            {@value}
+          </p>
         </div>
       </div>
     </div>

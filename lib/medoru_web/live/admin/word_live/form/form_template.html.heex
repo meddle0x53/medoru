@@ -180,14 +180,16 @@
               <%!-- File Upload --%>
               <div>
                 <label class="label">
-                  <span class="label-text">{gettext("Upload new image (300×300px recommended)")}</span>
+                  <span class="label-text">
+                    {gettext("Upload new image (300×300px recommended)")}
+                  </span>
                 </label>
-                
+
                 <.live_file_input
                   upload={@uploads.image}
                   class="file-input file-input-bordered w-full"
                 />
-                
+
                 <p class="text-xs text-base-content/50 mt-1">
                   {gettext("Accepted formats: JPG, PNG, WebP. Max size: 500KB")}
                 </p>
@@ -205,7 +207,7 @@
                         <p class="text-sm text-secondary">
                           {trunc(entry.client_size / 1024)} KB
                         </p>
-                        
+
                         <%!-- Progress bar --%>
                         <div class="w-full bg-base-300 rounded-full h-2 mt-2">
                           <div
@@ -224,7 +226,7 @@
                         <.icon name="hero-x-mark" class="w-5 h-5" />
                       </button>
                     </div>
-                    
+
                     <%!-- Errors --%>
                     <%= for err <- upload_errors(@uploads.image, entry) do %>
                       <p class="text-error text-sm mt-2">{error_to_string(err)}</p>

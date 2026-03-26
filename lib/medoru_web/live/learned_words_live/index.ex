@@ -21,15 +21,16 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
   @impl true
   def handle_params(%{"id" => user_id}, _url, socket) do
     user = Accounts.get_user!(user_id)
-    
+
     # Get all learned word IDs for highlighting
     learned_word_ids = Learning.list_learned_word_ids(user_id)
-    
+
     # Get learned words with pagination
-    result = list_learned_words_paginated(user_id,
-      page: 1,
-      per_page: @per_page
-    )
+    result =
+      list_learned_words_paginated(user_id,
+        page: 1,
+        per_page: @per_page
+      )
 
     {:noreply,
      socket
@@ -47,10 +48,11 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
     page = parse_page(page)
     user_id = socket.assigns.user.id
 
-    result = list_learned_words_paginated(user_id,
-      page: page,
-      per_page: @per_page
-    )
+    result =
+      list_learned_words_paginated(user_id,
+        page: page,
+        per_page: @per_page
+      )
 
     {:noreply,
      socket
@@ -68,10 +70,11 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
     total_count = Learning.count_learned_words(user_id)
 
     # Get paginated words
-    words = Learning.list_learned_words(user_id,
-      limit: per_page,
-      offset: (page - 1) * per_page
-    )
+    words =
+      Learning.list_learned_words(user_id,
+        limit: per_page,
+        offset: (page - 1) * per_page
+      )
 
     total_pages = ceil(total_count / per_page)
 

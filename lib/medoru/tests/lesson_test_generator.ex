@@ -16,7 +16,6 @@ defmodule Medoru.Tests.LessonTestGenerator do
   alias Medoru.Content.{Lesson, LessonWord, Word}
   alias Medoru.Tests
 
-
   # Mapping from user preference strings to internal step types
   @preference_to_type %{
     "word_to_meaning" => :word_to_meaning,
@@ -83,7 +82,14 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
       with {:ok, test} <- Tests.create_test(test_attrs),
            {:ok, _steps} <-
-             generate_steps(test, words, steps_per_word, distractor_count, lesson.id, user_preferences),
+             generate_steps(
+               test,
+               words,
+               steps_per_word,
+               distractor_count,
+               lesson.id,
+               user_preferences
+             ),
            {:ok, updated_test} <- Tests.ready_test(test) do
         # Update lesson with test reference
         lesson
@@ -433,7 +439,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
     # Check if the correct word has an image AND we have enough image distractors
     correct_word_has_image = correct_word.image_path != nil
-    
+
     if not correct_word_has_image or length(distractor_images) < distractor_count do
       # Not enough images - convert to regular word_to_meaning question
       question_data =
@@ -450,7 +456,10 @@ defmodule Medoru.Tests.LessonTestGenerator do
       option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
       step
-      |> Map.put(:question_data, Map.merge(question_data, %{options: options, option_word_ids: option_word_ids}))
+      |> Map.put(
+        :question_data,
+        Map.merge(question_data, %{options: options, option_word_ids: option_word_ids})
+      )
       |> Map.put(:options, options)
     else
       # Build image options with correct answer first
@@ -501,7 +510,9 @@ defmodule Medoru.Tests.LessonTestGenerator do
         |> order_by(fragment("RANDOM()"))
         |> Repo.all()
 
-      additional_images = Enum.map(additional_words, &%{meaning: &1.meaning, image_path: &1.image_path})
+      additional_images =
+        Enum.map(additional_words, &%{meaning: &1.meaning, image_path: &1.image_path})
+
       additional_ids = Enum.map(additional_words, & &1.id)
 
       {images ++ additional_images, ids ++ additional_ids}

@@ -190,7 +190,7 @@
             <.icon name="hero-shield-check" class="w-5 h-5" />
             {gettext("Admin Actions")}
           </h2>
-          
+
           <div class="space-y-4">
             <%!-- Daily Test Reset --%>
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-error/5 rounded-lg border border-error/10">
@@ -198,7 +198,10 @@
                 <p class="font-medium text-base-content">{gettext("Reset Daily Test")}</p>
                 <p class="text-sm text-secondary">
                   <%= if @daily_test_status.has_test do %>
-                    {gettext("User has a daily test today with %{count} items. Reset to allow retaking.", count: @daily_test_status.total_items)}
+                    {gettext(
+                      "User has a daily test today with %{count} items. Reset to allow retaking.",
+                      count: @daily_test_status.total_items
+                    )}
                   <% else %>
                     {gettext("No daily test found for today.")}
                   <% end %>

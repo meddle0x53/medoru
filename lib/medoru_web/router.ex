@@ -196,6 +196,9 @@ defmodule MedoruWeb.Router do
       live "/lessons", LessonLive.Index
       live "/lessons/new", LessonLive.Form, :new
       live "/lessons/:id/edit", LessonLive.Form, :edit
+
+      live "/classrooms", ClassroomLive.Index
+      live "/classrooms/:id", ClassroomLive.Show
     end
   end
 

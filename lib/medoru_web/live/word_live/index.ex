@@ -12,7 +12,7 @@ defmodule MedoruWeb.WordLive.Index do
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
-    
+
     # Get learned word IDs if user is logged in
     learned_word_ids =
       if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
@@ -20,9 +20,10 @@ defmodule MedoruWeb.WordLive.Index do
       else
         []
       end
-    
-    {:ok, socket 
-     |> assign(:difficulty, 5) 
+
+    {:ok,
+     socket
+     |> assign(:difficulty, 5)
      |> assign(:locale, locale)
      |> assign(:learned_word_ids, learned_word_ids)}
   end

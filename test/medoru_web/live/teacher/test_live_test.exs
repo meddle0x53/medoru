@@ -22,10 +22,10 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
     end
 
     test "student cannot access teacher test index", %{conn: conn, student: student} do
-      {:error, {:live_redirect, %{to: "/", flash: flash}}} =
+      {:error, {:redirect, %{to: "/dashboard", flash: flash}}} =
         conn |> log_in_user(student) |> live(~p"/teacher/tests")
 
-      assert flash["error"] == "Only teachers can manage tests."
+      assert flash["error"] == "You must be a teacher to access this page."
     end
 
     test "teacher can create a new test", %{conn: conn, teacher: teacher} do

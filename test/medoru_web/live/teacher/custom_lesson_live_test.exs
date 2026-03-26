@@ -22,10 +22,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
     end
 
     test "student cannot access custom lessons", %{conn: conn, student: student} do
-      {:error, {:live_redirect, %{to: "/classrooms", flash: flash}}} =
+      {:error, {:redirect, %{to: "/dashboard", flash: flash}}} =
         conn |> log_in_user(student) |> live(~p"/teacher/custom-lessons")
 
-      assert flash["error"] == "Only teachers can access this page."
+      assert flash["error"] == "You must be a teacher to access this page."
     end
 
     test "teacher can create a custom lesson", %{conn: conn, teacher: teacher} do

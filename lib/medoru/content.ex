@@ -43,6 +43,22 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns the list of kanji filtered by Japanese school grade level (1-6).
+
+  ## Examples
+
+      iex> list_kanji_by_school_level(1)
+      [%Kanji{}, ...]
+
+  """
+  def list_kanji_by_school_level(level) when level in 1..6 do
+    Kanji
+    |> where(school_level: ^level)
+    |> order_by([k], asc: k.school_level, asc: k.frequency)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single kanji by ID.
 
   Raises `Ecto.NoResultsError` if the Kanji does not exist.
@@ -1533,6 +1549,21 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Unarchives a custom lesson (restores to published status).
+
+  ## Examples
+
+      iex> unarchive_custom_lesson(custom_lesson)
+      {:ok, %CustomLesson{status: "published"}}
+
+  """
+  def unarchive_custom_lesson(%CustomLesson{} = custom_lesson) do
+    custom_lesson
+    |> CustomLesson.unarchive_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking custom lesson changes.
 
   ## Examples
@@ -1794,6 +1825,7 @@ defmodule Medoru.Content do
   """
   def list_classroom_custom_lessons(classroom_id, opts \\ []) do
     status = Keyword.get(opts, :status, "active")
+    include_archived = Keyword.get(opts, :include_archived, false)
 
     ClassroomCustomLesson
     |> where([ccl], ccl.classroom_id == ^classroom_id)
@@ -1802,6 +1834,14 @@ defmodule Medoru.Content do
         where(query, [ccl], ccl.status == ^status)
       else
         query
+      end
+    end)
+    |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
+    |> then(fn query ->
+      if include_archived do
+        query
+      else
+        where(query, [custom_lesson: cl], cl.status != "archived")
       end
     end)
     |> order_by([ccl], desc: ccl.published_at)

@@ -182,5 +182,129 @@ defmodule Medoru.Content.CustomLessonTest do
       membership = Classrooms.get_user_membership(classroom.id, student.id)
       assert membership.points == 3
     end
+
+    test "archive_custom_lesson/1 archives a lesson", %{teacher: teacher} do
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson to Archive",
+          creator_id: teacher.id
+        })
+
+      assert {:ok, archived} = Content.archive_custom_lesson(lesson)
+      assert archived.status == "archived"
+    end
+
+    test "unarchive_custom_lesson/1 restores an archived lesson to published", %{teacher: teacher} do
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson to Unarchive",
+          creator_id: teacher.id
+        })
+
+      # First archive it
+      assert {:ok, archived} = Content.archive_custom_lesson(lesson)
+      assert archived.status == "archived"
+
+      # Then unarchive it
+      assert {:ok, restored} = Content.unarchive_custom_lesson(archived)
+      assert restored.status == "published"
+    end
+
+    test "list_classroom_custom_lessons/1 excludes archived custom lessons by default", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      # Create active lesson
+      {:ok, active_lesson} =
+        Content.create_custom_lesson(%{
+          title: "Active Lesson",
+          creator_id: teacher.id
+        })
+
+      # Create lesson that will be archived
+      {:ok, archived_lesson} =
+        Content.create_custom_lesson(%{
+          title: "Archived Lesson",
+          creator_id: teacher.id
+        })
+
+      # Publish both to classroom
+      assert {:ok, _} =
+               Content.publish_lesson_to_classroom(active_lesson.id, classroom.id, teacher.id)
+
+      assert {:ok, _} =
+               Content.publish_lesson_to_classroom(archived_lesson.id, classroom.id, teacher.id)
+
+      # Archive one lesson
+      assert {:ok, _} = Content.archive_custom_lesson(archived_lesson)
+
+      # List classroom lessons - should only show active custom lesson
+      lessons = Content.list_classroom_custom_lessons(classroom.id)
+      assert length(lessons) == 1
+      assert hd(lessons).custom_lesson_id == active_lesson.id
+    end
+
+    test "list_classroom_custom_lessons/1 with include_archived: true shows all lessons", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      # Create active lesson
+      {:ok, active_lesson} =
+        Content.create_custom_lesson(%{
+          title: "Active Lesson",
+          creator_id: teacher.id
+        })
+
+      # Create lesson that will be archived
+      {:ok, archived_lesson} =
+        Content.create_custom_lesson(%{
+          title: "Archived Lesson",
+          creator_id: teacher.id
+        })
+
+      # Publish both to classroom
+      assert {:ok, _} =
+               Content.publish_lesson_to_classroom(active_lesson.id, classroom.id, teacher.id)
+
+      assert {:ok, _} =
+               Content.publish_lesson_to_classroom(archived_lesson.id, classroom.id, teacher.id)
+
+      # Archive one lesson
+      assert {:ok, _} = Content.archive_custom_lesson(archived_lesson)
+
+      # List classroom lessons with include_archived - should show both
+      lessons = Content.list_classroom_custom_lessons(classroom.id, include_archived: true)
+      assert length(lessons) == 2
+    end
+
+    test "list_teacher_custom_lessons/2 filters by status", %{teacher: teacher} do
+      # Create lessons with different statuses
+      {:ok, _draft} =
+        Content.create_custom_lesson(%{
+          title: "Draft Lesson",
+          creator_id: teacher.id,
+          status: "draft"
+        })
+
+      {:ok, _published} =
+        Content.create_custom_lesson(%{
+          title: "Published Lesson",
+          creator_id: teacher.id,
+          status: "published"
+        })
+
+      {:ok, _archived} =
+        Content.create_custom_lesson(%{
+          title: "Archived Lesson",
+          creator_id: teacher.id,
+          status: "archived"
+        })
+
+      # Test filtering by status
+      assert length(Content.list_teacher_custom_lessons(teacher.id)) == 3
+      assert length(Content.list_teacher_custom_lessons(teacher.id, status: "draft")) == 1
+      assert length(Content.list_teacher_custom_lessons(teacher.id, status: "published")) == 1
+      assert length(Content.list_teacher_custom_lessons(teacher.id, status: "archived")) == 1
+    end
   end
 end

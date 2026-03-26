@@ -67,7 +67,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
     else
       case Content.archive_custom_lesson(lesson) do
         {:ok, _} ->
-          lessons = Content.list_teacher_custom_lessons(user.id)
+          lessons =
+            case socket.assigns.current_filter do
+              "all" -> Content.list_teacher_custom_lessons(user.id)
+              status -> Content.list_teacher_custom_lessons(user.id, status: status)
+            end
 
           {:noreply,
            socket
@@ -76,6 +80,67 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to archive lesson."))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("unarchive", %{"id" => id}, socket) do
+    user = socket.assigns.current_scope.current_user
+    lesson = Content.get_custom_lesson!(id)
+
+    # Verify ownership
+    if lesson.creator_id != user.id do
+      {:noreply, put_flash(socket, :error, gettext("You can only unarchive your own lessons."))}
+    else
+      case Content.unarchive_custom_lesson(lesson) do
+        {:ok, _} ->
+          lessons =
+            case socket.assigns.current_filter do
+              "all" -> Content.list_teacher_custom_lessons(user.id)
+              status -> Content.list_teacher_custom_lessons(user.id, status: status)
+            end
+
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Lesson restored successfully."))
+           |> assign(:lessons, lessons)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to restore lesson."))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    user = socket.assigns.current_scope.current_user
+    lesson = Content.get_custom_lesson!(id)
+
+    # Verify ownership
+    if lesson.creator_id != user.id do
+      {:noreply, put_flash(socket, :error, gettext("You can only delete your own lessons."))}
+    else
+      # Only archived lessons can be deleted
+      if lesson.status != "archived" do
+        {:noreply, put_flash(socket, :error, gettext("Only archived lessons can be deleted."))}
+      else
+        case Content.delete_custom_lesson(lesson) do
+          {:ok, _} ->
+            lessons =
+              case socket.assigns.current_filter do
+                "all" -> Content.list_teacher_custom_lessons(user.id)
+                status -> Content.list_teacher_custom_lessons(user.id, status: status)
+              end
+
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Lesson deleted permanently."))
+             |> assign(:lessons, lessons)}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete lesson."))}
+        end
       end
     end
   end
@@ -217,7 +282,25 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                         <span class="hidden sm:inline">{gettext("Archive")}</span>
                       </button>
                     <% else %>
-                      <span class="text-sm text-secondary">{gettext("Archived")}</span>
+                      <button
+                        phx-click="unarchive"
+                        phx-value-id={lesson.id}
+                        class="btn btn-ghost btn-sm text-success flex-1 sm:flex-none"
+                      >
+                        <.icon name="hero-arrow-uturn-left" class="w-4 h-4 sm:mr-1" />
+                        <span class="hidden sm:inline">{gettext("Restore")}</span>
+                      </button>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={lesson.id}
+                        data-confirm={
+                          gettext("Permanently delete this lesson? This action cannot be undone.")
+                        }
+                        class="btn btn-ghost btn-sm text-error flex-1 sm:flex-none"
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4 sm:mr-1" />
+                        <span class="hidden sm:inline">{gettext("Delete")}</span>
+                      </button>
                     <% end %>
                   </div>
                 </div>

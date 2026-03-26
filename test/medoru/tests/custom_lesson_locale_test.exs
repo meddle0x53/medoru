@@ -195,37 +195,41 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
         })
 
       # Create words with images
-      word1 = word_fixture(%{
-        text: "りんご",
-        meaning: "apple",
-        reading: "りんご",
-        difficulty: 5,
-        image_path: "/uploads/word_images/apple.png"
-      })
+      word1 =
+        word_fixture(%{
+          text: "りんご",
+          meaning: "apple",
+          reading: "りんご",
+          difficulty: 5,
+          image_path: "/uploads/word_images/apple.png"
+        })
 
-      word2 = word_fixture(%{
-        text: "みかん",
-        meaning: "orange",
-        reading: "みかん",
-        difficulty: 5,
-        image_path: "/uploads/word_images/orange.png"
-      })
+      word2 =
+        word_fixture(%{
+          text: "みかん",
+          meaning: "orange",
+          reading: "みかん",
+          difficulty: 5,
+          image_path: "/uploads/word_images/orange.png"
+        })
 
-      word3 = word_fixture(%{
-        text: "バナナ",
-        meaning: "banana",
-        reading: "バナナ",
-        difficulty: 5,
-        image_path: "/uploads/word_images/banana.png"
-      })
+      word3 =
+        word_fixture(%{
+          text: "バナナ",
+          meaning: "banana",
+          reading: "バナナ",
+          difficulty: 5,
+          image_path: "/uploads/word_images/banana.png"
+        })
 
-      word4 = word_fixture(%{
-        text: "ぶどう",
-        meaning: "grape",
-        reading: "ぶどう",
-        difficulty: 5,
-        image_path: "/uploads/word_images/grape.png"
-      })
+      word4 =
+        word_fixture(%{
+          text: "ぶどう",
+          meaning: "grape",
+          reading: "ぶどう",
+          difficulty: 5,
+          image_path: "/uploads/word_images/grape.png"
+        })
 
       # Add words to lesson
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
@@ -258,7 +262,10 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
 
       # Verify image questions have image_options
       for step <- image_steps do
-        image_options = get_in(step.question_data, ["image_options"]) || get_in(step.question_data, [:image_options])
+        image_options =
+          get_in(step.question_data, ["image_options"]) ||
+            get_in(step.question_data, [:image_options])
+
         assert image_options != nil, "Image question should have image_options"
         assert length(image_options) >= 2, "Should have at least 2 image options"
       end
@@ -276,21 +283,23 @@ defmodule Medoru.Tests.CustomLessonLocaleTest do
           requires_test: true
         })
 
-      word1 = word_fixture(%{
-        text: "山",
-        meaning: "mountain",
-        reading: "やま",
-        difficulty: 5,
-        image_path: nil
-      })
+      word1 =
+        word_fixture(%{
+          text: "山",
+          meaning: "mountain",
+          reading: "やま",
+          difficulty: 5,
+          image_path: nil
+        })
 
-      word2 = word_fixture(%{
-        text: "川",
-        meaning: "river",
-        reading: "かわ",
-        difficulty: 5,
-        image_path: nil
-      })
+      word2 =
+        word_fixture(%{
+          text: "川",
+          meaning: "river",
+          reading: "かわ",
+          difficulty: 5,
+          image_path: nil
+        })
 
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})

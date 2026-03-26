@@ -88,6 +88,15 @@ defmodule Medoru.Content.CustomLesson do
   end
 
   @doc """
+  Changeset for unarchiving a lesson (restores to published status).
+  """
+  def unarchive_changeset(custom_lesson) do
+    custom_lesson
+    |> cast(%{status: "published"}, [:status])
+    |> validate_inclusion(:status, ["published"])
+  end
+
+  @doc """
   Changeset for updating word count.
   """
   def update_word_count_changeset(custom_lesson, count) do

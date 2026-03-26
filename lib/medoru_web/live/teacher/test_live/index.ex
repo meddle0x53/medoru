@@ -72,6 +72,32 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
   end
 
   @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    test = Tests.get_test!(id)
+    user = socket.assigns.current_user
+
+    # Verify ownership and archived status
+    if Tests.is_test_owner?(test, user.id) do
+      if test.setup_state == "archived" do
+        case Tests.delete_test(test) do
+          {:ok, _} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, gettext("Test deleted permanently."))
+             |> load_tests()}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to delete test."))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Only archived tests can be deleted."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("You can only delete your own tests."))}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
@@ -322,21 +348,45 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
         <div class="card-actions justify-end mt-4">
           <%= case @test.setup_state do %>
             <% "in_progress" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary btn-sm w-full sm:w-auto">
+              <.link
+                navigate={~p"/teacher/tests/#{@test.id}/edit"}
+                class="btn btn-primary btn-sm w-full sm:w-auto"
+              >
                 <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Continue Editing")}
               </.link>
             <% "ready" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-primary btn-sm w-full sm:w-auto">
+              <.link
+                navigate={~p"/teacher/tests/#{@test.id}"}
+                class="btn btn-primary btn-sm w-full sm:w-auto"
+              >
                 <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Review & Publish")}
               </.link>
             <% "published" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-success btn-sm w-full sm:w-auto">
+              <.link
+                navigate={~p"/teacher/tests/#{@test.id}"}
+                class="btn btn-success btn-sm w-full sm:w-auto"
+              >
                 <.icon name="hero-chart-bar" class="w-4 h-4 mr-1" /> {gettext("View Results")}
               </.link>
             <% "archived" -> %>
-              <.link navigate={~p"/teacher/tests/#{@test.id}"} class="btn btn-ghost btn-sm w-full sm:w-auto">
-                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
-              </.link>
+              <div class="flex gap-2 w-full">
+                <.link
+                  navigate={~p"/teacher/tests/#{@test.id}"}
+                  class="btn btn-ghost btn-sm flex-1"
+                >
+                  <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
+                </.link>
+                <button
+                  phx-click="delete"
+                  phx-value-id={@test.id}
+                  data-confirm={
+                    gettext("Permanently delete this test? This action cannot be undone.")
+                  }
+                  class="btn btn-error btn-sm flex-1"
+                >
+                  <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Delete")}
+                </button>
+              </div>
           <% end %>
         </div>
       </div>

@@ -13,7 +13,7 @@
     <%!-- Daily Goal Card --%>
     <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-8">
       <div class="card-body">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div class="flex items-center gap-4">
             <%!-- Default values when daily_stats is nil --%>
             <% studied_today = @daily_stats && @daily_stats.studied_today %>
@@ -51,7 +51,7 @@
           <.link
             navigate={~p"/daily-test"}
             class={[
-              "btn btn-lg h-auto py-3 px-4 sm:px-6 min-w-fit whitespace-normal text-center leading-tight",
+              "btn btn-lg h-auto py-3 px-6 min-w-fit whitespace-normal text-center leading-tight w-full sm:w-auto",
               if(studied_today, do: "btn-outline btn-success", else: "btn-primary")
             ]}
           >
@@ -129,7 +129,7 @@
     </div>
 
     <%!-- Quick Actions --%>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
       <.action_card
         title={gettext("Continue Learning")}
         description={gettext("Pick up where you left off with your lessons.")}

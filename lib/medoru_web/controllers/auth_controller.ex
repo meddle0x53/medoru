@@ -13,38 +13,48 @@ defmodule MedoruWeb.AuthController do
   Handles the OAuth callback from Google.
   """
   def callback(%{assigns: %{ueberauth_auth: auth}} = conn, _params) do
-    user_params = %{
-      email: auth.info.email,
-      provider: "google",
-      provider_uid: auth.uid,
-      name: auth.info.name,
-      avatar_url: auth.info.image
-    }
+    # Guard against missing email from OAuth provider
+    if is_nil(auth.info.email) do
+      conn
+      |> put_flash(
+        :error,
+        "Email is required to create an account. Please ensure you grant email access during Google sign-in."
+      )
+      |> redirect(to: ~p"/")
+    else
+      user_params = %{
+        email: auth.info.email,
+        provider: "google",
+        provider_uid: auth.uid,
+        name: auth.info.name,
+        avatar_url: auth.info.image
+      }
 
-    case Accounts.get_user_by_provider_uid("google", auth.uid) do
-      nil ->
-        # New user - register them
-        case Accounts.register_user_with_oauth(user_params) do
-          {:ok, %User{} = user} ->
-            conn
-            |> put_flash(:info, "Welcome to Medoru, #{user.name || user.email}!")
-            |> put_session(:user_id, user.id)
-            |> configure_session(renew: true)
-            |> redirect(to: ~p"/dashboard")
+      case Accounts.get_user_by_provider_uid("google", auth.uid) do
+        nil ->
+          # New user - register them
+          case Accounts.register_user_with_oauth(user_params) do
+            {:ok, %User{} = user} ->
+              conn
+              |> put_flash(:info, "Welcome to Medoru, #{user.name || user.email}!")
+              |> put_session(:user_id, user.id)
+              |> configure_session(renew: true)
+              |> redirect(to: ~p"/dashboard")
 
-          {:error, %Ecto.Changeset{} = changeset} ->
-            conn
-            |> put_flash(:error, "Could not create account: #{inspect_errors(changeset)}")
-            |> redirect(to: ~p"/")
-        end
+            {:error, %Ecto.Changeset{} = changeset} ->
+              conn
+              |> put_flash(:error, "Could not create account: #{inspect_errors(changeset)}")
+              |> redirect(to: ~p"/")
+          end
 
-      %User{} = user ->
-        # Existing user - log them in
-        conn
-        |> put_flash(:info, "Welcome back, #{user.name || user.email}!")
-        |> put_session(:user_id, user.id)
-        |> configure_session(renew: true)
-        |> redirect(to: ~p"/dashboard")
+        %User{} = user ->
+          # Existing user - log them in
+          conn
+          |> put_flash(:info, "Welcome back, #{user.name || user.email}!")
+          |> put_session(:user_id, user.id)
+          |> configure_session(renew: true)
+          |> redirect(to: ~p"/dashboard")
+      end
     end
   end
 

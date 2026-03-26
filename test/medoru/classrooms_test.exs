@@ -303,6 +303,87 @@ defmodule Medoru.ClassroomsTest do
     end
   end
 
+  describe "delete_classroom/1" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      {:ok, teacher: teacher}
+    end
+
+    test "deletes an archived classroom permanently", %{teacher: teacher} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      {:ok, archived} = Classrooms.archive_classroom(classroom)
+
+      assert {:ok, %Classroom{}} = Classrooms.delete_classroom(archived)
+      assert_raise Ecto.NoResultsError, fn -> Classrooms.get_classroom!(classroom.id) end
+    end
+
+    test "returns error when trying to delete non-archived classroom", %{teacher: teacher} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id, status: :active})
+
+      assert {:error, :not_archived} = Classrooms.delete_classroom(classroom)
+      # Classroom still exists
+      assert Classrooms.get_classroom!(classroom.id).id == classroom.id
+    end
+
+    test "returns error when trying to delete closed classroom", %{teacher: teacher} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      {:ok, closed} = Classrooms.close_classroom(classroom)
+
+      assert {:error, :not_archived} = Classrooms.delete_classroom(closed)
+    end
+  end
+
+  describe "list_all_classrooms/0" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      {:ok, teacher: teacher}
+    end
+
+    test "lists all classrooms including archived", %{teacher: teacher} do
+      active = classroom_fixture(%{teacher_id: teacher.id, name: "Active Classroom"})
+      closed = classroom_fixture(%{teacher_id: teacher.id, name: "Closed Classroom"})
+      {:ok, _} = Classrooms.close_classroom(closed)
+      archived = classroom_fixture(%{teacher_id: teacher.id, name: "Archived Classroom"})
+      {:ok, _} = Classrooms.archive_classroom(archived)
+
+      classrooms = Classrooms.list_all_classrooms()
+      ids = Enum.map(classrooms, & &1.id)
+
+      assert active.id in ids
+      assert closed.id in ids
+      assert archived.id in ids
+    end
+
+    test "filters by status", %{teacher: teacher} do
+      active = classroom_fixture(%{teacher_id: teacher.id, name: "Active Classroom"})
+      archived = classroom_fixture(%{teacher_id: teacher.id, name: "Archived Classroom"})
+      {:ok, _} = Classrooms.archive_classroom(archived)
+
+      active_classrooms = Classrooms.list_all_classrooms(status: :active)
+      assert length(active_classrooms) >= 1
+      assert active.id in Enum.map(active_classrooms, & &1.id)
+      refute archived.id in Enum.map(active_classrooms, & &1.id)
+
+      archived_classrooms = Classrooms.list_all_classrooms(status: :archived)
+      assert archived.id in Enum.map(archived_classrooms, & &1.id)
+      refute active.id in Enum.map(archived_classrooms, & &1.id)
+    end
+
+    test "filters by teacher_id", %{teacher: teacher} do
+      other_teacher = user_fixture(%{type: "teacher"})
+      teacher_classroom = classroom_fixture(%{teacher_id: teacher.id, name: "Teacher Classroom"})
+
+      other_classroom =
+        classroom_fixture(%{teacher_id: other_teacher.id, name: "Other Classroom"})
+
+      teacher_classrooms = Classrooms.list_all_classrooms(teacher_id: teacher.id)
+      ids = Enum.map(teacher_classrooms, & &1.id)
+
+      assert teacher_classroom.id in ids
+      refute other_classroom.id in ids
+    end
+  end
+
   # Helper function
   defp classroom_fixture(attrs) do
     teacher_id = attrs[:teacher_id] || user_fixture(%{type: "teacher"}).id

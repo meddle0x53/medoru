@@ -460,10 +460,14 @@ defmodule MedoruWeb.Layouts do
                 </li>
                 <li>
                   <.link
-                    navigate={~p"/settings/daily-test-preferences?#{locale_qs(@current_scope[:locale])}"}
+                    navigate={
+                      ~p"/settings/daily-test-preferences?#{locale_qs(@current_scope[:locale])}"
+                    }
                     class="flex items-center gap-2"
                   >
-                    <.icon name="hero-clipboard-document-check" class="w-4 h-4" /> {gettext("Daily Test")}
+                    <.icon name="hero-clipboard-document-check" class="w-4 h-4" /> {gettext(
+                      "Daily Test"
+                    )}
                   </.link>
                 </li>
                 <div class="divider my-1"></div>
@@ -567,7 +571,10 @@ defmodule MedoruWeb.Layouts do
               phx-click-away={JS.hide(to: "#mobile-nav-drawer-anon")}
             >
               <%!-- Backdrop --%>
-              <div class="absolute inset-0 bg-black/50" phx-click={JS.hide(to: "#mobile-nav-drawer-anon")}>
+              <div
+                class="absolute inset-0 bg-black/50"
+                phx-click={JS.hide(to: "#mobile-nav-drawer-anon")}
+              >
               </div>
 
               <%!-- Drawer Panel --%>

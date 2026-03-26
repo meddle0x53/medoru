@@ -529,7 +529,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
               <%= if @current_step.question_type == :multichoice do %>
                 <% is_image_question = @current_step.question_data["type"] == "image_to_meaning" %>
                 <% image_options = @current_step.question_data["image_options"] %>
-                
+
                 <%!-- Answer Options for Multichoice --%>
                 <div class={[
                   "mb-6",
@@ -541,7 +541,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
                 ]}>
                   <%= for {option, index} <- Enum.with_index(@current_step.options) do %>
                     <% is_selected = @selected_answer == option %>
-                    <% image_data = if is_image_question, do: Enum.at(image_options || [], index), else: nil %>
+                    <% image_data =
+                      if is_image_question, do: Enum.at(image_options || [], index), else: nil %>
                     <% question_type = @current_step.question_data["type"] %>
                     <% display_option =
                       if question_type in ["word_to_meaning", "image_to_meaning"] do
@@ -549,7 +550,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                       else
                         option
                       end %>
-                    
+
                     <button
                       type="button"
                       phx-click="select_answer"
@@ -586,10 +587,12 @@ defmodule MedoruWeb.LessonTestLive.Show do
                           />
                         <% else %>
                           <div class="w-full h-full flex items-center justify-center bg-base-200">
-                            <span class="text-secondary text-sm text-center px-2">{display_option}</span>
+                            <span class="text-secondary text-sm text-center px-2">
+                              {display_option}
+                            </span>
                           </div>
                         <% end %>
-                        
+
                         <%!-- Selection Indicator --%>
                         <div class={[
                           "absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center bg-white/90 backdrop-blur",
@@ -612,7 +615,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                               "border-primary bg-primary"
                             else
                               "border-base-300"
-                          end
+                            end
                           ]}>
                             <%= if is_selected do %>
                               <div class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white"></div>

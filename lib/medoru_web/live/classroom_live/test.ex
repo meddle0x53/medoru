@@ -560,24 +560,36 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   # Calculate writing score based on time and stroke count
   # Wrong answer = 0 points
-  # Correct answer = 5 points with time decay based on stroke count
+  # Correct answer = up to 5 points with gentle time decay based on stroke count
   defp calculate_writing_score(step, time_spent_seconds) do
     # Get stroke count from step data
     stroke_count = step.question_data["stroke_count"] || 4
 
-    # Determine decay interval based on stroke count (more generous timing)
-    interval_seconds =
+    # Base time limits for full 5 points (generous baseline)
+    # Simple kanji (1-4 strokes): 15 seconds for full points
+    # Medium kanji (5-8 strokes): 25 seconds for full points
+    # Complex kanji (9-12 strokes): 35 seconds for full points
+    # Very complex (13-17 strokes): 45 seconds for full points
+    # Extreme (18+ strokes): 60 seconds for full points
+    base_time =
       cond do
-        stroke_count <= 4 -> 8
-        stroke_count <= 8 -> 12
-        stroke_count <= 12 -> 15
-        stroke_count <= 17 -> 20
-        true -> 30
+        stroke_count <= 4 -> 15
+        stroke_count <= 8 -> 25
+        stroke_count <= 12 -> 35
+        stroke_count <= 17 -> 45
+        true -> 60
       end
 
-    # Calculate points: 5 - (time_spent / interval), minimum 0
-    points = 5 - div(time_spent_seconds, interval_seconds)
-    max(points, 0)
+    # Calculate score with gentle decay
+    # Full points if within base_time
+    # -1 point for each additional base_time period
+    # Minimum 3 points for any correct answer (was 0, now ensures recognition)
+    cond do
+      time_spent_seconds <= base_time -> 5
+      time_spent_seconds <= base_time * 2 -> 4
+      time_spent_seconds <= base_time * 3 -> 3
+      true -> 3
+    end
   end
 
   defp complete_test(socket, session_id, attempt_id) do

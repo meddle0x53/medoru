@@ -11,17 +11,46 @@ defmodule MedoruWeb.SettingsLive.DailyTestPreferences do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    profile = Accounts.get_user_profile(user.id) || %{daily_test_step_types: ["word_to_meaning", "word_to_reading", "reading_text"]}
 
-    selected_types = profile.daily_test_step_types || ["word_to_meaning", "word_to_reading", "reading_text"]
+    profile =
+      Accounts.get_user_profile(user.id) ||
+        %{daily_test_step_types: ["word_to_meaning", "word_to_reading", "reading_text"]}
+
+    selected_types =
+      profile.daily_test_step_types || ["word_to_meaning", "word_to_reading", "reading_text"]
 
     # Define step types at runtime so gettext uses the correct locale
     available_step_types = [
-      %{id: "word_to_meaning", label: gettext("Word to Meaning"), icon: "hero-book-open", description: gettext("Show a Japanese word and select the English meaning")},
-      %{id: "word_to_reading", label: gettext("Word to Reading"), icon: "hero-language", description: gettext("Show a Japanese word and select the hiragana reading")},
-      %{id: "reading_text", label: gettext("Type Meaning & Reading"), icon: "hero-pencil", description: gettext("Type both the English meaning and hiragana reading")},
-      %{id: "image_to_meaning", label: gettext("Image to Meaning"), icon: "hero-photo", description: gettext("Show a Japanese word and select from image options")},
-      %{id: "kanji_writing", label: gettext("Kanji Writing"), icon: "hero-paint-brush", description: gettext("Draw kanji with correct stroke order (3 points)")}
+      %{
+        id: "word_to_meaning",
+        label: gettext("Word to Meaning"),
+        icon: "hero-book-open",
+        description: gettext("Show a Japanese word and select the English meaning")
+      },
+      %{
+        id: "word_to_reading",
+        label: gettext("Word to Reading"),
+        icon: "hero-language",
+        description: gettext("Show a Japanese word and select the hiragana reading")
+      },
+      %{
+        id: "reading_text",
+        label: gettext("Type Meaning & Reading"),
+        icon: "hero-pencil",
+        description: gettext("Type both the English meaning and hiragana reading")
+      },
+      %{
+        id: "image_to_meaning",
+        label: gettext("Image to Meaning"),
+        icon: "hero-photo",
+        description: gettext("Show a Japanese word and select from image options")
+      },
+      %{
+        id: "kanji_writing",
+        label: gettext("Kanji Writing"),
+        icon: "hero-paint-brush",
+        description: gettext("Draw kanji with correct stroke order (3 points)")
+      }
     ]
 
     {:ok,
@@ -111,7 +140,10 @@ defmodule MedoruWeb.SettingsLive.DailyTestPreferences do
                 >
                   <div class={[
                     "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                    if(is_selected, do: "bg-primary text-primary-content", else: "bg-base-200 text-secondary")
+                    if(is_selected,
+                      do: "bg-primary text-primary-content",
+                      else: "bg-base-200 text-secondary"
+                    )
                   ]}>
                     <.icon name={step_type.icon} class="w-5 h-5" />
                   </div>
@@ -169,7 +201,9 @@ defmodule MedoruWeb.SettingsLive.DailyTestPreferences do
                 <div class="text-sm text-info-content">
                   <p class="font-medium mb-1">{gettext("How this works:")}</p>
                   <p>
-                    {gettext("Your daily test will randomly select from your chosen question types. New words will start with easier question types, while review words include more challenging ones based on your progress.")}
+                    {gettext(
+                      "Your daily test will randomly select from your chosen question types. New words will start with easier question types, while review words include more challenging ones based on your progress."
+                    )}
                   </p>
                 </div>
               </div>

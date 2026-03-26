@@ -12,6 +12,8 @@ defmodule Medoru.Content.Kanji do
     field :meanings, {:array, :string}
     field :stroke_count, :integer
     field :jlpt_level, :integer
+    # Japanese school level (1-6 = Elementary, 7 = Junior High)
+    field :school_level, :integer
     field :stroke_data, :map, default: %{}
     field :radicals, {:array, :string}, default: []
     field :frequency, :integer
@@ -33,6 +35,7 @@ defmodule Medoru.Content.Kanji do
       :meanings,
       :stroke_count,
       :jlpt_level,
+      :school_level,
       :stroke_data,
       :radicals,
       :frequency,
@@ -43,6 +46,7 @@ defmodule Medoru.Content.Kanji do
     |> validate_kanji_character()
     |> validate_number(:stroke_count, greater_than: 0)
     |> validate_number(:jlpt_level, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
+    |> validate_number(:school_level, greater_than_or_equal_to: 1, less_than_or_equal_to: 7)
     |> unique_constraint(:character)
   end
 

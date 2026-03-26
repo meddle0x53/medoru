@@ -117,7 +117,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         :order_index,
         :step_type,
         :question_type,
-        :points
+        :points,
+        :kanji_id,
+        :word_id
       ])
 
     socket =
@@ -714,6 +716,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       socket
       |> assign(:step_changeset, changeset)
       |> assign(:step_form, to_form(changeset, as: :step))
+      |> assign(:selected_word, word)
       |> assign(:word_search_query, "")
       |> assign(:available_words, [])
       |> assign(:search_type, nil)
@@ -883,9 +886,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     # Build readings display for explanation
     readings_text =
       case {on_readings, kun_readings} do
-        {[], []} -> ""
-        {on, []} -> gettext("On: %{readings}", readings: Enum.join(on, ", "))
-        {[], kun} -> gettext("Kun: %{readings}", readings: Enum.join(kun, ", "))
+        {[], []} ->
+          ""
+
+        {on, []} ->
+          gettext("On: %{readings}", readings: Enum.join(on, ", "))
+
+        {[], kun} ->
+          gettext("Kun: %{readings}", readings: Enum.join(kun, ", "))
+
         {on, kun} ->
           gettext("On: %{on_readings}, Kun: %{kun_readings}",
             on_readings: Enum.join(on, ", "),
@@ -927,6 +936,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      socket
      |> assign(:step_changeset, changeset)
      |> assign(:step_form, to_form(changeset, as: :step))
+     |> assign(:selected_kanji, kanji)
      |> assign(:kanji_search_query, "")
      |> assign(:available_kanji, [])}
   end
@@ -1040,11 +1050,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 class="space-y-6"
               >
                 <%!-- Hidden fields --%>
+                <% kanji_id = @selected_kanji && @selected_kanji.id %>
+                <% word_id = @selected_word && @selected_word.id %>
                 <input type="hidden" name="step[question_type]" value={@step_type} />
                 <input type="hidden" name="step[step_type]" value="vocabulary" />
                 <input type="hidden" name="step[points]" value={TestStep.default_points(@step_type)} />
-                <input type="hidden" name="step[kanji_id]" value={@step_form[:kanji_id].value} />
-                <input type="hidden" name="step[word_id]" value={@step_form[:word_id].value} />
+                <input type="hidden" name="step[kanji_id]" value={kanji_id} />
+                <input type="hidden" name="step[word_id]" value={word_id} />
 
                 <%!-- Question --%>
                 <div>
@@ -1151,7 +1163,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
                             <.icon name="hero-exclamation-triangle" class="w-6 h-6 text-error mb-2" />
                             <p class="text-sm text-error">
-                              {gettext("This kanji doesn't have stroke data. Writing validation will not work for this step.")}
+                              {gettext(
+                                "This kanji doesn't have stroke data. Writing validation will not work for this step."
+                              )}
                             </p>
                           </div>
                         <% end %>
@@ -1295,7 +1309,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                               placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
                             />
                             <p class="text-xs text-secondary mt-1">
-                              {gettext("Default from word database. Edit if you want a different reading accepted.")}
+                              {gettext(
+                                "Default from word database. Edit if you want a different reading accepted."
+                              )}
                             </p>
                           </div>
                         <% end %>
@@ -1403,7 +1419,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                                 class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors flex items-center gap-3"
                               >
                                 <%= if word.image_path do %>
-                                  <img src={word.image_path} alt={word.text} class="w-10 h-10 object-cover rounded" />
+                                  <img
+                                    src={word.image_path}
+                                    alt={word.text}
+                                    class="w-10 h-10 object-cover rounded"
+                                  />
                                 <% end %>
                                 <div>
                                   <span class="font-medium">{word.text}</span>

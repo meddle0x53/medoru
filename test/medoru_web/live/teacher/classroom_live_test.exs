@@ -21,16 +21,15 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert has_element?(view, "a", "Create Classroom")
     end
 
-    # Note: This test documents a known issue - teacher routes don't have
-    # proper authorization checks. Students can currently access teacher routes.
-    # This should be fixed by adding require_teacher checks to the router.
-    test "student currently CAN access teacher classroom index (known issue)", %{
+    test "student cannot access teacher classroom index", %{
       conn: conn,
       student: student
     } do
-      # Currently students can access this route - this documents the bug
-      {:ok, _view, html} = conn |> log_in_user(student) |> live(~p"/teacher/classrooms")
-      assert html =~ "My Classrooms"
+      # Students are redirected to dashboard with an error message
+      {:error, {:redirect, %{to: "/dashboard", flash: flash}}} =
+        conn |> log_in_user(student) |> live(~p"/teacher/classrooms")
+
+      assert flash["error"] == "You must be a teacher to access this page."
     end
 
     test "admin can access classroom index", %{conn: conn, admin: admin} do

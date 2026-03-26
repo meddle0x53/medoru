@@ -29,6 +29,14 @@
               <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
                 JLPT N{@kanji.jlpt_level}
               </span>
+              <%= if @kanji.school_level do %>
+                <.link
+                  navigate={~p"/kanji?sl=#{@kanji.school_level}"}
+                  class="bg-secondary/20 text-secondary/80 px-3 py-1 rounded-full text-sm font-medium hover:bg-secondary/30 transition-colors"
+                >
+                  SL{@kanji.school_level}
+                </.link>
+              <% end %>
               <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
                 {@kanji.stroke_count} {gettext("strokes")}
               </span>
