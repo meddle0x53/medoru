@@ -402,8 +402,14 @@ defmodule MedoruWeb.DailyTestLive do
 
   # Private functions
 
-  defp handle_correct_answer(socket, _step) do
+  defp handle_correct_answer(socket, step) do
     session = socket.assigns.session
+    user_id = socket.assigns.current_scope.current_user.id
+
+    # Update mastery level for the word
+    if step.word_id do
+      Learning.adjust_word_mastery(user_id, step.word_id, :correct)
+    end
 
     # Calculate score so far
     {_score, _total} = Tests.calculate_session_score(session.id)
@@ -463,6 +469,12 @@ defmodule MedoruWeb.DailyTestLive do
 
   defp handle_incorrect_answer(socket, step) do
     session = socket.assigns.session
+    user_id = socket.assigns.current_scope.current_user.id
+
+    # Update mastery level for the word (decrease)
+    if step.word_id do
+      Learning.adjust_word_mastery(user_id, step.word_id, :incorrect)
+    end
 
     # Still advance to next step
     next_step = get_next_step(session, step)

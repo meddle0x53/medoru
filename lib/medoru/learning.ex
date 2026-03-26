@@ -300,7 +300,7 @@ defmodule Medoru.Learning do
   @doc """
   Tracks that a user has learned a kanji.
 
-  Creates a new user_progress record with mastery_level 0 (New).
+  Creates a new user_progress record with mastery_level 1 (just learned).
   If the user has already learned this kanji, returns the existing progress.
 
   ## Examples
@@ -315,7 +315,7 @@ defmodule Medoru.Learning do
         attrs = %{
           user_id: user_id,
           kanji_id: kanji_id,
-          mastery_level: 0,
+          mastery_level: 1,
           times_reviewed: 0
         }
 
@@ -339,7 +339,7 @@ defmodule Medoru.Learning do
   @doc """
   Tracks that a user has learned a word.
 
-  Creates a new user_progress record with mastery_level 0 (New).
+  Creates a new user_progress record with mastery_level 1 (just learned).
   If the user has already learned this word, returns the existing progress.
 
   ## Examples
@@ -354,7 +354,7 @@ defmodule Medoru.Learning do
         attrs = %{
           user_id: user_id,
           word_id: word_id,
-          mastery_level: 0,
+          mastery_level: 1,
           times_reviewed: 0
         }
 
@@ -565,6 +565,199 @@ defmodule Medoru.Learning do
   end
 
   # ============================================================================
+  # Unlearn (Remove Progress)
+  # ============================================================================
+
+  @doc """
+  Unlearns a kanji for a user by removing their progress record.
+  Also removes any associated review schedules.
+
+  ## Examples
+
+      iex> unlearn_kanji(user_id, kanji_id)
+      {:ok, %UserProgress{}}
+
+      iex> unlearn_kanji(user_id, not_learned_kanji_id)
+      {:error, :not_learned}
+
+  """
+  def unlearn_kanji(user_id, kanji_id) do
+    case get_kanji_progress(user_id, kanji_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        # First delete any review schedules
+        ReviewSchedule
+        |> where([rs], rs.user_progress_id == ^progress.id)
+        |> Repo.delete_all()
+
+        # Then delete the progress record
+        Repo.delete(progress)
+    end
+  end
+
+  @doc """
+  Unlearns a word for a user by removing their progress record.
+  Also removes any associated review schedules.
+
+  ## Examples
+
+      iex> unlearn_word(user_id, word_id)
+      {:ok, %UserProgress{}}
+
+      iex> unlearn_word(user_id, not_learned_word_id)
+      {:error, :not_learned}
+
+  """
+  def unlearn_word(user_id, word_id) do
+    case get_word_progress(user_id, word_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        # First delete any review schedules
+        ReviewSchedule
+        |> where([rs], rs.user_progress_id == ^progress.id)
+        |> Repo.delete_all()
+
+        # Then delete the progress record
+        Repo.delete(progress)
+    end
+  end
+
+  # ============================================================================
+  # Mastery Level Management (for Daily Test)
+  # ============================================================================
+
+  @doc """
+  Adjusts mastery level for a word based on test performance.
+  - Correct answer: +1 (max 5)
+  - Wrong answer: -1 (min 1)
+
+  ## Examples
+
+      iex> adjust_word_mastery(user_id, word_id, :correct)
+      {:ok, %UserProgress{mastery_level: 2}}
+
+      iex> adjust_word_mastery(user_id, word_id, :incorrect)
+      {:ok, %UserProgress{mastery_level: 1}}
+
+  """
+  def adjust_word_mastery(user_id, word_id, result) when result in [:correct, :incorrect] do
+    case get_word_progress(user_id, word_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        new_level =
+          case result do
+            :correct -> min(progress.mastery_level + 1, 5)
+            :incorrect -> max(progress.mastery_level - 1, 1)
+          end
+
+        progress
+        |> UserProgress.changeset(%{
+          mastery_level: new_level,
+          times_reviewed: progress.times_reviewed + 1,
+          last_reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Adjusts mastery level for a kanji based on test performance.
+  - Correct answer: +1 (max 5)
+  - Wrong answer: -1 (min 1)
+
+  ## Examples
+
+      iex> adjust_kanji_mastery(user_id, kanji_id, :correct)
+      {:ok, %UserProgress{mastery_level: 2}}
+
+      iex> adjust_kanji_mastery(user_id, kanji_id, :incorrect)
+      {:ok, %UserProgress{mastery_level: 1}}
+
+  """
+  def adjust_kanji_mastery(user_id, kanji_id, result) when result in [:correct, :incorrect] do
+    case get_kanji_progress(user_id, kanji_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        new_level =
+          case result do
+            :correct -> min(progress.mastery_level + 1, 5)
+            :incorrect -> max(progress.mastery_level - 1, 1)
+          end
+
+        progress
+        |> UserProgress.changeset(%{
+          mastery_level: new_level,
+          times_reviewed: progress.times_reviewed + 1,
+          last_reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        })
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Gets words for daily test, prioritized by lowest mastery level first.
+  Only includes words that:
+  1. Have been reviewed at least once (times_reviewed > 0), OR
+  2. Belong to a completed lesson
+
+  Words from incomplete lessons that were just "tracked" but never reviewed
+  through a test are excluded.
+
+  ## Options
+    * `:limit` - Maximum number of words to return (default: 10)
+    * `:exclude_word_ids` - List of word IDs to exclude
+
+  ## Examples
+
+      iex> get_words_for_daily_test(user_id, limit: 10)
+      [%UserProgress{word: %Word{}, mastery_level: 1}, ...]
+
+  """
+  def get_words_for_daily_test(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+    exclude_ids = Keyword.get(opts, :exclude_word_ids, [])
+
+    # Get word IDs from completed lessons
+    completed_lesson_word_ids =
+      from(lw in "lesson_words",
+        join: lp in LessonProgress,
+        on: lp.lesson_id == lw.lesson_id,
+        where: lp.user_id == ^user_id and lp.status == :completed,
+        select: lw.word_id
+      )
+
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
+    # Only include words that have been reviewed OR are from completed lessons
+    # Note: mastery_level >= 1 alone is NOT enough - must be reviewed or from completed lesson
+    |> where([up], 
+      up.times_reviewed > 0 or 
+        up.word_id in subquery(completed_lesson_word_ids)
+    )
+    # Exclude specific word IDs if provided
+    |> then(fn query ->
+      if exclude_ids != [] do
+        where(query, [up], up.word_id not in ^exclude_ids)
+      else
+        query
+      end
+    end)
+    # Order by mastery level (lowest first), then by last reviewed (oldest first)
+    |> order_by([up], asc: up.mastery_level, asc: coalesce(up.last_reviewed_at, up.inserted_at))
+    |> preload(:word)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  # ============================================================================
   # Statistics
   # ============================================================================
 
@@ -577,7 +770,7 @@ defmodule Medoru.Learning do
       %{
         total_kanji_learned: 10,
         total_words_learned: 20,
-        kanji_by_mastery: %{0 => 5, 1 => 3, 2 => 2, 3 => 0, 4 => 0},
+        kanji_by_mastery: %{0 => 5, 1 => 3, 2 => 2, 3 => 0, 4 => 0, 5 => 0},
         lessons_started: 2,
         lessons_completed: 1
       }
@@ -593,8 +786,8 @@ defmodule Medoru.Learning do
       |> Enum.group_by(& &1.mastery_level)
       |> Map.new(fn {level, items} -> {level, length(items)} end)
       |> then(fn map ->
-        # Ensure all levels 0-4 are present
-        Map.merge(%{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0}, map)
+        # Ensure all levels 0-5 are present
+        Map.merge(%{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0}, map)
       end)
 
     %{

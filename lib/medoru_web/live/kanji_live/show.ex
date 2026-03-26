@@ -99,6 +99,33 @@ defmodule MedoruWeb.KanjiLive.Show do
   end
 
   @impl true
+  def handle_event("unlearn_kanji", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      user_id = socket.assigns.current_scope.current_user.id
+      kanji = socket.assigns.kanji
+
+      case Learning.unlearn_kanji(user_id, kanji.id) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:kanji_learned, false)
+           |> put_flash(:info, gettext("%{kanji} removed from learned list.", kanji: kanji.character))}
+
+        {:error, :not_learned} ->
+          {:noreply,
+           socket
+           |> assign(:kanji_learned, false)
+           |> put_flash(:error, gettext("Kanji was not learned."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not unlearn kanji."))}
+      end
+    else
+      {:noreply, push_navigate(socket, to: ~p"/")}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_writing_practice", params, socket) do
     # Reset completed state when explicitly starting practice (not just toggling)
     reset = params["reset"] == "true"

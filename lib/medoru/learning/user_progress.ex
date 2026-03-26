@@ -36,7 +36,7 @@ defmodule Medoru.Learning.UserProgress do
     ])
     |> validate_required([:user_id])
     |> validate_exactly_one_content()
-    |> validate_number(:mastery_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 4)
+    |> validate_number(:mastery_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 5)
     |> validate_number(:times_reviewed, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:kanji_id)

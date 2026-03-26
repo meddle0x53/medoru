@@ -15,12 +15,27 @@ defmodule MedoruWeb.KanjiLive.Index do
      |> assign(:filter_type, :jlpt)
      |> assign(:jlpt_level, 5)
      |> assign(:school_level, nil)
+     |> assign(:search_query, "")
      |> assign(:locale, locale)}
   end
 
   @impl true
   def handle_params(params, _url, socket) do
     cond do
+      # Search query
+      params["q"] not in [nil, ""] ->
+        query = String.trim(params["q"])
+        kanji_list = Content.search_kanji_localized(query, socket.assigns.locale, limit: 200)
+
+        {:noreply,
+         socket
+         |> assign(:filter_type, :search)
+         |> assign(:search_query, query)
+         |> assign(:jlpt_level, nil)
+         |> assign(:school_level, nil)
+         |> assign(:kanji_list, kanji_list)
+         |> assign(:page_title, gettext("Search: %{query}", query: query))}
+
       # School level filter (SL1-SL6)
       params["sl"] not in [nil, ""] ->
         level = parse_school_level(params["sl"])
@@ -31,6 +46,7 @@ defmodule MedoruWeb.KanjiLive.Index do
          |> assign(:filter_type, :school)
          |> assign(:school_level, level)
          |> assign(:jlpt_level, nil)
+         |> assign(:search_query, "")
          |> assign(:kanji_list, kanji_list)
          |> assign(:page_title, gettext("School Level %{level} Kanji", level: level))}
 
@@ -44,9 +60,26 @@ defmodule MedoruWeb.KanjiLive.Index do
          |> assign(:filter_type, :jlpt)
          |> assign(:jlpt_level, level)
          |> assign(:school_level, nil)
+         |> assign(:search_query, "")
          |> assign(:kanji_list, kanji_list)
          |> assign(:page_title, gettext("JLPT N%{level} Kanji", level: level))}
     end
+  end
+
+  @impl true
+  def handle_event("search", %{"query" => query}, socket) do
+    trimmed = String.trim(query)
+
+    if trimmed == "" do
+      {:noreply, push_patch(socket, to: ~p"/kanji")}
+    else
+      {:noreply, push_patch(socket, to: ~p"/kanji?q=#{URI.encode_www_form(trimmed)}")}
+    end
+  end
+
+  @impl true
+  def handle_event("clear_search", _, socket) do
+    {:noreply, push_patch(socket, to: ~p"/kanji")}
   end
 
   defp parse_jlpt_level(nil), do: 5

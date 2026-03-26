@@ -59,6 +59,33 @@ defmodule MedoruWeb.WordLive.Show do
     end
   end
 
+  @impl true
+  def handle_event("unlearn_word", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      user_id = socket.assigns.current_scope.current_user.id
+      word = socket.assigns.word
+
+      case Learning.unlearn_word(user_id, word.id) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:word_learned, false)
+           |> put_flash(:info, gettext("%{word} removed from learned list.", word: word.text))}
+
+        {:error, :not_learned} ->
+          {:noreply,
+           socket
+           |> assign(:word_learned, false)
+           |> put_flash(:error, gettext("Word was not learned."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not unlearn word."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   # Helper functions needed for shared templates
   def page_link_params(assigns, page) do
     assigns = Map.new(assigns)

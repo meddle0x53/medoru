@@ -221,23 +221,17 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   # Private functions
 
-  # Get new words that are available for the daily test
-  # Includes words the user has learned (in UserProgress)
-  # but hasn't reviewed yet (no ReviewSchedule or not due)
+  # Get words for daily test, prioritized by mastery level
+  # Words with lower mastery levels are prioritized
   defp get_eligible_new_words(user_id, opts) do
     limit = Keyword.get(opts, :limit, 5)
 
-    # Get words from UserProgress without ReviewSchedule
-    # These are words that have been learned but not yet scheduled for review
-    user_progress_entries = Medoru.Learning.get_new_words_for_review(user_id, limit: limit)
-
-    # Map to words - no additional filtering needed
-    # If a word is in UserProgress, it means the user has learned it
-    Enum.map(user_progress_entries, & &1.word)
+    # Use the new priority-based function that orders by mastery level
+    Learning.get_words_for_daily_test(user_id, limit: limit)
   end
 
   # Build test items from reviews and new words
-  defp build_test_items(due_reviews, new_words, _started_lesson_ids) do
+  defp build_test_items(due_reviews, new_word_progress, _started_lesson_ids) do
     # Create items from due reviews
     review_items =
       Enum.map(due_reviews, fn progress ->
@@ -251,19 +245,20 @@ defmodule Medoru.Learning.DailyTestGenerator do
         }
       end)
 
-    # Create items from new words
+    # Create items from new words (now passed as UserProgress entries)
     new_items =
-      Enum.map(new_words, fn word ->
+      Enum.map(new_word_progress, fn progress ->
         %{
-          word: word,
-          user_progress: nil,
-          is_new: true,
+          word: progress.word,
+          user_progress: progress,
+          is_new: progress.mastery_level == 1,
           question_types: [:meaning_to_reading, :reading_to_meaning]
         }
       end)
 
-    # Combine and shuffle
-    (review_items ++ new_items) |> Enum.shuffle()
+    # Combine - prioritize lower mastery levels, don't shuffle
+    # Items are already ordered by mastery level from the query
+    review_items ++ new_items
   end
 
   # Create the daily test with steps

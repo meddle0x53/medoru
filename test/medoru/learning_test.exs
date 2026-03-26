@@ -238,7 +238,7 @@ defmodule Medoru.LearningTest do
       assert user_progress.user_id == user.id
       assert user_progress.kanji_id == kanji.id
       assert user_progress.word_id == nil
-      assert user_progress.mastery_level == 0
+      assert user_progress.mastery_level == 1
     end
 
     test "track_kanji_learned/2 returns existing progress if already tracked" do
@@ -260,7 +260,7 @@ defmodule Medoru.LearningTest do
       assert user_progress.user_id == user.id
       assert user_progress.word_id == word.id
       assert user_progress.kanji_id == nil
-      assert user_progress.mastery_level == 0
+      assert user_progress.mastery_level == 1
     end
 
     test "track_word_learned/2 returns existing progress if already tracked" do
@@ -339,7 +339,7 @@ defmodule Medoru.LearningTest do
       assert stats.total_words_learned == 1
       assert stats.lessons_started == 1
       assert stats.lessons_completed == 1
-      assert stats.kanji_by_mastery == %{0 => 1, 1 => 0, 2 => 0, 3 => 0, 4 => 0}
+      assert stats.kanji_by_mastery == %{0 => 0, 1 => 1, 2 => 0, 3 => 0, 4 => 0, 5 => 0}
     end
 
     test "get_user_stats/1 returns empty stats for new user" do
@@ -351,7 +351,7 @@ defmodule Medoru.LearningTest do
       assert stats.total_words_learned == 0
       assert stats.lessons_started == 0
       assert stats.lessons_completed == 0
-      assert stats.kanji_by_mastery == %{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0}
+      assert stats.kanji_by_mastery == %{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0}
     end
   end
 
@@ -385,18 +385,18 @@ defmodule Medoru.LearningTest do
       assert %{kanji_id: ["must have either kanji_id or word_id"]} = errors_on(changeset)
     end
 
-    test "mastery_level must be between 0 and 4" do
+    test "mastery_level must be between 0 and 5" do
       user = user_fixture()
       kanji = kanji_fixture()
 
       attrs = %{
         user_id: user.id,
         kanji_id: kanji.id,
-        mastery_level: 5
+        mastery_level: 6
       }
 
       changeset = UserProgress.changeset(%UserProgress{}, attrs)
-      assert "must be less than or equal to 4" in errors_on(changeset).mastery_level
+      assert "must be less than or equal to 5" in errors_on(changeset).mastery_level
     end
 
     test "cannot create duplicate kanji progress for same user" do

@@ -4,10 +4,36 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Kanji Browser")}</h1>
       <p class="text-secondary">
-        {gettext(
-          "Browse and learn Japanese kanji organized by JLPT level or Japanese school grade"
-        )}
+        {gettext("Browse and learn Japanese kanji organized by JLPT level or Japanese school grade")}
       </p>
+    </div>
+
+    <%!-- Search Bar --%>
+    <div class="mb-6">
+      <form phx-submit="search" class="relative">
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <.icon name="hero-magnifying-glass" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+            <input
+              type="text"
+              name="query"
+              value={@search_query}
+              placeholder={gettext("Search kanji by character, meaning, or reading...")}
+              class="input input-bordered w-full pl-10"
+              phx-keydown={if @search_query != "", do: "clear_search"}
+              phx-key="Escape"
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">
+            {gettext("Search")}
+          </button>
+          <%= if @search_query != "" do %>
+            <button type="button" phx-click="clear_search" class="btn btn-ghost">
+              {gettext("Clear")}
+            </button>
+          <% end %>
+        </div>
+      </form>
     </div>
 
     <%!-- JLPT Level Selector --%>
@@ -57,23 +83,29 @@
     </div>
 
     <%!-- Stats --%>
-    <div class="mb-6 flex items-center gap-3 text-sm text-secondary">
+    <div class="mb-6 flex items-center gap-3 text-sm text-secondary flex-wrap">
       <span class="bg-base-200 px-3 py-1.5 rounded-full">
         {length(@kanji_list)} {gettext("characters")}
       </span>
-      <%= if @filter_type == :jlpt do %>
-        <span class="bg-base-200 px-3 py-1.5 rounded-full">
-          JLPT N{@jlpt_level}
-        </span>
-      <% else %>
-        <span class="bg-base-200 px-3 py-1.5 rounded-full">
-          {gettext("School Level")} SL{@school_level}
-          <%= if @school_level == 1 do %>
-            (1st grade)
-          <% else %>
-            ({@school_level}th grade)
-          <% end %>
-        </span>
+      <%= cond do %>
+        <% @filter_type == :search -> %>
+          <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+            {gettext("Search results for")} "{@search_query}"
+          </span>
+        <% @filter_type == :jlpt -> %>
+          <span class="bg-base-200 px-3 py-1.5 rounded-full">
+            JLPT N{@jlpt_level}
+          </span>
+        <% @filter_type == :school -> %>
+          <span class="bg-base-200 px-3 py-1.5 rounded-full">
+            {gettext("School Level")} SL{@school_level}
+            <%= if @school_level == 1 do %>
+              (1st grade)
+            <% else %>
+              ({@school_level}th grade)
+            <% end %>
+          </span>
+        <% true -> %>
       <% end %>
     </div>
 
@@ -102,9 +134,19 @@
     <%= if @kanji_list == [] do %>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">📚</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No kanji found")}</h3>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          <%= if @filter_type == :search do %>
+            {gettext("No kanji found for")} "{@search_query}"
+          <% else %>
+            {gettext("No kanji found")}
+          <% end %>
+        </h3>
         <p class="text-secondary">
-          {gettext("This JLPT level doesn't have any kanji data yet.")}
+          <%= if @filter_type == :search do %>
+            {gettext("Try a different search term or browse by level instead.")}
+          <% else %>
+            {gettext("This level doesn't have any kanji data yet.")}
+          <% end %>
         </p>
       </div>
     <% end %>

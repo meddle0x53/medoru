@@ -179,7 +179,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       # Create another word that's NOT in any completed lesson
       other_word = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
       {:ok, _} = Learning.track_word_learned(user.id, other_word.id)
-      # This word has mastery_level 0 and no completed lesson, so should NOT appear
+      # This word is learned (mastery_level 1) but NOT reviewed and NOT from a completed lesson
 
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
 
@@ -188,7 +188,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       # Word from completed lesson should appear
       assert word.id in word_ids_in_test
 
-      # Word not in any completed lesson should NOT appear
+      # Word not in any completed lesson and not reviewed should NOT appear
       refute other_word.id in word_ids_in_test
     end
 

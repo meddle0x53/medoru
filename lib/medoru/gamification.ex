@@ -239,20 +239,30 @@ defmodule Medoru.Gamification do
       false ->
         badge = get_badge!(badge_id)
 
-        result =
-          %UserBadge{}
-          |> UserBadge.changeset(%{
-            user_id: user_id,
-            badge_id: badge_id,
-            awarded_at: DateTime.utc_now()
-          })
-          |> Repo.insert()
+        # Use a transaction to ensure both badge and notification are created
+        Repo.transaction(fn ->
+          # Insert the badge
+          user_badge =
+            %UserBadge{}
+            |> UserBadge.changeset(%{
+              user_id: user_id,
+              badge_id: badge_id,
+              awarded_at: DateTime.utc_now()
+            })
+            |> Repo.insert!()
 
-        # Create notification for new badge
-        with {:ok, user_badge} <- result do
-          Notifications.notify_badge_earned(user_id, badge)
-          {:ok, user_badge}
-        end
+          # Create notification (wrapped in try/rescue to not fail the transaction)
+          try do
+            Notifications.notify_badge_earned(user_id, badge)
+          rescue
+            error ->
+              require Logger
+              Logger.error("Failed to create badge notification for user #{user_id}, badge #{badge_id}: #{inspect(error)}")
+              # Don't re-raise - badge is still awarded
+          end
+
+          user_badge
+        end)
     end
   end
 
@@ -416,12 +426,18 @@ defmodule Medoru.Gamification do
   # Checks and awards badges of a specific criteria type.
   # Fetches user badges once to avoid N+1 queries.
   defp check_and_award_badges(user_id, criteria_type, value) do
+    require Logger
+
+    Logger.info("Checking badges for user #{user_id}, type: #{criteria_type}, value: #{value}")
+
     # Fetch eligible badges and user's current badges in parallel
     eligible_badges =
       Badge
       |> where([b], b.criteria_type == ^criteria_type)
       |> where([b], b.criteria_value <= ^value)
       |> Repo.all()
+
+    Logger.info("Found #{length(eligible_badges)} eligible badges for criteria #{criteria_type} <= #{value}")
 
     # Get user's badge IDs as a MapSet for O(1) lookups
     user_badge_ids =
@@ -435,14 +451,25 @@ defmodule Medoru.Gamification do
         not MapSet.member?(user_badge_ids, badge.id)
       end)
 
+    Logger.info("Awarding #{length(new_badges)} new badges to user #{user_id}")
+
     # Award the new badges
-    new_badges
-    |> Enum.map(fn badge ->
-      case award_badge(user_id, badge.id) do
-        {:ok, user_badge} -> user_badge
-        _ -> nil
-      end
-    end)
-    |> Enum.reject(&is_nil/1)
+    awarded =
+      new_badges
+      |> Enum.map(fn badge ->
+        case award_badge(user_id, badge.id) do
+          {:ok, user_badge} ->
+            Logger.info("Awarded badge '#{badge.name}' to user #{user_id}")
+            user_badge
+
+          {:error, reason} ->
+            Logger.error("Failed to award badge '#{badge.name}' to user #{user_id}: #{inspect(reason)}")
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    Logger.info("Successfully awarded #{length(awarded)} badges to user #{user_id}")
+    awarded
   end
 end
