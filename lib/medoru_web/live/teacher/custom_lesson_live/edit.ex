@@ -137,30 +137,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
-  def handle_event("update_editing_meaning", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :editing_custom_meaning, value)}
-  end
-
-  @impl true
-  def handle_event("update_editing_examples", %{"value" => value}, socket) do
-    {:noreply, assign(socket, :editing_examples, value)}
-  end
-
-  @impl true
-  def handle_event("save_word", %{"id" => id}, socket) do
+  def handle_event("update_word", %{"id" => id, "word" => word_params}, socket) do
     lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
-    meaning = socket.assigns.editing_custom_meaning
-    examples = socket.assigns.editing_examples
-
+    
     # Parse examples (split by newline, remove empty)
+    examples_text = word_params["examples"] || ""
     examples_list =
-      examples
+      examples_text
       |> String.split("\n")
       |> Enum.map(&String.trim/1)
       |> Enum.reject(&(&1 == ""))
 
     attrs = %{
-      custom_meaning: meaning,
+      custom_meaning: word_params["custom_meaning"],
       examples: examples_list
     }
 
@@ -383,55 +372,57 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                     <%= if @editing_word_id == lesson_word.id do %>
                       <%!-- Edit Mode --%>
                       <div class="card-body p-4">
-                        <div class="flex items-start gap-4">
-                          <div class="text-2xl font-jp">{lesson_word.word.text}</div>
-                          <div class="flex-1 space-y-3">
-                            <div>
-                              <label class="label text-sm">
-                                {gettext("Custom Meaning (optional)")}
-                              </label>
-                              <input
-                                type="text"
-                                id={"meaning-#{lesson_word.id}"}
-                                name="custom_meaning"
-                                value={@editing_custom_meaning}
-                                phx-change="update_editing_meaning"
-                                phx-debounce="200"
-                                class="input input-bordered w-full input-sm"
-                                placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
-                              />
-                            </div>
-                            <div>
-                              <label class="label text-sm">
-                                {gettext("Examples (one per line, max 5)")}
-                              </label>
-                              <textarea
-                                id={"examples-#{lesson_word.id}"}
-                                name="examples"
-                                phx-change="update_editing_examples"
-                                phx-debounce="200"
-                                class="textarea textarea-bordered w-full textarea-sm"
-                                rows={3}
-                                placeholder={gettext("Add example sentences using this word...")}
-                              ><%= @editing_examples %></textarea>
+                        <.form
+                          for={%{}}
+                          id={"edit-word-form-#{lesson_word.id}"}
+                          phx-submit="update_word"
+                          phx-value-id={lesson_word.id}
+                          class="space-y-4"
+                        >
+                          <div class="flex items-start gap-4">
+                            <div class="text-2xl font-jp">{lesson_word.word.text}</div>
+                            <div class="flex-1 space-y-3">
+                              <div>
+                                <label class="label text-sm">
+                                  {gettext("Custom Meaning (optional)")}
+                                </label>
+                                <input
+                                  type="text"
+                                  name="word[custom_meaning]"
+                                  value={@editing_custom_meaning}
+                                  class="input input-bordered w-full input-sm"
+                                  placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
+                                />
+                              </div>
+                              <div>
+                                <label class="label text-sm">
+                                  {gettext("Examples (one per line, max 5)")}
+                                </label>
+                                <textarea
+                                  name="word[examples]"
+                                  class="textarea textarea-bordered w-full textarea-sm"
+                                  rows={3}
+                                  placeholder={gettext("Add example sentences using this word...")}
+                                ><%= @editing_examples %></textarea>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div class="flex justify-end gap-2 mt-4">
-                          <button
-                            phx-click="cancel_edit_word"
-                            class="btn btn-ghost btn-sm"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            phx-click="save_word"
-                            phx-value-id={lesson_word.id}
-                            class="btn btn-primary btn-sm"
-                          >
-                            Save
-                          </button>
-                        </div>
+                          <div class="flex justify-end gap-2 mt-4">
+                            <button
+                              type="button"
+                              phx-click="cancel_edit_word"
+                              class="btn btn-ghost btn-sm"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              class="btn btn-primary btn-sm"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </.form>
                       </div>
                     <% else %>
                       <%!-- View Mode --%>
