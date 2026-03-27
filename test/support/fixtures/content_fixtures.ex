@@ -200,4 +200,60 @@ defmodule Medoru.ContentFixtures do
 
     lesson_word
   end
+
+  @doc """
+  Generate a grammar form.
+  """
+  def grammar_form_fixture(attrs \\ %{}) do
+    {:ok, grammar_form} =
+      attrs
+      |> Enum.into(%{
+        name: "test-form-#{System.unique_integer([:positive])}",
+        display_name: "Test Form",
+        word_type: "verb",
+        suffix_pattern: "て",
+        description: "A test grammar form",
+        examples: ["example1", "example2"]
+      })
+      |> Content.create_grammar_form()
+
+    grammar_form
+  end
+
+  @doc """
+  Generate a word class.
+  """
+  def word_class_fixture(attrs \\ %{}) do
+    {:ok, word_class} =
+      attrs
+      |> Enum.into(%{
+        name: "test-class-#{System.unique_integer([:positive])}",
+        display_name: "Test Class",
+        description: "A test word class",
+        examples: ["example1", "example2"]
+      })
+      |> Content.create_word_class()
+
+    word_class
+  end
+
+  @doc """
+  Generate a word conjugation.
+  """
+  def word_conjugation_fixture(attrs \\ %{}) do
+    word = attrs[:word] || word_fixture(%{word_type: :verb})
+    grammar_form = attrs[:grammar_form] || grammar_form_fixture()
+
+    {:ok, conjugation} =
+      attrs
+      |> Enum.into(%{
+        word_id: word.id,
+        grammar_form_id: grammar_form.id,
+        conjugated_form: "conjugated#{System.unique_integer([:positive])}",
+        reading: "よみ#{System.unique_integer([:positive])}"
+      })
+      |> Content.create_word_conjugation()
+
+    conjugation
+  end
 end

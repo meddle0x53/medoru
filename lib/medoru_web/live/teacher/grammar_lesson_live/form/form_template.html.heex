@@ -1,0 +1,413 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <.link navigate={~p"/teacher/grammar-lessons"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Grammar Lessons")}
+      </.link>
+      <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <%!-- Lesson Info --%>
+      <div class="lg:col-span-1">
+        <div class="card bg-base-100 shadow-sm border border-base-300 sticky top-4">
+          <div class="card-body">
+            <h2 class="text-lg font-semibold mb-4">{gettext("Lesson Info")}</h2>
+            <.form
+              for={@changeset}
+              id="lesson-form"
+              phx-change="validate_lesson"
+              phx-submit="save_lesson"
+              class="space-y-4"
+            >
+              <div>
+                <label class="label" for="lesson_title">
+                  <span class="label-text">{gettext("Title")}</span>
+                </label>
+                <input
+                  type="text"
+                  id="lesson_title"
+                  name="custom_lesson[title]"
+                  value={Phoenix.HTML.FormData.to_form(@changeset, []).data.title}
+                  class="input input-bordered w-full"
+                  placeholder={gettext("e.g., Before/After Patterns")}
+                  required
+                />
+              </div>
+
+              <div>
+                <label class="label" for="lesson_description">
+                  <span class="label-text">{gettext("Description")}</span>
+                </label>
+                <textarea
+                  id="lesson_description"
+                  name="custom_lesson[description]"
+                  class="textarea textarea-bordered w-full"
+                  rows="3"
+                  placeholder={gettext("Describe what students will learn...")}
+                ><%= Phoenix.HTML.FormData.to_form(@changeset, []).data.description %></textarea>
+              </div>
+
+              <div>
+                <label class="label" for="lesson_difficulty">
+                  <span class="label-text">{gettext("Difficulty")}</span>
+                </label>
+                <select
+                  id="lesson_difficulty"
+                  name="custom_lesson[difficulty]"
+                  class="select select-bordered w-full"
+                >
+                  <%= for level <- 1..5 do %>
+                    <option value={level} selected={Phoenix.HTML.FormData.to_form(@changeset, []).data.difficulty == level}>
+                      N{level}
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-full" phx-disable-with={gettext("Saving...")}>
+                <.icon name="hero-check" class="w-5 h-5 mr-2" />
+                {gettext("Save Lesson")}
+              </button>
+            </.form>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Steps --%>
+      <div class="lg:col-span-2 space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">{gettext("Grammar Steps")}</h2>
+          <%= if @lesson do %>
+            <button phx-click="add_step" class="btn btn-primary btn-sm">
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Step")}
+            </button>
+          <% end %>
+        </div>
+
+        <%= if @steps == [] and is_nil(@current_step) do %>
+          <div class="card bg-base-200">
+            <div class="card-body text-center py-12">
+              <.icon name="hero-document-text" class="w-12 h-12 mx-auto text-base-300 mb-4" />
+              <p class="text-secondary">{gettext("No steps yet. Add your first grammar step!")}</p>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Step List --%>
+        <%= if is_nil(@current_step) do %>
+          <div class="space-y-4">
+            <%= for {step, index} <- Enum.with_index(@steps) do %>
+              <div class="card bg-base-100 shadow-sm border border-base-300">
+                <div class="card-body p-4">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-2">
+                        <span class="badge badge-ghost">{gettext("Step")} #{index + 1}</span>
+                        <h3 class="font-semibold">{step.title || gettext("Untitled Step")}</h3>
+                      </div>
+                      <div class="flex flex-wrap gap-2 mb-2">
+                        <%= for element <- step.pattern_elements || [] do %>
+                          <%= if element["type"] == "word_slot" do %>
+                            <span class="badge badge-primary badge-sm">
+                              {String.upcase(String.first(element["word_type"]))}
+                              <%= if element["forms"] != [] do %>
+                                [#{Enum.join(element["forms"], "|")}]
+                              <% end %>
+                            </span>
+                          <% else %>
+                            <span class="badge badge-ghost badge-sm font-jp">{element["text"]}</span>
+                          <% end %>
+                        <% end %>
+                      </div>
+                      <p class="text-sm text-secondary">{length(step.examples || [])} {gettext("examples")}</p>
+                    </div>
+                    <div class="flex items-center gap-2 ml-4">
+                      <button phx-click="edit_step" phx-value-index={index} class="btn btn-ghost btn-sm">
+                        <.icon name="hero-pencil" class="w-4 h-4" />
+                      </button>
+                      <button
+                        phx-click="delete_step"
+                        phx-value-id={step.id}
+                        data-confirm={gettext("Delete this step?")}
+                        class="btn btn-ghost btn-sm text-error"
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <%!-- Step Editor --%>
+          <div class="card bg-base-100 shadow-sm border border-base-300">
+            <div class="card-body">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">
+                  <%= if @current_step_index == :new do %>
+                    {gettext("New Step")}
+                  <% else %>
+                    {gettext("Edit Step")}
+                  <% end %>
+                </h3>
+                <button phx-click="cancel_step" class="btn btn-ghost btn-sm">
+                  <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> {gettext("Cancel")}
+                </button>
+              </div>
+
+              <div class="space-y-6">
+                <%!-- Step Title --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Step Title")}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={@current_step.title}
+                    phx-change="update_step_field"
+                    phx-value-field="title"
+                    class="input input-bordered w-full"
+                    placeholder={gettext("e.g., V-るまえに、Vます")}
+                  />
+                </div>
+
+                <%!-- Pattern Builder --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Grammar Pattern")}</span>
+                  </label>
+                  <div class="bg-base-200 rounded-lg p-4 mb-4">
+                    <%= if @current_step.pattern_elements == [] do %>
+                      <p class="text-secondary text-center py-4">{gettext("Add pattern elements below")}</p>
+                    <% else %>
+                      <div class="flex flex-wrap gap-2 items-center">
+                        <%= for {element, idx} <- Enum.with_index(@current_step.pattern_elements) do %>
+                          <%= if element["type"] == "word_slot" do %>
+                            <div class="badge badge-primary badge-lg p-3">
+                              <div class="flex flex-col items-center">
+                                <span class="text-xs opacity-75">{String.capitalize(element["word_type"])}</span>
+                                <span class="font-jp text-sm">
+                                  <%= if element["forms"] == [] do %>
+                                    [-]
+                                  <% else %>
+                                    [-#{Enum.join(element["forms"], "|")}]
+                                  <% end %>
+                                </span>
+                                <%= if element["word_class"] do %>
+                                  <span class="text-xs opacity-75">[{element["word_class"]}]</span>
+                                <% end %>
+                              </div>
+                              <%= if element["optional"] do %>
+                                <span class="text-xs ml-1">?</span>
+                              <% end %>
+                              <button
+                                phx-click="remove_pattern_element"
+                                phx-value-index={idx}
+                                class="ml-2 hover:text-error"
+                              >
+                                <.icon name="hero-x-mark" class="w-3 h-3" />
+                              </button>
+                            </div>
+                          <% else %>
+                            <div class="badge badge-ghost badge-lg p-3 font-jp">
+                              {element["text"]}
+                              <button
+                                phx-click="remove_pattern_element"
+                                phx-value-index={idx}
+                                class="ml-2 hover:text-error"
+                              >
+                                <.icon name="hero-x-mark" class="w-3 h-3" />
+                              </button>
+                            </div>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%!-- Add Pattern Element --%>
+                  <div class="flex gap-2">
+                    <button
+                      phx-click="add_pattern_element"
+                      phx-value-type="word_slot"
+                      class="btn btn-outline btn-sm"
+                    >
+                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Word Slot")}
+                    </button>
+                    <button
+                      phx-click="add_pattern_element"
+                      phx-value-type="literal"
+                      class="btn btn-outline btn-sm"
+                    >
+                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Text")}
+                    </button>
+                  </div>
+
+                  <%!-- Pattern Element Configuration --%>
+                  <%= for {element, idx} <- Enum.with_index(@current_step.pattern_elements) do %>
+                    <div class="border border-base-300 rounded-lg p-3 mt-2">
+                      <div class="flex items-center gap-2 mb-2">
+                        <span class="text-sm font-medium">
+                          <%= if element["type"] == "word_slot" do %>
+                            {gettext("Word Slot")} #{idx + 1}
+                          <% else %>
+                            {gettext("Literal Text")} #{idx + 1}
+                          <% end %>
+                        </span>
+                        <%= if element["type"] == "word_slot" do %>
+                          <label class="flex items-center gap-1 text-sm cursor-pointer ml-auto">
+                            <input
+                              type="checkbox"
+                              checked={element["optional"]}
+                              phx-click="toggle_optional"
+                              phx-value-index={idx}
+                              class="checkbox checkbox-xs"
+                            />
+                            {gettext("Optional")}
+                          </label>
+                        <% end %>
+                      </div>
+
+                      <%= if element["type"] == "word_slot" do %>
+                        <div class="grid grid-cols-2 gap-2">
+                          <select
+                            class="select select-bordered select-sm"
+                            phx-change="update_pattern_element"
+                            phx-value-index={idx}
+                            phx-value-field="word_type"
+                          >
+                            <%= for {label, value} <- @word_types do %>
+                              <option value={value} selected={element["word_type"] == value}>
+                                {label}
+                              </option>
+                            <% end %>
+                          </select>
+                          <select
+                            class="select select-bordered select-sm"
+                            phx-change="update_pattern_element"
+                            phx-value-index={idx}
+                            phx-value-field="word_class"
+                          >
+                            <option value="">{gettext("Any class")}</option>
+                            <%= for class <- @word_classes do %>
+                              <option value={class.name} selected={element["word_class"] == class.name}>
+                                {class.display_name}
+                              </option>
+                            <% end %>
+                          </select>
+                        </div>
+                      <% else %>
+                        <input
+                          type="text"
+                          value={element["text"]}
+                          phx-change="update_pattern_element"
+                          phx-value-index={idx}
+                          phx-value-field="text"
+                          class="input input-bordered w-full input-sm font-jp"
+                          placeholder={gettext("e.g., まえに、")}
+                        />
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+
+                <%!-- Explanation --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Explanation")}</span>
+                  </label>
+                  <textarea
+                    value={@current_step.explanation}
+                    phx-change="update_step_field"
+                    phx-value-field="explanation"
+                    class="textarea textarea-bordered w-full"
+                    rows="4"
+                    placeholder={gettext("Explain how this grammar pattern works...")}
+                  ></textarea>
+                </div>
+
+                <%!-- Examples --%>
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="label mb-0">
+                      <span class="label-text">{gettext("Examples (Max 5)")}</span>
+                    </label>
+                    <%= if length(@current_step.examples || []) < 5 do %>
+                      <button phx-click="add_example" class="btn btn-outline btn-xs">
+                        <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Add")}
+                      </button>
+                    <% end %>
+                  </div>
+
+                  <div class="space-y-3">
+                    <%= for {example, idx} <- Enum.with_index(@current_step.examples || []) do %>
+                      <div class="border border-base-300 rounded-lg p-3">
+                        <div class="flex justify-end mb-2">
+                          <button
+                            phx-click="remove_example"
+                            phx-value-index={idx}
+                            class="text-error hover:opacity-70"
+                          >
+                            <.icon name="hero-trash" class="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div class="space-y-2">
+                          <input
+                            type="text"
+                            value={example["sentence"]}
+                            phx-change="update_example"
+                            phx-value-index={idx}
+                            phx-value-field="sentence"
+                            class="input input-bordered w-full input-sm font-jp"
+                            placeholder={gettext("Japanese sentence")}
+                          />
+                          <input
+                            type="text"
+                            value={example["reading"]}
+                            phx-change="update_example"
+                            phx-value-index={idx}
+                            phx-value-field="reading"
+                            class="input input-bordered w-full input-sm font-jp"
+                            placeholder={gettext("Reading (hiragana)")}
+                          />
+                          <input
+                            type="text"
+                            value={example["meaning"]}
+                            phx-change="update_example"
+                            phx-value-index={idx}
+                            phx-value-field="meaning"
+                            class="input input-bordered w-full input-sm"
+                            placeholder={gettext("English meaning")}
+                          />
+                        </div>
+                        <button
+                          phx-click="validate_example"
+                          phx-value-index={idx}
+                          class="btn btn-ghost btn-xs mt-2"
+                        >
+                          <.icon name="hero-check-circle" class="w-3 h-3 mr-1" /> {gettext("Validate")}
+                        </button>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+                <%!-- Save Button --%>
+                <div class="flex justify-end gap-2 pt-4 border-t border-base-300">
+                  <button phx-click="cancel_step" class="btn btn-ghost">
+                    {gettext("Cancel")}
+                  </button>
+                  <button phx-click="save_step" class="btn btn-primary">
+                    <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Save Step")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

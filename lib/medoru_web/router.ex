@@ -150,6 +150,10 @@ defmodule MedoruWeb.Router do
       live "/custom-lessons/new", CustomLessonLive.New
       live "/custom-lessons/:id/edit", CustomLessonLive.Edit
       live "/custom-lessons/:id/publish", CustomLessonLive.Publish
+
+      live "/grammar-lessons", GrammarLessonLive.Index
+      live "/grammar-lessons/new", GrammarLessonLive.Form, :new
+      live "/grammar-lessons/:id/edit", GrammarLessonLive.Form, :edit
     end
   end
 
@@ -199,6 +203,15 @@ defmodule MedoruWeb.Router do
 
       live "/classrooms", ClassroomLive.Index
       live "/classrooms/:id", ClassroomLive.Show
+
+      live "/grammar-forms", GrammarFormLive.Index
+      live "/grammar-forms/new", GrammarFormLive.Form, :new
+      live "/grammar-forms/:id/edit", GrammarFormLive.Form, :edit
+
+      live "/word-classes", WordClassLive.Index
+      live "/word-classes/new", WordClassLive.Form, :new
+      live "/word-classes/:id", WordClassLive.Show
+      live "/word-classes/:id/edit", WordClassLive.Form, :edit
     end
   end
 

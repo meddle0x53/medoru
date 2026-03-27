@@ -1,0 +1,96 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <.link navigate={~p"/admin/word-classes"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Classes")}
+      </.link>
+      <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@changeset}
+          id="word-class-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="label" for="word_class_name">
+                <span class="label-text">{gettext("Name (system identifier)")}</span>
+              </label>
+              <input
+                type="text"
+                id="word_class_name"
+                name="word_class[name]"
+                value={Phoenix.HTML.FormData.to_form(@changeset, []).data.name}
+                class="input input-bordered w-full"
+                placeholder="e.g., time, place, person"
+                required
+              />
+              <%= if @changeset.errors[:name] do %>
+                <p class="text-error text-sm mt-1">{elem(@changeset.errors[:name], 0)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for="word_class_display_name">
+                <span class="label-text">{gettext("Display Name")}</span>
+              </label>
+              <input
+                type="text"
+                id="word_class_display_name"
+                name="word_class[display_name]"
+                value={Phoenix.HTML.FormData.to_form(@changeset, []).data.display_name}
+                class="input input-bordered w-full"
+                placeholder="e.g., Time expressions"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for="word_class_description">
+              <span class="label-text">{gettext("Description")}</span>
+            </label>
+            <textarea
+              id="word_class_description"
+              name="word_class[description]"
+              class="textarea textarea-bordered w-full"
+              rows="3"
+              placeholder={gettext("Describe what types of words belong to this class...")}
+            ><%= Phoenix.HTML.FormData.to_form(@changeset, []).data.description %></textarea>
+          </div>
+
+          <div>
+            <label class="label" for="word_class_examples">
+              <span class="label-text">{gettext("Example Words (one per line)")}</span>
+            </label>
+            <textarea
+              id="word_class_examples"
+              name="word_class[examples]"
+              class="textarea textarea-bordered w-full font-jp"
+              rows="4"
+              placeholder={gettext("今日\n明日\n朝\n夜")}
+            ><%= (Phoenix.HTML.FormData.to_form(@changeset, []).data.examples || []) |> Enum.join("\n") %></textarea>
+            <p class="text-sm text-secondary mt-1">
+              {gettext("These are example words that belong to this class")}
+            </p>
+          </div>
+
+          <div class="flex justify-end gap-4 pt-4">
+            <.link navigate={~p"/admin/word-classes"} class="btn btn-ghost">
+              {gettext("Cancel")}
+            </.link>
+            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+              <.icon name="hero-check" class="w-5 h-5 mr-2" />
+              {gettext("Save")}
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

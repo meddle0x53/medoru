@@ -19,12 +19,15 @@ defmodule Medoru.Content.CustomLesson do
   alias Medoru.Classrooms.ClassroomCustomLesson
   alias Medoru.Tests.Test
 
+  @lesson_subtypes ["vocabulary", "grammar"]
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "custom_lessons" do
     field :title, :string
     field :description, :string
     field :lesson_type, :string, default: "reading"
+    field :lesson_subtype, :string, default: "vocabulary"
     field :difficulty, :integer
     field :status, :string, default: "draft"
     field :word_count, :integer, default: 0
@@ -40,6 +43,8 @@ defmodule Medoru.Content.CustomLesson do
     has_many :words, through: [:custom_lesson_words, :word]
     has_many :classroom_custom_lessons, ClassroomCustomLesson
     has_many :classrooms, through: [:classroom_custom_lessons, :classroom]
+    has_many :grammar_lesson_steps, Medoru.Content.GrammarLessonStep,
+      preload_order: [asc: :position]
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -53,6 +58,7 @@ defmodule Medoru.Content.CustomLesson do
       :title,
       :description,
       :lesson_type,
+      :lesson_subtype,
       :difficulty,
       :status,
       :word_count,
@@ -61,10 +67,11 @@ defmodule Medoru.Content.CustomLesson do
       :include_writing,
       :steps_per_word
     ])
-    |> validate_required([:title, :lesson_type, :status, :creator_id])
+    |> validate_required([:title, :lesson_type, :lesson_subtype, :status, :creator_id])
     |> validate_length(:title, min: 1, max: 100)
     |> validate_length(:description, max: 500)
     |> validate_inclusion(:lesson_type, ["reading"])
+    |> validate_inclusion(:lesson_subtype, @lesson_subtypes)
     |> validate_inclusion(:status, ["draft", "published", "archived"])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:word_count, greater_than_or_equal_to: 0)

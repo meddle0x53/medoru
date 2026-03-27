@@ -1,0 +1,129 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <.link navigate={~p"/admin/grammar-forms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Grammar Forms")}
+      </.link>
+      <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@changeset}
+          id="grammar-form-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="label" for="grammar_form_name">
+                <span class="label-text">{gettext("Name (system identifier)")}</span>
+              </label>
+              <input
+                type="text"
+                id="grammar_form_name"
+                name="grammar_form[name]"
+                value={Phoenix.HTML.FormData.to_form(@changeset, []).data.name}
+                class="input input-bordered w-full"
+                placeholder="e.g., te-form, negative, past"
+                required
+              />
+              <%= if @changeset.errors[:name] do %>
+                <p class="text-error text-sm mt-1">{elem(@changeset.errors[:name], 0)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for="grammar_form_word_type">
+                <span class="label-text">{gettext("Word Type")}</span>
+              </label>
+              <select
+                id="grammar_form_word_type"
+                name="grammar_form[word_type]"
+                class="select select-bordered w-full"
+                required
+              >
+                <option value="">{gettext("Select type...")}</option>
+                <%= for {label, value} <- @word_types do %>
+                  <option value={value} selected={Phoenix.HTML.FormData.to_form(@changeset, []).data.word_type == value}>
+                    {label}
+                  </option>
+                <% end %>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for="grammar_form_display_name">
+              <span class="label-text">{gettext("Display Name")}</span>
+            </label>
+            <input
+              type="text"
+              id="grammar_form_display_name"
+              name="grammar_form[display_name]"
+              value={Phoenix.HTML.FormData.to_form(@changeset, []).data.display_name}
+              class="input input-bordered w-full"
+              placeholder="e.g., Te form (て form)"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="label" for="grammar_form_suffix_pattern">
+              <span class="label-text">{gettext("Suffix Pattern")}</span>
+            </label>
+            <input
+              type="text"
+              id="grammar_form_suffix_pattern"
+              name="grammar_form[suffix_pattern]"
+              value={Phoenix.HTML.FormData.to_form(@changeset, []).data.suffix_pattern}
+              class="input input-bordered w-full font-jp"
+              placeholder="e.g., て, ない, ます"
+            />
+            <p class="text-sm text-secondary mt-1">
+              {gettext("The ending pattern that identifies this form")}
+            </p>
+          </div>
+
+          <div>
+            <label class="label" for="grammar_form_description">
+              <span class="label-text">{gettext("Description")}</span>
+            </label>
+            <textarea
+              id="grammar_form_description"
+              name="grammar_form[description]"
+              class="textarea textarea-bordered w-full"
+              rows="3"
+              placeholder={gettext("Explain when and how this form is used...")}
+            ><%= Phoenix.HTML.FormData.to_form(@changeset, []).data.description %></textarea>
+          </div>
+
+          <div>
+            <label class="label" for="grammar_form_examples">
+              <span class="label-text">{gettext("Examples (one per line)")}</span>
+            </label>
+            <textarea
+              id="grammar_form_examples"
+              name="grammar_form[examples]"
+              class="textarea textarea-bordered w-full font-jp"
+              rows="4"
+              placeholder={gettext("食べて\n行って\n買って")}
+            ><%= (Phoenix.HTML.FormData.to_form(@changeset, []).data.examples || []) |> Enum.join("\n") %></textarea>
+          </div>
+
+          <div class="flex justify-end gap-4 pt-4">
+            <.link navigate={~p"/admin/grammar-forms"} class="btn btn-ghost">
+              {gettext("Cancel")}
+            </.link>
+            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+              <.icon name="hero-check" class="w-5 h-5 mr-2" />
+              {gettext("Save")}
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
