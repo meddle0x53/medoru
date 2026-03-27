@@ -73,7 +73,7 @@ defmodule MedoruWeb.KanjiLive.Index do
     if trimmed == "" do
       {:noreply, push_patch(socket, to: ~p"/kanji")}
     else
-      {:noreply, push_patch(socket, to: ~p"/kanji?q=#{URI.encode_www_form(trimmed)}")}
+      {:noreply, push_patch(socket, to: ~p"/kanji?q=#{trimmed}")}
     end
   end
 

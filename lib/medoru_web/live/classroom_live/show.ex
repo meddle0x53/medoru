@@ -232,6 +232,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 custom_lessons={@custom_lessons}
                 lesson_progress={@lesson_progress}
                 current_user={@current_scope.current_user}
+                lessons_filter={@lessons_filter}
+                lessons_total_count={@lessons_total_count}
+                lessons_page={@lessons_page}
+                lessons_total_pages={@lessons_total_pages}
               />
             <% "tests" -> %>
               <.tests_tab
@@ -433,6 +437,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :custom_lessons, :list, required: true
   attr :lesson_progress, :list, required: true
   attr :current_user, :map, required: true
+  attr :lessons_filter, :atom, required: true
+  attr :lessons_total_count, :integer, required: true
+  attr :lessons_page, :integer, required: true
+  attr :lessons_total_pages, :integer, required: true
 
   defp lessons_tab(assigns) do
     ~H"""
