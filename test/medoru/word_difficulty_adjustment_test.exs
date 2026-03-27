@@ -8,11 +8,16 @@ defmodule Medoru.WordDifficultyAdjustmentTest do
   describe "word difficulty adjustment logic" do
     setup do
       # Create kanji with different JLPT levels
-      n1_kanji = create_kanji!("級", 1)  # N1 - most difficult
-      n2_kanji = create_kanji!("例", 2)  # N2
-      n3_kanji = create_kanji!("食", 3)  # N3
-      n4_kanji = create_kanji!("学", 4)  # N4
-      n5_kanji = create_kanji!("日", 5)  # N5 - easiest
+      # N1 - most difficult
+      n1_kanji = create_kanji!("級", 1)
+      # N2
+      n2_kanji = create_kanji!("例", 2)
+      # N3
+      n3_kanji = create_kanji!("食", 3)
+      # N4
+      n4_kanji = create_kanji!("学", 4)
+      # N5 - easiest
+      n5_kanji = create_kanji!("日", 5)
 
       {:ok,
        n1_kanji: n1_kanji,
@@ -24,60 +29,80 @@ defmodule Medoru.WordDifficultyAdjustmentTest do
 
     test "N2 word with N1 kanji should become N1", %{n1_kanji: n1, n3_kanji: n3} do
       # Create N2 word that contains N1 kanji
-      word = create_word!("上級", 2)  # Currently N2
-      create_word_kanji!(word, n1, 0)  # Contains N1 kanji
-      create_word_kanji!(word, n3, 1)  # And N3 kanji
+      # Currently N2
+      word = create_word!("上級", 2)
+      # Contains N1 kanji
+      create_word_kanji!(word, n1, 0)
+      # And N3 kanji
+      create_word_kanji!(word, n3, 1)
 
       # Apply adjustment logic
       adjust_difficulty!()
 
       # Reload and check
       updated = Repo.get!(Word, word.id)
-      assert updated.difficulty == 1  # Should be N1 now
+      # Should be N1 now
+      assert updated.difficulty == 1
     end
 
     test "N3 word with N1 kanji should become N1", %{n1_kanji: n1, n4_kanji: n4} do
-      word = create_word!("最高級", 3)  # Currently N3
-      create_word_kanji!(word, n1, 0)  # Contains N1 kanji
-      create_word_kanji!(word, n4, 1)  # And N4 kanji
+      # Currently N3
+      word = create_word!("最高級", 3)
+      # Contains N1 kanji
+      create_word_kanji!(word, n1, 0)
+      # And N4 kanji
+      create_word_kanji!(word, n4, 1)
 
       adjust_difficulty!()
 
       updated = Repo.get!(Word, word.id)
-      assert updated.difficulty == 1  # Should be N1 now
+      # Should be N1 now
+      assert updated.difficulty == 1
     end
 
     test "N3 word with N2 kanji (but no N1) should become N2", %{n2_kanji: n2, n4_kanji: n4} do
-      word = create_word!("例外", 3)  # Currently N3
-      create_word_kanji!(word, n2, 0)  # Contains N2 kanji
-      create_word_kanji!(word, n4, 1)  # And N4 kanji (but no N1)
+      # Currently N3
+      word = create_word!("例外", 3)
+      # Contains N2 kanji
+      create_word_kanji!(word, n2, 0)
+      # And N4 kanji (but no N1)
+      create_word_kanji!(word, n4, 1)
 
       adjust_difficulty!()
 
       updated = Repo.get!(Word, word.id)
-      assert updated.difficulty == 2  # Should be N2 now
+      # Should be N2 now
+      assert updated.difficulty == 2
     end
 
     test "N3 word with only N3/N4/N5 kanji stays N3", %{n3_kanji: n3, n4_kanji: n4} do
-      word = create_word!("学生", 3)  # Currently N3
-      create_word_kanji!(word, n3, 0)  # N3 kanji
-      create_word_kanji!(word, n4, 1)  # N4 kanji
+      # Currently N3
+      word = create_word!("学生", 3)
+      # N3 kanji
+      create_word_kanji!(word, n3, 0)
+      # N4 kanji
+      create_word_kanji!(word, n4, 1)
 
       adjust_difficulty!()
 
       updated = Repo.get!(Word, word.id)
-      assert updated.difficulty == 3  # Should stay N3
+      # Should stay N3
+      assert updated.difficulty == 3
     end
 
     test "N2 word with only N2/N3/N4/N5 kanji stays N2", %{n2_kanji: n2, n3_kanji: n3} do
-      word = create_word!("比例", 2)  # Currently N2
-      create_word_kanji!(word, n2, 0)  # N2 kanji
-      create_word_kanji!(word, n3, 1)  # N3 kanji (but no N1)
+      # Currently N2
+      word = create_word!("比例", 2)
+      # N2 kanji
+      create_word_kanji!(word, n2, 0)
+      # N3 kanji (but no N1)
+      create_word_kanji!(word, n3, 1)
 
       adjust_difficulty!()
 
       updated = Repo.get!(Word, word.id)
-      assert updated.difficulty == 2  # Should stay N2
+      # Should stay N2
+      assert updated.difficulty == 2
     end
 
     test "multiple words are adjusted correctly", %{
@@ -152,8 +177,10 @@ defmodule Medoru.WordDifficultyAdjustmentTest do
   defp adjust_difficulty! do
     words_with_kanji =
       from(w in Word,
-        join: wk in WordKanji, on: wk.word_id == w.id,
-        join: k in Kanji, on: wk.kanji_id == k.id,
+        join: wk in WordKanji,
+        on: wk.word_id == w.id,
+        join: k in Kanji,
+        on: wk.kanji_id == k.id,
         where: w.difficulty in [2, 3],
         select: %{
           word_id: w.id,

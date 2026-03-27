@@ -109,7 +109,10 @@ defmodule MedoruWeb.KanjiLive.Show do
           {:noreply,
            socket
            |> assign(:kanji_learned, false)
-           |> put_flash(:info, gettext("%{kanji} removed from learned list.", kanji: kanji.character))}
+           |> put_flash(
+             :info,
+             gettext("%{kanji} removed from learned list.", kanji: kanji.character)
+           )}
 
         {:error, :not_learned} ->
           {:noreply,

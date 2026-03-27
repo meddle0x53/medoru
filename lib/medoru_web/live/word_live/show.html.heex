@@ -97,7 +97,11 @@
             <%= if @word_learned do %>
               <button
                 phx-click="unlearn_word"
-                data-confirm={gettext("Are you sure? This will remove '%{word}' from your learned words.", word: @word.text)}
+                data-confirm={
+                  gettext("Are you sure? This will remove '%{word}' from your learned words.",
+                    word: @word.text
+                  )
+                }
                 class="flex-1 inline-flex items-center justify-center gap-2 bg-green-100 hover:bg-red-100 dark:bg-green-900/30 dark:hover:bg-red-900/30 text-green-700 hover:text-red-700 dark:text-green-300 dark:hover:text-red-300 px-6 py-4 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] min-h-[56px]"
               >
                 <.icon name="hero-check-circle" class="w-5 h-5" />

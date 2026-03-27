@@ -124,7 +124,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                         checked={to_string(@form[:difficulty].value) == to_string(level)}
                         class="peer sr-only"
                       />
-                      <span class="btn btn-sm btn-outline peer-checked:btn-primary peer-checked:text-primary-content">
+                      <span class={[
+                        "btn btn-sm",
+                        to_string(@form[:difficulty].value) == to_string(level) && "btn-primary",
+                        to_string(@form[:difficulty].value) != to_string(level) && "btn-outline"
+                      ]}>
                         N{level}
                       </span>
                     </label>

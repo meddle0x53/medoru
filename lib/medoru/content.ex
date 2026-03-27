@@ -965,6 +965,112 @@ defmodule Medoru.Content do
     WordKanji.changeset(word_kanji, attrs)
   end
 
+  @doc """
+  Extracts kanji from a word's text and creates word_kanji associations.
+
+  Only creates associations for kanji that:
+  - Exist in the database
+  - Are NOT already associated with this word
+
+  Returns {:ok, [new_word_kanjis]} with only the newly created associations,
+  or {:error, reason} if something went wrong.
+
+  ## Examples
+
+      iex> extract_and_link_kanji_for_word(%Word{text: "日本", reading: "にほん"})
+      {:ok, [%WordKanji{kanji: %Kanji{character: "日"}}, %WordKanji{kanji: %Kanji{character: "本"}}]}
+
+  """
+  def extract_and_link_kanji_for_word(%Word{} = word) do
+    # Get existing kanji characters already linked to this word
+    existing_kanji_chars =
+      WordKanji
+      |> where([wk], wk.word_id == ^word.id)
+      |> join(:inner, [wk], k in assoc(wk, :kanji))
+      |> select([wk, k], k.character)
+      |> Repo.all()
+      |> MapSet.new()
+
+    # Extract all kanji from word text with positions
+    kanji_chars_with_positions = extract_kanji_from_text(word.text)
+
+    # Filter out already existing kanji
+    new_kanji_chars =
+      Enum.reject(kanji_chars_with_positions, fn {char, _pos} ->
+        MapSet.member?(existing_kanji_chars, char)
+      end)
+
+    if new_kanji_chars == [] do
+      {:ok, []}
+    else
+      # Get kanji IDs for the new characters
+      new_chars_list = Enum.map(new_kanji_chars, fn {char, _pos} -> char end)
+
+      kanji_map =
+        Kanji
+        |> where([k], k.character in ^new_chars_list)
+        |> preload(:kanji_readings)
+        |> Repo.all()
+        |> Map.new(fn k -> {k.character, k} end)
+
+      # Try to extract readings from word
+      extracted_readings =
+        case word.reading do
+          nil -> %{}
+          "" -> %{}
+          reading -> extract_all_kanji_readings(word.text, reading)
+        end
+
+      # Create word_kanji links for new kanji only
+      new_word_kanjis =
+        Enum.map(new_kanji_chars, fn {char, position} ->
+          case Map.get(kanji_map, char) do
+            nil ->
+              # Kanji not found in database
+              nil
+
+            kanji ->
+              # Try to find matching reading
+              kanji_reading = Map.get(extracted_readings, char)
+
+              reading_id =
+                if kanji_reading do
+                  Enum.find_value(kanji.kanji_readings, nil, fn r ->
+                    if r.reading == kanji_reading, do: r.id, else: nil
+                  end)
+                else
+                  nil
+                end
+
+              attrs = %{
+                word_id: word.id,
+                kanji_id: kanji.id,
+                position: position,
+                kanji_reading_id: reading_id
+              }
+
+              case create_word_kanji(attrs) do
+                {:ok, word_kanji} -> word_kanji
+                {:error, _} -> nil
+              end
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+
+      {:ok, new_word_kanjis}
+    end
+  end
+
+  # Extract kanji characters from text with their positions
+  defp extract_kanji_from_text(text) do
+    text
+    |> String.graphemes()
+    |> Enum.with_index()
+    |> Enum.filter(fn {char, _idx} ->
+      KanjiReadingExtractor.kanji?(char)
+    end)
+  end
+
   # Lesson Functions
 
   @doc """

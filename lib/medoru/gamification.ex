@@ -257,7 +257,11 @@ defmodule Medoru.Gamification do
           rescue
             error ->
               require Logger
-              Logger.error("Failed to create badge notification for user #{user_id}, badge #{badge_id}: #{inspect(error)}")
+
+              Logger.error(
+                "Failed to create badge notification for user #{user_id}, badge #{badge_id}: #{inspect(error)}"
+              )
+
               # Don't re-raise - badge is still awarded
           end
 
@@ -437,7 +441,9 @@ defmodule Medoru.Gamification do
       |> where([b], b.criteria_value <= ^value)
       |> Repo.all()
 
-    Logger.info("Found #{length(eligible_badges)} eligible badges for criteria #{criteria_type} <= #{value}")
+    Logger.info(
+      "Found #{length(eligible_badges)} eligible badges for criteria #{criteria_type} <= #{value}"
+    )
 
     # Get user's badge IDs as a MapSet for O(1) lookups
     user_badge_ids =
@@ -463,7 +469,10 @@ defmodule Medoru.Gamification do
             user_badge
 
           {:error, reason} ->
-            Logger.error("Failed to award badge '#{badge.name}' to user #{user_id}: #{inspect(reason)}")
+            Logger.error(
+              "Failed to award badge '#{badge.name}' to user #{user_id}: #{inspect(reason)}"
+            )
+
             nil
         end
       end)

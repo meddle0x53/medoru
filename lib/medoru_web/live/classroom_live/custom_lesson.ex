@@ -238,10 +238,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                   Content.get_localized_meaning(@current_word.word, @locale)}
               </div>
 
-              <%!-- {gettext("Examples")} --%>
-              <%= if @current_word.examples != [] do %>
+              <%!-- Examples --%>
+              <%= if @current_word.examples && @current_word.examples != [] do %>
                 <div class="border-t border-base-200 pt-6 mt-6">
-                  <h3 class="text-sm font-medium text-secondary mb-4">Examples</h3>
+                  <h3 class="text-sm font-medium text-secondary mb-4">{gettext("Examples")}</h3>
                   <div class="space-y-2">
                     <%= for example <- @current_word.examples do %>
                       <p class="text-lg font-jp">{example}</p>

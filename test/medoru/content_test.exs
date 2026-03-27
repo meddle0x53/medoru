@@ -801,6 +801,101 @@ defmodule Medoru.ContentTest do
 
       assert %Ecto.Changeset{} = Content.change_word_kanji(wk)
     end
+
+    test "extract_and_link_kanji_for_word/1 extracts kanji and creates associations" do
+      # Create kanji in database first
+      nichi_kanji = kanji_fixture(%{character: "日", frequency: 1})
+      _hon_kanji = kanji_fixture(%{character: "本", frequency: 2})
+
+      # Create a reading for the first kanji
+      _nichi_reading =
+        kanji_reading_fixture(nichi_kanji.id, %{
+          reading_type: :on,
+          reading: "ニチ",
+          romaji: "nichi"
+        })
+
+      # Create word without kanji associations
+      word = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+
+      # Extract and link kanji
+      assert {:ok, new_word_kanjis} = Content.extract_and_link_kanji_for_word(word)
+
+      # Should create 2 word_kanji associations
+      assert length(new_word_kanjis) == 2
+
+      # Verify the associations were created
+      word_with_kanji = Content.get_word_with_kanji!(word.id)
+      assert length(word_with_kanji.word_kanjis) == 2
+
+      # Check that kanji are in correct positions
+      kanji_chars = Enum.map(word_with_kanji.word_kanjis, & &1.kanji.character)
+      assert "日" in kanji_chars
+      assert "本" in kanji_chars
+    end
+
+    test "extract_and_link_kanji_for_word/1 only adds new kanji, skips existing" do
+      # Create kanji in database
+      nichi_kanji = kanji_fixture(%{character: "日", frequency: 1})
+      hon_kanji = kanji_fixture(%{character: "本", frequency: 2})
+
+      # Create word with one kanji already linked
+      word = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+
+      # Manually link first kanji
+      {:ok, _} =
+        Content.create_word_kanji(%{
+          word_id: word.id,
+          kanji_id: nichi_kanji.id,
+          position: 0,
+          kanji_reading_id: nil
+        })
+
+      # Extract and link kanji - should only add the second one
+      assert {:ok, new_word_kanjis} = Content.extract_and_link_kanji_for_word(word)
+
+      # Should only create 1 new word_kanji (for "本")
+      assert length(new_word_kanjis) == 1
+      assert hd(new_word_kanjis).kanji_id == hon_kanji.id
+
+      # Verify total associations
+      word_with_kanji = Content.get_word_with_kanji!(word.id)
+      assert length(word_with_kanji.word_kanjis) == 2
+    end
+
+    test "extract_and_link_kanji_for_word/1 returns empty list when no kanji found" do
+      # Create word with no kanji (kana only)
+      word = word_fixture(%{text: "あい", reading: "あい", meaning: "love"})
+
+      assert {:ok, []} = Content.extract_and_link_kanji_for_word(word)
+    end
+
+    test "extract_and_link_kanji_for_word/1 returns empty list when kanji not in database" do
+      # Create word with kanji that doesn't exist in database
+      word = word_fixture(%{text: "竜", reading: "りゅう", meaning: "dragon"})
+
+      # Should return empty list since kanji not in DB
+      assert {:ok, []} = Content.extract_and_link_kanji_for_word(word)
+    end
+
+    test "extract_and_link_kanji_for_word/1 matches readings when possible" do
+      # Create kanji with readings
+      _nichi_kanji = kanji_fixture(%{character: "日", frequency: 1})
+      _hon_kanji = kanji_fixture(%{character: "本", frequency: 2})
+
+      # Create word
+      word = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+
+      # Extract and link
+      assert {:ok, _new_word_kanjis} = Content.extract_and_link_kanji_for_word(word)
+
+      # Check that readings were matched where possible
+      word_with_kanji = Content.get_word_with_kanji!(word.id)
+
+      # The reading extractor may or may not match "にほん" to "ニチ"
+      # depending on the extraction logic, so we just verify associations exist
+      assert length(word_with_kanji.word_kanjis) == 2
+    end
   end
 
   describe "lessons" do

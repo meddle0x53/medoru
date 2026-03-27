@@ -393,8 +393,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               <input
                                 type="text"
                                 id={"meaning-#{lesson_word.id}"}
+                                name="custom_meaning"
                                 value={@editing_custom_meaning}
                                 phx-change="update_editing_meaning"
+                                phx-debounce="200"
                                 class="input input-bordered w-full input-sm"
                                 placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
                               />
@@ -405,11 +407,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               </label>
                               <textarea
                                 id={"examples-#{lesson_word.id}"}
+                                name="examples"
                                 phx-change="update_editing_examples"
+                                phx-debounce="200"
                                 class="textarea textarea-bordered w-full textarea-sm"
                                 rows={3}
                                 placeholder={gettext("Add example sentences using this word...")}
-                              >{@editing_examples}</textarea>
+                              ><%= @editing_examples %></textarea>
                             </div>
                           </div>
                         </div>
@@ -445,7 +449,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                               {lesson_word.custom_meaning ||
                                 Content.get_localized_meaning(lesson_word.word, @locale)}
                             </p>
-                            <%= if lesson_word.examples != [] do %>
+                            <%= if lesson_word.examples && lesson_word.examples != [] do %>
                               <div class="mt-2 space-y-1">
                                 <%= for example <- lesson_word.examples do %>
                                   <p class="text-sm text-secondary font-jp">• {example}</p>

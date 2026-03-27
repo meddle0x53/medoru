@@ -738,8 +738,9 @@ defmodule Medoru.Learning do
     |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
     # Only include words that have been reviewed OR are from completed lessons
     # Note: mastery_level >= 1 alone is NOT enough - must be reviewed or from completed lesson
-    |> where([up], 
-      up.times_reviewed > 0 or 
+    |> where(
+      [up],
+      up.times_reviewed > 0 or
         up.word_id in subquery(completed_lesson_word_ids)
     )
     # Exclude specific word IDs if provided

@@ -74,7 +74,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   end
 
   defp load_lessons_data(socket, classroom) do
-    result = Medoru.Content.list_classroom_custom_lessons(classroom.id, status: "active", per_page: 100)
+    result =
+      Medoru.Content.list_classroom_custom_lessons(classroom.id, status: "active", per_page: 100)
 
     socket
     |> assign(:classroom_lessons, result.lessons)
@@ -217,11 +218,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
     # First ensure indices are initialized, then get fresh data
     with :ok <- Classrooms.ensure_lesson_order_indices(classroom_id),
-         result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100),
+         result =
+           Medoru.Content.list_classroom_custom_lessons(classroom_id,
+             status: "active",
+             per_page: 100
+           ),
          lessons = result.lessons,
          current_index = Enum.find_index(lessons, fn l -> l.id == lesson_id end),
          true <- current_index && current_index > 0 do
-
       current_lesson = Enum.at(lessons, current_index)
       prev_lesson = Enum.at(lessons, current_index - 1)
 
@@ -232,7 +236,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
       case Classrooms.reorder_classroom_lessons(classroom_id, teacher_id, new_order) do
         {:ok, _} ->
-          result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100)
+          result =
+            Medoru.Content.list_classroom_custom_lessons(classroom_id,
+              status: "active",
+              per_page: 100
+            )
+
           {:noreply, assign(socket, :classroom_lessons, result.lessons)}
 
         {:error, _} ->
@@ -250,12 +259,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
     # First ensure indices are initialized, then get fresh data
     with :ok <- Classrooms.ensure_lesson_order_indices(classroom_id),
-         result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100),
+         result =
+           Medoru.Content.list_classroom_custom_lessons(classroom_id,
+             status: "active",
+             per_page: 100
+           ),
          lessons = result.lessons,
          current_index = Enum.find_index(lessons, fn l -> l.id == lesson_id end),
          last_index = length(lessons) - 1,
          true <- current_index && current_index < last_index do
-
       current_lesson = Enum.at(lessons, current_index)
       next_lesson = Enum.at(lessons, current_index + 1)
 
@@ -266,7 +278,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
       case Classrooms.reorder_classroom_lessons(classroom_id, teacher_id, new_order) do
         {:ok, _} ->
-          result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100)
+          result =
+            Medoru.Content.list_classroom_custom_lessons(classroom_id,
+              status: "active",
+              per_page: 100
+            )
+
           {:noreply, assign(socket, :classroom_lessons, result.lessons)}
 
         {:error, _} ->
@@ -569,7 +586,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
           <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("No Lessons Yet")}</h3>
           <p class="text-secondary max-w-md mx-auto mb-6">
-            {gettext("You haven't published any lessons to this classroom yet. Create and publish lessons to get started.")}
+            {gettext(
+              "You haven't published any lessons to this classroom yet. Create and publish lessons to get started."
+            )}
           </p>
           <.link navigate={~p"/teacher/custom-lessons"} class="btn btn-primary">
             <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create a Lesson")}
@@ -631,7 +650,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                   </div>
 
                   <div class="flex items-center gap-2">
-                    <.link navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"} class="btn btn-ghost btn-sm">
+                    <.link
+                      navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"}
+                      class="btn btn-ghost btn-sm"
+                    >
                       <.icon name="hero-pencil" class="w-4 h-4" />
                     </.link>
                   </div>
@@ -644,6 +666,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     </div>
     """
   end
+
   attr :published_tests, :list, required: true
   attr :test_attempts, :list, required: true
   attr :current_scope, :map, required: true

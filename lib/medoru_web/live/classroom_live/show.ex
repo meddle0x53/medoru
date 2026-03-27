@@ -70,11 +70,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
     page = socket.assigns.lessons_page
     per_page = socket.assigns.lessons_per_page
 
-    result = Classrooms.list_classroom_lessons_with_progress(classroom_id, user_id,
-      filter: filter,
-      page: page,
-      per_page: per_page
-    )
+    result =
+      Classrooms.list_classroom_lessons_with_progress(classroom_id, user_id,
+        filter: filter,
+        page: page,
+        per_page: per_page
+      )
 
     socket
     |> assign(:custom_lessons, result.lessons)
@@ -535,7 +536,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       <% "completed" -> %>
                         <div class="flex items-center gap-2">
                           <span class="badge badge-success">
-                            +{Map.get(get_lesson_progress_map(@lesson_progress, lesson.id), :points_earned, 0)} {gettext("pts")}
+                            +{Map.get(
+                              get_lesson_progress_map(@lesson_progress, lesson.id),
+                              :points_earned,
+                              0
+                            )} {gettext("pts")}
                           </span>
                           <.link
                             navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}

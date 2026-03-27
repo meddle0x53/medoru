@@ -137,6 +137,46 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("extract_kanji", _params, socket) do
+    word = socket.assigns.word
+
+    # Only works in edit mode (word must exist)
+    if socket.assigns.live_action == :edit do
+      {:ok, new_word_kanjis} = Content.extract_and_link_kanji_for_word(word)
+      count = length(new_word_kanjis)
+
+      # Reload word with updated word_kanjis
+      word = Content.get_word_with_kanji!(word.id)
+
+      # Reload kanji readings for display
+      word_kanjis_with_readings =
+        word.word_kanjis
+        |> Enum.sort_by(& &1.position)
+        |> Enum.map(fn wk ->
+          kanji = wk.kanji
+          readings = Content.list_readings_for_kanji(kanji.id)
+          {wk, readings}
+        end)
+
+      message =
+        case count do
+          0 -> gettext("No new kanji found in word text")
+          1 -> gettext("1 new kanji extracted and linked")
+          n -> gettext("%{count} new kanji extracted and linked", count: n)
+        end
+
+      {:noreply,
+       socket
+       |> assign(:word, word)
+       |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
+       |> put_flash(:info, message)}
+    else
+      {:noreply,
+       put_flash(socket, :error, gettext("Save the word first before extracting kanji"))}
+    end
+  end
+
   defp save_word(socket, :new, word_params) do
     word_params = handle_image_upload(socket, word_params)
 

@@ -72,7 +72,7 @@ defmodule Medoru.Classrooms do
   def get_classroom!(id) do
     Classroom
     |> Repo.get!(id)
-    |> Repo.preload([teacher: [:profile], memberships: [user: [:profile]]])
+    |> Repo.preload(teacher: [:profile], memberships: [user: [:profile]])
   end
 
   @doc """
@@ -1590,8 +1590,10 @@ defmodule Medoru.Classrooms do
           |> where([ccl], ccl.id == ^lesson_id and ccl.classroom_id == ^classroom_id)
           |> Repo.one()
           |> case do
-            nil -> nil
-            lesson -> 
+            nil ->
+              nil
+
+            lesson ->
               lesson
               |> ClassroomCustomLesson.order_changeset(%{order_index: order_index})
               |> Repo.update!()

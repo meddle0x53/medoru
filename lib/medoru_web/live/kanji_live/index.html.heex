@@ -4,7 +4,9 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Kanji Browser")}</h1>
       <p class="text-secondary">
-        {gettext("Browse and learn Japanese kanji organized by JLPT level or Japanese school grade")}
+        {gettext(
+          "Browse and learn Japanese kanji organized by JLPT level or Japanese school grade"
+        )}
       </p>
     </div>
 
@@ -13,7 +15,10 @@
       <form phx-submit="search" class="relative">
         <div class="flex gap-2">
           <div class="relative flex-1">
-            <.icon name="hero-magnifying-glass" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+            <.icon
+              name="hero-magnifying-glass"
+              class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary"
+            />
             <input
               type="text"
               name="query"
