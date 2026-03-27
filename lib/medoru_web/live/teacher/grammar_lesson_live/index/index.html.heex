@@ -1,0 +1,69 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-base-content">{gettext("My Grammar Lessons")}</h1>
+        <p class="text-secondary mt-1">{gettext("Create and manage grammar pattern lessons")}</p>
+      </div>
+      <.link navigate={~p"/teacher/grammar-lessons/new"} class="btn btn-primary">
+        <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Grammar Lesson")}
+      </.link>
+    </div>
+
+    <%= if @lessons == [] do %>
+      <div class="card bg-base-200">
+        <div class="card-body text-center py-16">
+          <.icon name="hero-book-open" class="w-16 h-16 mx-auto text-base-300 mb-4" />
+          <h3 class="text-xl font-semibold mb-2">{gettext("No grammar lessons yet")}</h3>
+          <p class="text-secondary mb-6">{gettext("Create your first grammar lesson to help students learn Japanese patterns")}</p>
+          <.link navigate={~p"/teacher/grammar-lessons/new"} class="btn btn-primary">
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Create Grammar Lesson")}
+          </.link>
+        </div>
+      </div>
+    <% else %>
+      <div class="grid gap-4">
+        <%= for lesson <- @lessons do %>
+          <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md transition-shadow">
+            <div class="card-body">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <h3 class="text-lg font-semibold">{lesson.title}</h3>
+                    <span class={["badge", lesson.status == "published" && "badge-success" || "badge-ghost"]}>
+                      {lesson.status}
+                    </span>
+                  </div>
+                  <p class="text-secondary text-sm mb-3">{lesson.description}</p>
+                  <div class="flex items-center gap-4 text-sm text-secondary">
+                    <span class="flex items-center gap-1">
+                      <.icon name="hero-document-text" class="w-4 h-4" />
+                      {length(lesson.grammar_lesson_steps || [])} {gettext("steps")}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <.icon name="hero-calendar" class="w-4 h-4" />
+                      {Calendar.strftime(lesson.inserted_at, "%Y-%m-%d")}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                  <.link navigate={~p"/teacher/grammar-lessons/#{lesson.id}/edit"} class="btn btn-ghost btn-sm">
+                    <.icon name="hero-pencil" class="w-4 h-4" />
+                  </.link>
+                  <button
+                    phx-click="delete"
+                    phx-value-id={lesson.id}
+                    data-confirm={gettext("Delete this lesson?")}
+                    class="btn btn-ghost btn-sm text-error"
+                  >
+                    <.icon name="hero-trash" class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

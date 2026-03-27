@@ -2315,4 +2315,373 @@ defmodule Medoru.Content do
       lessons_by_difficulty: lessons_by_difficulty
     }
   end
+
+  # ============================================================================
+  # Grammar Forms Functions
+  # ============================================================================
+
+  alias Medoru.Content.GrammarForm
+
+  @doc """
+  Returns the list of grammar forms.
+
+  ## Options
+    * `:word_type` - Filter by word type ("verb", "adjective", "noun")
+  """
+  def list_grammar_forms(opts \\ []) do
+    GrammarForm
+    |> maybe_filter_by_word_type(opts[:word_type])
+    |> order_by([gf], asc: gf.word_type, asc: gf.display_name)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_by_word_type(query, nil), do: query
+  defp maybe_filter_by_word_type(query, word_type) do
+    where(query, [gf], gf.word_type == ^word_type)
+  end
+
+  @doc """
+  Gets a single grammar form.
+
+  Raises `Ecto.NoResultsError` if the Grammar form does not exist.
+  """
+  def get_grammar_form!(id), do: Repo.get!(GrammarForm, id)
+
+  @doc """
+  Gets a single grammar form.
+
+  Returns nil if the Grammar form does not exist.
+  """
+  def get_grammar_form(id), do: Repo.get(GrammarForm, id)
+
+  @doc """
+  Gets a grammar form by name and word type.
+
+  Raises `Ecto.NoResultsError` if not found.
+  """
+  def get_grammar_form_by_name!(name, word_type) do
+    GrammarForm
+    |> where([gf], gf.name == ^name and gf.word_type == ^word_type)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a grammar form by name and word type.
+
+  Returns nil if not found.
+  """
+  def get_grammar_form_by_name(name, word_type) do
+    GrammarForm
+    |> where([gf], gf.name == ^name and gf.word_type == ^word_type)
+    |> Repo.one()
+  end
+
+  @doc """
+  Creates a grammar form.
+  """
+  def create_grammar_form(attrs \\ %{}) do
+    %GrammarForm{}
+    |> GrammarForm.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a grammar form.
+  """
+  def update_grammar_form(%GrammarForm{} = grammar_form, attrs) do
+    grammar_form
+    |> GrammarForm.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a grammar form.
+  """
+  def delete_grammar_form(%GrammarForm{} = grammar_form) do
+    Repo.delete(grammar_form)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking grammar form changes.
+  """
+  def change_grammar_form(%GrammarForm{} = grammar_form, attrs \\ %{}) do
+    GrammarForm.changeset(grammar_form, attrs)
+  end
+
+  # ============================================================================
+  # Word Classes Functions
+  # ============================================================================
+
+  alias Medoru.Content.{WordClass, WordClassMembership}
+
+  @doc """
+  Returns the list of word classes.
+  """
+  def list_word_classes do
+    WordClass
+    |> order_by([wc], asc: wc.display_name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single word class.
+
+  Raises `Ecto.NoResultsError` if the Word class does not exist.
+  """
+  def get_word_class!(id), do: Repo.get!(WordClass, id)
+
+  @doc """
+  Gets a single word class.
+
+  Returns nil if the Word class does not exist.
+  """
+  def get_word_class(id), do: Repo.get(WordClass, id)
+
+  @doc """
+  Gets a word class with its words preloaded.
+  """
+  def get_word_class_with_words!(id) do
+    WordClass
+    |> where([wc], wc.id == ^id)
+    |> preload(:words)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Creates a word class.
+  """
+  def create_word_class(attrs \\ %{}) do
+    %WordClass{}
+    |> WordClass.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a word class.
+  """
+  def update_word_class(%WordClass{} = word_class, attrs) do
+    word_class
+    |> WordClass.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a word class.
+  """
+  def delete_word_class(%WordClass{} = word_class) do
+    Repo.delete(word_class)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking word class changes.
+  """
+  def change_word_class(%WordClass{} = word_class, attrs \\ %{}) do
+    WordClass.changeset(word_class, attrs)
+  end
+
+  @doc """
+  Adds a word to a word class.
+  """
+  def add_word_to_class(word_id, word_class_id) do
+    %WordClassMembership{}
+    |> WordClassMembership.changeset(%{word_id: word_id, word_class_id: word_class_id})
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a word from a word class.
+  """
+  def remove_word_from_class(word_id, word_class_id) do
+    WordClassMembership
+    |> where([wcm], wcm.word_id == ^word_id and wcm.word_class_id == ^word_class_id)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      membership -> Repo.delete(membership)
+    end
+  end
+
+  @doc """
+  Lists words in a word class.
+  """
+  def list_words_in_class(word_class_id) do
+    Word
+    |> join(:inner, [w], wcm in WordClassMembership, on: wcm.word_id == w.id)
+    |> where([w, wcm], wcm.word_class_id == ^word_class_id)
+    |> order_by([w], asc: w.text)
+    |> Repo.all()
+  end
+
+  @doc """
+  Checks if a word is in a word class.
+  """
+  def word_in_class?(word_id, word_class_id) do
+    WordClassMembership
+    |> where([wcm], wcm.word_id == ^word_id and wcm.word_class_id == ^word_class_id)
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Lists word classes for a word.
+  """
+  def list_word_classes_for_word(word_id) do
+    WordClass
+    |> join(:inner, [wc], wcm in WordClassMembership, on: wcm.word_class_id == wc.id)
+    |> where([wc, wcm], wcm.word_id == ^word_id)
+    |> order_by([wc], asc: wc.display_name)
+    |> Repo.all()
+  end
+
+  # ============================================================================
+  # Grammar Lesson Steps Functions
+  # ============================================================================
+
+  alias Medoru.Content.GrammarLessonStep
+
+  @doc """
+  Returns the list of grammar lesson steps for a custom lesson.
+  """
+  def list_grammar_lesson_steps(custom_lesson_id) do
+    GrammarLessonStep
+    |> where([gls], gls.custom_lesson_id == ^custom_lesson_id)
+    |> order_by([gls], asc: gls.position)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single grammar lesson step.
+
+  Raises `Ecto.NoResultsError` if the step does not exist.
+  """
+  def get_grammar_lesson_step!(id), do: Repo.get!(GrammarLessonStep, id)
+
+  @doc """
+  Creates a grammar lesson step.
+  """
+  def create_grammar_lesson_step(attrs \\ %{}) do
+    %GrammarLessonStep{}
+    |> GrammarLessonStep.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a grammar lesson step.
+  """
+  def update_grammar_lesson_step(%GrammarLessonStep{} = step, attrs) do
+    step
+    |> GrammarLessonStep.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a grammar lesson step.
+  """
+  def delete_grammar_lesson_step(%GrammarLessonStep{} = step) do
+    Repo.delete(step)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking grammar lesson step changes.
+  """
+  def change_grammar_lesson_step(%GrammarLessonStep{} = step, attrs \\ %{}) do
+    GrammarLessonStep.changeset(step, attrs)
+  end
+
+  # ============================================================================
+  # Word Conjugations Functions
+  # ============================================================================
+
+  alias Medoru.Content.WordConjugation
+
+  @doc """
+  Returns the list of word conjugations for a word.
+  """
+  def list_word_conjugations(word_id) do
+    WordConjugation
+    |> where([wc], wc.word_id == ^word_id)
+    |> join(:inner, [wc], gf in assoc(wc, :grammar_form))
+    |> order_by([wc, gf], asc: gf.word_type, asc: gf.display_name)
+    |> preload(:grammar_form)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single word conjugation.
+
+  Raises `Ecto.NoResultsError` if the conjugation does not exist.
+  """
+  def get_word_conjugation!(id), do: Repo.get!(WordConjugation, id)
+
+  @doc """
+  Creates a word conjugation.
+  """
+  def create_word_conjugation(attrs \\ %{}) do
+    %WordConjugation{}
+    |> WordConjugation.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates multiple word conjugations in a batch.
+  """
+  def create_word_conjugations(conjugations) when is_list(conjugations) do
+    Repo.transaction(fn ->
+      Enum.map(conjugations, fn attrs ->
+        case create_word_conjugation(attrs) do
+          {:ok, conj} -> conj
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end)
+  end
+
+  @doc """
+  Updates a word conjugation.
+  """
+  def update_word_conjugation(%WordConjugation{} = conjugation, attrs) do
+    conjugation
+    |> WordConjugation.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a word conjugation.
+  """
+  def delete_word_conjugation(%WordConjugation{} = conjugation) do
+    Repo.delete(conjugation)
+  end
+
+  @doc """
+  Deletes all conjugations for a word.
+  """
+  def delete_word_conjugations(word_id) do
+    WordConjugation
+    |> where([wc], wc.word_id == ^word_id)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking word conjugation changes.
+  """
+  def change_word_conjugation(%WordConjugation{} = conjugation, attrs \\ %{}) do
+    WordConjugation.changeset(conjugation, attrs)
+  end
+
+  @doc """
+  Finds a word conjugation by form text.
+  """
+  def find_conjugation_by_form(conjugated_form) do
+    WordConjugation
+    |> where([wc], wc.conjugated_form == ^conjugated_form)
+    |> join(:inner, [wc], w in assoc(wc, :word))
+    |> join(:inner, [wc], gf in assoc(wc, :grammar_form))
+    |> select([wc, w, gf], %{
+      word_id: w.id,
+      word_text: w.text,
+      word_type: w.word_type,
+      grammar_form: gf.name,
+      grammar_form_display: gf.display_name
+    })
+    |> Repo.all()
+  end
 end

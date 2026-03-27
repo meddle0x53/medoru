@@ -1,0 +1,131 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <.link navigate={~p"/admin/word-classes"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Classes")}
+      </.link>
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-base-content">{@word_class.display_name}</h1>
+          <p class="text-secondary mt-1">{@word_class.description}</p>
+        </div>
+        <.link navigate={~p"/admin/word-classes/#{@word_class.id}/edit"} class="btn btn-outline btn-sm">
+          <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit")}
+        </.link>
+      </div>
+    </div>
+
+    <%!-- Stats --%>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body p-4">
+          <div class="text-2xl font-bold">{@word_stats.total_words}</div>
+          <div class="text-sm text-secondary">{gettext("Total Words")}</div>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body p-4">
+          <div class="text-2xl font-bold text-primary">{@word_stats.verbs}</div>
+          <div class="text-sm text-secondary">{gettext("Verbs")}</div>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body p-4">
+          <div class="text-2xl font-bold text-secondary">{@word_stats.nouns}</div>
+          <div class="text-sm text-secondary">{gettext("Nouns")}</div>
+        </div>
+      </div>
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body p-4">
+          <div class="text-2xl font-bold text-accent">{@word_stats.adjectives}</div>
+          <div class="text-sm text-secondary">{gettext("Adjectives")}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <%!-- Word List --%>
+      <div class="lg:col-span-2">
+        <div class="card bg-base-100 shadow-sm border border-base-300">
+          <div class="card-body">
+            <h2 class="text-lg font-semibold mb-4">{gettext("Words in this Class")}</h2>
+            
+            <%= if @words_in_class == [] do %>
+              <div class="text-center py-8 text-secondary">
+                <.icon name="hero-inbox" class="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>{gettext("No words in this class yet")}</p>
+              </div>
+            <% else %>
+              <div class="space-y-2 max-h-96 overflow-y-auto">
+                <%= for word <- Enum.sort_by(@words_in_class, & &1.text) do %>
+                  <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
+                    <div class="flex items-baseline gap-3">
+                      <span class="text-xl font-jp">{word.text}</span>
+                      <span class="text-sm text-secondary">{word.reading}</span>
+                      <span class="badge badge-sm badge-ghost">{word.word_type}</span>
+                    </div>
+                    <button
+                      phx-click="remove_word"
+                      phx-value-word_id={word.id}
+                      class="btn btn-ghost btn-xs text-error"
+                    >
+                      <.icon name="hero-x-mark" class="w-4 h-4" />
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Add Words --%>
+      <div>
+        <div class="card bg-base-100 shadow-sm border border-base-300">
+          <div class="card-body">
+            <h2 class="text-lg font-semibold mb-4">{gettext("Add Words")}</h2>
+            
+            <form phx-change="search" class="mb-4">
+              <div class="relative">
+                <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+                <input
+                  type="text"
+                  name="query"
+                  value={@search_query}
+                  placeholder={gettext("Search words...")}
+                  class="input input-bordered w-full pl-10"
+                  phx-debounce="300"
+                />
+              </div>
+            </form>
+
+            <div class="space-y-2 max-h-80 overflow-y-auto">
+              <%= for word <- @search_results do %>
+                <div class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg">
+                  <button
+                    phx-click="add_word"
+                    phx-value-word_id={word.id}
+                    class="btn btn-ghost btn-sm flex-shrink-0"
+                  >
+                    <.icon name="hero-plus" class="w-4 h-4" />
+                  </button>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-baseline gap-2">
+                      <span class="text-lg font-jp truncate">{word.text}</span>
+                      <span class="text-sm text-secondary truncate">{word.reading}</span>
+                    </div>
+                    <p class="text-sm text-secondary truncate">{word.meaning}</p>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <%= if @search_query != "" and @search_results == [] do %>
+              <p class="text-center text-secondary py-4">{gettext("No words found")}</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
