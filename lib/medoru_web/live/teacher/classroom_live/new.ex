@@ -66,12 +66,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
         </div>
 
         <%!-- Form --%>
-        <div class="card bg-base-100 border border-base-300 shadow-sm">
-          <div class="card-body">
+        <div class="bg-white dark:bg-base-100 rounded-xl shadow-sm border border-base-300 overflow-hidden">
+          <div class="p-6 sm:p-8">
             <.form for={@form} id="classroom-form" phx-change="validate" phx-submit="save">
               <div class="space-y-6">
                 <%!-- Name --%>
-                <div class="form-control">
+                <div>
                   <.input
                     field={@form[:name]}
                     type="text"
@@ -85,7 +85,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                 </div>
 
                 <%!-- Slug (auto-generated from name) --%>
-                <div class="form-control">
+                <div>
                   <.input
                     field={@form[:slug]}
                     type="text"
@@ -98,7 +98,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                 </div>
 
                 <%!-- Description --%>
-                <div class="form-control">
+                <div>
                   <.input
                     field={@form[:description]}
                     type="textarea"
@@ -109,9 +109,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                 </div>
 
                 <%!-- Actions --%>
-                <div class="flex items-center gap-4 pt-4 border-t border-base-200">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-base-200">
                   <button type="submit" class="btn btn-primary">
-                    {gettext("Create Classroom")}
+                    <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Classroom")}
                   </button>
                   <.link navigate={~p"/teacher/classrooms"} class="btn btn-ghost">
                     {gettext("Cancel")}

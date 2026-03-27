@@ -19,7 +19,7 @@ IO.puts("=" |> String.duplicate(60))
 
 # Get all N2 and N3 words with their kanji
 words_with_kanji =
-  from(w in Word,
+  (from(w in Word,
     join: wk in WordKanji, on: wk.word_id == w.id,
     join: k in Kanji, on: wk.kanji_id == k.id,
     where: w.difficulty in [2, 3],
@@ -32,7 +32,7 @@ words_with_kanji =
       kanji_level: k.jlpt_level
     }
   )
-  |> Repo.all()
+  |> Repo.all())
 
 # Group by word
 words_by_id = Enum.group_by(words_with_kanji, & &1.word_id)
@@ -49,14 +49,14 @@ IO.puts("Found #{map_size(words_by_id)} N2/N3 words to analyze\n")
     cond do
       # Contains N1 kanji (hardest)
       max_kanji_difficulty == 1 and word_difficulty == 2 ->
-        {[%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: format_kanji_info(kanji_list)} | n2to1], n3to1, n3to2}
+        {[%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: (Enum.map(kanji_list, & "#{&1.kanji_character}(N#{&1.kanji_level})") |> Enum.join(", "))} | n2to1], n3to1, n3to2}
         
       max_kanji_difficulty == 1 and word_difficulty == 3 ->
-        {n2to1, [%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: format_kanji_info(kanji_list)} | n3to1], n3to2}
+        {n2to1, [%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: (Enum.map(kanji_list, & "#{&1.kanji_character}(N#{&1.kanji_level})") |> Enum.join(", "))} | n3to1], n3to2}
         
       # Contains N2 kanji (but no N1)
       max_kanji_difficulty == 2 and word_difficulty == 3 ->
-        {n2to1, n3to1, [%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: format_kanji_info(kanji_list)} | n3to2]}
+        {n2to1, n3to1, [%{word_id: word_id, text: hd(kanji_list).word_text, kanji_info: (Enum.map(kanji_list, & "#{&1.kanji_character}(N#{&1.kanji_level})") |> Enum.join(", "))} | n3to2]}
         
       true ->
         {n2to1, n3to1, n3to2}
@@ -100,10 +100,10 @@ IO.puts("  Total:   #{length(n1_from_n2) + length(n1_from_n3) + length(n2_from_n
 # Apply changes
 IO.puts("\nApply these changes? (yes/no)")
 
-case IO.gets("") |> String.trim() |> String.downcase() do
+(case IO.gets("") |> String.trim() |> String.downcase() do
   "yes" ->
     IO.puts("\nApplying changes...")
-    
+
     # Update N2 -> N1
     n1_from_n2_ids = Enum.map(n1_from_n2, & &1.word_id)
     if n1_from_n2_ids != [] do
@@ -112,7 +112,7 @@ case IO.gets("") |> String.trim() |> String.downcase() do
         |> Repo.update_all(set: [difficulty: 1])
       IO.puts("  Updated #{count} words: N2 → N1")
     end
-    
+
     # Update N3 -> N1
     n1_from_n3_ids = Enum.map(n1_from_n3, & &1.word_id)
     if n1_from_n3_ids != [] do
@@ -121,7 +121,7 @@ case IO.gets("") |> String.trim() |> String.downcase() do
         |> Repo.update_all(set: [difficulty: 1])
       IO.puts("  Updated #{count} words: N3 → N1")
     end
-    
+
     # Update N3 -> N2
     n2_from_n3_ids = Enum.map(n2_from_n3, & &1.word_id)
     if n2_from_n3_ids != [] do
@@ -130,14 +130,14 @@ case IO.gets("") |> String.trim() |> String.downcase() do
         |> Repo.update_all(set: [difficulty: 2])
       IO.puts("  Updated #{count} words: N3 → N2")
     end
-    
+
     IO.puts("\nDone!")
-    
+
   _ ->
     IO.puts("\nAborted. No changes were made.")
-end
+end)
 
 # Helper function
  defp format_kanji_info(kanji_list) do
   Enum.map(kanji_list, & "#{&1.kanji_character}(N#{&1.kanji_level})") |> Enum.join(", ")
-end
+ end

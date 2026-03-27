@@ -31,8 +31,6 @@ defmodule MedoruWeb.ClassroomLive.Show do
           members = Classrooms.list_classroom_members(id)
           published_tests = Classrooms.list_classroom_tests(id, status: :active)
           user_attempts = Classrooms.list_user_test_attempts(id, user.id)
-          custom_lessons = Medoru.Content.list_classroom_custom_lessons(id)
-          lesson_progress = Classrooms.list_user_custom_lesson_progress(id, user.id)
 
           {:ok,
            socket
@@ -42,8 +40,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
            |> assign(:members, members)
            |> assign(:published_tests, published_tests)
            |> assign(:user_attempts, user_attempts)
-           |> assign(:custom_lessons, custom_lessons)
-           |> assign(:lesson_progress, lesson_progress)
+           |> assign(:lessons_filter, :all)
+           |> assign(:lessons_page, 1)
+           |> assign(:lessons_per_page, 10)
            |> assign(:active_tab, "overview")}
         end
     end
@@ -52,7 +51,37 @@ defmodule MedoruWeb.ClassroomLive.Show do
   @impl true
   def handle_params(params, _url, socket) do
     tab = params["tab"] || "overview"
+
+    # Load lessons when on lessons tab
+    socket =
+      if tab == "lessons" do
+        load_lessons_data(socket)
+      else
+        socket
+      end
+
     {:noreply, assign(socket, :active_tab, tab)}
+  end
+
+  defp load_lessons_data(socket) do
+    classroom_id = socket.assigns.classroom.id
+    user_id = socket.assigns.current_scope.current_user.id
+    filter = socket.assigns.lessons_filter
+    page = socket.assigns.lessons_page
+    per_page = socket.assigns.lessons_per_page
+
+    result = Classrooms.list_classroom_lessons_with_progress(classroom_id, user_id,
+      filter: filter,
+      page: page,
+      per_page: per_page
+    )
+
+    socket
+    |> assign(:custom_lessons, result.lessons)
+    |> assign(:lesson_progress, result.progress)
+    |> assign(:lessons_page, result.page)
+    |> assign(:lessons_total_pages, result.total_pages)
+    |> assign(:lessons_total_count, result.total_count)
   end
 
   @impl true
@@ -61,6 +90,39 @@ defmodule MedoruWeb.ClassroomLive.Show do
      socket
      |> assign(:active_tab, tab)
      |> push_patch(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=#{tab}")}
+  end
+
+  @impl true
+  def handle_event("filter_lessons", %{"filter" => filter}, socket) do
+    filter_atom =
+      case filter do
+        "completed" -> :completed
+        "learned" -> :completed
+        "not_started" -> :not_started
+        "unlearned" -> :not_started
+        "in_progress" -> :in_progress
+        _ -> :all
+      end
+
+    socket =
+      socket
+      |> assign(:lessons_filter, filter_atom)
+      |> assign(:lessons_page, 1)
+      |> load_lessons_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("change_lessons_page", %{"page" => page}, socket) do
+    page = String.to_integer(page)
+
+    socket =
+      socket
+      |> assign(:lessons_page, page)
+      |> load_lessons_data()
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -373,7 +435,32 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp lessons_tab(assigns) do
     ~H"""
-    <div class="space-y-3 sm:space-y-4">
+    <div class="space-y-4 sm:space-y-6">
+      <%!-- Filter Buttons --%>
+      <div class="flex flex-wrap gap-2">
+        <.filter_button
+          active={@lessons_filter == :all}
+          label={gettext("All")}
+          filter="all"
+          count={@lessons_total_count}
+        />
+        <.filter_button
+          active={@lessons_filter == :not_started}
+          label={gettext("Not Started")}
+          filter="not_started"
+        />
+        <.filter_button
+          active={@lessons_filter == :in_progress}
+          label={gettext("In Progress")}
+          filter="in_progress"
+        />
+        <.filter_button
+          active={@lessons_filter == :completed}
+          label={gettext("Completed")}
+          filter="completed"
+        />
+      </div>
+
       <%= if @custom_lessons == [] do %>
         <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
           <.icon
@@ -390,87 +477,108 @@ defmodule MedoruWeb.ClassroomLive.Show do
           </p>
         </div>
       <% else %>
-        <%= for classroom_lesson <- @custom_lessons do %>
-          <% lesson = classroom_lesson.custom_lesson %>
-          <% progress = get_lesson_progress(@lesson_progress, lesson.id) %>
-          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
-            <div class="card-body p-4 sm:p-6">
-              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                <div class="flex-1 min-w-0">
-                  <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
-                    {lesson.title}
-                  </h3>
-                  <p class="text-secondary text-sm mb-2 sm:mb-3">
-                    {lesson.description || gettext("No description")}
-                  </p>
+        <div class="space-y-3 sm:space-y-4">
+          <%= for classroom_lesson <- @custom_lessons do %>
+            <% lesson = classroom_lesson.custom_lesson %>
+            <% progress = Map.get(@lesson_progress, lesson.id) %>
+            <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+              <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
+                      {lesson.title}
+                    </h3>
+                    <p class="text-secondary text-sm mb-2 sm:mb-3">
+                      {lesson.description || gettext("No description")}
+                    </p>
 
-                  <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
-                    <span class="badge badge-outline badge-sm">
-                      <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
-                      {lesson.word_count} {gettext("words")}
-                    </span>
-
-                    <%= if lesson.difficulty do %>
+                    <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
                       <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-signal" class="w-3 h-3 mr-1" /> N{lesson.difficulty}
+                        <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
+                        {lesson.word_count} {gettext("words")}
                       </span>
-                    <% end %>
 
-                    <%= if lesson.requires_test do %>
-                      <span
-                        class="badge badge-info badge-sm"
-                        title={gettext("Requires test to complete")}
-                      >
-                        <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
-                      </span>
-                    <% end %>
+                      <%= if lesson.difficulty do %>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-signal" class="w-3 h-3 mr-1" /> N{lesson.difficulty}
+                        </span>
+                      <% end %>
 
-                    <%= case progress && progress.status do %>
+                      <%= if lesson.requires_test do %>
+                        <span
+                          class="badge badge-info badge-sm"
+                          title={gettext("Requires test to complete")}
+                        >
+                          <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
+                        </span>
+                      <% end %>
+
+                      <%= case progress do %>
+                        <% "completed" -> %>
+                          <span class="badge badge-success badge-sm">
+                            <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
+                          </span>
+                        <% "in_progress" -> %>
+                          <span class="badge badge-warning badge-sm">
+                            <.icon name="hero-play" class="w-3 h-3 mr-1" /> {gettext("In Progress")}
+                          </span>
+                        <% _ -> %>
+                          <span class="badge badge-ghost badge-sm">
+                            {gettext("Not Started")}
+                          </span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <div class="sm:ml-4 self-start sm:self-auto">
+                    <%= case progress do %>
                       <% "completed" -> %>
-                        <span class="badge badge-success badge-sm">
-                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
-                        </span>
-                      <% "in_progress" -> %>
-                        <span class="badge badge-warning badge-sm">
-                          <.icon name="hero-play" class="w-3 h-3 mr-1" /> {gettext("In Progress")}
-                        </span>
+                        <div class="flex items-center gap-2">
+                          <span class="badge badge-success">
+                            +{Map.get(get_lesson_progress_map(@lesson_progress, lesson.id), :points_earned, 0)} {gettext("pts")}
+                          </span>
+                          <.link
+                            navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                            class="btn btn-secondary btn-sm"
+                          >
+                            <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
+                          </.link>
+                        </div>
                       <% _ -> %>
-                        <span class="badge badge-ghost badge-sm">
-                          {gettext("Not Started")}
-                        </span>
+                        <.link
+                          navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                          class="btn btn-primary btn-sm sm:btn-md"
+                        >
+                          <%= if progress == "in_progress" do %>
+                            <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
+                          <% else %>
+                            <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}
+                          <% end %>
+                        </.link>
                     <% end %>
                   </div>
                 </div>
-
-                <div class="sm:ml-4 self-start sm:self-auto">
-                  <%= case progress && progress.status do %>
-                    <% "completed" -> %>
-                      <div class="flex items-center gap-2">
-                        <span class="badge badge-success">
-                          +{progress.points_earned} {gettext("pts")}
-                        </span>
-                        <.link
-                          navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
-                          class="btn btn-secondary btn-sm"
-                        >
-                          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
-                        </.link>
-                      </div>
-                    <% _ -> %>
-                      <.link
-                        navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
-                        class="btn btn-primary btn-sm sm:btn-md"
-                      >
-                        <%= if progress && progress.status == "in_progress" do %>
-                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
-                        <% else %>
-                          <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}
-                        <% end %>
-                      </.link>
-                  <% end %>
-                </div>
               </div>
             </div>
+          <% end %>
+        </div>
+
+        <%!-- Pagination --%>
+        <%= if @lessons_total_pages > 1 do %>
+          <div class="flex justify-center gap-2 pt-4">
+            <%= for page_num <- 1..@lessons_total_pages do %>
+              <button
+                phx-click="change_lessons_page"
+                phx-value-page={page_num}
+                class={[
+                  "btn btn-sm",
+                  @lessons_page == page_num && "btn-primary",
+                  @lessons_page != page_num && "btn-ghost"
+                ]}
+              >
+                {page_num}
+              </button>
+            <% end %>
           </div>
         <% end %>
       <% end %>
@@ -478,8 +586,36 @@ defmodule MedoruWeb.ClassroomLive.Show do
     """
   end
 
-  defp get_lesson_progress(progress_list, lesson_id) do
-    Enum.find(progress_list, fn p -> p.custom_lesson_id == lesson_id end)
+  defp get_lesson_progress_map(progress_map, lesson_id) do
+    case Map.get(progress_map, lesson_id) do
+      nil -> %{status: "not_started", points_earned: 0}
+      progress when is_map(progress) -> progress
+      status -> %{status: status, points_earned: 0}
+    end
+  end
+
+  attr :active, :boolean, required: true
+  attr :label, :string, required: true
+  attr :filter, :string, required: true
+  attr :count, :integer, default: nil
+
+  defp filter_button(assigns) do
+    ~H"""
+    <button
+      phx-click="filter_lessons"
+      phx-value-filter={@filter}
+      class={[
+        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+        @active && "bg-primary text-primary-content",
+        !@active && "bg-base-200 text-secondary hover:bg-base-300"
+      ]}
+    >
+      {@label}
+      <%= if @count do %>
+        <span class="ml-1 opacity-75">({@count})</span>
+      <% end %>
+    </button>
+    """
   end
 
   attr :classroom, :map, required: true

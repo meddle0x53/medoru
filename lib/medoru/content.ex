@@ -1748,19 +1748,23 @@ defmodule Medoru.Content do
 
       case existing do
         nil ->
+          # Get next order index for this classroom
+          next_order_index = Medoru.Classrooms.get_next_lesson_order_index(classroom_id)
+
           # Create new published record
           attrs =
             attrs
             |> Map.put(:custom_lesson_id, lesson_id)
             |> Map.put(:classroom_id, classroom_id)
             |> Map.put(:published_by_id, teacher_id)
+            |> Map.put(:order_index, next_order_index)
 
           %ClassroomCustomLesson{}
           |> ClassroomCustomLesson.publish_changeset(attrs)
           |> Repo.insert()
 
         %{status: "unpublished"} = classroom_lesson ->
-          # Republish existing record
+          # Republish existing record - keep the original order_index
           classroom_lesson
           |> ClassroomCustomLesson.republish_changeset()
           |> Repo.update()
@@ -1826,27 +1830,61 @@ defmodule Medoru.Content do
   def list_classroom_custom_lessons(classroom_id, opts \\ []) do
     status = Keyword.get(opts, :status, "active")
     include_archived = Keyword.get(opts, :include_archived, false)
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+    order_by = Keyword.get(opts, :order_by, :order_index)
 
-    ClassroomCustomLesson
-    |> where([ccl], ccl.classroom_id == ^classroom_id)
-    |> then(fn query ->
-      if status do
-        where(query, [ccl], ccl.status == ^status)
-      else
-        query
-      end
-    end)
-    |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
-    |> then(fn query ->
-      if include_archived do
-        query
-      else
-        where(query, [custom_lesson: cl], cl.status != "archived")
-      end
-    end)
-    |> order_by([ccl], desc: ccl.published_at)
-    |> preload(:custom_lesson)
-    |> Repo.all()
+    query =
+      ClassroomCustomLesson
+      |> where([ccl], ccl.classroom_id == ^classroom_id)
+      |> then(fn q ->
+        if status do
+          where(q, [ccl], ccl.status == ^status)
+        else
+          q
+        end
+      end)
+      |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
+      |> then(fn q ->
+        if include_archived do
+          q
+        else
+          where(q, [custom_lesson: cl], cl.status != "archived")
+        end
+      end)
+      |> then(fn q ->
+        case order_by do
+          :order_index -> order_by(q, [ccl], asc: ccl.order_index, asc: ccl.published_at)
+          :published_at -> order_by(q, [ccl], desc: ccl.published_at)
+          _ -> order_by(q, [ccl], asc: ccl.order_index)
+        end
+      end)
+      |> preload(:custom_lesson)
+
+    # Paginate
+    paginated =
+      query
+      |> limit(^per_page)
+      |> offset((^page - 1) * ^per_page)
+      |> Repo.all()
+
+    # Get total count
+    total_count =
+      query
+      |> exclude(:order_by)
+      |> exclude(:preload)
+      |> exclude(:limit)
+      |> exclude(:offset)
+      |> select(count())
+      |> Repo.one()
+
+    %{
+      lessons: paginated,
+      page: page,
+      per_page: per_page,
+      total_count: total_count,
+      total_pages: ceil(total_count / per_page)
+    }
   end
 
   @doc """

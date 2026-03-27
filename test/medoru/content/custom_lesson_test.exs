@@ -145,9 +145,10 @@ defmodule Medoru.Content.CustomLessonTest do
 
       {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
 
-      lessons = Content.list_classroom_custom_lessons(classroom.id)
-      assert length(lessons) == 1
-      assert hd(lessons).custom_lesson_id == lesson.id
+      result = Content.list_classroom_custom_lessons(classroom.id)
+      assert result.total_count == 1
+      assert length(result.lessons) == 1
+      assert hd(result.lessons).custom_lesson_id == lesson.id
     end
 
     test "complete_custom_lesson/3 awards points", %{
@@ -239,9 +240,10 @@ defmodule Medoru.Content.CustomLessonTest do
       assert {:ok, _} = Content.archive_custom_lesson(archived_lesson)
 
       # List classroom lessons - should only show active custom lesson
-      lessons = Content.list_classroom_custom_lessons(classroom.id)
-      assert length(lessons) == 1
-      assert hd(lessons).custom_lesson_id == active_lesson.id
+      result = Content.list_classroom_custom_lessons(classroom.id)
+      assert result.total_count == 1
+      assert length(result.lessons) == 1
+      assert hd(result.lessons).custom_lesson_id == active_lesson.id
     end
 
     test "list_classroom_custom_lessons/1 with include_archived: true shows all lessons", %{
@@ -273,8 +275,9 @@ defmodule Medoru.Content.CustomLessonTest do
       assert {:ok, _} = Content.archive_custom_lesson(archived_lesson)
 
       # List classroom lessons with include_archived - should show both
-      lessons = Content.list_classroom_custom_lessons(classroom.id, include_archived: true)
-      assert length(lessons) == 2
+      result = Content.list_classroom_custom_lessons(classroom.id, include_archived: true)
+      assert result.total_count == 2
+      assert length(result.lessons) == 2
     end
 
     test "list_teacher_custom_lessons/2 filters by status", %{teacher: teacher} do

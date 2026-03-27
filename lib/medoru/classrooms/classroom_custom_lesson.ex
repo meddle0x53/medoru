@@ -23,6 +23,7 @@ defmodule Medoru.Classrooms.ClassroomCustomLesson do
     field :points_override, :integer
     field :published_at, :utc_datetime_usec
     field :unpublished_at, :utc_datetime_usec
+    field :order_index, :integer, default: 0
 
     belongs_to :classroom, Classroom
     belongs_to :custom_lesson, CustomLesson
@@ -82,5 +83,15 @@ defmodule Medoru.Classrooms.ClassroomCustomLesson do
       :unpublished_at
     ])
     |> validate_inclusion(:status, ["active"])
+  end
+
+  @doc """
+  Changeset for updating lesson order.
+  """
+  def order_changeset(classroom_lesson, attrs) do
+    classroom_lesson
+    |> cast(attrs, [:order_index])
+    |> validate_required([:order_index])
+    |> validate_number(:order_index, greater_than_or_equal_to: 0)
   end
 end

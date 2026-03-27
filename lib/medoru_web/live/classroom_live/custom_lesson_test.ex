@@ -39,8 +39,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
     # Verify lesson is published to this classroom
-    published_lessons = Content.list_classroom_custom_lessons(classroom_id)
-    lesson_ids = Enum.map(published_lessons, fn pc -> pc.custom_lesson_id end)
+    result = Content.list_classroom_custom_lessons(classroom_id)
+    lesson_ids = Enum.map(result.lessons, fn pc -> pc.custom_lesson_id end)
 
     if lesson_id not in lesson_ids do
       {:ok,

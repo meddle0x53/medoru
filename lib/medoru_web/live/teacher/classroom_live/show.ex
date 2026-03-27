@@ -50,21 +50,38 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   def handle_params(params, _url, socket) do
     tab = params["tab"] || "overview"
 
-    # Reload data when switching to tests tab to get fresh attempt statuses
+    # Reload data when switching to specific tabs
     socket =
-      if tab == "tests" do
-        classroom = socket.assigns.classroom
-        published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
-        test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
+      case tab do
+        "tests" ->
+          classroom = socket.assigns.classroom
+          published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+          test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
 
-        socket
-        |> assign(:published_tests, published_tests)
-        |> assign(:test_attempts, test_attempts)
-      else
-        socket
+          socket
+          |> assign(:published_tests, published_tests)
+          |> assign(:test_attempts, test_attempts)
+
+        "lessons" ->
+          classroom = socket.assigns.classroom
+          load_lessons_data(socket, classroom)
+
+        _ ->
+          socket
       end
 
     {:noreply, assign(socket, :active_tab, tab)}
+  end
+
+  defp load_lessons_data(socket, classroom) do
+    result = Medoru.Content.list_classroom_custom_lessons(classroom.id, status: "active", per_page: 100)
+
+    socket
+    |> assign(:classroom_lessons, result.lessons)
+    |> assign(:lessons_page, result.page)
+    |> assign(:lessons_total_pages, result.total_pages)
+    |> assign(:lessons_total_count, result.total_count)
+    |> assign(:reordering, false)
   end
 
   @impl true
@@ -189,6 +206,78 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_reordering", _, socket) do
+    {:noreply, assign(socket, :reordering, not socket.assigns.reordering)}
+  end
+
+  @impl true
+  def handle_event("move_lesson_up", %{"id" => lesson_id}, socket) do
+    classroom_id = socket.assigns.classroom.id
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    # First ensure indices are initialized, then get fresh data
+    with :ok <- Classrooms.ensure_lesson_order_indices(classroom_id),
+         result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100),
+         lessons = result.lessons,
+         current_index = Enum.find_index(lessons, fn l -> l.id == lesson_id end),
+         true <- current_index && current_index > 0 do
+
+      current_lesson = Enum.at(lessons, current_index)
+      prev_lesson = Enum.at(lessons, current_index - 1)
+
+      new_order = [
+        {current_lesson.id, prev_lesson.order_index},
+        {prev_lesson.id, current_lesson.order_index}
+      ]
+
+      case Classrooms.reorder_classroom_lessons(classroom_id, teacher_id, new_order) do
+        {:ok, _} ->
+          result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100)
+          {:noreply, assign(socket, :classroom_lessons, result.lessons)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder lessons."))}
+      end
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("move_lesson_down", %{"id" => lesson_id}, socket) do
+    classroom_id = socket.assigns.classroom.id
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    # First ensure indices are initialized, then get fresh data
+    with :ok <- Classrooms.ensure_lesson_order_indices(classroom_id),
+         result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100),
+         lessons = result.lessons,
+         current_index = Enum.find_index(lessons, fn l -> l.id == lesson_id end),
+         last_index = length(lessons) - 1,
+         true <- current_index && current_index < last_index do
+
+      current_lesson = Enum.at(lessons, current_index)
+      next_lesson = Enum.at(lessons, current_index + 1)
+
+      new_order = [
+        {current_lesson.id, next_lesson.order_index},
+        {next_lesson.id, current_lesson.order_index}
+      ]
+
+      case Classrooms.reorder_classroom_lessons(classroom_id, teacher_id, new_order) do
+        {:ok, _} ->
+          result = Medoru.Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: 100)
+          {:noreply, assign(socket, :classroom_lessons, result.lessons)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder lessons."))}
+      end
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
@@ -305,7 +394,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 current_scope={@current_scope}
               />
             <% "lessons" -> %>
-              <.lessons_tab />
+              <.lessons_tab
+                classroom_lessons={@classroom_lessons}
+                lessons_total_count={@lessons_total_count}
+                reordering={@reordering}
+              />
             <% "tests" -> %>
               <.tests_tab
                 published_tests={@published_tests}
@@ -432,20 +525,125 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :classroom_lessons, :list, required: true
+  attr :lessons_total_count, :integer, required: true
+  attr :reordering, :boolean, required: true
+
   defp lessons_tab(assigns) do
     ~H"""
-    <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
-      <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
-      <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("Lessons Coming Soon")}</h3>
-      <p class="text-secondary max-w-md mx-auto">
-        {gettext(
-          "In the next iteration, you'll be able to assign lessons to your classroom and track student progress."
-        )}
-      </p>
+    <div class="space-y-6">
+      <%!-- Header with count and reorder toggle --%>
+      <div class="flex items-center justify-between">
+        <h3 class="card-title text-base-content">
+          <.icon name="hero-book-open" class="w-5 h-5 mr-2" />
+          {gettext("Published Lessons")}
+          <span class="badge badge-ghost ml-2">{@lessons_total_count}</span>
+        </h3>
+
+        <div class="flex items-center gap-3">
+          <%= if @classroom_lessons != [] do %>
+            <button
+              phx-click="toggle_reordering"
+              class={[
+                "btn btn-sm",
+                @reordering && "btn-primary",
+                !@reordering && "btn-ghost btn-outline"
+              ]}
+            >
+              <%= if @reordering do %>
+                <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Done")}
+              <% else %>
+                <.icon name="hero-arrows-up-down" class="w-4 h-4 mr-1" /> {gettext("Reorder")}
+              <% end %>
+            </button>
+          <% end %>
+
+          <.link navigate={~p"/teacher/custom-lessons"} class="btn btn-primary btn-sm">
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Lessons")}
+          </.link>
+        </div>
+      </div>
+
+      <%= if @classroom_lessons == [] do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
+          <.icon name="hero-book-open" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("No Lessons Yet")}</h3>
+          <p class="text-secondary max-w-md mx-auto mb-6">
+            {gettext("You haven't published any lessons to this classroom yet. Create and publish lessons to get started.")}
+          </p>
+          <.link navigate={~p"/teacher/custom-lessons"} class="btn btn-primary">
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create a Lesson")}
+          </.link>
+        </div>
+      <% else %>
+        <div class="space-y-3">
+          <%= for {classroom_lesson, index} <- Enum.with_index(@classroom_lessons, 1) do %>
+            <% lesson = classroom_lesson.custom_lesson %>
+            <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+              <div class="card-body p-4">
+                <div class="flex items-center gap-4">
+                  <%= if @reordering do %>
+                    <div class="flex flex-col gap-1">
+                      <button
+                        phx-click="move_lesson_up"
+                        phx-value-id={classroom_lesson.id}
+                        disabled={index == 1}
+                        class={["btn btn-xs btn-ghost", index == 1 && "opacity-30"]}
+                      >
+                        <.icon name="hero-chevron-up" class="w-4 h-4" />
+                      </button>
+                      <button
+                        phx-click="move_lesson_down"
+                        phx-value-id={classroom_lesson.id}
+                        disabled={index == @lessons_total_count}
+                        class={["btn btn-xs btn-ghost", index == @lessons_total_count && "opacity-30"]}
+                      >
+                        <.icon name="hero-chevron-down" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  <% else %>
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {index}
+                    </div>
+                  <% end %>
+
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-semibold text-base-content truncate">{lesson.title}</h4>
+                    <p class="text-sm text-secondary truncate">
+                      {lesson.description || gettext("No description")}
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
+                        {lesson.word_count} {gettext("words")}
+                      </span>
+                      <%= if lesson.difficulty do %>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-signal" class="w-3 h-3 mr-1" /> N{lesson.difficulty}
+                        </span>
+                      <% end %>
+                      <%= if lesson.requires_test do %>
+                        <span class="badge badge-info badge-sm">
+                          <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <.link navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"} class="btn btn-ghost btn-sm">
+                      <.icon name="hero-pencil" class="w-4 h-4" />
+                    </.link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
     </div>
     """
   end
-
   attr :published_tests, :list, required: true
   attr :test_attempts, :list, required: true
   attr :current_scope, :map, required: true

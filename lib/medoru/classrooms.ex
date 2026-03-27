@@ -1567,6 +1567,274 @@ defmodule Medoru.Classrooms do
     |> Repo.all()
   end
 
+  # ============================================================================
+  # Lesson Ordering and Filtering
+  # ============================================================================
+
+  alias Medoru.Classrooms.ClassroomCustomLesson
+
+  @doc """
+  Updates the order of lessons in a classroom.
+  Accepts a list of tuples {lesson_id, new_order_index}.
+  Only the teacher who owns the classroom can reorder lessons.
+  """
+  def reorder_classroom_lessons(classroom_id, teacher_id, lesson_order_list) do
+    classroom = get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        Enum.each(lesson_order_list, fn {lesson_id, order_index} ->
+          ClassroomCustomLesson
+          |> where([ccl], ccl.id == ^lesson_id and ccl.classroom_id == ^classroom_id)
+          |> Repo.one()
+          |> case do
+            nil -> nil
+            lesson -> 
+              lesson
+              |> ClassroomCustomLesson.order_changeset(%{order_index: order_index})
+              |> Repo.update!()
+          end
+        end)
+
+        :ok
+      end)
+    end
+  end
+
+  @doc """
+  Ensures all lessons in a classroom have unique order indices.
+  If all lessons have the same order_index (e.g., all 0 from default),
+  assigns sequential indices based on published_at order.
+  """
+  def ensure_lesson_order_indices(classroom_id) do
+    lessons =
+      ClassroomCustomLesson
+      |> where([ccl], ccl.classroom_id == ^classroom_id)
+      |> order_by([ccl], asc: ccl.published_at)
+      |> Repo.all()
+
+    # Check if all lessons have the same order_index
+    order_indices = Enum.map(lessons, & &1.order_index) |> Enum.uniq()
+
+    if length(order_indices) == 1 and length(lessons) > 1 do
+      # All lessons have the same index, need to reassign
+      lessons
+      |> Enum.with_index(1)
+      |> Enum.each(fn {lesson, index} ->
+        lesson
+        |> ClassroomCustomLesson.order_changeset(%{order_index: index})
+        |> Repo.update!()
+      end)
+    end
+
+    :ok
+  end
+
+  @doc """
+  Gets the next order index for a new lesson in a classroom.
+  """
+  def get_next_lesson_order_index(classroom_id) do
+    max_index =
+      ClassroomCustomLesson
+      |> where([ccl], ccl.classroom_id == ^classroom_id)
+      |> select([ccl], max(ccl.order_index))
+      |> Repo.one()
+
+    (max_index || 0) + 1
+  end
+
+  @doc """
+  Lists classroom lessons filtered by user's completion status.
+
+  ## Options
+    * `:filter` - :all, :completed, :not_started, :in_progress (default: :all)
+    * `:page` - Page number for pagination (default: 1)
+    * `:per_page` - Items per page (default: 20)
+
+  """
+  def list_classroom_lessons_with_progress(classroom_id, user_id, opts \\ []) do
+    filter = Keyword.get(opts, :filter, :all)
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+
+    # Get all active lessons for the classroom
+    lessons_query =
+      ClassroomCustomLesson
+      |> where([ccl], ccl.classroom_id == ^classroom_id and ccl.status == "active")
+      |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
+      |> where([custom_lesson: cl], cl.status != "archived")
+      |> order_by([ccl], asc: ccl.order_index)
+      |> preload(:custom_lesson)
+
+    # Get user's progress for these lessons
+    user_progress =
+      ClassroomLessonProgress
+      |> where([p], p.classroom_id == ^classroom_id and p.user_id == ^user_id)
+      |> where([p], p.lesson_source == "custom")
+      |> Repo.all()
+      |> Map.new(fn p -> {p.custom_lesson_id, p.status} end)
+
+    # Apply filter
+    filtered_lessons =
+      lessons_query
+      |> Repo.all()
+      |> Enum.filter(fn ccl ->
+        lesson_status = Map.get(user_progress, ccl.custom_lesson_id, "not_started")
+
+        case filter do
+          :all -> true
+          :completed -> lesson_status == "completed"
+          :learned -> lesson_status == "completed"
+          :not_started -> lesson_status == "not_started"
+          :unlearned -> lesson_status == "not_started"
+          :in_progress -> lesson_status == "in_progress"
+          _ -> true
+        end
+      end)
+
+    # Paginate manually after filtering
+    total_count = length(filtered_lessons)
+    offset = (page - 1) * per_page
+    paginated_lessons = Enum.slice(filtered_lessons, offset, per_page)
+
+    %{
+      lessons: paginated_lessons,
+      progress: user_progress,
+      page: page,
+      per_page: per_page,
+      total_count: total_count,
+      total_pages: max(ceil(total_count / per_page), 1)
+    }
+  end
+
+  # ============================================================================
+  # Point Management
+  # ============================================================================
+
+  @doc """
+  Removes points from a member when their lesson/test is reset.
+  Ensures points don't go below zero.
+  """
+  def remove_member_points(classroom_id, user_id, points_to_remove) do
+    membership =
+      ClassroomMembership
+      |> where([m], m.classroom_id == ^classroom_id and m.user_id == ^user_id)
+      |> Repo.one()
+
+    case membership do
+      nil ->
+        {:error, :not_a_member}
+
+      membership ->
+        new_points = max(membership.points - points_to_remove, 0)
+
+        membership
+        |> ClassroomMembership.changeset(%{points: new_points})
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Resets a lesson attempt for a student (teacher only).
+  Removes points earned from the lesson.
+  """
+  def reset_lesson_attempt(classroom_id, user_id, custom_lesson_id, teacher_id) do
+    classroom = get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        # Get the progress record
+        progress =
+          ClassroomLessonProgress
+          |> where([p], p.classroom_id == ^classroom_id)
+          |> where([p], p.user_id == ^user_id)
+          |> where([p], p.custom_lesson_id == ^custom_lesson_id)
+          |> Repo.one()
+
+        case progress do
+          nil ->
+            {:error, :no_progress_found}
+
+          progress ->
+            # Remove points if lesson was completed
+            if progress.status == "completed" && progress.points_earned > 0 do
+              {:ok, _} = remove_member_points(classroom_id, user_id, progress.points_earned)
+            end
+
+            # Delete the progress record so they can start fresh
+            Repo.delete!(progress)
+
+            {:ok, :reset}
+        end
+      end)
+      |> case do
+        {:ok, {:ok, :reset}} -> {:ok, :reset}
+        {:ok, {:error, reason}} -> {:error, reason}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  @doc """
+  Resets a test attempt for a student (teacher only).
+  Also removes points earned from the test.
+  """
+  def reset_test_attempt_with_points(classroom_id, user_id, test_id, teacher_id) do
+    classroom = get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        attempt =
+          ClassroomTestAttempt
+          |> where([a], a.classroom_id == ^classroom_id)
+          |> where([a], a.user_id == ^user_id)
+          |> where([a], a.test_id == ^test_id)
+          |> Repo.one()
+
+        case attempt do
+          nil ->
+            {:error, :no_attempt_found}
+
+          attempt ->
+            # Remove points if test was completed
+            if attempt.status in ["completed", "timed_out"] && attempt.points_earned > 0 do
+              {:ok, _} = remove_member_points(classroom_id, user_id, attempt.points_earned)
+            end
+
+            # Complete the old test session if exists
+            if attempt.test_session_id do
+              Medoru.Tests.complete_test_session(attempt.test_session_id)
+            end
+
+            # Reset the attempt
+            attempt
+            |> ClassroomTestAttempt.reset_changeset(%{
+              reset_count: attempt.reset_count + 1,
+              reset_at: DateTime.utc_now(),
+              reset_by_id: teacher_id,
+              test_session_id: nil,
+              points_earned: 0,
+              score: 0
+            })
+            |> Repo.update!()
+
+            {:ok, :reset}
+        end
+      end)
+      |> case do
+        {:ok, {:ok, :reset}} -> {:ok, :reset}
+        {:ok, {:error, reason}} -> {:error, reason}
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
   defp maybe_generate_slug(attrs) do
     name = attrs[:name]
     slug = attrs[:slug]
