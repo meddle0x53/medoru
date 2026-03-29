@@ -16,29 +16,33 @@ defmodule Medoru.Grammar.ValidatorTest do
       masu = ContentFixtures.grammar_form_fixture(%{name: "masu-form", word_type: "verb"})
 
       # Create conjugations
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: taberu.id,
-        grammar_form_id: dictionary.id,
-        conjugated_form: "食べる"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: taberu.id,
+          grammar_form_id: dictionary.id,
+          conjugated_form: "食べる"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: taberu.id,
-        grammar_form_id: masu.id,
-        conjugated_form: "食べます"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: taberu.id,
+          grammar_form_id: masu.id,
+          conjugated_form: "食べます"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: arau.id,
-        grammar_form_id: dictionary.id,
-        conjugated_form: "洗う"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: arau.id,
+          grammar_form_id: dictionary.id,
+          conjugated_form: "洗う"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: arau.id,
-        grammar_form_id: masu.id,
-        conjugated_form: "洗います"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: arau.id,
+          grammar_form_id: masu.id,
+          conjugated_form: "洗います"
+        })
 
       %{
         taberu: taberu,
@@ -84,7 +88,12 @@ defmodule Medoru.Grammar.ValidatorTest do
 
     test "handles optional elements" do
       pattern = [
-        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["dictionary"], "optional" => true},
+        %{
+          "type" => "word_slot",
+          "word_type" => "verb",
+          "forms" => ["dictionary"],
+          "optional" => true
+        },
         %{"type" => "literal", "text" => "まえに、"},
         %{"type" => "word_slot", "word_type" => "verb", "forms" => ["masu-form"]}
       ]
@@ -111,11 +120,12 @@ defmodule Medoru.Grammar.ValidatorTest do
       taberu = ContentFixtures.word_fixture(%{text: "食べる", word_type: :verb})
       dictionary = ContentFixtures.grammar_form_fixture(%{name: "dictionary", word_type: "verb"})
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: taberu.id,
-        grammar_form_id: dictionary.id,
-        conjugated_form: "食べる"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: taberu.id,
+          grammar_form_id: dictionary.id,
+          conjugated_form: "食べる"
+        })
 
       %{}
     end

@@ -1,7 +1,10 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="max-w-6xl mx-auto px-4 py-8">
     <div class="mb-8">
-      <.link navigate={~p"/admin/word-classes"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+      <.link
+        navigate={~p"/admin/word-classes"}
+        class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+      >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Classes")}
       </.link>
       <div class="flex items-start justify-between">
@@ -9,7 +12,10 @@
           <h1 class="text-3xl font-bold text-base-content">{@word_class.display_name}</h1>
           <p class="text-secondary mt-1">{@word_class.description}</p>
         </div>
-        <.link navigate={~p"/admin/word-classes/#{@word_class.id}/edit"} class="btn btn-outline btn-sm">
+        <.link
+          navigate={~p"/admin/word-classes/#{@word_class.id}/edit"}
+          class="btn btn-outline btn-sm"
+        >
           <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit")}
         </.link>
       </div>
@@ -49,7 +55,7 @@
         <div class="card bg-base-100 shadow-sm border border-base-300">
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">{gettext("Words in this Class")}</h2>
-            
+
             <%= if @words_in_class == [] do %>
               <div class="text-center py-8 text-secondary">
                 <.icon name="hero-inbox" class="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -84,10 +90,13 @@
         <div class="card bg-base-100 shadow-sm border border-base-300">
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">{gettext("Add Words")}</h2>
-            
+
             <form phx-change="search" class="mb-4">
               <div class="relative">
-                <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+                <.icon
+                  name="hero-magnifying-glass"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary"
+                />
                 <input
                   type="text"
                   name="query"

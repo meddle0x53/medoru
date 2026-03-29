@@ -1,16 +1,19 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="mb-8">
-      <.link navigate={~p"/teacher/grammar-lessons"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
-        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Grammar Lessons")}
+  <div class="max-w-6xl mx-auto px-4 py-6 md:py-8">
+    <div class="mb-6 md:mb-8">
+      <.link
+        navigate={~p"/teacher/custom-lessons"}
+        class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
       </.link>
-      <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+      <h1 class="text-2xl md:text-3xl font-bold text-base-content">{@page_title}</h1>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
       <%!-- Lesson Info --%>
       <div class="lg:col-span-1">
-        <div class="card bg-base-100 shadow-sm border border-base-300 sticky top-4">
+        <div class="card bg-base-100 shadow-sm border border-base-300 lg:sticky lg:top-4">
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">{gettext("Lesson Info")}</h2>
             <.form
@@ -28,7 +31,7 @@
                   type="text"
                   id="lesson_title"
                   name="custom_lesson[title]"
-                  value={Phoenix.HTML.FormData.to_form(@changeset, []).data.title}
+                  value={Ecto.Changeset.get_field(@changeset, :title)}
                   class="input input-bordered w-full"
                   placeholder={gettext("e.g., Before/After Patterns")}
                   required
@@ -45,7 +48,7 @@
                   class="textarea textarea-bordered w-full"
                   rows="3"
                   placeholder={gettext("Describe what students will learn...")}
-                ><%= Phoenix.HTML.FormData.to_form(@changeset, []).data.description %></textarea>
+                ><%= Ecto.Changeset.get_field(@changeset, :description) %></textarea>
               </div>
 
               <div>
@@ -58,14 +61,21 @@
                   class="select select-bordered w-full"
                 >
                   <%= for level <- 1..5 do %>
-                    <option value={level} selected={Phoenix.HTML.FormData.to_form(@changeset, []).data.difficulty == level}>
+                    <option
+                      value={level}
+                      selected={Ecto.Changeset.get_field(@changeset, :difficulty) == level}
+                    >
                       N{level}
                     </option>
                   <% end %>
                 </select>
               </div>
 
-              <button type="submit" class="btn btn-primary w-full" phx-disable-with={gettext("Saving...")}>
+              <button
+                type="submit"
+                class="btn btn-primary w-full"
+                phx-disable-with={gettext("Saving...")}
+              >
                 <.icon name="hero-check" class="w-5 h-5 mr-2" />
                 {gettext("Save Lesson")}
               </button>
@@ -76,10 +86,10 @@
 
       <%!-- Steps --%>
       <div class="lg:col-span-2 space-y-6">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 class="text-xl font-semibold">{gettext("Grammar Steps")}</h2>
           <%= if @lesson do %>
-            <button phx-click="add_step" class="btn btn-primary btn-sm">
+            <button phx-click="add_step" class="btn btn-primary btn-sm w-full sm:w-auto">
               <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Step")}
             </button>
           <% end %>
@@ -89,7 +99,9 @@
           <div class="card bg-base-200">
             <div class="card-body text-center py-12">
               <.icon name="hero-document-text" class="w-12 h-12 mx-auto text-base-300 mb-4" />
-              <p class="text-secondary">{gettext("No steps yet. Add your first grammar step!")}</p>
+              <p class="text-secondary">
+                {gettext("No steps yet. Add your first grammar step!")}
+              </p>
             </div>
           </div>
         <% end %>
@@ -100,30 +112,59 @@
             <%= for {step, index} <- Enum.with_index(@steps) do %>
               <div class="card bg-base-100 shadow-sm border border-base-300">
                 <div class="card-body p-4">
-                  <div class="flex items-start justify-between">
-                    <div class="flex-1">
+                  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2 mb-2">
-                        <span class="badge badge-ghost">{gettext("Step")} #{index + 1}</span>
-                        <h3 class="font-semibold">{step.title || gettext("Untitled Step")}</h3>
+                        <span class="badge badge-ghost shrink-0">
+                          {gettext("Step")} #{index + 1}
+                        </span>
+                        <h3 class="font-semibold truncate">
+                          {step.title || gettext("Untitled Step")}
+                        </h3>
                       </div>
                       <div class="flex flex-wrap gap-2 mb-2">
                         <%= for element <- step.pattern_elements || [] do %>
-                          <%= if element["type"] == "word_slot" do %>
-                            <span class="badge badge-primary badge-sm">
-                              {String.upcase(String.first(element["word_type"]))}
-                              <%= if element["forms"] != [] do %>
-                                [#{Enum.join(element["forms"], "|")}]
-                              <% end %>
-                            </span>
-                          <% else %>
-                            <span class="badge badge-ghost badge-sm font-jp">{element["text"]}</span>
+                          <%= case element["type"] do %>
+                            <% "word_slot" -> %>
+                              <% color =
+                                @word_type_colors[element["word_type"]] ||
+                                  "bg-gray-500 text-white" %>
+                              <span class={["px-2 py-1 rounded text-xs font-medium", color]}>
+                                {String.capitalize(element["word_type"])}
+                                <%= if element["form"] do %>
+                                  <span class="font-jp ml-1">[{element["form"]}]</span>
+                                <% end %>
+                              </span>
+                            <% "word_class" -> %>
+                              <% class =
+                                Enum.find(@word_classes, fn c ->
+                                  c.id == element["word_class_id"]
+                                end) %>
+                              <span class="px-2 py-1 rounded text-xs font-medium bg-purple-400 text-white">
+                                <%= if class do %>
+                                  {class.display_name}
+                                <% else %>
+                                  {gettext("Class")}
+                                <% end %>
+                              </span>
+                            <% "literal" -> %>
+                              <span class="px-2 py-1 rounded text-xs font-medium bg-white text-gray-900 border border-base-300 font-jp">
+                                {element["text"]}
+                              </span>
+                            <% _ -> %>
                           <% end %>
                         <% end %>
                       </div>
-                      <p class="text-sm text-secondary">{length(step.examples || [])} {gettext("examples")}</p>
+                      <p class="text-sm text-secondary">
+                        {length(step.examples || [])} {gettext("examples")}
+                      </p>
                     </div>
-                    <div class="flex items-center gap-2 ml-4">
-                      <button phx-click="edit_step" phx-value-index={index} class="btn btn-ghost btn-sm">
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button
+                        phx-click="edit_step"
+                        phx-value-index={index}
+                        class="btn btn-ghost btn-sm"
+                      >
                         <.icon name="hero-pencil" class="w-4 h-4" />
                       </button>
                       <button
@@ -143,13 +184,14 @@
         <% else %>
           <%!-- Step Editor --%>
           <div class="card bg-base-100 shadow-sm border border-base-300">
-            <div class="card-body">
+            <div class="card-body p-4 md:p-6">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold">
-                  <%= if @current_step_index == :new do %>
-                    {gettext("New Step")}
-                  <% else %>
-                    {gettext("Edit Step")}
+                  <%= cond do %>
+                    <% @current_step_index == :new -> %>
+                      {gettext("New Step")}
+                    <% true -> %>
+                      {gettext("Edit Step")}
                   <% end %>
                 </h3>
                 <button phx-click="cancel_step" class="btn btn-ghost btn-sm">
@@ -163,78 +205,137 @@
                   <label class="label">
                     <span class="label-text">{gettext("Step Title")}</span>
                   </label>
-                  <input
-                    type="text"
-                    value={@current_step.title}
-                    phx-change="update_step_field"
-                    phx-value-field="title"
-                    class="input input-bordered w-full"
-                    placeholder={gettext("e.g., V-るまえに、Vます")}
-                  />
+                  <form phx-change="update_step_field" phx-value-field="title">
+                    <input
+                      type="text"
+                      name="title"
+                      value={@current_step.title}
+                      class="input input-bordered w-full"
+                      placeholder={gettext("e.g., V-るまえに、Vます")}
+                    />
+                  </form>
                 </div>
 
-                <%!-- Pattern Builder --%>
+                <%!-- Grammar Pattern Preview --%>
                 <div>
                   <label class="label">
                     <span class="label-text">{gettext("Grammar Pattern")}</span>
                   </label>
-                  <div class="bg-base-200 rounded-lg p-4 mb-4">
+                  <div class="bg-base-200 rounded-lg p-4 mb-4 min-h-[60px]">
                     <%= if @current_step.pattern_elements == [] do %>
-                      <p class="text-secondary text-center py-4">{gettext("Add pattern elements below")}</p>
+                      <p class="text-secondary text-center py-4">
+                        {gettext("Add pattern elements below")}
+                      </p>
                     <% else %>
                       <div class="flex flex-wrap gap-2 items-center">
                         <%= for {element, idx} <- Enum.with_index(@current_step.pattern_elements) do %>
-                          <%= if element["type"] == "word_slot" do %>
-                            <div class="badge badge-primary badge-lg p-3">
-                              <div class="flex flex-col items-center">
-                                <span class="text-xs opacity-75">{String.capitalize(element["word_type"])}</span>
-                                <span class="font-jp text-sm">
-                                  <%= if element["forms"] == [] do %>
-                                    [-]
-                                  <% else %>
-                                    [-#{Enum.join(element["forms"], "|")}]
-                                  <% end %>
-                                </span>
-                                <%= if element["word_class"] do %>
-                                  <span class="text-xs opacity-75">[{element["word_class"]}]</span>
+                          <%= case element["type"] do %>
+                            <% "word_slot" -> %>
+                              <% color =
+                                @word_type_colors[element["word_type"]] ||
+                                  "bg-gray-500 text-white" %>
+                              <% form_display =
+                                if element["form"] && element["word_type"] != "particle",
+                                  do:
+                                    Enum.find(
+                                      get_forms_for_word_type(
+                                        @grammar_forms,
+                                        element["word_type"]
+                                      ),
+                                      &(&1.name == element["form"])
+                                    ),
+                                  else: nil %>
+                              <div class={[
+                                "relative group rounded-lg px-3 py-2 min-w-[80px] text-center shadow-sm",
+                                color
+                              ]}>
+                                <%= cond do %>
+                                  <% element["word_type"] == "particle" && element["form"] && element["form"] != "" -> %>
+                                    <div class="text-sm font-medium font-jp">
+                                      {element["form"]}
+                                    </div>
+                                  <% element["form"] && element["form"] != "" && form_display -> %>
+                                    <div class="text-sm font-medium font-jp">
+                                      {String.upcase(element["word_type"])}-{form_display.display_name}
+                                    </div>
+                                  <% true -> %>
+                                    <div class="text-sm font-medium">
+                                      {String.upcase(element["word_type"])}
+                                    </div>
                                 <% end %>
+                                <%= if element["optional"] do %>
+                                  <div class="text-xs opacity-70">({gettext("optional")})</div>
+                                <% end %>
+                                <button
+                                  phx-click="remove_pattern_element"
+                                  phx-value-index={idx}
+                                  class="absolute -top-2 -right-2 bg-error text-error-content rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                >
+                                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                                </button>
                               </div>
-                              <%= if element["optional"] do %>
-                                <span class="text-xs ml-1">?</span>
-                              <% end %>
-                              <button
-                                phx-click="remove_pattern_element"
-                                phx-value-index={idx}
-                                class="ml-2 hover:text-error"
-                              >
-                                <.icon name="hero-x-mark" class="w-3 h-3" />
-                              </button>
-                            </div>
-                          <% else %>
-                            <div class="badge badge-ghost badge-lg p-3 font-jp">
-                              {element["text"]}
-                              <button
-                                phx-click="remove_pattern_element"
-                                phx-value-index={idx}
-                                class="ml-2 hover:text-error"
-                              >
-                                <.icon name="hero-x-mark" class="w-3 h-3" />
-                              </button>
-                            </div>
+                            <% "word_class" -> %>
+                              <% class =
+                                Enum.find(@word_classes, fn c ->
+                                  c.id == element["word_class_id"]
+                                end) %>
+                              <div class="relative group rounded-lg px-3 py-2 min-w-[80px] text-center shadow-sm bg-purple-400 text-white">
+                                <div class="text-xs opacity-80 uppercase tracking-wide">
+                                  {gettext("Class")}
+                                </div>
+                                <div class="text-sm font-medium">
+                                  <%= if class do %>
+                                    {class.display_name}
+                                  <% else %>
+                                    {gettext("Select...")}
+                                  <% end %>
+                                </div>
+                                <%= if element["optional"] do %>
+                                  <div class="text-xs opacity-70">({gettext("optional")})</div>
+                                <% end %>
+                                <button
+                                  phx-click="remove_pattern_element"
+                                  phx-value-index={idx}
+                                  class="absolute -top-2 -right-2 bg-error text-error-content rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                >
+                                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                                </button>
+                              </div>
+                            <% "literal" -> %>
+                              <div class="relative group rounded-lg px-3 py-2 min-w-[60px] text-center shadow-sm bg-white border border-base-300">
+                                <div class="font-jp text-lg font-bold text-gray-900">
+                                  {element["text"] || "..."}
+                                </div>
+                                <button
+                                  phx-click="remove_pattern_element"
+                                  phx-value-index={idx}
+                                  class="absolute -top-2 -right-2 bg-error text-error-content rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                >
+                                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                                </button>
+                              </div>
+                            <% _ -> %>
                           <% end %>
                         <% end %>
                       </div>
                     <% end %>
                   </div>
 
-                  <%!-- Add Pattern Element --%>
-                  <div class="flex gap-2">
+                  <%!-- Add Pattern Element Buttons --%>
+                  <div class="flex flex-wrap gap-2">
                     <button
                       phx-click="add_pattern_element"
                       phx-value-type="word_slot"
                       class="btn btn-outline btn-sm"
                     >
-                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Word Slot")}
+                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Word")}
+                    </button>
+                    <button
+                      phx-click="add_pattern_element"
+                      phx-value-type="word_class"
+                      class="btn btn-outline btn-sm"
+                    >
+                      <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Word Class")}
                     </button>
                     <button
                       phx-click="add_pattern_element"
@@ -247,67 +348,131 @@
 
                   <%!-- Pattern Element Configuration --%>
                   <%= for {element, idx} <- Enum.with_index(@current_step.pattern_elements) do %>
-                    <div class="border border-base-300 rounded-lg p-3 mt-2">
-                      <div class="flex items-center gap-2 mb-2">
+                    <div class="border border-base-300 rounded-lg p-3 mt-3 bg-base-50">
+                      <div class="flex items-center justify-between mb-3">
                         <span class="text-sm font-medium">
-                          <%= if element["type"] == "word_slot" do %>
-                            {gettext("Word Slot")} #{idx + 1}
-                          <% else %>
-                            {gettext("Literal Text")} #{idx + 1}
+                          <%= case element["type"] do %>
+                            <% "word_slot" -> %>
+                              {gettext("Word")} #{idx + 1}
+                            <% "word_class" -> %>
+                              {gettext("Word Class")} #{idx + 1}
+                            <% "literal" -> %>
+                              {gettext("Text")} #{idx + 1}
                           <% end %>
                         </span>
-                        <%= if element["type"] == "word_slot" do %>
-                          <label class="flex items-center gap-1 text-sm cursor-pointer ml-auto">
+                        <%= if element["type"] != "literal" do %>
+                          <label class="flex items-center gap-2 text-sm cursor-pointer">
                             <input
                               type="checkbox"
                               checked={element["optional"]}
                               phx-click="toggle_optional"
                               phx-value-index={idx}
-                              class="checkbox checkbox-xs"
+                              class="checkbox checkbox-sm"
                             />
                             {gettext("Optional")}
                           </label>
                         <% end %>
                       </div>
 
-                      <%= if element["type"] == "word_slot" do %>
-                        <div class="grid grid-cols-2 gap-2">
-                          <select
-                            class="select select-bordered select-sm"
-                            phx-change="update_pattern_element"
-                            phx-value-index={idx}
-                            phx-value-field="word_type"
-                          >
-                            <%= for {label, value} <- @word_types do %>
-                              <option value={value} selected={element["word_type"] == value}>
-                                {label}
-                              </option>
-                            <% end %>
-                          </select>
-                          <select
-                            class="select select-bordered select-sm"
-                            phx-change="update_pattern_element"
-                            phx-value-index={idx}
-                            phx-value-field="word_class"
-                          >
-                            <option value="">{gettext("Any class")}</option>
-                            <%= for class <- @word_classes do %>
-                              <option value={class.name} selected={element["word_class"] == class.name}>
-                                {class.display_name}
-                              </option>
-                            <% end %>
-                          </select>
-                        </div>
-                      <% else %>
-                        <input
-                          type="text"
-                          value={element["text"]}
-                          phx-change="update_pattern_element"
-                          phx-value-index={idx}
-                          phx-value-field="text"
-                          class="input input-bordered w-full input-sm font-jp"
-                          placeholder={gettext("e.g., まえに、")}
-                        />
+                      <%= case element["type"] do %>
+                        <% "word_slot" -> %>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label class="label-text text-xs mb-1 block">
+                                {gettext("Type")}
+                              </label>
+                              <form phx-change="update_element_word_type">
+                                <input type="hidden" name="index" value={idx} />
+                                <select
+                                  name="value"
+                                  class="select select-bordered select-sm w-full"
+                                >
+                                  <%= for {label, value} <- @word_types do %>
+                                    <option value={value} selected={element["word_type"] == value}>
+                                      {label}
+                                    </option>
+                                  <% end %>
+                                </select>
+                              </form>
+                            </div>
+                            <div>
+                              <label class="label-text text-xs mb-1 block">
+                                <%= if element["word_type"] == "particle" do %>
+                                  {gettext("Particle")}
+                                <% else %>
+                                  {gettext("Form")}
+                                <% end %>
+                              </label>
+                              <form phx-change="update_element_form">
+                                <input type="hidden" name="index" value={idx} />
+                                <select
+                                  name="value"
+                                  class="select select-bordered select-sm w-full"
+                                >
+                                  <%= if element["word_type"] == "particle" do %>
+                                    <option value="">{gettext("Select particle...")}</option>
+                                    <%= for {label, value} <- @particles do %>
+                                      <option
+                                        value={value}
+                                        selected={element["form"] == value}
+                                      >
+                                        {label}
+                                      </option>
+                                    <% end %>
+                                  <% else %>
+                                    <option value="">{gettext("Any form")}</option>
+                                    <%= for form <- get_forms_for_word_type(@grammar_forms, element["word_type"]) do %>
+                                      <option
+                                        value={form.name}
+                                        selected={element["form"] == form.name}
+                                      >
+                                        {form.display_name}
+                                      </option>
+                                    <% end %>
+                                  <% end %>
+                                </select>
+                              </form>
+                            </div>
+                          </div>
+                        <% "word_class" -> %>
+                          <div>
+                            <label class="label-text text-xs mb-1 block">
+                              {gettext("Word Class")}
+                            </label>
+                            <form phx-change="update_element_word_class">
+                              <input type="hidden" name="index" value={idx} />
+                              <select name="value" class="select select-bordered select-sm w-full">
+                                <option value="">{gettext("Select a word class...")}</option>
+                                <%= for class <- @word_classes do %>
+                                  <option
+                                    value={class.id}
+                                    selected={element["word_class_id"] == class.id}
+                                  >
+                                    {class.display_name}
+                                  </option>
+                                <% end %>
+                              </select>
+                            </form>
+                          </div>
+                        <% "literal" -> %>
+                          <div>
+                            <label class="label-text text-xs mb-1 block">{gettext("Text")}</label>
+                            <form phx-change="update_element_text">
+                              <input type="hidden" name="index" value={idx} />
+                              <input
+                                type="text"
+                                name="value"
+                                value={element["text"]}
+                                phx-debounce="5000"
+                                class="input input-bordered w-full input-sm font-jp"
+                                placeholder={gettext("e.g., まえに、")}
+                              />
+                            </form>
+                            <p class="text-xs text-secondary mt-1">
+                              {gettext("Updates after 5 seconds of not typing")}
+                            </p>
+                          </div>
+                        <% _ -> %>
                       <% end %>
                     </div>
                   <% end %>
@@ -319,18 +484,19 @@
                     <span class="label-text">{gettext("Explanation")}</span>
                   </label>
                   <textarea
-                    value={@current_step.explanation}
-                    phx-change="update_step_field"
-                    phx-value-field="explanation"
+                    id="step-explanation"
+                    name="step[explanation]"
+                    phx-change="update_step_explanation"
+                    phx-blur="update_step_explanation"
                     class="textarea textarea-bordered w-full"
                     rows="4"
                     placeholder={gettext("Explain how this grammar pattern works...")}
-                  ></textarea>
+                  >{@current_step.explanation}</textarea>
                 </div>
 
                 <%!-- Examples --%>
                 <div>
-                  <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center justify-between mb-3">
                     <label class="label mb-0">
                       <span class="label-text">{gettext("Examples (Max 5)")}</span>
                     </label>
@@ -343,8 +509,11 @@
 
                   <div class="space-y-3">
                     <%= for {example, idx} <- Enum.with_index(@current_step.examples || []) do %>
-                      <div class="border border-base-300 rounded-lg p-3">
-                        <div class="flex justify-end mb-2">
+                      <div class="border border-base-300 rounded-lg p-3 bg-base-50">
+                        <div class="flex justify-between items-start mb-2">
+                          <span class="text-xs text-secondary">
+                            {gettext("Example")} #{idx + 1}
+                          </span>
                           <button
                             phx-click="remove_example"
                             phx-value-index={idx}
@@ -356,30 +525,42 @@
                         <div class="space-y-2">
                           <input
                             type="text"
+                            id={"example-#{idx}-sentence"}
+                            name={"example[#{idx}][sentence]"}
                             value={example["sentence"]}
                             phx-change="update_example"
+                            phx-blur="update_example"
                             phx-value-index={idx}
                             phx-value-field="sentence"
+                            phx-debounce="100"
                             class="input input-bordered w-full input-sm font-jp"
-                            placeholder={gettext("Japanese sentence")}
+                            placeholder={gettext("Example in target form (e.g., 来ない)")}
                           />
                           <input
                             type="text"
+                            id={"example-#{idx}-reading"}
+                            name={"example[#{idx}][reading]"}
                             value={example["reading"]}
                             phx-change="update_example"
+                            phx-blur="update_example"
                             phx-value-index={idx}
                             phx-value-field="reading"
+                            phx-debounce="100"
                             class="input input-bordered w-full input-sm font-jp"
-                            placeholder={gettext("Reading (hiragana)")}
+                            placeholder={gettext("Reading (e.g., こない)")}
                           />
                           <input
                             type="text"
+                            id={"example-#{idx}-meaning"}
+                            name={"example[#{idx}][meaning]"}
                             value={example["meaning"]}
                             phx-change="update_example"
+                            phx-blur="update_example"
                             phx-value-index={idx}
                             phx-value-field="meaning"
+                            phx-debounce="100"
                             class="input input-bordered w-full input-sm"
-                            placeholder={gettext("English meaning")}
+                            placeholder={gettext("English meaning (e.g., 'won't come')")}
                           />
                         </div>
                         <button
@@ -387,7 +568,9 @@
                           phx-value-index={idx}
                           class="btn btn-ghost btn-xs mt-2"
                         >
-                          <.icon name="hero-check-circle" class="w-3 h-3 mr-1" /> {gettext("Validate")}
+                          <.icon name="hero-check-circle" class="w-3 h-3 mr-1" /> {gettext(
+                            "Validate"
+                          )}
                         </button>
                       </div>
                     <% end %>
@@ -395,11 +578,11 @@
                 </div>
 
                 <%!-- Save Button --%>
-                <div class="flex justify-end gap-2 pt-4 border-t border-base-300">
-                  <button phx-click="cancel_step" class="btn btn-ghost">
+                <div class="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-base-300">
+                  <button phx-click="cancel_step" class="btn btn-ghost w-full sm:w-auto">
                     {gettext("Cancel")}
                   </button>
-                  <button phx-click="save_step" class="btn btn-primary">
+                  <button phx-click="save_step" class="btn btn-primary w-full sm:w-auto">
                     <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Save Step")}
                   </button>
                 </div>

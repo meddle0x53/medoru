@@ -45,6 +45,8 @@ defmodule MedoruWeb.Admin.WordClassLive.Form do
 
   @impl true
   def handle_event("validate", %{"word_class" => class_params}, socket) do
+    class_params = process_examples(class_params)
+
     changeset =
       socket.assigns.word_class
       |> Content.change_word_class(class_params)
@@ -55,7 +57,27 @@ defmodule MedoruWeb.Admin.WordClassLive.Form do
 
   @impl true
   def handle_event("save", %{"word_class" => class_params}, socket) do
+    class_params = process_examples(class_params)
     save_word_class(socket, socket.assigns.live_action, class_params)
+  end
+
+  defp process_examples(params) do
+    case params["examples_input"] do
+      nil ->
+        params
+
+      "" ->
+        Map.put(params, "examples", [])
+
+      text ->
+        examples =
+          text
+          |> String.split("\n")
+          |> Enum.map(&String.trim/1)
+          |> Enum.reject(&(&1 == ""))
+
+        Map.put(params, "examples", examples)
+    end
   end
 
   defp save_word_class(socket, :edit, class_params) do

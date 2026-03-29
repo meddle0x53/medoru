@@ -3,7 +3,9 @@
     <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-bold text-base-content">{gettext("Grammar Forms")}</h1>
-        <p class="text-secondary mt-1">{gettext("Manage verb and adjective conjugation forms")}</p>
+        <p class="text-secondary mt-1">
+          {gettext("Manage verb and adjective conjugation forms")}
+        </p>
       </div>
       <.link navigate={~p"/admin/grammar-forms/new"} class="btn btn-primary">
         <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Form")}
@@ -20,7 +22,9 @@
             <select phx-change="filter_word_type" class="select select-bordered select-sm">
               <option value="">{gettext("All Types")}</option>
               <option value="verb" selected={@word_type_filter == "verb"}>Verb</option>
-              <option value="adjective" selected={@word_type_filter == "adjective"}>Adjective</option>
+              <option value="adjective" selected={@word_type_filter == "adjective"}>
+                Adjective
+              </option>
               <option value="noun" selected={@word_type_filter == "noun"}>Noun</option>
             </select>
           </div>
@@ -58,11 +62,18 @@
                       {word_type_label(form.word_type)}
                     </span>
                   </td>
-                  <td><code class="bg-base-200 px-2 py-1 rounded text-sm">{form.suffix_pattern}</code></td>
+                  <td>
+                    <code class="bg-base-200 px-2 py-1 rounded text-sm">
+                      {form.suffix_pattern}
+                    </code>
+                  </td>
                   <td class="max-w-xs truncate">{form.description}</td>
                   <td>
                     <div class="flex gap-2">
-                      <.link navigate={~p"/admin/grammar-forms/#{form.id}/edit"} class="btn btn-ghost btn-sm">
+                      <.link
+                        navigate={~p"/admin/grammar-forms/#{form.id}/edit"}
+                        class="btn btn-ghost btn-sm"
+                      >
                         <.icon name="hero-pencil" class="w-4 h-4" />
                       </.link>
                       <button

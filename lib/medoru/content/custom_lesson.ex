@@ -43,6 +43,7 @@ defmodule Medoru.Content.CustomLesson do
     has_many :words, through: [:custom_lesson_words, :word]
     has_many :classroom_custom_lessons, ClassroomCustomLesson
     has_many :classrooms, through: [:classroom_custom_lessons, :classroom]
+
     has_many :grammar_lesson_steps, Medoru.Content.GrammarLessonStep,
       preload_order: [asc: :position]
 

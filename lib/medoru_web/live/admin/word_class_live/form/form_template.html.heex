@@ -1,7 +1,10 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="mb-8">
-      <.link navigate={~p"/admin/word-classes"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+      <.link
+        navigate={~p"/admin/word-classes"}
+        class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+      >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Classes")}
       </.link>
       <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
@@ -25,7 +28,7 @@
                 type="text"
                 id="word_class_name"
                 name="word_class[name]"
-                value={Phoenix.HTML.FormData.to_form(@changeset, []).data.name}
+                value={Ecto.Changeset.get_field(@changeset, :name)}
                 class="input input-bordered w-full"
                 placeholder="e.g., time, place, person"
                 required
@@ -43,7 +46,7 @@
                 type="text"
                 id="word_class_display_name"
                 name="word_class[display_name]"
-                value={Phoenix.HTML.FormData.to_form(@changeset, []).data.display_name}
+                value={Ecto.Changeset.get_field(@changeset, :display_name)}
                 class="input input-bordered w-full"
                 placeholder="e.g., Time expressions"
                 required
@@ -61,7 +64,7 @@
               class="textarea textarea-bordered w-full"
               rows="3"
               placeholder={gettext("Describe what types of words belong to this class...")}
-            ><%= Phoenix.HTML.FormData.to_form(@changeset, []).data.description %></textarea>
+            ><%= Ecto.Changeset.get_field(@changeset, :description) %></textarea>
           </div>
 
           <div>
@@ -70,11 +73,14 @@
             </label>
             <textarea
               id="word_class_examples"
-              name="word_class[examples]"
+              name="word_class[examples_input]"
               class="textarea textarea-bordered w-full font-jp"
               rows="4"
-              placeholder={gettext("今日\n明日\n朝\n夜")}
-            ><%= (Phoenix.HTML.FormData.to_form(@changeset, []).data.examples || []) |> Enum.join("\n") %></textarea>
+              placeholder={gettext("今日
+明日
+朝
+夜")}
+            ><%= (@changeset |> Ecto.Changeset.get_field(:examples) || []) |> Enum.join("\n") %></textarea>
             <p class="text-sm text-secondary mt-1">
               {gettext("These are example words that belong to this class")}
             </p>

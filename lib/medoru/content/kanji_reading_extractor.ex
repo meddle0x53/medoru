@@ -122,7 +122,7 @@ defmodule Medoru.Content.KanjiReadingExtractor do
     |> Enum.sort_by(&String.length/1, :desc)
     |> Enum.find_value(fn kr ->
       if String.starts_with?(remaining, kr) do
-        rest = String.slice(remaining, String.length(kr)..-1)
+        rest = String.slice(remaining, String.length(kr)..-1//1)
         {kr, rest}
       else
         nil
