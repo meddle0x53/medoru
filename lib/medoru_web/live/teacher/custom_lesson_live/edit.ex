@@ -139,9 +139,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def handle_event("update_word", %{"id" => id, "word" => word_params}, socket) do
     lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
-    
+
     # Parse examples (split by newline, remove empty)
     examples_text = word_params["examples"] || ""
+
     examples_list =
       examples_text
       |> String.split("\n")
@@ -184,7 +185,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
       if new_value and lesson.status == "published" and is_nil(lesson.test_id) do
         Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
           lesson.id,
-          include_writing: lesson.include_writing
+          include_writing: lesson.include_writing,
+          steps_per_word: lesson.steps_per_word
         )
       else
         {:ok, nil}
@@ -265,6 +267,57 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("update_steps_per_word", %{"value" => value}, socket) do
+    lesson = socket.assigns.lesson
+    steps_per_word = String.to_integer(value)
+
+    # Clamp to valid range
+    steps_per_word = max(1, min(5, steps_per_word))
+
+    # Only allow changing if requires_test is true
+    if not lesson.requires_test do
+      {:noreply, put_flash(socket, :error, gettext("Enable test requirement first."))}
+    else
+      # If lesson is published and has a test, regenerate with new setting
+      test_result =
+        if lesson.status == "published" and not is_nil(lesson.test_id) do
+          Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
+            lesson.id,
+            include_writing: lesson.include_writing,
+            steps_per_word: steps_per_word
+          )
+        else
+          {:ok, nil}
+        end
+
+      case test_result do
+        {:ok, _} ->
+          case Content.update_custom_lesson(lesson, %{steps_per_word: steps_per_word}) do
+            {:ok, _updated_lesson} ->
+              # Reload to get updated test
+              updated_lesson = Content.get_custom_lesson!(lesson.id)
+
+              {:noreply,
+               socket
+               |> assign(:lesson, updated_lesson)
+               |> assign(:test_settings_changed, true)}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to update settings."))}
+          end
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to regenerate test: %{reason}", reason: inspect(reason))
+           )}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("publish", _params, socket) do
     lesson = socket.assigns.lesson
 
@@ -277,7 +330,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
         if lesson.requires_test and is_nil(lesson.test_id) do
           Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
             lesson.id,
-            include_writing: lesson.include_writing
+            include_writing: lesson.include_writing,
+            steps_per_word: lesson.steps_per_word
           )
         else
           {:ok, nil}
@@ -391,7 +445,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                                   name="word[custom_meaning]"
                                   value={@editing_custom_meaning}
                                   class="input input-bordered w-full input-sm"
-                                  placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
+                                  placeholder={
+                                    Content.get_localized_meaning(lesson_word.word, @locale)
+                                  }
                                 />
                               </div>
                               <div>
@@ -579,6 +635,31 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                       </div>
                     </div>
                   </label>
+
+                  <%!-- Steps Per Word --%>
+                  <div class={[
+                    "flex items-center justify-between",
+                    not @lesson.requires_test && "opacity-50"
+                  ]}>
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Questions per word")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Number of test questions per word (1-5)")}
+                      </div>
+                    </div>
+                    <select
+                      class="select select-bordered select-sm w-20"
+                      disabled={not @lesson.requires_test}
+                      phx-change="update_steps_per_word"
+                      value={@lesson.steps_per_word}
+                    >
+                      <%= for n <- 1..5 do %>
+                        <option value={n} selected={@lesson.steps_per_word == n}>
+                          {n}
+                        </option>
+                      <% end %>
+                    </select>
+                  </div>
                 </div>
 
                 <%= if @test_settings_changed do %>

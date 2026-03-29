@@ -259,10 +259,12 @@ defmodule Medoru.Classrooms do
 
     Classroom
     |> then(fn query ->
-      if status do
-        where(query, [c], c.status == ^status)
-      else
+      # Only filter by status if a valid non-empty status is provided
+      # Status can be nil, empty string, or empty atom when "All" is selected
+      if is_nil(status) || status == "" || status == :"" do
         query
+      else
+        where(query, [c], c.status == ^status)
       end
     end)
     |> then(fn query ->
@@ -1676,7 +1678,9 @@ defmodule Medoru.Classrooms do
       |> where([p], p.classroom_id == ^classroom_id and p.user_id == ^user_id)
       |> where([p], p.lesson_source == "custom")
       |> Repo.all()
-      |> Map.new(fn p -> {p.custom_lesson_id, p.status} end)
+      |> Map.new(fn p ->
+        {p.custom_lesson_id, %{status: p.status, points_earned: p.points_earned}}
+      end)
 
     # Apply filter
     filtered_lessons =

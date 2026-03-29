@@ -231,6 +231,12 @@ defmodule MedoruWeb.DailyTestLive.Complete do
           _ -> question
         end
 
+      String.starts_with?(question, "__MSG_WRITE_KANJI_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meanings] -> gettext("Write the kanji for '%{meanings}'", meanings: meanings)
+          _ -> question
+        end
+
       true ->
         question
     end

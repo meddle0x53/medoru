@@ -32,6 +32,7 @@ defmodule Medoru.Content.CustomLesson do
     # Test configuration
     field :requires_test, :boolean, default: false
     field :include_writing, :boolean, default: false
+    field :steps_per_word, :integer, default: 3
 
     belongs_to :creator, User
     belongs_to :test, Test
@@ -57,7 +58,8 @@ defmodule Medoru.Content.CustomLesson do
       :word_count,
       :creator_id,
       :requires_test,
-      :include_writing
+      :include_writing,
+      :steps_per_word
     ])
     |> validate_required([:title, :lesson_type, :status, :creator_id])
     |> validate_length(:title, min: 1, max: 100)

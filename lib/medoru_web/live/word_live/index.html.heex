@@ -38,6 +38,52 @@
       <% end %>
     </div>
 
+    <%!-- Learned Status Filter (only shown when user is logged in) --%>
+    <%= if @current_scope && @current_scope.current_user do %>
+      <div class="flex flex-wrap gap-2 mb-6">
+        <.link
+          patch={~p"/words?#{page_link_params(assigns, 1) |> Keyword.delete(:learned_filter)}"}
+          class={[
+            "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+            if(is_nil(@learned_filter),
+              do: "bg-primary text-primary-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+            )
+          ]}
+        >
+          {gettext("All Words")}
+        </.link>
+        <.link
+          patch={
+            ~p"/words?#{page_link_params(assigns, 1) |> Keyword.put(:learned_filter, :learned)}"
+          }
+          class={[
+            "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+            if(@learned_filter == :learned,
+              do: "bg-success text-success-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+            )
+          ]}
+        >
+          ✅ {gettext("Learned")}
+        </.link>
+        <.link
+          patch={
+            ~p"/words?#{page_link_params(assigns, 1) |> Keyword.put(:learned_filter, :unlearned)}"
+          }
+          class={[
+            "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+            if(@learned_filter == :unlearned,
+              do: "bg-warning text-warning-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+            )
+          ]}
+        >
+          📚 {gettext("Not Learned")}
+        </.link>
+      </div>
+    <% end %>
+
     <%!-- Search and Sort Controls --%>
     <div class="flex flex-col sm:flex-row gap-4 mb-6">
       <%!-- Search Form --%>

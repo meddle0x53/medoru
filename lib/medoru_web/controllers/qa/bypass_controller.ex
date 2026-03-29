@@ -158,6 +158,39 @@ defmodule MedoruWeb.QA.BypassController do
     })
   end
 
+  @doc """
+  Deletes the current user's daily test for the day.
+  This allows tests to reset and regenerate the daily test.
+
+  DELETE /qa/api/daily-test
+  """
+  def delete_daily_test(conn, _params) do
+    unless qa_mode?() do
+      return_not_found(conn)
+    end
+
+    user_id = get_session(conn, :user_id)
+
+    if is_nil(user_id) do
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Not authenticated"})
+    else
+      case Medoru.Learning.delete_user_daily_test(user_id) do
+        {:ok, :deleted} ->
+          json(conn, %{success: true, message: "Daily test deleted"})
+
+        {:ok, :no_test_found} ->
+          json(conn, %{success: true, message: "No daily test found to delete"})
+
+        {:error, reason} ->
+          conn
+          |> put_status(:internal_server_error)
+          |> json(%{error: "Failed to delete daily test", reason: inspect(reason)})
+      end
+    end
+  end
+
   defp qa_mode? do
     Application.get_env(:medoru, :qa_mode, false)
   end

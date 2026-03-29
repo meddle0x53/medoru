@@ -239,6 +239,7 @@ defmodule MedoruWeb.Router do
       post "/bypass/api/login", BypassController, :api_login
       get "/bypass/api/users", BypassController, :list_users
       get "/health", BypassController, :health
+      delete "/api/daily-test", BypassController, :delete_daily_test
     end
   end
 end

@@ -35,6 +35,15 @@ defmodule MedoruWeb.WordLive.Index do
     search = parse_search(params["search"])
     sort_by = parse_sort_by(params["sort_by"])
     sort_order = parse_sort_order(params["sort_order"])
+    learned_filter = parse_learned_filter(params["learned_filter"])
+
+    # Get user_id for learned filter
+    user_id =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        socket.assigns.current_scope.current_user.id
+      else
+        nil
+      end
 
     result =
       Content.list_words_paginated(
@@ -43,7 +52,9 @@ defmodule MedoruWeb.WordLive.Index do
         difficulty: difficulty,
         search: search,
         sort_by: sort_by,
-        sort_order: sort_order
+        sort_order: sort_order,
+        learned_filter: learned_filter,
+        user_id: user_id
       )
 
     {:noreply,
@@ -53,6 +64,7 @@ defmodule MedoruWeb.WordLive.Index do
      |> assign(:search, search)
      |> assign(:sort_by, sort_by)
      |> assign(:sort_order, sort_order)
+     |> assign(:learned_filter, learned_filter)
      |> assign(:words, result.words)
      |> assign(:total_count, result.total_count)
      |> assign(:total_pages, result.total_pages)
@@ -171,6 +183,19 @@ defmodule MedoruWeb.WordLive.Index do
 
   defp parse_sort_order(_), do: :desc
 
+  defp parse_learned_filter(nil), do: nil
+  defp parse_learned_filter(""), do: nil
+
+  defp parse_learned_filter(filter) when is_binary(filter) do
+    case filter do
+      "learned" -> :learned
+      "unlearned" -> :unlearned
+      _ -> nil
+    end
+  end
+
+  defp parse_learned_filter(_), do: nil
+
   defp toggle_order(:asc), do: :desc
   defp toggle_order(:desc), do: :asc
 
@@ -193,7 +218,8 @@ defmodule MedoruWeb.WordLive.Index do
       search: Map.get(assigns, :search),
       page: page,
       sort_by: Map.get(assigns, :sort_by),
-      sort_order: Map.get(assigns, :sort_order)
+      sort_order: Map.get(assigns, :sort_order),
+      learned_filter: Map.get(assigns, :learned_filter)
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
   end

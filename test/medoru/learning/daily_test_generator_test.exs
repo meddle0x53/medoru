@@ -172,14 +172,14 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert length(test.test_steps) >= 2
     end
 
-    test "only includes words from completed lessons or reviewed words", %{user: user, word: word} do
+    test "includes learned words (mastery_level >= 1) for review", %{user: user, word: word} do
       # The word from the completed lesson (from setup) should appear
       {:ok, _} = Learning.track_word_learned(user.id, word.id)
 
       # Create another word that's NOT in any completed lesson
       other_word = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
       {:ok, _} = Learning.track_word_learned(user.id, other_word.id)
-      # This word is learned (mastery_level 1) but NOT reviewed and NOT from a completed lesson
+      # This word is learned (mastery_level 1) and should appear for review
 
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
 
@@ -188,8 +188,8 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       # Word from completed lesson should appear
       assert word.id in word_ids_in_test
 
-      # Word not in any completed lesson and not reviewed should NOT appear
-      refute other_word.id in word_ids_in_test
+      # Any learned word (mastery_level >= 1) should appear for review
+      assert other_word.id in word_ids_in_test
     end
 
     test "returns error when no words have been learned" do
@@ -200,7 +200,7 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert {:error, :no_items_available} = DailyTestGenerator.generate_daily_test(new_user.id)
     end
 
-    test "new user can review words from completed lesson but not incomplete lesson" do
+    test "new user can review all learned words regardless of lesson completion" do
       # Create a new user
       user = user_fixture()
 
@@ -229,12 +229,12 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       # User starts Lesson 2 but doesn't complete it
       {:ok, _} = Learning.start_lesson(user.id, lesson2.id)
 
-      # Track words from lesson 2 (user viewed them but lesson not completed)
+      # Track words from lesson 2 (user manually marked them as learned)
       {:ok, _} = Learning.track_word_learned(user.id, word3.id)
       {:ok, _} = Learning.track_word_learned(user.id, word4.id)
 
-      # Daily test should include words from completed lesson (word1, word2)
-      # but NOT from incomplete lesson (word3, word4)
+      # Daily test should include ALL learned words (mastery_level >= 1)
+      # regardless of whether the lesson is complete or not
       assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
 
       word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
@@ -246,12 +246,12 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert word2.id in word_ids_in_test,
              "Words from completed lesson should appear in daily test"
 
-      # Words from incomplete lesson should NOT appear
-      refute word3.id in word_ids_in_test,
-             "Words from incomplete lesson should NOT appear in daily test"
+      # Words from incomplete lesson that were manually learned should ALSO appear
+      assert word3.id in word_ids_in_test,
+             "Manually learned words should appear in daily test"
 
-      refute word4.id in word_ids_in_test,
-             "Words from incomplete lesson should NOT appear in daily test"
+      assert word4.id in word_ids_in_test,
+             "Manually learned words should appear in daily test"
     end
 
     test "new user flow: complete lesson then take daily test with lesson words" do

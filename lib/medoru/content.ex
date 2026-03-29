@@ -17,6 +17,8 @@ defmodule Medoru.Content do
     CustomLessonWord
   }
 
+  alias Medoru.Learning.UserProgress
+
   # Kanji Functions
 
   @doc """
@@ -534,55 +536,64 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     search = Keyword.get(opts, :search)
     difficulty = Keyword.get(opts, :difficulty)
+    learned_filter = Keyword.get(opts, :learned_filter)
+    user_id = Keyword.get(opts, :user_id)
 
-    if search && search != "" do
-      # Use search_words for exact match priority, then paginate
-      all_words = search_words(search, limit: 10_000)
+    # Base query for words
+    base_query =
+      if search && search != "" do
+        # For search, we need to get IDs from search_words and then query
+        word_ids = search_words(search, limit: 10_000) |> Enum.map(& &1.id)
+        Word |> where([w], w.id in ^word_ids)
+      else
+        Word
+      end
 
-      # Apply difficulty filter if specified
-      filtered_words =
-        if difficulty do
-          Enum.filter(all_words, &(&1.difficulty == difficulty))
-        else
-          all_words
+    # Apply difficulty filter
+    query = if difficulty, do: where(base_query, difficulty: ^difficulty), else: base_query
+
+    # Apply learned filter if specified and user_id is provided
+    query =
+      if learned_filter && user_id do
+        case learned_filter do
+          :learned ->
+            from w in query,
+              join: up in UserProgress,
+              on: up.word_id == w.id and up.user_id == ^user_id
+
+          :unlearned ->
+            from w in query,
+              left_join: up in UserProgress,
+              on: up.word_id == w.id and up.user_id == ^user_id,
+              where: is_nil(up.id)
+
+          _ ->
+            query
         end
-
-      total_count = length(filtered_words)
-      total_pages = max(ceil(total_count / per_page), 1)
-      offset = (page - 1) * per_page
-      words = Enum.slice(filtered_words, offset, per_page)
-
-      %{
-        words: words,
-        total_count: total_count,
-        total_pages: total_pages,
-        current_page: min(page, total_pages),
-        per_page: per_page
-      }
-    else
-      # No search - use simple database pagination
-      query = Word
-      query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
-
-      total_count = query |> select([w], count(w.id)) |> Repo.one()
-      total_pages = max(ceil(total_count / per_page), 1)
-      offset = (page - 1) * per_page
-
-      words =
+      else
         query
-        |> order_by([w], asc: w.usage_frequency)
-        |> limit(^per_page)
-        |> offset(^offset)
-        |> Repo.all()
+      end
 
-      %{
-        words: words,
-        total_count: total_count,
-        total_pages: total_pages,
-        current_page: min(page, total_pages),
-        per_page: per_page
-      }
-    end
+    # Get total count
+    total_count = query |> select([w], count(w.id)) |> Repo.one()
+    total_pages = max(ceil(total_count / per_page), 1)
+    offset = (page - 1) * per_page
+
+    # Get words with sorting
+    words =
+      query
+      |> order_by([w], asc: w.usage_frequency)
+      |> limit(^per_page)
+      |> offset(^offset)
+      |> Repo.all()
+
+    %{
+      words: words,
+      total_count: total_count,
+      total_pages: total_pages,
+      current_page: min(page, total_pages),
+      per_page: per_page
+    }
   end
 
   @doc """

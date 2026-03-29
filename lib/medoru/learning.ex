@@ -163,6 +163,9 @@ defmodule Medoru.Learning do
         {:error, :not_started}
 
       progress ->
+        # Track all lesson words as learned before marking lesson complete
+        track_lesson_words_learned(user_id, lesson_id)
+
         # Also update user stats for completed lesson
         result =
           progress
@@ -177,6 +180,22 @@ defmodule Medoru.Learning do
 
         result
     end
+  end
+
+  # Tracks all words in a lesson as learned when the lesson is completed
+  defp track_lesson_words_learned(user_id, lesson_id) do
+    # Get all words in the lesson
+    word_ids =
+      from(lw in Medoru.Content.LessonWord,
+        where: lw.lesson_id == ^lesson_id,
+        select: lw.word_id
+      )
+      |> Repo.all()
+
+    # Track each word as learned
+    Enum.each(word_ids, fn word_id ->
+      track_word_learned(user_id, word_id)
+    end)
   end
 
   # ============================================================================
@@ -656,13 +675,25 @@ defmodule Medoru.Learning do
             :incorrect -> max(progress.mastery_level - 1, 1)
           end
 
-        progress
-        |> UserProgress.changeset(%{
-          mastery_level: new_level,
-          times_reviewed: progress.times_reviewed + 1,
-          last_reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
-        })
-        |> Repo.update()
+        # Do both updates in a transaction
+        Repo.transaction(fn ->
+          # Update mastery level
+          {:ok, updated_progress} =
+            progress
+            |> UserProgress.changeset(%{
+              mastery_level: new_level,
+              times_reviewed: progress.times_reviewed + 1,
+              last_reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second)
+            })
+            |> Repo.update()
+
+          # Also update SRS schedule for spaced repetition
+          # Quality: 4 for correct (good), 2 for incorrect (failed)
+          quality = if result == :correct, do: 4, else: 2
+          {:ok, _schedule} = record_review(user_id, progress.id, quality)
+
+          updated_progress
+        end)
     end
   end
 
@@ -724,25 +755,17 @@ defmodule Medoru.Learning do
   def get_words_for_daily_test(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit, 10)
     exclude_ids = Keyword.get(opts, :exclude_word_ids, [])
+    now = DateTime.utc_now()
 
-    # Get word IDs from completed lessons
-    completed_lesson_word_ids =
-      from(lw in "lesson_words",
-        join: lp in LessonProgress,
-        on: lp.lesson_id == lw.lesson_id,
-        where: lp.user_id == ^user_id and lp.status == :completed,
-        select: lw.word_id
-      )
+    # Include all words the user has learned (has UserProgress record for)
+    # Words are ordered by mastery level (lowest first), so words with
+    # mastery_level 0 or 1 will appear before words with higher mastery
+    #
+    # Exclude words that are scheduled for future review (via SRS)
+    # These should only appear when they're actually due
 
     UserProgress
     |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
-    # Only include words that have been reviewed OR are from completed lessons
-    # Note: mastery_level >= 1 alone is NOT enough - must be reviewed or from completed lesson
-    |> where(
-      [up],
-      up.times_reviewed > 0 or
-        up.word_id in subquery(completed_lesson_word_ids)
-    )
     # Exclude specific word IDs if provided
     |> then(fn query ->
       if exclude_ids != [] do
@@ -751,8 +774,21 @@ defmodule Medoru.Learning do
         query
       end
     end)
+    # Left join with review_schedules to check if word is scheduled for future
+    |> join(:left, [up], rs in ReviewSchedule, on: rs.user_progress_id == up.id)
+    # Only include words that either:
+    # - Have no review schedule yet, OR
+    # - Have a review schedule that's due (next_review_at <= now), OR
+    # - Have a review schedule with 0 repetitions (never actually reviewed via SRS)
+    # Words with repetitions > 0 AND next_review_at > now are "scheduled for future" and should be excluded
+    |> where([up, rs], is_nil(rs.id) or rs.next_review_at <= ^now or rs.repetitions == 0)
     # Order by mastery level (lowest first), then by last reviewed (oldest first)
-    |> order_by([up], asc: up.mastery_level, asc: coalesce(up.last_reviewed_at, up.inserted_at))
+    |> order_by([up, rs],
+      asc: up.mastery_level,
+      asc: coalesce(up.last_reviewed_at, up.inserted_at),
+      # Prioritize words without a schedule or with 0 repetitions (new words)
+      asc: fragment("CASE WHEN ? IS NULL OR ? = 0 THEN 0 ELSE 1 END", rs.id, rs.repetitions)
+    )
     |> preload(:word)
     |> limit(^limit)
     |> Repo.all()

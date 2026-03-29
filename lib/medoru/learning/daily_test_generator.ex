@@ -20,7 +20,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
   alias Medoru.Content.Word
 
   # Daily test configuration
-  @daily_goal 10
+  # Base daily goal - will scale with user's learned words
+  @base_daily_goal 10
+  @max_daily_goal 25
   @new_word_limit 5
   @distractor_count 3
 
@@ -62,18 +64,25 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   """
   def generate_daily_test(user_id) do
+    # Calculate dynamic daily goal based on user's learned words
+    learned_count = count_learned_words(user_id)
+    daily_goal = calculate_daily_goal(learned_count)
+
     # Get due reviews
-    due_reviews = Learning.get_due_reviews(user_id, limit: @daily_goal)
+    due_reviews = Learning.get_due_reviews(user_id, limit: daily_goal)
+
+    # Get unique word IDs from due reviews to exclude from new words
+    due_word_ids = Enum.map(due_reviews, & &1.word_id)
 
     # Calculate how many new words to add
     due_count = length(due_reviews)
-    new_words_needed = max(0, @daily_goal - due_count)
+    new_words_needed = max(0, daily_goal - due_count)
     new_words_needed = min(new_words_needed, @new_word_limit)
 
-    # Get new words for learning
+    # Get new words for learning (excluding words already in due reviews)
     new_words =
       if new_words_needed > 0 do
-        get_eligible_new_words(user_id, limit: new_words_needed)
+        get_eligible_new_words(user_id, limit: new_words_needed, exclude_word_ids: due_word_ids)
       else
         []
       end
@@ -221,13 +230,30 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   # Private functions
 
+  # Count how many words the user has learned
+  defp count_learned_words(user_id) do
+    Learning.count_learned_words(user_id)
+  end
+
+  # Calculate daily goal based on learned words count
+  # Scales from @base_daily_goal to @max_daily_goal
+  defp calculate_daily_goal(learned_count) do
+    cond do
+      learned_count < 20 -> @base_daily_goal
+      learned_count < 50 -> 15
+      learned_count < 100 -> 20
+      true -> @max_daily_goal
+    end
+  end
+
   # Get words for daily test, prioritized by mastery level
   # Words with lower mastery levels are prioritized
   defp get_eligible_new_words(user_id, opts) do
     limit = Keyword.get(opts, :limit, 5)
+    exclude_ids = Keyword.get(opts, :exclude_word_ids, [])
 
     # Use the new priority-based function that orders by mastery level
-    Learning.get_words_for_daily_test(user_id, limit: limit)
+    Learning.get_words_for_daily_test(user_id, limit: limit, exclude_word_ids: exclude_ids)
   end
 
   # Build test items from reviews and new words
@@ -245,9 +271,15 @@ defmodule Medoru.Learning.DailyTestGenerator do
         }
       end)
 
+    # Get word IDs from review items to exclude from new items
+    review_word_ids = MapSet.new(due_reviews, & &1.word_id)
+
     # Create items from new words (now passed as UserProgress entries)
+    # Filter out any words already in due reviews
     new_items =
-      Enum.map(new_word_progress, fn progress ->
+      new_word_progress
+      |> Enum.reject(fn progress -> MapSet.member?(review_word_ids, progress.word_id) end)
+      |> Enum.map(fn progress ->
         %{
           word: progress.word,
           user_progress: progress,
@@ -276,7 +308,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
       # Pre-validate that steps will be generated
       steps_count =
         test_items
-        |> Enum.flat_map(&build_word_steps(&1, user_step_types))
+        |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id))
+        |> Enum.shuffle()
         |> length()
 
       if steps_count == 0 do
@@ -297,7 +330,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
         }
 
         with {:ok, test} <- Tests.create_test(test_attrs),
-             {:ok, _steps} <- create_test_steps(test, test_items, user_step_types),
+             {:ok, _steps} <- create_test_steps(test, test_items, user_step_types, user_id),
              {:ok, ready_test} <- Tests.ready_test(test) do
           # Preload test_steps before returning
           {:ok, Repo.preload(ready_test, :test_steps)}
@@ -322,10 +355,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   # Create test steps for all test items
-  defp create_test_steps(test, test_items, user_step_types) do
+  defp create_test_steps(test, test_items, user_step_types, user_id) do
     steps =
       test_items
-      |> Enum.flat_map(&build_word_steps(&1, user_step_types))
+      |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id))
+      # Shuffle to avoid having all questions for the same word consecutively
+      |> Enum.shuffle()
       |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
 
     # Validate that we have at least one step
@@ -338,7 +373,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   # Build steps for a single word (mix of multichoice and reading_text)
   # Uses user preferences if available, otherwise random variety
-  defp build_word_steps(%{word: word, is_new: is_new}, user_step_types) do
+  defp build_word_steps(%{word: word, is_new: is_new}, user_step_types, user_id) do
     base_attrs = %{
       word_id: word.id,
       step_type: :vocabulary,
@@ -355,7 +390,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
           question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
           correct_answer: word.meaning,
           points: 1,
-          options: fetch_meaning_options(word),
+          options: fetch_meaning_options(word, user_id),
           question_data: %{
             word_text: word.text,
             word_reading: word.reading,
@@ -370,7 +405,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
           question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
           correct_answer: word.reading,
           points: 1,
-          options: fetch_reading_options(word),
+          options: fetch_reading_options(word, user_id),
           question_data: %{
             word_text: word.text,
             word_meaning: word.meaning,
@@ -399,7 +434,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
       "image_to_meaning" ->
         # Try to get image-based options, fallback to text if not enough
-        case fetch_image_options(word) do
+        case fetch_image_options(word, user_id) do
           {:ok, options} ->
             Map.merge(base_attrs, %{
               question_type: :multichoice,
@@ -424,7 +459,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
               question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
               correct_answer: word.meaning,
               points: 1,
-              options: fetch_meaning_options(word),
+              options: fetch_meaning_options(word, user_id),
               question_data: %{
                 word_text: word.text,
                 word_reading: word.reading,
@@ -448,7 +483,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
               question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
               correct_answer: word.reading,
               points: 1,
-              options: fetch_reading_options(word),
+              options: fetch_reading_options(word, user_id),
               question_data: %{
                 word_text: word.text,
                 word_meaning: word.meaning,
@@ -536,7 +571,11 @@ defmodule Medoru.Learning.DailyTestGenerator do
       "kanji_writing"
     ]
 
-    types = Enum.filter(user_step_types, &(&1 in valid_types))
+    # Remove duplicates while preserving order, then filter to valid types
+    types =
+      user_step_types
+      |> Enum.uniq()
+      |> Enum.filter(&(&1 in valid_types))
 
     if types == [] do
       ["word_to_meaning", "word_to_reading"]
@@ -567,44 +606,63 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   # Fetch meaning options with distractors
-  defp fetch_meaning_options(word) do
+  # Only uses words the user has learned (has UserProgress for)
+  # Does NOT filter by difficulty - any learned word can be a distractor
+  defp fetch_meaning_options(word, user_id) do
     distractors =
       Word
-      |> where([w], w.id != ^word.id and w.difficulty == ^word.difficulty)
+      |> join(:inner, [w], up in Learning.UserProgress,
+        on: up.word_id == w.id and up.user_id == ^user_id
+      )
+      |> where([w], w.id != ^word.id)
       |> order_by(fragment("RANDOM()"))
       |> limit(@distractor_count)
       |> select([w], w.meaning)
       |> Repo.all()
 
-    [word.meaning | distractors] |> Enum.shuffle()
+    # Ensure correct answer is only added once
+    options = [word.meaning | distractors]
+    options |> Enum.uniq() |> Enum.shuffle()
   end
 
   # Fetch reading options with distractors
-  defp fetch_reading_options(word) do
+  # Only uses words the user has learned (has UserProgress for)
+  # Does NOT filter by difficulty - any learned word can be a distractor
+  defp fetch_reading_options(word, user_id) do
     distractors =
       Word
-      |> where([w], w.id != ^word.id and w.difficulty == ^word.difficulty)
+      |> join(:inner, [w], up in Learning.UserProgress,
+        on: up.word_id == w.id and up.user_id == ^user_id
+      )
+      |> where([w], w.id != ^word.id)
       |> order_by(fragment("RANDOM()"))
       |> limit(@distractor_count)
       |> select([w], w.reading)
       |> Repo.all()
 
-    [word.reading | distractors] |> Enum.shuffle()
+    # Ensure correct answer is only added once
+    options = [word.reading | distractors]
+    options |> Enum.uniq() |> Enum.shuffle()
   end
 
   # Fetch image options with distractors
   # Returns {:ok, [%{meaning: ..., image_path: ...}, ...]} or {:error, :not_enough_images}
-  defp fetch_image_options(word) do
+  # Only uses words the user has learned (has UserProgress for)
+  # Does NOT filter by difficulty - any learned word can be a distractor
+  defp fetch_image_options(word, user_id) do
     # Check if the target word has an image
     target_word = Word |> where([w], w.id == ^word.id and not is_nil(w.image_path)) |> Repo.one()
 
     if is_nil(target_word) do
       {:error, :not_enough_images}
     else
-      # Get distractors that have images
+      # Get distractors that have images - only from learned words
       distractors =
         Word
-        |> where([w], w.id != ^word.id and w.difficulty == ^word.difficulty)
+        |> join(:inner, [w], up in Learning.UserProgress,
+          on: up.word_id == w.id and up.user_id == ^user_id
+        )
+        |> where([w], w.id != ^word.id)
         |> where([w], not is_nil(w.image_path))
         |> order_by(fragment("RANDOM()"))
         |> limit(@distractor_count)
@@ -615,8 +673,10 @@ defmodule Medoru.Learning.DailyTestGenerator do
       if length(distractors) < @distractor_count do
         {:error, :not_enough_images}
       else
-        options = [%{meaning: word.meaning, image_path: word.image_path} | distractors]
-        {:ok, Enum.shuffle(options)}
+        correct_option = %{meaning: word.meaning, image_path: word.image_path}
+        options = [correct_option | distractors]
+        # Ensure no duplicates and shuffle
+        {:ok, options |> Enum.uniq_by(& &1.meaning) |> Enum.shuffle()}
       end
     end
   end
