@@ -1,0 +1,182 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-6 md:py-8">
+    <%!-- Back Link --%>
+    <.link
+      navigate={~p"/words/#{@word.id}"}
+      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 md:mb-6 transition-colors"
+    >
+      <.icon name="hero-arrow-left" class="w-4 h-4" />
+      <span class="text-sm md:text-base">{gettext("Back to %{word}", word: @word.text)}</span>
+    </.link>
+
+    <%!-- Header --%>
+    <div class="text-center mb-6 md:mb-8">
+      <h1 class="text-3xl md:text-4xl lg:text-5xl font-medium text-base-content mb-3">
+        {@word.text}
+      </h1>
+      <div class="text-lg md:text-xl text-secondary/80 font-medium mb-3 font-jp">
+        {@word.reading}
+      </div>
+      <div class="flex items-center justify-center gap-2 flex-wrap">
+        <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-xs md:text-sm font-medium">
+          JLPT N{@word.difficulty}
+        </span>
+        <span class={[
+          "px-3 py-1 rounded-full text-xs md:text-sm font-medium capitalize",
+          case @word.word_type do
+            :verb ->
+              "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+
+            :adjective ->
+              "bg-green-100/80 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+
+            _ ->
+              "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+          end
+        ]}>
+          {@word.word_type}
+        </span>
+      </div>
+    </div>
+
+    <%!-- Conjugations --%>
+    <%= if @conjugations == [] do %>
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 md:p-8 text-center">
+        <.icon
+          name="hero-information-circle"
+          class="w-10 h-10 md:w-12 md:h-12 text-secondary/40 mx-auto mb-4"
+        />
+        <p class="text-secondary text-sm md:text-base">
+          {gettext("No conjugations available for this word.")}
+        </p>
+      </div>
+    <% else %>
+      <%= for {word_type, forms} <- @grouped_conjugations do %>
+        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-4 md:mb-6">
+          <%!-- Section Header --%>
+          <div class="px-4 md:px-6 py-3 md:py-4 bg-base-200/50 border-b border-base-300">
+            <h2 class="text-base md:text-lg font-semibold text-base-content capitalize">
+              {word_type} {gettext("Forms")}
+            </h2>
+          </div>
+
+          <%!-- Forms List --%>
+          <div class="divide-y divide-base-200">
+            <%= for conj <- forms do %>
+              <% suffix_color =
+                MedoruWeb.WordLive.Conjugations.form_suffix_color(conj.grammar_form.name) %>
+              <div class="p-4 md:px-6 md:py-4 hover:bg-base-200/30 transition-colors">
+                <%!-- Mobile Layout: Stacked --%>
+                <div class="flex flex-col gap-2 md:hidden">
+                  <%!-- Top row: Form name + colored suffix pattern --%>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-medium text-secondary/70">
+                      {conj.grammar_form.display_name}
+                    </span>
+                    <%= if conj.grammar_form.suffix_pattern do %>
+                      <span class={[
+                        "text-xs px-2 py-0.5 rounded font-jp font-medium",
+                        suffix_color
+                      ]}>
+                        {conj.grammar_form.suffix_pattern}
+                      </span>
+                    <% end %>
+                  </div>
+
+                  <%!-- Middle: Conjugated form with same color --%>
+                  <div class="flex flex-col gap-1">
+                    <span class={[
+                      "inline-block px-3 py-1.5 rounded-lg font-jp font-medium text-lg",
+                      suffix_color
+                    ]}>
+                      {conj.conjugated_form}
+                    </span>
+                    <%= if conj.reading && conj.reading != conj.conjugated_form do %>
+                      <span class="text-sm text-secondary/70 font-jp ml-1">
+                        {conj.reading}
+                      </span>
+                    <% end %>
+                  </div>
+
+                  <%!-- Bottom: Description if present --%>
+                  <%= if conj.grammar_form.description do %>
+                    <p class="text-xs text-secondary/60">
+                      {conj.grammar_form.description}
+                    </p>
+                  <% end %>
+                </div>
+
+                <%!-- Desktop Layout: Grid --%>
+                <div class="hidden md:grid md:grid-cols-12 md:gap-4 md:items-center">
+                  <%!-- Form Name & Colored Suffix (4 columns) --%>
+                  <div class="col-span-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="text-sm font-medium text-secondary/80">
+                        {conj.grammar_form.display_name}
+                      </span>
+                    </div>
+                    <%= if conj.grammar_form.suffix_pattern do %>
+                      <div class="mt-1.5">
+                        <span class={[
+                          "inline-block text-sm px-2.5 py-1 rounded-md font-jp font-medium",
+                          suffix_color
+                        ]}>
+                          {conj.grammar_form.suffix_pattern}
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%!-- Conjugated Form with same color (4 columns) --%>
+                  <div class="col-span-4">
+                    <div class="flex flex-col gap-1">
+                      <span class={[
+                        "inline-block text-2xl font-jp font-medium px-4 py-2 rounded-lg",
+                        suffix_color
+                      ]}>
+                        {conj.conjugated_form}
+                      </span>
+                      <%= if conj.reading && conj.reading != conj.conjugated_form do %>
+                        <span class="text-base text-secondary/70 font-jp ml-1">
+                          {conj.reading}
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <%!-- Description (4 columns) --%>
+                  <div class="col-span-4">
+                    <%= if conj.grammar_form.description do %>
+                      <p class="text-sm text-secondary/70 leading-relaxed">
+                        {conj.grammar_form.description}
+                      </p>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <%!-- Navigation --%>
+    <div class="mt-6 md:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <.link
+        navigate={~p"/words/#{@word.id}"}
+        class="inline-flex items-center justify-center gap-2 text-secondary hover:text-primary font-medium transition-colors px-4 py-2 rounded-lg hover:bg-base-200"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to word")}
+      </.link>
+
+      <.link
+        navigate={~p"/words?difficulty=#{@word.difficulty}"}
+        class="inline-flex items-center justify-center gap-2 text-secondary hover:text-primary font-medium transition-colors px-4 py-2 rounded-lg hover:bg-base-200"
+      >
+        {gettext("Back to N%{level} Words", level: @word.difficulty)}
+        <.icon name="hero-arrow-right" class="w-4 h-4" />
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

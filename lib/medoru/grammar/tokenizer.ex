@@ -91,7 +91,7 @@ defmodule Medoru.Grammar.Tokenizer do
           position: position
         }
 
-        rest = String.slice(remaining, matched_len..-1)
+        rest = String.slice(remaining, matched_len..-1//1)
         do_tokenize(rest, [token | tokens], position + matched_len)
     end
   end
@@ -185,7 +185,7 @@ defmodule Medoru.Grammar.Tokenizer do
     case pattern_element do
       %{"type" => "literal", "text" => literal} ->
         if String.starts_with?(normalized, literal) do
-          {literal, String.slice(normalized, String.length(literal)..-1)}
+          {literal, String.slice(normalized, String.length(literal)..-1//1)}
         else
           nil
         end
@@ -202,7 +202,7 @@ defmodule Medoru.Grammar.Tokenizer do
     max_len = min(String.length(sentence), 10)
 
     # Try longest match first
-    Enum.find_value(max_len..1, fn len ->
+    Enum.find_value(max_len..1//-1, fn len ->
       candidate = String.slice(sentence, 0, len)
 
       case lookup_word(candidate) do
@@ -211,7 +211,7 @@ defmodule Medoru.Grammar.Tokenizer do
 
         result ->
           if result.word_type == word_type and form_matches?(result.form, slot) do
-            {candidate, String.slice(sentence, len..-1)}
+            {candidate, String.slice(sentence, len..-1//1)}
           else
             nil
           end

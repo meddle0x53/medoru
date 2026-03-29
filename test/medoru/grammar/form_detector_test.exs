@@ -9,30 +9,50 @@ defmodule Medoru.Grammar.FormDetectorTest do
     setup do
       word = ContentFixtures.word_fixture(%{text: "食べる", reading: "たべる", word_type: :verb})
 
-      te_form = ContentFixtures.grammar_form_fixture(%{name: "te-form", display_name: "Te Form", word_type: "verb"})
-      nai_form = ContentFixtures.grammar_form_fixture(%{name: "nai-form", display_name: "Nai Form", word_type: "verb"})
-      masu_form = ContentFixtures.grammar_form_fixture(%{name: "masu-form", display_name: "Masu Form", word_type: "verb"})
+      te_form =
+        ContentFixtures.grammar_form_fixture(%{
+          name: "te-form",
+          display_name: "Te Form",
+          word_type: "verb"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: te_form.id,
-        conjugated_form: "食べて",
-        reading: "たべて"
-      })
+      nai_form =
+        ContentFixtures.grammar_form_fixture(%{
+          name: "nai-form",
+          display_name: "Nai Form",
+          word_type: "verb"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: nai_form.id,
-        conjugated_form: "食べない",
-        reading: "たべない"
-      })
+      masu_form =
+        ContentFixtures.grammar_form_fixture(%{
+          name: "masu-form",
+          display_name: "Masu Form",
+          word_type: "verb"
+        })
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: masu_form.id,
-        conjugated_form: "食べます",
-        reading: "たべます"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "食べて",
+          reading: "たべて"
+        })
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: nai_form.id,
+          conjugated_form: "食べない",
+          reading: "たべない"
+        })
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: masu_form.id,
+          conjugated_form: "食べます",
+          reading: "たべます"
+        })
 
       %{word: word, te_form: te_form, nai_form: nai_form, masu_form: masu_form}
     end
@@ -64,12 +84,13 @@ defmodule Medoru.Grammar.FormDetectorTest do
       word = ContentFixtures.word_fixture(%{text: "食べる", reading: "たべる", word_type: :verb})
       te_form = ContentFixtures.grammar_form_fixture(%{name: "te-form", word_type: "verb"})
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: te_form.id,
-        conjugated_form: "食べて",
-        reading: "たべて"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "食べて",
+          reading: "たべて"
+        })
 
       %{word: word}
     end
@@ -92,11 +113,12 @@ defmodule Medoru.Grammar.FormDetectorTest do
       te_form = ContentFixtures.grammar_form_fixture(%{name: "te-form", word_type: "verb"})
       nai_form = ContentFixtures.grammar_form_fixture(%{name: "nai-form", word_type: "verb"})
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: te_form.id,
-        conjugated_form: "食べて"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "食べて"
+        })
 
       %{te_form: te_form, nai_form: nai_form}
     end
@@ -116,11 +138,12 @@ defmodule Medoru.Grammar.FormDetectorTest do
       te_form = ContentFixtures.grammar_form_fixture(%{name: "te-form", word_type: "verb"})
       nai_form = ContentFixtures.grammar_form_fixture(%{name: "nai-form", word_type: "verb"})
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: te_form.id,
-        conjugated_form: "食べて"
-      })
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "食べて"
+        })
 
       %{te_form: te_form, nai_form: nai_form}
     end
@@ -137,14 +160,21 @@ defmodule Medoru.Grammar.FormDetectorTest do
   describe "list_conjugations/1" do
     setup do
       word = ContentFixtures.word_fixture(%{text: "食べる", word_type: :verb})
-      te_form = ContentFixtures.grammar_form_fixture(%{name: "te-form", word_type: "verb", display_name: "Te Form"})
 
-      {:ok, _} = Content.create_word_conjugation(%{
-        word_id: word.id,
-        grammar_form_id: te_form.id,
-        conjugated_form: "食べて",
-        reading: "たべて"
-      })
+      te_form =
+        ContentFixtures.grammar_form_fixture(%{
+          name: "te-form",
+          word_type: "verb",
+          display_name: "Te Form"
+        })
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: word.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "食べて",
+          reading: "たべて"
+        })
 
       %{word: word, te_form: te_form}
     end

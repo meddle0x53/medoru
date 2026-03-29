@@ -9,7 +9,7 @@ defmodule Medoru.Grammar.FormDetector do
 
   import Ecto.Query
   alias Medoru.Repo
-  alias Medoru.Content.{Word, WordConjugation, GrammarForm}
+  alias Medoru.Content.{WordConjugation, GrammarForm}
 
   @doc """
   Detects the form of a word by looking up its conjugations in the database.

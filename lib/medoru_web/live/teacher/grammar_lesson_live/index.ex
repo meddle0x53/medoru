@@ -6,6 +6,14 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Index do
 
   alias Medoru.Content
 
+  @word_type_colors %{
+    "verb" => "bg-emerald-500 text-white",
+    "noun" => "bg-blue-500 text-white",
+    "adjective" => "bg-rose-500 text-white",
+    "expression" => "bg-amber-400 text-amber-950",
+    "particle" => "bg-orange-500 text-white"
+  }
+
   embed_templates "index/*"
 
   @impl true
@@ -41,7 +49,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Index do
     {:noreply,
      socket
      |> assign(:page_title, gettext("My Grammar Lessons"))
-     |> assign(:lessons, lessons)}
+     |> assign(:lessons, lessons)
+     |> assign(:word_type_colors, @word_type_colors)
+     |> assign(:word_classes, Content.list_word_classes())}
   end
 
   @impl true

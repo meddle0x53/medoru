@@ -256,4 +256,44 @@ defmodule Medoru.ContentFixtures do
 
     conjugation
   end
+
+  @doc """
+  Generate a custom lesson.
+  """
+  def custom_lesson_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        title: "Test Custom Lesson #{System.unique_integer([:positive])}",
+        description: "Test description",
+        difficulty: 5,
+        lesson_type: "reading",
+        lesson_subtype: "vocabulary",
+        status: "draft",
+        creator_id: nil
+      })
+
+    {:ok, lesson} = Content.create_custom_lesson(attrs)
+    lesson
+  end
+
+  @doc """
+  Generate a grammar lesson step.
+  """
+  def grammar_lesson_step_fixture(attrs \\ %{}) do
+    lesson = attrs[:custom_lesson] || custom_lesson_fixture()
+
+    attrs =
+      Enum.into(attrs, %{
+        custom_lesson_id: lesson.id,
+        position: 0,
+        title: "Test Step",
+        explanation: "Test explanation",
+        pattern_elements: [],
+        examples: [],
+        difficulty: 1
+      })
+
+    {:ok, step} = Content.create_grammar_lesson_step(attrs)
+    step
+  end
 end

@@ -7,8 +7,7 @@ defmodule Medoru.Repo.Migrations.CreateWordConjugations do
       add :conjugated_form, :string, null: false
       add :reading, :string
 
-      add :word_id, references(:words, type: :binary_id, on_delete: :delete_all),
-        null: false
+      add :word_id, references(:words, type: :binary_id, on_delete: :delete_all), null: false
 
       add :grammar_form_id, references(:grammar_forms, type: :binary_id, on_delete: :delete_all),
         null: false

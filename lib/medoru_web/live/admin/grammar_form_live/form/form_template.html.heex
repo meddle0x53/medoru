@@ -1,7 +1,10 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="mb-8">
-      <.link navigate={~p"/admin/grammar-forms"} class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors">
+      <.link
+        navigate={~p"/admin/grammar-forms"}
+        class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+      >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Grammar Forms")}
       </.link>
       <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
@@ -47,7 +50,12 @@
               >
                 <option value="">{gettext("Select type...")}</option>
                 <%= for {label, value} <- @word_types do %>
-                  <option value={value} selected={Phoenix.HTML.FormData.to_form(@changeset, []).data.word_type == value}>
+                  <option
+                    value={value}
+                    selected={
+                      Phoenix.HTML.FormData.to_form(@changeset, []).data.word_type == value
+                    }
+                  >
                     {label}
                   </option>
                 <% end %>

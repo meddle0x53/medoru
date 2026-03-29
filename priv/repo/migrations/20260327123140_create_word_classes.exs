@@ -19,8 +19,7 @@ defmodule Medoru.Repo.Migrations.CreateWordClasses do
     create table(:word_class_memberships, primary_key: false) do
       add :id, :binary_id, primary_key: true
 
-      add :word_id, references(:words, type: :binary_id, on_delete: :delete_all),
-        null: false
+      add :word_id, references(:words, type: :binary_id, on_delete: :delete_all), null: false
 
       add :word_class_id,
           references(:word_classes, type: :binary_id, on_delete: :delete_all),

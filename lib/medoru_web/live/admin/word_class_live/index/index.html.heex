@@ -3,7 +3,9 @@
     <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-bold text-base-content">{gettext("Word Classes")}</h1>
-        <p class="text-secondary mt-1">{gettext("Manage semantic categories for words (time, place, person, object)")}</p>
+        <p class="text-secondary mt-1">
+          {gettext("Manage semantic categories for words (time, place, person, object)")}
+        </p>
       </div>
       <.link navigate={~p"/admin/word-classes/new"} class="btn btn-primary">
         <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Class")}
@@ -36,16 +38,25 @@
                         <span class="badge badge-ghost badge-sm font-jp">{example}</span>
                       <% end %>
                       <%= if length(word_class.examples || []) > 3 do %>
-                        <span class="badge badge-ghost badge-sm">+{length(word_class.examples) - 3}</span>
+                        <span class="badge badge-ghost badge-sm">
+                          +{length(word_class.examples) - 3}
+                        </span>
                       <% end %>
                     </div>
                   </td>
                   <td>
                     <div class="flex gap-2">
-                      <.link navigate={~p"/admin/word-classes/#{word_class.id}"} class="btn btn-ghost btn-sm" title={gettext("Manage Words")}>
+                      <.link
+                        navigate={~p"/admin/word-classes/#{word_class.id}"}
+                        class="btn btn-ghost btn-sm"
+                        title={gettext("Manage Words")}
+                      >
                         <.icon name="hero-users" class="w-4 h-4" />
                       </.link>
-                      <.link navigate={~p"/admin/word-classes/#{word_class.id}/edit"} class="btn btn-ghost btn-sm">
+                      <.link
+                        navigate={~p"/admin/word-classes/#{word_class.id}/edit"}
+                        class="btn btn-ghost btn-sm"
+                      >
                         <.icon name="hero-pencil" class="w-4 h-4" />
                       </.link>
                       <button

@@ -18,7 +18,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       {:ok, view, html} = conn |> log_in_user(teacher) |> live(~p"/teacher/custom-lessons")
 
       assert html =~ "My Custom Lessons"
-      assert has_element?(view, "a", "Create Lesson")
+      assert has_element?(view, "a", "Create Vocabulary Lesson")
+      assert has_element?(view, "a", "Create Grammar Lesson")
     end
 
     test "student cannot access custom lessons", %{conn: conn, student: student} do

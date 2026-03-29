@@ -139,9 +139,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def handle_event("update_word", %{"id" => id, "word" => word_params}, socket) do
     lesson_word = Enum.find(socket.assigns.lesson_words, fn lw -> lw.id == id end)
-    
+
     # Parse examples (split by newline, remove empty)
     examples_text = word_params["examples"] || ""
+
     examples_list =
       examples_text
       |> String.split("\n")
@@ -391,7 +392,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                                   name="word[custom_meaning]"
                                   value={@editing_custom_meaning}
                                   class="input input-bordered w-full input-sm"
-                                  placeholder={Content.get_localized_meaning(lesson_word.word, @locale)}
+                                  placeholder={
+                                    Content.get_localized_meaning(lesson_word.word, @locale)
+                                  }
                                 />
                               </div>
                               <div>

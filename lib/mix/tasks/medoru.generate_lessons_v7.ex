@@ -474,7 +474,7 @@ defmodule Mix.Tasks.Medoru.GenerateLessonsV7 do
           else
             # If we run out of words, wrap around and take remaining
             remaining = words_per_lesson - (total_words - start_idx)
-            Enum.slice(words, start_idx..-1) ++ Enum.slice(words, 0..(remaining - 1))
+            Enum.slice(words, start_idx..-1//1) ++ Enum.slice(words, 0..(remaining - 1))
           end
 
         # Deduplicate word IDs

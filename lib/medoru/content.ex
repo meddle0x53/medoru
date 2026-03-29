@@ -1532,6 +1532,7 @@ defmodule Medoru.Content do
       end
     end)
     |> order_by([cl], desc: cl.inserted_at)
+    |> preload(:grammar_lesson_steps)
     |> Repo.all()
   end
 
@@ -2336,6 +2337,7 @@ defmodule Medoru.Content do
   end
 
   defp maybe_filter_by_word_type(query, nil), do: query
+
   defp maybe_filter_by_word_type(query, word_type) do
     where(query, [gf], gf.word_type == ^word_type)
   end

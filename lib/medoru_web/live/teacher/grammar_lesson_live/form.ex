@@ -1,6 +1,11 @@
 defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   @moduledoc """
   Teacher form for creating and editing grammar lessons.
+
+  Pattern elements:
+  - word_slot: word_type + form (colored bubbles)
+  - word_class: reference to word class (light purple bubble)
+  - literal: fixed text (white bubble)
   """
   use MedoruWeb, :live_view
 
@@ -16,6 +21,47 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     {"Particle", "particle"},
     {"Expression", "expression"}
   ]
+
+  # Common Japanese particles for selection
+  @particles [
+    {"は (wa - topic)", "は"},
+    {"が (ga - subject)", "が"},
+    {"を (wo - object)", "を"},
+    {"に (ni - to/at)", "に"},
+    {"で (de - at/by)", "で"},
+    {"へ (e - to)", "へ"},
+    {"と (to - with/and)", "と"},
+    {"から (kara - from)", "から"},
+    {"まで (made - until)", "まで"},
+    {"より (yori - than)", "より"},
+    {"も (mo - also)", "も"},
+    {"や (ya - and)", "や"},
+    {"の (no - possessive)", "の"},
+    {"か (ka - question)", "か"},
+    {"ね (ne - right?)", "ね"},
+    {"よ (yo - you know)", "よ"},
+    {"わ (wa - emotion)", "わ"},
+    {"ぞ (zo - emphasis)", "ぞ"},
+    {"ぜ (ze - emphasis)", "ぜ"},
+    {"な (na - prohibition)", "な"},
+    {"さ (sa - casual)", "さ"},
+    {"っけ (kke - I wonder)", "っけ"},
+    {"もの (mono - because)", "もの"},
+    {"くらい (kurai - about)", "くらい"},
+    {"ぐらい (gurai - about)", "ぐらい"},
+    {"だけ (dake - only)", "だけ"},
+    {"しか (shika - only)", "しか"},
+    {"など (nado - etc.)", "など"}
+  ]
+
+  # Colors for word type bubbles (Tailwind classes)
+  @word_type_colors %{
+    "verb" => "bg-emerald-500 text-white",
+    "noun" => "bg-blue-500 text-white",
+    "adjective" => "bg-rose-500 text-white",
+    "expression" => "bg-amber-400 text-amber-950",
+    "particle" => "bg-orange-500 text-white"
+  }
 
   @impl true
   def render(assigns) do
@@ -42,7 +88,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
        socket
        |> assign(:grammar_forms, grammar_forms)
        |> assign(:word_classes, word_classes)
-       |> assign(:word_types, @word_types)}
+       |> assign(:word_types, @word_types)
+       |> assign(:word_type_colors, @word_type_colors)
+       |> assign(:particles, @particles)}
     end
   end
 
@@ -52,9 +100,10 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
     case socket.assigns.live_action do
       :new ->
-        changeset = Content.change_custom_lesson(%Content.CustomLesson{}, %{
-          "lesson_subtype" => "grammar"
-        })
+        changeset =
+          Content.change_custom_lesson(%Content.CustomLesson{}, %{
+            "lesson_subtype" => "grammar"
+          })
 
         {:noreply,
          socket
@@ -91,8 +140,14 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
   @impl true
   def handle_event("validate_lesson", %{"custom_lesson" => lesson_params}, socket) do
+    base_lesson =
+      case socket.assigns.live_action do
+        :edit -> socket.assigns.lesson
+        :new -> %Content.CustomLesson{}
+      end
+
     changeset =
-      %Content.CustomLesson{}
+      base_lesson
       |> Content.change_custom_lesson(Map.put(lesson_params, "lesson_subtype", "grammar"))
       |> Map.put(:action, :validate)
 
@@ -199,9 +254,38 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   end
 
   @impl true
-  def handle_event("update_step_field", %{"field" => field, "value" => value}, socket) do
+  def handle_event("update_step_field", params, socket) do
+    # Form sends params with field name as key
+    field = params["field"] || "title"
+    value = params[field] || ""
+
     step = socket.assigns.current_step
     step = Map.put(step, String.to_atom(field), value)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event(
+        "update_step_explanation",
+        %{"step" => %{"explanation" => explanation}},
+        socket
+      ) do
+    step = socket.assigns.current_step
+    step = Map.put(step, :explanation, explanation)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  # Handle blur event which sends value directly
+  @impl true
+  def handle_event(
+        "update_step_explanation",
+        %{"value" => explanation},
+        socket
+      ) do
+    step = socket.assigns.current_step
+    step = Map.put(step, :explanation, explanation)
 
     {:noreply, assign(socket, :current_step, step)}
   end
@@ -217,12 +301,60 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   end
 
   @impl true
-  def handle_event("update_pattern_element", %{"index" => index, "field" => field, "value" => value}, socket) do
-    step = socket.assigns.current_step
+  def handle_event("update_element_word_type", %{"index" => index, "value" => value}, socket) do
     index = String.to_integer(index)
+    step = socket.assigns.current_step
     elements = step.pattern_elements
     element = Enum.at(elements, index)
-    element = Map.put(element, field, value)
+
+    # Update word_type and reset form
+    element =
+      element
+      |> Map.put("word_type", value)
+      |> Map.put("form", nil)
+
+    elements = List.replace_at(elements, index, element)
+    step = Map.put(step, :pattern_elements, elements)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("update_element_form", %{"index" => index, "value" => value}, socket) do
+    index = String.to_integer(index)
+    step = socket.assigns.current_step
+    elements = step.pattern_elements
+    element = Enum.at(elements, index)
+
+    element = Map.put(element, "form", value)
+    elements = List.replace_at(elements, index, element)
+    step = Map.put(step, :pattern_elements, elements)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("update_element_word_class", %{"index" => index, "value" => value}, socket) do
+    index = String.to_integer(index)
+    step = socket.assigns.current_step
+    elements = step.pattern_elements
+    element = Enum.at(elements, index)
+
+    element = Map.put(element, "word_class_id", value)
+    elements = List.replace_at(elements, index, element)
+    step = Map.put(step, :pattern_elements, elements)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("update_element_text", %{"index" => index, "value" => value}, socket) do
+    index = String.to_integer(index)
+    step = socket.assigns.current_step
+    elements = step.pattern_elements
+    element = Enum.at(elements, index)
+
+    element = Map.put(element, "text", value)
     elements = List.replace_at(elements, index, element)
     step = Map.put(step, :pattern_elements, elements)
 
@@ -262,7 +394,29 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   end
 
   @impl true
-  def handle_event("update_example", %{"index" => index, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_example",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
+    step = socket.assigns.current_step
+    index = String.to_integer(index)
+    examples = step.examples
+    example = Enum.at(examples, index)
+    example = Map.put(example, field, value)
+    examples = List.replace_at(examples, index, example)
+    step = Map.put(step, :examples, examples)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  # Handle blur event from example inputs
+  @impl true
+  def handle_event(
+        "update_example",
+        %{"index" => index, "field" => field, "_target" => _, "value" => value},
+        socket
+      ) do
     step = socket.assigns.current_step
     index = String.to_integer(index)
     examples = step.examples
@@ -288,13 +442,44 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   def handle_event("validate_example", %{"index" => index}, socket) do
     step = socket.assigns.current_step
     example = Enum.at(step.examples, String.to_integer(index))
+    sentence = example["sentence"] || ""
 
-    case Validator.validate_sentence(example["sentence"], step.pattern_elements) do
-      {:ok, _} ->
-        {:noreply, put_flash(socket, :info, gettext("Example is valid!"))}
+    # Check if sentence is empty
+    if String.trim(sentence) == "" do
+      {:noreply,
+       put_flash(
+         socket,
+         :error,
+         gettext("Please enter a Japanese sentence/word before validating.")
+       )}
+    else
+      case Validator.validate_sentence(sentence, step.pattern_elements) do
+        {:ok, _} ->
+          {:noreply, put_flash(socket, :info, gettext("Example is valid!"))}
 
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Example doesn't match pattern: %{reason}", reason: inspect(reason)))}
+        {:error, %{expected: expected, got: got}} when got == "" or is_nil(got) ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext(
+               "Example doesn't match pattern. Expected: %{expected}. Make sure you've entered the correct conjugated form (not the dictionary form).",
+               expected: expected
+             )
+           )}
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext(
+               "Example doesn't match pattern. Expected: %{expected}, but got: %{got}. Make sure you've entered the correct conjugated form.",
+               expected: reason[:expected] || "pattern",
+               got: reason[:got] || "nothing"
+             )
+           )}
+      end
     end
   end
 
@@ -303,43 +488,66 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     step = socket.assigns.current_step
     lesson = socket.assigns.lesson
 
-    attrs = %{
-      position: step.position,
-      title: step.title,
-      explanation: step.explanation,
-      pattern_elements: step.pattern_elements,
-      examples: step.examples,
-      difficulty: step.difficulty || 1,
-      custom_lesson_id: lesson.id
-    }
+    # Validate all examples before saving
+    all_valid =
+      Enum.all?(step.examples, fn example ->
+        example["sentence"] != "" and
+          example["reading"] != "" and
+          example["meaning"] != ""
+      end)
 
-    result =
-      if socket.assigns.current_step_index == :new do
-        Content.create_grammar_lesson_step(attrs)
-      else
-        existing_step = Enum.at(socket.assigns.steps, socket.assigns.current_step_index)
-        Content.update_grammar_lesson_step(existing_step, attrs)
+    if not all_valid do
+      {:noreply,
+       put_flash(
+         socket,
+         :error,
+         gettext("All examples must have sentence, reading, and meaning.")
+       )}
+    else
+      attrs = %{
+        position: step.position,
+        title: step.title,
+        explanation: step.explanation,
+        pattern_elements: step.pattern_elements,
+        examples: step.examples,
+        difficulty: step.difficulty || 1,
+        custom_lesson_id: lesson.id
+      }
+
+      result =
+        if socket.assigns.current_step_index == :new do
+          Content.create_grammar_lesson_step(attrs)
+        else
+          existing_step = Enum.at(socket.assigns.steps, socket.assigns.current_step_index)
+          Content.update_grammar_lesson_step(existing_step, attrs)
+        end
+
+      case result do
+        {:ok, _} ->
+          steps = Content.list_grammar_lesson_steps(lesson.id)
+
+          {:noreply,
+           socket
+           |> assign(:steps, steps)
+           |> assign(:current_step_index, nil)
+           |> assign(:current_step, nil)
+           |> put_flash(:info, gettext("Step saved successfully."))}
+
+        {:error, changeset} ->
+          errors =
+            Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+              Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
+                opts[String.to_existing_atom(key)] |> to_string()
+              end)
+            end)
+
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to save step: %{errors}", errors: inspect(errors))
+           )}
       end
-
-    case result do
-      {:ok, _} ->
-        steps = Content.list_grammar_lesson_steps(lesson.id)
-
-        {:noreply,
-         socket
-         |> assign(:steps, steps)
-         |> assign(:current_step_index, nil)
-         |> assign(:current_step, nil)
-         |> put_flash(:info, gettext("Step saved successfully."))}
-
-      {:error, changeset} ->
-        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-          Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
-            opts[String.to_existing_atom(key)] |> to_string()
-          end)
-        end)
-
-        {:noreply, put_flash(socket, :error, gettext("Failed to save step: %{errors}", errors: inspect(errors)))}
     end
   end
 
@@ -349,8 +557,15 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     %{
       "type" => "word_slot",
       "word_type" => "verb",
-      "forms" => [],
-      "word_class" => nil,
+      "form" => nil,
+      "optional" => false
+    }
+  end
+
+  defp create_pattern_element("word_class") do
+    %{
+      "type" => "word_class",
+      "word_class_id" => nil,
       "optional" => false
     }
   end
@@ -360,5 +575,10 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
       "type" => "literal",
       "text" => ""
     }
+  end
+
+  # Get forms for a specific word type
+  def get_forms_for_word_type(grammar_forms, word_type) do
+    Enum.filter(grammar_forms, fn form -> form.word_type == word_type end)
   end
 end
