@@ -68,6 +68,28 @@
           </div>
 
           <div>
+            <label class="label" for="word_class_pattern">
+              <span class="label-text">{gettext("Regex Pattern (optional)")}</span>
+            </label>
+            <input
+              type="text"
+              id="word_class_pattern"
+              name="word_class[pattern]"
+              value={Ecto.Changeset.get_field(@changeset, :pattern)}
+              class="input input-bordered w-full font-mono"
+              placeholder={gettext("e.g., [0-9]+(時|分) for time expressions")}
+            />
+            <p class="text-sm text-secondary mt-1">
+              {gettext(
+                "If provided, the validator will use this regex to match words instead of the word list above."
+              )}
+            </p>
+            <%= if @changeset.errors[:pattern] do %>
+              <p class="text-error text-sm mt-1">{elem(@changeset.errors[:pattern], 0)}</p>
+            <% end %>
+          </div>
+
+          <div>
             <label class="label" for="word_class_examples">
               <span class="label-text">{gettext("Example Words (one per line)")}</span>
             </label>

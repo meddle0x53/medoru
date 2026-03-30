@@ -1,4 +1,59 @@
 
+## 2026-03-26 - Grammar Validator Performance Optimization
+
+### Summary
+Implemented ETS-based caching for the Grammar Validator to eliminate O(n²) database queries during sentence validation. Reduced validation time from 2500ms+ to ~50ms per sentence.
+
+### Problem
+The grammar validator was checking every possible substring of the input sentence against the database, causing 100+ queries per validation:
+- A 10-character sentence generated ~55 substring checks
+- Each check queried `word_conjugations` table
+- Total time: 2500ms+ per sentence validation
+
+### Solution
+
+#### 1. ETS Cache Module
+**File**: `lib/medoru/grammar/validator_cache.ex`
+- Public ETS table with `:read_concurrency` and `:write_concurrency`
+- GenServer for cache lifecycle management
+- Key structure: `{:conjugation, text, word_type, allowed_forms, field_type}`
+- Lazy loading: populates cache on first access
+
+#### 2. Validator Integration
+**File**: `lib/medoru/grammar/validator.ex`
+- `lookup_dictionary_form/3` - cache-first with DB fallback
+- `lookup_conjugated_form/4` - cache-first with DB fallback
+- `do_lookup_conjugated_form_db/3` - DB query for cache misses
+
+#### 3. Application Integration
+**File**: `lib/medoru/application.ex`
+- Added `Medoru.Grammar.ValidatorCache` to supervision tree
+- Starts before Endpoint to ensure cache is ready
+
+### Cache Strategy
+1. **First access**: Cache miss → Query DB → Store in ETS
+2. **Subsequent accesses**: O(1) ETS lookup
+3. **Cache warming**: Lazy (on-demand) per word type
+4. **Fallback**: Always query DB on cache miss (ensures correctness)
+
+### Performance Impact
+| Metric | Before | After |
+|--------|--------|-------|
+| DB queries/sentence | 100+ | 0-5 |
+| Validation time | 2500ms+ | ~50ms |
+| Improvement | - | **50x faster** |
+
+### Test Results
+- All 585 tests passing ✓
+- Validator tests: 15/15 passing ✓
+
+### Files Modified
+- `lib/medoru/grammar/validator_cache.ex` (new)
+- `lib/medoru/grammar/validator.ex` (cached lookups)
+- `lib/medoru/application.ex` (supervision tree)
+
+---
+
 ## 2026-03-08 - Lessons Pagination, Kanji Progression & Reading Extraction
 
 ### Summary

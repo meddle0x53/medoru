@@ -227,21 +227,43 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
         <% else %>
           <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <%= for lesson <- @lessons do %>
-              <div class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow flex flex-col h-full">
+              <% # Determine card styling based on lesson type
+              {type_badge_class, type_label, type_icon} =
+                case lesson.lesson_subtype do
+                  "grammar" -> {"badge-secondary", gettext("Grammar"), "hero-beaker"}
+                  _ -> {"badge-primary", gettext("Vocabulary"), "hero-bookmark"}
+                end
+
+              # Border color based on type
+              card_border_class =
+                case lesson.lesson_subtype do
+                  "grammar" -> "border-secondary/30 hover:border-secondary/60"
+                  _ -> "border-primary/30 hover:border-primary/60"
+                end %>
+              <div class={[
+                "card bg-base-100 border hover:shadow-lg transition-all flex flex-col h-full",
+                card_border_class
+              ]}>
                 <div class="card-body flex flex-col flex-1">
-                  <%!-- Header with status badge --%>
-                  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                  <%!-- Header with type and status badges --%>
+                  <div class="flex flex-col gap-2 mb-2">
+                    <div class="flex items-center justify-between">
+                      <span class={["badge badge-sm", type_badge_class]}>
+                        <.icon name={type_icon} class="w-3 h-3 mr-1" />
+                        {type_label}
+                      </span>
+                      <%= case lesson.status do %>
+                        <% "draft" -> %>
+                          <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
+                        <% "published" -> %>
+                          <span class="badge badge-success badge-sm">{gettext("Published")}</span>
+                        <% "archived" -> %>
+                          <span class="badge badge-neutral badge-sm">{gettext("Archived")}</span>
+                      <% end %>
+                    </div>
                     <h3 class="card-title text-base sm:text-lg text-base-content line-clamp-1">
                       {lesson.title}
                     </h3>
-                    <%= case lesson.status do %>
-                      <% "draft" -> %>
-                        <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
-                      <% "published" -> %>
-                        <span class="badge badge-success badge-sm">{gettext("Published")}</span>
-                      <% "archived" -> %>
-                        <span class="badge badge-neutral badge-sm">{gettext("Archived")}</span>
-                    <% end %>
                   </div>
 
                   <%!-- Description --%>
@@ -252,8 +274,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                   <%!-- Meta info --%>
                   <div class="flex items-center gap-4 text-sm text-secondary mb-4">
                     <span class="flex items-center gap-1">
-                      <.icon name="hero-bookmark" class="w-4 h-4" />
-                      {lesson.word_count} {gettext("words")}
+                      <%= if lesson.lesson_subtype == "grammar" do %>
+                        <.icon name="hero-beaker" class="w-4 h-4" />
+                        {lesson.word_count} {gettext("steps")}
+                      <% else %>
+                        <.icon name="hero-bookmark" class="w-4 h-4" />
+                        {lesson.word_count} {gettext("words")}
+                      <% end %>
                     </span>
                     <%= if lesson.difficulty do %>
                       <span class="flex items-center gap-1">
@@ -265,8 +292,12 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                   <%!-- Actions --%>
                   <div class="card-actions justify-start sm:justify-end mt-auto pt-2">
                     <%= if lesson.status != "archived" do %>
+                      <% edit_path =
+                        if lesson.lesson_subtype == "grammar",
+                          do: ~p"/teacher/grammar-lessons/#{lesson.id}/edit",
+                          else: ~p"/teacher/custom-lessons/#{lesson.id}/edit" %>
                       <.link
-                        navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"}
+                        navigate={edit_path}
                         class="btn btn-ghost btn-sm flex-1 sm:flex-none"
                       >
                         <.icon name="hero-pencil" class="w-4 h-4 sm:mr-1" />

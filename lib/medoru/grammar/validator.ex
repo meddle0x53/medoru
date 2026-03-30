@@ -24,7 +24,8 @@ defmodule Medoru.Grammar.Validator do
       # => {:ok, [%{text: "食べる", ...}, %{text: "まえに、", ...}, %{text: "手を洗います", ...}]}
   """
 
-  alias Medoru.Content.{Word, WordConjugation, WordClass, WordClassMembership}
+  alias Medoru.Content.{Word, WordClass, WordClassMembership}
+  alias Medoru.Grammar.ValidatorCache
   alias Medoru.Repo
 
   import Ecto.Query
@@ -178,11 +179,18 @@ defmodule Medoru.Grammar.Validator do
       end
 
     # For particles, use exact matching (not "anywhere" search)
+    # For other word types, match at current position only (not anywhere)
     result =
-      if word_type == "particle" do
-        find_matching_particle(remaining, allowed_forms)
-      else
-        find_matching_word_anywhere(remaining, word_type, allowed_forms, nil)
+      cond do
+        word_type == "particle" ->
+          find_matching_particle(remaining, allowed_forms)
+
+        # For optional slots, try matching at start first
+        slot["optional"] ->
+          find_matching_word_at_start(remaining, word_type, allowed_forms, nil)
+
+        true ->
+          find_matching_word_anywhere(remaining, word_type, allowed_forms, nil)
       end
 
     case result do
@@ -190,12 +198,48 @@ defmodule Medoru.Grammar.Validator do
         # Try contraction matching if next element is a literal (only for verbs)
         case try_contraction_match(remaining, word_type, allowed_forms, next_element) do
           nil ->
-            if slot["optional"] do
-              :optional_no_match
-            else
-              expected = build_expected_message(word_type, allowed_forms, nil)
-              got = String.slice(remaining, 0, min(5, String.length(remaining)))
-              {:error, %{position: 0, expected: expected, got: got}}
+            # For verbs: try "NounをVerb" pattern - strip "Nounを" prefix and validate verb
+            object_marked_result =
+              if word_type == "verb" do
+                try_object_marked_verb_match(remaining, allowed_forms)
+              else
+                nil
+              end
+
+            case object_marked_result do
+              nil ->
+                if slot["optional"] do
+                  :optional_no_match
+                else
+                  expected = build_expected_message(word_type, allowed_forms, nil)
+                  got = String.slice(remaining, 0, min(5, String.length(remaining)))
+                  {:error, %{position: 0, expected: expected, got: got}}
+                end
+
+              {noun_text, verb_text, verb_info} ->
+                # Matched "NounをVerb" pattern
+                matched = %{
+                  text: verb_text,
+                  type: word_type,
+                  form: verb_info.form,
+                  word_id: verb_info[:word_id]
+                }
+
+                # Include "Nounを" as skipped text
+                skipped_prefix = noun_text <> "を"
+
+                breakdown = [
+                  %{text: skipped_prefix, type: "skipped", form: nil}
+                ]
+
+                new_remaining =
+                  String.slice(
+                    remaining,
+                    (String.length(skipped_prefix) + String.length(verb_text))..-1//1
+                  ) ||
+                    ""
+
+                {:ok_with_skipped, matched, new_remaining, breakdown}
             end
 
           {matched_text, word_info, skipped_text} ->
@@ -214,7 +258,10 @@ defmodule Medoru.Grammar.Validator do
               end
 
             new_remaining =
-              String.slice(remaining, String.length(skipped_text || "") + String.length(matched_text)..-1//1) ||
+              String.slice(
+                remaining,
+                (String.length(skipped_text || "") + String.length(matched_text))..-1//1
+              ) ||
                 ""
 
             {:ok_with_skipped, matched, new_remaining, breakdown}
@@ -237,7 +284,10 @@ defmodule Medoru.Grammar.Validator do
           end
 
         new_remaining =
-          String.slice(remaining, String.length(skipped_text || "") + String.length(matched_text)..-1//1) ||
+          String.slice(
+            remaining,
+            (String.length(skipped_text || "") + String.length(matched_text))..-1//1
+          ) ||
             ""
 
         {:ok_with_skipped, matched, new_remaining, breakdown}
@@ -267,6 +317,30 @@ defmodule Medoru.Grammar.Validator do
             got = String.slice(remaining, 0, min(5, String.length(remaining)))
             {:error, %{position: 0, expected: expected, got: got}}
           end
+
+        {matched_text, word_info, skipped_text} ->
+          matched = %{
+            text: matched_text,
+            type: word_info.word_type,
+            word_class: word_class_name,
+            word_id: word_info.word_id
+          }
+
+          new_remaining =
+            String.slice(
+              remaining,
+              (String.length(skipped_text || "") + String.length(matched_text))..-1//1
+            ) ||
+              ""
+
+          breakdown =
+            if skipped_text && skipped_text != "" do
+              [%{text: skipped_text, type: "skipped", form: nil}]
+            else
+              []
+            end
+
+          {:ok_with_skipped, matched, new_remaining, breakdown}
 
         {matched_text, word_info} ->
           matched = %{
@@ -308,6 +382,34 @@ defmodule Medoru.Grammar.Validator do
     end)
   end
 
+  # Finds a matching word at the start of the sentence only (no skipping)
+  # Returns {matched_text, word_info, skipped_text} or nil (skipped_text is always "")
+  defp find_matching_word_at_start(sentence, word_type, allowed_forms, word_class) do
+    max_len = min(String.length(sentence), 10)
+    forms_list = allowed_forms || []
+
+    # Try different lengths from longest to shortest, but only at position 0
+    Enum.find_value(max_len..1//-1, fn len ->
+      candidate = String.slice(sentence, 0, len)
+
+      # Check dictionary form
+      dictionary_match = lookup_dictionary_form(candidate, word_type, word_class)
+
+      if dictionary_match && (forms_list == [] || "dictionary" in forms_list) do
+        {candidate, %{word_id: dictionary_match.word_id, form: "dictionary"}, ""}
+      else
+        # Check conjugated forms
+        conjugated_match = lookup_conjugated_form(candidate, word_type, forms_list, word_class)
+
+        if conjugated_match do
+          {candidate, conjugated_match, ""}
+        else
+          nil
+        end
+      end
+    end)
+  end
+
   # Searches for a matching word anywhere in the sentence, not just at the start
   # Returns {matched_text, word_info, skipped_text} or nil
   defp find_matching_word_anywhere(sentence, word_type, allowed_forms, word_class) do
@@ -329,7 +431,7 @@ defmodule Medoru.Grammar.Validator do
         dictionary_match = lookup_dictionary_form(candidate, word_type, word_class)
 
         if dictionary_match && (forms_list == [] || "dictionary" in forms_list) do
-          {candidate, %{word_id: dictionary_match.id, form: "dictionary"}, skipped}
+          {candidate, %{word_id: dictionary_match.word_id, form: "dictionary"}, skipped}
         else
           # Check conjugated forms
           conjugated_match = lookup_conjugated_form(candidate, word_type, forms_list, word_class)
@@ -433,54 +535,85 @@ defmodule Medoru.Grammar.Validator do
     end
   end
 
-  defp lookup_dictionary_form(text, word_type, word_class) do
-    query =
-      Word
-      |> where([w], w.text == ^text and w.word_type == ^word_type)
+  # Cached lookup for dictionary forms with DB fallback
+  defp lookup_dictionary_form(text, word_type, nil) do
+    # Try cache first
+    case ValidatorCache.lookup_dictionary_form(text, word_type) do
+      nil ->
+        # Cache miss - query DB and populate cache
+        result =
+          Word
+          |> where([w], w.text == ^text and w.word_type == ^word_type)
+          |> limit(1)
+          |> Repo.one()
 
-    # Add word_class filter if specified
-    query =
-      if word_class do
-        query
-        |> join(:inner, [w], wcm in WordClassMembership, on: wcm.word_id == w.id)
-        |> join(:inner, [_w, wcm], wc in "word_classes", on: wc.id == wcm.word_class_id)
-        |> where([_w, _wcm, wc], wc.name == ^word_class)
-      else
-        query
-      end
+        case result do
+          nil -> nil
+          word -> %{word_id: word.id, form: "dictionary"}
+        end
 
-    query
-    |> limit(1)
-    |> Repo.one()
-  end
-
-  defp lookup_conjugated_form(text, word_type, allowed_forms, word_class) do
-    # First try matching against conjugated_form (kanji)
-    result = do_lookup_conjugated_form(text, word_type, allowed_forms, word_class, :conjugated_form)
-
-    # If no match, try matching against reading (kana)
-    if result do
-      result
-    else
-      do_lookup_conjugated_form(text, word_type, allowed_forms, word_class, :reading)
+      word_id ->
+        %{word_id: word_id, form: "dictionary"}
     end
   end
 
-  defp do_lookup_conjugated_form(text, word_type, allowed_forms, word_class, field) do
+  # Fallback to database for word_class filtering (rare case)
+  defp lookup_dictionary_form(text, word_type, word_class) do
+    result =
+      Word
+      |> where([w], w.text == ^text and w.word_type == ^word_type)
+      |> join(:inner, [w], wcm in WordClassMembership, on: wcm.word_id == w.id)
+      |> join(:inner, [_w, wcm], wc in "word_classes", on: wc.id == wcm.word_class_id)
+      |> where([_w, _wcm, wc], wc.name == ^word_class)
+      |> limit(1)
+      |> Repo.one()
+
+    case result do
+      nil -> nil
+      word -> %{word_id: word.id, form: "dictionary"}
+    end
+  end
+
+  defp lookup_conjugated_form(text, word_type, allowed_forms, _word_class) do
+    # Note: word_class filtering is not implemented for cached conjugation lookups
+    # Try cache first
+    cached =
+      ValidatorCache.lookup_conjugated_form(
+        text,
+        word_type,
+        allowed_forms || [],
+        :conjugated_form
+      ) ||
+        ValidatorCache.lookup_conjugated_form(
+          text,
+          word_type,
+          allowed_forms || [],
+          :reading
+        )
+
+    if cached do
+      cached
+    else
+      # Cache miss - query DB directly
+      do_lookup_conjugated_form_db(text, word_type, allowed_forms)
+    end
+  end
+
+  # Database fallback for conjugated forms
+  defp do_lookup_conjugated_form_db(text, word_type, allowed_forms) do
+    import Ecto.Query
+    alias Medoru.Content.WordConjugation
+
     query =
       WordConjugation
       |> join(:inner, [wc], w in assoc(wc, :word))
       |> join(:inner, [wc], gf in assoc(wc, :grammar_form))
       |> where([wc, w, gf], w.word_type == ^word_type)
+      |> where(
+        [wc, _w, _gf],
+        wc.conjugated_form == ^text or wc.reading == ^text
+      )
 
-    # Add field filter based on which field we're checking
-    query =
-      case field do
-        :conjugated_form -> where(query, [wc, _w, _gf], wc.conjugated_form == ^text)
-        :reading -> where(query, [wc, _w, _gf], wc.reading == ^text)
-      end
-
-    # Filter by allowed forms
     query =
       if allowed_forms != [] do
         where(query, [_wc, _w, gf], gf.name in ^allowed_forms)
@@ -488,24 +621,13 @@ defmodule Medoru.Grammar.Validator do
         query
       end
 
-    # Add word_class filter if specified
-    query =
-      if word_class do
-        query
-        |> join(:inner, [_wc, w, _gf], wcm in WordClassMembership, on: wcm.word_id == w.id)
-        |> join(:inner, [_wc, _w, _gf, wcm], wc in "word_classes", on: wc.id == wcm.word_class_id)
-        |> where([_wc, _w, _gf, _wcm, wc], wc.name == ^word_class)
-      else
-        query
-      end
+    result =
+      query
+      |> select([wc, w, gf], %{word_id: w.id, form: gf.name})
+      |> limit(1)
+      |> Repo.one()
 
-    query
-    |> select([wc, w, gf], %{
-      word_id: w.id,
-      form: gf.name
-    })
-    |> limit(1)
-    |> Repo.one()
+    result
   end
 
   defp build_expected_message(word_type, [], nil) do
@@ -538,6 +660,59 @@ defmodule Medoru.Grammar.Validator do
   end
 
   defp find_word_by_class(sentence, word_class_id) do
+    # First, check if the word class has a regex pattern
+    word_class =
+      WordClass
+      |> where([wc], wc.id == ^word_class_id)
+      |> select([wc], %{id: wc.id, name: wc.name, pattern: wc.pattern})
+      |> Repo.one()
+
+    # Try regex pattern first (if present), then fall back to word membership
+    regex_result =
+      if word_class && word_class.pattern && word_class.pattern != "" do
+        find_word_by_regex_pattern(sentence, word_class)
+      else
+        nil
+      end
+
+    # If regex matched, use it; otherwise try word membership
+    case regex_result do
+      nil -> find_word_by_membership(sentence, word_class_id)
+      result -> result
+    end
+  end
+
+  # Matches using regex pattern from word class
+  defp find_word_by_regex_pattern(sentence, word_class) do
+    # Add ^ anchor to ensure pattern matches from the start
+    # This prevents matching partial words (e.g., matching "日" from "土曜日")
+    anchored_pattern = "^(" <> word_class.pattern <> ")"
+
+    case Regex.compile(anchored_pattern) do
+      {:ok, regex} ->
+        # Try to find match at the start of the sentence
+        find_regex_match_at_start(sentence, regex, word_class)
+
+      {:error, _} ->
+        # Invalid regex, no match
+        nil
+    end
+  end
+
+  # Finds regex match at the start of the sentence only
+  # The regex should already be anchored with ^
+  defp find_regex_match_at_start(sentence, regex, word_class) do
+    case Regex.run(regex, sentence) do
+      [match | _] ->
+        {match, %{word_id: nil, word_type: "word_class", word_class: word_class.name}, ""}
+
+      _ ->
+        nil
+    end
+  end
+
+  # Traditional word-based matching using WordClassMembership
+  defp find_word_by_membership(sentence, word_class_id) do
     # Try different lengths from longest to shortest
     max_len = min(String.length(sentence), 10)
 
@@ -559,6 +734,135 @@ defmodule Medoru.Grammar.Validator do
         {candidate, result}
       else
         nil
+      end
+    end)
+  end
+
+  # Tries to match a verb with an object marker pattern: "NounをVerb"
+  # This handles sentences like "土曜日までに本を返さなければなりません"
+  # where "本を返さ" should be recognized as verb "返さ" with "本を" prefix
+  # Returns {noun_text, verb_text, verb_info} or nil
+  defp try_object_marked_verb_match(remaining, allowed_forms) do
+    # Find the object marker "を"
+    case String.split(remaining, "を", parts: 2) do
+      [prefix, verb_candidate] when prefix != "" and verb_candidate != "" ->
+        # Validate that prefix is a noun (or at least a valid word)
+        # Try different noun lengths from the end of prefix
+        noun_match = find_noun_at_end(prefix)
+
+        case noun_match do
+          nil ->
+            nil
+
+          noun_text ->
+            # Try to match the verb candidate (with contraction support)
+            verb_result =
+              find_matching_word_with_contractions(
+                verb_candidate,
+                "verb",
+                allowed_forms
+              )
+
+            case verb_result do
+              {verb_text, verb_info} ->
+                # Verify the verb match is at the start of verb_candidate
+                if String.starts_with?(verb_candidate, verb_text) do
+                  {noun_text, verb_text, verb_info}
+                else
+                  nil
+                end
+
+              nil ->
+                nil
+            end
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  # Finds a noun at the end of the given text
+  # Tries different substring lengths and validates against noun dictionary
+  defp find_noun_at_end(text) do
+    max_len = min(String.length(text), 8)
+    text_len = String.length(text)
+
+    Enum.find_value(1..max_len//1, fn len ->
+      # Take 'len' characters from the end
+      start_pos = text_len - len
+      candidate = String.slice(text, start_pos..-1//1)
+
+      # Check if this is a valid noun
+      case lookup_dictionary_form(candidate, "noun", nil) do
+        nil -> nil
+        _word_info -> candidate
+      end
+    end)
+  end
+
+  # Finds a matching word with contraction support (for object-marked verbs)
+  # Returns {matched_text, word_info} or nil
+  defp find_matching_word_with_contractions(sentence, word_type, allowed_forms) do
+    # First try regular matching at the start
+    case find_matching_word_at_start(sentence, word_type, allowed_forms, nil) do
+      {text, info, _} ->
+        {text, info}
+
+      nil ->
+        # Try contraction matching for each form
+        try_contraction_forms(sentence, word_type, allowed_forms || [])
+    end
+  end
+
+  # Try contraction matching for all forms
+  # Returns {contracted_form, word_info} or nil
+  defp try_contraction_forms(_sentence, _word_type, []), do: nil
+
+  defp try_contraction_forms(sentence, word_type, [form | rest]) do
+    case @contraction_rules[form] do
+      nil ->
+        try_contraction_forms(sentence, word_type, rest)
+
+      %{add_suffix: suffix, expressions: exprs} ->
+        # Try to find a contracted form at the start that is followed by an expression
+        # The contracted form + one of the expressions should be at the start
+        case find_contracted_form_with_expression(
+               sentence,
+               word_type,
+               form,
+               suffix,
+               exprs
+             ) do
+          nil -> try_contraction_forms(sentence, word_type, rest)
+          result -> result
+        end
+    end
+  end
+
+  # Finds a contracted form at the start followed by a triggering expression
+  # Returns {contracted_form, word_info} or nil
+  defp find_contracted_form_with_expression(sentence, word_type, form, suffix, expressions) do
+    # Try different lengths for the contracted form at the start
+    Enum.find_value(1..10//1, fn len ->
+      candidate = String.slice(sentence, 0, len)
+
+      # Check if (candidate + suffix) is a valid conjugation
+      full_form = candidate <> suffix
+
+      case lookup_conjugated_form(full_form, word_type, [form], nil) do
+        nil ->
+          nil
+
+        word_info ->
+          # Check if what follows this candidate is one of the expressions
+          rest = String.slice(sentence, len..-1//1)
+
+          if Enum.any?(expressions, &String.starts_with?(rest, &1)) do
+            {candidate, word_info}
+          else
+            nil
+          end
       end
     end)
   end

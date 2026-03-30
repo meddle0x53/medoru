@@ -3,13 +3,33 @@ defmodule Medoru.Repo.Migrations.UpdateGrammarFormDisplayNames do
 
   def up do
     # Update verb forms - remove "形" from display names
-    execute("UPDATE grammar_forms SET display_name = 'ない' WHERE name = 'nai-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'なくて' WHERE name = 'nakute-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'なかった' WHERE name = 'nakatta-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'ます' WHERE name = 'masu-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'て' WHERE name = 'te-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'た' WHERE name = 'ta-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = '条件形 (れば)' WHERE name = 'conditional' AND word_type = 'verb'")
+    execute(
+      "UPDATE grammar_forms SET display_name = 'ない' WHERE name = 'nai-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'なくて' WHERE name = 'nakute-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'なかった' WHERE name = 'nakatta-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'ます' WHERE name = 'masu-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'て' WHERE name = 'te-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'た' WHERE name = 'ta-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = '条件形 (れば)' WHERE name = 'conditional' AND word_type = 'verb'"
+    )
 
     # Update adjective forms - remove "形" from display names  
     execute("UPDATE grammar_forms SET display_name = 'ない' WHERE name = 'kunai-form'")
@@ -26,13 +46,33 @@ defmodule Medoru.Repo.Migrations.UpdateGrammarFormDisplayNames do
 
   def down do
     # Revert to original names with "形"
-    execute("UPDATE grammar_forms SET display_name = 'ない形' WHERE name = 'nai-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'なくて形' WHERE name = 'nakute-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'なかった形' WHERE name = 'nakatta-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'ます形' WHERE name = 'masu-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'て形' WHERE name = 'te-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = 'た形' WHERE name = 'ta-form' AND word_type = 'verb'")
-    execute("UPDATE grammar_forms SET display_name = '条件形' WHERE name = 'conditional' AND word_type = 'verb'")
+    execute(
+      "UPDATE grammar_forms SET display_name = 'ない形' WHERE name = 'nai-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'なくて形' WHERE name = 'nakute-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'なかった形' WHERE name = 'nakatta-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'ます形' WHERE name = 'masu-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'て形' WHERE name = 'te-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = 'た形' WHERE name = 'ta-form' AND word_type = 'verb'"
+    )
+
+    execute(
+      "UPDATE grammar_forms SET display_name = '条件形' WHERE name = 'conditional' AND word_type = 'verb'"
+    )
 
     execute("UPDATE grammar_forms SET display_name = 'くない形' WHERE name = 'kunai-form'")
     execute("UPDATE grammar_forms SET display_name = 'くなかった形' WHERE name = 'kunakatta-form'")

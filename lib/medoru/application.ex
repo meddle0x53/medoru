@@ -14,8 +14,8 @@ defmodule Medoru.Application do
       Medoru.Repo,
       {DNSCluster, query: Application.get_env(:medoru, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Medoru.PubSub},
-      # Start a worker by calling: Medoru.Worker.start_link(arg)
-      # {Medoru.Worker, _arg},
+      # Grammar validator cache for fast lookups
+      Medoru.Grammar.ValidatorCache,
       # Start to serve requests, typically the last entry
       MedoruWeb.Endpoint
     ]
