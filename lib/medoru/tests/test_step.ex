@@ -21,7 +21,23 @@ defmodule Medoru.Tests.TestStep do
   import Ecto.Changeset
 
   @step_types [:reading, :writing, :listening, :grammar, :speaking, :vocabulary]
-  @question_types [:multichoice, :fill, :match, :order, :writing, :reading_text]
+  # Grammar question types:
+  # - :sentence_validation - Type 1: Validate sentence against grammar pattern
+  # - :conjugation - Type 2: Conjugate base form to target form
+  # - :conjugation_multichoice - Type 3: Multiple choice conjugation
+  # - :word_order - Type 4: Order word bubbles
+  @question_types [
+    :multichoice,
+    :fill,
+    :match,
+    :order,
+    :writing,
+    :reading_text,
+    :sentence_validation,
+    :conjugation,
+    :conjugation_multichoice,
+    :word_order
+  ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -37,6 +53,7 @@ defmodule Medoru.Tests.TestStep do
     field :hints, {:array, :string}, default: []
     field :explanation, :string
     field :time_limit_seconds, :integer
+    field :max_attempts, :integer, default: 5
 
     # Content references (optional - for linking to specific kanji/words)
     belongs_to :kanji, Medoru.Content.Kanji
@@ -63,6 +80,7 @@ defmodule Medoru.Tests.TestStep do
       :hints,
       :explanation,
       :time_limit_seconds,
+      :max_attempts,
       :kanji_id,
       :word_id,
       :test_id
@@ -99,32 +117,51 @@ defmodule Medoru.Tests.TestStep do
       :order -> 2
       :writing -> 5
       :reading_text -> 2
+      # Grammar step types
+      :sentence_validation -> 10
+      :conjugation -> 3
+      :conjugation_multichoice -> 3
+      :word_order -> 3
     end
   end
 
   defp validate_points_by_type(changeset) do
     question_type = get_field(changeset, :question_type)
     points = get_field(changeset, :points)
+    step_type = get_field(changeset, :step_type)
 
     changeset =
-      case {question_type, points} do
-        {:multichoice, p} when p != 1 ->
+      case {question_type, points, step_type} do
+        {:multichoice, p, _} when p != 1 ->
           add_error(changeset, :points, "multiple choice questions must be worth 1 point")
 
-        {:picture_multichoice, p} when p != 1 ->
+        {:picture_multichoice, p, _} when p != 1 ->
           add_error(changeset, :points, "picture multiple choice questions must be worth 1 point")
 
-        {:writing, p} when p != 5 ->
+        {:writing, p, _} when p != 5 ->
           add_error(changeset, :points, "writing questions must be worth 5 points")
 
-        {:reading_text, p} when p not in [1, 2] ->
+        {:reading_text, p, _} when p not in [1, 2] ->
           add_error(changeset, :points, "reading text questions must be worth 1 or 2 points")
 
-        {:fill, p} when p not in [1, 2, 3] ->
+        {:fill, p, _} when p not in [1, 2, 3] ->
           add_error(changeset, :points, "fill questions must be worth 2 or 3 points")
 
-        {type, p} when type in [:match, :order] and p not in [1, 2] ->
+        {type, p, _} when type in [:match, :order] and p not in [1, 2] ->
           add_error(changeset, :points, "this question type must be worth 1 or 2 points")
+
+        # Grammar step validations
+        {:sentence_validation, p, :grammar} when p != 10 ->
+          add_error(changeset, :points, "sentence validation must be worth 10 points")
+
+        {:conjugation, p, :grammar} when p != 3 ->
+          add_error(changeset, :points, "conjugation questions must be worth 3 points")
+
+        {:conjugation_multichoice, p, :grammar} when p != 3 ->
+          add_error(changeset, :points, "conjugation multiple choice must be worth 3 points")
+
+        {:word_order, p, :grammar} when p != 3 ->
+          add_error(changeset, :points, "word order questions must be worth 3 points")
 
         _ ->
           changeset

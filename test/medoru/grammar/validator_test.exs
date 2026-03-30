@@ -360,7 +360,7 @@ defmodule Medoru.Grammar.ValidatorTest do
         %{"type" => "word_slot", "word_type" => "noun", "optional" => true},
         %{"type" => "word_class", "word_class_id" => time_class.id},
         %{"type" => "literal", "text" => "までに"},
-        %{"type" => "word_slot", "word_type" => "verb", "form" => "nai-form"}
+        %{"type" => "word_slot", "word_type" => "verb"}
       ]
 
       # Sentence: 土曜日までに本を返さなければなりません

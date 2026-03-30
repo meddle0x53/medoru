@@ -85,16 +85,22 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_event("select_step_type", %{"type" => type_str}, socket) do
     # Validate step type to prevent crashes
-    type =
+    {type, step_type} =
       case type_str do
-        "multichoice" -> :multichoice
-        "picture_multichoice" -> :picture_multichoice
-        "fill" -> :fill
-        "writing" -> :writing
-        "match" -> :match
-        "order" -> :order
-        "reading_text" -> :reading_text
-        _ -> :multichoice
+        # Vocabulary types
+        "multichoice" -> {:multichoice, "vocabulary"}
+        "picture_multichoice" -> {:picture_multichoice, "vocabulary"}
+        "fill" -> {:fill, "vocabulary"}
+        "writing" -> {:writing, "vocabulary"}
+        "match" -> {:match, "vocabulary"}
+        "order" -> {:order, "vocabulary"}
+        "reading_text" -> {:reading_text, "vocabulary"}
+        # Grammar types
+        "sentence_validation" -> {:sentence_validation, "grammar"}
+        "conjugation" -> {:conjugation, "grammar"}
+        "conjugation_multichoice" -> {:conjugation_multichoice, "grammar"}
+        "word_order" -> {:word_order, "grammar"}
+        _ -> {:multichoice, "vocabulary"}
       end
 
     _test = socket.assigns.test
@@ -105,7 +111,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     # Create initial changeset based on type
     attrs = %{
       "order_index" => next_index,
-      "step_type" => "vocabulary",
+      "step_type" => step_type,
       "question_type" => type_str,
       "points" => TestStep.default_points(type)
     }
