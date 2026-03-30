@@ -126,7 +126,12 @@ defmodule MedoruWeb.StepBuilderComponents do
       match: "bg-green-100 text-green-800",
       order: "bg-orange-100 text-orange-800",
       writing: "bg-red-100 text-red-800",
-      reading_text: "bg-teal-100 text-teal-800"
+      reading_text: "bg-teal-100 text-teal-800",
+      # Grammar types
+      sentence_validation: "bg-emerald-100 text-emerald-800",
+      conjugation: "bg-amber-100 text-amber-800",
+      conjugation_multichoice: "bg-cyan-100 text-cyan-800",
+      word_order: "bg-pink-100 text-pink-800"
     }
 
     labels = %{
@@ -136,7 +141,12 @@ defmodule MedoruWeb.StepBuilderComponents do
       match: "Matching",
       order: "Order",
       writing: "Writing",
-      reading_text: "Reading"
+      reading_text: "Reading",
+      # Grammar labels
+      sentence_validation: "Grammar: Sentence",
+      conjugation: "Grammar: Conjugation",
+      conjugation_multichoice: "Grammar: Multi Choice",
+      word_order: "Grammar: Word Order"
     }
 
     assigns =
@@ -180,44 +190,91 @@ defmodule MedoruWeb.StepBuilderComponents do
 
   @doc """
   Renders the step type selector modal content.
+  Supports both vocabulary and grammar step types.
   """
   attr :on_select, :any, required: true
+  attr :step_category, :string, default: "vocabulary"
 
   def step_type_selector(assigns) do
     ~H"""
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <.step_type_option
-        type={:multichoice}
-        icon="hero-list-bullet"
-        title="Multiple Choice"
-        description="Students select from text options"
-        points="1 point"
-        on_select={@on_select}
-      />
-      <.step_type_option
-        type={:picture_multichoice}
-        icon="hero-photo"
-        title="Picture Multiple Choice"
-        description="Students select from image options"
-        points="1 point"
-        on_select={@on_select}
-      />
-      <.step_type_option
-        type={:fill}
-        icon="hero-pencil-square"
-        title="Fill in Blank"
-        description="Students type the meaning"
-        points="2 points"
-        on_select={@on_select}
-      />
-      <.step_type_option
-        type={:writing}
-        icon="hero-pencil"
-        title="Kanji Writing"
-        description="Students draw kanji on canvas"
-        points="5 points"
-        on_select={@on_select}
-      />
+    <div class="space-y-6">
+      <%!-- Vocabulary Steps --%>
+      <div>
+        <h4 class="text-sm font-medium text-secondary mb-3">{gettext("Vocabulary Questions")}</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.step_type_option
+            type={:multichoice}
+            icon="hero-list-bullet"
+            title="Multiple Choice"
+            description="Students select from text options"
+            points="1 point"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:picture_multichoice}
+            icon="hero-photo"
+            title="Picture Multiple Choice"
+            description="Students select from image options"
+            points="1 point"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:fill}
+            icon="hero-pencil-square"
+            title="Fill in Blank"
+            description="Students type the meaning"
+            points="2 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:writing}
+            icon="hero-pencil"
+            title="Kanji Writing"
+            description="Students draw kanji on canvas"
+            points="5 points"
+            on_select={@on_select}
+          />
+        </div>
+      </div>
+
+      <%!-- Grammar Steps --%>
+      <div>
+        <h4 class="text-sm font-medium text-secondary mb-3">{gettext("Grammar Questions")}</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.step_type_option
+            type={:sentence_validation}
+            icon="hero-check-badge"
+            title="Sentence Validation"
+            description="Students write valid sentences for a pattern"
+            points="10 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:conjugation}
+            icon="hero-arrow-path"
+            title="Conjugation"
+            description="Students conjugate to target form"
+            points="3 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:conjugation_multichoice}
+            icon="hero-list-bullet"
+            title="Conjugation (Multiple Choice)"
+            description="Students select correct conjugation"
+            points="3 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:word_order}
+            icon="hero-bars-arrow-up"
+            title="Word Order"
+            description="Students arrange words in correct order"
+            points="3 points"
+            on_select={@on_select}
+          />
+        </div>
+      </div>
     </div>
     """
   end

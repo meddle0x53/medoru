@@ -817,7 +817,8 @@ defmodule Medoru.Grammar.Validator do
 
   # Try contraction matching for all forms
   # Returns {contracted_form, word_info} or nil
-  defp try_contraction_forms(_sentence, _word_type, []), do: nil
+  defp try_contraction_forms(sentence, word_type, []),
+    do: try_contraction_forms(sentence, word_type, Map.keys(@contraction_rules))
 
   defp try_contraction_forms(sentence, word_type, [form | rest]) do
     case @contraction_rules[form] do
