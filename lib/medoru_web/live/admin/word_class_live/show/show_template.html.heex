@@ -11,6 +11,12 @@
         <div>
           <h1 class="text-3xl font-bold text-base-content">{@word_class.display_name}</h1>
           <p class="text-secondary mt-1">{@word_class.description}</p>
+          <%= if @word_class.pattern && @word_class.pattern != "" do %>
+            <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-accent/10 rounded-full">
+              <span class="text-xs text-accent font-medium">{gettext("Regex Pattern:")}</span>
+              <code class="text-sm font-mono text-accent">{@word_class.pattern}</code>
+            </div>
+          <% end %>
         </div>
         <.link
           navigate={~p"/admin/word-classes/#{@word_class.id}/edit"}

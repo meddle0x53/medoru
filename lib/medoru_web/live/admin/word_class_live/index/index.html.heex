@@ -28,7 +28,14 @@
               <%= for word_class <- @word_classes do %>
                 <tr>
                   <td>
-                    <div class="font-medium">{word_class.display_name}</div>
+                    <div class="flex items-center gap-2">
+                      <div class="font-medium">{word_class.display_name}</div>
+                      <%= if word_class.pattern && word_class.pattern != "" do %>
+                        <span class="badge badge-accent badge-sm" title={word_class.pattern}>
+                          {gettext("Regex")}
+                        </span>
+                      <% end %>
+                    </div>
                     <div class="text-xs text-secondary">{word_class.name}</div>
                   </td>
                   <td class="max-w-xs">{word_class.description}</td>
