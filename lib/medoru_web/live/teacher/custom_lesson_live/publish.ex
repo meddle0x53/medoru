@@ -18,7 +18,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
        |> put_flash(:error, gettext("Only teachers can publish lessons."))
        |> push_navigate(to: ~p"/classrooms")}
     else
-      lesson = Content.get_custom_lesson_with_words!(id)
+      lesson = Content.get_custom_lesson!(id)
 
       # Verify ownership and published status
       cond do
@@ -137,7 +137,14 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
           </.link>
           <h1 class="text-2xl font-bold text-base-content">{gettext("Publish Lesson")}</h1>
-          <p class="text-secondary">{@lesson.title} • {length(@lesson.custom_lesson_words)} words</p>
+          <p class="text-secondary">
+            {@lesson.title} •
+            <%= if @lesson.lesson_subtype == "grammar" do %>
+              {gettext("Grammar lesson")}
+            <% else %>
+              {gettext("Vocabulary lesson")}
+            <% end %>
+          </p>
         </div>
 
         <%!-- Classrooms List --%>

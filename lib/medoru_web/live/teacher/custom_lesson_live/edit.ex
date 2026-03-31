@@ -183,11 +183,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
     # If enabling test and lesson is published but has no test, generate one
     test_result =
       if new_value and lesson.status == "published" and is_nil(lesson.test_id) do
-        Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
-          lesson.id,
-          include_writing: lesson.include_writing,
-          steps_per_word: lesson.steps_per_word
-        )
+        generate_test_for_lesson(lesson)
       else
         {:ok, nil}
       end
@@ -229,8 +225,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
       new_value = !lesson.include_writing
 
       # If lesson is published and has a test, regenerate with new writing setting
+      # Note: include_writing only applies to vocabulary lessons
       test_result =
-        if lesson.status == "published" and not is_nil(lesson.test_id) do
+        if lesson.status == "published" and not is_nil(lesson.test_id) and
+             lesson.lesson_subtype == "vocabulary" do
           Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
             lesson.id,
             include_writing: new_value
@@ -321,38 +319,49 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   def handle_event("publish", _params, socket) do
     lesson = socket.assigns.lesson
 
-    # Check minimum word count
-    if lesson.word_count < 1 do
-      {:noreply, put_flash(socket, :error, gettext("Add at least 1 word before publishing."))}
-    else
-      # Generate test if required and not already generated
-      test_result =
-        if lesson.requires_test and is_nil(lesson.test_id) do
-          Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
-            lesson.id,
-            include_writing: lesson.include_writing,
-            steps_per_word: lesson.steps_per_word
-          )
-        else
-          {:ok, nil}
-        end
+    # Check minimum content count (words for vocab, steps for grammar)
+    min_content =
+      if lesson.lesson_subtype == "grammar" do
+        # For grammar lessons, check grammar steps
+        steps_count = length(Content.list_grammar_lesson_steps(lesson.id))
+        if steps_count < 1, do: {:error, :no_steps}, else: {:ok, steps_count}
+      else
+        # For vocabulary lessons, check word count
+        if lesson.word_count < 1, do: {:error, :no_words}, else: {:ok, lesson.word_count}
+      end
 
-      case test_result do
-        {:ok, _test} ->
-          # Reload lesson to get updated test_id
-          lesson = Content.get_custom_lesson!(lesson.id)
+    case min_content do
+      {:error, :no_steps} ->
+        {:noreply, put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
 
-          # Mark as published
-          case Content.publish_custom_lesson(lesson) do
-            {:ok, lesson} ->
-              {:noreply,
-               socket
-               |> assign(:lesson, lesson)
-               |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+      {:error, :no_words} ->
+        {:noreply, put_flash(socket, :error, gettext("Add at least 1 word before publishing."))}
 
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+      {:ok, _} ->
+        # Generate test if required and not already generated
+        test_result =
+          if lesson.requires_test and is_nil(lesson.test_id) do
+            generate_test_for_lesson(lesson)
+          else
+            {:ok, nil}
           end
+
+        case test_result do
+          {:ok, _test} ->
+            # Reload lesson to get updated test_id
+            lesson = Content.get_custom_lesson!(lesson.id)
+
+            # Mark as published
+            case Content.publish_custom_lesson(lesson) do
+              {:ok, lesson} ->
+                {:noreply,
+                 socket
+                 |> assign(:lesson, lesson)
+                 |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+
+              {:error, _} ->
+                {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+            end
 
         {:error, reason} ->
           {:noreply,
@@ -361,7 +370,22 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
              :error,
              gettext("Failed to generate test: %{reason}", reason: inspect(reason))
            )}
-      end
+        end
+    end
+  end
+
+  # Helper function to generate the appropriate test based on lesson subtype
+  defp generate_test_for_lesson(lesson) do
+    case lesson.lesson_subtype do
+      "grammar" ->
+        Medoru.Tests.GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
+
+      _ ->
+        # Default to vocabulary test generator
+        Medoru.Tests.CustomLessonTestGenerator.generate_lesson_test(
+          lesson.id,
+          include_writing: lesson.include_writing
+        )
     end
   end
 

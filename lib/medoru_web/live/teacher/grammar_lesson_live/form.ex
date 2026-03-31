@@ -551,6 +551,52 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("publish", _params, socket) do
+    lesson = socket.assigns.lesson
+    steps = socket.assigns.steps
+
+    # Check minimum content - at least 1 grammar step
+    if length(steps) < 1 do
+      {:noreply, put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
+    else
+      # Generate test if required and not already generated
+      test_result =
+        if lesson.requires_test and is_nil(lesson.test_id) do
+          Medoru.Tests.GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
+        else
+          {:ok, nil}
+        end
+
+      case test_result do
+        {:ok, _} ->
+          # Reload lesson to get updated test_id
+          lesson = Content.get_custom_lesson!(lesson.id)
+
+          # Mark as published
+          case Content.publish_custom_lesson(lesson) do
+            {:ok, lesson} ->
+              {:noreply,
+               socket
+               |> assign(:lesson, lesson)
+               |> put_flash(:info, gettext("Lesson published successfully!"))
+               |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+          end
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to generate test: %{reason}", reason: inspect(reason))
+           )}
+      end
+    end
+  end
+
   # Helper functions
 
   defp create_pattern_element("word_slot") do

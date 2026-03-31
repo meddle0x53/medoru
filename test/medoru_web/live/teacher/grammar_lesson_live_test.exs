@@ -10,6 +10,53 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
     %{conn: conn, user: user}
   end
 
+  describe "grammar lesson index" do
+    test "shows share link for published grammar lessons", %{conn: conn, user: user} do
+      # Create a published grammar lesson with a step
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Published Grammar Lesson",
+          status: "published"
+        })
+
+      # Create a grammar step
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        title: "Test Step",
+        position: 0
+      })
+
+      {:ok, _view, html} = live(conn, ~p"/teacher/grammar-lessons")
+
+      # Should show the lesson title
+      assert html =~ "Published Grammar Lesson"
+
+      # Should show the share link for published lessons
+      assert html =~ "hero-share"
+    end
+
+    test "does not show share link for draft grammar lessons", %{conn: conn, user: user} do
+      # Create a draft grammar lesson
+      _lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Draft Grammar Lesson",
+          status: "draft"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/teacher/grammar-lessons")
+
+      # Should show the lesson title
+      assert html =~ "Draft Grammar Lesson"
+
+      # Should not show the share link for draft lessons
+      refute html =~ "hero-share"
+    end
+  end
+
   describe "grammar lesson form" do
     test "word slot bubble updates when changing word type", %{conn: conn, user: user} do
       # Create a grammar lesson

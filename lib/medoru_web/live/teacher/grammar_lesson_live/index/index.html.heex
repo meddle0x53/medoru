@@ -103,6 +103,14 @@
                   >
                     <.icon name="hero-pencil" class="w-4 h-4" />
                   </.link>
+                  <%= if lesson.status == "published" do %>
+                    <.link
+                      navigate={~p"/teacher/custom-lessons/#{lesson.id}/publish"}
+                      class="btn btn-ghost btn-sm"
+                    >
+                      <.icon name="hero-share" class="w-4 h-4" />
+                    </.link>
+                  <% end %>
                   <button
                     phx-click="delete"
                     phx-value-id={lesson.id}

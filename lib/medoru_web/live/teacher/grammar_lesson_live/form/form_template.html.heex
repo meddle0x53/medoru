@@ -79,6 +79,17 @@
                 <.icon name="hero-check" class="w-5 h-5 mr-2" />
                 {gettext("Save Lesson")}
               </button>
+
+              <%= if @lesson && @lesson.status == "draft" && length(@steps) >= 1 do %>
+                <button
+                  type="button"
+                  phx-click="publish"
+                  class="btn btn-success w-full mt-2"
+                >
+                  <.icon name="hero-check-circle" class="w-5 h-5 mr-2" />
+                  {gettext("Publish Lesson")}
+                </button>
+              <% end %>
             </.form>
           </div>
         </div>
