@@ -83,6 +83,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                |> assign(:current_step, current_step)
                |> assign(:selected_answer, nil)
                |> assign(:feedback, nil)
+               |> assign(:show_hint, false)
                |> assign(:practice, practice)}
 
             {:error, _reason} ->
@@ -119,20 +120,33 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   end
 
   @impl true
+  def handle_event("update_answer", %{"answer" => answer}, socket) do
+    {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  def handle_event("update_answer", %{"value" => value}, socket) do
+    {:noreply, assign(socket, :selected_answer, value)}
+  end
+
+  @impl true
   def handle_event("submit_answer", _params, socket) do
     answer = socket.assigns.selected_answer
 
-    if is_nil(answer) do
-      {:noreply, put_flash(socket, :error, gettext("Please select an answer"))}
+    if is_nil(answer) or answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
     else
       session = socket.assigns.session
       step = socket.assigns.current_step
+
+      # Determine correctness based on question type
+      is_correct = check_answer_correctness(answer, step)
 
       # Record answer
       attrs = %{
         answer: answer,
         time_spent_seconds: 10,
-        step_index: session.current_step_index
+        step_index: session.current_step_index,
+        is_correct: is_correct
       }
 
       case Tests.record_step_answer(session.id, step.id, attrs, locale: socket.assigns.locale) do
@@ -152,6 +166,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   @impl true
   def handle_event("clear_feedback", _params, socket) do
     {:noreply, assign(socket, :feedback, nil)}
+  end
+
+  @impl true
+  def handle_event("show_hint", _params, socket) do
+    {:noreply, assign(socket, :show_hint, true)}
   end
 
   @impl true
@@ -205,6 +224,30 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     end
   end
 
+  # Check if answer is correct based on question type
+  defp check_answer_correctness(answer, step) do
+    if step.question_type == :sentence_validation do
+      # Use Grammar.Validator for sentence validation
+      pattern = get_in(step.question_data, ["pattern"]) || []
+
+      case Medoru.Grammar.Validator.validate_sentence(answer, pattern) do
+        {:ok, _breakdown} -> true
+        {:error, _reason} -> false
+      end
+    else
+      # For other question types, compare with correct_answer
+      normalize_answer(answer) == normalize_answer(step.correct_answer)
+    end
+  end
+
+  # Normalize answer for comparison (lowercase, trim whitespace)
+  defp normalize_answer(nil), do: ""
+  defp normalize_answer(answer) do
+    answer
+    |> String.trim()
+    |> String.downcase()
+  end
+
   defp handle_correct_answer(socket, _step) do
     session = socket.assigns.session
 
@@ -227,6 +270,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
        |> assign(:session, updated_session)
        |> assign(:current_step, next_step)
        |> assign(:selected_answer, nil)
+       |> assign(:show_hint, false)
        |> assign(:feedback, :correct)}
     else
       # Complete test
@@ -253,6 +297,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
        |> assign(:session, updated_session)
        |> assign(:current_step, next_step)
        |> assign(:selected_answer, nil)
+       |> assign(:show_hint, false)
        |> assign(:feedback, :incorrect)}
     else
       # Complete test even with incorrect last answer
@@ -600,51 +645,101 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                   locale={@locale}
                 />
               <% else %>
-                <%!-- Multichoice Options --%>
-                <% localized_options = localize_options(@current_step, @locale) %>
-                <div class="space-y-3 mb-6">
-                  <%= for {option, display_value} <- localized_options do %>
-                    <button
-                      type="button"
-                      phx-click="select_answer"
-                      phx-value-answer={option}
-                      class={[
-                        "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
-                        if @selected_answer == option do
-                          "border-primary bg-primary/5"
-                        else
-                          "border-base-200 hover:border-primary/50 hover:bg-base-50"
-                        end
-                      ]}
-                    >
-                      <div class="flex items-center gap-3">
-                        <div class={[
-                          "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-                          if @selected_answer == option do
-                            "border-primary bg-primary"
-                          else
-                            "border-base-300"
-                          end
-                        ]}>
-                          <%= if @selected_answer == option do %>
-                            <div class="w-2 h-2 rounded-full bg-white"></div>
-                          <% end %>
-                        </div>
-                        <span class="text-base-content font-medium">{display_value}</span>
-                      </div>
-                    </button>
-                  <% end %>
-                </div>
+                <%!-- Sentence Validation (Grammar) --%>
+                <%= if @current_step.question_type == :sentence_validation do %>
+                  <div class="space-y-4 mb-6">
+                    <p class="text-sm text-secondary">
+                      {gettext("Build a sentence following this pattern:")}
+                    </p>
 
-                <%!-- Submit Button --%>
-                <button
-                  type="button"
-                  phx-click="submit_answer"
-                  disabled={is_nil(@selected_answer)}
-                  class="w-full btn btn-primary"
-                >
-                  {gettext("Submit Answer")}
-                </button>
+                    <%!-- Hint button --%>
+                    <%= if @current_step.hints != [] and not @show_hint do %>
+                      <button
+                        type="button"
+                        phx-click="show_hint"
+                        class="btn btn-ghost btn-sm text-info"
+                      >
+                        <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
+                        {gettext("Show Hint")}
+                      </button>
+                    <% end %>
+
+                    <%!-- Show hint when requested --%>
+                    <%= if @show_hint and @current_step.hints != [] do %>
+                      <div class="bg-info/10 border border-info/30 rounded-lg p-3">
+                        <p class="text-sm text-info">
+                          <.icon name="hero-light-bulb" class="w-4 h-4 mr-1 inline" />
+                          {gettext("Hint:")} {List.first(@current_step.hints)}
+                        </p>
+                      </div>
+                    <% end %>
+
+                    <input
+                      type="text"
+                      name="answer"
+                      value={@selected_answer}
+                      placeholder={gettext("Type your answer in Japanese...")}
+                      class="input input-bordered w-full"
+                      phx-keyup="update_answer"
+                      phx-debounce="100"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    phx-click="submit_answer"
+                    disabled={is_nil(@selected_answer) or @selected_answer == ""}
+                    class="w-full btn btn-primary"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+                <% else %>
+                  <%!-- Multichoice Options --%>
+                  <% localized_options = localize_options(@current_step, @locale) %>
+                  <div class="space-y-3 mb-6">
+                    <%= for {option, display_value} <- localized_options do %>
+                      <button
+                        type="button"
+                        phx-click="select_answer"
+                        phx-value-answer={option}
+                        class={[
+                          "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
+                          if @selected_answer == option do
+                            "border-primary bg-primary/5"
+                          else
+                            "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                          end
+                        ]}
+                      >
+                        <div class="flex items-center gap-3">
+                          <div class={[
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                            if @selected_answer == option do
+                              "border-primary bg-primary"
+                            else
+                              "border-base-300"
+                            end
+                          ]}>
+                            <%= if @selected_answer == option do %>
+                              <div class="w-2 h-2 rounded-full bg-white"></div>
+                            <% end %>
+                          </div>
+                          <span class="text-base-content font-medium">{display_value}</span>
+                        </div>
+                      </button>
+                    <% end %>
+                  </div>
+
+                  <%!-- Submit Button --%>
+                  <button
+                    type="button"
+                    phx-click="submit_answer"
+                    disabled={is_nil(@selected_answer)}
+                    class="w-full btn btn-primary"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+                <% end %>
               <% end %>
             </div>
           </div>

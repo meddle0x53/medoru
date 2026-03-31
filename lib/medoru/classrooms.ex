@@ -1527,17 +1527,28 @@ defmodule Medoru.Classrooms do
   Completes a custom lesson and awards points.
 
   Points calculation:
-  - Base: 1 point per word
-  - Bonus: 1 point for completing
+  - Vocabulary: 1 point per word + 1 bonus point
+  - Grammar: 2 points per grammar rule + 1 bonus point
   """
   def complete_custom_lesson(classroom_id, user_id, custom_lesson_id) do
     {:ok, progress} =
       get_or_create_custom_lesson_progress(classroom_id, user_id, custom_lesson_id)
 
-    # Get word count for points calculation
-    custom_lesson = Medoru.Content.get_custom_lesson_with_words!(custom_lesson_id)
-    word_count = length(custom_lesson.custom_lesson_words)
-    points_earned = word_count * 1 + 1
+    # Get lesson with words and grammar steps for points calculation
+    custom_lesson =
+      Medoru.Content.get_custom_lesson_with_lesson_data!(custom_lesson_id)
+
+    # Calculate points based on lesson type
+    points_earned =
+      if custom_lesson.lesson_subtype == "grammar" do
+        # Grammar lessons: 2 points per grammar rule + 1 bonus
+        grammar_step_count = length(custom_lesson.grammar_lesson_steps || [])
+        grammar_step_count * 2 + 1
+      else
+        # Vocabulary lessons: 1 point per word + 1 bonus
+        word_count = length(custom_lesson.custom_lesson_words)
+        word_count * 1 + 1
+      end
 
     attrs = %{
       points_earned: points_earned

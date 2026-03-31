@@ -223,6 +223,88 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
+  Resets all progress for a user. This deletes:
+  - Test step answers and test sessions
+  - Lesson progress and classroom lesson progress
+  - User stats (XP, level, streak)
+  - Classroom membership points
+
+  Returns {:ok, stats} with the count of deleted records.
+  """
+  def reset_user_progress(user_id) do
+    import Ecto.Query
+
+    # Delete test step answers for user's sessions
+    {test_step_answers_deleted, _} =
+      Repo.delete_all(
+        from tsa in Medoru.Tests.TestStepAnswer,
+          where:
+            tsa.test_session_id in subquery(
+              from ts in Medoru.Tests.TestSession,
+                where: ts.user_id == ^user_id,
+                select: ts.id
+            )
+      )
+
+    # Delete test sessions
+    {test_sessions_deleted, _} =
+      Repo.delete_all(from ts in Medoru.Tests.TestSession, where: ts.user_id == ^user_id)
+
+    # Delete lesson progress
+    {lesson_progress_deleted, _} =
+      Repo.delete_all(from lp in Medoru.Learning.LessonProgress, where: lp.user_id == ^user_id)
+
+    # Delete classroom lesson progress
+    {classroom_progress_deleted, _} =
+      Repo.delete_all(
+        from clp in Medoru.Classrooms.ClassroomLessonProgress, where: clp.user_id == ^user_id
+      )
+
+    # Delete classroom test attempts
+    {test_attempts_deleted, _} =
+      Repo.delete_all(
+        from cta in Medoru.Classrooms.ClassroomTestAttempt, where: cta.user_id == ^user_id
+      )
+
+    # Reset classroom membership points
+    {memberships_updated, _} =
+      Repo.update_all(
+        from(cm in Medoru.Classrooms.ClassroomMembership,
+          where: cm.user_id == ^user_id,
+          update: [set: [points: 0]]
+        ),
+        []
+      )
+
+    # Reset user stats
+    {stats_updated, _} =
+      Repo.update_all(
+        from(us in UserStats,
+          where: us.user_id == ^user_id,
+          update: [set: [xp: 0, level: 1, streak: 0, longest_streak: 0]]
+        ),
+        []
+      )
+
+    # Delete user progress (kanji/word learning records)
+    {user_progress_deleted, _} =
+      Repo.delete_all(from up in Medoru.Learning.UserProgress, where: up.user_id == ^user_id)
+
+    stats = %{
+      test_step_answers_deleted: test_step_answers_deleted,
+      test_sessions_deleted: test_sessions_deleted,
+      lesson_progress_deleted: lesson_progress_deleted,
+      classroom_progress_deleted: classroom_progress_deleted,
+      test_attempts_deleted: test_attempts_deleted,
+      memberships_updated: memberships_updated,
+      stats_reset: stats_updated,
+      user_progress_deleted: user_progress_deleted
+    }
+
+    {:ok, stats}
+  end
+
+  @doc """
   Gets a user profile by user id.
   """
   def get_profile_by_user!(user_id) do

@@ -332,7 +332,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
     case min_content do
       {:error, :no_steps} ->
-        {:noreply, put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
 
       {:error, :no_words} ->
         {:noreply, put_flash(socket, :error, gettext("Add at least 1 word before publishing."))}
@@ -363,13 +364,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                 {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
             end
 
-        {:error, reason} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext("Failed to generate test: %{reason}", reason: inspect(reason))
-           )}
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Failed to generate test: %{reason}", reason: inspect(reason))
+             )}
         end
     end
   end

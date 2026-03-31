@@ -99,7 +99,8 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
       step_type: :grammar,
       question_type: :sentence_validation,
       question: lesson_step.title,
-      correct_answer: "",  # Validation is pattern-based, not exact match
+      # Validation is pattern-based, not exact match
+      correct_answer: "",
       points: 5,
       hints: if(hint, do: [hint], else: []),
       explanation: lesson_step.explanation,
@@ -107,7 +108,8 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
         "pattern" => pattern,
         "grammar_step" => true,
         "lesson_step_title" => lesson_step.title,
-        "show_pattern" => false  # Hide the pattern
+        # Hide the pattern
+        "show_pattern" => false
       },
       options: [],
       max_attempts: 4

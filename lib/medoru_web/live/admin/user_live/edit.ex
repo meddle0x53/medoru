@@ -55,4 +55,26 @@ defmodule MedoruWeb.Admin.UserLive.Edit do
      socket
      |> push_navigate(to: ~p"/admin/users")}
   end
+
+  @impl true
+  def handle_event("reset_progress", _, socket) do
+    user = socket.assigns.user
+
+    {:ok, stats} = Accounts.reset_user_progress(user.id)
+
+    # Reload user to get updated stats
+    updated_user = Accounts.get_user_for_admin!(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:user, updated_user)
+     |> put_flash(
+       :info,
+       gettext(
+         "User progress reset successfully. Deleted %{sessions} test sessions, %{progress} progress records.",
+         sessions: stats.test_sessions_deleted,
+         progress: stats.lesson_progress_deleted + stats.classroom_progress_deleted
+       )
+     )}
+  end
 end

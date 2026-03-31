@@ -29,16 +29,20 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
 
   defp load_completion(socket, classroom_id, lesson_id, user, practice) do
     classroom = Classrooms.get_classroom!(classroom_id)
-    lesson = Content.get_custom_lesson_with_words!(lesson_id)
+    lesson = Content.get_custom_lesson_with_lesson_data!(lesson_id)
 
     # Get the completed progress (if any)
     progress = Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id)
 
-    # Calculate points (only show actual earned points, not practice)
+    # Determine lesson type and counts
+    is_grammar = lesson.lesson_subtype == "grammar"
     word_count = length(lesson.custom_lesson_words)
+    grammar_step_count = length(lesson.grammar_lesson_steps || [])
+
+    # Calculate points (only show actual earned points, not practice)
     points_earned = if practice, do: 0, else: (progress && progress.points_earned) || 0
 
-    # Get already learned items
+    # Get already learned items (only for vocabulary lessons)
     learned_word_ids = Learning.list_learned_word_ids(user.id)
     learned_kanji_ids = Learning.list_learned_kanji_ids(user.id)
 
@@ -84,7 +88,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
      socket
      |> assign(:classroom, classroom)
      |> assign(:lesson, lesson)
+     |> assign(:is_grammar, is_grammar)
      |> assign(:word_count, word_count)
+     |> assign(:grammar_step_count, grammar_step_count)
      |> assign(:points_earned, points_earned)
      |> assign(:practice, practice)
      |> assign(:lesson_words, lesson_words)
@@ -196,10 +202,17 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
 
               <%!-- Stats --%>
               <div class="flex justify-center gap-8 mb-8">
-                <div class="text-center">
-                  <div class="text-3xl font-bold text-primary">{@word_count}</div>
-                  <div class="text-sm text-secondary">{gettext("Words Learned")}</div>
-                </div>
+                <%= if @is_grammar do %>
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-primary">{@grammar_step_count}</div>
+                    <div class="text-sm text-secondary">{gettext("Grammar Rules Learned")}</div>
+                  </div>
+                <% else %>
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-primary">{@word_count}</div>
+                    <div class="text-sm text-secondary">{gettext("Words Learned")}</div>
+                  </div>
+                <% end %>
                 <div class="text-center">
                   <div class="text-3xl font-bold text-primary">+{@points_earned}</div>
                   <div class="text-sm text-secondary">{gettext("Points Earned")}</div>
@@ -213,8 +226,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
               </div>
             <% end %>
 
-            <%!-- Mark as Learned Section (only if not in practice mode and not already marked) --%>
-            <%= if not @practice and not @marked_as_learned do %>
+            <%!-- Mark as Learned Section (only for vocabulary lessons, not in practice mode, and not already marked) --%>
+            <%= if not @is_grammar and not @practice and not @marked_as_learned do %>
               <div class="border-t border-base-200 pt-8 mb-8">
                 <h2 class="text-xl font-semibold text-base-content mb-4 text-center">
                   {gettext("Select items to add to your study list")}

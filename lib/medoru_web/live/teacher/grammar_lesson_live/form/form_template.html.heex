@@ -71,6 +71,30 @@
                 </select>
               </div>
 
+              <%!-- Test Settings --%>
+              <%= if @lesson do %>
+                <div class="border-t border-base-200 pt-4 mt-4">
+                  <h3 class="font-medium text-sm mb-3">
+                    <.icon name="hero-pencil-square" class="w-4 h-4 mr-1 inline" />
+                    {gettext("Test Settings")}
+                  </h3>
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@lesson.requires_test}
+                      phx-click="toggle_requires_test"
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Require test to complete")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Students must pass a test to finish the lesson")}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              <% end %>
+
               <button
                 type="submit"
                 class="btn btn-primary w-full"

@@ -276,6 +276,101 @@ defmodule Medoru.Grammar.ValidatorTest do
     end
   end
 
+  describe "validation with prefix text before pattern" do
+    setup do
+      # Create grammar forms
+      {:ok, te_form} =
+        Content.create_grammar_form(%{
+          name: "te-form",
+          display_name: "て形",
+          word_type: "verb"
+        })
+
+      {:ok, nai_form} =
+        Content.create_grammar_form(%{
+          name: "nai-form",
+          display_name: "ない形",
+          word_type: "verb"
+        })
+
+      # Create verb (来る - to come)
+      kuru =
+        ContentFixtures.word_fixture(%{
+          text: "来る",
+          reading: "くる",
+          word_type: :verb
+        })
+
+      # Create te-form conjugation (来て - positive)
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: kuru.id,
+          grammar_form_id: te_form.id,
+          conjugated_form: "来て"
+        })
+
+      # Create nai-form conjugation (来ない) - needed for generating なくて on the fly
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: kuru.id,
+          grammar_form_id: nai_form.id,
+          conjugated_form: "来ない"
+        })
+
+      %{te_form: te_form, nai_form: nai_form, kuru: kuru}
+    end
+
+    test "validates sentence with nai-form + くて pattern and prefix text", %{nai_form: nai_form} do
+      # Pattern from screenshot: [Verb (nai-form)] + [くてもいいです]
+      # The nai-form (来ない) combines with くて to form 来なくて
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["nai-form"]},
+        %{"type" => "literal", "text" => "くてもいいです"}
+      ]
+
+      # Sentence with time word before the verb: あした来なくてもいいです。
+      # Should match: 来ない (nai-form) + くてもいいです = 来なくてもいいです
+      sentence = "あした来なくてもいいです。"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error: #{inspect(result)}"
+        )
+      end
+
+      # Check breakdown has the verb and literal
+      assert length(result.breakdown) >= 2
+
+      # Should have skipped text (あした) and the verb
+      verb_element = Enum.find(result.breakdown, fn e -> String.contains?(e.text, "来") end)
+      assert verb_element != nil, "Expected to find verb '来' in breakdown"
+      assert verb_element.form == "nai-form", "Expected nai-form for verb"
+    end
+
+    test "validates nai-form + くて pattern without prefix", %{nai_form: _nai_form} do
+      # Same pattern but without prefix text
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["nai-form"]},
+        %{"type" => "literal", "text" => "くてもいいです"}
+      ]
+
+      sentence = "来なくてもいいです"
+
+      result = Validator.validate_with_details(sentence, pattern)
+      
+      unless result.valid do
+        flunk("Expected valid but got: #{inspect(result)}")
+      end
+
+      # Verify the breakdown
+      verb_element = Enum.find(result.breakdown, fn e -> e.type == "verb" end)
+      assert verb_element != nil
+      assert verb_element.form == "nai-form"
+    end
+  end
+
   describe "complex patterns with optional slots and word classes" do
     setup do
       # Create a time word class with pattern and words

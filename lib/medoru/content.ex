@@ -1622,6 +1622,22 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Gets a single custom lesson with words and grammar steps preloaded.
+
+  ## Examples
+
+      iex> get_custom_lesson_with_lesson_data!(123)
+      %CustomLesson{custom_lesson_words: [...], grammar_lesson_steps: [...]}
+
+  """
+  def get_custom_lesson_with_lesson_data!(id) do
+    CustomLesson
+    |> where(id: ^id)
+    |> preload([:creator, :grammar_lesson_steps, custom_lesson_words: :word])
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a custom lesson.
 
   ## Examples

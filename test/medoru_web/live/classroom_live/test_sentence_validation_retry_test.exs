@@ -184,7 +184,8 @@ defmodule MedoruWeb.ClassroomLive.TestSentenceValidationRetryTest do
         _ -> false
       end
 
-    assert redirected, "Should have redirected to results after 4 wrong attempts, got: #{inspect(last_result)}"
+    assert redirected,
+           "Should have redirected to results after 4 wrong attempts, got: #{inspect(last_result)}"
   end
 
   test "sentence validation accepts correct answer and moves on", %{
@@ -210,6 +211,7 @@ defmodule MedoruWeb.ClassroomLive.TestSentenceValidationRetryTest do
         _ -> false
       end
 
-    assert redirected, "Should have redirected to results after correct answer, got: #{inspect(result)}"
+    assert redirected,
+           "Should have redirected to results after correct answer, got: #{inspect(result)}"
   end
 end

@@ -7,7 +7,6 @@ defmodule Medoru.Tests.GrammarLessonTestGeneratorTest do
   import Medoru.ContentFixtures
   import Medoru.AccountsFixtures
 
-
   describe "generate_lesson_test/1" do
     setup do
       # Create a teacher user

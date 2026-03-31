@@ -16,7 +16,8 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
       student = user_fixture(%{type: "student", email: "student_grammar_test@example.com"})
 
       # Create classroom
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Grammar Classroom", teacher_id: teacher.id})
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Grammar Classroom", teacher_id: teacher.id})
 
       # Student applies to join classroom
       {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
@@ -123,7 +124,7 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
       # STEP 3: Verify test generation - 8 test steps total
       # ============================================
       test_steps = Medoru.Tests.list_test_steps(test.id)
-      
+
       # Should have 8 test steps (2 per lesson step × 4 lesson steps)
       assert length(test_steps) == 8
 
@@ -143,11 +144,19 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
       # ============================================
       # Steps should have titles from lesson steps
       titles = Enum.map(test_steps, & &1.question) |> Enum.uniq() |> Enum.sort()
-      expected_titles = ["Adjective in past form", "Negative verb form", "Noun AND Noun", "To want something"]
+
+      expected_titles = [
+        "Adjective in past form",
+        "Negative verb form",
+        "Noun AND Noun",
+        "To want something"
+      ]
+
       assert titles == expected_titles
 
       # Each lesson step should have exactly 2 test steps
       steps_by_title = Enum.group_by(test_steps, & &1.question)
+
       for title <- expected_titles do
         assert length(steps_by_title[title]) == 2
       end

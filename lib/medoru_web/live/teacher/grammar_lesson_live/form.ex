@@ -552,13 +552,28 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   end
 
   @impl true
+  def handle_event("toggle_requires_test", _params, socket) do
+    lesson = socket.assigns.lesson
+    new_value = !lesson.requires_test
+
+    case Content.update_custom_lesson(lesson, %{requires_test: new_value}) do
+      {:ok, updated_lesson} ->
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update test setting."))}
+    end
+  end
+
+  @impl true
   def handle_event("publish", _params, socket) do
     lesson = socket.assigns.lesson
     steps = socket.assigns.steps
 
     # Check minimum content - at least 1 grammar step
     if length(steps) < 1 do
-      {:noreply, put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
+      {:noreply,
+       put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
     else
       # Generate test if required and not already generated
       test_result =
