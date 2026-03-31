@@ -21,6 +21,7 @@ defmodule Medoru.Content.WordConjugation do
   schema "word_conjugations" do
     field :conjugated_form, :string
     field :reading, :string
+    field :alternative_forms, {:array, :string}, default: []
 
     belongs_to :word, Word
     belongs_to :grammar_form, GrammarForm
@@ -31,7 +32,7 @@ defmodule Medoru.Content.WordConjugation do
   @doc false
   def changeset(conjugation, attrs) do
     conjugation
-    |> cast(attrs, [:conjugated_form, :reading, :word_id, :grammar_form_id])
+    |> cast(attrs, [:conjugated_form, :reading, :alternative_forms, :word_id, :grammar_form_id])
     |> validate_required([:conjugated_form, :word_id, :grammar_form_id])
     |> foreign_key_constraint(:word_id)
     |> foreign_key_constraint(:grammar_form_id)

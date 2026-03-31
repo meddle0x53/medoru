@@ -309,12 +309,14 @@ defmodule Medoru.Grammar.ValidatorTest do
           conjugated_form: "来て"
         })
 
-      # Create nai-form conjugation (来ない) - needed for generating なくて on the fly
+      # Create nai-form conjugation (来ない) with alternative form (来な)
+      # The alternative form is used for combining with suffixes like くて, ければ
       {:ok, _} =
         Content.create_word_conjugation(%{
           word_id: kuru.id,
           grammar_form_id: nai_form.id,
-          conjugated_form: "来ない"
+          conjugated_form: "来ない",
+          alternative_forms: ["来な"]
         })
 
       %{te_form: te_form, nai_form: nai_form, kuru: kuru}

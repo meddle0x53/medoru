@@ -115,11 +115,15 @@ defmodule Medoru.Maintenance.Conjugations do
           # Handle multiple forms (e.g., kanji + kana for irregular verbs)
           # Save kanji as conjugated_form and kana as reading
           [kanji_form, kana_form] ->
+            # Generate alternative forms using the kanji form
+            alt_forms = generate_alternative_forms(kanji_form, form.name)
+
             attrs = %{
               word_id: word.id,
               grammar_form_id: form.id,
               conjugated_form: kanji_form,
               reading: kana_form,
+              alternative_forms: alt_forms,
               is_regular: verb_type in [:ichidan, :godan]
             }
 
@@ -130,10 +134,14 @@ defmodule Medoru.Maintenance.Conjugations do
 
           # Single form
           conjugated ->
+            # Generate alternative forms for certain grammar forms
+            alt_forms = generate_alternative_forms(conjugated, form.name)
+
             attrs = %{
               word_id: word.id,
               grammar_form_id: form.id,
               conjugated_form: conjugated,
+              alternative_forms: alt_forms,
               is_regular: verb_type in [:ichidan, :godan]
             }
 
@@ -232,9 +240,27 @@ defmodule Medoru.Maintenance.Conjugations do
     %WordConjugation{}
     |> WordConjugation.changeset(attrs)
     |> Repo.insert(
-      on_conflict: {:replace, [:conjugated_form, :updated_at]},
+      on_conflict: {:replace, [:conjugated_form, :alternative_forms, :updated_at]},
       conflict_target: [:word_id, :grammar_form_id]
     )
+  end
+
+  # Generates alternative forms for certain grammar forms
+  # These are contracted forms used when combining with certain suffixes
+  defp generate_alternative_forms(conjugated, form_name) do
+    case form_name do
+      # For nai-form, the alternative is without い (for combining with くて, ければ, etc.)
+      # e.g., 来ない → 来な (used in 来なくて, 来なければ)
+      "nai-form" ->
+        if String.ends_with?(conjugated, "ない") do
+          [String.replace_suffix(conjugated, "ない", "な")]
+        else
+          []
+        end
+
+      _ ->
+        []
+    end
   end
 
   # Classify verb type

@@ -604,6 +604,7 @@ defmodule Medoru.Grammar.Validator do
     import Ecto.Query
     alias Medoru.Content.WordConjugation
 
+    # First try: match conjugated_form or reading directly
     query =
       WordConjugation
       |> join(:inner, [wc], w in assoc(wc, :word))
@@ -627,7 +628,29 @@ defmodule Medoru.Grammar.Validator do
       |> limit(1)
       |> Repo.one()
 
-    result
+    # Second try: match alternative_forms array if no direct match
+    if is_nil(result) do
+      alt_query =
+        WordConjugation
+        |> join(:inner, [wc], w in assoc(wc, :word))
+        |> join(:inner, [wc], gf in assoc(wc, :grammar_form))
+        |> where([wc, w, gf], w.word_type == ^word_type)
+        |> where([wc, _w, _gf], ^text in wc.alternative_forms)
+
+      alt_query =
+        if allowed_forms != [] do
+          where(alt_query, [_wc, _w, gf], gf.name in ^allowed_forms)
+        else
+          alt_query
+        end
+
+      alt_query
+      |> select([wc, w, gf], %{word_id: w.id, form: gf.name})
+      |> limit(1)
+      |> Repo.one()
+    else
+      result
+    end
   end
 
   defp build_expected_message(word_type, [], nil) do

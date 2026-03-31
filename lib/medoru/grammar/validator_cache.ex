@@ -187,18 +187,28 @@ defmodule Medoru.Grammar.ValidatorCache do
       |> select([wc, w, gf], {
         wc.conjugated_form,
         wc.reading,
+        wc.alternative_forms,
         w.id,
         gf.name
       })
       |> Repo.all()
 
     entries =
-      Enum.flat_map(conjugations, fn {conj_form, reading, word_id, form_name} ->
-        [
+      Enum.flat_map(conjugations, fn {conj_form, reading, alt_forms, word_id, form_name} ->
+        base_entries = [
           {{:conjugation, conj_form, word_type, form_name, :conjugated_form},
            {word_id, form_name}},
           {{:conjugation, reading, word_type, form_name, :reading}, {word_id, form_name}}
         ]
+
+        # Add entries for alternative forms
+        alt_entries =
+          Enum.map(alt_forms || [], fn alt_form ->
+            {{:conjugation, alt_form, word_type, form_name, :conjugated_form},
+             {word_id, form_name}}
+          end)
+
+        base_entries ++ alt_entries
       end)
 
     # Filter out entries with nil keys (some conjugations might not have readings)
