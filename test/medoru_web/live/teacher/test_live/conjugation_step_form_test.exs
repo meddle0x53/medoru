@@ -81,8 +81,16 @@ defmodule MedoruWeb.Teacher.TestLive.ConjugationStepFormTest do
           usage_frequency: 100
         })
 
-      %{conn: conn, user: user, test_item: test_item, verb: verb, adjective: adjective,
-        te_form: te_form, ta_form: ta_form, adj_past: adj_past}
+      %{
+        conn: conn,
+        user: user,
+        test_item: test_item,
+        verb: verb,
+        adjective: adjective,
+        te_form: te_form,
+        ta_form: ta_form,
+        adj_past: adj_past
+      }
     end
 
     test "can open conjugation step form", %{conn: conn, test_item: test_item} do
@@ -294,7 +302,10 @@ defmodule MedoruWeb.Teacher.TestLive.ConjugationStepFormTest do
       assert step.question_type == :conjugation
     end
 
-    test "conjugation multichoice shows auto-generate UI without checkbox", %{conn: conn, test_item: test_item} do
+    test "conjugation multichoice shows auto-generate UI without checkbox", %{
+      conn: conn,
+      test_item: test_item
+    } do
       {:ok, view, _html} = live(conn, ~p"/teacher/tests/#{test_item.id}/edit")
 
       view
@@ -308,7 +319,7 @@ defmodule MedoruWeb.Teacher.TestLive.ConjugationStepFormTest do
 
       # No checkbox should be present - auto-generate is always enabled
       refute has_element?(view, "input#auto_generate_checkbox")
-      
+
       # Select verb type
       view
       |> form("#step-form", %{"step" => %{"question_data" => %{"word_type" => "verb"}}})
@@ -337,14 +348,14 @@ defmodule MedoruWeb.Teacher.TestLive.ConjugationStepFormTest do
 
       # Verify the correct answer was generated (hidden input)
       assert has_element?(view, "input[value=\"食べて\"]")
-      
+
       # The wrong answers section should now be visible
       assert has_element?(view, "button", "Add")
 
       # Verify the wrong answers section has the input and button
       assert has_element?(view, "input#new-wrong-option")
       assert has_element?(view, "button[phx-click=\"add_option\"]")
-      
+
       # Verify correct answer is shown
       html = render(view)
       assert html =~ "Correct:"

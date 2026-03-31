@@ -6,6 +6,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   alias Medoru.Classrooms
   alias Medoru.Tests
+  alias Medoru.Grammar.Validator
 
   @impl true
   def mount(%{"id" => classroom_id, "test_id" => test_id}, _session, socket) do
@@ -213,12 +214,20 @@ defmodule MedoruWeb.ClassroomLive.Test do
   # Helper function to initialize answer based on step type
   defp initial_answer_for_step(nil), do: ""
   defp initial_answer_for_step(%{question_type: :fill}), do: %{"meaning" => "", "reading" => ""}
+  defp initial_answer_for_step(%{question_type: :word_order}), do: []
+  defp initial_answer_for_step(%{question_type: :sentence_validation}), do: ""
+  defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
   defp initial_answer_for_step(_), do: ""
 
   @impl true
   def handle_event("submit_answer", %{"answer" => "skipped"}, socket) do
     # User skipped a writing question - mark as incorrect
     submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
+  def handle_event("show_hint", _, socket) do
+    {:noreply, assign(socket, :show_hint, true)}
   end
 
   @impl true
@@ -372,57 +381,27 @@ defmodule MedoruWeb.ClassroomLive.Test do
     session = socket.assigns.session
     attempt = socket.assigns.attempt
 
-    # Record the answer
-    result =
-      Tests.record_step_answer(session.id, step.id, %{
-        "answer" => answer,
-        "time_spent_seconds" => 30,
-        "step_index" => step.order_index
-      })
+    # Handle grammar step types with special scoring
+    case step.question_type do
+      :sentence_validation ->
+        handle_sentence_validation_answer(socket, answer, step, session, attempt)
 
-    case result do
-      {:ok, step_answer} ->
-        # Update attempt progress
-        Classrooms.update_test_progress(attempt.id, %{
-          score: step_answer.points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 30
-        })
+      :conjugation ->
+        handle_conjugation_answer(socket, answer, step, session, attempt)
 
-        # Move to next step or complete
-        next_index = socket.assigns.current_step_index + 1
+      :conjugation_multichoice ->
+        handle_conjugation_multichoice_answer(socket, answer, step, session, attempt)
 
-        if next_index >= socket.assigns.total_steps do
-          # Complete the test
-          complete_test(socket, session.id, attempt.id)
-        else
-          # Update session progress for resume functionality
-          Tests.update_session_progress(session.id, next_index)
+      :word_order ->
+        handle_word_order_answer(socket, answer, step, session, attempt)
 
-          next_step = Enum.at(socket.assigns.steps, next_index)
-
-          {:noreply,
-           socket
-           |> assign(:current_step_index, next_index)
-           |> assign(:current_step, next_step)
-           |> assign(:answer, initial_answer_for_step(next_step))
-           |> assign(:show_hint, false)
-           |> assign(:writing_start_time, writing_start_time(next_step))}
-        end
-
-      {:error, changeset} ->
-        require Logger
-        Logger.error("Failed to submit answer (other): #{inspect(changeset.errors)}")
-
-        {:noreply,
-         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+      _ ->
+        # Standard multichoice handling
+        handle_standard_answer(socket, answer, step, session, attempt)
     end
   end
 
-  @impl true
-  def handle_event("show_hint", _, socket) do
-    {:noreply, assign(socket, :show_hint, true)}
-  end
-
+  # Timer and Writing event handlers
   @impl true
   def handle_event("time_up", _, socket) do
     # Timer ran out - auto-submit the test
@@ -467,6 +446,292 @@ defmodule MedoruWeb.ClassroomLive.Test do
     # KanjiWriter library cleared the stroke automatically
     {:noreply, put_flash(socket, :error, gettext("Try again - follow the red guide"))}
   end
+
+  # Grammar Step Handlers
+  @impl true
+  def handle_event("word_order_click", %{"word" => word, "action" => "add"}, socket) do
+    step = socket.assigns.current_step
+    current_answer = socket.assigns.answer || []
+
+    # Parse available words from question_data (handles newline-separated strings)
+    question_data = step.question_data || %{}
+    available_words = parse_word_order_words(question_data["words"])
+
+    # Count occurrences in current answer
+    used_count = Enum.count(current_answer, &(&1 == word))
+    available_count = Enum.count(available_words, &(&1 == word))
+
+    if used_count < available_count do
+      new_answer = current_answer ++ [word]
+      {:noreply, assign(socket, :answer, new_answer)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("word_order_remove", %{"index" => index}, socket) do
+    current_answer = socket.assigns.answer || []
+    index = String.to_integer(index)
+
+    new_answer = List.delete_at(current_answer, index)
+    {:noreply, assign(socket, :answer, new_answer)}
+  end
+
+  @impl true
+  def handle_event("word_order_clear", _params, socket) do
+    {:noreply, assign(socket, :answer, [])}
+  end
+
+  # Standard answer handler for multichoice questions
+  defp handle_standard_answer(socket, answer, step, session, attempt) do
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 30,
+        "step_index" => step.order_index
+      })
+
+    case result do
+      {:ok, step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: step_answer.points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 30
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Sentence validation: 10 points, -3 per wrong attempt, min 1 point
+  defp handle_sentence_validation_answer(socket, answer, step, session, attempt) do
+    # Get existing answer for this step (only one record exists per step due to unique constraint)
+    existing_answers = Tests.list_test_step_answers(session.id, step.id)
+    existing_answer = List.first(existing_answers)
+
+    # Count previous wrong attempts from the attempts field
+    previous_attempts = if existing_answer, do: existing_answer.attempts, else: 0
+
+    # Validate against grammar pattern
+    pattern = get_in(step.question_data, ["pattern"]) || []
+
+    is_correct =
+      case Validator.validate_sentence(answer, pattern) do
+        {:ok, _breakdown} -> true
+        {:error, _reason} -> false
+      end
+
+    # This is the current attempt number
+    current_attempt = previous_attempts + 1
+
+    # Calculate points: 10 - 3*(current_attempt-1), min 1
+    points_earned =
+      if is_correct do
+        max(1, 10 - (current_attempt - 1) * 3)
+      else
+        0
+      end
+
+    # Record the answer
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "step_index" => step.order_index,
+        "time_spent_seconds" => 45,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "attempts" => current_attempt,
+        "metadata" => %{
+          "grammar_step" => true,
+          "wrong_attempts" => previous_attempts,
+          "pattern" => pattern
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 45
+        })
+
+        # Max 4 attempts total
+        if is_correct or current_attempt >= 4 do
+          # Correct or max attempts reached - move to next
+          move_to_next_step(socket, session, attempt)
+        else
+          # Wrong but can retry - stay on this step
+          {:noreply,
+           socket
+           |> put_flash(
+             :error,
+             gettext("Incorrect. Try again! (%{current}/4 attempts)",
+               current: current_attempt
+             )
+           )
+           |> assign(:answer, "")}
+        end
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Conjugation: 3 points, single attempt, text validation
+  defp handle_conjugation_answer(socket, answer, step, session, attempt) do
+    question_data = step.question_data || %{}
+    correct_answer = question_data["generated_answer"] || step.correct_answer
+    is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
+    points_earned = if is_correct, do: 3, else: 0
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 30,
+        "step_index" => step.order_index,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "grammar_step" => true,
+          "conjugation" => true,
+          "correct_answer" => correct_answer
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 30
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Conjugation multichoice: 3 points, single attempt, option selection
+  defp handle_conjugation_multichoice_answer(socket, answer, step, session, attempt) do
+    question_data = step.question_data || %{}
+    correct_answer = question_data["generated_answer"] || step.correct_answer
+    is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
+    points_earned = if is_correct, do: 3, else: 0
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 20,
+        "step_index" => step.order_index,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "grammar_step" => true,
+          "conjugation_multichoice" => true
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 20
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Word order: 3 points, single attempt, drag-drop validation
+  defp handle_word_order_answer(socket, answer, step, session, attempt) do
+    # answer is the joined string from word_order question
+    correct_answer = step.correct_answer
+    is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
+    points_earned = if is_correct, do: 3, else: 0
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 40,
+        "step_index" => step.order_index,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "grammar_step" => true,
+          "word_order" => true,
+          "word_selection" => socket.assigns.answer || []
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 40
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Helper to move to next step or complete test
+  defp move_to_next_step(socket, session, attempt) do
+    next_index = socket.assigns.current_step_index + 1
+
+    if next_index >= socket.assigns.total_steps do
+      complete_test(socket, session.id, attempt.id)
+    else
+      Tests.update_session_progress(session.id, next_index)
+      next_step = Enum.at(socket.assigns.steps, next_index)
+
+      {:noreply,
+       socket
+       |> assign(:current_step_index, next_index)
+       |> assign(:current_step, next_step)
+       |> assign(:answer, initial_answer_for_step(next_step))
+       |> assign(:show_hint, false)
+       |> assign(:writing_start_time, writing_start_time(next_step))}
+    end
+  end
+
+  # Private helper functions
+  defp normalize_answer(answer) when is_binary(answer) do
+    answer
+    |> String.trim()
+    |> String.replace(~r/\s+/, "")
+  end
+
+  defp normalize_answer(answer), do: to_string(answer)
 
   defp submit_writing_answer(socket, correct, accuracy) do
     step = socket.assigns.current_step
@@ -780,6 +1045,29 @@ defmodule MedoruWeb.ClassroomLive.Test do
                         </div>
                       <% end %>
                     </div>
+                  <% :sentence_validation -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.sentence_validation_question
+                      step={@current_step}
+                      answer={@answer}
+                      step_id={@current_step.id}
+                    />
+                  <% :conjugation -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.conjugation_question
+                      step={@current_step}
+                      answer={@answer}
+                      step_id={@current_step.id}
+                    />
+                  <% :conjugation_multichoice -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.conjugation_multichoice_question
+                      step={@current_step}
+                      step_id={@current_step.id}
+                    />
+                  <% :word_order -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.word_order_question
+                      step={@current_step}
+                      step_id={@current_step.id}
+                      answer={@answer}
+                    />
                   <% _ -> %>
                     <.input
                       type="text"
@@ -890,4 +1178,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
   # Return current time for writing steps, nil for other types
   defp writing_start_time(%{question_type: :writing}), do: DateTime.utc_now()
   defp writing_start_time(_), do: nil
+
+  # Parse words for word_order questions from various formats
+  defp parse_word_order_words(nil), do: []
+  defp parse_word_order_words(words) when is_list(words), do: words
+
+  defp parse_word_order_words(words) when is_binary(words) do
+    words
+    |> String.split(~r/[\n,]/, trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
 end

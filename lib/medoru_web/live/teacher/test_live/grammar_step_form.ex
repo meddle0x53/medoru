@@ -451,7 +451,9 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
     ~H"""
     <div class="space-y-4">
       <p class="text-sm text-secondary">
-        {gettext("Select a word and target form. The system will generate the question and correct answer. You add the wrong answers.")}
+        {gettext(
+          "Select a word and target form. The system will generate the question and correct answer. You add the wrong answers."
+        )}
       </p>
 
       <%!-- Word selection and form generation --%>
@@ -472,18 +474,18 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           <p class="text-xs text-secondary mb-2">
             {gettext("Add incorrect conjugations as distractors. The correct answer is already set.")}
           </p>
-          
+
           <%!-- Show correct answer (read-only) --%>
           <div class="flex items-center gap-2 mb-3 p-2 bg-emerald-50 rounded border border-emerald-200">
             <span class="text-emerald-600 text-sm font-medium">{gettext("Correct:")}</span>
-            <span class="font-jp font-medium text-emerald-800"><%= generated_answer %></span>
+            <span class="font-jp font-medium text-emerald-800">{generated_answer}</span>
             <input type="hidden" name="step[correct_answer]" value={generated_answer} />
           </div>
 
           <%!-- Wrong answers list --%>
           <% options = @step_form[:options].value || [] %>
           <% option_count = length(options) %>
-          
+
           <div class="space-y-2 mb-3">
             <%= for {option, idx} <- Enum.with_index(options) do %>
               <div class="flex items-center gap-2">
@@ -506,7 +508,7 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
               </div>
             <% end %>
           </div>
-          
+
           <%!-- Add new wrong option input --%>
           <div class="flex gap-2">
             <input
@@ -526,120 +528,13 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
               <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
             </button>
           </div>
-          
+
           <%!-- Option count hint --%>
           <p class={"text-xs mt-2 " <> if option_count < 3, do: "text-warning", else: "text-secondary"}>
             {gettext("%{count} wrong options added (need 3-7)", count: option_count)}
           </p>
         </div>
       <% end %>
-    </div>
-    """
-  end
-
-  # Manual mode for conjugation multichoice (existing behavior)
-  defp conjugation_multichoice_manual_form(assigns) do
-    ~H"""
-    <div class="space-y-4">
-      <div>
-        <label class="label" for="step_question">
-          <span class="label-text">{gettext("Question")}</span>
-        </label>
-        <input
-          type="text"
-          id="step_question"
-          name="step[question]"
-          value={@step_form[:question].value}
-          class="input input-bordered w-full"
-          placeholder={gettext("e.g., Select the correct te-form of this verb")}
-          required
-        />
-      </div>
-
-      <div>
-        <label class="label" for="base_word">
-          <span class="label-text">{gettext("Base Word")}</span>
-        </label>
-        <input
-          type="text"
-          id="base_word"
-          name="step[question_data][base_word]"
-          value={@step_form[:question_data].value["base_word"]}
-          class="input input-bordered w-full font-jp"
-          placeholder={gettext("e.g., 食べる")}
-          required
-        />
-      </div>
-
-      <div>
-        <label class="label" for="target_form">
-          <span class="label-text">{gettext("Target Form")}</span>
-        </label>
-        <select
-          id="target_form"
-          name="step[question_data][target_form]"
-          class="select select-bordered w-full"
-        >
-          <option value="">{gettext("Select target form...")}</option>
-          <%= for form <- filter_forms_by_word_type(@grammar_forms, @step_form[:question_data].value["word_type"]) do %>
-            <option
-              value={form.name}
-              selected={@step_form[:question_data].value["target_form"] == form.name}
-            >
-              {form.display_name}
-            </option>
-          <% end %>
-        </select>
-      </div>
-
-      <div>
-        <label class="label">
-          <span class="label-text">{gettext("Answer Options (4-8 options)")}</span>
-        </label>
-        <div class="space-y-2">
-          <%= for {option, idx} <- Enum.with_index(@step_form[:options].value || []) do %>
-            <div class="flex items-center gap-2">
-              <input
-                type="text"
-                name="step[options][]"
-                value={option}
-                class="input input-bordered w-full input-sm font-jp"
-                placeholder={gettext("Option %{num}", num: idx + 1)}
-              />
-              <button
-                type="button"
-                phx-click="remove_option"
-                phx-value-index={idx}
-                class="btn btn-ghost btn-sm text-error"
-              >
-                <.icon name="hero-x-mark" class="w-4 h-4" />
-              </button>
-            </div>
-          <% end %>
-        </div>
-        <button
-          type="button"
-          phx-click="add_option"
-          class="btn btn-outline btn-sm mt-2"
-        >
-          <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add Option")}
-        </button>
-      </div>
-
-      <div>
-        <label class="label" for="correct_answer">
-          <span class="label-text">{gettext("Correct Answer")}</span>
-        </label>
-        <input
-          type="text"
-          id="correct_answer"
-          name="step[correct_answer]"
-          value={@step_form[:correct_answer].value}
-          class="input input-bordered w-full font-jp"
-          placeholder={gettext("e.g., 食べて")}
-          required
-        />
-      </div>
     </div>
     """
   end

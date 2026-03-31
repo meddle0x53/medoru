@@ -1101,6 +1101,7 @@ defmodule Medoru.Tests do
             attrs["points_earned"] || if(attrs["is_correct"], do: step.points, else: 0),
           time_spent_seconds: attrs["time_spent_seconds"],
           step_index: attrs["step_index"],
+          attempts: attrs["attempts"] || 1,
           metadata: attrs["metadata"] || %{},
           test_session_id: session_id,
           test_step_id: step_id

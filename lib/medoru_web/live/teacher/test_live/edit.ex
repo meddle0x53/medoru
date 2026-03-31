@@ -160,6 +160,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:selected_word, nil)
       |> assign(:reading_answer, "")
       |> assign(:include_reading, true)
+      # Reset grammar pattern elements for new step - BUG 1 FIX
+      |> assign(:grammar_pattern_elements, [])
 
     {:noreply, socket}
   end
@@ -181,33 +183,59 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   def handle_event("validate_step", %{"step" => step_params}, socket) do
     attrs = parse_options_from_params(step_params)
 
-    # Preserve existing question_data if present in socket
-    # Handle auto_generate checkbox specially - if not in params, it was unchecked
-    attrs =
+    # Get existing question_data from changeset changes or original step data
+    existing_question_data =
       case socket.assigns.step_changeset do
-        %{changes: %{question_data: existing_data}} when is_map(existing_data) ->
-          new_question_data = Map.get(attrs, "question_data", %{})
-          
-          # Check if auto_generate was toggled off (field not in params means unchecked)
-          new_question_data =
-            if Map.has_key?(existing_data, "auto_generate") and 
-               not Map.has_key?(new_question_data, "auto_generate") do
-              # Checkbox was unchecked - explicitly set to false
-              Map.put(new_question_data, "auto_generate", false)
-            else
-              new_question_data
-            end
-          
-          # Merge new data with existing, preserving auto-generate state
-          merged = Map.merge(existing_data, new_question_data)
-          Map.put(attrs, "question_data", merged)
+        %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
+          data
 
         _ ->
-          attrs
+          # Fall back to original step's question_data when editing
+          case socket.assigns.editing_step do
+            %{question_data: data} when is_map(data) -> data
+            _ -> %{}
+          end
       end
 
+    # Handle checkboxes specially - if not in params, they were unchecked
+    attrs =
+      if map_size(existing_question_data) > 0 do
+        new_question_data = Map.get(attrs, "question_data", %{})
+
+        # Check if auto_generate was toggled off (field not in params means unchecked)
+        new_question_data =
+          if Map.has_key?(existing_question_data, "auto_generate") and
+               not Map.has_key?(new_question_data, "auto_generate") do
+            # Checkbox was unchecked - explicitly set to false
+            Map.put(new_question_data, "auto_generate", false)
+          else
+            new_question_data
+          end
+
+        # Check if show_pattern was toggled off (field not in params means unchecked)
+        new_question_data =
+          if Map.has_key?(existing_question_data, "show_pattern") and
+               not Map.has_key?(new_question_data, "show_pattern") do
+            # Checkbox was unchecked - explicitly set to false
+            Map.put(new_question_data, "show_pattern", false)
+          else
+            new_question_data
+          end
+
+        # Merge new data with existing, preserving checkbox states
+        merged = Map.merge(existing_question_data, new_question_data)
+        # Normalize checkbox values after merging
+        normalized = normalize_checkbox_values(merged)
+        Map.put(attrs, "question_data", normalized)
+      else
+        attrs
+      end
+
+    # Use the existing step if editing, otherwise use a new struct
+    base_step = socket.assigns.editing_step || %TestStep{}
+
     changeset =
-      %TestStep{}
+      base_step
       |> TestStep.changeset(attrs)
       |> Map.put(:action, :validate)
 
@@ -233,7 +261,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     attrs =
       case socket.assigns.step_changeset do
         %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
-          normalized_data = normalize_pattern_in_question_data(data)
+          normalized_data =
+            data
+            |> normalize_pattern_in_question_data()
+            |> normalize_checkbox_values()
+
           Map.put(attrs, "question_data", normalized_data)
 
         _ ->
@@ -268,6 +300,26 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     attrs =
       if step_type in [:sentence_validation, :conjugation, :conjugation_multichoice, :word_order] do
         Map.put_new(attrs, "correct_answer", "N/A")
+      else
+        attrs
+      end
+
+    # For conjugation multichoice, prepend the generated answer to options
+    attrs =
+      if step_type == :conjugation_multichoice do
+        question_data = Map.get(attrs, "question_data", %{})
+        generated_answer = question_data["generated_answer"]
+        options = Map.get(attrs, "options", [])
+
+        if generated_answer && generated_answer != "" do
+          # Prepend correct answer to options, avoiding duplicates
+          new_options =
+            [generated_answer | Enum.reject(options, &(String.trim(&1) == generated_answer))]
+
+          Map.put(attrs, "options", new_options)
+        else
+          attrs
+        end
       else
         attrs
       end
@@ -323,14 +375,33 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     if step do
       changeset = TestStep.changeset(step, %{})
 
+      # Load grammar pattern elements from step's question_data - BUG 1 FIX
+      grammar_pattern_elements =
+        case step.question_data do
+          %{"pattern" => pattern} when is_list(pattern) ->
+            pattern
+
+          %{"pattern" => pattern} when is_map(pattern) ->
+            # Convert map with string keys to list
+            pattern
+            |> Enum.sort_by(fn {k, _} -> String.to_integer(k) end)
+            |> Enum.map(fn {_, v} -> v end)
+
+          _ ->
+            []
+        end
+
       {:noreply,
        socket
        |> assign(:show_step_form, true)
        |> assign(:editing_step, step)
        |> assign(:step_changeset, changeset)
-       |> assign(:step_form, to_form(changeset))
+       |> assign(:step_form, to_form(changeset, as: :step))
        |> assign(:step_type, step.question_type)
-       |> assign(:new_option_text, "")}
+       |> assign(:new_option_text, "")
+       |> assign(:grammar_pattern_elements, grammar_pattern_elements)
+       |> assign(:selected_word, nil)
+       |> assign(:selected_kanji, nil)}
     else
       {:noreply, put_flash(socket, :error, gettext("Step not found."))}
     end
@@ -339,7 +410,78 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_event("update_step", %{"step" => step_params}, socket) do
     step = socket.assigns.editing_step
-    attrs = parse_options_from_params(step_params)
+    step_type = socket.assigns.step_type
+
+    # Parse options from textarea (newline-separated)
+    attrs =
+      step_params
+      |> parse_options_from_params()
+      |> Map.put("step_type", step_type_to_category(step_type))
+      |> Map.put("question_type", step_type)
+
+    # Include question_data from the current changeset if it exists
+    # Normalize pattern to list if it's a map (from form data)
+    attrs =
+      case socket.assigns.step_changeset do
+        %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
+          normalized_data = normalize_pattern_in_question_data(data)
+          Map.put(attrs, "question_data", normalized_data)
+
+        _ ->
+          attrs
+      end
+
+    # For fill type, add reading_answer and include_reading to question_data
+    attrs =
+      if step_type == :fill do
+        reading_answer = socket.assigns.reading_answer
+        include_reading = socket.assigns.include_reading
+        points = if include_reading, do: 3, else: 2
+
+        question_data = Map.get(attrs, "question_data", %{})
+        question_data = Map.put(question_data, "include_reading", include_reading)
+
+        question_data =
+          if include_reading && reading_answer && reading_answer != "" do
+            Map.put(question_data, "reading_answer", reading_answer)
+          else
+            question_data
+          end
+
+        attrs
+        |> Map.put("question_data", question_data)
+        |> Map.put("points", points)
+      else
+        attrs
+      end
+
+    # For grammar step types, set a default correct_answer (not applicable)
+    attrs =
+      if step_type in [:sentence_validation, :conjugation, :conjugation_multichoice, :word_order] do
+        Map.put_new(attrs, "correct_answer", "N/A")
+      else
+        attrs
+      end
+
+    # For conjugation multichoice, prepend the generated answer to options
+    attrs =
+      if step_type == :conjugation_multichoice do
+        question_data = Map.get(attrs, "question_data", %{})
+        generated_answer = question_data["generated_answer"]
+        options = Map.get(attrs, "options", [])
+
+        if generated_answer && generated_answer != "" do
+          # Prepend correct answer to options, avoiding duplicates
+          new_options =
+            [generated_answer | Enum.reject(options, &(String.trim(&1) == generated_answer))]
+
+          Map.put(attrs, "options", new_options)
+        else
+          attrs
+        end
+      else
+        attrs
+      end
 
     case Tests.update_test_step(step, attrs) do
       {:ok, _updated_step} ->
@@ -1117,11 +1259,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   def handle_event("toggle_auto_generate", _params, socket) do
     changeset = socket.assigns.step_changeset
     question_data = Changeset.get_field(changeset, :question_data) || %{}
-    
+
     # Toggle auto_generate flag
     current_value = question_data["auto_generate"] || false
     new_value = not current_value
-    
+
     updated_question_data = Map.put(question_data, "auto_generate", new_value)
 
     # Clear auto-generated fields if switching to manual
@@ -1298,7 +1440,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
        )
        when is_binary(word_id) and is_binary(target_form) and is_binary(word_type) do
     # Find the grammar form matching both name and word_type
-    form = Enum.find(grammar_forms, fn f -> f.name == target_form and f.word_type == word_type end)
+    form =
+      Enum.find(grammar_forms, fn f -> f.name == target_form and f.word_type == word_type end)
 
     if form do
       base_word = question_data["selected_word_text"]
@@ -1621,8 +1764,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   # Legacy form names (for backward compatibility)
   defp conjugate_i_adjective(word, "past-i"), do: String.replace_suffix(word, "い", "かった")
   defp conjugate_i_adjective(word, "negative-i"), do: String.replace_suffix(word, "い", "くない")
+
   defp conjugate_i_adjective(word, "negative-past-i"),
     do: String.replace_suffix(word, "い", "くなかった")
+
   defp conjugate_i_adjective(word, "te-form-adj"), do: String.replace_suffix(word, "い", "くて")
   defp conjugate_i_adjective(word, _), do: word
 
@@ -1751,7 +1896,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
               >
                 <%!-- Hidden fields --%>
                 <% kanji_id = @selected_kanji && @selected_kanji.id %>
-                <% word_id = @selected_word && @selected_word.id %>
+                <% # For grammar steps, word_id comes from question_data - BUG 3 FIX
+                word_id =
+                  if @selected_word && @selected_word.id do
+                    @selected_word.id
+                  else
+                    get_in(@step_form[:question_data].value, ["selected_word"])
+                  end %>
                 <% step_type_category =
                   if @step_type in [
                        :sentence_validation,
@@ -2073,7 +2224,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                       </label>
 
                       <% options = @step_form[:options].value || [] %>
-                      <% correct = @step_form[:correct_answer].value %>
+                      <% question_data = @step_form[:question_data].value || %{} %>
+                      <% correct =
+                        if @step_type == :conjugation_multichoice do
+                          question_data["generated_answer"] || @step_form[:correct_answer].value
+                        else
+                          @step_form[:correct_answer].value
+                        end %>
                       <% correct_trimmed = if correct, do: String.trim(correct), else: "" %>
 
                       <%!-- Options as tags --%>
@@ -2340,7 +2497,42 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         answer -> Map.put(params, "correct_answer", String.trim(answer))
       end
 
+    # Normalize checkbox values in question_data
+    params =
+      case Map.get(params, "question_data") do
+        question_data when is_map(question_data) ->
+          normalized_data = normalize_checkbox_values(question_data)
+          Map.put(params, "question_data", normalized_data)
+
+        _ ->
+          params
+      end
+
     params
+  end
+
+  # Normalize checkbox values from "on" to true, and absence to false
+  defp normalize_checkbox_values(question_data) do
+    question_data
+    |> Enum.map(fn {key, value} ->
+      normalized_value =
+        if key in ["show_pattern", "auto_generate", "is_correct", "include_reading"] do
+          case value do
+            "on" -> true
+            true -> true
+            "true" -> true
+            false -> false
+            "false" -> false
+            nil -> false
+            _ -> false
+          end
+        else
+          value
+        end
+
+      {key, normalized_value}
+    end)
+    |> Enum.into(%{})
   end
 
   # Ensure each element has a type field based on its structure
@@ -2476,6 +2668,20 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     end
   end
 
+  # Helper to convert step_type to category (grammar or vocabulary)
+  defp step_type_to_category(step_type) do
+    if step_type in [
+         :sentence_validation,
+         :conjugation,
+         :conjugation_multichoice,
+         :word_order
+       ] do
+      :grammar
+    else
+      :vocabulary
+    end
+  end
+
   # Private helper for updating pattern elements
   defp update_pattern_element_by_index(socket, index, field, value) do
     elements = socket.assigns.grammar_pattern_elements || []
@@ -2515,7 +2721,19 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             Map.put(element, "optional", is_optional)
 
           "grammar_form" ->
-            Map.put(element, "grammar_form", value)
+            # Find the grammar form name to store for student display
+            grammar_form =
+              if value && value != "" do
+                Enum.find(socket.assigns.grammar_forms, fn f ->
+                  to_string(f.id) == to_string(value)
+                end)
+              else
+                nil
+              end
+
+            element
+            |> Map.put("grammar_form", value)
+            |> Map.put("forms", if(grammar_form, do: [grammar_form.name], else: []))
 
           _ ->
             element
