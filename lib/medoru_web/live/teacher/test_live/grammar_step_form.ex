@@ -156,6 +156,192 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
 
   # Type 2: Conjugation Form
   defp conjugation_form(assigns) do
+    question_data = assigns.step_form[:question_data].value || %{}
+
+    auto_generate =
+      question_data["auto_generate"] == true || question_data["auto_generate"] == "true"
+
+    assigns =
+      assigns
+      |> assign(:auto_generate, auto_generate)
+      |> assign(:question_data, question_data)
+
+    ~H"""
+    <div class="space-y-4">
+      <%!-- Auto-generate toggle --%>
+      <div class="form-control">
+        <label class="label cursor-pointer justify-start gap-3">
+          <input
+            type="checkbox"
+            id="auto_generate_checkbox"
+            name="step[question_data][auto_generate]"
+            class="checkbox checkbox-sm"
+            checked={@auto_generate}
+            value="true"
+            phx-click="toggle_auto_generate"
+          />
+          <span class="label-text">{gettext("Auto-generate question and answer")}</span>
+        </label>
+        <p class="text-xs text-secondary ml-8">
+          {gettext(
+            "When enabled, select a word from the database and the system will generate the question and correct answer automatically."
+          )}
+        </p>
+      </div>
+
+      <%= if @auto_generate do %>
+        <%!-- Auto-generate mode --%>
+        <.conjugation_auto_generate_form
+          step_form={@step_form}
+          question_data={@question_data}
+          grammar_forms={@grammar_forms}
+        />
+      <% else %>
+        <%!-- Manual mode (existing behavior) --%>
+        <.conjugation_manual_form step_form={@step_form} grammar_forms={@grammar_forms} />
+      <% end %>
+    </div>
+    """
+  end
+
+  # Auto-generate mode form
+  defp conjugation_auto_generate_form(assigns) do
+    ~H"""
+    <div class="space-y-4">
+      <%!-- Word Type Selection --%>
+      <div>
+        <label class="label" for="word_type">
+          <span class="label-text">{gettext("Word Type")}</span>
+        </label>
+        <select
+          id="word_type"
+          name="step[question_data][word_type]"
+          class="select select-bordered w-full"
+          phx-change="update_conjugation_word_type"
+        >
+          <option value="" selected={is_nil(@question_data["word_type"])}>
+            {gettext("Select type...")}
+          </option>
+          <option value="verb" selected={@question_data["word_type"] == "verb"}>
+            {gettext("Verb (動詞)")}
+          </option>
+          <option value="adjective" selected={@question_data["word_type"] == "adjective"}>
+            {gettext("Adjective (形容詞)")}
+          </option>
+        </select>
+      </div>
+
+      <%!-- Base Word Selection --%>
+      <%= if @question_data["word_type"] do %>
+        <div>
+          <label class="label" for="base_word_search">
+            <span class="label-text">{gettext("Select Base Word")}</span>
+          </label>
+          <div class="relative">
+            <input
+              type="text"
+              id="base_word_search"
+              name="step[question_data][base_word_search]"
+              value={@question_data["base_word_search"]}
+              class="input input-bordered w-full font-jp"
+              placeholder={gettext("Type to search for words...")}
+              phx-change="search_conjugation_word"
+              phx-debounce="300"
+            />
+            <%= if @question_data["selected_word"] do %>
+              <div class="mt-2 p-2 bg-emerald-100 rounded text-emerald-800 text-sm">
+                {gettext("Selected:")} <strong>{@question_data["selected_word_text"]}</strong>
+                <button
+                  type="button"
+                  phx-click="clear_selected_conjugation_word"
+                  class="ml-2 text-emerald-600 hover:text-emerald-900"
+                >
+                  {gettext("Change")}
+                </button>
+              </div>
+            <% end %>
+          </div>
+
+          <%!-- Search Results --%>
+          <%= if @question_data["word_search_results"] && @question_data["word_search_results"] != [] do %>
+            <div class="mt-2 border border-base-300 rounded-lg max-h-40 overflow-y-auto">
+              <%= for word <- @question_data["word_search_results"] do %>
+                <button
+                  type="button"
+                  phx-click="select_conjugation_word"
+                  phx-value-word-id={word.id}
+                  phx-value-word-text={word.text}
+                  phx-value-word-reading={word.reading}
+                  class="w-full text-left p-2 hover:bg-base-200 border-b border-base-200 last:border-b-0"
+                >
+                  <span class="font-jp font-medium">{word.text}</span>
+                  <span class="text-sm text-secondary ml-2">{word.reading}</span>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%!-- Target Form Selection --%>
+      <%= if @question_data["selected_word"] do %>
+        <div>
+          <label class="label" for="target_form">
+            <span class="label-text">{gettext("Target Form")}</span>
+          </label>
+          <select
+            id="target_form"
+            name="step[question_data][target_form]"
+            class="select select-bordered w-full"
+            phx-change="update_target_form"
+          >
+            <option value="" selected={is_nil(@question_data["target_form"])}>
+              {gettext("Select target form...")}
+            </option>
+            <%= for form <- filter_forms_by_word_type(@grammar_forms, @question_data["word_type"]) do %>
+              <option
+                value={form.name}
+                selected={@question_data["target_form"] == form.name}
+              >
+                {form.display_name}
+              </option>
+            <% end %>
+          </select>
+        </div>
+      <% end %>
+
+      <%!-- Generated Question Preview --%>
+      <%= if @question_data["generated_question"] do %>
+        <div class="bg-base-200 rounded-lg p-4">
+          <label class="label-text text-xs text-secondary">{gettext("Generated Question")}</label>
+          <p class="font-medium mt-1">{@question_data["generated_question"]}</p>
+          <input type="hidden" name="step[question]" value={@question_data["generated_question"]} />
+        </div>
+      <% end %>
+
+      <%!-- Generated Answer Preview --%>
+      <%= if @question_data["generated_answer"] do %>
+        <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+          <label class="label-text text-xs text-emerald-600">
+            {gettext("Correct Answer (Auto-generated)")}
+          </label>
+          <p class="font-jp font-medium mt-1 text-emerald-800">
+            {@question_data["generated_answer"]}
+          </p>
+          <input type="hidden" name="step[correct_answer]" value={@question_data["generated_answer"]} />
+          <input
+            type="hidden"
+            name="step[question_data][base_word]"
+            value={@question_data["selected_word_text"]}
+          />
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  # Manual mode form (existing behavior)
+  defp conjugation_manual_form(assigns) do
     ~H"""
     <div class="space-y-4">
       <div>
@@ -221,7 +407,7 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           class="select select-bordered w-full"
         >
           <option value="">{gettext("Select target form...")}</option>
-          <%= for form <- @grammar_forms do %>
+          <%= for form <- filter_forms_by_word_type(@grammar_forms, @step_form[:question_data].value["word_type"]) do %>
             <option
               value={form.name}
               selected={@step_form[:question_data].value["target_form"] == form.name}
@@ -250,8 +436,109 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
     """
   end
 
+  # Filter grammar forms by word type
+  defp filter_forms_by_word_type(forms, word_type) when is_list(forms) and is_binary(word_type) do
+    Enum.filter(forms, fn form -> form.word_type == word_type end)
+  end
+
+  defp filter_forms_by_word_type(forms, _) when is_list(forms), do: forms
+  defp filter_forms_by_word_type(_, _), do: []
+
   # Type 3: Conjugation Multiple Choice Form
+  # Always uses auto-generate mode - teacher selects word, system generates correct answer,
+  # teacher adds wrong answer options manually
   defp conjugation_multichoice_form(assigns) do
+    ~H"""
+    <div class="space-y-4">
+      <p class="text-sm text-secondary">
+        {gettext("Select a word and target form. The system will generate the question and correct answer. You add the wrong answers.")}
+      </p>
+
+      <%!-- Word selection and form generation --%>
+      <.conjugation_auto_generate_form
+        step_form={@step_form}
+        question_data={@step_form[:question_data].value || %{}}
+        grammar_forms={@grammar_forms}
+      />
+
+      <%!-- Wrong answers section (only shown when we have a generated answer) --%>
+      <% question_data = @step_form[:question_data].value || %{} %>
+      <% generated_answer = question_data["generated_answer"] || question_data[:generated_answer] %>
+      <%= if generated_answer do %>
+        <div class="border-t border-base-200 pt-4 mt-4">
+          <label class="label">
+            <span class="label-text">{gettext("Wrong Answer Options (3-7 options)")}</span>
+          </label>
+          <p class="text-xs text-secondary mb-2">
+            {gettext("Add incorrect conjugations as distractors. The correct answer is already set.")}
+          </p>
+          
+          <%!-- Show correct answer (read-only) --%>
+          <div class="flex items-center gap-2 mb-3 p-2 bg-emerald-50 rounded border border-emerald-200">
+            <span class="text-emerald-600 text-sm font-medium">{gettext("Correct:")}</span>
+            <span class="font-jp font-medium text-emerald-800"><%= generated_answer %></span>
+            <input type="hidden" name="step[correct_answer]" value={generated_answer} />
+          </div>
+
+          <%!-- Wrong answers list --%>
+          <% options = @step_form[:options].value || [] %>
+          <% option_count = length(options) %>
+          
+          <div class="space-y-2 mb-3">
+            <%= for {option, idx} <- Enum.with_index(options) do %>
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  name="step[options][]"
+                  value={option}
+                  class="input input-bordered w-full input-sm font-jp"
+                  placeholder={gettext("Wrong option %{num}", num: idx + 1)}
+                  readonly
+                />
+                <button
+                  type="button"
+                  phx-click="remove_option"
+                  phx-value-index={idx}
+                  class="btn btn-ghost btn-sm text-error"
+                >
+                  <.icon name="hero-x-mark" class="w-4 h-4" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+          
+          <%!-- Add new wrong option input --%>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              id="new-wrong-option"
+              name="new_option_text"
+              value=""
+              phx-keyup="update_new_option"
+              class="input input-bordered flex-1 input-sm font-jp"
+              placeholder={gettext("Type a wrong answer...")}
+            />
+            <button
+              type="button"
+              phx-click="add_option"
+              class="btn btn-outline btn-sm"
+            >
+              <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
+            </button>
+          </div>
+          
+          <%!-- Option count hint --%>
+          <p class={"text-xs mt-2 " <> if option_count < 3, do: "text-warning", else: "text-secondary"}>
+            {gettext("%{count} wrong options added (need 3-7)", count: option_count)}
+          </p>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  # Manual mode for conjugation multichoice (existing behavior)
+  defp conjugation_multichoice_manual_form(assigns) do
     ~H"""
     <div class="space-y-4">
       <div>
@@ -294,7 +581,7 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           class="select select-bordered w-full"
         >
           <option value="">{gettext("Select target form...")}</option>
-          <%= for form <- @grammar_forms do %>
+          <%= for form <- filter_forms_by_word_type(@grammar_forms, @step_form[:question_data].value["word_type"]) do %>
             <option
               value={form.name}
               selected={@step_form[:question_data].value["target_form"] == form.name}

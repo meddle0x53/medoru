@@ -181,6 +181,31 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   def handle_event("validate_step", %{"step" => step_params}, socket) do
     attrs = parse_options_from_params(step_params)
 
+    # Preserve existing question_data if present in socket
+    # Handle auto_generate checkbox specially - if not in params, it was unchecked
+    attrs =
+      case socket.assigns.step_changeset do
+        %{changes: %{question_data: existing_data}} when is_map(existing_data) ->
+          new_question_data = Map.get(attrs, "question_data", %{})
+          
+          # Check if auto_generate was toggled off (field not in params means unchecked)
+          new_question_data =
+            if Map.has_key?(existing_data, "auto_generate") and 
+               not Map.has_key?(new_question_data, "auto_generate") do
+              # Checkbox was unchecked - explicitly set to false
+              Map.put(new_question_data, "auto_generate", false)
+            else
+              new_question_data
+            end
+          
+          # Merge new data with existing, preserving auto-generate state
+          merged = Map.merge(existing_data, new_question_data)
+          Map.put(attrs, "question_data", merged)
+
+        _ ->
+          attrs
+      end
+
     changeset =
       %TestStep{}
       |> TestStep.changeset(attrs)
@@ -436,6 +461,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         # Add new option (wrong answer)
         new_options = existing_options ++ [trimmed]
 
+        # Preserve question_data for auto-generate functionality
+        question_data = current_form[:question_data].value || %{}
+
         updated_params = %{
           "question" => current_form[:question].value,
           "correct_answer" => correct_answer,
@@ -443,7 +471,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           "options" => new_options,
           "hints" => current_form[:hints].value,
           "explanation" => current_form[:explanation].value,
-          "kanji_id" => current_form[:kanji_id].value
+          "kanji_id" => current_form[:kanji_id].value,
+          "question_data" => question_data
         }
 
         # For picture_multichoice, also track option_word_ids
@@ -497,6 +526,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         socket
       end
 
+    # Preserve question_data for auto-generate functionality
+    question_data = current_form[:question_data].value || %{}
+
     updated_params = %{
       "question" => current_form[:question].value,
       "correct_answer" => current_form[:correct_answer].value,
@@ -504,7 +536,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       "options" => new_options,
       "hints" => current_form[:hints].value,
       "explanation" => current_form[:explanation].value,
-      "kanji_id" => current_form[:kanji_id].value
+      "kanji_id" => current_form[:kanji_id].value,
+      "question_data" => question_data
     }
 
     changeset =
@@ -1075,6 +1108,538 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:step_form, to_form(changeset, as: :step))}
   end
 
+  # ============================================================================
+  # Conjugation Auto-generate Events
+  # ============================================================================
+
+  @impl true
+  # Handle checkbox click - toggle the current state
+  def handle_event("toggle_auto_generate", _params, socket) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+    
+    # Toggle auto_generate flag
+    current_value = question_data["auto_generate"] || false
+    new_value = not current_value
+    
+    updated_question_data = Map.put(question_data, "auto_generate", new_value)
+
+    # Clear auto-generated fields if switching to manual
+    updated_question_data =
+      if not new_value do
+        updated_question_data
+        |> Map.delete("generated_question")
+        |> Map.delete("generated_answer")
+        |> Map.delete("selected_word")
+        |> Map.delete("selected_word_text")
+        |> Map.delete("word_search_results")
+      else
+        updated_question_data
+      end
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event(
+        "update_conjugation_word_type",
+        %{"step" => %{"question_data" => %{"word_type" => word_type}}},
+        socket
+      ) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+
+    updated_question_data =
+      question_data
+      |> Map.put("word_type", word_type)
+      |> Map.delete("selected_word")
+      |> Map.delete("selected_word_text")
+      |> Map.delete("word_search_results")
+      |> Map.delete("generated_question")
+      |> Map.delete("generated_answer")
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event(
+        "search_conjugation_word",
+        %{"step" => %{"question_data" => %{"base_word_search" => query}}},
+        socket
+      ) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+    word_type = question_data["word_type"]
+
+    # Search for words matching query and word_type
+    words =
+      if String.length(query) >= 1 do
+        Medoru.Content.search_words_by_type(query, word_type, limit: 10)
+      else
+        []
+      end
+
+    updated_question_data = Map.put(question_data, "word_search_results", words)
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  def handle_event("search_conjugation_word", _, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event(
+        "select_conjugation_word",
+        %{"word-id" => word_id, "word-text" => text, "word-reading" => reading},
+        socket
+      ) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+
+    updated_question_data =
+      question_data
+      |> Map.put("selected_word", word_id)
+      |> Map.put("selected_word_text", text)
+      |> Map.put("selected_word_reading", reading)
+      |> Map.delete("word_search_results")
+      |> Map.delete("base_word_search")
+
+    # Try to generate if we have all required fields
+    updated_question_data =
+      maybe_generate_conjugation(updated_question_data, socket.assigns.grammar_forms)
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event("clear_selected_conjugation_word", _, socket) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+
+    updated_question_data =
+      question_data
+      |> Map.delete("selected_word")
+      |> Map.delete("selected_word_text")
+      |> Map.delete("selected_word_reading")
+      |> Map.delete("generated_question")
+      |> Map.delete("generated_answer")
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event(
+        "update_target_form",
+        %{"step" => %{"question_data" => %{"target_form" => target_form}}},
+        socket
+      ) do
+    changeset = socket.assigns.step_changeset
+    question_data = Changeset.get_field(changeset, :question_data) || %{}
+
+    updated_question_data =
+      question_data
+      |> Map.put("target_form", target_form)
+
+    # Try to generate if we have all required fields
+    updated_question_data =
+      maybe_generate_conjugation(updated_question_data, socket.assigns.grammar_forms)
+
+    changeset =
+      changeset
+      |> Changeset.put_change(:question_data, updated_question_data)
+
+    {:noreply,
+     socket
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  # Helper to generate conjugation question and answer when all fields are present
+  defp maybe_generate_conjugation(
+         %{"selected_word" => word_id, "target_form" => target_form, "word_type" => word_type} =
+           question_data,
+         grammar_forms
+       )
+       when is_binary(word_id) and is_binary(target_form) and is_binary(word_type) do
+    # Find the grammar form matching both name and word_type
+    form = Enum.find(grammar_forms, fn f -> f.name == target_form and f.word_type == word_type end)
+
+    if form do
+      base_word = question_data["selected_word_text"]
+      reading = question_data["selected_word_reading"] || base_word
+
+      # Generate question text
+      question_template = get_conjugation_question_template(target_form, word_type)
+      generated_question = String.replace(question_template, "{word}", base_word)
+
+      # Generate correct answer by applying conjugation
+      generated_answer = conjugate_word(base_word, reading, target_form, word_type, form)
+
+      question_data
+      |> Map.put("generated_question", generated_question)
+      |> Map.put("generated_answer", generated_answer)
+      |> Map.put("question", generated_question)
+      |> Map.put("base_word", base_word)
+    else
+      question_data
+    end
+  end
+
+  defp maybe_generate_conjugation(question_data, _), do: question_data
+
+  # Question templates for each form
+  defp get_conjugation_question_template("te-form", "verb"),
+    do: "Conjugate {word} to te-form (て形)"
+
+  defp get_conjugation_question_template("ta-form", "verb"),
+    do: "Conjugate {word} to ta-form (た形 - past tense)"
+
+  defp get_conjugation_question_template("nai-form", "verb"),
+    do: "Conjugate {word} to nai-form (ない形 - negative)"
+
+  defp get_conjugation_question_template("masu-form", "verb"),
+    do: "Conjugate {word} to masu-form (ます形 - polite)"
+
+  defp get_conjugation_question_template("potential", "verb"),
+    do: "Conjugate {word} to potential form (potential - can do)"
+
+  defp get_conjugation_question_template("conditional", "verb"),
+    do: "Conjugate {word} to conditional form (ば形)"
+
+  defp get_conjugation_question_template("volitional", "verb"),
+    do: "Conjugate {word} to volitional form (意向形 - let's do)"
+
+  defp get_conjugation_question_template("imperative", "verb"),
+    do: "Conjugate {word} to imperative form (命令形)"
+
+  defp get_conjugation_question_template("passive", "verb"),
+    do: "Conjugate {word} to passive form (受身形)"
+
+  defp get_conjugation_question_template("causative", "verb"),
+    do: "Conjugate {word} to causative form (使役形)"
+
+  defp get_conjugation_question_template("adverbial", "adjective"),
+    do: "Conjugate {word} to adverbial form (く form)"
+
+  defp get_conjugation_question_template("past", "adjective"),
+    do: "Conjugate {word} to past form (かった form)"
+
+  defp get_conjugation_question_template("negative", "adjective"),
+    do: "Conjugate {word} to negative form (くない form)"
+
+  # Legacy form names (for backward compatibility)
+  defp get_conjugation_question_template("past-i", "adjective"),
+    do: "Conjugate {word} to past form (かった form)"
+
+  defp get_conjugation_question_template("negative-i", "adjective"),
+    do: "Conjugate {word} to negative form (くない form)"
+
+  defp get_conjugation_question_template(form_name, _word_type) do
+    "Conjugate {word} to #{form_name} form"
+  end
+
+  # Simple conjugation logic based on suffix patterns
+  defp conjugate_word(base_word, _reading, target_form, word_type, form) do
+    cond do
+      # Godan verbs (type 1) - end in u, tsu, ru, mu, bu, nu, ku, gu, su
+      word_type == "verb" && is_godan_verb?(base_word) ->
+        conjugate_godan_verb(base_word, target_form)
+
+      # Ichidan verbs (type 2) - end in iru/eru
+      word_type == "verb" ->
+        conjugate_ichidan_verb(base_word, target_form)
+
+      # I-adjectives - end in い
+      word_type == "adjective" && String.ends_with?(base_word, "い") ->
+        conjugate_i_adjective(base_word, target_form)
+
+      # Na-adjectives
+      word_type == "adjective" ->
+        conjugate_na_adjective(base_word, target_form)
+
+      true ->
+        # Fallback - just append suffix pattern if available
+        if form.suffix_pattern do
+          String.replace_suffix(base_word, "", form.suffix_pattern)
+        else
+          base_word
+        end
+    end
+  end
+
+  # Determine if a verb is godan (五段) type
+  defp is_godan_verb?(word) do
+    # Godan verbs don't end in iru/eru (with some exceptions)
+    # This is a simplified check
+    not String.ends_with?(word, [
+      "いる",
+      "える",
+      "きる",
+      "ける",
+      "ぎる",
+      "げる",
+      "しる",
+      "せる",
+      "ちる",
+      "てる",
+      "にる",
+      "ねる",
+      "ひる",
+      "へる",
+      "びる",
+      "べる",
+      "みる",
+      "める",
+      "りる",
+      "れる"
+    ])
+  end
+
+  # Conjugate godan verbs
+  defp conjugate_godan_verb(word, "te-form"), do: godan_te_form(word)
+  defp conjugate_godan_verb(word, "ta-form"), do: godan_ta_form(word)
+  defp conjugate_godan_verb(word, "nai-form"), do: godan_nai_form(word)
+  defp conjugate_godan_verb(word, "masu-form"), do: godan_masu_form(word)
+  defp conjugate_godan_verb(word, "potential"), do: godan_potential_form(word)
+  defp conjugate_godan_verb(word, "conditional"), do: godan_conditional_form(word)
+  defp conjugate_godan_verb(word, "volitional"), do: godan_volitional_form(word)
+  defp conjugate_godan_verb(word, "imperative"), do: godan_imperative_form(word)
+  defp conjugate_godan_verb(word, "passive"), do: godan_passive_form(word)
+  defp conjugate_godan_verb(word, "causative"), do: godan_causative_form(word)
+  defp conjugate_godan_verb(word, _), do: word
+
+  # Godan verb conjugations
+  defp godan_te_form(word) do
+    cond do
+      String.ends_with?(word, "う") -> String.replace_suffix(word, "う", "って")
+      String.ends_with?(word, "つ") -> String.replace_suffix(word, "つ", "って")
+      String.ends_with?(word, "る") -> String.replace_suffix(word, "る", "って")
+      String.ends_with?(word, "む") -> String.replace_suffix(word, "む", "んで")
+      String.ends_with?(word, "ぶ") -> String.replace_suffix(word, "ぶ", "んで")
+      String.ends_with?(word, "ぬ") -> String.replace_suffix(word, "ぬ", "んで")
+      String.ends_with?(word, "く") -> String.replace_suffix(word, "く", "いて")
+      String.ends_with?(word, "ぐ") -> String.replace_suffix(word, "ぐ", "いで")
+      String.ends_with?(word, "す") -> String.replace_suffix(word, "す", "して")
+      true -> word <> "て"
+    end
+  end
+
+  defp godan_ta_form(word) do
+    cond do
+      String.ends_with?(word, "う") -> String.replace_suffix(word, "う", "った")
+      String.ends_with?(word, "つ") -> String.replace_suffix(word, "つ", "った")
+      String.ends_with?(word, "る") -> String.replace_suffix(word, "る", "った")
+      String.ends_with?(word, "む") -> String.replace_suffix(word, "む", "んだ")
+      String.ends_with?(word, "ぶ") -> String.replace_suffix(word, "ぶ", "んだ")
+      String.ends_with?(word, "ぬ") -> String.replace_suffix(word, "ぬ", "んだ")
+      String.ends_with?(word, "く") -> String.replace_suffix(word, "く", "いた")
+      String.ends_with?(word, "ぐ") -> String.replace_suffix(word, "ぐ", "いだ")
+      String.ends_with?(word, "す") -> String.replace_suffix(word, "す", "した")
+      true -> word <> "た"
+    end
+  end
+
+  defp godan_nai_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "わ") <> "ない"
+      "つ" -> String.replace_suffix(word, "つ", "た") <> "ない"
+      "る" -> String.replace_suffix(word, "る", "ら") <> "ない"
+      "む" -> String.replace_suffix(word, "む", "ま") <> "ない"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "ば") <> "ない"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "な") <> "ない"
+      "く" -> String.replace_suffix(word, "く", "か") <> "ない"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "が") <> "ない"
+      "す" -> String.replace_suffix(word, "す", "さ") <> "ない"
+      _ -> word <> "ない"
+    end
+  end
+
+  defp godan_masu_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "い") <> "ます"
+      "つ" -> String.replace_suffix(word, "つ", "ち") <> "ます"
+      "る" -> String.replace_suffix(word, "る", "り") <> "ます"
+      "む" -> String.replace_suffix(word, "む", "み") <> "ます"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "び") <> "ます"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "に") <> "ます"
+      "く" -> String.replace_suffix(word, "く", "き") <> "ます"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "ぎ") <> "ます"
+      "す" -> String.replace_suffix(word, "す", "し") <> "ます"
+      _ -> word <> "ます"
+    end
+  end
+
+  defp godan_potential_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "え") <> "る"
+      "つ" -> String.replace_suffix(word, "つ", "て") <> "る"
+      "る" -> String.replace_suffix(word, "る", "れ") <> "る"
+      "む" -> String.replace_suffix(word, "む", "め") <> "る"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "べ") <> "る"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "ね") <> "る"
+      "く" -> String.replace_suffix(word, "く", "け") <> "る"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "げ") <> "る"
+      "す" -> String.replace_suffix(word, "す", "せ") <> "る"
+      _ -> word <> "る"
+    end
+  end
+
+  defp godan_conditional_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "え") <> "ば"
+      "つ" -> String.replace_suffix(word, "つ", "て") <> "ば"
+      "る" -> String.replace_suffix(word, "る", "れ") <> "ば"
+      "む" -> String.replace_suffix(word, "む", "め") <> "ば"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "べ") <> "ば"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "ね") <> "ば"
+      "く" -> String.replace_suffix(word, "く", "け") <> "ば"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "げ") <> "ば"
+      "す" -> String.replace_suffix(word, "す", "せ") <> "ば"
+      _ -> word <> "ば"
+    end
+  end
+
+  defp godan_volitional_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "お") <> "う"
+      "つ" -> String.replace_suffix(word, "つ", "と") <> "う"
+      "る" -> String.replace_suffix(word, "る", "ろ") <> "う"
+      "む" -> String.replace_suffix(word, "む", "も") <> "う"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "ぼ") <> "う"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "の") <> "う"
+      "く" -> String.replace_suffix(word, "く", "こ") <> "う"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "ご") <> "う"
+      "す" -> String.replace_suffix(word, "す", "そ") <> "う"
+      _ -> word <> "う"
+    end
+  end
+
+  defp godan_imperative_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "え")
+      "つ" -> String.replace_suffix(word, "つ", "て")
+      "る" -> String.replace_suffix(word, "る", "れ")
+      "む" -> String.replace_suffix(word, "む", "め")
+      "ぶ" -> String.replace_suffix(word, "ぶ", "べ")
+      "ぬ" -> String.replace_suffix(word, "ぬ", "ね")
+      "く" -> String.replace_suffix(word, "く", "け")
+      "ぐ" -> String.replace_suffix(word, "ぐ", "げ")
+      "す" -> String.replace_suffix(word, "す", "せ")
+      _ -> word
+    end
+  end
+
+  defp godan_passive_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "わ") <> "れる"
+      "つ" -> String.replace_suffix(word, "つ", "た") <> "れる"
+      "る" -> String.replace_suffix(word, "る", "ら") <> "れる"
+      "む" -> String.replace_suffix(word, "む", "ま") <> "れる"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "ば") <> "れる"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "な") <> "れる"
+      "く" -> String.replace_suffix(word, "く", "か") <> "れる"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "が") <> "れる"
+      "す" -> String.replace_suffix(word, "す", "さ") <> "れる"
+      _ -> word <> "れる"
+    end
+  end
+
+  defp godan_causative_form(word) do
+    case String.last(word) do
+      "う" -> String.replace_suffix(word, "う", "わ") <> "せる"
+      "つ" -> String.replace_suffix(word, "つ", "た") <> "せる"
+      "る" -> String.replace_suffix(word, "る", "ら") <> "せる"
+      "む" -> String.replace_suffix(word, "む", "ま") <> "せる"
+      "ぶ" -> String.replace_suffix(word, "ぶ", "ば") <> "せる"
+      "ぬ" -> String.replace_suffix(word, "ぬ", "な") <> "せる"
+      "く" -> String.replace_suffix(word, "く", "か") <> "せる"
+      "ぐ" -> String.replace_suffix(word, "ぐ", "が") <> "せる"
+      "す" -> String.replace_suffix(word, "す", "さ") <> "せる"
+      _ -> word <> "せる"
+    end
+  end
+
+  # Ichidan verb conjugations (simpler - just change the ending)
+  defp conjugate_ichidan_verb(word, "te-form"), do: String.replace_suffix(word, "る", "て")
+  defp conjugate_ichidan_verb(word, "ta-form"), do: String.replace_suffix(word, "る", "た")
+  defp conjugate_ichidan_verb(word, "nai-form"), do: String.replace_suffix(word, "る", "ない")
+  defp conjugate_ichidan_verb(word, "masu-form"), do: String.replace_suffix(word, "る", "ます")
+  defp conjugate_ichidan_verb(word, "potential"), do: String.replace_suffix(word, "る", "られる")
+  defp conjugate_ichidan_verb(word, "conditional"), do: String.replace_suffix(word, "る", "れば")
+  defp conjugate_ichidan_verb(word, "volitional"), do: String.replace_suffix(word, "る", "よう")
+  defp conjugate_ichidan_verb(word, "imperative"), do: String.replace_suffix(word, "る", "ろ")
+  defp conjugate_ichidan_verb(word, "passive"), do: String.replace_suffix(word, "る", "られる")
+  defp conjugate_ichidan_verb(word, "causative"), do: String.replace_suffix(word, "る", "させる")
+  defp conjugate_ichidan_verb(word, _), do: word
+
+  # I-adjective conjugations
+  # Form names match grammar_forms table (scoped by word_type)
+  defp conjugate_i_adjective(word, "adverbial"), do: String.replace_suffix(word, "い", "く")
+  defp conjugate_i_adjective(word, "past"), do: String.replace_suffix(word, "い", "かった")
+  defp conjugate_i_adjective(word, "negative"), do: String.replace_suffix(word, "い", "くない")
+
+  defp conjugate_i_adjective(word, "negative-past"),
+    do: String.replace_suffix(word, "い", "くなかった")
+
+  defp conjugate_i_adjective(word, "te-form"), do: String.replace_suffix(word, "い", "くて")
+  # Legacy form names (for backward compatibility)
+  defp conjugate_i_adjective(word, "past-i"), do: String.replace_suffix(word, "い", "かった")
+  defp conjugate_i_adjective(word, "negative-i"), do: String.replace_suffix(word, "い", "くない")
+  defp conjugate_i_adjective(word, "negative-past-i"),
+    do: String.replace_suffix(word, "い", "くなかった")
+  defp conjugate_i_adjective(word, "te-form-adj"), do: String.replace_suffix(word, "い", "くて")
+  defp conjugate_i_adjective(word, _), do: word
+
+  # Na-adjective conjugations
+  # Form names match grammar_forms table (scoped by word_type)
+  defp conjugate_na_adjective(word, "adverbial"), do: word <> "に"
+  defp conjugate_na_adjective(word, "past"), do: word <> "だった"
+  defp conjugate_na_adjective(word, "negative"), do: word <> "ではない"
+  defp conjugate_na_adjective(word, "negative-past"), do: word <> "ではなかった"
+  defp conjugate_na_adjective(word, "te-form"), do: word <> "で"
+  # Legacy form names (for backward compatibility)
+  defp conjugate_na_adjective(word, "past-na"), do: word <> "だった"
+  defp conjugate_na_adjective(word, "negative-na"), do: word <> "ではない"
+  defp conjugate_na_adjective(word, "negative-past-na"), do: word <> "ではなかった"
+  defp conjugate_na_adjective(word, "te-form-adj"), do: word <> "で"
+  defp conjugate_na_adjective(word, _), do: word
+
   @impl true
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
@@ -1493,8 +2058,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     </p>
                   </div>
 
-                  <%!-- Options for multichoice and picture_multichoice --%>
-                  <%= if @step_type in [:multichoice, :picture_multichoice] do %>
+                  <%!-- Options for multichoice types --%>
+                  <%= if @step_type in [:multichoice, :picture_multichoice, :conjugation_multichoice] do %>
                     <div>
                       <label class="block text-sm font-medium text-base-content mb-2">
                         <%= if @step_type == :picture_multichoice do %>

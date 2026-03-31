@@ -464,6 +464,43 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Searches words by query and filters by word type (verb, adjective, noun, etc.)
+
+  ## Options
+
+    * `:limit` - Maximum number of results (default: 20)
+
+  ## Examples
+
+      iex> search_words_by_type("tabe", "verb")
+      [%Word{text: "食べる"}, ...]
+
+      iex> search_words_by_type("ookii", "adjective", limit: 5)
+      [%Word{text: "大きい"}, ...]
+  """
+  def search_words_by_type(query, word_type, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+
+    if String.trim(query) == "" or is_nil(word_type) do
+      []
+    else
+      search_term = "%#{query}%"
+
+      Word
+      |> where(
+        [w],
+        w.word_type == ^word_type and
+          (ilike(w.text, ^search_term) or
+             ilike(w.reading, ^search_term) or
+             ilike(w.meaning, ^search_term))
+      )
+      |> order_by([w], desc: w.usage_frequency)
+      |> limit(^limit)
+      |> Repo.all()
+    end
+  end
+
+  @doc """
   Searches kanji by character, meanings, or readings.
 
   ## Options
