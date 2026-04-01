@@ -6656,3 +6656,658 @@ msgstr "自分のレッスンのみ編集できます。"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only delete your own tests."
 msgstr "自分のレッスンのみ編集できます。"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:576
+#, elixir-autogen, elixir-format
+msgid "Add at least 1 grammar step before publishing."
+msgstr "公開する前に、少なくとも1つの文法ステップを追加してください。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:89
+#, elixir-autogen, elixir-format
+msgid "Add elements below"
+msgstr "以下に要素を追加"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:475
+#, elixir-autogen, elixir-format
+msgid "Add incorrect conjugations as distractors. The correct answer is already set."
+msgstr "注意を逸らすための不正確な活用形を追加してください。正解はすでに設定されています。"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:247
+#, elixir-autogen, elixir-format
+msgid "Add pattern elements below"
+msgstr "以下にパターン要素を追加"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:121
+#, elixir-autogen, elixir-format
+msgid "Add Text"
+msgstr "テキストを追加"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:113
+#, elixir-autogen, elixir-format
+msgid "Add Word Class"
+msgstr "単語クラスを追加"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:698
+#, elixir-autogen, elixir-format
+msgid "Adjective (形容詞)"
+msgstr "形容詞 (形容詞)"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:36
+#, elixir-autogen, elixir-format
+msgid "Admin - Grammar Forms"
+msgstr "管理 - 文法フォーム"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:504
+#, elixir-autogen, elixir-format
+msgid "All examples must have sentence, reading, and meaning."
+msgstr "すべての例には文、読み方、意味が必要です。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "All Types"
+msgstr "すべてのタイプ"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:724
+#, elixir-autogen, elixir-format
+msgid "Any form"
+msgstr "任意の形"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:556
+#, elixir-autogen, elixir-format
+msgid "Arrange the words to form a correct sentence:"
+msgstr "単語を並べて正しい文を作ってください："
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:183
+#, elixir-autogen, elixir-format
+msgid "Auto-generate question and answer"
+msgstr "質問と答えを自動生成"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:230
+#, elixir-autogen, elixir-format
+msgid "Available words:"
+msgstr "利用可能な単語："
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Back to Grammar Forms"
+msgstr "文法フォームに戻る"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:349
+#, elixir-autogen, elixir-format
+msgid "Base Word"
+msgstr "基本形"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:652
+#, elixir-autogen, elixir-format
+msgid "Build a sentence following this pattern:"
+msgstr "このパターンに従って文を作ってください："
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:24
+#, elixir-autogen, elixir-format
+msgid "Build a sentence that follows this pattern:"
+msgstr "このパターンに従って文を作ってください："
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:81
+#, elixir-autogen, elixir-format
+msgid "Build the grammar pattern students should follow."
+msgstr "生徒が従うべき文法パターンを構築してください。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:259
+#, elixir-autogen, elixir-format
+msgid "Change"
+msgstr "変更"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:73
+#, elixir-autogen, elixir-format
+msgid "Class"
+msgstr "クラス"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:630
+#, elixir-autogen, elixir-format
+msgid "Class: %{name}"
+msgstr "クラス：%{name}"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Clear Filters"
+msgstr "フィルターをクリア"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:252
+#, elixir-autogen, elixir-format
+msgid "(Click words above to build sentence)"
+msgstr "（上の単語をクリックして文を作ってください）"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:224
+#, elixir-autogen, elixir-format
+msgid "Click words to add them. Click on selected words to remove them."
+msgstr "単語をクリックして追加してください。選択した単語をクリックして削除します。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:128
+#, elixir-autogen, elixir-format
+msgid "Configure Elements"
+msgstr "要素を設定"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:101
+#, elixir-autogen, elixir-format
+msgid "Conjugate this word:"
+msgstr "この単語を活用させてください："
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:480
+#, elixir-autogen, elixir-format
+msgid "Correct:"
+msgstr "正解："
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:326
+#, elixir-autogen, elixir-format
+msgid "Correct Answer (Auto-generated)"
+msgstr "正解（自動生成）"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:579
+#, elixir-autogen, elixir-format
+msgid "Correct Sentence"
+msgstr "正しい文"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:534
+#, elixir-autogen, elixir-format
+msgid "%{count} wrong options added (need 3-7)"
+msgstr "%{count}個の間違った選択肢を追加（3〜7個必要）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Create and manage grammar pattern lessons"
+msgstr "文法パターンレッスンの作成と管理"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Create Grammar Lesson"
+msgstr "文法レッスンを作成"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Create your first grammar lesson to help students learn Japanese patterns"
+msgstr "最初の文法レッスンを作成して、生徒が日本語のパターンを学ぶのを助ける"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this grammar form?"
+msgstr "この文法フォームを削除しますか？"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this lesson?"
+msgstr "このレッスンを削除しますか？"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this step?"
+msgstr "このステップを削除しますか？"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Describe what students will learn..."
+msgstr "生徒が学ぶことを説明してください..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "Difficulty"
+msgstr "難易度"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:94
+#, elixir-autogen, elixir-format
+msgid "Edit Grammar Form"
+msgstr "文法フォームを編集"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:131
+#, elixir-autogen, elixir-format
+msgid "Edit Grammar Lesson"
+msgstr "文法レッスンを編集"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:556
+#, elixir-autogen, elixir-format
+msgid "e.g., Arrange the words to form a correct sentence"
+msgstr "例：単語を並べて正しい文を作ってください"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "e.g., Before/After Patterns"
+msgstr "例：前後のパターン"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:72
+#, elixir-autogen, elixir-format
+msgid "e.g., Write a sentence about your weekend plans"
+msgstr "例：週末の予定について文を書いてください"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:660
+#, elixir-autogen, elixir-format
+msgid "Element %{idx}:"
+msgstr "要素 %{idx}："
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "English meaning (e.g., 'won't come')"
+msgstr "英語の意味（例：'won't come'）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Example in target form (e.g., 来ない)"
+msgstr "目標形での例（例：来ない）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:458
+#, elixir-autogen, elixir-format
+msgid "Example is valid!"
+msgstr "例は有効です！"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "examples"
+msgstr "例"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:283
+#, elixir-autogen, elixir-format
+msgid "Examples"
+msgstr "例"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:473
+#, elixir-autogen, elixir-format
+msgid "Examples:"
+msgstr "例："
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Examples (Max 5)"
+msgstr "例（最大5つ）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Examples (one per line)"
+msgstr "例（1行に1つ）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Explain how this grammar pattern works..."
+msgstr "この文法パターンがどのように機能するか説明してください..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Explain when and how this form is used..."
+msgstr "この形がいつ、どのように使われるか説明してください..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:433
+#, elixir-autogen, elixir-format
+msgid "Explanation"
+msgstr "説明"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:707
+#, elixir-autogen, elixir-format
+msgid "Expression (表現)"
+msgstr "表現 (表現)"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:69
+#, elixir-autogen, elixir-format
+msgid "Failed to delete grammar form. It may be in use."
+msgstr "文法フォームの削除に失敗しました。使用中の可能性があります。"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:548
+#, elixir-autogen, elixir-format
+msgid "Failed to save step: %{errors}"
+msgstr "ステップの保存に失敗しました：%{errors}"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Form"
+msgstr "フォーム"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:316
+#, elixir-autogen, elixir-format
+msgid "Generated Question"
+msgstr "生成された質問"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:85
+#, elixir-autogen, elixir-format
+msgid "Grammar form created successfully."
+msgstr "文法フォームが正常に作成されました。"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:63
+#, elixir-autogen, elixir-format
+msgid "Grammar form deleted successfully."
+msgstr "文法フォームが正常に削除されました。"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Grammar Forms"
+msgstr "文法フォーム"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:72
+#, elixir-autogen, elixir-format
+msgid "Grammar form updated successfully."
+msgstr "文法フォームが正常に更新されました。"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:169
+#, elixir-autogen, elixir-format
+msgid "Grammar lesson created. Now add steps!"
+msgstr "文法レッスンが作成されました。次はステップを追加してください！"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Grammar Pattern"
+msgstr "文法パターン"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:136
+#, elixir-autogen, elixir-format
+msgid "Grammar Steps"
+msgstr "文法ステップ"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:672
+#, elixir-autogen, elixir-format
+msgid "Hint:"
+msgstr "ヒント："
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:70
+#, elixir-autogen, elixir-format
+msgid "Incorrect. Attempt %{current}/4. Points: %{points}"
+msgstr "不正解。%{current}/4回目の試行。ポイント：%{points}"
+
+#: lib/medoru_web/live/classroom_live/test.ex:575
+#, elixir-autogen, elixir-format
+msgid "Incorrect. Try again! (%{current}/4 attempts)"
+msgstr "不正解。もう一度試してください！（%{current}/4回目の試行）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Lesson Info"
+msgstr "レッスン情報"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:597
+#, elixir-autogen, elixir-format
+msgid "Lesson published successfully!"
+msgstr "レッスンが正常に公開されました！"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Manage verb and adjective conjugation forms"
+msgstr "動詞と形容詞の活用形を管理"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index.ex:51
+#, elixir-autogen, elixir-format
+msgid "My Grammar Lessons"
+msgstr "私の文法レッスン"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Name (system identifier)"
+msgstr "名前（システム識別子）"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "New Form"
+msgstr "新規フォーム"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:93
+#, elixir-autogen, elixir-format
+msgid "New Grammar Form"
+msgstr "新規文法フォーム"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:110
+#, elixir-autogen, elixir-format
+msgid "New Grammar Lesson"
+msgstr "新規文法レッスン"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:412
+#, elixir-autogen, elixir-format
+msgid "New Step"
+msgstr "新規ステップ"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "No grammar forms found"
+msgstr "文法フォームが見つかりません"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "No grammar lessons yet"
+msgstr "文法レッスンはまだありません"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "No steps yet. Add your first grammar step!"
+msgstr "まだステップがありません。最初の文法ステップを追加してください！"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:701
+#, elixir-autogen, elixir-format
+msgid "Noun (名詞)"
+msgstr "名詞 (名詞)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:704
+#, elixir-autogen, elixir-format
+msgid "Particle (助詞)"
+msgstr "助詞 (助詞)"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:423
+#, elixir-autogen, elixir-format
+msgid "Pattern:"
+msgstr "パターン："
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:453
+#, elixir-autogen, elixir-format
+msgid "Please enter a Japanese sentence/word before validating."
+msgstr "検証する前に日本語の文や単語を入力してください。"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:136
+#, elixir-autogen, elixir-format
+msgid "Please enter an answer"
+msgstr "答えを入力してください"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Reading (e.g., こない)"
+msgstr "読み方（例：こない）"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:675
+#, elixir-autogen, elixir-format
+msgid "Remove"
+msgstr "削除"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:567
+#, elixir-autogen, elixir-format
+msgid "Required Form"
+msgstr "必要な形"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Save Lesson"
+msgstr "レッスンを保存"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:323
+#, elixir-autogen, elixir-format
+msgid "Save Step"
+msgstr "ステップを保存"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:197
+#, elixir-autogen, elixir-format
+msgid "Save the lesson first before adding steps."
+msgstr "ステップを追加する前に、まずレッスンを保存してください。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Select..."
+msgstr "選択..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:766
+#, elixir-autogen, elixir-format
+msgid "Select a class..."
+msgstr "クラスを選択..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:52
+#, elixir-autogen, elixir-format
+msgid "Select a grammar step type"
+msgstr "文法ステップの種類を選択"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Select a word class..."
+msgstr "単語クラスを選択..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:238
+#, elixir-autogen, elixir-format
+msgid "Select Base Word"
+msgstr "基本形を選択"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:253
+#, elixir-autogen, elixir-format
+msgid "Selected:"
+msgstr "選択済み："
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Select particle..."
+msgstr "助詞を選択..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:299
+#, elixir-autogen, elixir-format
+msgid "Select target form..."
+msgstr "目標の形を選択..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:157
+#, elixir-autogen, elixir-format
+msgid "Select the correct conjugation:"
+msgstr "正しい活用形を選択してください："
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:223
+#, elixir-autogen, elixir-format
+msgid "Select type..."
+msgstr "種類を選択..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:150
+#, elixir-autogen, elixir-format
+msgid "Show grammar pattern to students"
+msgstr "生徒に文法パターンを表示"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:131
+#, elixir-autogen, elixir-format
+msgid "Single attempt only. 3 points for correct answer."
+msgstr "1回のみの試行。正解で3ポイント。"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:416
+#, elixir-autogen, elixir-format
+msgid "Step"
+msgstr "ステップ"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:534
+#, elixir-autogen, elixir-format
+msgid "Step saved successfully."
+msgstr "ステップが正常に保存されました。"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:421
+#, elixir-autogen, elixir-format
+msgid "Step Title"
+msgstr "ステップタイトル"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Suffix Pattern"
+msgstr "接尾辞パターン"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:290
+#, elixir-autogen, elixir-format
+msgid "Target Form"
+msgstr "目標の形"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:121
+#, elixir-autogen, elixir-format
+msgid "+ Text"
+msgstr "+ テキスト"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:612
+#, elixir-autogen, elixir-format
+msgid "Text"
+msgstr "テキスト"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "The ending pattern that identifies this form"
+msgstr "この形を識別する終わりのパターン"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:521
+#, elixir-autogen, elixir-format
+msgid "Type a wrong answer..."
+msgstr "間違った答えを入力..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:123
+#, elixir-autogen, elixir-format
+msgid "Type the conjugated form..."
+msgstr "活用形を入力してください..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:247
+#, elixir-autogen, elixir-format
+msgid "Type to search for words..."
+msgstr "単語を検索するために入力..."
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:681
+#, elixir-autogen, elixir-format
+msgid "Type your answer in Japanese..."
+msgstr "日本語で答えを入力してください..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:60
+#, elixir-autogen, elixir-format
+msgid "Type your sentence here..."
+msgstr "ここに文を入力してください..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:342
+#, elixir-autogen, elixir-format
+msgid "Untitled Step"
+msgstr "無題のステップ"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Updates after 5 seconds of not typing"
+msgstr "5秒間入力がないと更新"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:695
+#, elixir-autogen, elixir-format
+msgid "Verb (動詞)"
+msgstr "動詞 (動詞)"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:261
+#, elixir-autogen, elixir-format
+msgid "+ Word Class"
+msgstr "+ 単語クラス"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:599
+#, elixir-autogen, elixir-format
+msgid "Word Class"
+msgstr "単語クラス"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:548
+#, elixir-autogen, elixir-format
+msgid "Words (enter in correct order)"
+msgstr "単語（正しい順序で入力）"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "+ Word Slot"
+msgstr "+ 単語スロット"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:566
+#, elixir-autogen, elixir-format
+msgid "Words will be shuffled for students. Enter one word per line."
+msgstr "単語は生徒用にシャッフルされます。1行に1つの単語を入力してください。"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:472
+#, elixir-autogen, elixir-format
+msgid "Wrong Answer Options (3-7 options)"
+msgstr "間違った答えの選択肢（3〜7個）"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:497
+#, elixir-autogen, elixir-format
+msgid "Wrong option %{num}"
+msgstr "間違った選択肢 %{num}"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:116
+#, elixir-autogen, elixir-format
+msgid "Your answer:"
+msgstr "あなたの答え："
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:53
+#, elixir-autogen, elixir-format
+msgid "Your sentence:"
+msgstr "あなたの文："

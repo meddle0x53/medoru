@@ -6657,3 +6657,658 @@ msgstr "Можете да редактирате само собствените
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only delete your own tests."
 msgstr "Можете да редактирате само собствените си уроци."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:576
+#, elixir-autogen, elixir-format
+msgid "Add at least 1 grammar step before publishing."
+msgstr "Добавете поне 1 граматична стъпка преди публикуване."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:89
+#, elixir-autogen, elixir-format
+msgid "Add elements below"
+msgstr "Добавете елементи по-долу"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:475
+#, elixir-autogen, elixir-format
+msgid "Add incorrect conjugations as distractors. The correct answer is already set."
+msgstr "Добавете неправилни спрежения като отклоняващи фактори. Правилният отговор вече е зададен."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:247
+#, elixir-autogen, elixir-format
+msgid "Add pattern elements below"
+msgstr "Добавете елементи към шаблона по-долу"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:121
+#, elixir-autogen, elixir-format
+msgid "Add Text"
+msgstr "Добави текст"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:113
+#, elixir-autogen, elixir-format
+msgid "Add Word Class"
+msgstr "Добави клас думи"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:698
+#, elixir-autogen, elixir-format
+msgid "Adjective (形容詞)"
+msgstr "Прилагателно (形容詞)"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:36
+#, elixir-autogen, elixir-format
+msgid "Admin - Grammar Forms"
+msgstr "Админ - Граматични форми"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:504
+#, elixir-autogen, elixir-format
+msgid "All examples must have sentence, reading, and meaning."
+msgstr "Всички примери трябва да имат изречение, четене и значение."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "All Types"
+msgstr "Всички типове"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:724
+#, elixir-autogen, elixir-format
+msgid "Any form"
+msgstr "Всяка форма"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:556
+#, elixir-autogen, elixir-format
+msgid "Arrange the words to form a correct sentence:"
+msgstr "Подредете думите, за да образувате правилно изречение:"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:183
+#, elixir-autogen, elixir-format
+msgid "Auto-generate question and answer"
+msgstr "Автоматично генериране на въпрос и отговор"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:230
+#, elixir-autogen, elixir-format
+msgid "Available words:"
+msgstr "Налични думи:"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Back to Grammar Forms"
+msgstr "Назад към граматичните форми"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:349
+#, elixir-autogen, elixir-format
+msgid "Base Word"
+msgstr "Основна дума"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:652
+#, elixir-autogen, elixir-format
+msgid "Build a sentence following this pattern:"
+msgstr "Постройте изречение, следвайки този шаблон:"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:24
+#, elixir-autogen, elixir-format
+msgid "Build a sentence that follows this pattern:"
+msgstr "Постройте изречение, което следва този шаблон:"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:81
+#, elixir-autogen, elixir-format
+msgid "Build the grammar pattern students should follow."
+msgstr "Постройте граматичния шаблон, който учениците трябва да следват."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:259
+#, elixir-autogen, elixir-format
+msgid "Change"
+msgstr "Промени"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:73
+#, elixir-autogen, elixir-format
+msgid "Class"
+msgstr "Клас"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:630
+#, elixir-autogen, elixir-format
+msgid "Class: %{name}"
+msgstr "Клас: %{name}"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Clear Filters"
+msgstr "Изчисти филтрите"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:252
+#, elixir-autogen, elixir-format
+msgid "(Click words above to build sentence)"
+msgstr "(Кликнете върху думите по-горе, за да построите изречение)"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:224
+#, elixir-autogen, elixir-format
+msgid "Click words to add them. Click on selected words to remove them."
+msgstr "Кликнете върху думите, за да ги добавите. Кликнете върху избраните думи, за да ги премахнете."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:128
+#, elixir-autogen, elixir-format
+msgid "Configure Elements"
+msgstr "Конфигурирай елементите"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:101
+#, elixir-autogen, elixir-format
+msgid "Conjugate this word:"
+msgstr "Спрегнете тази дума:"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:480
+#, elixir-autogen, elixir-format
+msgid "Correct:"
+msgstr "Правилно:"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:326
+#, elixir-autogen, elixir-format
+msgid "Correct Answer (Auto-generated)"
+msgstr "Правилен отговор (Автоматично генериран)"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:579
+#, elixir-autogen, elixir-format
+msgid "Correct Sentence"
+msgstr "Правилно изречение"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:534
+#, elixir-autogen, elixir-format
+msgid "%{count} wrong options added (need 3-7)"
+msgstr "%{count} грешни опции добавени (нужни са 3-7)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:8
+#, elixir-autogen, elixir-format
+msgid "Create and manage grammar pattern lessons"
+msgstr "Създайте и управлявайте уроци по граматични шаблони"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:29
+#, elixir-autogen, elixir-format
+msgid "Create Grammar Lesson"
+msgstr "Създай граматичен урок"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:26
+#, elixir-autogen, elixir-format
+msgid "Create your first grammar lesson to help students learn Japanese patterns"
+msgstr "Създайте първия си граматичен урок, за да помогнете на учениците да научат японски шаблони"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this grammar form?"
+msgstr "Изтрий тази граматична форма?"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this lesson?"
+msgstr "Изтрий този урок?"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Delete this step?"
+msgstr "Изтрий тази стъпка?"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Describe what students will learn..."
+msgstr "Опишете какво ще научат учениците..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:68
+#, elixir-autogen, elixir-format
+msgid "Difficulty"
+msgstr "Трудност"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:94
+#, elixir-autogen, elixir-format
+msgid "Edit Grammar Form"
+msgstr "Редактиране на граматична форма"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:131
+#, elixir-autogen, elixir-format
+msgid "Edit Grammar Lesson"
+msgstr "Редактиране на граматичен урок"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:556
+#, elixir-autogen, elixir-format
+msgid "e.g., Arrange the words to form a correct sentence"
+msgstr "напр., Подредете думите, за да образувате правилно изречение"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "e.g., Before/After Patterns"
+msgstr "напр., Преди/След шаблони"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:72
+#, elixir-autogen, elixir-format
+msgid "e.g., Write a sentence about your weekend plans"
+msgstr "напр., Напишете изречение за плановете за уикенда"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:660
+#, elixir-autogen, elixir-format
+msgid "Element %{idx}:"
+msgstr "Елемент %{idx}:"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "English meaning (e.g., 'won't come')"
+msgstr "Английско значение (напр., 'няма да дойде')"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Example in target form (e.g., 来ない)"
+msgstr "Пример в целевата форма (напр., 来ない)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:458
+#, elixir-autogen, elixir-format
+msgid "Example is valid!"
+msgstr "Примерът е валиден!"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "examples"
+msgstr "примери"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:283
+#, elixir-autogen, elixir-format
+msgid "Examples"
+msgstr "Примери"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:473
+#, elixir-autogen, elixir-format
+msgid "Examples:"
+msgstr "Примери:"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Examples (Max 5)"
+msgstr "Примери (Макс 5)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Examples (one per line)"
+msgstr "Примери (по един на ред)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Explain how this grammar pattern works..."
+msgstr "Обяснете как работи този граматичен шаблон..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Explain when and how this form is used..."
+msgstr "Обяснете кога и как се използва тази форма..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:433
+#, elixir-autogen, elixir-format
+msgid "Explanation"
+msgstr "Обяснение"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:707
+#, elixir-autogen, elixir-format
+msgid "Expression (表現)"
+msgstr "Израз (表現)"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:69
+#, elixir-autogen, elixir-format
+msgid "Failed to delete grammar form. It may be in use."
+msgstr "Неуспешно изтриване на граматичната форма. Възможно е да се използва."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:548
+#, elixir-autogen, elixir-format
+msgid "Failed to save step: %{errors}"
+msgstr "Неуспешно запазване на стъпката: %{errors}"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Form"
+msgstr "Форма"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:316
+#, elixir-autogen, elixir-format
+msgid "Generated Question"
+msgstr "Генериран въпрос"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:85
+#, elixir-autogen, elixir-format
+msgid "Grammar form created successfully."
+msgstr "Граматичната форма е създадена успешно."
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:63
+#, elixir-autogen, elixir-format
+msgid "Grammar form deleted successfully."
+msgstr "Граматичната форма е изтрита успешно."
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Grammar Forms"
+msgstr "Граматични форми"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:72
+#, elixir-autogen, elixir-format
+msgid "Grammar form updated successfully."
+msgstr "Граматичната форма е актуализирана успешно."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:169
+#, elixir-autogen, elixir-format
+msgid "Grammar lesson created. Now add steps!"
+msgstr "Граматичният урок е създаден. Сега добавете стъпки!"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Grammar Pattern"
+msgstr "Граматичен шаблон"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:136
+#, elixir-autogen, elixir-format
+msgid "Grammar Steps"
+msgstr "Граматични стъпки"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:672
+#, elixir-autogen, elixir-format
+msgid "Hint:"
+msgstr "Подсказка:"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:70
+#, elixir-autogen, elixir-format
+msgid "Incorrect. Attempt %{current}/4. Points: %{points}"
+msgstr "Неправилно. Опит %{current}/4. Точки: %{points}"
+
+#: lib/medoru_web/live/classroom_live/test.ex:575
+#, elixir-autogen, elixir-format
+msgid "Incorrect. Try again! (%{current}/4 attempts)"
+msgstr "Неправилно. Опитайте отново! (%{current}/4 опита)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:32
+#, elixir-autogen, elixir-format
+msgid "Lesson Info"
+msgstr "Информация за урока"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:597
+#, elixir-autogen, elixir-format
+msgid "Lesson published successfully!"
+msgstr "Урокът е публикуван успешно!"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "Manage verb and adjective conjugation forms"
+msgstr "Управление на форми за спрежение на глаголи и прилагателни"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index.ex:51
+#, elixir-autogen, elixir-format
+msgid "My Grammar Lessons"
+msgstr "Моите граматични уроци"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Name (system identifier)"
+msgstr "Име (системен идентификатор)"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "New Form"
+msgstr "Нова форма"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:93
+#, elixir-autogen, elixir-format
+msgid "New Grammar Form"
+msgstr "Нова граматична форма"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:110
+#, elixir-autogen, elixir-format
+msgid "New Grammar Lesson"
+msgstr "Нов граматичен урок"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:412
+#, elixir-autogen, elixir-format
+msgid "New Step"
+msgstr "Нова стъпка"
+
+#: lib/medoru_web/live/admin/grammar_form_live/index.ex:?
+#, elixir-autogen, elixir-format
+msgid "No grammar forms found"
+msgstr "Няма намерени граматични форми"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:23
+#, elixir-autogen, elixir-format
+msgid "No grammar lessons yet"
+msgstr "Все още няма граматични уроци"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "No steps yet. Add your first grammar step!"
+msgstr "Все още няма стъпки. Добавете първата си граматична стъпка!"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:701
+#, elixir-autogen, elixir-format
+msgid "Noun (名詞)"
+msgstr "Съществително (名詞)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:704
+#, elixir-autogen, elixir-format
+msgid "Particle (助詞)"
+msgstr "Частица (助詞)"
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:423
+#, elixir-autogen, elixir-format
+msgid "Pattern:"
+msgstr "Шаблон:"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:453
+#, elixir-autogen, elixir-format
+msgid "Please enter a Japanese sentence/word before validating."
+msgstr "Моля, въведете японско изречение/дума преди валидация."
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:136
+#, elixir-autogen, elixir-format
+msgid "Please enter an answer"
+msgstr "Моля, въведете отговор"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Reading (e.g., こない)"
+msgstr "Четене (напр., こない)"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:675
+#, elixir-autogen, elixir-format
+msgid "Remove"
+msgstr "Премахни"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:567
+#, elixir-autogen, elixir-format
+msgid "Required Form"
+msgstr "Изисквана форма"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:112
+#, elixir-autogen, elixir-format
+msgid "Save Lesson"
+msgstr "Запази урока"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:323
+#, elixir-autogen, elixir-format
+msgid "Save Step"
+msgstr "Запази стъпката"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:197
+#, elixir-autogen, elixir-format
+msgid "Save the lesson first before adding steps."
+msgstr "Запазете урока първо, преди да добавяте стъпки."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Select..."
+msgstr "Избери..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:766
+#, elixir-autogen, elixir-format
+msgid "Select a class..."
+msgstr "Избери клас..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:52
+#, elixir-autogen, elixir-format
+msgid "Select a grammar step type"
+msgstr "Избери тип граматична стъпка"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Select a word class..."
+msgstr "Избери клас думи..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:238
+#, elixir-autogen, elixir-format
+msgid "Select Base Word"
+msgstr "Избери основна дума"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:253
+#, elixir-autogen, elixir-format
+msgid "Selected:"
+msgstr "Избрано:"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Select particle..."
+msgstr "Избери частица..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:299
+#, elixir-autogen, elixir-format
+msgid "Select target form..."
+msgstr "Избери целева форма..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:157
+#, elixir-autogen, elixir-format
+msgid "Select the correct conjugation:"
+msgstr "Избери правилното спрежение:"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:223
+#, elixir-autogen, elixir-format
+msgid "Select type..."
+msgstr "Избери тип..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:150
+#, elixir-autogen, elixir-format
+msgid "Show grammar pattern to students"
+msgstr "Покажи граматичния шаблон на учениците"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:131
+#, elixir-autogen, elixir-format
+msgid "Single attempt only. 3 points for correct answer."
+msgstr "Само един опит. 3 точки за правилен отговор."
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:416
+#, elixir-autogen, elixir-format
+msgid "Step"
+msgstr "Стъпка"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:534
+#, elixir-autogen, elixir-format
+msgid "Step saved successfully."
+msgstr "Стъпката е запазена успешно."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:421
+#, elixir-autogen, elixir-format
+msgid "Step Title"
+msgstr "Заглавие на стъпката"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "Suffix Pattern"
+msgstr "Шаблон за наставка"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:290
+#, elixir-autogen, elixir-format
+msgid "Target Form"
+msgstr "Целева форма"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:121
+#, elixir-autogen, elixir-format
+msgid "+ Text"
+msgstr "+ Текст"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:612
+#, elixir-autogen, elixir-format
+msgid "Text"
+msgstr "Текст"
+
+#: lib/medoru_web/live/admin/grammar_form_live/form.ex:?
+#, elixir-autogen, elixir-format
+msgid "The ending pattern that identifies this form"
+msgstr "Крайният шаблон, който идентифицира тази форма"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:521
+#, elixir-autogen, elixir-format
+msgid "Type a wrong answer..."
+msgstr "Въведи грешен отговор..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:123
+#, elixir-autogen, elixir-format
+msgid "Type the conjugated form..."
+msgstr "Въведи спрегнатата форма..."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:247
+#, elixir-autogen, elixir-format
+msgid "Type to search for words..."
+msgstr "Въведи за търсене на думи..."
+
+#: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:681
+#, elixir-autogen, elixir-format
+msgid "Type your answer in Japanese..."
+msgstr "Въведи отговора си на японски..."
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:60
+#, elixir-autogen, elixir-format
+msgid "Type your sentence here..."
+msgstr "Въведи изречението си тук..."
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:342
+#, elixir-autogen, elixir-format
+msgid "Untitled Step"
+msgstr "Стъпка без заглавие"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:?
+#, elixir-autogen, elixir-format
+msgid "Updates after 5 seconds of not typing"
+msgstr "Актуализира се след 5 секунди без писане"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:695
+#, elixir-autogen, elixir-format
+msgid "Verb (動詞)"
+msgstr "Глагол (動詞)"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:261
+#, elixir-autogen, elixir-format
+msgid "+ Word Class"
+msgstr "+ Клас думи"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:599
+#, elixir-autogen, elixir-format
+msgid "Word Class"
+msgstr "Клас думи"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:548
+#, elixir-autogen, elixir-format
+msgid "Words (enter in correct order)"
+msgstr "Думи (въведи в правилен ред)"
+
+#: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:252
+#, elixir-autogen, elixir-format
+msgid "+ Word Slot"
+msgstr "+ Слот за дума"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:566
+#, elixir-autogen, elixir-format
+msgid "Words will be shuffled for students. Enter one word per line."
+msgstr "Думите ще бъдат разбъркани за учениците. Въведи по една дума на ред."
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:472
+#, elixir-autogen, elixir-format
+msgid "Wrong Answer Options (3-7 options)"
+msgstr "Опции за грешен отговор (3-7 опции)"
+
+#: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:497
+#, elixir-autogen, elixir-format
+msgid "Wrong option %{num}"
+msgstr "Грешна опция %{num}"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:116
+#, elixir-autogen, elixir-format
+msgid "Your answer:"
+msgstr "Твоят отговор:"
+
+#: lib/medoru_web/live/classroom_live/grammar_components.ex:53
+#, elixir-autogen, elixir-format
+msgid "Your sentence:"
+msgstr "Твоето изречение:"
