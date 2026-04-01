@@ -4,19 +4,36 @@ This document outlines the long-term development plan for Medoru.
 
 ---
 
-## Version 0.1.2 - Small Improvements
+## Version 0.1.4 - Grammar Lessons ✅ COMPLETE
 
-**Status**: 📝 Planning  
+**Status**: ✅ COMPLETE | **Completed**: 2026-03-31  
+**Log**: [ITERATION-GRAMMAR-STUDENT-TAKING.md](./ITERATION-GRAMMAR-STUDENT-TAKING.md)
+
+**Goal:** Grammar lesson system with pattern validation and alternative forms
+
+**Features:**
+- ✅ Grammar lesson creation by teachers
+- ✅ Pattern builder with word types and forms
+- ✅ Sentence validation against grammar patterns
+- ✅ Alternative forms support (contracted Japanese forms like 来ない→来な)
+- ✅ ETS caching for 50x validation performance improvement
+- ✅ Admin progress reset feature
+
+---
+
+## Version 0.1.2 - Small Improvements ✅ COMPLETE
+
+**Status**: ✅ COMPLETE | **Completed**: 2026-03-20  
 **Plan**: [PLAN-v0.1.2.md](./PLAN-v0.1.2.md)
 
 **Goal:** Bug fixes and small UX improvements
 
 **Features:**
-- Daily test step type preferences (user-configurable)
-- Fix daily tests showing unlearned words
-- Public access to kanji/words for anonymous users
-- Language switching for non-logged-in users
-- Word picture uploads (admin)
+- ✅ Daily test step type preferences (user-configurable)
+- ✅ Fix daily tests showing unlearned words
+- ✅ Public access to kanji/words for anonymous users
+- ✅ Language switching for non-logged-in users
+- ✅ Word picture uploads (admin)
 
 ---
 
@@ -69,7 +86,7 @@ This document outlines the long-term development plan for Medoru.
 
 ---
 
-## Version 0.2.0 - Social Features & Games ⬅️ CURRENT PLAN
+## Version 0.2.0 - Social & Games ⬅️ CURRENT
 
 **Status**: 📝 Planning  
 **Plan**: [PLAN-v0.2.0.md](./PLAN-v0.2.0.md)

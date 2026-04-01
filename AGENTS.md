@@ -1,24 +1,152 @@
 # AGENTS.md - Medoru Japanese Learning Platform
 
+## Current State
+
+**Version**: 0.1.4 ✅ COMPLETE  
+**Status**: Bug fixing period - Grammar validation stable  
+**Tests**: 630 passing (some flaky due to async DB locks)  
+**URL**: https://medoru.net
+
+### What's Complete (v0.1.4)
+- Grammar lesson system with pattern builder
+- Sentence validation against grammar patterns
+- Alternative forms for contracted Japanese (ない→な)
+- ETS caching for 50x validation performance
+- Admin progress reset feature
+
+### What's Complete (v0.1.2)
+- Daily test step type preferences
+- Fix for unlearned words appearing in daily tests
+- Public kanji/words access for anonymous users
+- Anonymous language switching
+- Word picture uploads (admin)
+
+### What's Next (v0.2.0)
+See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
+
+**Epics:**
+1. Real-time infrastructure (PubSub, Presence, Channels)
+2. Game engine architecture (plugin-based)
+3. Memory Cards game (first game type)
+4. Real-time classroom chat
+5. User tags & following system
+6. User level system with XP
+7. Badge system fixes
+
+---
+
 ## Project Overview
+
 **Medoru** is a social Japanese learning platform built with Phoenix LiveView.
 
-**Core Features (V1):**
+**Core Features:**
 - OAuth authentication (Google)
 - Kanji database (N1-N5) with stroke data
 - Word database cross-referenced to kanji and specific readings
-- Lesson system (1-3 kanji per lesson)
-- Multiple-choice testing (meaning/reading/kanji)
-- Daily review tests with streak tracking
-- Real-time learning duels between users
-- Rankings and duel history
+- Lesson system (vocabulary + grammar)
+- Multiple test types (multichoice, fill-in, kanji writing, text input)
+- Daily review tests with SRS scheduling
+- Classroom system (teachers, students, tests)
+- Real-time learning games
+- Rankings and leaderboards
 
 **Tech Stack:**
 - Elixir 1.17+, Phoenix 1.8+, LiveView 1.0+
 - PostgreSQL with JSONB for flexible kanji data
 - Google OAuth via Ueberauth
 - Tailwind CSS for UI
-- Canvas API for future stroke drawing
+- ETS caching for grammar validation
+
+---
+
+## Version History
+
+### v0.1.4 - Grammar Lessons (2026-03-31)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- Grammar lesson creation by teachers with pattern builder
+- Sentence validation against grammar patterns
+- Alternative forms support for contracted Japanese (e.g., 来ない→来な)
+- Admin progress reset ("Danger Zone" in user edit)
+- ETS caching for 50x validation performance improvement
+
+**Key Technical Changes:**
+- Migration: Added `alternative_forms` array to `word_conjugations` with GIN index
+- Schema: Updated `WordConjugation` with `alternative_forms` field
+- Cache: `ValidatorCache` preloads alternatives as lookup keys
+- Validator: `Grammar.Validator` checks main and alternative forms
+- Conjugations: 66,396 verb conjugations updated with alternative forms
+
+**Log**: [ITERATION-GRAMMAR-STUDENT-TAKING.md](.agents/logs/ITERATION-GRAMMAR-STUDENT-TAKING.md)
+
+### v0.1.2 - Small Improvements (2026-03-20)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- Daily test step type preferences (user-configurable)
+- Fix for unlearned words appearing in daily tests
+- Public kanji/words access for anonymous users
+- Anonymous language switching (header selector)
+- Word picture uploads (1-3 images per word)
+
+**Log**: [PLAN-v0.1.2.md](.agents/logs/PLAN-v0.1.2.md)
+
+### v0.1.0 - MVP (2026-03-18)
+**Status**: ✅ RELEASED  
+**Live**: https://medoru.net
+
+**Iterations 1-7 (Core MVP):**
+- OAuth & Accounts
+- Kanji & Readings (N5-N1)
+- Words with Reading Links
+- Lessons (300 topic-based)
+- Learning Core (progress, streaks)
+- Daily Reviews & SRS
+- Polish & Integration
+
+**Iterations 8-21 (Extended MVP):**
+- User types (student/teacher/admin)
+- Enhanced Profiles
+- Badge System
+- Logging Infrastructure
+- Multi-Step Test System
+- Auto-Generated Daily Tests
+- Vocabulary Lesson System
+- Kanji Writing Tests
+- Reading Text Input
+- Classroom Core
+- Classroom Membership
+- Classroom Tests & Rankings
+- Teacher Test Creation
+- Admin Dashboard
+- i18n (Bulgarian/Japanese)
+- UI Polish & Mobile
+- Deployment & Production
+
+---
+
+## Recent Changes
+
+### 2026-03-31 - Grammar v0.1.4 Complete
+- Grammar lesson system with pattern validation
+- Alternative forms for contracted Japanese (ない→な)
+- 66,396 verb conjugations updated
+- Admin progress reset feature
+- 50x performance improvement with ETS caching
+
+### 2026-03-26 - Grammar Validator Performance Optimization
+- Implemented ETS-based caching for Grammar Validator
+- Reduced validation time from 2500ms+ to ~50ms per sentence
+- Cache key structure: `{:conjugation, text, word_type, allowed_forms, field_type}`
+- Lazy loading per word type
+
+### 2026-03-20 - v0.1.2 Complete
+- Daily test preferences
+- Public access fixes
+- Word picture uploads
+
+---
 
 ## Domain Architecture (Contexts)
 
@@ -44,6 +172,9 @@
 - `Word` - Word text, meaning, difficulty, associated kanji
 - `WordKanji` - Join table linking words to specific kanji AND specific readings
 - `Lesson` - Title, description, ordered kanji list, difficulty
+- `GrammarLesson` - Grammar patterns for validation
+- `GrammarPattern` - Individual grammar patterns
+- `WordConjugation` - Verb conjugations with alternative forms
 
 **Key Functions:**
 - `list_kanji_by_level/1` - Filter by N1-N5
@@ -65,6 +196,7 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - `kanji_readings` table stores each reading separately (e.g., "日" has 4 readings: ニチ, ジツ, ひ, か)
 - `word_kanjis` table references BOTH the kanji AND the specific reading used
 - This allows words to correctly link to which reading they use (e.g., "日本" uses ニチ not ジツ)
+- `word_conjugations.alternative_forms` handles contracted forms (e.g., 来ない→来な)
 
 ### 3. Learning Context (`lib/medoru/learning/`)
 **Responsibility:** User progress, lessons, daily reviews, SRS scheduling
@@ -105,6 +237,8 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - `:fill` - Fill in the blank (2 points)
 - `:match` - Matching pairs (2 points)
 - `:order` - Put in correct order (2 points)
+- `:reading_text` - Text input (2 points)
+- `:writing` - Kanji drawing (5 points)
 
 **Key Functions:**
 - `create_test/1`, `publish_test/1` - Test management
@@ -120,31 +254,21 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - -10% per hint used
 - Minimum 10% of base points if correct
 
-### 5. Duels Context (`lib/medoru/duels/`)
-**Responsibility:** Real-time duels, matchmaking, rankings
+### 5. Classroom Context (`lib/medoru/classrooms/`)
+**Responsibility:** Classroom management, memberships, tests
 
 **Key Schemas:**
-- `Duel` - Challenger, opponent, status, start/end time, duration
-- `DuelQuestion` - Questions generated for this duel
-- `DuelAnswer` - Each player's answer with timing
-- `DuelResult` - Final scores, winner, XP gained
-- `Ranking` - ELO or point-based ranking system
+- `Classroom` - Name, slug, invite code, teacher
+- `ClassroomMembership` - Student applications, status workflow
+- `ClassroomTest` - Tests published to classrooms
+- `ClassroomTestAttempt` - Student test attempts with points
 
 **Key Functions:**
-- `create_duel_invite/2` - Send duel request
-- `accept_duel/2` - Start duel, generate questions
-- `submit_duel_answer/3` - Real-time answer submission
-- `finish_duel/1` - Calculate winner, update rankings
-- `get_rankings/1` - Leaderboard
-
-**Duel Logic:**
-1. Find common learned words between both users
-2. If none, use lowest level words from less advanced user
-3. Generate N questions (configurable, default 20)
-4. Both players see same questions simultaneously
-5. 5-minute timer (configurable)
-6. Scoring: +10 correct, -5 wrong, +5 speed bonus (if < 5s)
-7. Winner: highest score, tie-breaker: fastest average time
+- `create_classroom/1` - Create with auto-generated slug and invite code
+- `join_classroom/2` - Student application workflow
+- `approve_membership/2`, `reject_membership/2` - Teacher moderation
+- `publish_test_to_classroom/2` - Make test available to students
+- `record_test_attempt/3` - Track completion and points
 
 ### 6. Gamification Context (`lib/medoru/gamification/`)
 **Responsibility:** Scores, achievements, leaderboards
@@ -154,6 +278,21 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - `Achievement` - Unlockable achievements
 - `UserAchievement` - Join table with unlock date
 - `LeaderboardEntry` - Cached rankings
+
+### 7. Grammar Context (`lib/medoru/grammar/`)
+**Responsibility:** Grammar validation and pattern matching
+
+**Key Modules:**
+- `Grammar.Validator` - Validates sentences against patterns
+- `Grammar.ValidatorCache` - ETS cache for O(1) lookups
+- `Grammar.Pattern` - Pattern component representation
+
+**Key Features:**
+- Pattern validation with word type matching
+- Alternative forms support (contracted Japanese)
+- ETS caching for performance (50x improvement)
+
+---
 
 ## Critical Business Rules
 
@@ -177,53 +316,7 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - **Word Readings:** Must reference valid kanji_reading records
 - **Progress Tracking:** Immutable history, no deletion of test records
 
-## Database Schema Priorities
-
-## Phase 1 (MVP) - Extended Iterations
-
-### ✅ COMPLETED (Iterations 1-12)
-| # | Feature | Status |
-|---|---------|--------|
-| 1 | Users + OAuth | ✅ |
-| 2 | Kanji + KanjiReadings (N5-N1) | ✅ |
-| 3 | Words + WordKanjis | ✅ |
-| 4 | Lessons (basic) | ✅ |
-| 5 | UserProgress + DailyStreak | ✅ |
-| 6 | Daily Reviews (basic) | ✅ |
-| 7 | Polish & Integration | ✅ |
-| 8 | User Types (student/teacher/admin) | ✅ |
-| 9 | Enhanced Profiles | ✅ |
-| 10 | Badge System | ✅ |
-| 11 | Logging Infrastructure | ✅ |
-| 12 | Kanji Stroke Animation | ✅ |
-| 14 | Multi-Step Test System | ✅ |
-| 17 | Vocabulary Lesson System | ✅ |
-
-### ⏳ PENDING (Iterations 13-21) - See `.agents/logs/PENDING.md`
-| # | Feature | Priority |
-|---|---------|----------|
-| 14 | Multi-Step Test System | 🔴 HIGH |
-| 16 | Auto-Generated Daily Tests | 🔴 HIGH |
-| 17 | Vocabulary Lesson System | 🟡 MEDIUM |
-| 13 | Admin Badge Management | 🟡 MEDIUM |
-| 15 | Teacher Test Creation | 🟢 LOWER |
-| 18 | Classroom Core | 🟢 LOWER |
-| 19 | Classroom Membership | 🟢 LOWER |
-| 20 | Classroom Tests & Rankings | 🟢 LOWER |
-| 21 | Admin Dashboard | 🟢 LOWER |
-
-## Phase 2 (Social) - v0.2.0
-- Friends system
-- Real-time 1v1 duels
-- Global and friend leaderboards
-- Duel history and statistics
-
-## Phase 3 (Advanced) - v0.3.0
-- Grammar lessons and tests
-- Listening exercises (audio)
-- Writing tests (stroke recognition)
-- N4-N1 vocabulary expansion
-- Mobile app
+---
 
 ## Phoenix Conventions (Strict)
 
@@ -244,13 +337,18 @@ lib/medoru_web/live/
 │   ├── index.ex               # Lesson list
 │   ├── show.ex                # Individual lesson
 │   └── test.ex                # Lesson test mode
-├── duel_live/
-│   ├── lobby.ex               # Find opponents
-│   ├── match.ex               # Active duel
-│   └── results.ex             # Post-duel screen
-└── user_live/
-    ├── profile.ex
-    └── settings.ex
+├── classroom_live/
+│   ├── index.ex               # Student classrooms
+│   ├── show.ex                # Classroom detail
+│   └── test.ex                # Taking tests
+├── teacher/
+│   ├── classroom_live/        # Teacher management
+│   └── test_live/             # Test creation
+└── admin/
+    ├── user_live.ex           # User management
+    ├── kanji_live.ex          # Kanji management
+    ├── word_live.ex           # Word management
+    └── lesson_live.ex         # Lesson management
 ```
 
 ### Testing Requirements
@@ -258,6 +356,8 @@ lib/medoru_web/live/
 - **Integration:** LiveView tests with `PhoenixTest`
 - **Factories:** ExMachina for User, Kanji, Word generation
 - **Coverage:** 80%+ for contexts, 60%+ for LiveView
+
+---
 
 ## Japanese Data Handling
 
@@ -306,11 +406,24 @@ lib/medoru_web/live/
 }
 ```
 
+### Word Conjugations with Alternative Forms
+```elixir
+%WordConjugation{
+  word_id: 1,
+  grammar_form_id: 1,
+  conjugated_form: "来ない",      # Full nai-form
+  alternative_forms: ["来な"],     # Contracted form for combining
+  reading: "こない"
+}
+```
+
 ### Word Reading Logic
 Words store full reading in hiragana, but derive from specific kanji_reading records:
 - "日本" -> reading "にほん" (from 日=ニチ + 本=ホン)
 - System validates that word references valid kanji_reading IDs
 - This ensures the reading shown matches the actual kanji readings used
+
+---
 
 ## Development Workflow
 
@@ -335,6 +448,8 @@ mix credo --strict
 mix dialyzer
 mix test
 ```
+
+---
 
 ## Kimi-Specific Instructions
 
@@ -361,6 +476,8 @@ mix test
 - Use `execute/1` for complex SQL with safety checks
 - Never modify existing migrations that are deployed
 
+---
+
 ## File Locations Quick Reference
 
 | Type | Path |
@@ -372,41 +489,17 @@ mix test
 | Seeds | `priv/repo/seeds/` |
 | Static assets | `priv/static/` |
 | Config | `config/runtime.exs` (env vars) |
+| Logs | `.agents/logs/` |
+| Skills | `.agents/skills/` |
 
-## Additional Projects Context
+---
 
-This AGENTS.md covers the main Medoru platform. For related tools:
-
-### Python Spider (Data Collection)
-- Separate project, but follow same data schema
-- Output JSON matching Kanji/KanjiReading/Word structure
-- Store raw scraped data in `data/raw/` before processing
-
-### Rust/Python Document Parser
-- Input: PDFs, text files with Japanese content
-- Output: Structured exercises in JSON
-- Must validate against Medoru content schema
-
-When working on these tools, reference this AGENTS.md for data structure requirements.
-
-## Boundaries
-
-- ✅ **Always:** Run full test suite before claiming complete
-- ✅ **Always:** Use changesets for data validation
-- ✅ **Always:** Add indexes on foreign keys and frequently queried fields
-- ✅ **Always:** Ensure word_kanjis references valid kanji_reading records
-- ⚠️ **Ask first:** New dependencies, OAuth provider changes, database schema changes affecting existing data
-- 🚫 **Never:** Store OAuth secrets in code, modify user progress history directly, skip database transactions for multi-step operations
-- 🚫 **Never:** Allow orphaned kanji_readings or word_kanjis without proper references
-
-
-
-## Project guidelines
+## Project Guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
-### Phoenix v1.8 guidelines
+### Phoenix v1.8 Guidelines
 
 - **Always** begin your LiveView templates with `<Layouts.app flash={@flash} ...>` which wraps all inner content
 - The `MyAppWeb.Layouts` module is aliased in the `my_app_web.ex` file, so you can use it without needing to alias it again
@@ -416,10 +509,9 @@ When working on these tools, reference this AGENTS.md for data structure require
 - Phoenix v1.8 moved the `<.flash_group>` component to the `Layouts` module. You are **forbidden** from calling `<.flash_group>` outside of the `layouts.ex` module
 - Out of the box, `core_components.ex` imports an `<.icon name="hero-x-mark" class="w-5 h-5"/>` component for hero icons. **Always** use the `<.icon>` component for icons, **never** use `Heroicons` modules or similar
 - **Always** use the imported `<.input>` component for form inputs from `core_components.ex` when available. `<.input>` is imported and using it will save steps and prevent errors
-- If you override the default input classes (`<.input class="myclass px-2 py-1 rounded-lg">)`) class with your own values, no default classes are inherited, so your
-custom classes must fully style the input
+- If you override the default input classes (`<.input class="myclass px-2 py-1 rounded-lg">)`) class with your own values, no default classes are inherited, so your custom classes must fully style the input
 
-### JS and CSS guidelines
+### JS and CSS Guidelines
 
 - **Use Tailwind CSS classes and custom CSS rules** to create polished, responsive, and visually stunning interfaces.
 - Tailwindcss v4 **no longer needs a tailwind.config.js** and uses a new import syntax in `app.css`:
@@ -437,13 +529,48 @@ custom classes must fully style the input
   - You must import the vendor deps into app.js and app.css to use them
   - **Never write inline <script>custom js</script> tags within templates**
 
-### UI/UX & design guidelines
+### UI/UX & Design Guidelines
 
 - **Produce world-class UI designs** with a focus on usability, aesthetics, and modern design principles
 - Implement **subtle micro-interactions** (e.g., button hover effects, and smooth transitions)
 - Ensure **clean typography, spacing, and layout balance** for a refined, premium look
 - Focus on **delightful details** like hover effects, loading states, and smooth page transitions
 
+---
+
+## Boundaries
+
+- ✅ **Always:** Run full test suite before claiming complete
+- ✅ **Always:** Use changesets for data validation
+- ✅ **Always:** Add indexes on foreign keys and frequently queried fields
+- ✅ **Always:** Ensure word_kanjis references valid kanji_reading records
+- ⚠️ **Ask first:** New dependencies, OAuth provider changes, database schema changes affecting existing data
+- 🚫 **Never:** Store OAuth secrets in code, modify user progress history directly, skip database transactions for multi-step operations
+- 🚫 **Never:** Allow orphaned kanji_readings or word_kanjis without proper references
+
+---
+
+## Additional Resources
+
+### QA Testing with Playwright
+The project includes a comprehensive E2E testing suite in the `/qa` directory using Playwright.
+
+```bash
+bin/qa setup       # Setup QA environment
+bin/qa server      # Start QA server (port 4001)
+bin/qa test        # Run all tests
+bin/qa test:ui     # UI mode for debugging
+```
+
+See `qa/README.md` for full documentation.
+
+### Logs and Planning
+- **Current State**: See top of this file
+- **v0.2.0 Plan**: [.agents/logs/PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md)
+- **Iteration Logs**: [.agents/logs/ITERATION-*.md](.agents/logs/)
+- **Skills**: [.agents/skills/](.agents/skills/)
+
+---
 
 <!-- usage-rules-start -->
 <!-- usage-rules-header -->
