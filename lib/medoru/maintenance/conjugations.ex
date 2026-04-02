@@ -204,19 +204,21 @@ defmodule Medoru.Maintenance.Conjugations do
   defp generate_na_adjectives(forms) do
     IO.puts("\nProcessing な-adjectives...")
 
+    # Na-adjectives are all adjectives that don't end in い
+    # (includes words ending in だ, な, and loanwords like ハンサム)
     na_adjectives =
       Repo.all(
         from w in Word,
-          where: w.word_type == :adjective and (like(w.text, "%だ") or like(w.text, "%な"))
+          where: w.word_type == :adjective and not like(w.text, "%い")
       )
 
     adj_forms = Map.get(forms, "adjective", [])
     
     # Map database form names to conjugation functions
-    # Database has: dictionary-na, na-form, adverbial, te-form-adj, past-i, negative-na
+    # Database has: dictionary-na, na-form, adverbial, te-form-adj, te-form-na, past-i, negative-na
     na_adj_forms = 
       adj_forms
-      |> Enum.filter(&(&1.name in ["dictionary-na", "na-form", "adverbial", "te-form-adj", "past-i", "negative-na"]))
+      |> Enum.filter(&(&1.name in ["dictionary-na", "na-form", "adverbial", "te-form-adj", "te-form-na", "past-i", "negative-na"]))
 
     Enum.reduce(na_adjectives, {0, 0}, fn word, {count, errors} ->
       Enum.reduce(na_adj_forms, {count, errors}, fn form, {c, e} ->
@@ -668,28 +670,32 @@ defmodule Medoru.Maintenance.Conjugations do
 
   # な-adjective conjugation with full forms
   # Maps database form names to conjugations:
-  #   dictionary-na -> 静かだ (dictionary form)
-  #   na-form -> 静かな (attributive form)
-  #   adverbial -> 静かで (de-form, also used for te-form)
-  #   te-form-adj -> 静かで (te-form, same as adverbial for な-adjectives)
-  #   past-i -> 静かだった (past form)
-  #   negative-na -> 静かではない (negative form)
+  #   dictionary-na -> 静かだ / ハンサムだ (dictionary form)
+  #   na-form -> 静かな / ハンサムな (attributive form)
+  #   adverbial -> 静かで / ハンサムで (de-form, also used for te-form)
+  #   te-form-adj -> 静かで / ハンサムで (te-form - kept for compatibility)
+  #   te-form-na -> 静かで / ハンサムで (te-form for な-adjectives)
+  #   past-i -> 静かだった / ハンサムだった (past form)
+  #   negative-na -> 静かではない / ハンサムではない (negative form)
   #
   # Returns: {conjugated_form, reading} or nil
   defp conjugate_na_adjective_full(text, reading, form_name) do
+    # Remove trailing だ or な if present (for words like 静かだ, 元気な)
+    # For loanwords like ハンサム, use as-is
     base =
-      text
-      |> String.replace_suffix("だ", "")
-      |> String.replace_suffix("な", "")
+      cond do
+        String.ends_with?(text, "だ") -> String.replace_suffix(text, "だ", "")
+        String.ends_with?(text, "な") -> String.replace_suffix(text, "な", "")
+        true -> text
+      end
     
     # Get base reading (remove trailing だ/な if present)
     base_reading = 
-      if reading && reading != "" do
-        reading
-        |> String.replace_suffix("だ", "")
-        |> String.replace_suffix("な", "")
-      else
-        base
+      cond do
+        reading && String.ends_with?(reading, "だ") -> String.replace_suffix(reading, "だ", "")
+        reading && String.ends_with?(reading, "な") -> String.replace_suffix(reading, "な", "")
+        reading && reading != "" -> reading
+        true -> base
       end
 
     case form_name do
@@ -700,6 +706,8 @@ defmodule Medoru.Maintenance.Conjugations do
       "adverbial" -> 
         {base <> "で", base_reading <> "で"}
       "te-form-adj" -> 
+        {base <> "で", base_reading <> "で"}
+      "te-form-na" -> 
         {base <> "で", base_reading <> "で"}
       "past-i" -> 
         {base <> "だった", base_reading <> "だった"}
