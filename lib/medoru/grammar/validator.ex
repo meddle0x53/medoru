@@ -179,11 +179,17 @@ defmodule Medoru.Grammar.Validator do
       end
 
     # For particles, use exact matching (not "anywhere" search)
-    # For other word types, match at current position only (not anywhere)
+    # For nouns: try matching at start first (known or unknown)
+    # For other word types, match at current position or search anywhere
     result =
       cond do
         word_type == "particle" ->
           find_matching_particle(remaining, allowed_forms)
+
+        # For nouns: always try matching at start first
+        # This allows unknown names to be matched before falling back to anywhere search
+        word_type == "noun" ->
+          find_matching_word_at_start(remaining, word_type, allowed_forms, nil)
 
         # For optional slots, try matching at start first
         slot["optional"] ->
@@ -205,15 +211,45 @@ defmodule Medoru.Grammar.Validator do
               else
                 nil
               end
-
+            
             case object_marked_result do
               nil ->
-                if slot["optional"] do
-                  :optional_no_match
-                else
-                  expected = build_expected_message(word_type, allowed_forms, nil)
-                  got = String.slice(remaining, 0, min(5, String.length(remaining)))
-                  {:error, %{position: 0, expected: expected, got: got}}
+                # For nouns: accept unknown words as names (e.g., マリアさん)
+                # This allows patterns like [Noun][Particle-は]... to work with names
+                # that aren't in the dictionary
+                unknown_noun_result =
+                  if word_type == "noun" do
+                    extract_unknown_noun(remaining, next_element)
+                  else
+                    nil
+                  end
+
+                case unknown_noun_result do
+                  nil ->
+                    if slot["optional"] do
+                      :optional_no_match
+                    else
+                      expected = build_expected_message(word_type, allowed_forms, nil)
+                      got = String.slice(remaining, 0, min(5, String.length(remaining)))
+                      {:error, %{position: 0, expected: expected, got: got}}
+                    end
+
+                  {noun_text, new_remaining} ->
+                    # Only accept unknown nouns for non-optional slots
+                    # For optional slots, skip matching to allow other elements to match
+                    if slot["optional"] do
+                      :optional_no_match
+                    else
+                      # Accept unknown word as a noun (name)
+                      matched = %{
+                        text: noun_text,
+                        type: "noun",
+                        form: "unknown",
+                        word_id: nil
+                      }
+
+                      {:ok, matched, new_remaining}
+                    end
                 end
 
               {noun_text, verb_text, verb_info} ->
@@ -803,6 +839,99 @@ defmodule Medoru.Grammar.Validator do
       _ ->
         nil
     end
+  end
+
+  # Extracts an unknown noun from the start of remaining text.
+  # Used when no known noun is found in the database - treats unknown text as a name.
+  # 
+  # Strategy:
+  # 1. If next_element is a literal, take everything up to that literal
+  # 2. Otherwise, take characters until we hit a particle (は, が, を, etc.)
+  # 3. Must have at least 1 character to be considered a noun
+  #
+  # Returns: {noun_text, new_remaining} or nil
+  defp extract_unknown_noun(remaining, next_element) do
+    # Common particles that typically follow nouns
+    particles = ["は", "が", "を", "に", "で", "へ", "から", "まで", "と", "や", "の"]
+    
+    # Convert to graphemes for proper Unicode handling
+    chars = String.graphemes(remaining)
+    
+    # Find the boundary (grapheme position where we should stop)
+    boundary_idx = 
+      cond do
+        # If next element is a literal, find where it starts
+        is_map(next_element) && next_element["type"] == "literal" ->
+          literal = next_element["text"]
+          find_literal_position(chars, literal)
+          
+        # Otherwise, find the first particle
+        true ->
+          find_first_particle(chars, particles)
+      end
+    
+    # Extract the noun
+    noun_candidate = 
+      case boundary_idx do
+        nil -> 
+          # No boundary found - take chars until punctuation or particle
+          take_unknown_noun_chars(chars, particles)
+        0 -> 
+          # Boundary is at start - no noun here
+          nil
+        idx -> 
+          chars |> Enum.take(idx) |> Enum.join()
+      end
+    
+    case noun_candidate do
+      nil -> nil
+      "" -> nil
+      text -> 
+        new_remaining = String.slice(remaining, String.length(text)..-1//1) || ""
+        {text, new_remaining}
+    end
+  end
+  
+  # Find position of literal in char list (returns grapheme index)
+  defp find_literal_position(chars, literal) do
+    literal_chars = String.graphemes(literal)
+    len = length(literal_chars)
+    
+    Enum.find_index(0..(length(chars) - len)//1, fn i ->
+      Enum.slice(chars, i, len) == literal_chars
+    end)
+  end
+  
+  # Find first particle position (returns grapheme index)
+  defp find_first_particle(chars, particles) do
+    Enum.find_index(chars, fn char -> char in particles end)
+  end
+  
+  # Takes characters from start until hitting a particle or punctuation
+  defp take_unknown_noun_chars(chars, particles) do
+    result = 
+      Enum.reduce_while(chars, {[], 0}, fn char, {acc, count} ->
+        cond do
+          # Stop at punctuation
+          char in ["、", "。", "？", "！"] ->
+            {:halt, {acc, count}}
+            
+          # Stop at particles (only if we have at least 2 chars)
+          char in particles && count >= 2 ->
+            {:halt, {acc, count}}
+            
+          # Stop if we already have 10 characters
+          count >= 10 ->
+            {:halt, {acc, count}}
+            
+          # Otherwise add this character
+          true ->
+            {:cont, {[char | acc], count + 1}}
+        end
+      end)
+    
+    {acc, _} = result
+    acc |> Enum.reverse() |> Enum.join()
   end
 
   # Finds a noun at the end of the given text

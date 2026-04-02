@@ -511,4 +511,176 @@ defmodule Medoru.Grammar.ValidatorTest do
       end
     end
   end
+
+  describe "unknown noun handling (names)" do
+    setup do
+      # Create noun: 髪 (hair) - will be in DB
+      kami =
+        ContentFixtures.word_fixture(%{
+          text: "髪",
+          reading: "かみ",
+          word_type: :noun
+        })
+
+      # Create adjective: 長い (long) - will be in DB
+      nagai =
+        ContentFixtures.word_fixture(%{
+          text: "長い",
+          reading: "ながい",
+          word_type: :adjective
+        })
+
+      # Create grammar form for i-adjective dictionary form
+      {:ok, dictionary_i} =
+        Content.create_grammar_form(%{
+          name: "dictionary-i",
+          display_name: "辞書形（い形容詞）",
+          word_type: "adjective"
+        })
+
+      # Create conjugation for 長い in dictionary-i form
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: nagai.id,
+          grammar_form_id: dictionary_i.id,
+          conjugated_form: "長い",
+          reading: "ながい"
+        })
+
+      %{
+        kami: kami,
+        nagai: nagai,
+        dictionary_i: dictionary_i
+      }
+    end
+
+    test "validates sentence with unknown noun (name) at start: NはNがAdj pattern", %{
+      dictionary_i: _dictionary_i
+    } do
+      # Pattern: [Noun][Particle-は][Noun][Particle-が][Adjective in dictionary-i form]
+      # Particles use word_slot with word_type: "particle" and forms for allowed particles
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "noun"},
+        %{"type" => "word_slot", "word_type" => "particle", "forms" => ["は"]},
+        %{"type" => "word_slot", "word_type" => "noun"},
+        %{"type" => "word_slot", "word_type" => "particle", "forms" => ["が"]},
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => ["dictionary-i"]}
+      ]
+
+      # Example: マリアさんは髪が長いです。
+      # Note: マリアさん is NOT in the DB - should be accepted as unknown name/noun
+      sentence = "マリアさんは髪が長いです"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Verify breakdown structure
+      assert length(result.breakdown) == 5
+
+      # First element should be the unknown noun マリアさん
+      first_element = hd(result.breakdown)
+      assert first_element.text == "マリアさん"
+      assert first_element.type == "noun"
+      # Unknown nouns have nil word_id
+      assert first_element.word_id == nil
+
+      # Second element should be particle は
+      second_element = Enum.at(result.breakdown, 1)
+      assert second_element.text == "は"
+      assert second_element.type == "particle"
+
+      # Third element should be the known noun 髪
+      third_element = Enum.at(result.breakdown, 2)
+      assert third_element.text == "髪"
+      assert third_element.type == "noun"
+
+      # Fourth element should be particle が
+      fourth_element = Enum.at(result.breakdown, 3)
+      assert fourth_element.text == "が"
+      assert fourth_element.type == "particle"
+
+      # Fifth element should be the adjective 長い
+      fifth_element = Enum.at(result.breakdown, 4)
+      assert fifth_element.text == "長い"
+      assert fifth_element.type == "adjective"
+      assert fifth_element.form == "dictionary-i"
+    end
+
+    test "validates sentence with unknown noun using other particles (を, に)", %{
+      dictionary_i: _dictionary_i
+    } do
+      # Pattern: [Noun][Particle-を][Verb] - but using adjective slot for simplicity
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "noun"},
+        %{"type" => "word_slot", "word_type" => "particle", "forms" => ["を"]},
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => ["dictionary-i"]}
+      ]
+
+      # Example: 田中さんを長い (unnatural but tests particle を)
+      # Note: 田中さん is NOT in the DB
+      sentence = "田中さんを長い"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Verify the unknown noun was recognized
+      first_element = hd(result.breakdown)
+      assert first_element.text == "田中さん"
+      assert first_element.type == "noun"
+    end
+
+    test "validates sentence with unknown noun followed by が particle", %{
+      dictionary_i: _dictionary_i
+    } do
+      # Pattern: [Noun][Particle-が][Adjective]
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "noun"},
+        %{"type" => "word_slot", "word_type" => "particle", "forms" => ["が"]},
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => ["dictionary-i"]}
+      ]
+
+      # Example: 太郎が長い (unnatural but tests particle が)
+      sentence = "太郎が長い"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Verify the unknown noun was recognized
+      first_element = hd(result.breakdown)
+      assert first_element.text == "太郎"
+      assert first_element.type == "noun"
+    end
+
+    test "returns error when no particle follows unknown text", %{dictionary_i: _dictionary_i} do
+      # Pattern that expects a noun but the sentence has no particle after unknown text
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "noun"},
+        %{"type" => "word_slot", "word_type" => "particle", "forms" => ["は"]},
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => ["dictionary-i"]}
+      ]
+
+      # Sentence without particle after unknown noun - should fail
+      sentence = "マリアさん髪が長いです"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      # This should fail because マリアさん is not followed by は
+      assert result.valid == false
+    end
+  end
 end
