@@ -176,6 +176,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("update_description", %{"description" => description}, socket) do
+    lesson = socket.assigns.lesson
+
+    case Content.update_custom_lesson(lesson, %{description: description}) do
+      {:ok, updated_lesson} ->
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update description."))}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_requires_test", _params, socket) do
     lesson = socket.assigns.lesson
     new_value = !lesson.requires_test
@@ -625,6 +638,24 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                 </h3>
 
                 <div class="space-y-4">
+                  <%!-- Description --%>
+                  <div>
+                    <div class="font-medium text-sm mb-1">{gettext("Description")}</div>
+                    <form phx-submit="update_description" class="space-y-2">
+                      <textarea
+                        name="description"
+                        class="textarea textarea-bordered w-full textarea-sm"
+                        rows={3}
+                        placeholder={gettext("What will students learn in this lesson?")}
+                      ><%= @lesson.description %></textarea>
+                      <div class="flex justify-end">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                          {gettext("Save")}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
                   <%!-- Require Test --%>
                   <label class="flex items-start gap-3 cursor-pointer">
                     <input
