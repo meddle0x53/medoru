@@ -1,14 +1,24 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
   <div class="max-w-4xl mx-auto px-4 py-8">
     <%!-- Back Link --%>
-    <.link
-      navigate={~p"/words?difficulty=#{@word.difficulty}"}
-      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
-    >
-      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{level} Words",
-        level: @word.difficulty
-      )}
-    </.link>
+    <%= if @return_to do %>
+      <% return_path = build_return_path(@return_to, @step, @practice) %>
+      <.link
+        navigate={return_path}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lesson")}
+      </.link>
+    <% else %>
+      <.link
+        navigate={~p"/words?difficulty=#{@word.difficulty}"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{level} Words",
+          level: @word.difficulty
+        )}
+      </.link>
+    <% end %>
 
     <%!-- Main Word Card --%>
     <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
@@ -176,12 +186,22 @@
 
     <%!-- Navigation --%>
     <div class="mt-8">
-      <.link
-        navigate={~p"/words?difficulty=#{@word.difficulty}"}
-        class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
-      >
-        <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}
-      </.link>
+      <%= if @return_to do %>
+        <% return_path = build_return_path(@return_to, @step, @practice) %>
+        <.link
+          navigate={return_path}
+          class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lesson")}
+        </.link>
+      <% else %>
+        <.link
+          navigate={~p"/words?difficulty=#{@word.difficulty}"}
+          class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}
+        </.link>
+      <% end %>
     </div>
   </div>
 </Layouts.app>

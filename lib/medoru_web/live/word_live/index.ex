@@ -5,7 +5,7 @@ defmodule MedoruWeb.WordLive.Index do
   alias Medoru.Content
   alias Medoru.Learning
 
-  embed_templates "*.html"
+  embed_templates "index.html"
 
   @per_page 30
 

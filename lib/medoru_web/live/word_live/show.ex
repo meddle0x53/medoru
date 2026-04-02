@@ -5,7 +5,7 @@ defmodule MedoruWeb.WordLive.Show do
   alias Medoru.Content
   alias Medoru.Learning
 
-  embed_templates "*.html"
+  embed_templates "show.html"
 
   @impl true
   def mount(_params, session, socket) do
@@ -14,7 +14,8 @@ defmodule MedoruWeb.WordLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _url, socket) do
+  def handle_params(params, _url, socket) do
+    %{"id" => id} = params
     word = Content.get_word_with_kanji!(id)
     locale = socket.assigns.locale
     localized_meaning = Content.get_localized_meaning(word, locale)
@@ -27,16 +28,33 @@ defmodule MedoruWeb.WordLive.Show do
         false
       end
 
+    # Store return URL and step for navigation back to lesson
+    return_to = params["return_to"]
+    step = parse_step_param(params["step"])
+    practice = params["practice"] == "true"
+
     {:noreply,
      socket
      |> assign(:word, word)
      |> assign(:localized_meaning, localized_meaning)
      |> assign(:word_learned, word_learned)
+     |> assign(:return_to, return_to)
+     |> assign(:step, step)
+     |> assign(:practice, practice)
      |> assign(
        :page_title,
        gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
      )}
   end
+  
+  defp parse_step_param(nil), do: nil
+  defp parse_step_param(step) when is_binary(step) do
+    case Integer.parse(step) do
+      {num, _} -> num
+      :error -> nil
+    end
+  end
+  defp parse_step_param(step) when is_integer(step), do: step
 
   @impl true
   def handle_event("mark_word_learned", _params, socket) do
@@ -151,5 +169,22 @@ defmodule MedoruWeb.WordLive.Show do
   # Helper for template: get localized word meaning
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
+  end
+  
+  # Helper for template: build return path with step and practice params
+  def build_return_path(return_to, step, practice) do
+    path = return_to
+    
+    # Add query params
+    params = []
+    params = if step, do: [{"step", step} | params], else: params
+    params = if practice, do: [{"practice", "true"} | params], else: params
+    
+    if params != [] do
+      query_string = URI.encode_query(params)
+      "#{path}?#{query_string}"
+    else
+      path
+    end
   end
 end
