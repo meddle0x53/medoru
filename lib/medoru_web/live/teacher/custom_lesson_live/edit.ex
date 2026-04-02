@@ -423,8 +423,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
           <div class="lg:col-span-2 space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-base-content">{gettext("Words")}</h2>
-              <span class={["badge", (length(@lesson_words) > 50 && "badge-error") || "badge-ghost"]}>
-                {length(@lesson_words)}/{gettext("50")}
+              <span class={["badge", (length(@lesson_words) > 60 && "badge-error") || "badge-ghost"]}>
+                {length(@lesson_words)}/{gettext("60")}
               </span>
             </div>
 
@@ -587,7 +587,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                         phx-click="add_word"
                         phx-value-word_id={word.id}
                         class="btn btn-ghost btn-sm flex-shrink-0"
-                        disabled={length(@lesson_words) >= 50}
+                        disabled={length(@lesson_words) >= 60}
                       >
                         <.icon name="hero-plus" class="w-4 h-4" />
                       </button>
@@ -608,9 +608,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                   <p class="text-center text-secondary py-4">{gettext("No words found")}</p>
                 <% end %>
 
-                <%= if length(@lesson_words) >= 50 do %>
+                <%= if length(@lesson_words) >= 60 do %>
                   <p class="text-center text-error text-sm mt-4">
-                    {gettext("Maximum 50 words reached")}
+                    {gettext("Maximum 60 words reached")}
                   </p>
                 <% end %>
               </div>
