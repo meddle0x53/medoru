@@ -17,9 +17,9 @@ defmodule Medoru.Grammar.ValidatorTimeoutTest do
   alias Medoru.ContentFixtures
   alias Medoru.Content
   
-  # Set a short timeout to catch hanging tests quickly
-  @tag timeout: 5000
   describe "complex pattern with multiple optional elements - timeout test" do
+    # Set a short timeout to catch hanging tests quickly
+    @describetag timeout: 5000
     setup do
       # Create grammar forms
       {:ok, te_form} =
@@ -162,7 +162,7 @@ defmodule Medoru.Grammar.ValidatorTimeoutTest do
       }
     end
     
-    test "validates complex sentence with multiple optional elements - SHOULD TIMEOUT", %{te_form: te_form} do
+    test "validates complex sentence with multiple optional elements - SHOULD TIMEOUT", %{te_form: _te_form} do
       # Pattern: [Verb-て-form][Expression-optional][Verb-て-form-optional][Expression-optional][Verb]
       # The last verb can be in any form (empty forms list)
       # 

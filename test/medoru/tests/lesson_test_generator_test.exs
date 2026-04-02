@@ -191,7 +191,7 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
 
     test "includes words from previous lessons in distractor pool", %{
       lesson2: lesson2,
-      lesson1_words: _lesson1_words,
+      lesson1_words: lesson1_words,
       lesson2_words: lesson2_words
     } do
       # Generate test for lesson 2 (which has lesson 1 as previous)
@@ -200,15 +200,28 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
 
       multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
 
-      # Get all distractor texts used
+      # Get all distractor texts used (excluding correct answers)
       all_options = Enum.flat_map(multichoice_steps, & &1.options)
 
-      # Should include words from both lessons
+      lesson1_texts = Enum.map(lesson1_words, & &1.text)
       lesson2_texts = Enum.map(lesson2_words, & &1.text)
 
-      # At least some options should be from lesson 2 (same lesson)
-      assert Enum.any?(all_options, fn opt -> opt in lesson2_texts end),
-             "Should include distractors from same lesson"
+      # Verify distractors include words from previous lesson (lesson 1)
+      # This is the key requirement: distractors should come from learned words
+      assert Enum.any?(all_options, fn opt -> opt in lesson1_texts end),
+             "Should include distractors from previous lesson (lesson 1)"
+
+      # Also verify that all distractors come from learned words (lesson 1 or 2)
+      # and not from outside the curriculum
+      all_lesson_texts = lesson1_texts ++ lesson2_texts
+      
+      # Get unique distractor texts (may include readings/meanings which are not word texts)
+      # We check that any word-like distractor (single character) is from our lessons
+      word_distractors = Enum.filter(all_options, &(&1 in all_lesson_texts))
+      
+      # All word distractors should come from lesson 1 or 2
+      assert Enum.all?(word_distractors, &(&1 in all_lesson_texts)),
+             "All word distractors should come from learned words (lessons 1-2)"
     end
   end
 

@@ -322,7 +322,7 @@ defmodule Medoru.Grammar.ValidatorTest do
       %{te_form: te_form, nai_form: nai_form, kuru: kuru}
     end
 
-    test "validates sentence with nai-form + くて pattern and prefix text", %{nai_form: nai_form} do
+    test "validates sentence with nai-form + くて pattern and prefix text", %{nai_form: _nai_form} do
       # Pattern from screenshot: [Verb (nai-form)] + [くてもいいです]
       # The nai-form (来ない) combines with くて to form 来なくて
       pattern = [

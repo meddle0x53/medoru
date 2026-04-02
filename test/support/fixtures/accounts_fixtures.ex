@@ -9,28 +9,44 @@ defmodule Medoru.AccountsFixtures do
   @doc """
   Generate a unique user email.
   """
-  def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_user_email, do: "user#{System.unique_integer([:positive])}@example.com"
 
   @doc """
   Generate a unique provider_uid.
   """
-  def unique_provider_uid, do: "#{System.unique_integer()}"
+  def unique_provider_uid, do: "#{System.unique_integer([:positive])}"
 
   @doc """
   Generate a user.
   """
   def user_fixture(attrs \\ %{}) do
-    {:ok, user} =
+    # Ensure unique identifiers to avoid deadlocks in parallel tests
+    unique_suffix = "_#{System.unique_integer([:positive])}"
+    
+    email = 
+      case attrs[:email] || attrs["email"] do
+        nil -> unique_user_email()
+        e -> "#{e}#{unique_suffix}"
+      end
+
+    provider_uid = 
+      case attrs[:provider_uid] || attrs["provider_uid"] do
+        nil -> unique_provider_uid()
+        uid -> "#{uid}#{unique_suffix}"
+      end
+
+    attrs = 
       attrs
+      |> Map.drop([:email, :provider_uid, "email", "provider_uid"])
       |> Enum.into(%{
-        email: unique_user_email(),
+        email: email,
         provider: "google",
-        provider_uid: unique_provider_uid(),
+        provider_uid: provider_uid,
         name: "Test User",
         avatar_url: "https://example.com/avatar.jpg"
       })
-      |> Accounts.create_user()
 
+    {:ok, user} = Accounts.create_user(attrs)
     user
   end
 
@@ -38,17 +54,33 @@ defmodule Medoru.AccountsFixtures do
   Generate a user with profile and stats (full registration).
   """
   def user_fixture_with_registration(attrs \\ %{}) do
-    {:ok, user} =
+    # Ensure unique identifiers to avoid deadlocks in parallel tests
+    unique_suffix = "_#{System.unique_integer([:positive])}"
+    
+    email = 
+      case attrs[:email] || attrs["email"] do
+        nil -> unique_user_email()
+        e -> "#{e}#{unique_suffix}"
+      end
+
+    provider_uid = 
+      case attrs[:provider_uid] || attrs["provider_uid"] do
+        nil -> unique_provider_uid()
+        uid -> "#{uid}#{unique_suffix}"
+      end
+
+    attrs = 
       attrs
+      |> Map.drop([:email, :provider_uid, "email", "provider_uid"])
       |> Enum.into(%{
-        email: unique_user_email(),
+        email: email,
         provider: "google",
-        provider_uid: unique_provider_uid(),
+        provider_uid: provider_uid,
         name: "Test User",
         avatar_url: "https://example.com/avatar.jpg"
       })
-      |> Accounts.register_user_with_oauth()
 
+    {:ok, user} = Accounts.register_user_with_oauth(attrs)
     user
   end
 

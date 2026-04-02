@@ -212,8 +212,8 @@ defmodule MedoruWeb.ClassroomLive.TestConjugationMultichoiceTest do
 
   describe "teacher creates conjugation multichoice step" do
     test "step is saved with correct answer in options", %{
-      conn: conn,
-      classroom: classroom,
+      conn: _conn,
+      classroom: _classroom,
       test_item: test
     } do
       # Get the step from the test
