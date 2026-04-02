@@ -395,8 +395,6 @@ defmodule Medoru.Maintenance.Conjugations do
   # For example:
   #   撮る (とる) -> godan (toru ends in -oru sound)
   #   見る (みる) -> ichidan (miru ends in -iru sound)
-  defp classify_verb(text, reading \\ nil)
-  
   defp classify_verb(text, reading) do
     cond do
       # Irregular verbs

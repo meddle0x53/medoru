@@ -683,4 +683,141 @@ defmodule Medoru.Grammar.ValidatorTest do
       assert result.valid == false
     end
   end
+
+  describe "literal matching anywhere in sentence" do
+    setup do
+      # Create a verb for testing patterns with verbs after literals
+      iku =
+        ContentFixtures.word_fixture(%{
+          text: "行く",
+          reading: "いく",
+          word_type: :verb
+        })
+
+      {:ok, masu_form} =
+        Content.create_grammar_form(%{
+          name: "masu-form",
+          display_name: "ます形",
+          word_type: "verb"
+        })
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: iku.id,
+          grammar_form_id: masu_form.id,
+          conjugated_form: "行きます",
+          reading: "いきます"
+        })
+
+      %{iku: iku, masu_form: masu_form}
+    end
+
+    test "validates sentence when literal appears anywhere (not just at start)", %{
+      masu_form: _masu_form
+    } do
+      # Pattern: [TEXT "どうやって"] [VERB in masu-form]
+      # The literal "どうやって" should match anywhere in the sentence
+      pattern = [
+        %{"type" => "literal", "text" => "どうやって"},
+        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["masu-form"]}
+      ]
+
+      # Sentence with prefix before the literal: 大学までどうやって行きますか
+      # Should match: "どうやって" (literal) + "行きます" (verb)
+      sentence = "大学までどうやって行きますか"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Verify breakdown has the literal and verb
+      assert length(result.breakdown) >= 2
+
+      # Should have skipped text (大学まで) and the literal (どうやって)
+      skipped_element = Enum.find(result.breakdown, fn e -> e.type == "skipped" end)
+      assert skipped_element != nil, "Expected to find skipped text in breakdown"
+      assert skipped_element.text == "大学まで"
+
+      literal_element = Enum.find(result.breakdown, fn e -> e.text == "どうやって" end)
+      assert literal_element != nil, "Expected to find literal 'どうやって' in breakdown"
+      assert literal_element.type == "literal"
+
+      verb_element = Enum.find(result.breakdown, fn e -> e.type == "verb" end)
+      assert verb_element != nil, "Expected to find verb in breakdown"
+      assert verb_element.text == "行きます"
+      assert verb_element.form == "masu-form"
+    end
+
+    test "validates sentence when literal is at the start (no prefix)", %{
+      masu_form: _masu_form
+    } do
+      # Same pattern but literal is at the start
+      pattern = [
+        %{"type" => "literal", "text" => "どうやって"},
+        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["masu-form"]}
+      ]
+
+      sentence = "どうやって行きますか"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Should not have skipped text
+      skipped_element = Enum.find(result.breakdown, fn e -> e.type == "skipped" end)
+      assert skipped_element == nil, "Expected no skipped text when literal is at start"
+
+      literal_element = Enum.find(result.breakdown, fn e -> e.text == "どうやって" end)
+      assert literal_element != nil
+    end
+
+    test "returns error when literal is not found in sentence", %{masu_form: _masu_form} do
+      pattern = [
+        %{"type" => "literal", "text" => "どうやって"},
+        %{"type" => "word_slot", "word_type" => "verb", "forms" => ["masu-form"]}
+      ]
+
+      # Sentence without the literal
+      sentence = "大学まで行きますか"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      assert result.valid == false
+      assert result.error_at != nil
+    end
+
+    test "validates multiple literals with text between them" do
+      # Pattern with two literals: [TEXT "どうやって"] [TEXT "行きますか"]
+      pattern = [
+        %{"type" => "literal", "text" => "どうやって"},
+        %{"type" => "literal", "text" => "行きますか"}
+      ]
+
+      # Sentence with text between the two literals
+      sentence = "大学までどうやってここから行きますか"
+
+      result = Validator.validate_with_details(sentence, pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      # Should find both literals
+      first_literal = Enum.find(result.breakdown, fn e -> e.text == "どうやって" end)
+      assert first_literal != nil
+
+      second_literal = Enum.find(result.breakdown, fn e -> e.text == "行きますか" end)
+      assert second_literal != nil
+    end
+  end
 end

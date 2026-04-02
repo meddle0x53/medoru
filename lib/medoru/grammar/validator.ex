@@ -152,19 +152,38 @@ defmodule Medoru.Grammar.Validator do
     # Normalize literal by removing spaces for comparison
     normalized_literal = String.replace(literal, ~r/\s+/, "")
 
-    if String.starts_with?(remaining, normalized_literal) do
-      matched = %{
-        text: literal,
-        type: "literal",
-        form: nil,
-        meaning: element_meaning(literal)
-      }
+    # Try to find the literal anywhere in the remaining text (not just at start)
+    # Note: :binary.match returns byte positions, not character positions
+    case :binary.match(remaining, normalized_literal) do
+      {byte_position, _byte_length} when byte_position >= 0 ->
+        # Convert byte position to character position for String.slice
+        char_position = byte_position_to_char_position(remaining, byte_position)
+        literal_length = String.length(normalized_literal)
+        
+        # Extract skipped prefix if any
+        skipped_prefix = if char_position > 0, do: String.slice(remaining, 0, char_position), else: ""
+        
+        matched = %{
+          text: literal,
+          type: "literal",
+          form: nil,
+          meaning: element_meaning(literal)
+        }
 
-      new_remaining = String.slice(remaining, String.length(normalized_literal)..-1//1) || ""
-      {:ok, matched, new_remaining}
-    else
-      {:error,
-       %{position: 0, expected: "literal: #{literal}", got: String.slice(remaining, 0..5)}}
+        new_remaining = 
+          String.slice(remaining, (char_position + literal_length)..-1//1) || ""
+
+        if skipped_prefix == "" do
+          # No skipped text - normal match
+          {:ok, matched, new_remaining}
+        else
+          # Has skipped prefix - return with skipped text info
+          {:ok_with_skipped, matched, new_remaining, [%{text: skipped_prefix, type: "skipped"}]}
+        end
+
+      :nomatch ->
+        {:error,
+         %{position: 0, expected: "literal: #{literal}", got: String.slice(remaining, 0..5)}}
     end
   end
 
@@ -397,6 +416,10 @@ defmodule Medoru.Grammar.Validator do
 
   # Finds a matching particle - particles match exactly at the start or anywhere
   # Returns {matched_text, word_info, skipped_text} or nil
+  defp find_matching_particle("", _allowed_forms) do
+    nil
+  end
+
   defp find_matching_particle(sentence, allowed_forms) do
     sentence_len = String.length(sentence)
 
@@ -420,6 +443,10 @@ defmodule Medoru.Grammar.Validator do
 
   # Finds a matching word at the start of the sentence only (no skipping)
   # Returns {matched_text, word_info, skipped_text} or nil (skipped_text is always "")
+  defp find_matching_word_at_start("", _word_type, _allowed_forms, _word_class) do
+    nil
+  end
+
   defp find_matching_word_at_start(sentence, word_type, allowed_forms, word_class) do
     max_len = min(String.length(sentence), 10)
     forms_list = allowed_forms || []
@@ -448,6 +475,10 @@ defmodule Medoru.Grammar.Validator do
 
   # Searches for a matching word anywhere in the sentence, not just at the start
   # Returns {matched_text, word_info, skipped_text} or nil
+  defp find_matching_word_anywhere("", _word_type, _allowed_forms, _word_class) do
+    nil
+  end
+
   defp find_matching_word_anywhere(sentence, word_type, allowed_forms, word_class) do
     max_len = min(String.length(sentence), 10)
     forms_list = allowed_forms || []
@@ -1018,5 +1049,13 @@ defmodule Medoru.Grammar.Validator do
           end
       end
     end)
+  end
+
+  # Convert byte position (from :binary.match) to character position (for String.slice)
+  # This is necessary because Japanese characters are multi-byte in UTF-8
+  defp byte_position_to_char_position(string, byte_position) do
+    # Take the bytes up to the position and count characters
+    prefix_binary = binary_part(string, 0, byte_position)
+    String.length(prefix_binary)
   end
 end

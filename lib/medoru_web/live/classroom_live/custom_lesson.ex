@@ -37,7 +37,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
-  defp load_lesson(socket, classroom_id, lesson_id, user, locale, practice, step \\ 0) do
+  defp load_lesson(socket, classroom_id, lesson_id, user, locale, practice, step) do
     classroom = Classrooms.get_classroom!(classroom_id)
     lesson = Content.get_custom_lesson!(lesson_id)
 
@@ -83,7 +83,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
-  defp load_vocabulary_lesson(socket, classroom, lesson, progress, is_completed, practice, locale, step \\ 0) do
+  defp load_vocabulary_lesson(socket, classroom, lesson, progress, is_completed, practice, locale, step) do
     lesson_words = Content.list_lesson_words(lesson.id)
     total_items = length(lesson_words)
     # Ensure step is within valid range
