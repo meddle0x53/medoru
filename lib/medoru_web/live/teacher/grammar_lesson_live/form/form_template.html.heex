@@ -46,7 +46,8 @@
                   id="lesson_description"
                   name="custom_lesson[description]"
                   class="textarea textarea-bordered w-full"
-                  rows="3"
+                  rows="6"
+                  style="min-height: 160px;"
                   placeholder={gettext("Describe what students will learn...")}
                 ><%= Ecto.Changeset.get_field(@changeset, :description) %></textarea>
               </div>
@@ -524,7 +525,8 @@
                     phx-change="update_step_explanation"
                     phx-blur="update_step_explanation"
                     class="textarea textarea-bordered w-full"
-                    rows="4"
+                    rows="8"
+                    style="min-height: 200px;"
                     placeholder={gettext("Explain how this grammar pattern works...")}
                   >{@current_step.explanation}</textarea>
                 </div>
