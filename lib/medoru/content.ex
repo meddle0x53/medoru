@@ -576,61 +576,111 @@ defmodule Medoru.Content do
     learned_filter = Keyword.get(opts, :learned_filter)
     user_id = Keyword.get(opts, :user_id)
 
-    # Base query for words
-    base_query =
-      if search && search != "" do
-        # For search, we need to get IDs from search_words and then query
-        word_ids = search_words(search, limit: 10_000) |> Enum.map(& &1.id)
-        Word |> where([w], w.id in ^word_ids)
-      else
-        Word
-      end
+    search = if search, do: String.trim(search), else: search
 
-    # Apply difficulty filter
-    query = if difficulty, do: where(base_query, difficulty: ^difficulty), else: base_query
+    if search && search != "" do
+      # Use search_words for matching and ranking, then filter/paginate in Elixir.
+      # This preserves the exact-matches-first ordering from search_words.
+      words = search_words(search, limit: 10_000)
 
-    # Apply learned filter if specified and user_id is provided
-    query =
-      if learned_filter && user_id do
-        case learned_filter do
-          :learned ->
-            from w in query,
-              join: up in UserProgress,
-              on: up.word_id == w.id and up.user_id == ^user_id
-
-          :unlearned ->
-            from w in query,
-              left_join: up in UserProgress,
-              on: up.word_id == w.id and up.user_id == ^user_id,
-              where: is_nil(up.id)
-
-          _ ->
-            query
+      # Apply difficulty filter
+      words =
+        if difficulty do
+          Enum.filter(words, & &1.difficulty == difficulty)
+        else
+          words
         end
-      else
+
+      # Apply learned filter if specified and user_id is provided
+      words =
+        if learned_filter && user_id do
+          learned_word_ids =
+            UserProgress
+            |> where([up], up.user_id == ^user_id)
+            |> select([up], up.word_id)
+            |> Repo.all()
+            |> MapSet.new()
+
+          case learned_filter do
+            :learned ->
+              Enum.filter(words, &MapSet.member?(learned_word_ids, &1.id))
+
+            :unlearned ->
+              Enum.reject(words, &MapSet.member?(learned_word_ids, &1.id))
+
+            _ ->
+              words
+          end
+        else
+          words
+        end
+
+      total_count = length(words)
+      total_pages = max(ceil(total_count / per_page), 1)
+      offset = (page - 1) * per_page
+
+      paginated_words =
+        words
+        |> Enum.drop(offset)
+        |> Enum.take(per_page)
+
+      %{
+        words: paginated_words,
+        total_count: total_count,
+        total_pages: total_pages,
+        current_page: min(page, total_pages),
+        per_page: per_page
+      }
+    else
+      # Base query for words
+      query = Word
+
+      # Apply difficulty filter
+      query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+
+      # Apply learned filter if specified and user_id is provided
+      query =
+        if learned_filter && user_id do
+          case learned_filter do
+            :learned ->
+              from w in query,
+                join: up in UserProgress,
+                on: up.word_id == w.id and up.user_id == ^user_id
+
+            :unlearned ->
+              from w in query,
+                left_join: up in UserProgress,
+                on: up.word_id == w.id and up.user_id == ^user_id,
+                where: is_nil(up.id)
+
+            _ ->
+              query
+          end
+        else
+          query
+        end
+
+      # Get total count
+      total_count = query |> select([w], count(w.id)) |> Repo.one()
+      total_pages = max(ceil(total_count / per_page), 1)
+      offset = (page - 1) * per_page
+
+      # Get words with sorting
+      words =
         query
-      end
+        |> order_by([w], asc: w.usage_frequency)
+        |> limit(^per_page)
+        |> offset(^offset)
+        |> Repo.all()
 
-    # Get total count
-    total_count = query |> select([w], count(w.id)) |> Repo.one()
-    total_pages = max(ceil(total_count / per_page), 1)
-    offset = (page - 1) * per_page
-
-    # Get words with sorting
-    words =
-      query
-      |> order_by([w], asc: w.usage_frequency)
-      |> limit(^per_page)
-      |> offset(^offset)
-      |> Repo.all()
-
-    %{
-      words: words,
-      total_count: total_count,
-      total_pages: total_pages,
-      current_page: min(page, total_pages),
-      per_page: per_page
-    }
+      %{
+        words: words,
+        total_count: total_count,
+        total_pages: total_pages,
+        current_page: min(page, total_pages),
+        per_page: per_page
+      }
+    end
   end
 
   @doc """
