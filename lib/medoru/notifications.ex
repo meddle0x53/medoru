@@ -357,4 +357,68 @@ defmodule Medoru.Notifications do
       }
     })
   end
+
+  @doc """
+  Notifies students that a new lesson was published to their classroom.
+
+  ## Examples
+
+      iex> notify_classroom_lesson_published(user_id, "N5 Kanji", "Introduction", lesson_id, classroom_id)
+      {:ok, %Notification{}}
+
+  """
+  def notify_classroom_lesson_published(user_id, classroom_name, lesson_title, lesson_id, classroom_id) do
+    create_notification(%{
+      user_id: user_id,
+      type: "classroom_lesson",
+      title: "📚 New Lesson in #{classroom_name}",
+      message: "\"#{lesson_title}\" has been published to your classroom.",
+      data: %{
+        classroom_id: classroom_id,
+        classroom_name: classroom_name,
+        lesson_id: lesson_id,
+        lesson_title: lesson_title,
+        action: "lesson_published"
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
+  @doc """
+  Notifies students that a new test was published to their classroom.
+
+  ## Examples
+
+      iex> notify_classroom_test_published(user_id, "N5 Kanji", "Kanji Quiz", test_id, classroom_id)
+      {:ok, %Notification{}}
+
+  """
+  def notify_classroom_test_published(user_id, classroom_name, test_title, test_id, classroom_id) do
+    create_notification(%{
+      user_id: user_id,
+      type: "classroom_test",
+      title: "📝 New Test in #{classroom_name}",
+      message: "\"#{test_title}\" has been published to your classroom.",
+      data: %{
+        classroom_id: classroom_id,
+        classroom_name: classroom_name,
+        test_id: test_id,
+        test_title: test_title,
+        action: "test_published"
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
+  defp maybe_broadcast_notification({:ok, notification}, user_id) do
+    Phoenix.PubSub.broadcast(
+      Medoru.PubSub,
+      "notifications:#{user_id}",
+      {:new_notification, notification}
+    )
+
+    {:ok, notification}
+  end
+
+  defp maybe_broadcast_notification(error, _user_id), do: error
 end

@@ -118,22 +118,42 @@
                     </div>
                   </div>
 
-                  <%!-- Badge-specific actions --%>
-                  <%= if notification.type == "badge_earned" do %>
-                    <div class="mt-3 flex gap-2">
-                      <.link
-                        navigate={~p"/settings/profile"}
-                        class="btn btn-primary btn-xs"
-                      >
-                        <.icon name="hero-star" class="w-3 h-3 mr-1" /> Feature on Profile
-                      </.link>
-                      <.link
-                        navigate={~p"/users/#{@current_scope.current_user.id}"}
-                        class="btn btn-ghost btn-xs"
-                      >
-                        View Profile
-                      </.link>
-                    </div>
+                  <%!-- Notification actions --%>
+                  <%= cond do %>
+                    <% notification.type == "badge_earned" -> %>
+                      <div class="mt-3 flex gap-2">
+                        <.link
+                          navigate={~p"/settings/profile"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-star" class="w-3 h-3 mr-1" /> Feature on Profile
+                        </.link>
+                        <.link
+                          navigate={~p"/users/#{@current_scope.current_user.id}"}
+                          class="btn btn-ghost btn-xs"
+                        >
+                          View Profile
+                        </.link>
+                      </div>
+                    <% notification.type == "classroom_lesson" && notification.data["classroom_id"] && notification.data["lesson_id"] -> %>
+                      <div class="mt-3">
+                        <.link
+                          navigate={~p"/classrooms/#{notification.data["classroom_id"]}/custom-lessons/#{notification.data["lesson_id"]}"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-book-open" class="w-3 h-3 mr-1" /> {gettext("Start Lesson")}
+                        </.link>
+                      </div>
+                    <% notification.type == "classroom_test" && notification.data["classroom_id"] && notification.data["test_id"] -> %>
+                      <div class="mt-3">
+                        <.link
+                          navigate={~p"/classrooms/#{notification.data["classroom_id"]}/tests/#{notification.data["test_id"]}"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-clipboard-document-list" class="w-3 h-3 mr-1" /> {gettext("Take Test")}
+                        </.link>
+                      </div>
+                    <% true -> %>
                   <% end %>
                 </div>
               </div>

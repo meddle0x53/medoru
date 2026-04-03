@@ -87,6 +87,8 @@ defmodule MedoruWeb.NotificationsLive do
   def icon_for_type("streak_milestone"), do: "hero-fire"
   def icon_for_type("lesson_complete"), do: "hero-academic-cap"
   def icon_for_type("daily_reminder"), do: "hero-calendar"
+  def icon_for_type("classroom_lesson"), do: "hero-book-open"
+  def icon_for_type("classroom_test"), do: "hero-clipboard-document-list"
   def icon_for_type(_), do: "hero-bell"
 
   def icon_bg_class("badge_earned"),

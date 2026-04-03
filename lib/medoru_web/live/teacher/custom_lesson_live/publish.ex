@@ -6,6 +6,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
   alias Medoru.Content
   alias Medoru.Classrooms
+  alias Medoru.Notifications
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -66,6 +67,25 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
     case Content.publish_lesson_to_classroom(lesson.id, classroom_id, user.id) do
       {:ok, published} ->
         published_map = Map.put(socket.assigns.published_map, classroom_id, published)
+
+        # Notify all approved students in the classroom concurrently
+        classroom = Classrooms.get_classroom!(classroom_id)
+        members = Classrooms.list_classroom_members(classroom_id)
+
+        Task.async_stream(
+          members,
+          fn membership ->
+            Notifications.notify_classroom_lesson_published(
+              membership.user_id,
+              classroom.name,
+              lesson.title,
+              lesson.id,
+              classroom_id
+            )
+          end,
+          timeout: :infinity
+        )
+        |> Stream.run()
 
         {:noreply,
          socket

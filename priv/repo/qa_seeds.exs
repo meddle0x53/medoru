@@ -266,6 +266,25 @@ with user <- Accounts.get_user_by_email("studentinactive@qa.test") do
   IO.puts("  ✅ Inactive student: 30-day best streak, inactive 5 days")
 end
 
+# Seed a few basic words for lesson/testing purposes
+words_to_seed = [
+  %{text: "日本", reading: "にほん", meaning: "Japan", difficulty: 5, word_type: :noun},
+  %{text: "本", reading: "ほん", meaning: "book", difficulty: 5, word_type: :noun},
+  %{text: "日", reading: "ひ", meaning: "day, sun", difficulty: 5, word_type: :noun}
+]
+
+Enum.each(words_to_seed, fn word_attrs ->
+  case Content.create_word(word_attrs) do
+    {:ok, _word} -> :ok
+    {:error, %{errors: [text: {"has already been taken", _}]}} -> :ok
+    {:error, changeset} ->
+      IO.puts("  ⚠️  Failed to seed word #{word_attrs.text}")
+      IO.inspect(changeset.errors)
+  end
+end)
+
+IO.puts("  ✅ Seeded #{length(words_to_seed)} basic words for testing")
+
 IO.puts("""
 
 ✅ QA database seeding complete!

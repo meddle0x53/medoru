@@ -72,6 +72,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Index do
   end
 
   defp classroom_card(assigns) do
+    stats = assigns.stats || %{total_members: 0}
+    assigns = assign(assigns, :stats, stats)
+
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200">
       <div class="card-body">

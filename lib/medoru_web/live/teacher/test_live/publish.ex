@@ -13,6 +13,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
   alias Medoru.Tests
   alias Medoru.Classrooms
+  alias Medoru.Notifications
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -169,6 +170,27 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
             # Update test status to published
             Tests.publish_teacher_test(test)
 
+            # Notify students in each successfully published classroom concurrently
+            Enum.each(successes, fn {:ok, classroom_test} ->
+              classroom = Classrooms.get_classroom!(classroom_test.classroom_id)
+              members = Classrooms.list_classroom_members(classroom_test.classroom_id)
+
+              Task.async_stream(
+                members,
+                fn membership ->
+                  Notifications.notify_classroom_test_published(
+                    membership.user_id,
+                    classroom.name,
+                    test.title,
+                    test.id,
+                    classroom_test.classroom_id
+                  )
+                end,
+                timeout: :infinity
+              )
+              |> Stream.run()
+            end)
+
             socket
             |> put_flash(
               :info,
@@ -179,6 +201,27 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
 
           {_, _} ->
             Tests.publish_teacher_test(test)
+
+            # Notify students in each successfully published classroom concurrently
+            Enum.each(successes, fn {:ok, classroom_test} ->
+              classroom = Classrooms.get_classroom!(classroom_test.classroom_id)
+              members = Classrooms.list_classroom_members(classroom_test.classroom_id)
+
+              Task.async_stream(
+                members,
+                fn membership ->
+                  Notifications.notify_classroom_test_published(
+                    membership.user_id,
+                    classroom.name,
+                    test.title,
+                    test.id,
+                    classroom_test.classroom_id
+                  )
+                end,
+                timeout: :infinity
+              )
+              |> Stream.run()
+            end)
 
             socket
             |> put_flash(
@@ -235,6 +278,24 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
       classroom_test ->
         case Classrooms.republish_test_to_classroom(classroom_test, teacher_id) do
           {:ok, _} ->
+            classroom = Classrooms.get_classroom!(classroom_test.classroom_id)
+            members = Classrooms.list_classroom_members(classroom_test.classroom_id)
+
+            Task.async_stream(
+              members,
+              fn membership ->
+                Notifications.notify_classroom_test_published(
+                  membership.user_id,
+                  classroom.name,
+                  test.title,
+                  test.id,
+                  classroom_test.classroom_id
+                )
+              end,
+              timeout: :infinity
+            )
+            |> Stream.run()
+
             {:noreply,
              socket
              |> put_flash(:info, gettext("Test republished to classroom."))

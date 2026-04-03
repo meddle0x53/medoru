@@ -270,6 +270,15 @@ defmodule Medoru.Maintenance.Conjugations do
           []
         end
 
+      # For masu-form, the alternative is without す (for combining with しょうか, etc.)
+      # e.g., 行きます → 行きま (used in 行きましょうか)
+      "masu-form" ->
+        if String.ends_with?(conjugated, "ます") do
+          [String.replace_suffix(conjugated, "ます", "ま")]
+        else
+          []
+        end
+
       _ ->
         []
     end
