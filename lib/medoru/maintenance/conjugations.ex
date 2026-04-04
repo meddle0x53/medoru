@@ -101,6 +101,9 @@ defmodule Medoru.Maintenance.Conjugations do
   defp generate_verbs(forms) do
     IO.puts("\nProcessing verbs...")
 
+    # Ensure important special verbs exist (hiragana forms of common verbs)
+    ensure_special_verbs()
+
     verbs = Repo.all(from w in Word, where: w.word_type == :verb)
     verb_forms = Map.get(forms, "verb", [])
 
@@ -270,11 +273,13 @@ defmodule Medoru.Maintenance.Conjugations do
           []
         end
 
-      # For masu-form, the alternative is without す (for combining with しょうか, etc.)
-      # e.g., 行きます → 行きま (used in 行きましょうか)
+      # For masu-form, two alternatives:
+      # 1. Without す: 行きま (used in 行きましょうか, 行きません)
+      # 2. Bare i-stem: 行き (used in 行きたい, 行きたがる, etc.)
       "masu-form" ->
         if String.ends_with?(conjugated, "ます") do
-          [String.replace_suffix(conjugated, "ます", "ま")]
+          without_masu = String.replace_suffix(conjugated, "ます", "")
+          [without_masu <> "ま", without_masu]
         else
           []
         end
@@ -302,7 +307,7 @@ defmodule Medoru.Maintenance.Conjugations do
     "走る", "はしる",           # to run
     "知る", "しる",             # to know
     "切る", "きる",             # to cut
-    "要る", "いる",             # to need (not to exist - 居る is ichidan)
+    "要る",                    # to need (いる - hiragana removed to allow ichidan いる/居る "to be")
     "帰る", "かえる",           # to return
     "限る", "かぎる",           # to limit
     "散る", "ちる",             # to scatter
@@ -472,13 +477,42 @@ defmodule Medoru.Maintenance.Conjugations do
 
   # Full verb conjugation with proper stem changes
   defp conjugate_verb_full(text, verb_type, form_name) do
-    case verb_type do
-      :ichidan -> conjugate_ichidan(text, form_name)
-      :godan -> conjugate_godan(text, form_name)
-      :kuru -> conjugate_kuru(form_name)
-      :suru -> conjugate_suru(form_name)
+    # Check for special case verbs first (hardcoded conjugations)
+    case special_verb_conjugation(text, form_name) do
+      nil -> 
+        # Fall through to regular conjugation logic
+        case verb_type do
+          :ichidan -> conjugate_ichidan(text, form_name)
+          :godan -> conjugate_godan(text, form_name)
+          :kuru -> conjugate_kuru(form_name)
+          :suru -> conjugate_suru(form_name)
+        end
+      conjugated -> conjugated
     end
   end
+
+  # Special case verbs with hardcoded conjugations
+  # These override the normal conjugation logic
+  defp special_verb_conjugation("いる", form_name) do
+    # いる (居る) - to be (animate) - ichidan conjugations
+    case form_name do
+      "dictionary" -> "いる"
+      "masu-form" -> "います"
+      "te-form" -> "いて"
+      "ta-form" -> "いた"
+      "nai-form" -> "いない"
+      "nakute-form" -> "いなくて"
+      "nakatta-form" -> "いなかった"
+      "potential" -> "いられる"
+      "passive" -> "いられる"
+      "causative" -> "いらせる"
+      "imperative" -> "いろ"
+      "volitional" -> "いよう"
+      "conditional" -> "いれば"
+      _ -> nil
+    end
+  end
+  defp special_verb_conjugation(_text, _form_name), do: nil
 
   # Ichidan (一段) verb conjugation
   defp conjugate_ichidan(text, form_name) do
@@ -722,5 +756,46 @@ defmodule Medoru.Maintenance.Conjugations do
         {base <> "ではない", base_reading <> "ではない"}
       _ -> nil
     end
+  end
+
+  # Ensures special verbs that are critical for the application exist in the database.
+  # These are primarily hiragana forms of common verbs that might not be in the seed data.
+  defp ensure_special_verbs do
+    special_verbs = [
+      %{
+        text: "いる",
+        meaning: "to be (of animate objects)",
+        reading: "いる",
+        word_type: :verb,
+        difficulty: 3,
+        usage_frequency: 100,
+        example_sentence: "猫がいます",
+        example_reading: "ねこがいます",
+        example_meaning: "There is a cat",
+        translations: %{"en" => "to be (animate)", "bg" => "да бъда (за живи същества)"}
+      }
+    ]
+
+    Enum.each(special_verbs, fn verb_attrs ->
+      # Check if verb already exists
+      case Repo.get_by(Word, text: verb_attrs.text, word_type: :verb) do
+        nil ->
+          # Insert the verb
+          %Word{}
+          |> Word.changeset(Map.put(verb_attrs, :sort_score, 0))
+          |> Repo.insert(on_conflict: :nothing)
+          |> case do
+            {:ok, word} -> 
+              IO.puts("  Added special verb: #{word.text}")
+            {:error, changeset} ->
+              IO.puts("  Warning: Failed to add #{verb_attrs.text}: #{inspect(changeset.errors)}")
+            _ ->
+              :ok
+          end
+        _existing ->
+          # Verb already exists, no action needed
+          :ok
+      end
+    end)
   end
 end

@@ -265,4 +265,115 @@ defmodule Medoru.AccountsTest do
       assert stats.level == 3
     end
   end
+
+  describe "api_tokens" do
+    import Medoru.AccountsFixtures
+    alias Medoru.Accounts.ApiToken
+
+    test "list_user_api_tokens/1 returns empty list when no tokens" do
+      user = user_fixture()
+      assert Accounts.list_user_api_tokens(user.id) == []
+    end
+
+    test "create_api_token/2 creates a token and returns plaintext" do
+      user = user_fixture()
+
+      assert {:ok, %ApiToken{} = token, plaintext} =
+               Accounts.create_api_token(user.id, %{"name" => "Test Token"})
+
+      assert token.user_id == user.id
+      assert token.name == "Test Token"
+      assert is_nil(token.expires_at)
+      assert is_binary(plaintext)
+      assert byte_size(plaintext) > 20
+    end
+
+    test "create_api_token/2 creates a token with expiration" do
+      user = user_fixture()
+
+      assert {:ok, %ApiToken{} = token, _plaintext} =
+               Accounts.create_api_token(user.id, %{"name" => "Expiring", "expires_in_days" => "30"})
+
+      assert token.name == "Expiring"
+      assert token.expires_at != nil
+      assert DateTime.diff(token.expires_at, DateTime.utc_now(), :day) >= 29
+    end
+
+    test "create_api_token/2 enforces max 3 tokens per user" do
+      user = user_fixture()
+
+      for i <- 1..3 do
+        assert {:ok, %ApiToken{}, _plaintext} =
+                 Accounts.create_api_token(user.id, %{"name" => "Token #{i}"})
+      end
+
+      assert {:error, :limit_reached} =
+               Accounts.create_api_token(user.id, %{"name" => "Token 4"})
+    end
+
+    test "count_user_api_tokens/1 returns correct count" do
+      user = user_fixture()
+      assert Accounts.count_user_api_tokens(user.id) == 0
+
+      {:ok, _, _} = Accounts.create_api_token(user.id, %{"name" => "One"})
+      assert Accounts.count_user_api_tokens(user.id) == 1
+    end
+
+    test "delete_api_token/2 removes token for owner" do
+      user = user_fixture()
+      {:ok, token, _} = Accounts.create_api_token(user.id, %{"name" => "To Delete"})
+
+      assert {:ok, %ApiToken{}} = Accounts.delete_api_token(user.id, token.id)
+      assert Accounts.list_user_api_tokens(user.id) == []
+    end
+
+    test "delete_api_token/2 returns error for non-owner" do
+      user = user_fixture()
+      other_user = user_fixture(%{email: "other@example.com", provider_uid: "other123"})
+      {:ok, token, _} = Accounts.create_api_token(user.id, %{"name" => "Mine"})
+
+      assert {:error, :not_found} = Accounts.delete_api_token(other_user.id, token.id)
+    end
+
+    test "verify_api_token/1 returns token for valid token" do
+      user = user_fixture()
+      {:ok, _token, plaintext} = Accounts.create_api_token(user.id, %{"name" => "Valid"})
+
+      assert {:ok, %ApiToken{}} = Accounts.verify_api_token(plaintext)
+    end
+
+    test "verify_api_token/1 returns error for invalid token" do
+      assert {:error, :invalid} = Accounts.verify_api_token("invalid-token")
+    end
+
+    test "verify_api_token/1 returns error for expired token" do
+      user = user_fixture()
+
+      # Create token that expired yesterday with a valid hash
+      expired = DateTime.add(DateTime.utc_now(), -1, :day)
+      plaintext = "expired-test-token"
+      token_hash = :crypto.hash(:sha256, plaintext) |> Base.encode16(case: :lower)
+
+      {:ok, _token} =
+        %ApiToken{}
+        |> Ecto.Changeset.change(%{
+          user_id: user.id,
+          token_hash: token_hash,
+          expires_at: expired
+        })
+        |> Medoru.Repo.insert()
+
+      assert {:error, :expired} = Accounts.verify_api_token(plaintext)
+    end
+
+    test "touch_api_token/1 updates last_used_at" do
+      user = user_fixture()
+      {:ok, token, _} = Accounts.create_api_token(user.id, %{"name" => "To Touch"})
+      assert is_nil(token.last_used_at)
+
+      assert {:ok, %ApiToken{} = updated} = Accounts.touch_api_token(token)
+      assert updated.last_used_at != nil
+      assert DateTime.diff(DateTime.utc_now(), updated.last_used_at, :second) < 5
+    end
+  end
 end

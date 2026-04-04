@@ -24,7 +24,7 @@ defmodule MedoruWeb.SettingsLiveTest do
       # Submit the form - render_submit returns redirect tuple on success
       result =
         view
-        |> form("form",
+        |> form("#profile-form",
           user_profile: %{display_name: "NewDisplayName", bio: "Hello, this is my bio!"}
         )
         |> render_submit()
@@ -49,7 +49,7 @@ defmodule MedoruWeb.SettingsLiveTest do
 
       html =
         view
-        |> form("form", user_profile: %{display_name: "TakenName"})
+        |> form("#profile-form", user_profile: %{display_name: "TakenName"})
         |> render_submit()
 
       assert html =~ "is already taken"
@@ -60,10 +60,53 @@ defmodule MedoruWeb.SettingsLiveTest do
 
       html =
         view
-        |> form("form", user_profile: %{display_name: "Invalid@Name#"})
+        |> form("#profile-form", user_profile: %{display_name: "Invalid@Name#"})
         |> render_change()
 
       assert html =~ "can only contain letters"
+    end
+
+    test "creates API token", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "h2", "API Tokens")
+
+      html =
+        view
+        |> form("#api-token-form", api_token: %{name: "Test Token", expires_in_days: "30"})
+        |> render_submit()
+
+      assert html =~ "API token created successfully"
+      assert html =~ "Copy your token now"
+      assert html =~ "<code"
+    end
+
+    test "deletes API token", %{conn: conn, user: user} do
+      {:ok, token, _plaintext} =
+        Medoru.Accounts.create_api_token(user.id, %{"name" => "To Delete"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "span", "To Delete")
+
+      html =
+        view
+        |> element("button[phx-click=\"delete_api_token\"][phx-value-id=\"#{token.id}\"]")
+        |> render_click()
+
+      assert html =~ "API token revoked"
+      refute html =~ "To Delete"
+    end
+
+    test "enforces API token limit", %{conn: conn, user: user} do
+      for i <- 1..3 do
+        {:ok, _, _} = Medoru.Accounts.create_api_token(user.id, %{"name" => "Token #{i}"})
+      end
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      refute has_element?(view, "#api-token-form")
+      assert has_element?(view, "p", "Token limit reached")
     end
   end
 end

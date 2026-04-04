@@ -13,6 +13,7 @@
       <div class="card-body">
         <.form
           for={@form}
+          id="profile-form"
           phx-change="validate"
           phx-submit="save"
           class="space-y-6"
@@ -241,5 +242,122 @@
         </div>
       </div>
     <% end %>
+
+    <%!-- API Tokens Section --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg">
+          <.icon name="hero-key" class="w-5 h-5 text-primary" /> {gettext("API Tokens")}
+        </h2>
+        <p class="text-sm text-base-content/60 mb-4">
+          {gettext("Manage API tokens for external integrations. You can create up to 3 tokens.")}
+        </p>
+
+        <%!-- Newly created token alert --%>
+        <%= if @new_token_plaintext do %>
+          <div class="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-xl">
+            <div class="flex items-start gap-3">
+              <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-warning">{gettext("Copy your token now")}</p>
+                <p class="text-sm text-base-content/70 mb-3">
+                  {gettext("This is the only time you'll see the full token.")}
+                </p>
+                <div class="flex items-center gap-2">
+                  <code class="flex-1 bg-base-100 px-3 py-2 rounded-lg font-mono text-sm break-all border border-base-300">
+                    {@new_token_plaintext}
+                  </code>
+                  <button
+                    type="button"
+                    phx-click="dismiss_new_token"
+                    class="btn btn-ghost btn-sm"
+                  >
+                    {gettext("Done")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Existing Tokens --%>
+        <%= if @api_tokens == [] do %>
+          <p class="text-sm text-base-content/50 py-4">{gettext("No API tokens yet.")}</p>
+        <% else %>
+          <div class="space-y-3 mb-6">
+            <%= for token <- @api_tokens do %>
+              <div class="flex items-center justify-between p-4 bg-base-200 rounded-xl border border-base-300">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-base-content truncate">
+                      {token.name || gettext("Unnamed token")}
+                    </span>
+                    <span class="badge badge-ghost badge-sm">
+                      {mask_token(token.token_hash)}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3 mt-1 text-xs text-base-content/60">
+                    <span>{format_token_expiry(token.expires_at)}</span>
+                    <span>•</span>
+                    <span>{gettext("Created %{date}", date: Calendar.strftime(token.inserted_at, "%b %d, %Y"))}</span>
+                    <span>•</span>
+                    <span>{format_token_last_used(token.last_used_at)}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  phx-click="delete_api_token"
+                  phx-value-id={token.id}
+                  class="btn btn-ghost btn-sm text-error"
+                  data-confirm={gettext("Are you sure you want to revoke this token?")}
+                >
+                  <.icon name="hero-trash" class="w-4 h-4" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- Create Token Form --%>
+        <%= if @api_token_count < 3 do %>
+          <.form
+            for={@new_token_form}
+            id="api-token-form"
+            phx-submit="create_api_token"
+            class="border-t border-base-300 pt-4"
+          >
+            <div class="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                name={@new_token_form[:name].name}
+                value={@new_token_form[:name].value}
+                placeholder={gettext("Token name (e.g., Mobile App)")}
+                class="input input-bordered flex-1"
+                maxlength="100"
+              />
+              <select
+                name={@new_token_form[:expires_in_days].name}
+                class="select select-bordered sm:w-48"
+              >
+                <option value="">{gettext("Never expires")}</option>
+                <option value="30">{gettext("Expires in 30 days")}</option>
+                <option value="60">{gettext("Expires in 60 days")}</option>
+                <option value="90">{gettext("Expires in 90 days")}</option>
+              </select>
+              <button
+                type="submit"
+                class="btn btn-primary"
+              >
+                <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Token")}
+              </button>
+            </div>
+          </.form>
+        <% else %>
+          <p class="text-sm text-base-content/50 pt-4 border-t border-base-300">
+            {gettext("Token limit reached. Revoke an existing token to create a new one.")}
+          </p>
+        <% end %>
+      </div>
+    </div>
   </div>
 </Layouts.app>

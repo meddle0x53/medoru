@@ -5,7 +5,7 @@ defmodule Medoru.Accounts do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Accounts.{User, UserProfile, UserStats}
+  alias Medoru.Accounts.{ApiToken, User, UserProfile, UserStats}
 
   @doc """
   Returns the list of users.
@@ -490,6 +490,133 @@ defmodule Medoru.Accounts do
   """
   def award_badge_to_user(user_id, badge_id) do
     Gamification.award_badge(user_id, badge_id)
+  end
+
+  # ============================================================================
+  # API Tokens
+  # ============================================================================
+
+  @max_api_tokens 3
+
+  @doc """
+  Returns the list of API tokens for a user.
+  """
+  def list_user_api_tokens(user_id) do
+    ApiToken
+    |> where([t], t.user_id == ^user_id)
+    |> order_by([t], desc: t.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the count of API tokens for a user.
+  """
+  def count_user_api_tokens(user_id) do
+    ApiToken
+    |> where([t], t.user_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Creates a new API token for a user.
+
+  Returns `{:ok, token_struct, plaintext_token}` on success.
+  Returns `{:error, :limit_reached}` if the user already has 3 tokens.
+  Returns `{:error, changeset}` on validation failure.
+
+  The plaintext token is shown only once to the user.
+  """
+  def create_api_token(user_id, attrs \\ %{}) do
+    if count_user_api_tokens(user_id) >= @max_api_tokens do
+      {:error, :limit_reached}
+    else
+      plaintext = generate_token()
+      token_hash = hash_token(plaintext)
+
+      expires_at =
+        case attrs["expires_in_days"] || attrs[:expires_in_days] do
+          nil -> nil
+          "" -> nil
+          days when is_binary(days) ->
+            case Integer.parse(days) do
+              {n, _} when n > 0 -> DateTime.utc_now() |> DateTime.add(n, :day)
+              _ -> nil
+            end
+          days when is_integer(days) and days > 0 ->
+            DateTime.utc_now() |> DateTime.add(days, :day)
+          _ -> nil
+        end
+
+      api_token_attrs = %{
+        user_id: user_id,
+        name: attrs["name"] || attrs[:name],
+        token_hash: token_hash,
+        expires_at: expires_at
+      }
+
+      %ApiToken{}
+      |> ApiToken.changeset(api_token_attrs)
+      |> Repo.insert()
+      |> case do
+        {:ok, token} -> {:ok, token, plaintext}
+        {:error, changeset} -> {:error, changeset}
+      end
+    end
+  end
+
+  @doc """
+  Deletes an API token ensuring it belongs to the given user.
+  """
+  def delete_api_token(user_id, token_id) do
+    ApiToken
+    |> where([t], t.id == ^token_id and t.user_id == ^user_id)
+    |> Repo.one()
+    |> case do
+      nil -> {:error, :not_found}
+      token -> Repo.delete(token)
+    end
+  end
+
+  @doc """
+  Verifies a raw API token and returns the associated token struct if valid.
+
+  Returns `{:ok, token}` if the token is valid and not expired.
+  Returns `{:error, :invalid}` otherwise.
+  """
+  def verify_api_token(plaintext) do
+    token_hash = hash_token(plaintext)
+
+    ApiToken
+    |> where([t], t.token_hash == ^token_hash)
+    |> Repo.one()
+    |> case do
+      nil ->
+        {:error, :invalid}
+
+      token ->
+        if token.expires_at && DateTime.compare(token.expires_at, DateTime.utc_now()) == :lt do
+          {:error, :expired}
+        else
+          {:ok, token}
+        end
+    end
+  end
+
+  @doc """
+  Updates the last_used_at timestamp for an API token.
+  """
+  def touch_api_token(%ApiToken{} = token) do
+    token
+    |> ApiToken.changeset(%{last_used_at: DateTime.utc_now()})
+    |> Repo.update()
+  end
+
+  defp generate_token do
+    :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+  end
+
+  defp hash_token(plaintext) do
+    :crypto.hash(:sha256, plaintext) |> Base.encode16(case: :lower)
   end
 
   # ============================================================================

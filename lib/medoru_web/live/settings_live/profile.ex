@@ -38,6 +38,10 @@ defmodule MedoruWeb.SettingsLive.Profile do
     user_badges = Gamification.list_user_badges(user.id)
     featured_badge = Gamification.get_featured_badge(user.id)
 
+    # Load API tokens
+    api_tokens = Accounts.list_user_api_tokens(user.id)
+    api_token_count = length(api_tokens)
+
     {:ok,
      socket
      |> assign(:page_title, gettext("Profile Settings"))
@@ -46,6 +50,10 @@ defmodule MedoruWeb.SettingsLive.Profile do
      |> assign(:uploaded_files, [])
      |> assign(:user_badges, user_badges)
      |> assign(:featured_badge, featured_badge)
+     |> assign(:api_tokens, api_tokens)
+     |> assign(:api_token_count, api_token_count)
+     |> assign(:new_token_plaintext, nil)
+     |> assign(:new_token_form, to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token))
      |> allow_upload(:avatar,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,
@@ -175,6 +183,59 @@ defmodule MedoruWeb.SettingsLive.Profile do
      |> put_flash(:info, gettext("Featured badge removed."))}
   end
 
+  @impl true
+  def handle_event("create_api_token", %{"api_token" => token_params}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case Accounts.create_api_token(user.id, token_params) do
+      {:ok, _token, plaintext} ->
+        api_tokens = Accounts.list_user_api_tokens(user.id)
+
+        {:noreply,
+         socket
+         |> assign(:api_tokens, api_tokens)
+         |> assign(:api_token_count, length(api_tokens))
+         |> assign(:new_token_plaintext, plaintext)
+         |> assign(:new_token_form, to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token))
+         |> put_flash(:info, gettext("API token created successfully. Copy it now — you won't see it again."))}
+
+      {:error, :limit_reached} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("You can only create up to 3 API tokens."))}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to create API token."))}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_api_token", %{"id" => token_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case Accounts.delete_api_token(user.id, token_id) do
+      {:ok, _} ->
+        api_tokens = Accounts.list_user_api_tokens(user.id)
+
+        {:noreply,
+         socket
+         |> assign(:api_tokens, api_tokens)
+         |> assign(:api_token_count, length(api_tokens))
+         |> assign(:new_token_plaintext, nil)
+         |> put_flash(:info, gettext("API token revoked."))}
+
+      {:error, :not_found} ->
+        {:noreply, put_flash(socket, :error, gettext("Token not found."))}
+    end
+  end
+
+  @impl true
+  def handle_event("dismiss_new_token", _params, socket) do
+    {:noreply, assign(socket, :new_token_plaintext, nil)}
+  end
+
   # Helper functions
 
   defp format_bytes(bytes) when bytes < 1_000, do: "#{bytes} B"
@@ -219,4 +280,40 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   defp badge_color_class(_),
     do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+
+  # API Token helpers
+
+  defp mask_token(token) when byte_size(token) > 8 do
+    prefix = binary_part(token, 0, 4)
+    suffix = binary_part(token, byte_size(token) - 4, 4)
+    "#{prefix}...#{suffix}"
+  end
+
+  defp mask_token(_), do: "****"
+
+  defp format_token_expiry(nil), do: gettext("Never expires")
+  defp format_token_expiry(%DateTime{} = dt) do
+    diff = DateTime.diff(dt, DateTime.utc_now(), :day)
+
+    cond do
+      diff < 0 -> gettext("Expired")
+      diff == 0 -> gettext("Expires today")
+      diff == 1 -> gettext("Expires tomorrow")
+      diff < 30 -> gettext("Expires in %{days} days", days: diff)
+      true -> gettext("Expires on %{date}", date: Calendar.strftime(dt, "%b %d, %Y"))
+    end
+  end
+
+  defp format_token_last_used(nil), do: gettext("Never used")
+  defp format_token_last_used(%DateTime{} = dt) do
+    diff = DateTime.diff(DateTime.utc_now(), dt, :second)
+
+    cond do
+      diff < 60 -> gettext("Just now")
+      diff < 3600 -> gettext("%{m}m ago", m: div(diff, 60))
+      diff < 86400 -> gettext("%{h}h ago", h: div(diff, 3600))
+      diff < 604_800 -> gettext("%{d}d ago", d: div(diff, 86400))
+      true -> Calendar.strftime(dt, "%b %d, %Y")
+    end
+  end
 end
