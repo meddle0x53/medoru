@@ -67,6 +67,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
            )
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}")}
         else
+          # Abandon any existing sessions before starting new one
+          abandon_existing_sessions(user.id, lesson.test_id)
+
           # Start a new test session
           # In practice mode, we still create a session but won't complete the lesson
           case Tests.start_test_session(user.id, lesson.test_id) do
@@ -357,6 +360,22 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     test.test_steps
     |> Enum.find(fn step ->
       step.order_index > session.current_step_index
+    end)
+  end
+
+  # Abandon all existing test sessions for a user and test
+  # This prevents stuck sessions from blocking new test attempts
+  defp abandon_existing_sessions(user_id, test_id) do
+    import Ecto.Query
+    alias Medoru.Repo
+    alias Medoru.Tests.TestSession
+
+    # Find all non-completed sessions for this user/test
+    TestSession
+    |> where([ts], ts.user_id == ^user_id and ts.test_id == ^test_id and ts.status not in [:completed, :abandoned])
+    |> Repo.all()
+    |> Enum.each(fn session ->
+      Tests.abandon_session(session, session.time_spent_seconds || 0)
     end)
   end
 

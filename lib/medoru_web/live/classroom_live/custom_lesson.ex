@@ -534,9 +534,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <%!-- Explanation --%>
           <div class="mb-6">
             <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
-            <div class="text-base-content whitespace-pre-wrap leading-relaxed">
-              {@current_step.explanation}
-            </div>
+            <div class="text-base-content whitespace-pre-wrap leading-relaxed">{@current_step.explanation}</div>
           </div>
 
           <%!-- Examples --%>

@@ -239,6 +239,11 @@ defmodule MedoruWeb.Moderator.KanjiLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("clear_feedback", _params, socket) do
+    {:noreply, socket}
+  end
+
   defp save_kanji(socket, :new, kanji_params) do
     case Content.create_kanji(kanji_params) do
       {:ok, _kanji} ->

@@ -67,9 +67,10 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
 
   # Generates test steps for all grammar lesson steps
   defp generate_steps(test, lesson_steps) do
-    # For each lesson step, generate 2 sentence_validation steps
+    # For each lesson step with examples, generate 2 sentence_validation steps
     all_steps =
       lesson_steps
+      |> Enum.filter(fn step -> has_examples?(step) end)
       |> Enum.flat_map(fn step ->
         build_sentence_validation_steps(step)
       end)
@@ -77,6 +78,12 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
       |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
 
     Tests.create_test_steps(test, all_steps)
+  end
+
+  # Check if a lesson step has at least one example
+  defp has_examples?(lesson_step) do
+    examples = lesson_step.examples || []
+    length(examples) > 0
   end
 
   # Build 2 sentence_validation steps for a grammar lesson step

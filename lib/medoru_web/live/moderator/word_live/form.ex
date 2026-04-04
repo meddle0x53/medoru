@@ -99,6 +99,11 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
   end
 
   @impl true
+  def handle_event("clear_feedback", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event(
         "update_word_kanji_reading",
         %{"word_kanji_id" => word_kanji_id, "reading_id" => reading_id},

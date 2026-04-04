@@ -98,6 +98,11 @@ defmodule MedoruWeb.Moderator.KanjiLive.Index do
     end
   end
 
+  @impl true
+  def handle_event("clear_feedback", _params, socket) do
+    {:noreply, socket}
+  end
+
   defp list_kanji_for_admin(opts) do
     page_num = Keyword.get(opts, :page, 1)
     per_page_count = Keyword.get(opts, :per_page, @per_page)

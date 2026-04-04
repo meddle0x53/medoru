@@ -29,7 +29,7 @@ case "${1:-}" in
     
     echo "🗄️  Creating QA database..."
     cd "$PROJECT_ROOT"
-    mix ecto.create -c qa.exs || true
+    MIX_ENV=qa mix ecto.create || true
     MIX_ENV=qa mix ecto.migrate
     
     echo "🌱 Seeding test data..."
@@ -73,10 +73,10 @@ case "${1:-}" in
     
   reset)
     echo "🗑️  Dropping QA database..."
-    mix ecto.drop -c qa.exs || true
+    MIX_ENV=qa mix ecto.drop || true
     
     echo "🗄️  Recreating QA database..."
-    mix ecto.create -c qa.exs
+    MIX_ENV=qa mix ecto.create
     MIX_ENV=qa mix ecto.migrate
     
     echo "🌱 Seeding test data..."

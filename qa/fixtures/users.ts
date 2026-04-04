@@ -26,6 +26,14 @@ export const TEST_USERS = {
     description: 'Secondary admin account',
   },
 
+  // Moderator user
+  moderator: {
+    email: 'moderator@qa.test',
+    name: 'QA Moderator',
+    type: 'student' as const,
+    description: 'Moderator with content management access',
+  },
+
   // Teacher users
   teacher: {
     email: 'teacher@qa.test',

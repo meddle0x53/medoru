@@ -34,6 +34,16 @@ test_users = [
     provider_uid: "qa_google_admin_002"
   },
 
+  # Moderator user
+  %{
+    email: "moderator@qa.test",
+    name: "QA Moderator",
+    type: "student",
+    moderator: true,
+    provider: "google",
+    provider_uid: "qa_google_moderator_001"
+  },
+
   # Teacher users
   %{
     email: "teacher@qa.test",
@@ -174,8 +184,11 @@ create_or_update_user = fn user_attrs ->
       end)
 
     existing_user ->
-      # Update existing user to ensure correct type
+      # Update existing user to ensure correct type and moderator flag
       Accounts.update_user_type(existing_user, user_attrs.type)
+      if user_attrs[:moderator] != nil do
+        Accounts.update_user_moderator(existing_user, user_attrs.moderator)
+      end
       {:ok, existing_user}
   end
 end
@@ -294,6 +307,9 @@ IO.puts("""
    Admins:
    • admin@qa.test
    • admin2@qa.test
+
+   Moderators:
+   • moderator@qa.test
 
    Teachers:
    • teacher@qa.test

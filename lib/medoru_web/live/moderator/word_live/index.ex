@@ -109,6 +109,11 @@ defmodule MedoruWeb.Moderator.WordLive.Index do
     end
   end
 
+  @impl true
+  def handle_event("clear_feedback", _params, socket) do
+    {:noreply, socket}
+  end
+
   defp difficulty_badge_color(5), do: "badge-success"
   defp difficulty_badge_color(4), do: "badge-info"
   defp difficulty_badge_color(3), do: "badge-warning"
