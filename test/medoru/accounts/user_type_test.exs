@@ -81,6 +81,60 @@ defmodule Medoru.Accounts.UserTypeTest do
     test "types/0 returns all valid types" do
       assert User.types() == ["student", "teacher", "admin"]
     end
+
+    test "moderator? returns true based on moderator flag" do
+      {:ok, user} =
+        Accounts.register_user_with_oauth(%{
+          email: "mod@example.com",
+          provider: "google",
+          provider_uid: "mod123",
+          name: "Mod User"
+        })
+
+      refute User.moderator?(user)
+
+      {:ok, user} = Accounts.update_user_moderator(user, true)
+      assert User.moderator?(user)
+      assert User.staff?(user)
+      refute User.admin?(user)
+    end
+
+    test "staff? returns true for admins and moderators" do
+      {:ok, admin} =
+        Accounts.register_user_with_oauth(%{
+          email: "staff_admin@example.com",
+          provider: "google",
+          provider_uid: "sa123",
+          name: "Staff Admin"
+        })
+
+      {:ok, admin} = Accounts.update_user_type(admin, "admin")
+      assert User.staff?(admin)
+      refute User.moderator?(admin)
+
+      {:ok, mod} =
+        Accounts.register_user_with_oauth(%{
+          email: "staff_mod@example.com",
+          provider: "google",
+          provider_uid: "sm123",
+          name: "Staff Mod"
+        })
+
+      {:ok, mod} = Accounts.update_user_moderator(mod, true)
+      assert User.staff?(mod)
+      refute User.admin?(mod)
+
+      {:ok, teacher} =
+        Accounts.register_user_with_oauth(%{
+          email: "staff_teacher@example.com",
+          provider: "google",
+          provider_uid: "st123",
+          name: "Staff Teacher"
+        })
+
+      {:ok, teacher} = Accounts.update_user_type(teacher, "teacher")
+      refute User.staff?(teacher)
+    end
   end
 
   describe "list_users_for_admin/1" do

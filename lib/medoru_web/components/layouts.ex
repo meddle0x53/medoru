@@ -5,6 +5,8 @@ defmodule MedoruWeb.Layouts do
   """
   use MedoruWeb, :html
 
+  alias Medoru.Accounts.User
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -111,6 +113,16 @@ defmodule MedoruWeb.Layouts do
                 label={gettext("Custom Lessons")}
                 locale={@current_scope[:locale]}
                 class="hidden xl:block"
+              />
+            <% end %>
+
+            <%= if User.moderator?(@current_scope.current_user) do %>
+              <.nav_link
+                path="/moderator"
+                icon="hero-check-badge"
+                label={gettext("Moderator")}
+                locale={@current_scope[:locale]}
+                class="hidden md:block text-warning"
               />
             <% end %>
 
@@ -249,6 +261,19 @@ defmodule MedoruWeb.Layouts do
                       icon="hero-book-open"
                       label={gettext("Custom Lessons")}
                       locale={@current_scope[:locale]}
+                    />
+                  <% end %>
+
+                  <%= if User.moderator?(@current_scope.current_user) do %>
+                    <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
+                      {gettext("Moderator")}
+                    </div>
+                    <.mobile_nav_link
+                      path="/moderator"
+                      icon="hero-check-badge"
+                      label={gettext("Moderator Dashboard")}
+                      locale={@current_scope[:locale]}
+                      class="text-warning"
                     />
                   <% end %>
 
@@ -410,6 +435,18 @@ defmodule MedoruWeb.Layouts do
                 tabindex="0"
                 class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-52 mt-2 border border-base-300"
               >
+                <%= if User.moderator?(@current_scope.current_user) do %>
+                  <li class="menu-title px-3 py-2">
+                    <span class="text-xs text-base-content/50">{gettext("Moderation")}</span>
+                  </li>
+                  <li>
+                    <.link navigate={~p"/moderator"} class="flex items-center gap-2 text-warning">
+                      <.icon name="hero-check-badge" class="w-4 h-4" /> {gettext("Moderator Dashboard")}
+                    </.link>
+                  </li>
+                  <div class="divider my-1"></div>
+                <% end %>
+
                 <%= if @current_scope.current_user.type == "admin" do %>
                   <li class="menu-title px-3 py-2">
                     <span class="text-xs text-base-content/50">{gettext("Administration")}</span>

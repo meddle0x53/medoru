@@ -1,0 +1,435 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-2">
+        <.link navigate={~p"/moderator/words"} class="btn btn-sm btn-ghost">
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+      </div>
+    </div>
+
+    <%!-- Form --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@form}
+          id="word-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <%!-- Basic Info --%>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="label" for={@form[:text].id}>
+                <span class="label-text">{gettext("Word (Japanese)")}</span>
+              </label>
+              <.input
+                field={@form[:text]}
+                type="text"
+                class="text-xl"
+                placeholder={gettext("e.g., 日本")}
+              />
+              <%= for error <- @form[:text].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:reading].id}>
+                <span class="label-text">{gettext("Reading (Hiragana/Katakana)")}</span>
+              </label>
+              <.input
+                field={@form[:reading]}
+                type="text"
+                placeholder={gettext("e.g., にほん")}
+              />
+              <%= for error <- @form[:reading].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for={@form[:meaning].id}>
+              <span class="label-text">{gettext("Meaning (English)")}</span>
+            </label>
+            <.input
+              field={@form[:meaning]}
+              type="text"
+              placeholder={gettext("e.g., Japan")}
+            />
+            <%= for error <- @form[:meaning].errors do %>
+              <p class="text-error text-sm mt-1">{format_error(error)}</p>
+            <% end %>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="label" for={@form[:difficulty].id}>
+                <span class="label-text">{gettext("JLPT Level")}</span>
+              </label>
+              <.input
+                field={@form[:difficulty]}
+                type="select"
+                options={[
+                  {gettext("N5 (Beginner)"), 5},
+                  {gettext("N4 (Basic)"), 4},
+                  {gettext("N3 (Intermediate)"), 3},
+                  {gettext("N2 (Advanced)"), 2},
+                  {gettext("N1 (Expert)"), 1}
+                ]}
+              />
+              <%= for error <- @form[:difficulty].errors do %>
+                <p class="text-error text-sm mt-1">{format_error(error)}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:word_type].id}>
+                <span class="label-text">{gettext("Word Type")}</span>
+              </label>
+              <.input
+                field={@form[:word_type]}
+                type="select"
+                options={@word_types}
+              />
+            </div>
+
+            <div>
+              <label class="label" for={@form[:usage_frequency].id}>
+                <span class="label-text">{gettext("Frequency Rank")}</span>
+              </label>
+              <.input
+                field={@form[:usage_frequency]}
+                type="number"
+                min="1"
+                placeholder={gettext("e.g., 100")}
+              />
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("Lower = more common")}
+              </p>
+            </div>
+          </div>
+
+          <%!-- Example Sentence --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-document-text" class="w-5 h-5" />
+              {gettext("Example Sentence")}
+            </h3>
+
+            <div class="space-y-4">
+              <div>
+                <label class="label" for={@form[:example_sentence].id}>
+                  <span class="label-text">{gettext("Sentence (Japanese)")}</span>
+                </label>
+                <.input
+                  field={@form[:example_sentence]}
+                  type="text"
+                  placeholder={gettext("e.g., 日本に行きたいです。")}
+                />
+              </div>
+
+              <div>
+                <label class="label" for={@form[:example_reading].id}>
+                  <span class="label-text">{gettext("Reading")}</span>
+                </label>
+                <.input
+                  field={@form[:example_reading]}
+                  type="text"
+                  placeholder={gettext("e.g., にほんにいきたいです。")}
+                />
+              </div>
+
+              <div>
+                <label class="label" for={@form[:example_meaning].id}>
+                  <span class="label-text">{gettext("Meaning (English)")}</span>
+                </label>
+                <.input
+                  field={@form[:example_meaning]}
+                  type="text"
+                  placeholder={gettext("e.g., I want to go to Japan.")}
+                />
+              </div>
+            </div>
+          </div>
+
+          <%!-- Image Upload Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-photo" class="w-5 h-5" />
+              {gettext("Word Image")}
+            </h3>
+
+            <div class="space-y-4">
+              <%!-- Current Image Preview --%>
+              <%= if @word.image_path do %>
+                <div class="p-4 bg-base-200/50 rounded-lg">
+                  <p class="text-sm text-secondary mb-2">{gettext("Current image:")}</p>
+                  <img
+                    src={@word.image_path}
+                    alt={@word.text}
+                    class="w-full max-w-[300px] h-auto rounded-xl border border-base-300"
+                  />
+                </div>
+              <% end %>
+
+              <%!-- File Upload --%>
+              <div>
+                <label class="label">
+                  <span class="label-text">
+                    {gettext("Upload new image (300×300px recommended)")}
+                  </span>
+                </label>
+
+                <.live_file_input
+                  upload={@uploads.image}
+                  class="file-input file-input-bordered w-full"
+                />
+
+                <p class="text-xs text-base-content/50 mt-1">
+                  {gettext("Accepted formats: JPG, PNG, WebP. Max size: 500KB")}
+                </p>
+
+                <%!-- Upload Preview --%>
+                <%= for entry <- @uploads.image.entries do %>
+                  <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                    <div class="flex items-center gap-4">
+                      <.live_img_preview
+                        entry={entry}
+                        class="w-24 h-24 object-cover rounded-lg border border-base-300"
+                      />
+                      <div class="flex-1">
+                        <p class="font-medium">{entry.client_name}</p>
+                        <p class="text-sm text-secondary">
+                          {trunc(entry.client_size / 1024)} KB
+                        </p>
+
+                        <%!-- Progress bar --%>
+                        <div class="w-full bg-base-300 rounded-full h-2 mt-2">
+                          <div
+                            class="bg-primary h-2 rounded-full transition-all"
+                            style={"width: #{entry.progress}%"}
+                          >
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        phx-click="cancel-upload"
+                        phx-value-ref={entry.ref}
+                        class="btn btn-sm btn-ghost btn-circle text-error"
+                      >
+                        <.icon name="hero-x-mark" class="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <%!-- Errors --%>
+                    <%= for err <- upload_errors(@uploads.image, entry) do %>
+                      <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Translations Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-globe-alt" class="w-5 h-5" />
+              {gettext("Translations")}
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <%!-- Bulgarian Translation --%>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge badge-primary">BG</span>
+                  <span class="font-medium">{gettext("Bulgarian")}</span>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Meaning")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][bg][meaning]"
+                      id="word_translations_bg_meaning"
+                      value={get_in(@form[:translations].value || %{}, ["bg", "meaning"])}
+                      placeholder={gettext("Bulgarian meaning")}
+                    />
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Example")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][bg][example]"
+                      id="word_translations_bg_example"
+                      value={get_in(@form[:translations].value || %{}, ["bg", "example"])}
+                      placeholder={gettext("Bulgarian example sentence")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Japanese Translation (for Japanese explanations) --%>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge badge-secondary">JA</span>
+                  <span class="font-medium">{gettext("Japanese Explanation")}</span>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Meaning")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][ja][meaning]"
+                      id="word_translations_ja_meaning"
+                      value={get_in(@form[:translations].value || %{}, ["ja", "meaning"])}
+                      placeholder={gettext("Japanese explanation")}
+                    />
+                  </div>
+                  <div>
+                    <label class="label">
+                      <span class="label-text">{gettext("Example")}</span>
+                    </label>
+                    <.input
+                      field={@form[:translations]}
+                      type="text"
+                      name="word[translations][ja][example]"
+                      id="word_translations_ja_example"
+                      value={get_in(@form[:translations].value || %{}, ["ja", "example"])}
+                      placeholder={gettext("Japanese example")}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Actions --%>
+          <div class="border-t border-base-300 pt-6 flex items-center justify-end gap-4">
+            <.link navigate={~p"/moderator/words"} class="btn btn-ghost">
+              {gettext("Cancel")}
+            </.link>
+            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              <%= if @live_action == :new do %>
+                {gettext("Create Word")}
+              <% else %>
+                {gettext("Update Word")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+
+    <%!-- Kanji Readings Section (Edit only) - Outside main form --%>
+    <%= if @live_action == :edit do %>
+      <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+              <.icon name="hero-language" class="w-5 h-5" />
+              {gettext("Kanji Associations")}
+            </h3>
+            <button
+              type="button"
+              phx-click="extract_kanji"
+              class="btn btn-sm btn-outline btn-primary"
+            >
+              <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+              {gettext("Extract Kanji")}
+            </button>
+          </div>
+
+          <%= if @word_kanjis_with_readings == [] do %>
+            <div class="text-center py-8 text-secondary">
+              <.icon name="hero-language" class="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>{gettext("No kanji associated with this word yet.")}</p>
+              <p class="text-sm mt-1">
+                {gettext("Click 'Extract Kanji' to automatically detect kanji in the word text.")}
+              </p>
+            </div>
+          <% else %>
+            <div class="space-y-4">
+              <%= for {word_kanji, readings} <- @word_kanjis_with_readings do %>
+                <div class="p-4 bg-base-200/50 rounded-lg">
+                  <div class="flex items-center gap-3 mb-3">
+                    <span class="text-3xl font-medium text-primary">
+                      {word_kanji.kanji.character}
+                    </span>
+                    <span class="text-sm text-secondary">
+                      {gettext("Position")} #{word_kanji.position + 1}
+                    </span>
+                  </div>
+
+                  <.form
+                    for={%{}}
+                    phx-change="update_word_kanji_reading"
+                    class="flex flex-col sm:flex-row gap-3 items-start sm:items-end"
+                  >
+                    <input type="hidden" name="word_kanji_id" value={word_kanji.id} />
+
+                    <div class="flex-1 w-full">
+                      <label class="label">
+                        <span class="label-text">{gettext("Reading used in this word")}</span>
+                      </label>
+                      <select
+                        name="reading_id"
+                        class="select select-bordered w-full"
+                      >
+                        <option value="" selected={is_nil(word_kanji.kanji_reading_id)}>
+                          {gettext("-- Select a reading --")}
+                        </option>
+                        <%= for reading <- readings do %>
+                          <option
+                            value={reading.id}
+                            selected={word_kanji.kanji_reading_id == reading.id}
+                          >
+                            {String.upcase(to_string(reading.reading_type))}: {reading.reading} ({reading.romaji})
+                          </option>
+                        <% end %>
+                      </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-primary">
+                      <.icon name="hero-check" class="w-4 h-4" />
+                      <span class="hidden sm:inline">{gettext("Update")}</span>
+                    </button>
+                  </.form>
+
+                  <%= if word_kanji.kanji_reading do %>
+                    <div class="mt-2 text-sm text-success flex items-center gap-2">
+                      <.icon name="hero-check-circle" class="w-4 h-4" />
+                      {gettext("Currently using")}:
+                      <strong>{word_kanji.kanji_reading.reading}</strong>
+                    </div>
+                  <% else %>
+                    <div class="mt-2 text-sm text-warning flex items-center gap-2">
+                      <.icon name="hero-exclamation-triangle" class="w-4 h-4" />
+                      {gettext("No specific reading set")}
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

@@ -203,6 +203,15 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
+  Updates a user's moderator flag.
+  """
+  def update_user_moderator(%User{} = user, moderator) when is_boolean(moderator) do
+    user
+    |> User.moderator_changeset(%{moderator: moderator})
+    |> Repo.update()
+  end
+
+  @doc """
   Gets a single user with profile and stats for admin.
   """
   def get_user_for_admin!(id) do

@@ -50,6 +50,25 @@ defmodule MedoruWeb.Admin.UserLive.Edit do
   end
 
   @impl true
+  def handle_event("toggle_moderator", _, socket) do
+    user = socket.assigns.user
+    new_value = !user.moderator
+
+    case Accounts.update_user_moderator(user, new_value) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:user, updated_user)
+         |> put_flash(:info, gettext("Moderator status updated."))}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to update moderator status."))}
+    end
+  end
+
+  @impl true
   def handle_event("go_back", _, socket) do
     {:noreply,
      socket

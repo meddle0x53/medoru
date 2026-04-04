@@ -176,6 +176,38 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Moderator routes
+  scope "/moderator", MedoruWeb.Moderator do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :moderator,
+      on_mount: [
+        {MedoruWeb.UserAuth, :require_authenticated_user},
+        {MedoruWeb.Plugs.Moderator, :default}
+      ] do
+      live "/", DashboardLive
+    end
+  end
+
+  # Moderator content management (duplicated admin LiveViews with moderator paths)
+  scope "/moderator", MedoruWeb.Moderator do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :moderator_content,
+      on_mount: [
+        {MedoruWeb.UserAuth, :require_authenticated_user},
+        {MedoruWeb.Plugs.Moderator, :default}
+      ] do
+      live "/kanji", KanjiLive.Index
+      live "/kanji/new", KanjiLive.Form, :new
+      live "/kanji/:id/edit", KanjiLive.Form, :edit
+
+      live "/words", WordLive.Index
+      live "/words/new", WordLive.Form, :new
+      live "/words/:id/edit", WordLive.Form, :edit
+    end
+  end
+
   # Admin routes
   scope "/admin", MedoruWeb.Admin do
     pipe_through [:browser, :require_authenticated_user]

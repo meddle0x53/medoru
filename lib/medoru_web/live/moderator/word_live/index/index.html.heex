@@ -1,0 +1,274 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <.link navigate={~p"/moderator"} class="btn btn-sm btn-ghost">
+            <.icon name="hero-arrow-left" class="w-4 h-4" />
+          </.link>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Word Management")}</h1>
+        </div>
+        <p class="mt-1 text-secondary">
+          {gettext("Manage vocabulary words. Total: %{count}", count: @total_count)}
+        </p>
+      </div>
+      <.link
+        navigate={~p"/moderator/words/new"}
+        class="btn btn-primary w-full sm:w-auto min-h-[44px] touch-target"
+      >
+        <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Add Word")}
+      </.link>
+    </div>
+
+    <%!-- Filters --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body p-4 sm:p-6">
+        <div class="flex flex-col gap-4">
+          <%!-- Difficulty Filter --%>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
+              {gettext("Filter by level:")}
+            </span>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="filter_difficulty"
+                phx-value-difficulty=""
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(is_nil(@difficulty_filter), do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("All")}
+              </button>
+              <%= for diff <- 5..1//-1 do %>
+                <button
+                  phx-click="filter_difficulty"
+                  phx-value-difficulty={diff}
+                  class={[
+                    "btn btn-sm min-h-[40px] touch-target",
+                    if(@difficulty_filter == to_string(diff),
+                      do: "btn-active btn-primary",
+                      else: "btn-ghost"
+                    )
+                  ]}
+                >
+                  N{diff}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Search --%>
+          <.form
+            for={%{}}
+            phx-submit="search"
+            class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full"
+          >
+            <div class="join w-full sm:flex-1">
+              <input
+                type="text"
+                name="search[query]"
+                value={@search}
+                placeholder={gettext("Search word, reading, or meaning...")}
+                class="join-item input input-bordered w-full text-base min-h-[48px]"
+              />
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="submit"
+                class="btn btn-primary min-h-[48px] touch-target flex-1 sm:flex-none px-4"
+              >
+                <.icon name="hero-magnifying-glass" class="w-5 h-5 sm:mr-2" />
+                <span class="hidden sm:inline">{gettext("Search")}</span>
+              </button>
+              <%= if @search || @difficulty_filter do %>
+                <button
+                  type="button"
+                  phx-click="clear_filters"
+                  class="btn btn-ghost min-h-[48px] touch-target px-4"
+                >
+                  {gettext("Clear")}
+                </button>
+              <% end %>
+            </div>
+          </.form>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Words Table (Desktop) / Cards (Mobile) --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+      <%!-- Desktop Table --%>
+      <div class="hidden md:block table-responsive">
+        <table class="table table-zebra w-full">
+          <thead>
+            <tr class="bg-base-200/50">
+              <th class="text-base-content/70">{gettext("Word")}</th>
+              <th class="text-base-content/70">{gettext("Reading")}</th>
+              <th class="text-base-content/70">{gettext("Meaning")}</th>
+              <th class="text-base-content/70">{gettext("Level")}</th>
+              <th class="text-base-content/70">{gettext("Trans")}</th>
+              <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for word <- @words do %>
+              <tr class="hover:bg-base-200/50">
+                <td>
+                  <span class="text-xl font-medium">{word.text}</span>
+                </td>
+                <td class="text-base-content/70">
+                  {word.reading}
+                </td>
+                <td class="max-w-xs truncate">
+                  {word.meaning}
+                </td>
+                <td>
+                  <span class={["badge badge-sm", difficulty_badge_color(word.difficulty)]}>
+                    N{word.difficulty}
+                  </span>
+                </td>
+                <td>
+                  <div class="flex gap-1">
+                    <%= if get_in(word.translations, ["bg", "meaning"]) do %>
+                      <span class="badge badge-xs badge-primary">BG</span>
+                    <% end %>
+                    <%= if get_in(word.translations, ["ja", "meaning"]) do %>
+                      <span class="badge badge-xs badge-secondary">JA</span>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="text-right">
+                  <div class="flex items-center justify-end gap-1">
+                    <.link
+                      navigate={~p"/moderator/words/#{word.id}/edit"}
+                      class="btn btn-ghost btn-sm"
+                      title={gettext("Edit")}
+                    >
+                      <.icon name="hero-pencil-square" class="w-4 h-4" />
+                    </.link>
+                    <button
+                      phx-click="delete"
+                      phx-value-id={word.id}
+                      data-confirm={gettext("Are you sure you want to delete this word?")}
+                      class="btn btn-ghost btn-sm text-error"
+                      title={gettext("Delete")}
+                    >
+                      <.icon name="hero-trash" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%!-- Mobile Cards --%>
+      <div class="md:hidden divide-y divide-base-200">
+        <%= for word <- @words do %>
+          <div class="p-4 hover:bg-base-200/50">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                  <span class="text-xl font-medium font-japanese">{word.text}</span>
+                  <span class={["badge badge-sm", difficulty_badge_color(word.difficulty)]}>
+                    N{word.difficulty}
+                  </span>
+                </div>
+                <p class="text-sm text-base-content/70 font-japanese">{word.reading}</p>
+                <p class="text-sm text-secondary line-clamp-2">{word.meaning}</p>
+                <div class="flex gap-1 mt-2">
+                  <%= if get_in(word.translations, ["bg", "meaning"]) do %>
+                    <span class="badge badge-xs badge-primary">BG</span>
+                  <% end %>
+                  <%= if get_in(word.translations, ["ja", "meaning"]) do %>
+                    <span class="badge badge-xs badge-secondary">JA</span>
+                  <% end %>
+                </div>
+              </div>
+              <div class="flex flex-row sm:flex-col gap-2">
+                <.link
+                  navigate={~p"/moderator/words/#{word.id}/edit"}
+                  class="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] touch-target"
+                >
+                  <.icon name="hero-pencil-square" class="w-5 h-5" />
+                </.link>
+                <button
+                  phx-click="delete"
+                  phx-value-id={word.id}
+                  data-confirm={gettext("Are you sure you want to delete this word?")}
+                  class="btn btn-ghost btn-sm text-error min-h-[44px] min-w-[44px] touch-target"
+                >
+                  <.icon name="hero-trash" class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%= if @words == [] do %>
+        <div class="p-12 text-center">
+          <.icon name="hero-book-open" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
+          <p class="text-base-content/50">{gettext("No words found matching your criteria.")}</p>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+        <div class="text-sm text-base-content/60">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </div>
+        <div class="join">
+          <.link
+            navigate={
+              if @page > 1,
+                do:
+                  ~p"/moderator/words?#{%{page: @page - 1, difficulty: @difficulty_filter, search: @search}}",
+                else: "#"
+            }
+            class={[
+              "join-item btn min-h-[44px] min-w-[44px] touch-target",
+              if(@page <= 1, do: "btn-disabled")
+            ]}
+          >
+            <.icon name="hero-chevron-left" class="w-5 h-5" />
+          </.link>
+          <%= for page_num <- 1..@total_pages do %>
+            <%= if abs(page_num - @page) <= 2 or page_num == 1 or page_num == @total_pages do %>
+              <.link
+                navigate={
+                  ~p"/moderator/words?#{%{page: page_num, difficulty: @difficulty_filter, search: @search}}"
+                }
+                class={[
+                  "join-item btn w-11 h-11 min-w-[44px] max-w-[44px] p-0 touch-target",
+                  if(page_num == @page, do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {page_num}
+              </.link>
+            <% end %>
+          <% end %>
+          <.link
+            navigate={
+              if @page < @total_pages,
+                do:
+                  ~p"/moderator/words?#{%{page: @page + 1, difficulty: @difficulty_filter, search: @search}}",
+                else: "#"
+            }
+            class={[
+              "join-item btn min-h-[44px] min-w-[44px] touch-target",
+              if(@page >= @total_pages, do: "btn-disabled")
+            ]}
+          >
+            <.icon name="hero-chevron-right" class="w-5 h-5" />
+          </.link>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

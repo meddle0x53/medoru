@@ -112,7 +112,7 @@
                           {gettext("Can learn, take tests, and join classrooms.")}
                         <% _ -> %>
                           {gettext("Standard user")}
-                      <% end %>
+                        <% end %>
                     </div>
                   </div>
                 </div>
@@ -123,6 +123,57 @@
             </button>
           <% end %>
         </div>
+      </div>
+    </div>
+
+    <%!-- Moderator Toggle Card --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4">{gettext("Moderator Access")}</h2>
+        <p class="text-secondary mb-6">
+          {gettext("Grant this user access to manage words and kanji via the moderator dashboard.")}
+        </p>
+
+        <button
+          phx-click="toggle_moderator"
+          class={[
+            "w-full p-4 rounded-xl border-2 text-left transition-all",
+            if @user.moderator do
+              "border-warning bg-warning/5"
+            else
+              "border-base-300 hover:border-warning/30"
+            end
+          ]}
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class={[
+                "w-10 h-10 rounded-full flex items-center justify-center",
+                @user.moderator && "bg-warning/10 text-warning",
+                !@user.moderator && "bg-base-200"
+              ]}>
+                <.icon name="hero-check-badge" class="w-5 h-5" />
+              </div>
+              <div>
+                <div class="font-semibold text-base-content">
+                  {gettext("Content Moderator")}
+                </div>
+                <div class="text-sm text-base-content/60">
+                  <%= if @user.moderator do %>
+                    {gettext("Can edit words and kanji. Independent of user type.")}
+                  <% else %>
+                    {gettext("No moderator access.")}
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            <%= if @user.moderator do %>
+              <span class="badge badge-warning">{gettext("Enabled")}</span>
+            <% else %>
+              <span class="badge badge-ghost">{gettext("Disabled")}</span>
+            <% end %>
+          </div>
+        </button>
       </div>
     </div>
 

@@ -16,6 +16,7 @@ defmodule Medoru.Accounts.User do
     field :name, :string
     field :avatar_url, :string
     field :type, :string, default: "student"
+    field :moderator, :boolean, default: false
 
     has_one :profile, Medoru.Accounts.UserProfile
     has_one :stats, Medoru.Accounts.UserStats
@@ -26,7 +27,8 @@ defmodule Medoru.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :provider, :provider_uid, :name, :avatar_url, :type])
+    |> cast(attrs, [:email, :provider, :provider_uid, :name, :avatar_url, :type, :moderator])
+    |> validate_required([:email, :provider, :provider_uid, :moderator])
     |> validate_required([:email, :provider, :provider_uid])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> validate_inclusion(:provider, ["google"])
@@ -49,10 +51,32 @@ defmodule Medoru.Accounts.User do
   end
 
   @doc """
+  Changeset for updating moderator flag.
+  """
+  def moderator_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:moderator])
+    |> validate_required([:moderator])
+  end
+
+  @doc """
   Returns true if user is an admin.
   """
   def admin?(%__MODULE__{type: "admin"}), do: true
   def admin?(_), do: false
+
+  @doc """
+  Returns true if user is a moderator (content manager).
+  """
+  def moderator?(%__MODULE__{moderator: true}), do: true
+  def moderator?(_), do: false
+
+  @doc """
+  Returns true if user has staff access (admin or moderator).
+  """
+  def staff?(%__MODULE__{type: "admin"}), do: true
+  def staff?(%__MODULE__{moderator: true}), do: true
+  def staff?(_), do: false
 
   @doc """
   Returns true if user is a teacher (includes admins).

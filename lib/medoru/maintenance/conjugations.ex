@@ -772,7 +772,7 @@ defmodule Medoru.Maintenance.Conjugations do
         example_sentence: "猫がいます",
         example_reading: "ねこがいます",
         example_meaning: "There is a cat",
-        translations: %{"en" => "to be (animate)", "bg" => "да бъда (за живи същества)"}
+        translations: %{"en" => %{"meaning" => "to be (animate)"}, "bg" => %{"meaning" => "да бъда (за живи същества)"}}
       }
     ]
 
