@@ -11,7 +11,13 @@
 - Word Sets: User-created collections of up to 100 words
 - Word Set management: Create, edit, delete, paginated list with search/sort
 - Word selection: Autocomplete input for adding words
-- Practice Tests: Configurable test generation per word set
+- Practice Tests: Full test-taking experience with all question types
+  - Multichoice (word_to_meaning, word_to_reading, image_to_meaning)
+  - Text input (reading_text)
+  - Kanji writing with stroke validation
+  - Answer validation and feedback
+  - Test completion statistics (correct/incorrect/score)
+- Full i18n support (Bulgarian, Japanese translations)
 - Routes: `/words/sets/*` with full CRUD
 
 ### What's Complete (v0.1.4)
@@ -30,27 +36,31 @@
 
 ### What's Complete (v0.1.5) - Word Sets
 **Status**: ✅ COMPLETE  
-**Plan**: [.kimi/plans/zatanna-stature-rocket.md](/.kimi/plans/zatanna-stature-rocket.md)
+**Date**: 2026-04-05
 
 **Features:**
 - Word Sets: User-created collections of up to 100 words
 - Word Set management: Create, edit, delete, paginated list with search/sort
-- Word selection: Autocomplete input (reuse CustomLesson component)
-- Word Set view: Display words with N1-N5 levels (reuse /words view)
-- Practice Tests: Configurable test generation per word set
-  - Select step types (word_to_meaning, word_to_reading, reading_text, image_to_meaning, kanji_writing)
-  - Configure max steps per word (1-5, random per word)
-  - Take practice tests (no points awarded)
-  - Delete and recreate tests at any time
+- Word selection: Autocomplete input for adding words
+- Word reordering: Drag-and-drop to change word order in set
+- Practice Tests: Full test-taking experience
+  - Configurable step types (word_to_meaning, word_to_reading, reading_text, image_to_meaning, kanji_writing)
+  - Max steps per word (1-5, random per word)
+  - All question types supported with proper UI
+  - Answer validation using server's validation logic
+  - Test completion with statistics (correct/incorrect/score)
+  - No points awarded (practice only)
+- Full i18n support: Bulgarian and Japanese translations for all UI text
 
 **Routes:** `/words/sets/*`
 
 **Key Technical Changes:**
 - Migration: `word_sets` and `word_set_words` tables
-- Schemas: `WordSet`, `WordSetWord`
-- Context: `Learning.WordSets` for CRUD and word management
+- Schemas: `WordSet`, `WordSetWord` with position tracking
+- Context: `Learning.WordSets` for CRUD and test generation
 - Generator: `Tests.WordSetTestGenerator` for practice test creation
-- LiveViews: Index, Form, EditWords, Show, TestConfig
+- LiveViews: Index, Form, EditWords, Show, TestConfig, Test
+- Added `show_submit` attribute to WritingComponent for flexible button display
 
 ---
 
@@ -187,6 +197,14 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 ---
 
 ## Recent Changes
+
+### 2026-04-05 - Word Sets v0.1.5 Complete
+- Word Sets: User-created collections of up to 100 words
+- Practice tests with all question types (multichoice, reading_text, kanji_writing, image_to_meaning)
+- Full test-taking experience with answer validation and feedback
+- Test completion statistics (correct/incorrect/score)
+- Full i18n support (Bulgarian, Japanese)
+- Bug fixes: duplicate options, answer validation, boolean event handling
 
 ### 2026-03-31 - Grammar v0.1.4 Complete
 - Grammar lesson system with pattern validation
