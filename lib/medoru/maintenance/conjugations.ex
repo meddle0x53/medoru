@@ -41,6 +41,115 @@ defmodule Medoru.Maintenance.Conjugations do
   end
 
   @doc """
+  Seeds or updates grammar forms required for conjugation generation.
+  
+  This ensures the grammar_forms table has all the forms expected by
+  `generate_all/1` and `generate_for_type/1`.
+  
+  ## Options
+    * `:clear_first` - If true, deletes all existing grammar forms first (default: false)
+  
+  ## Usage
+      Medoru.Maintenance.Conjugations.seed_grammar_forms()
+      Medoru.Maintenance.Conjugations.seed_grammar_forms(clear_first: true)
+  """
+  def seed_grammar_forms(opts \\ []) do
+    if opts[:clear_first] do
+      IO.puts("Clearing existing grammar forms...")
+      {count, _} = Repo.delete_all(GrammarForm)
+      IO.puts("  Deleted #{count} forms")
+    end
+
+    IO.puts("Seeding grammar forms...")
+
+    # Verb forms (13 forms)
+    verb_forms = [
+      %{name: "dictionary", display_name: "る", word_type: "verb", suffix_pattern: "る", description: "Dictionary form, plain form"},
+      %{name: "masu-form", display_name: "ます", word_type: "verb", suffix_pattern: "ます", description: "Polite present/future"},
+      %{name: "te-form", display_name: "て", word_type: "verb", suffix_pattern: "て", description: "Te-form for connecting verbs"},
+      %{name: "ta-form", display_name: "た", word_type: "verb", suffix_pattern: "た", description: "Past plain form"},
+      %{name: "nai-form", display_name: "ない", word_type: "verb", suffix_pattern: "ない", description: "Negative plain form"},
+      %{name: "nakute-form", display_name: "なくて", word_type: "verb", suffix_pattern: "なくて", description: "Negative te-form"},
+      %{name: "nakatta-form", display_name: "なかった", word_type: "verb", suffix_pattern: "なかった", description: "Negative past"},
+      %{name: "potential", display_name: "られる", word_type: "verb", suffix_pattern: "られる", description: "Potential form (can do)"},
+      %{name: "passive", display_name: "られる", word_type: "verb", suffix_pattern: "られる", description: "Passive form"},
+      %{name: "causative", display_name: "させる", word_type: "verb", suffix_pattern: "させる", description: "Causative form (make/let do)"},
+      %{name: "imperative", display_name: "ろ", word_type: "verb", suffix_pattern: "ろ", description: "Imperative/command form"},
+      %{name: "volitional", display_name: "よう", word_type: "verb", suffix_pattern: "よう", description: "Volitional form (let's do)"},
+      %{name: "conditional", display_name: "れば", word_type: "verb", suffix_pattern: "れば", description: "Conditional form (if)"},
+    ]
+
+    # い-adjective forms (6 forms)
+    i_adjective_forms = [
+      %{name: "dictionary", display_name: "い", word_type: "adjective", suffix_pattern: "い", description: "Dictionary form"},
+      %{name: "ku-form", display_name: "く", word_type: "adjective", suffix_pattern: "く", description: "Ku-form for adverbs (adverbial)"},
+      %{name: "kute-form", display_name: "くて", word_type: "adjective", suffix_pattern: "くて", description: "Te-form for connecting (kute-form)"},
+      %{name: "katta-form", display_name: "かった", word_type: "adjective", suffix_pattern: "かった", description: "Past tense (katta-form)"},
+      %{name: "kunai-form", display_name: "くない", word_type: "adjective", suffix_pattern: "くない", description: "Negative present (kunai-form)"},
+      %{name: "kunakatta-form", display_name: "くなかった", word_type: "adjective", suffix_pattern: "くなかった", description: "Negative past (kunakatta-form)"},
+    ]
+
+    # な-adjective forms (6 forms)
+    na_adjective_forms = [
+      %{name: "dictionary-na", display_name: "だ", word_type: "adjective", suffix_pattern: "だ", description: "Dictionary form with da"},
+      %{name: "na-form", display_name: "な", word_type: "adjective", suffix_pattern: "な", description: "Attributive form (before noun)"},
+      %{name: "adverbial", display_name: "で", word_type: "adjective", suffix_pattern: "で", description: "Te-form/de-form for connecting"},
+      %{name: "past-i", display_name: "だった", word_type: "adjective", suffix_pattern: "だった", description: "Past form (deshita/datta)"},
+      %{name: "negative-na", display_name: "ではない", word_type: "adjective", suffix_pattern: "ではない", description: "Negative plain (dewa nai)"},
+    ]
+
+    all_forms = verb_forms ++ i_adjective_forms ++ na_adjective_forms
+
+    results =
+      Enum.map(all_forms, fn form_attrs ->
+        case Repo.get_by(GrammarForm, name: form_attrs.name, word_type: form_attrs.word_type) do
+          nil ->
+            %GrammarForm{}
+            |> GrammarForm.changeset(form_attrs)
+            |> Repo.insert()
+            |> case do
+              {:ok, form} ->
+                IO.puts("  ✓ Created: #{form.name} (#{form.word_type})")
+                {:created, form}
+
+              {:error, changeset} ->
+                IO.puts("  ✗ Error creating #{form_attrs.name}: #{inspect(changeset.errors)}")
+                {:error, changeset}
+            end
+
+          existing ->
+            # Update if needed
+            existing
+            |> GrammarForm.changeset(form_attrs)
+            |> Repo.update()
+            |> case do
+              {:ok, form} ->
+                IO.puts("  ✓ Updated: #{form.name} (#{form.word_type})")
+                {:updated, form}
+
+              {:error, changeset} ->
+                IO.puts("  ✗ Error updating #{form_attrs.name}: #{inspect(changeset.errors)}")
+                {:error, changeset}
+            end
+        end
+      end)
+
+    created = Enum.count(results, fn {status, _} -> status == :created end)
+    updated = Enum.count(results, fn {status, _} -> status == :updated end)
+    errors = Enum.count(results, fn {status, _} -> status == :error end)
+
+    IO.puts("\n✅ Grammar forms seeding complete!")
+    IO.puts("Total: #{length(all_forms)} forms (#{created} created, #{updated} updated, #{errors} errors)")
+
+    %{
+      total: length(all_forms),
+      created: created,
+      updated: updated,
+      errors: errors
+    }
+  end
+
+  @doc """
   Generates all conjugations for verbs and adjectives.
   Safe to run multiple times (upserts on conflict).
 
@@ -171,10 +280,13 @@ defmodule Medoru.Maintenance.Conjugations do
     adj_forms = Map.get(forms, "adjective", [])
     
     # Map database form names to conjugation functions
-    # Database has: dictionary-i, adverbial, te-form-adj, past-i, negative-i
+    # Supports both naming conventions:
+    # - New: dictionary-i, adverbial, te-form-adj, past-i, negative-i
+    # - Legacy: dictionary, ku-form, kute-form, katta-form, kunai-form
     i_adj_forms = 
       adj_forms
-      |> Enum.filter(&(&1.name in ["dictionary-i", "adverbial", "te-form-adj", "past-i", "negative-i"]))
+      |> Enum.filter(&(&1.name in ["dictionary-i", "adverbial", "te-form-adj", "past-i", "negative-i",
+                                   "dictionary", "ku-form", "kute-form", "katta-form", "kunai-form"]))
 
     Enum.reduce(i_adjectives, {0, 0}, fn word, {count, errors} ->
       Enum.reduce(i_adj_forms, {count, errors}, fn form, {c, e} ->
@@ -695,6 +807,7 @@ defmodule Medoru.Maintenance.Conjugations do
       end
 
     case form_name do
+      # New naming convention
       "dictionary-i" -> 
         {text, reading}
       "adverbial" -> 
@@ -705,6 +818,19 @@ defmodule Medoru.Maintenance.Conjugations do
         {stem <> "かった", base_reading <> "かった"}
       "negative-i" -> 
         {stem <> "くない", base_reading <> "くない"}
+      # Legacy naming convention
+      "dictionary" -> 
+        {text, reading}
+      "ku-form" -> 
+        {stem <> "く", base_reading <> "く"}
+      "kute-form" -> 
+        {stem <> "くて", base_reading <> "くて"}
+      "katta-form" -> 
+        {stem <> "かった", base_reading <> "かった"}
+      "kunai-form" -> 
+        {stem <> "くない", base_reading <> "くない"}
+      "kunakatta-form" ->
+        {stem <> "くなかった", base_reading <> "くなかった"}
       _ -> nil
     end
   end
