@@ -2,10 +2,17 @@
 
 ## Current State
 
-**Version**: 0.1.4 ✅ COMPLETE  
-**Status**: Bug fixing period - Grammar validation stable  
+**Version**: 0.1.5 ✅ COMPLETE  
+**Status**: Word Sets feature implemented and ready for testing  
 **Tests**: 630 passing (some flaky due to async DB locks)  
 **URL**: https://medoru.net
+
+### What's Complete (v0.1.5)
+- Word Sets: User-created collections of up to 100 words
+- Word Set management: Create, edit, delete, paginated list with search/sort
+- Word selection: Autocomplete input for adding words
+- Practice Tests: Configurable test generation per word set
+- Routes: `/words/sets/*` with full CRUD
 
 ### What's Complete (v0.1.4)
 - Grammar lesson system with pattern builder
@@ -20,6 +27,32 @@
 - Public kanji/words access for anonymous users
 - Anonymous language switching
 - Word picture uploads (admin)
+
+### What's Complete (v0.1.5) - Word Sets
+**Status**: ✅ COMPLETE  
+**Plan**: [.kimi/plans/zatanna-stature-rocket.md](/.kimi/plans/zatanna-stature-rocket.md)
+
+**Features:**
+- Word Sets: User-created collections of up to 100 words
+- Word Set management: Create, edit, delete, paginated list with search/sort
+- Word selection: Autocomplete input (reuse CustomLesson component)
+- Word Set view: Display words with N1-N5 levels (reuse /words view)
+- Practice Tests: Configurable test generation per word set
+  - Select step types (word_to_meaning, word_to_reading, reading_text, image_to_meaning, kanji_writing)
+  - Configure max steps per word (1-5, random per word)
+  - Take practice tests (no points awarded)
+  - Delete and recreate tests at any time
+
+**Routes:** `/words/sets/*`
+
+**Key Technical Changes:**
+- Migration: `word_sets` and `word_set_words` tables
+- Schemas: `WordSet`, `WordSetWord`
+- Context: `Learning.WordSets` for CRUD and word management
+- Generator: `Tests.WordSetTestGenerator` for practice test creation
+- LiveViews: Index, Form, EditWords, Show, TestConfig
+
+---
 
 ### What's Next (v0.2.0)
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
@@ -60,6 +93,33 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 ---
 
 ## Version History
+
+### v0.1.5 - Word Sets (2026-04-05)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- Word Sets: User-created collections of up to 100 words for focused study
+- Word Set CRUD: Create, edit, delete with pagination, search, and sorting
+- Word management: Add/remove words via autocomplete, reorder with up/down buttons
+- Word Set view: Display words with N1-N5 proficiency levels
+- Practice Tests: Configurable tests per word set
+  - Selectable question types (word_to_meaning, word_to_reading, reading_text, image_to_meaning, kanji_writing)
+  - Random 1-5 questions per word from selected types
+  - No points awarded - pure practice
+  - Hard-delete and recreate at any time
+
+**Routes:** `/words/sets/*`
+
+**Key Technical Changes:**
+- Migration: `word_sets` and `word_set_words` tables
+- Schemas: `WordSet`, `WordSetWord` with validations
+- Context: `Learning.WordSets` for CRUD, word management, and test generation
+- Generator: `Tests.WordSetTestGenerator` for configurable practice test creation
+- LiveViews: Index, Form, EditWords, Show, TestConfig
+- Router: Added `/words/sets` nested routes
+- Navigation: Added "My Word Sets" link from `/words`
+
+---
 
 ### v0.1.4 - Grammar Lessons (2026-03-31)
 **Status**: ✅ COMPLETE

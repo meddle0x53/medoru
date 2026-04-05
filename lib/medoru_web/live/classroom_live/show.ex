@@ -489,7 +489,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
         <div class="space-y-3 sm:space-y-4">
           <%= for classroom_lesson <- @custom_lessons do %>
             <% lesson = classroom_lesson.custom_lesson %>
-            <% progress = Map.get(@lesson_progress, lesson.id) %>
+            <% progress = get_lesson_progress_map(@lesson_progress, lesson.id) %>
+            <% progress_status = progress.status %>
             <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
               <div class="card-body p-4 sm:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
@@ -522,7 +523,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         </span>
                       <% end %>
 
-                      <%= case progress do %>
+                      <%= case progress_status do %>
                         <% "completed" -> %>
                           <span class="badge badge-success badge-sm">
                             <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
@@ -540,15 +541,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   </div>
 
                   <div class="sm:ml-4 self-start sm:self-auto">
-                    <%= case progress do %>
+                    <%= case progress_status do %>
                       <% "completed" -> %>
                         <div class="flex items-center gap-2">
                           <span class="badge badge-success">
-                            +{Map.get(
-                              get_lesson_progress_map(@lesson_progress, lesson.id),
-                              :points_earned,
-                              0
-                            )} {gettext("pts")}
+                            +{progress.points_earned} {gettext("pts")}
                           </span>
                           <.link
                             navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
@@ -562,7 +559,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
                           class="btn btn-primary btn-sm sm:btn-md"
                         >
-                          <%= if progress == "in_progress" do %>
+                          <%= if progress_status == "in_progress" do %>
                             <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
                           <% else %>
                             <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}

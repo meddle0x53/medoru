@@ -28,6 +28,22 @@ defmodule MedoruWeb.Router do
     plug MedoruWeb.UserAuth, :require_authenticated_user
   end
 
+  # Word Sets routes (require authentication) - MUST come before /words/:id
+  scope "/words/sets", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :word_sets,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/", WordSetLive.Index
+      live "/new", WordSetLive.Form, :new
+      live "/:id", WordSetLive.Show
+      live "/:id/edit", WordSetLive.Form, :edit
+      live "/:id/edit-words", WordSetLive.EditWords
+      live "/:id/test-config", WordSetLive.TestConfig
+      live "/:id/test", WordSetLive.Test
+    end
+  end
+
   # Public routes
   scope "/", MedoruWeb do
     pipe_through :browser

@@ -8,6 +8,19 @@
       </p>
     </div>
 
+    <%!-- User Actions --%>
+    <%= if @current_scope && @current_scope.current_user do %>
+      <div class="flex gap-2 mb-4">
+        <.link
+          navigate={~p"/words/sets"}
+          class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content rounded-xl font-medium transition-all flex items-center gap-2"
+        >
+          <.icon name="hero-folder" class="w-4 h-4" />
+          {gettext("My Word Sets")}
+        </.link>
+      </div>
+    <% end %>
+
     <%!-- Difficulty Selector --%>
     <div class="flex flex-wrap gap-2 mb-6">
       <.link

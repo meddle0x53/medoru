@@ -5,6 +5,7 @@ defmodule Medoru.LearningFixtures do
   """
 
   alias Medoru.Learning
+  alias Medoru.Learning.WordSets
 
   @doc """
   Generate a user_progress for kanji.
@@ -62,5 +63,20 @@ defmodule Medoru.LearningFixtures do
     else
       lesson_progress
     end
+  end
+
+  @doc """
+  Generate a word_set.
+  """
+  def word_set_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        name: "Test Word Set #{System.unique_integer([:positive])}",
+        description: "A test word set",
+        word_count: 0
+      })
+
+    {:ok, word_set} = WordSets.create_word_set(attrs)
+    word_set
   end
 end

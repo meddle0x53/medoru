@@ -1,0 +1,293 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+    <%= if assigns[:test_completed] do %>
+      <%!-- Test Complete --%>
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-6 sm:p-8 text-center">
+        <div class="w-16 h-16 sm:w-24 sm:h-24 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+          <.icon name="hero-check-circle" class="w-8 h-8 sm:w-12 sm:h-12 text-success" />
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
+          {gettext("Practice Complete!")} 🎉
+        </h1>
+        <p class="text-secondary mb-4 sm:mb-6 text-sm sm:text-base">
+          {gettext("You completed the practice test for '%{name}'", name: @word_set.name)}
+        </p>
+        
+        <%!-- Stats Summary --%>
+        <%= if assigns[:stats] do %>
+          <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="bg-success/10 rounded-xl p-4">
+              <div class="text-2xl sm:text-3xl font-bold text-success">{@stats.correct}</div>
+              <div class="text-xs sm:text-sm text-success-content/70">{gettext("Correct")}</div>
+            </div>
+            <div class="bg-error/10 rounded-xl p-4">
+              <div class="text-2xl sm:text-3xl font-bold text-error">{@stats.incorrect}</div>
+              <div class="text-xs sm:text-sm text-error-content/70">{gettext("Incorrect")}</div>
+            </div>
+            <div class="bg-primary/10 rounded-xl p-4">
+              <div class="text-2xl sm:text-3xl font-bold text-primary">{@stats.percentage}<%= "%" %></div>
+              <div class="text-xs sm:text-sm text-primary-content/70">{gettext("Score")}</div>
+            </div>
+          </div>
+        <% end %>
+        
+        <.link
+          navigate={~p"/words/sets/#{@word_set.id}"}
+          class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+        >
+          <.icon name="hero-arrow-left" class="w-5 h-5" /> {gettext("Back to Word Set")}
+        </.link>
+      </div>
+    <% else %>
+      <%!-- Header --%>
+      <div class="mb-4 sm:mb-8">
+        <div class="flex items-center gap-2 text-xs sm:text-sm text-secondary mb-1 sm:mb-2">
+          <.link
+            navigate={~p"/words/sets/#{@word_set.id}"}
+            class="hover:text-primary transition-colors flex items-center gap-1"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Set")}
+          </.link>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold text-base-content">{gettext("Practice Test")}</h1>
+        <p class="text-secondary mt-1 text-sm sm:text-base">
+          {@word_set.name}
+        </p>
+      </div>
+
+      <%= if @current_step do %>
+        <%!-- Progress Bar --%>
+        <div class="mb-4 sm:mb-8">
+          <div class="flex justify-between text-xs sm:text-sm mb-1 sm:mb-2">
+            <span class="text-secondary">
+              {gettext("Question %{current} of %{total}",
+                current: @step_number,
+                total: @total_steps
+              )}
+            </span>
+            <% progress = round(@step_number / @total_steps * 100) %>
+            <span class="text-secondary">{progress}<%= "%" %> {gettext("complete")}</span>
+          </div>
+          <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary transition-all duration-300"
+              style={"width: #{@step_number / @total_steps * 100}%"}
+            >
+            </div>
+          </div>
+        </div>
+
+        <%!-- Question Card --%>
+        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6 mb-4 sm:mb-6">
+          <%= cond do %>
+            <% @current_step.question_type == :writing -> %>
+              <%!-- Writing Question (Kanji Drawing) --%>
+              <%!-- WritingComponent handles its own question display, canvas, and submit buttons --%>
+              <MedoruWeb.LessonTestLive.WritingComponent.writing_question
+                step={@current_step}
+                target="writing-component"
+                locale={@locale}
+                show_submit={false}
+              />
+
+              <%!-- Additional Actions for Writing (shown after feedback) --%>
+              <%= if @feedback do %>
+                <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                  <button
+                    type="button"
+                    phx-click="next_step"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                  >
+                    {gettext("Continue →")}
+                  </button>
+                </div>
+              <% end %>
+            <% @current_step.question_type == :reading_text -> %>
+              <%!-- Reading Text Question --%>
+              <div class="mb-4 sm:mb-6">
+                <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                  {gettext("Type the meaning and reading:")}
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
+                  {@current_step.question}
+                </h2>
+              </div>
+
+              <%!-- Answer Inputs --%>
+              <div class="space-y-4 mb-4 sm:mb-6">
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Meaning (English)")}
+                  </label>
+                  <input
+                    type="text"
+                    name="meaning_answer"
+                    value={@meaning_answer}
+                    phx-change="update_meaning"
+                    phx-debounce="200"
+                    placeholder={gettext("Enter meaning...")}
+                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Reading (Hiragana)")}
+                  </label>
+                  <input
+                    type="text"
+                    name="reading_answer"
+                    value={@reading_answer}
+                    phx-change="update_reading"
+                    phx-debounce="200"
+                    placeholder={gettext("Enter reading...")}
+                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese"
+                  />
+                </div>
+              </div>
+
+              <%!-- Actions for Reading Text --%>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <%= if @feedback != :incorrect do %>
+                  <button
+                    type="button"
+                    phx-click="submit_reading_text"
+                    disabled={@meaning_answer == "" or @reading_answer == ""}
+                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+
+                  <button
+                    type="button"
+                    phx-click="skip_question"
+                    class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                  >
+                    {gettext("Skip →")}
+                  </button>
+                <% else %>
+                  <button
+                    type="button"
+                    phx-click="next_step"
+                    class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                  >
+                    {gettext("Continue →")}
+                  </button>
+                <% end %>
+              </div>
+            <% true -> %>
+              <%!-- Multichoice Question --%>
+              <% 
+                question_data = @current_step.question_data || %{}
+                question_label = question_data["question_label"] 
+                word_text = question_data["word_text"] || @current_step.question
+                options = question_data["options"] || @current_step.options || []
+              %>
+              
+              <%!-- Question --%>
+              <div class="mb-4 sm:mb-6">
+                <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                  <%= case question_label do %>
+                    <% "meaning" -> %>
+                      {gettext("What does this word mean?")}
+                    <% "reading" -> %>
+                      {gettext("How do you read this word?")}
+                    <% _ -> %>
+                      {gettext("Choose the correct answer")}
+                  <% end %>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
+                  {word_text}
+                </h2>
+              </div>
+
+              <%= if is_nil(@feedback) do %>
+                <%!-- Answer Options --%>
+                <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                  <%= for {option, index} <- Enum.with_index(options) do %>
+                    <% is_selected = @selected_answer == option
+                       display_option = localize_option(option, @locale) %>
+                    <button
+                      type="button"
+                      phx-click="select_answer"
+                      phx-value-answer={option}
+                      class={[
+                        "w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px]",
+                        if is_selected do
+                          "border-primary bg-primary/5"
+                        else
+                          "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                        end
+                      ]}
+                    >
+                      <div class="flex items-center gap-3">
+                        <div class={[
+                          "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                          if is_selected do
+                            "border-primary bg-primary"
+                          else
+                            "border-base-300"
+                          end
+                        ]}>
+                          <%= if is_selected do %>
+                            <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
+                          <% end %>
+                        </div>
+                        <span class="text-base-content font-medium text-sm sm:text-base">
+                          {display_option}
+                        </span>
+                      </div>
+                    </button>
+                  <% end %>
+                </div>
+
+                <%!-- Actions --%>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    phx-click="submit_answer"
+                    disabled={is_nil(@selected_answer)}
+                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+                </div>
+              <% else %>
+                <%!-- Result --%>
+                <%= if @feedback == :correct do %>
+                  <div class="bg-success/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div class="flex items-center gap-3">
+                      <.icon name="hero-check-circle" class="w-8 h-8 text-success" />
+                      <div>
+                        <p class="font-semibold text-success text-lg">{gettext("Correct!")}</p>
+                        <p class="text-success-content/80">{gettext("Well done.")}</p>
+                      </div>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="bg-error/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div class="flex items-center gap-3">
+                      <.icon name="hero-x-circle" class="w-8 h-8 text-error" />
+                      <div>
+                        <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
+                        <p class="text-error-content/80">
+                          {gettext("The correct answer is: %{answer}", answer: @current_step.correct_answer)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
+                <button
+                  type="button"
+                  phx-click="next_step"
+                  class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[48px]"
+                >
+                  {gettext("Continue →")}
+                </button>
+              <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</Layouts.app>

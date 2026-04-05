@@ -13,6 +13,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
   attr :step, :map, required: true
   attr :target, :any, required: true
   attr :locale, :string, default: "en"
+  attr :show_submit, :boolean, default: true
 
   def writing_question(assigns) do
     ~H"""
@@ -67,13 +68,15 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
         >
           <.icon name="hero-light-bulb" class="w-5 h-5" /> {gettext("Hint")}
         </button>
-        <button
-          type="button"
-          data-action="submit"
-          class="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          <.icon name="hero-check" class="w-5 h-5" /> {gettext("Submit")}
-        </button>
+        <%= if @show_submit do %>
+          <button
+            type="button"
+            data-action="submit"
+            class="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <.icon name="hero-check" class="w-5 h-5" /> {gettext("Submit")}
+          </button>
+        <% end %>
       </div>
 
       <%!-- Instructions --%>
@@ -138,7 +141,14 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
         gettext("Write the kanji for '%{meanings}'", meanings: meanings)
 
       _ ->
-        question
+        # For backward compatibility: if question is plain meanings, try to localize
+        # by looking up the kanji and getting its localized meanings
+        localized = get_localized_meanings_for_step(step, locale)
+        if localized != question and localized != "" do
+          gettext("Write the kanji for '%{meanings}'", meanings: localized)
+        else
+          question
+        end
     end
   end
 
