@@ -1,7 +1,7 @@
 defmodule Medoru.Learning.WordSet do
   @moduledoc """
   Schema for Word Sets - user-created collections of words for focused study.
-  
+
   A word set can contain up to 100 words and has an optional associated practice test.
   """
   use Ecto.Schema
@@ -35,7 +35,10 @@ defmodule Medoru.Learning.WordSet do
     |> validate_required([:name, :user_id])
     |> validate_length(:name, min: 1, max: 100)
     |> validate_length(:description, max: 500)
-    |> validate_number(:word_count, greater_than_or_equal_to: 0, less_than_or_equal_to: @max_words)
+    |> validate_number(:word_count,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: @max_words
+    )
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:practice_test_id)
   end
@@ -46,7 +49,10 @@ defmodule Medoru.Learning.WordSet do
   def update_word_count_changeset(word_set, count) do
     word_set
     |> cast(%{word_count: count}, [:word_count])
-    |> validate_number(:word_count, greater_than_or_equal_to: 0, less_than_or_equal_to: @max_words)
+    |> validate_number(:word_count,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: @max_words
+    )
   end
 
   @doc """

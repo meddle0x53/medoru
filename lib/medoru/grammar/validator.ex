@@ -159,10 +159,11 @@ defmodule Medoru.Grammar.Validator do
         # Convert byte position to character position for String.slice
         char_position = byte_position_to_char_position(remaining, byte_position)
         literal_length = String.length(normalized_literal)
-        
+
         # Extract skipped prefix if any
-        skipped_prefix = if char_position > 0, do: String.slice(remaining, 0, char_position), else: ""
-        
+        skipped_prefix =
+          if char_position > 0, do: String.slice(remaining, 0, char_position), else: ""
+
         matched = %{
           text: literal,
           type: "literal",
@@ -170,7 +171,7 @@ defmodule Medoru.Grammar.Validator do
           meaning: element_meaning(literal)
         }
 
-        new_remaining = 
+        new_remaining =
           String.slice(remaining, (char_position + literal_length)..-1//1) || ""
 
         if skipped_prefix == "" do
@@ -230,7 +231,7 @@ defmodule Medoru.Grammar.Validator do
               else
                 nil
               end
-            
+
             case object_marked_result do
               nil ->
                 # For nouns: accept unknown words as names (e.g., マリアさん)
@@ -884,83 +885,89 @@ defmodule Medoru.Grammar.Validator do
   defp extract_unknown_noun(remaining, next_element) do
     # Common particles that typically follow nouns
     particles = ["は", "が", "を", "に", "で", "へ", "から", "まで", "と", "や", "の"]
-    
+
     # Convert to graphemes for proper Unicode handling
     chars = String.graphemes(remaining)
-    
+
     # Find the boundary (grapheme position where we should stop)
-    boundary_idx = 
+    boundary_idx =
       cond do
         # If next element is a literal, find where it starts
         is_map(next_element) && next_element["type"] == "literal" ->
           literal = next_element["text"]
           find_literal_position(chars, literal)
-          
+
         # Otherwise, find the first particle
         true ->
           find_first_particle(chars, particles)
       end
-    
+
     # Extract the noun
-    noun_candidate = 
+    noun_candidate =
       case boundary_idx do
-        nil -> 
+        nil ->
           # No boundary found - take chars until punctuation or particle
           take_unknown_noun_chars(chars, particles)
-        0 -> 
+
+        0 ->
           # Boundary is at start - no noun here
           nil
-        idx -> 
+
+        idx ->
           chars |> Enum.take(idx) |> Enum.join()
       end
-    
+
     case noun_candidate do
-      nil -> nil
-      "" -> nil
-      text -> 
+      nil ->
+        nil
+
+      "" ->
+        nil
+
+      text ->
         new_remaining = String.slice(remaining, String.length(text)..-1//1) || ""
         {text, new_remaining}
     end
   end
-  
+
   # Find position of literal in char list (returns grapheme index)
   defp find_literal_position(chars, literal) do
     literal_chars = String.graphemes(literal)
     len = length(literal_chars)
-    
+
     Enum.find_index(0..(length(chars) - len)//1, fn i ->
       Enum.slice(chars, i, len) == literal_chars
     end)
   end
-  
+
   # Find first particle position (returns grapheme index)
   defp find_first_particle(chars, particles) do
     Enum.find_index(chars, fn char -> char in particles end)
   end
-  
+
   # Takes characters from start until hitting a particle or punctuation
   defp take_unknown_noun_chars(chars, particles) do
-    result = 
+    result =
       Enum.reduce_while(chars, {[], 0}, fn char, {acc, count} ->
         cond do
           # Stop at punctuation
           char in ["、", "。", "？", "！"] ->
             {:halt, {acc, count}}
-            
+
           # Stop at particles (only if we have at least 2 chars)
           char in particles && count >= 2 ->
             {:halt, {acc, count}}
-            
+
           # Stop if we already have 10 characters
           count >= 10 ->
             {:halt, {acc, count}}
-            
+
           # Otherwise add this character
           true ->
             {:cont, {[char | acc], count + 1}}
         end
       end)
-    
+
     {acc, _} = result
     acc |> Enum.reverse() |> Enum.join()
   end

@@ -17,7 +17,10 @@ defmodule Medoru.Repo.Migrations.CreateWordSets do
     # Word set words join table
     create table(:word_set_words, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :word_set_id, references(:word_sets, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :word_set_id, references(:word_sets, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :word_id, references(:words, type: :binary_id, on_delete: :delete_all), null: false
       add :position, :integer, null: false
 

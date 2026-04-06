@@ -1,7 +1,7 @@
 defmodule Medoru.Learning.WordSetWord do
   @moduledoc """
   Schema for words within a word set.
-  
+
   Tracks the position of each word for custom ordering.
   """
   use Ecto.Schema

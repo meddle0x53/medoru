@@ -1,7 +1,7 @@
 defmodule Medoru.Tests.WordSetTestGenerator do
   @moduledoc """
   Generates practice tests for word sets.
-  
+
   Similar to CustomLessonTestGenerator but:
   - Test type is :practice
   - Uses user-selected step types
@@ -9,18 +9,17 @@ defmodule Medoru.Tests.WordSetTestGenerator do
   - No points awarded (practice mode)
   """
 
-
   alias Medoru.Repo
   alias Medoru.Tests
 
   @doc """
   Generates a practice test for a word set.
-  
+
   ## Options
     * `:step_types` - List of step type atoms (required)
     * `:max_steps_per_word` - Max questions per word (1-5, default: 3)
     * `:distractor_count` - Number of distractors per question (default: 3)
-  
+
   ## Examples
       generate_test(word_set, words, step_types: [:word_to_meaning, :word_to_reading], max_steps_per_word: 3)
   """
@@ -49,7 +48,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
     }
 
     with {:ok, test} <- Tests.create_test(test_attrs),
-         {:ok, _steps} <- generate_steps(test, words, step_types, max_steps_per_word, distractor_count),
+         {:ok, _steps} <-
+           generate_steps(test, words, step_types, max_steps_per_word, distractor_count),
          {:ok, ready_test} <- Tests.ready_test(test) do
       # Update word set with test reference
       word_set
@@ -69,7 +69,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       Enum.flat_map(words, fn word ->
         # Random number of steps for this word (1 to max)
         num_steps = :rand.uniform(max_steps_per_word)
-        
+
         # Randomly select step types for this word
         selected_types = Enum.take_random(step_types, min(num_steps, length(step_types)))
 
@@ -82,7 +82,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
     # Shuffle all steps for random order
     shuffled_steps = Enum.shuffle(all_steps)
-    
+
     # Assign order indices
     steps_with_order =
       Enum.with_index(shuffled_steps, fn step, index ->
@@ -99,7 +99,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       question: "#{word.text}",
       correct_answer: word.meaning,
       word_id: word.id,
-      points: 0,  # Practice tests don't award points
+      # Practice tests don't award points
+      points: 0,
       hints: ["Think about the kanji meanings"],
       question_data: %{
         word_text: word.text,
@@ -204,10 +205,11 @@ defmodule Medoru.Tests.WordSetTestGenerator do
     end
   end
 
-  defp add_distractors(step, word, count, field, distractor_pool) when field in [:meaning, :reading] do
+  defp add_distractors(step, word, count, field, distractor_pool)
+       when field in [:meaning, :reading] do
     # Get distractors from the word set (not random words)
     # Deduplicate by field value to avoid duplicate options
-    distractors = 
+    distractors =
       distractor_pool
       |> Enum.reject(&(&1.id == word.id))
       |> Enum.uniq_by(&Map.get(&1, field))
@@ -215,7 +217,11 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       |> Enum.map(&Map.get(&1, field))
 
     # Create pairs and shuffle
-    pairs = [{step.correct_answer, word.id} | Enum.zip(distractors, List.duplicate(nil, length(distractors)))]
+    pairs = [
+      {step.correct_answer, word.id}
+      | Enum.zip(distractors, List.duplicate(nil, length(distractors)))
+    ]
+
     shuffled = Enum.shuffle(pairs)
     {options, option_word_ids} = Enum.unzip(shuffled)
 
@@ -223,15 +229,18 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
     step
     |> Map.put(:options, options)
-    |> Map.put(:question_data, Map.merge(question_data, %{
-      option_word_ids: option_word_ids,
-      options: options
-    }))
+    |> Map.put(
+      :question_data,
+      Map.merge(question_data, %{
+        option_word_ids: option_word_ids,
+        options: options
+      })
+    )
   end
 
   defp add_image_distractors(step, word, count, distractor_pool) do
     # For image questions, fetch words with images from the word set
-    distractors = 
+    distractors =
       distractor_pool
       |> Enum.reject(&(&1.id == word.id))
       |> Enum.filter(& &1.image_path)
@@ -289,12 +298,20 @@ defmodule Medoru.Tests.WordSetTestGenerator do
   end
 
   defp validate_step_types(types) do
-    allowed = [:word_to_meaning, :word_to_reading, :reading_text, :image_to_meaning, :kanji_writing]
-    Enum.filter(types, & &1 in allowed)
+    allowed = [
+      :word_to_meaning,
+      :word_to_reading,
+      :reading_text,
+      :image_to_meaning,
+      :kanji_writing
+    ]
+
+    Enum.filter(types, &(&1 in allowed))
   end
 
   defp clamp(value, min, max) when is_integer(value) do
     value |> max(min) |> min(max)
   end
+
   defp clamp(_, min, max), do: div(min + max, 2)
 end

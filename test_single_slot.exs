@@ -19,9 +19,10 @@ pattern = [
 
 IO.puts("\nStarting validation (single slot)...")
 
-{time, result} = :timer.tc(fn ->
-  Validator.validate_with_details(sentence, pattern)
-end)
+{time, result} =
+  :timer.tc(fn ->
+    Validator.validate_with_details(sentence, pattern)
+  end)
 
 time_ms = time / 1000
 IO.puts("Completed in #{time_ms}ms")

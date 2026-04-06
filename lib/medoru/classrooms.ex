@@ -11,6 +11,8 @@ defmodule Medoru.Classrooms do
   import Ecto.Query, warn: false
   alias Medoru.Repo
 
+  use Gettext, backend: MedoruWeb.Gettext
+
   alias Medoru.Classrooms.{Classroom, ClassroomMembership, ClassroomTest}
   alias Medoru.Notifications
 
@@ -447,9 +449,12 @@ defmodule Medoru.Classrooms do
       with {:ok, _membership} <- result,
            classroom = %Classroom{} <- get_classroom!(classroom_id),
            user = %Medoru.Accounts.User{} <- Medoru.Accounts.get_user!(user_id) do
+        # Use display name (name > email > "Anonymous")
+        display_name = user.name || user.email || gettext("Anonymous")
+        
         Notifications.notify_new_application(
           classroom.teacher_id,
-          user.email,
+          display_name,
           classroom.name,
           classroom.id
         )

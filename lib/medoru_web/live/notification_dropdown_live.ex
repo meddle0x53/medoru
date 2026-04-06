@@ -187,11 +187,17 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_bg_class("classroom_test"), do: "bg-indigo-100 text-indigo-700"
   defp icon_bg_class(_), do: "bg-base-200 text-base-content"
 
-  defp notification_link(%{type: "classroom_lesson", data: %{"lesson_id" => id, "classroom_id" => cid}}) do
+  defp notification_link(%{
+         type: "classroom_lesson",
+         data: %{"lesson_id" => id, "classroom_id" => cid}
+       }) do
     ~p"/classrooms/#{cid}/custom-lessons/#{id}"
   end
 
-  defp notification_link(%{type: "classroom_test", data: %{"test_id" => id, "classroom_id" => cid}}) do
+  defp notification_link(%{
+         type: "classroom_test",
+         data: %{"test_id" => id, "classroom_id" => cid}
+       }) do
     ~p"/classrooms/#{cid}/tests/#{id}"
   end
 

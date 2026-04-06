@@ -42,25 +42,27 @@ defmodule MedoruWeb.WordSetLive.Index do
 
   @impl true
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
-    params = [
-      page: 1,
-      search: query,
-      sort_by: socket.assigns.sort_by,
-      sort_order: socket.assigns.sort_order
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
+    params =
+      [
+        page: 1,
+        search: query,
+        sort_by: socket.assigns.sort_by,
+        sort_order: socket.assigns.sort_order
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
 
     {:noreply, push_patch(socket, to: ~p"/words/sets?#{params}")}
   end
 
   @impl true
   def handle_event("clear_search", _params, socket) do
-    params = [
-      page: 1,
-      sort_by: socket.assigns.sort_by,
-      sort_order: socket.assigns.sort_order
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) end)
+    params =
+      [
+        page: 1,
+        sort_by: socket.assigns.sort_by,
+        sort_order: socket.assigns.sort_order
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) end)
 
     {:noreply, push_patch(socket, to: ~p"/words/sets?#{params}")}
   end
@@ -101,25 +103,32 @@ defmodule MedoruWeb.WordSetLive.Index do
           {:noreply,
            socket
            |> put_flash(:info, gettext("Word set deleted successfully."))
-           |> load_word_sets(user.id, socket.assigns.page, socket.assigns.search, 
-                            socket.assigns.sort_by, socket.assigns.sort_order)}
+           |> load_word_sets(
+             user.id,
+             socket.assigns.page,
+             socket.assigns.search,
+             socket.assigns.sort_by,
+             socket.assigns.sort_order
+           )}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete word set."))}
       end
     else
-      {:noreply, put_flash(socket, :error, gettext("You don't have permission to delete this word set."))}
+      {:noreply,
+       put_flash(socket, :error, gettext("You don't have permission to delete this word set."))}
     end
   end
 
   defp load_word_sets(socket, user_id, page, search, sort_by, sort_order) do
-    result = WordSets.list_user_word_sets(user_id,
-      page: page,
-      per_page: @per_page,
-      search: search,
-      sort_by: sort_by,
-      sort_order: sort_order
-    )
+    result =
+      WordSets.list_user_word_sets(user_id,
+        page: page,
+        per_page: @per_page,
+        search: search,
+        sort_by: sort_by,
+        sort_order: sort_order
+      )
 
     socket
     |> assign(:word_sets, result.word_sets)
@@ -128,12 +137,14 @@ defmodule MedoruWeb.WordSetLive.Index do
   end
 
   defp parse_page(nil), do: 1
+
   defp parse_page(page) when is_binary(page) do
     case Integer.parse(page) do
       {n, _} when n > 0 -> n
       _ -> 1
     end
   end
+
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
 
@@ -160,14 +171,15 @@ defmodule MedoruWeb.WordSetLive.Index do
 
   # Helper for templates
   def page_link_params(search, sort_by, sort_order, page) do
-    params = [
-      page: page,
-      search: search,
-      sort_by: sort_by,
-      sort_order: sort_order
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
-    
+    params =
+      [
+        page: page,
+        search: search,
+        sort_by: sort_by,
+        sort_order: sort_order
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
+
     params
   end
 
@@ -179,14 +191,15 @@ defmodule MedoruWeb.WordSetLive.Index do
         default_order(sort_by)
       end
 
-    params = [
-      page: 1,
-      search: search,
-      sort_by: sort_by,
-      sort_order: sort_order
-    ]
-    |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
-    
+    params =
+      [
+        page: 1,
+        search: search,
+        sort_by: sort_by,
+        sort_order: sort_order
+      ]
+      |> Enum.reject(fn {_, v} -> is_nil(v) or v == "" end)
+
     params
   end
 
@@ -229,7 +242,10 @@ defmodule MedoruWeb.WordSetLive.Index do
           <%!-- Search --%>
           <form phx-submit="search" class="flex-1">
             <div class="relative">
-              <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+              <.icon
+                name="hero-magnifying-glass"
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary"
+              />
               <input
                 type="text"
                 name="search[query]"
@@ -256,8 +272,8 @@ defmodule MedoruWeb.WordSetLive.Index do
               phx-value-sort_by="name"
               class={[
                 "px-4 py-2 rounded-lg font-medium transition-colors",
-                if(@sort_by == :name, 
-                  do: "bg-primary text-primary-content", 
+                if(@sort_by == :name,
+                  do: "bg-primary text-primary-content",
                   else: "bg-base-200 text-base-content hover:bg-base-300"
                 )
               ]}
@@ -269,8 +285,8 @@ defmodule MedoruWeb.WordSetLive.Index do
               phx-value-sort_by="inserted_at"
               class={[
                 "px-4 py-2 rounded-lg font-medium transition-colors",
-                if(@sort_by == :inserted_at, 
-                  do: "bg-primary text-primary-content", 
+                if(@sort_by == :inserted_at,
+                  do: "bg-primary text-primary-content",
                   else: "bg-base-200 text-base-content hover:bg-base-300"
                 )
               ]}
@@ -352,9 +368,13 @@ defmodule MedoruWeb.WordSetLive.Index do
                         {gettext("Edit")}
                       </.link>
                       <button
-                        phx-click={"delete"}
+                        phx-click="delete"
                         phx-value-id={word_set.id}
-                        data-confirm={gettext("Are you sure you want to delete this word set? This action cannot be undone.")}
+                        data-confirm={
+                          gettext(
+                            "Are you sure you want to delete this word set? This action cannot be undone."
+                          )
+                        }
                         class="btn btn-sm btn-ghost text-error"
                       >
                         <.icon name="hero-trash" class="w-4 h-4" />
@@ -372,7 +392,9 @@ defmodule MedoruWeb.WordSetLive.Index do
             <div class="flex justify-center gap-2 mt-8">
               <%= if @page > 1 do %>
                 <.link
-                  navigate={~p"/words/sets?#{page_link_params(@search, @sort_by, @sort_order, @page - 1)}"}
+                  navigate={
+                    ~p"/words/sets?#{page_link_params(@search, @sort_by, @sort_order, @page - 1)}"
+                  }
                   class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
                 >
                   <.icon name="hero-chevron-left" class="w-5 h-5" />
@@ -385,7 +407,9 @@ defmodule MedoruWeb.WordSetLive.Index do
 
               <%= if @page < @total_pages do %>
                 <.link
-                  navigate={~p"/words/sets?#{page_link_params(@search, @sort_by, @sort_order, @page + 1)}"}
+                  navigate={
+                    ~p"/words/sets?#{page_link_params(@search, @sort_by, @sort_order, @page + 1)}"
+                  }
                   class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
                 >
                   <.icon name="hero-chevron-right" class="w-5 h-5" />

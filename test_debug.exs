@@ -21,14 +21,16 @@ pattern = [
 IO.puts("\nStarting validation...")
 
 # Set a shorter timeout to see the issue faster
-task = Task.async(fn ->
-  Validator.validate_with_details(sentence, pattern)
-end)
+task =
+  Task.async(fn ->
+    Validator.validate_with_details(sentence, pattern)
+  end)
 
 case Task.yield(task, 5000) do
   nil ->
     IO.puts("❌ TIMEOUT after 5 seconds")
     Task.shutdown(task)
+
   {:ok, result} ->
     IO.puts("✅ Result: #{inspect(result, pretty: true)}")
 end

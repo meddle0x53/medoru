@@ -83,7 +83,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
-  defp load_vocabulary_lesson(socket, classroom, lesson, progress, is_completed, practice, locale, step) do
+  defp load_vocabulary_lesson(
+         socket,
+         classroom,
+         lesson,
+         progress,
+         is_completed,
+         practice,
+         locale,
+         step
+       ) do
     lesson_words = Content.list_lesson_words(lesson.id)
     total_items = length(lesson_words)
     # Ensure step is within valid range
@@ -107,7 +116,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
      |> assign(:total_items, length(lesson_words))}
   end
 
-  defp load_grammar_lesson(socket, classroom, lesson, progress, is_completed, practice, locale, step \\ 0) do
+  defp load_grammar_lesson(
+         socket,
+         classroom,
+         lesson,
+         progress,
+         is_completed,
+         practice,
+         locale,
+         step \\ 0
+       ) do
     grammar_steps = Content.list_grammar_lesson_steps(lesson.id)
     total_items = length(grammar_steps)
     # Ensure step is within valid range
@@ -142,7 +160,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   def handle_params(params, _url, socket) do
     # Handle step from URL query param
     step = parse_step(params["step"])
-    
+
     socket =
       if step != socket.assigns[:current_index] && step >= 0 && step < socket.assigns.total_items do
         # Update current index and item based on step
@@ -155,8 +173,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
           :grammar ->
             current_step = Enum.at(socket.assigns.grammar_steps, step)
-            current_step = %{current_step | explanation: String.trim(current_step.explanation || "")}
-            
+
+            current_step = %{
+              current_step
+              | explanation: String.trim(current_step.explanation || "")
+            }
+
             assign(socket,
               current_index: step,
               current_step: current_step
@@ -168,7 +190,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       else
         socket
       end
-    
+
     {:noreply,
      assign(
        socket,
@@ -176,14 +198,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
        Content.get_localized_lesson_title(socket.assigns.lesson, socket.assigns.locale)
      )}
   end
-  
+
   defp parse_step(nil), do: nil
+
   defp parse_step(step) when is_binary(step) do
     case Integer.parse(step) do
       {num, _} -> num
       :error -> nil
     end
   end
+
   defp parse_step(step) when is_integer(step), do: step
 
   @impl true
@@ -205,7 +229,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           :grammar ->
             next_step = Enum.at(socket.assigns.grammar_steps, next_index)
             next_step = %{next_step | explanation: String.trim(next_step.explanation || "")}
-            
+
             assign(socket,
               current_index: next_index,
               current_step: next_step
@@ -238,7 +262,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           :grammar ->
             prev_step = Enum.at(socket.assigns.grammar_steps, prev_index)
             prev_step = %{prev_step | explanation: String.trim(prev_step.explanation || "")}
-            
+
             assign(socket,
               current_index: prev_index,
               current_step: prev_step
@@ -311,20 +335,20 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         {:noreply, put_flash(socket, :error, gettext("Failed to complete lesson."))}
     end
   end
-  
+
   # Helper to update URL with current step
   defp push_step_to_url(socket, step) do
     classroom_id = socket.assigns.classroom.id
     lesson_id = socket.assigns.lesson.id
     practice = socket.assigns.practice
-    
-    path = 
+
+    path =
       if practice do
         ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}&practice=true"
       else
         ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}"
       end
-    
+
     push_patch(socket, to: path)
   end
 
@@ -381,7 +405,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         <div class="card-body text-center py-12">
           <%!-- Japanese Text --%>
           <.link
-            navigate={word_detail_path(@classroom.id, @lesson.id, @current_word.word.id, @current_index, @practice)}
+            navigate={
+              word_detail_path(
+                @classroom.id,
+                @lesson.id,
+                @current_word.word.id,
+                @current_index,
+                @practice
+              )
+            }
             class="text-6xl font-jp mb-4 hover:text-primary transition-colors inline-block"
             title="View word details"
           >
@@ -534,7 +566,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <%!-- Explanation --%>
           <div class="mb-6">
             <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
-            <div class="text-base-content whitespace-pre-wrap leading-relaxed">{@current_step.explanation}</div>
+            <div class="text-base-content whitespace-pre-wrap leading-relaxed">
+              {@current_step.explanation}
+            </div>
           </div>
 
           <%!-- Examples --%>
@@ -619,16 +653,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     <% end %>
     """
   end
-  
+
   # Helper to generate word detail path with return step
   defp word_detail_path(classroom_id, lesson_id, word_id, step, practice) do
     return_to = "/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}"
-    
+
     params = [{"return_to", return_to}, {"step", step}]
     params = if practice, do: [{"practice", "true"} | params], else: params
-    
+
     query = URI.encode_query(params)
-    
+
     ~p"/words/#{word_id}?#{query}"
   end
 end

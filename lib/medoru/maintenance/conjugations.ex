@@ -42,13 +42,13 @@ defmodule Medoru.Maintenance.Conjugations do
 
   @doc """
   Seeds or updates grammar forms required for conjugation generation.
-  
+
   This ensures the grammar_forms table has all the forms expected by
   `generate_all/1` and `generate_for_type/1`.
-  
+
   ## Options
     * `:clear_first` - If true, deletes all existing grammar forms first (default: false)
-  
+
   ## Usage
       Medoru.Maintenance.Conjugations.seed_grammar_forms()
       Medoru.Maintenance.Conjugations.seed_grammar_forms(clear_first: true)
@@ -64,38 +64,182 @@ defmodule Medoru.Maintenance.Conjugations do
 
     # Verb forms (13 forms)
     verb_forms = [
-      %{name: "dictionary", display_name: "る", word_type: "verb", suffix_pattern: "る", description: "Dictionary form, plain form"},
-      %{name: "masu-form", display_name: "ます", word_type: "verb", suffix_pattern: "ます", description: "Polite present/future"},
-      %{name: "te-form", display_name: "て", word_type: "verb", suffix_pattern: "て", description: "Te-form for connecting verbs"},
-      %{name: "ta-form", display_name: "た", word_type: "verb", suffix_pattern: "た", description: "Past plain form"},
-      %{name: "nai-form", display_name: "ない", word_type: "verb", suffix_pattern: "ない", description: "Negative plain form"},
-      %{name: "nakute-form", display_name: "なくて", word_type: "verb", suffix_pattern: "なくて", description: "Negative te-form"},
-      %{name: "nakatta-form", display_name: "なかった", word_type: "verb", suffix_pattern: "なかった", description: "Negative past"},
-      %{name: "potential", display_name: "られる", word_type: "verb", suffix_pattern: "られる", description: "Potential form (can do)"},
-      %{name: "passive", display_name: "られる", word_type: "verb", suffix_pattern: "られる", description: "Passive form"},
-      %{name: "causative", display_name: "させる", word_type: "verb", suffix_pattern: "させる", description: "Causative form (make/let do)"},
-      %{name: "imperative", display_name: "ろ", word_type: "verb", suffix_pattern: "ろ", description: "Imperative/command form"},
-      %{name: "volitional", display_name: "よう", word_type: "verb", suffix_pattern: "よう", description: "Volitional form (let's do)"},
-      %{name: "conditional", display_name: "れば", word_type: "verb", suffix_pattern: "れば", description: "Conditional form (if)"},
+      %{
+        name: "dictionary",
+        display_name: "る",
+        word_type: "verb",
+        suffix_pattern: "る",
+        description: "Dictionary form, plain form"
+      },
+      %{
+        name: "masu-form",
+        display_name: "ます",
+        word_type: "verb",
+        suffix_pattern: "ます",
+        description: "Polite present/future"
+      },
+      %{
+        name: "te-form",
+        display_name: "て",
+        word_type: "verb",
+        suffix_pattern: "て",
+        description: "Te-form for connecting verbs"
+      },
+      %{
+        name: "ta-form",
+        display_name: "た",
+        word_type: "verb",
+        suffix_pattern: "た",
+        description: "Past plain form"
+      },
+      %{
+        name: "nai-form",
+        display_name: "ない",
+        word_type: "verb",
+        suffix_pattern: "ない",
+        description: "Negative plain form"
+      },
+      %{
+        name: "nakute-form",
+        display_name: "なくて",
+        word_type: "verb",
+        suffix_pattern: "なくて",
+        description: "Negative te-form"
+      },
+      %{
+        name: "nakatta-form",
+        display_name: "なかった",
+        word_type: "verb",
+        suffix_pattern: "なかった",
+        description: "Negative past"
+      },
+      %{
+        name: "potential",
+        display_name: "られる",
+        word_type: "verb",
+        suffix_pattern: "られる",
+        description: "Potential form (can do)"
+      },
+      %{
+        name: "passive",
+        display_name: "られる",
+        word_type: "verb",
+        suffix_pattern: "られる",
+        description: "Passive form"
+      },
+      %{
+        name: "causative",
+        display_name: "させる",
+        word_type: "verb",
+        suffix_pattern: "させる",
+        description: "Causative form (make/let do)"
+      },
+      %{
+        name: "imperative",
+        display_name: "ろ",
+        word_type: "verb",
+        suffix_pattern: "ろ",
+        description: "Imperative/command form"
+      },
+      %{
+        name: "volitional",
+        display_name: "よう",
+        word_type: "verb",
+        suffix_pattern: "よう",
+        description: "Volitional form (let's do)"
+      },
+      %{
+        name: "conditional",
+        display_name: "れば",
+        word_type: "verb",
+        suffix_pattern: "れば",
+        description: "Conditional form (if)"
+      }
     ]
 
     # い-adjective forms (6 forms)
     i_adjective_forms = [
-      %{name: "dictionary", display_name: "い", word_type: "adjective", suffix_pattern: "い", description: "Dictionary form"},
-      %{name: "ku-form", display_name: "く", word_type: "adjective", suffix_pattern: "く", description: "Ku-form for adverbs (adverbial)"},
-      %{name: "kute-form", display_name: "くて", word_type: "adjective", suffix_pattern: "くて", description: "Te-form for connecting (kute-form)"},
-      %{name: "katta-form", display_name: "かった", word_type: "adjective", suffix_pattern: "かった", description: "Past tense (katta-form)"},
-      %{name: "kunai-form", display_name: "くない", word_type: "adjective", suffix_pattern: "くない", description: "Negative present (kunai-form)"},
-      %{name: "kunakatta-form", display_name: "くなかった", word_type: "adjective", suffix_pattern: "くなかった", description: "Negative past (kunakatta-form)"},
+      %{
+        name: "dictionary",
+        display_name: "い",
+        word_type: "adjective",
+        suffix_pattern: "い",
+        description: "Dictionary form"
+      },
+      %{
+        name: "ku-form",
+        display_name: "く",
+        word_type: "adjective",
+        suffix_pattern: "く",
+        description: "Ku-form for adverbs (adverbial)"
+      },
+      %{
+        name: "kute-form",
+        display_name: "くて",
+        word_type: "adjective",
+        suffix_pattern: "くて",
+        description: "Te-form for connecting (kute-form)"
+      },
+      %{
+        name: "katta-form",
+        display_name: "かった",
+        word_type: "adjective",
+        suffix_pattern: "かった",
+        description: "Past tense (katta-form)"
+      },
+      %{
+        name: "kunai-form",
+        display_name: "くない",
+        word_type: "adjective",
+        suffix_pattern: "くない",
+        description: "Negative present (kunai-form)"
+      },
+      %{
+        name: "kunakatta-form",
+        display_name: "くなかった",
+        word_type: "adjective",
+        suffix_pattern: "くなかった",
+        description: "Negative past (kunakatta-form)"
+      }
     ]
 
     # な-adjective forms (6 forms)
     na_adjective_forms = [
-      %{name: "dictionary-na", display_name: "だ", word_type: "adjective", suffix_pattern: "だ", description: "Dictionary form with da"},
-      %{name: "na-form", display_name: "な", word_type: "adjective", suffix_pattern: "な", description: "Attributive form (before noun)"},
-      %{name: "adverbial", display_name: "で", word_type: "adjective", suffix_pattern: "で", description: "Te-form/de-form for connecting"},
-      %{name: "past-i", display_name: "だった", word_type: "adjective", suffix_pattern: "だった", description: "Past form (deshita/datta)"},
-      %{name: "negative-na", display_name: "ではない", word_type: "adjective", suffix_pattern: "ではない", description: "Negative plain (dewa nai)"},
+      %{
+        name: "dictionary-na",
+        display_name: "だ",
+        word_type: "adjective",
+        suffix_pattern: "だ",
+        description: "Dictionary form with da"
+      },
+      %{
+        name: "na-form",
+        display_name: "な",
+        word_type: "adjective",
+        suffix_pattern: "な",
+        description: "Attributive form (before noun)"
+      },
+      %{
+        name: "adverbial",
+        display_name: "で",
+        word_type: "adjective",
+        suffix_pattern: "で",
+        description: "Te-form/de-form for connecting"
+      },
+      %{
+        name: "past-i",
+        display_name: "だった",
+        word_type: "adjective",
+        suffix_pattern: "だった",
+        description: "Past form (deshita/datta)"
+      },
+      %{
+        name: "negative-na",
+        display_name: "ではない",
+        word_type: "adjective",
+        suffix_pattern: "ではない",
+        description: "Negative plain (dewa nai)"
+      }
     ]
 
     all_forms = verb_forms ++ i_adjective_forms ++ na_adjective_forms
@@ -139,7 +283,10 @@ defmodule Medoru.Maintenance.Conjugations do
     errors = Enum.count(results, fn {status, _} -> status == :error end)
 
     IO.puts("\n✅ Grammar forms seeding complete!")
-    IO.puts("Total: #{length(all_forms)} forms (#{created} created, #{updated} updated, #{errors} errors)")
+
+    IO.puts(
+      "Total: #{length(all_forms)} forms (#{created} created, #{updated} updated, #{errors} errors)"
+    )
 
     %{
       total: length(all_forms),
@@ -278,15 +425,27 @@ defmodule Medoru.Maintenance.Conjugations do
       Repo.all(from w in Word, where: w.word_type == :adjective and like(w.text, "%い"))
 
     adj_forms = Map.get(forms, "adjective", [])
-    
+
     # Map database form names to conjugation functions
     # Supports both naming conventions:
     # - New: dictionary-i, adverbial, te-form-adj, past-i, negative-i
     # - Legacy: dictionary, ku-form, kute-form, katta-form, kunai-form
-    i_adj_forms = 
+    i_adj_forms =
       adj_forms
-      |> Enum.filter(&(&1.name in ["dictionary-i", "adverbial", "te-form-adj", "past-i", "negative-i",
-                                   "dictionary", "ku-form", "kute-form", "katta-form", "kunai-form"]))
+      |> Enum.filter(
+        &(&1.name in [
+            "dictionary-i",
+            "adverbial",
+            "te-form-adj",
+            "past-i",
+            "negative-i",
+            "dictionary",
+            "ku-form",
+            "kute-form",
+            "katta-form",
+            "kunai-form"
+          ])
+      )
 
     Enum.reduce(i_adjectives, {0, 0}, fn word, {count, errors} ->
       Enum.reduce(i_adj_forms, {count, errors}, fn form, {c, e} ->
@@ -328,12 +487,22 @@ defmodule Medoru.Maintenance.Conjugations do
       )
 
     adj_forms = Map.get(forms, "adjective", [])
-    
+
     # Map database form names to conjugation functions
     # Database has: dictionary-na, na-form, adverbial, te-form-adj, te-form-na, past-i, negative-na
-    na_adj_forms = 
+    na_adj_forms =
       adj_forms
-      |> Enum.filter(&(&1.name in ["dictionary-na", "na-form", "adverbial", "te-form-adj", "te-form-na", "past-i", "negative-na"]))
+      |> Enum.filter(
+        &(&1.name in [
+            "dictionary-na",
+            "na-form",
+            "adverbial",
+            "te-form-adj",
+            "te-form-na",
+            "past-i",
+            "negative-na"
+          ])
+      )
 
     Enum.reduce(na_adjectives, {0, 0}, fn word, {count, errors} ->
       Enum.reduce(na_adj_forms, {count, errors}, fn form, {c, e} ->
@@ -414,98 +583,244 @@ defmodule Medoru.Maintenance.Conjugations do
   # checks these sets before applying the ichidan rule.
   #
   @godan_iru_exceptions MapSet.new([
-    # === Core/common verbs (JLPT N5-N4) ===
-    "入る", "はいる",           # to enter
-    "走る", "はしる",           # to run
-    "知る", "しる",             # to know
-    "切る", "きる",             # to cut
-    "要る",                    # to need (いる - hiragana removed to allow ichidan いる/居る "to be")
-    "帰る", "かえる",           # to return
-    "限る", "かぎる",           # to limit
-    "散る", "ちる",             # to scatter
-    
-    # === JLPT N3-N2 level ===
-    "焦る", "あせる",           # to be in a hurry
-    "火照る", "ほてる",         # to feel hot/flush
-    "陰る", "かげる",           # to darken/be clouded
-    "覆る", "くつがえる",       # to be overturned
-    "滑る", "すべる",           # to slip
-    "滑る", "ぬめる",           # to be slippery
-    "喋る", "しゃべる",         # to chat/talk
-    "茂る", "しげる",           # to grow thick
-    "繁る", "しげる",           # to grow thick (alt kanji)
-    "湿気る", "しける",         # to get damp
-    "猛る", "たける",           # to rage/act violently
-    "蘇る", "よみがえる",       # to be resurrected
-    "混じる", "まじる",         # to mingle
-    "詰る", "なじる",           # to rebuke
-    "阿る", "おもねる",         # to flatter
-    "競る", "せる",             # to compete
-    "照る", "てる",             # to shine
-    "煉る", "ねる",             # to knead/temper (not 寝る sleep - ichidan)
-    "攀じる", "よじる",         # to twist/distort
-    "千切る", "ちぎる",         # to tear to pieces
-    "穿る", "ほじる",           # to pick/dig out (also うがる)
-    "迸る", "ほとばしる",       # to gush/spurt
-    "弄る", "いじる",           # to fiddle with (also もてあそる)
-    "軋る", "きしる",           # to squeak/creak
-    "抉る", "こじる",           # to pry (also えぐる)
-    "漲る", "みなぎる",         # to overflow
-    "謗る", "そしる",           # to slander (also しにものぐる)
-    "謗る", "譏る", "誹る",      # alt kanji for slander
-    "滾る", "たぎる",           # to seethe/boil
-    "激る", "たぎる",           # alt kanji
-    "魂消る", "たまげる",       # to be frightened
-    "耽る", "ふける",           # to be absorbed in
-    "捻る", "ひねる",           # to twist/wring
-    "捻じる", "ねじる",         # to twist
-    "抓る", "つねる",           # to pinch
-    "畝る", "うねる",           # to undulate
-    "握る", "にぎる",           # to grasp
-    
-    # === Less common but important ===
-    "脂ぎる", "あぶらぎる",     # to be greasy
-    "油ぎる", "あぶらぎる",     # alt kanji
-    "毟る", "むしる",           # to pluck/pick
-    "挘る", "むしる",           # alt kanji
-    "罵る", "ののしる",         # to abuse verbally
-    "陥る", "おちいる",         # to fall/sink
-    "滅入る", "めいる",         # to feel depressed
-    "やじる",                   # to jeer at
-    "愚痴る", "ぐちる",         # to grumble
-    
-    # === Kana-only exceptions ===
-    "びびる",                   # to be surprised/nervous
-    "どじる",                   # to mess up
-    "いびる",                   # to torment/roast (not 見る)
-    "せびる",                   # to pester/extort
-    "くねる"                    # to be crooked/wriggle
-  ])
+                          # === Core/common verbs (JLPT N5-N4) ===
+                          # to enter
+                          "入る",
+                          "はいる",
+                          # to run
+                          "走る",
+                          "はしる",
+                          # to know
+                          "知る",
+                          "しる",
+                          # to cut
+                          "切る",
+                          "きる",
+                          # to need (いる - hiragana removed to allow ichidan いる/居る "to be")
+                          "要る",
+                          # to return
+                          "帰る",
+                          "かえる",
+                          # to limit
+                          "限る",
+                          "かぎる",
+                          # to scatter
+                          "散る",
+                          "ちる",
+
+                          # === JLPT N3-N2 level ===
+                          # to be in a hurry
+                          "焦る",
+                          "あせる",
+                          # to feel hot/flush
+                          "火照る",
+                          "ほてる",
+                          # to darken/be clouded
+                          "陰る",
+                          "かげる",
+                          # to be overturned
+                          "覆る",
+                          "くつがえる",
+                          # to slip
+                          "滑る",
+                          "すべる",
+                          # to be slippery
+                          "滑る",
+                          "ぬめる",
+                          # to chat/talk
+                          "喋る",
+                          "しゃべる",
+                          # to grow thick
+                          "茂る",
+                          "しげる",
+                          # to grow thick (alt kanji)
+                          "繁る",
+                          "しげる",
+                          # to get damp
+                          "湿気る",
+                          "しける",
+                          # to rage/act violently
+                          "猛る",
+                          "たける",
+                          # to be resurrected
+                          "蘇る",
+                          "よみがえる",
+                          # to mingle
+                          "混じる",
+                          "まじる",
+                          # to rebuke
+                          "詰る",
+                          "なじる",
+                          # to flatter
+                          "阿る",
+                          "おもねる",
+                          # to compete
+                          "競る",
+                          "せる",
+                          # to shine
+                          "照る",
+                          "てる",
+                          # to knead/temper (not 寝る sleep - ichidan)
+                          "煉る",
+                          "ねる",
+                          # to twist/distort
+                          "攀じる",
+                          "よじる",
+                          # to tear to pieces
+                          "千切る",
+                          "ちぎる",
+                          # to pick/dig out (also うがる)
+                          "穿る",
+                          "ほじる",
+                          # to gush/spurt
+                          "迸る",
+                          "ほとばしる",
+                          # to fiddle with (also もてあそる)
+                          "弄る",
+                          "いじる",
+                          # to squeak/creak
+                          "軋る",
+                          "きしる",
+                          # to pry (also えぐる)
+                          "抉る",
+                          "こじる",
+                          # to overflow
+                          "漲る",
+                          "みなぎる",
+                          # to slander (also しにものぐる)
+                          "謗る",
+                          "そしる",
+                          # alt kanji for slander
+                          "謗る",
+                          "譏る",
+                          "誹る",
+                          # to seethe/boil
+                          "滾る",
+                          "たぎる",
+                          # alt kanji
+                          "激る",
+                          "たぎる",
+                          # to be frightened
+                          "魂消る",
+                          "たまげる",
+                          # to be absorbed in
+                          "耽る",
+                          "ふける",
+                          # to twist/wring
+                          "捻る",
+                          "ひねる",
+                          # to twist
+                          "捻じる",
+                          "ねじる",
+                          # to pinch
+                          "抓る",
+                          "つねる",
+                          # to undulate
+                          "畝る",
+                          "うねる",
+                          # to grasp
+                          "握る",
+                          "にぎる",
+
+                          # === Less common but important ===
+                          # to be greasy
+                          "脂ぎる",
+                          "あぶらぎる",
+                          # alt kanji
+                          "油ぎる",
+                          "あぶらぎる",
+                          # to pluck/pick
+                          "毟る",
+                          "むしる",
+                          # alt kanji
+                          "挘る",
+                          "むしる",
+                          # to abuse verbally
+                          "罵る",
+                          "ののしる",
+                          # to fall/sink
+                          "陥る",
+                          "おちいる",
+                          # to feel depressed
+                          "滅入る",
+                          "めいる",
+                          # to jeer at
+                          "やじる",
+                          # to grumble
+                          "愚痴る",
+                          "ぐちる",
+
+                          # === Kana-only exceptions ===
+                          # to be surprised/nervous
+                          "びびる",
+                          # to mess up
+                          "どじる",
+                          # to torment/roast (not 見る)
+                          "いびる",
+                          # to pester/extort
+                          "せびる",
+                          # to be crooked/wriggle
+                          "くねる"
+                        ])
 
   @godan_eru_exceptions MapSet.new([
-    # === Core/common (JLPT N5-N4) ===
-    "蹴る", "ける",             # to kick
-    "伏せる", "ふせる",         # to hide/lie in ambush
-    "減る", "へる",             # to decrease
-    "参る", "まいる",           # to go/come (humble)
-    
-    # === JLPT N3-N2 level ===
-    "煎る", "いる",             # to roast/boil down
-    "炒る", "いる",             # to stir-fry
-    "熬る", "いる",             # to boil down
-    "翔ける", "かける",         # to soar
-    "噛る", "かじる",           # to gnaw
-    "練る", "ねる",             # to knead (alt kanji)
-    "滑る", "ぬめる",           # to be slippery
-    "阿る", "阿ねる", "おもねる", # to flatter
-    "競る", "糶る", "せる",     # to compete
-    "挵る", "せせる",           # to pick/play with
-    "詰める", "つめる",         # to pinch
-    
-    # === Less common ===
-    "のめる",                   # to fall forward
-    "くねる"                    # to be crooked
-  ])
+                          # === Core/common (JLPT N5-N4) ===
+                          # to kick
+                          "蹴る",
+                          "ける",
+                          # to hide/lie in ambush
+                          "伏せる",
+                          "ふせる",
+                          # to decrease
+                          "減る",
+                          "へる",
+                          # to go/come (humble)
+                          "参る",
+                          "まいる",
+
+                          # === JLPT N3-N2 level ===
+                          # to roast/boil down
+                          "煎る",
+                          "いる",
+                          # to stir-fry
+                          "炒る",
+                          "いる",
+                          # to boil down
+                          "熬る",
+                          "いる",
+                          # to soar
+                          "翔ける",
+                          "かける",
+                          # to gnaw
+                          "噛る",
+                          "かじる",
+                          # to knead (alt kanji)
+                          "練る",
+                          "ねる",
+                          # to be slippery
+                          "滑る",
+                          "ぬめる",
+                          # to flatter
+                          "阿る",
+                          "阿ねる",
+                          "おもねる",
+                          # to compete
+                          "競る",
+                          "糶る",
+                          "せる",
+                          # to pick/play with
+                          "挵る",
+                          "せせる",
+                          # to pinch
+                          "詰める",
+                          "つめる",
+
+                          # === Less common ===
+                          # to fall forward
+                          "のめる",
+                          # to be crooked
+                          "くねる"
+                        ])
 
   # Classify verb type
   # 
@@ -524,11 +839,19 @@ defmodule Medoru.Maintenance.Conjugations do
   defp classify_verb(text, reading) do
     cond do
       # Irregular verbs
-      text in ["くる", "来る"] -> :kuru
-      text in ["する", "為る"] -> :suru
+      text in ["くる", "来る"] ->
+        :kuru
+
+      text in ["する", "為る"] ->
+        :suru
+
       # Godan exceptions: verbs ending in -iru/-eru that are NOT ichidan
-      text in @godan_iru_exceptions -> :godan
-      text in @godan_eru_exceptions -> :godan
+      text in @godan_iru_exceptions ->
+        :godan
+
+      text in @godan_eru_exceptions ->
+        :godan
+
       # For る-ending verbs, check the reading
       String.ends_with?(text, "る") ->
         if reading && ichidan_reading?(reading) do
@@ -536,24 +859,50 @@ defmodule Medoru.Maintenance.Conjugations do
         else
           :godan
         end
+
       # Godan verbs: everything else (verbs not ending in る)
-      true -> :godan
+      true ->
+        :godan
     end
   end
-  
+
   # Check if the reading indicates an ichidan verb
   # Ichidan verbs have readings ending in -iru or -eru (い/え段 + る)
   defp ichidan_reading?(reading) do
     # Get the character before る in the reading
     stem = String.slice(reading, 0, max(0, String.length(reading) - 1))
     last_char = String.last(stem)
-    
+
     # Check if it's in い or え column
     last_char in [
       # い column
-      "い", "き", "ぎ", "し", "じ", "ち", "ぢ", "に", "ひ", "び", "ぴ", "み", "り",
+      "い",
+      "き",
+      "ぎ",
+      "し",
+      "じ",
+      "ち",
+      "ぢ",
+      "に",
+      "ひ",
+      "び",
+      "ぴ",
+      "み",
+      "り",
       # え column  
-      "え", "け", "げ", "せ", "ぜ", "て", "で", "ね", "へ", "べ", "ぺ", "め", "れ"
+      "え",
+      "け",
+      "げ",
+      "せ",
+      "ぜ",
+      "て",
+      "で",
+      "ね",
+      "へ",
+      "べ",
+      "ぺ",
+      "め",
+      "れ"
     ]
   end
 
@@ -591,7 +940,7 @@ defmodule Medoru.Maintenance.Conjugations do
   defp conjugate_verb_full(text, verb_type, form_name) do
     # Check for special case verbs first (hardcoded conjugations)
     case special_verb_conjugation(text, form_name) do
-      nil -> 
+      nil ->
         # Fall through to regular conjugation logic
         case verb_type do
           :ichidan -> conjugate_ichidan(text, form_name)
@@ -599,7 +948,9 @@ defmodule Medoru.Maintenance.Conjugations do
           :kuru -> conjugate_kuru(form_name)
           :suru -> conjugate_suru(form_name)
         end
-      conjugated -> conjugated
+
+      conjugated ->
+        conjugated
     end
   end
 
@@ -624,6 +975,7 @@ defmodule Medoru.Maintenance.Conjugations do
       _ -> nil
     end
   end
+
   defp special_verb_conjugation(_text, _form_name), do: nil
 
   # Ichidan (一段) verb conjugation
@@ -683,15 +1035,16 @@ defmodule Medoru.Maintenance.Conjugations do
         # Get stem without the final character
         base = String.slice(text, 0, String.length(text) - 1)
 
-        result = cond do
-          last in ["う", "つ", "る"] -> base <> "った"
-          last in ["ぶ", "む", "ぬ"] -> base <> "んだ"
-          last == "く" -> base <> "いた"
-          last == "ぐ" -> base <> "いだ"
-          last == "す" -> base <> "した"
-          true -> base <> "た"
-        end
-        
+        result =
+          cond do
+            last in ["う", "つ", "る"] -> base <> "った"
+            last in ["ぶ", "む", "ぬ"] -> base <> "んだ"
+            last == "く" -> base <> "いた"
+            last == "ぐ" -> base <> "いだ"
+            last == "す" -> base <> "した"
+            true -> base <> "た"
+          end
+
         # Special case: 行く→行った (iku→itta), not 行いた
         handle_iku_ta_form(result, text)
 
@@ -735,7 +1088,7 @@ defmodule Medoru.Maintenance.Conjugations do
       result
     end
   end
-  
+
   # Special case: 行く→行った (iku→itta), not 行いた
   defp handle_iku_ta_form(result, original) do
     if original in ["いく", "行く"] do
@@ -799,7 +1152,7 @@ defmodule Medoru.Maintenance.Conjugations do
   defp conjugate_i_adjective_full(text, reading, form_name) do
     stem = String.replace_suffix(text, "い", "")
     # Also get stem from reading (remove trailing い)
-    base_reading = 
+    base_reading =
       if reading && reading != "" do
         String.replace_suffix(reading, "い", "")
       else
@@ -808,30 +1161,42 @@ defmodule Medoru.Maintenance.Conjugations do
 
     case form_name do
       # New naming convention
-      "dictionary-i" -> 
+      "dictionary-i" ->
         {text, reading}
-      "adverbial" -> 
+
+      "adverbial" ->
         {stem <> "く", base_reading <> "く"}
-      "te-form-adj" -> 
+
+      "te-form-adj" ->
         {stem <> "くて", base_reading <> "くて"}
-      "past-i" -> 
+
+      "past-i" ->
         {stem <> "かった", base_reading <> "かった"}
-      "negative-i" -> 
+
+      "negative-i" ->
         {stem <> "くない", base_reading <> "くない"}
+
       # Legacy naming convention
-      "dictionary" -> 
+      "dictionary" ->
         {text, reading}
-      "ku-form" -> 
+
+      "ku-form" ->
         {stem <> "く", base_reading <> "く"}
-      "kute-form" -> 
+
+      "kute-form" ->
         {stem <> "くて", base_reading <> "くて"}
-      "katta-form" -> 
+
+      "katta-form" ->
         {stem <> "かった", base_reading <> "かった"}
-      "kunai-form" -> 
+
+      "kunai-form" ->
         {stem <> "くない", base_reading <> "くない"}
+
       "kunakatta-form" ->
         {stem <> "くなかった", base_reading <> "くなかった"}
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -855,9 +1220,9 @@ defmodule Medoru.Maintenance.Conjugations do
         String.ends_with?(text, "な") -> String.replace_suffix(text, "な", "")
         true -> text
       end
-    
+
     # Get base reading (remove trailing だ/な if present)
-    base_reading = 
+    base_reading =
       cond do
         reading && String.ends_with?(reading, "だ") -> String.replace_suffix(reading, "だ", "")
         reading && String.ends_with?(reading, "な") -> String.replace_suffix(reading, "な", "")
@@ -866,21 +1231,29 @@ defmodule Medoru.Maintenance.Conjugations do
       end
 
     case form_name do
-      "dictionary-na" -> 
+      "dictionary-na" ->
         {base <> "だ", base_reading <> "だ"}
-      "na-form" -> 
+
+      "na-form" ->
         {base <> "な", base_reading <> "な"}
-      "adverbial" -> 
+
+      "adverbial" ->
         {base <> "で", base_reading <> "で"}
-      "te-form-adj" -> 
+
+      "te-form-adj" ->
         {base <> "で", base_reading <> "で"}
-      "te-form-na" -> 
+
+      "te-form-na" ->
         {base <> "で", base_reading <> "で"}
-      "past-i" -> 
+
+      "past-i" ->
         {base <> "だった", base_reading <> "だった"}
-      "negative-na" -> 
+
+      "negative-na" ->
         {base <> "ではない", base_reading <> "ではない"}
-      _ -> nil
+
+      _ ->
+        nil
     end
   end
 
@@ -898,7 +1271,10 @@ defmodule Medoru.Maintenance.Conjugations do
         example_sentence: "猫がいます",
         example_reading: "ねこがいます",
         example_meaning: "There is a cat",
-        translations: %{"en" => %{"meaning" => "to be (animate)"}, "bg" => %{"meaning" => "да бъда (за живи същества)"}}
+        translations: %{
+          "en" => %{"meaning" => "to be (animate)"},
+          "bg" => %{"meaning" => "да бъда (за живи същества)"}
+        }
       }
     ]
 
@@ -911,13 +1287,16 @@ defmodule Medoru.Maintenance.Conjugations do
           |> Word.changeset(Map.put(verb_attrs, :sort_score, 0))
           |> Repo.insert(on_conflict: :nothing)
           |> case do
-            {:ok, word} -> 
+            {:ok, word} ->
               IO.puts("  Added special verb: #{word.text}")
+
             {:error, changeset} ->
               IO.puts("  Warning: Failed to add #{verb_attrs.text}: #{inspect(changeset.errors)}")
+
             _ ->
               :ok
           end
+
         _existing ->
           # Verb already exists, no action needed
           :ok

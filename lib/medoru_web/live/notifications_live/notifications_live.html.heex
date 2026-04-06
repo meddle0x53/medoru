@@ -138,19 +138,27 @@
                     <% notification.type == "classroom_lesson" && notification.data["classroom_id"] && notification.data["lesson_id"] -> %>
                       <div class="mt-3">
                         <.link
-                          navigate={~p"/classrooms/#{notification.data["classroom_id"]}/custom-lessons/#{notification.data["lesson_id"]}"}
+                          navigate={
+                            ~p"/classrooms/#{notification.data["classroom_id"]}/custom-lessons/#{notification.data["lesson_id"]}"
+                          }
                           class="btn btn-primary btn-xs"
                         >
-                          <.icon name="hero-book-open" class="w-3 h-3 mr-1" /> {gettext("Start Lesson")}
+                          <.icon name="hero-book-open" class="w-3 h-3 mr-1" /> {gettext(
+                            "Start Lesson"
+                          )}
                         </.link>
                       </div>
                     <% notification.type == "classroom_test" && notification.data["classroom_id"] && notification.data["test_id"] -> %>
                       <div class="mt-3">
                         <.link
-                          navigate={~p"/classrooms/#{notification.data["classroom_id"]}/tests/#{notification.data["test_id"]}"}
+                          navigate={
+                            ~p"/classrooms/#{notification.data["classroom_id"]}/tests/#{notification.data["test_id"]}"
+                          }
                           class="btn btn-primary btn-xs"
                         >
-                          <.icon name="hero-clipboard-document-list" class="w-3 h-3 mr-1" /> {gettext("Take Test")}
+                          <.icon name="hero-clipboard-document-list" class="w-3 h-3 mr-1" /> {gettext(
+                            "Take Test"
+                          )}
                         </.link>
                       </div>
                     <% true -> %>

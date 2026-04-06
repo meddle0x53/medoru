@@ -1,7 +1,7 @@
 defmodule Medoru.Learning.WordSets do
   @moduledoc """
   Context module for Word Sets - user-created collections of words.
-  
+
   Provides CRUD operations, word management, and practice test integration.
   """
 
@@ -15,7 +15,7 @@ defmodule Medoru.Learning.WordSets do
 
   @doc """
   Returns a paginated list of word sets for a user.
-  
+
   ## Options
     * `:page` - Page number (default: 1)
     * `:per_page` - Items per page (default: 20)
@@ -76,7 +76,7 @@ defmodule Medoru.Learning.WordSets do
 
   @doc """
   Gets a single word set with preloaded words.
-  
+
   Raises `Ecto.NoResultsError` if the word set does not exist.
   """
   def get_word_set!(id) do
@@ -156,7 +156,7 @@ defmodule Medoru.Learning.WordSets do
 
   @doc """
   Adds a word to a word set.
-  
+
   Returns `{:error, :max_words_reached}` if the set already has 100 words.
   """
   def add_word_to_set(%WordSet{} = word_set, word_id) do
@@ -165,7 +165,10 @@ defmodule Medoru.Learning.WordSets do
     else
       # Get next position
       max_position =
-        from(wsw in WordSetWord, where: wsw.word_set_id == ^word_set.id, select: max(wsw.position))
+        from(wsw in WordSetWord,
+          where: wsw.word_set_id == ^word_set.id,
+          select: max(wsw.position)
+        )
         |> Repo.one() || 0
 
       attrs = %{
@@ -223,7 +226,7 @@ defmodule Medoru.Learning.WordSets do
 
   @doc """
   Reorders words in a word set by their IDs.
-  
+
   Takes a list of word IDs in the desired order.
   """
   def reorder_words(word_set_id, word_ids) do
@@ -241,7 +244,7 @@ defmodule Medoru.Learning.WordSets do
 
   @doc """
   Creates a practice test for a word set.
-  
+
   ## Options
     * `:step_types` - List of step types to include (required)
     * `:max_steps_per_word` - Max questions per word (1-5, default: 3)
@@ -327,14 +330,14 @@ defmodule Medoru.Learning.WordSets do
         {:ok, word_set} = create_word_set(word_set_attrs)
 
         # Get unique word IDs
-        word_ids = 
+        word_ids =
           lesson_words
           |> Enum.map(& &1.word_id)
           |> Enum.uniq()
 
         # Batch insert all words at once
         now = DateTime.utc_now()
-        
+
         word_set_words =
           Enum.with_index(word_ids, fn word_id, index ->
             %{
@@ -354,6 +357,123 @@ defmodule Medoru.Learning.WordSets do
         |> Repo.update!()
       end)
     end
+  end
+
+  @doc """
+  Searches user's word sets by name for copying words.
+  Excludes the specified word set from results.
+  Returns up to 5 results, with exact matches first, then partial matches.
+  """
+  def search_word_sets_for_copy(user_id, exclude_word_set_id, search_term) do
+    search_pattern = "%#{search_term}%"
+
+    # Get exact matches first (case-insensitive)
+    exact_matches =
+      from(ws in WordSet,
+        where: ws.user_id == ^user_id,
+        where: ws.id != ^exclude_word_set_id,
+        where: ilike(ws.name, ^search_term),
+        limit: 5
+      )
+      |> Repo.all()
+
+    # If we have less than 5, get partial matches
+    if length(exact_matches) < 5 do
+      remaining = 5 - length(exact_matches)
+      exclude_ids = [exclude_word_set_id | Enum.map(exact_matches, & &1.id)]
+
+      partial_matches =
+        from(ws in WordSet,
+          where: ws.user_id == ^user_id,
+          where: ws.id not in ^exclude_ids,
+          where: ilike(ws.name, ^search_pattern),
+          limit: ^remaining
+        )
+        |> Repo.all()
+
+      exact_matches ++ partial_matches
+    else
+      exact_matches
+    end
+  end
+
+  @doc """
+  Copies words from source word set to target word set.
+  Validates that combined unique words don't exceed max limit.
+  Skips duplicate words (already in target).
+
+  Returns {:ok, target_word_set} on success,
+  {:error, :would_overflow} if max words would be exceeded,
+  or {:error, reason} on other failures.
+  """
+  def copy_words_to_word_set(source_word_set_id, target_word_set_id) do
+    _source = get_word_set!(source_word_set_id)
+    target = get_word_set!(target_word_set_id)
+
+    # Get word IDs from both sets
+    source_word_ids = get_word_set_word_ids(source_word_set_id)
+    target_word_ids = get_word_set_word_ids(target_word_set_id)
+
+    # Calculate unique words after merge
+    combined_unique = Enum.uniq(source_word_ids ++ target_word_ids)
+    new_total = length(combined_unique)
+
+    if new_total > @max_words do
+      {:error, :would_overflow}
+    else
+      # Find words to copy (those in source but not in target)
+      words_to_copy = source_word_ids -- target_word_ids
+
+      if words_to_copy == [] do
+        {:ok, target}
+      else
+        # Get current max position in target (default to 0 like add_word_to_set)
+        max_position = get_max_position(target_word_set_id) || 0
+
+        now = DateTime.utc_now()
+
+        # Prepare batch insert with positions continuing from target
+        word_set_words =
+          Enum.with_index(words_to_copy, fn word_id, index ->
+            %{
+              word_set_id: target_word_set_id,
+              word_id: word_id,
+              position: max_position + index + 1,
+              inserted_at: now,
+              updated_at: now
+            }
+          end)
+
+        # Insert with on_conflict: :nothing to skip duplicates
+        {_inserted_count, _} =
+          Repo.insert_all(WordSetWord, word_set_words, on_conflict: :nothing)
+
+        # Update target word count
+        target
+        |> WordSet.update_word_count_changeset(new_total)
+        |> Repo.update!()
+
+        {:ok, Repo.get!(WordSet, target_word_set_id)}
+      end
+    end
+  end
+
+  # Get all word IDs for a word set
+  defp get_word_set_word_ids(word_set_id) do
+    from(wsw in WordSetWord,
+      where: wsw.word_set_id == ^word_set_id,
+      select: wsw.word_id
+    )
+    |> Repo.all()
+  end
+
+  # Get max position in word set
+  defp get_max_position(word_set_id) do
+    from(wsw in WordSetWord,
+      where: wsw.word_set_id == ^word_set_id,
+      select: max(wsw.position)
+    )
+    |> Repo.one()
   end
 
   # Helper to reorder words sequentially (0, 1, 2, ...)

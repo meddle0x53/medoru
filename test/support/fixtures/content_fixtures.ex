@@ -140,8 +140,11 @@ defmodule Medoru.ContentFixtures do
   # Generate a unique word text using test-safe Japanese characters
   defp unique_word_text do
     # Use CJK Unified Ideographs Extension A for test words
-    index = System.unique_integer([:positive]) |> rem(100)
-    <<0x3400 + index::utf8>>
+    # Support up to 10000 unique words using 2-character combinations
+    index = System.unique_integer([:positive]) |> rem(10000)
+    high = div(index, 100)
+    low = rem(index, 100)
+    <<0x3400 + high::utf8, 0x3400 + low::utf8>>
   end
 
   @doc """

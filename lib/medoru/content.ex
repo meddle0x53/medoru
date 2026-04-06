@@ -586,7 +586,7 @@ defmodule Medoru.Content do
       # Apply difficulty filter
       words =
         if difficulty do
-          Enum.filter(words, & &1.difficulty == difficulty)
+          Enum.filter(words, &(&1.difficulty == difficulty))
         else
           words
         end

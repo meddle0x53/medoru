@@ -4,6 +4,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.ShowTest do
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
 
+  import Ecto.Query
+
   alias Medoru.Classrooms
   alias Medoru.Repo
 
@@ -173,6 +175,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.ShowTest do
       {:ok, membership2} = Classrooms.apply_to_join(own_classroom.id, anonymous_member.id)
       {:ok, _} = Classrooms.approve_membership(membership2)
 
+      # Clear notifications to avoid email leakage in test assertions
+      Repo.delete_all(from n in Medoru.Notifications.Notification, where: n.user_id == ^teacher_no_name.id)
+
       conn = log_in_user(conn, teacher_no_name)
       {:ok, _lv, html} = live(conn, ~p"/teacher/classrooms/#{own_classroom.id}?tab=students")
 
@@ -205,6 +210,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.ShowTest do
       # Anonymous student joins and gets approved
       {:ok, membership} = Classrooms.apply_to_join(viewing_classroom.id, anonymous_student.id)
       {:ok, _} = Classrooms.approve_membership(membership)
+
+      # Clear notifications to avoid email leakage in test assertions
+      # (Notifications contain email in their message which is unrelated to member display)
+      Repo.delete_all(from n in Medoru.Notifications.Notification, where: n.user_id == ^viewing_teacher.id)
 
       # Viewing teacher views their classroom
       conn = log_in_user(conn, viewing_teacher)

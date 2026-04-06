@@ -99,7 +99,9 @@ defmodule MedoruWeb.WordSetLive.Test do
         step_index: session.current_step_index
       }
 
-      case Tests.record_step_answer(session.id, step.id, attrs, locale: socket.assigns.current_scope.locale) do
+      case Tests.record_step_answer(session.id, step.id, attrs,
+             locale: socket.assigns.current_scope.locale
+           ) do
         {:ok, step_answer} ->
           feedback = if step_answer.is_correct, do: :correct, else: :incorrect
           {:noreply, assign(socket, :feedback, feedback)}
@@ -192,13 +194,15 @@ defmodule MedoruWeb.WordSetLive.Test do
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => completed}, socket) when completed in ["true", true] do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["true", true] do
     # Submit button clicked when kanji is complete - treat same as kanji_complete
     handle_event("kanji_complete", %{}, socket)
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => completed}, socket) when completed in ["false", false] do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["false", false] do
     # User gave up or skipped - mark as incorrect
     session = socket.assigns.session
     step = socket.assigns.current_step
@@ -264,11 +268,11 @@ defmodule MedoruWeb.WordSetLive.Test do
     case get_next_step(session) do
       nil ->
         Tests.complete_session(session, 0, 0, 0)
-        
+
         # Calculate statistics
         stats = calculate_test_stats(session)
-        
-        {:noreply, 
+
+        {:noreply,
          socket
          |> assign(:test_completed, true)
          |> assign(:stats, stats)}
@@ -314,7 +318,7 @@ defmodule MedoruWeb.WordSetLive.Test do
     alias Medoru.Tests.TestStepAnswer
 
     # Get all answers for this session
-    answers = 
+    answers =
       TestStepAnswer
       |> where([a], a.test_session_id == ^session.id)
       |> Repo.all()
@@ -339,7 +343,11 @@ defmodule MedoruWeb.WordSetLive.Test do
     alias Medoru.Tests.TestSession
 
     TestSession
-    |> where([ts], ts.user_id == ^user_id and ts.test_id == ^test_id and ts.status not in [:completed, :abandoned])
+    |> where(
+      [ts],
+      ts.user_id == ^user_id and ts.test_id == ^test_id and
+        ts.status not in [:completed, :abandoned]
+    )
     |> Repo.all()
     |> Enum.each(fn session ->
       Tests.abandon_session(session, session.time_spent_seconds || 0)

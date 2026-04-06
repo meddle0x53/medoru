@@ -46,14 +46,16 @@ defmodule MedoruWeb.WordLive.Show do
        gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
      )}
   end
-  
+
   defp parse_step_param(nil), do: nil
+
   defp parse_step_param(step) when is_binary(step) do
     case Integer.parse(step) do
       {num, _} -> num
       :error -> nil
     end
   end
+
   defp parse_step_param(step) when is_integer(step), do: step
 
   @impl true
@@ -170,16 +172,16 @@ defmodule MedoruWeb.WordLive.Show do
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
   end
-  
+
   # Helper for template: build return path with step and practice params
   def build_return_path(return_to, step, practice) do
     path = return_to
-    
+
     # Add query params
     params = []
     params = if step, do: [{"step", step} | params], else: params
     params = if practice, do: [{"practice", "true"} | params], else: params
-    
+
     if params != [] do
       query_string = URI.encode_query(params)
       "#{path}?#{query_string}"

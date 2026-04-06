@@ -29,9 +29,10 @@ IO.puts("")
 
 IO.puts("Starting validation...")
 
-{time, result} = :timer.tc(fn ->
-  Validator.validate_with_details(sentence, pattern)
-end)
+{time, result} =
+  :timer.tc(fn ->
+    Validator.validate_with_details(sentence, pattern)
+  end)
 
 time_ms = time / 1000
 IO.puts("Completed in #{time_ms}ms")
@@ -39,6 +40,7 @@ IO.puts("Result.valid: #{result.valid}")
 
 if result.valid do
   IO.puts("Breakdown:")
+
   Enum.each(result.breakdown, fn elem ->
     IO.puts("  - #{elem.text} (type: #{elem.type}, form: #{elem.form || "nil"})")
   end)

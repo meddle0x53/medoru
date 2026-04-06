@@ -26,7 +26,8 @@ defmodule MedoruWeb.WordSetLive.Show do
     user = socket.assigns.current_scope.current_user
     page = parse_page(socket.assigns[:page])
 
-    {word_set, words_result} = WordSets.get_word_set_with_words_paginated(id, page: page, per_page: @per_page)
+    {word_set, words_result} =
+      WordSets.get_word_set_with_words_paginated(id, page: page, per_page: @per_page)
 
     # Check if user owns this word set
     is_owner = user && word_set.user_id == user.id
@@ -39,7 +40,12 @@ defmodule MedoruWeb.WordSetLive.Show do
      |> assign(:total_pages, words_result.total_pages)
      |> assign(:page, page)
      |> assign(:is_owner, is_owner)
-     |> assign(:page_title, word_set.name)}
+     |> assign(:page_title, word_set.name)
+     |> assign(:copy_modal_open, false)
+     |> assign(:copy_search_term, "")
+     |> assign(:copy_search_results, [])
+     |> assign(:copy_selected_target, nil)
+     |> assign(:copy_error, nil)}
   end
 
   @impl true
@@ -47,7 +53,11 @@ defmodule MedoruWeb.WordSetLive.Show do
     page = parse_page(page)
     _word_set = socket.assigns.word_set
 
-    {_word_set, words_result} = WordSets.get_word_set_with_words_paginated(socket.assigns.word_set.id, page: page, per_page: @per_page)
+    {_word_set, words_result} =
+      WordSets.get_word_set_with_words_paginated(socket.assigns.word_set.id,
+        page: page,
+        per_page: @per_page
+      )
 
     {:noreply,
      socket
@@ -75,20 +85,123 @@ defmodule MedoruWeb.WordSetLive.Show do
     end
   end
 
+  # Copy to Word Set event handlers
+  @impl true
+  def handle_event("open_copy_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:copy_modal_open, true)
+     |> assign(:copy_search_term, "")
+     |> assign(:copy_search_results, [])
+     |> assign(:copy_selected_target, nil)
+     |> assign(:copy_error, nil)}
+  end
+
+  @impl true
+  def handle_event("close_copy_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:copy_modal_open, false)
+     |> assign(:copy_search_term, "")
+     |> assign(:copy_search_results, [])
+     |> assign(:copy_selected_target, nil)
+     |> assign(:copy_error, nil)}
+  end
+
+  @impl true
+  def handle_event("update_copy_search", %{"search" => search_term}, socket) do
+    {:noreply, assign(socket, :copy_search_term, search_term)}
+  end
+
+  @impl true
+  def handle_event("search_word_sets", params, socket) do
+    # Get search term from event params (keybaord enter) or socket assign (button click)
+    search_term =
+      case params do
+        %{"value" => value} when is_binary(value) -> String.trim(value)
+        _ -> String.trim(socket.assigns.copy_search_term)
+      end
+
+    if search_term == "" do
+      {:noreply, assign(socket, :copy_search_results, [])}
+    else
+      user_id = socket.assigns.current_scope.current_user.id
+      source_id = socket.assigns.word_set.id
+
+      results = WordSets.search_word_sets_for_copy(user_id, source_id, search_term)
+      {:noreply, assign(socket, :copy_search_results, results)}
+    end
+  end
+
+  @impl true
+  def handle_event("select_target_word_set", %{"id" => target_id, "name" => name}, socket) do
+    target = %{id: target_id, name: name}
+
+    {:noreply,
+     socket
+     |> assign(:copy_selected_target, target)
+     |> assign(:copy_error, nil)}
+  end
+
+  @impl true
+  def handle_event("clear_selected_target", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:copy_selected_target, nil)
+     |> assign(:copy_error, nil)}
+  end
+
+  @impl true
+  def handle_event("copy_to_word_set", _, socket) do
+    source_id = socket.assigns.word_set.id
+    target = socket.assigns.copy_selected_target
+
+    if target do
+      case WordSets.copy_words_to_word_set(source_id, target.id) do
+        {:ok, updated_target} ->
+          {:noreply,
+           socket
+           |> assign(:copy_modal_open, false)
+           |> assign(:copy_search_term, "")
+           |> assign(:copy_search_results, [])
+           |> assign(:copy_selected_target, nil)
+           |> assign(:copy_error, nil)
+           |> put_flash(:info, gettext("Words copied to '%{name}'", name: updated_target.name))
+           |> push_navigate(to: ~p"/words/sets/#{updated_target.id}")}
+
+        {:error, :would_overflow} ->
+          {:noreply,
+           socket
+           |> assign(:copy_error, gettext("Cannot copy: would exceed maximum word limit"))
+           |> assign(:copy_selected_target, nil)}
+
+        {:error, _} ->
+          {:noreply,
+           socket
+           |> assign(:copy_error, gettext("Failed to copy words"))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # Helper for template
+  def localized_word_meaning(word, locale) do
+    Content.get_localized_meaning(word, locale)
+  end
+
+  # Private helpers
   defp parse_page(nil), do: 1
+
   defp parse_page(page) when is_binary(page) do
     case Integer.parse(page) do
       {n, _} when n > 0 -> n
       _ -> 1
     end
   end
+
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
-
-  # Helper for template
-  def localized_word_meaning(word, locale) do
-    Content.get_localized_meaning(word, locale)
-  end
 
   @impl true
   def render(assigns) do
@@ -132,6 +245,14 @@ defmodule MedoruWeb.WordSetLive.Show do
                   <.icon name="hero-cog-6-tooth" class="w-4 h-4 inline mr-1" />
                   {gettext("Settings")}
                 </.link>
+                <button
+                  type="button"
+                  phx-click="open_copy_modal"
+                  class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors"
+                >
+                  <.icon name="hero-document-duplicate" class="w-4 h-4 inline mr-1" />
+                  {gettext("Copy to")}
+                </button>
               </div>
             <% end %>
           </div>
@@ -162,7 +283,11 @@ defmodule MedoruWeb.WordSetLive.Show do
                     </.link>
                     <button
                       phx-click="delete_test"
-                      data-confirm={gettext("Delete this practice test? You'll need to recreate it to take it again.")}
+                      data-confirm={
+                        gettext(
+                          "Delete this practice test? You'll need to recreate it to take it again."
+                        )
+                      }
                       class="px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded-lg font-medium transition-colors"
                     >
                       <.icon name="hero-trash" class="w-4 h-4 inline mr-1" />
@@ -173,7 +298,9 @@ defmodule MedoruWeb.WordSetLive.Show do
               <% else %>
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <p class="text-secondary flex-1">
-                    {gettext("Create a practice test to study these words with customizable question types.")}
+                    {gettext(
+                      "Create a practice test to study these words with customizable question types."
+                    )}
                   </p>
                   <.link
                     navigate={~p"/words/sets/#{@word_set.id}/test-config"}
@@ -293,6 +420,122 @@ defmodule MedoruWeb.WordSetLive.Show do
             {gettext("Back to My Word Sets")}
           </.link>
         </div>
+
+        <%!-- Copy to Word Set Modal --%>
+        <%= if @copy_modal_open do %>
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 class="text-xl font-bold text-base-content mb-4">
+                {gettext("Copy to Word Set")}
+              </h3>
+              <p class="text-secondary mb-4">
+                {gettext("Copy words from '%{source}' to another word set", source: @word_set.name)}
+              </p>
+
+              <%!-- Error message --%>
+              <%= if @copy_error do %>
+                <div class="bg-error/10 text-error rounded-lg p-3 mb-4">
+                  {@copy_error}
+                </div>
+              <% end %>
+
+              <%!-- Search --%>
+              <%= if !@copy_selected_target do %>
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Search for word set")}
+                  </label>
+                  <div class="flex gap-2">
+                    <input
+                      type="text"
+                      name="search"
+                      value={@copy_search_term}
+                      phx-change="update_copy_search"
+                      phx-keydown="search_word_sets"
+                      phx-key="Enter"
+                      placeholder={gettext("Enter word set name...")}
+                      class="flex-1 px-4 py-2 rounded-lg border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                    />
+                    <button
+                      type="button"
+                      phx-click="search_word_sets"
+                      class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors"
+                    >
+                      {gettext("Search")}
+                    </button>
+                  </div>
+                </div>
+
+                <%!-- Search Results --%>
+                <%= if @copy_search_results != [] do %>
+                  <div class="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                    <%= for word_set <- @copy_search_results do %>
+                      <button
+                        type="button"
+                        phx-click="select_target_word_set"
+                        phx-value-id={word_set.id}
+                        phx-value-name={word_set.name}
+                        class="w-full text-left p-3 rounded-lg border border-base-200 hover:border-primary hover:bg-primary/5 transition-colors"
+                      >
+                        <div class="font-medium text-base-content">{word_set.name}</div>
+                        <div class="text-sm text-secondary">
+                          {word_set.word_count} {ngettext("word", "words", word_set.word_count)}
+                        </div>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+
+                <%= if @copy_search_term != "" && @copy_search_results == [] do %>
+                  <p class="text-secondary text-center py-4">
+                    {gettext("No word sets found")}
+                  </p>
+                <% end %>
+              <% else %>
+                <%!-- Selected Target --%>
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Selected word set")}
+                  </label>
+                  <div class="flex items-center justify-between p-3 rounded-lg border border-primary bg-primary/5">
+                    <div>
+                      <div class="font-medium text-base-content">{@copy_selected_target.name}</div>
+                    </div>
+                    <button
+                      type="button"
+                      phx-click="clear_selected_target"
+                      class="p-1 text-secondary hover:text-error transition-colors"
+                    >
+                      <.icon name="hero-x-mark" class="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+
+              <%!-- Actions --%>
+              <div class="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  phx-click="close_copy_modal"
+                  class="btn btn-ghost"
+                >
+                  {gettext("Back")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="copy_to_word_set"
+                  disabled={!@copy_selected_target}
+                  class={[
+                    "btn btn-primary",
+                    !@copy_selected_target && "btn-disabled opacity-50"
+                  ]}
+                >
+                  {gettext("Copy")}
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
     </Layouts.app>
     """

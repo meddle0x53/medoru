@@ -214,11 +214,11 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
       # Also verify that all distractors come from learned words (lesson 1 or 2)
       # and not from outside the curriculum
       all_lesson_texts = lesson1_texts ++ lesson2_texts
-      
+
       # Get unique distractor texts (may include readings/meanings which are not word texts)
       # We check that any word-like distractor (single character) is from our lessons
       word_distractors = Enum.filter(all_options, &(&1 in all_lesson_texts))
-      
+
       # All word distractors should come from lesson 1 or 2
       assert Enum.all?(word_distractors, &(&1 in all_lesson_texts)),
              "All word distractors should come from learned words (lessons 1-2)"

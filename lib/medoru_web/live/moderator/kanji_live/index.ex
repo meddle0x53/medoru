@@ -61,7 +61,9 @@ defmodule MedoruWeb.Moderator.KanjiLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(to: ~p"/moderator/kanji?#{%{level: level_param, search: socket.assigns.search}}")}
+     |> push_patch(
+       to: ~p"/moderator/kanji?#{%{level: level_param, search: socket.assigns.search}}"
+     )}
   end
 
   @impl true

@@ -36,7 +36,13 @@ defmodule MedoruWeb.WordSetLive.TestTest do
 
       word_set = WordSets.get_word_set!(word_set.id)
 
-      %{conn: conn, user: user, word_set: word_set, practice_test: test, words: [word1, word2, word3]}
+      %{
+        conn: conn,
+        user: user,
+        word_set: word_set,
+        practice_test: test,
+        words: [word1, word2, word3]
+      }
     end
 
     test "renders practice test interface", %{conn: conn, word_set: word_set} do
@@ -130,11 +136,12 @@ defmodule MedoruWeb.WordSetLive.TestTest do
 
       # Verify that both boolean and string values work
       # This should not raise a FunctionClauseError
-      result = 
+      result =
         try do
           view
           |> element("button[phx-click='submit_writing']")
           |> render_click(%{"completed" => true})
+
           :ok
         rescue
           _ -> :error

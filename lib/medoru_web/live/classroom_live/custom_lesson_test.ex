@@ -245,6 +245,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   # Normalize answer for comparison (lowercase, trim whitespace)
   defp normalize_answer(nil), do: ""
+
   defp normalize_answer(answer) do
     answer
     |> String.trim()
@@ -372,7 +373,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
     # Find all non-completed sessions for this user/test
     TestSession
-    |> where([ts], ts.user_id == ^user_id and ts.test_id == ^test_id and ts.status not in [:completed, :abandoned])
+    |> where(
+      [ts],
+      ts.user_id == ^user_id and ts.test_id == ^test_id and
+        ts.status not in [:completed, :abandoned]
+    )
     |> Repo.all()
     |> Enum.each(fn session ->
       Tests.abandon_session(session, session.time_spent_seconds || 0)

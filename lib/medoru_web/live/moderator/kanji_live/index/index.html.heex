@@ -174,7 +174,8 @@
           <.link
             navigate={
               if @page > 1,
-                do: ~p"/moderator/kanji?#{%{page: @page - 1, level: @level_filter, search: @search}}",
+                do:
+                  ~p"/moderator/kanji?#{%{page: @page - 1, level: @level_filter, search: @search}}",
                 else: "#"
             }
             class={["join-item btn btn-sm min-w-[40px]", if(@page <= 1, do: "btn-disabled")]}
@@ -199,7 +200,8 @@
           <.link
             navigate={
               if @page < @total_pages,
-                do: ~p"/moderator/kanji?#{%{page: @page + 1, level: @level_filter, search: @search}}",
+                do:
+                  ~p"/moderator/kanji?#{%{page: @page + 1, level: @level_filter, search: @search}}",
                 else: "#"
             }
             class={[

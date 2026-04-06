@@ -196,8 +196,14 @@ defmodule MedoruWeb.SettingsLive.Profile do
          |> assign(:api_tokens, api_tokens)
          |> assign(:api_token_count, length(api_tokens))
          |> assign(:new_token_plaintext, plaintext)
-         |> assign(:new_token_form, to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token))
-         |> put_flash(:info, gettext("API token created successfully. Copy it now — you won't see it again."))}
+         |> assign(
+           :new_token_form,
+           to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token)
+         )
+         |> put_flash(
+           :info,
+           gettext("API token created successfully. Copy it now — you won't see it again.")
+         )}
 
       {:error, :limit_reached} ->
         {:noreply,
@@ -292,6 +298,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
   defp mask_token(_), do: "****"
 
   defp format_token_expiry(nil), do: gettext("Never expires")
+
   defp format_token_expiry(%DateTime{} = dt) do
     diff = DateTime.diff(dt, DateTime.utc_now(), :day)
 
@@ -305,6 +312,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
   end
 
   defp format_token_last_used(nil), do: gettext("Never used")
+
   defp format_token_last_used(%DateTime{} = dt) do
     diff = DateTime.diff(DateTime.utc_now(), dt, :second)
 

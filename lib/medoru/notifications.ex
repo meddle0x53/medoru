@@ -367,7 +367,13 @@ defmodule Medoru.Notifications do
       {:ok, %Notification{}}
 
   """
-  def notify_classroom_lesson_published(user_id, classroom_name, lesson_title, lesson_id, classroom_id) do
+  def notify_classroom_lesson_published(
+        user_id,
+        classroom_name,
+        lesson_title,
+        lesson_id,
+        classroom_id
+      ) do
     create_notification(%{
       user_id: user_id,
       type: "classroom_lesson",

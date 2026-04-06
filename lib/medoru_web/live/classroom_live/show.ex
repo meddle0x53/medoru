@@ -147,7 +147,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
-  def handle_event("open_copy_modal", %{"lesson_id" => lesson_id, "lesson_title" => lesson_title}, socket) do
+  def handle_event(
+        "open_copy_modal",
+        %{"lesson_id" => lesson_id, "lesson_title" => lesson_title},
+        socket
+      ) do
     {:noreply,
      socket
      |> assign(:copy_lesson_modal_open, true)
@@ -176,7 +180,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
          |> assign(:copy_lesson_modal_open, false)
          |> assign(:copy_lesson_id, nil)
          |> assign(:copy_lesson_title, nil)
-         |> put_flash(:info, gettext("Words copied to new word set: %{name}", name: word_set.name))
+         |> put_flash(
+           :info,
+           gettext("Words copied to new word set: %{name}", name: word_set.name)
+         )
          |> push_navigate(to: ~p"/words/sets/#{word_set.id}")}
 
       {:error, :no_words_in_lesson} ->
@@ -610,7 +617,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       >
                         <.icon name="hero-document-plus" class="w-4 h-4" />
                       </button>
-                      
+
                       <%= case progress_status do %>
                         <% "completed" -> %>
                           <div class="flex items-center gap-2">
@@ -674,7 +681,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 {gettext("Create a new word set from '%{lesson}'?", lesson: @copy_lesson_title)}
               </p>
               <p class="text-sm text-secondary mb-6">
-                {gettext("All words from this lesson will be copied to a new word set with the same name and description.")}
+                {gettext(
+                  "All words from this lesson will be copied to a new word set with the same name and description."
+                )}
               </p>
               <div class="flex gap-3 justify-end">
                 <button

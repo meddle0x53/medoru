@@ -292,7 +292,10 @@ defmodule Medoru.AccountsTest do
       user = user_fixture()
 
       assert {:ok, %ApiToken{} = token, _plaintext} =
-               Accounts.create_api_token(user.id, %{"name" => "Expiring", "expires_in_days" => "30"})
+               Accounts.create_api_token(user.id, %{
+                 "name" => "Expiring",
+                 "expires_in_days" => "30"
+               })
 
       assert token.name == "Expiring"
       assert token.expires_at != nil

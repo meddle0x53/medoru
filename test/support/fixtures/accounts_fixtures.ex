@@ -22,20 +22,20 @@ defmodule Medoru.AccountsFixtures do
   def user_fixture(attrs \\ %{}) do
     # Ensure unique identifiers to avoid deadlocks in parallel tests
     unique_suffix = "_#{System.unique_integer([:positive])}"
-    
-    email = 
+
+    email =
       case attrs[:email] || attrs["email"] do
         nil -> unique_user_email()
         e -> "#{e}#{unique_suffix}"
       end
 
-    provider_uid = 
+    provider_uid =
       case attrs[:provider_uid] || attrs["provider_uid"] do
         nil -> unique_provider_uid()
         uid -> "#{uid}#{unique_suffix}"
       end
 
-    attrs = 
+    attrs =
       attrs
       |> Map.drop([:email, :provider_uid, "email", "provider_uid"])
       |> Enum.into(%{
@@ -56,20 +56,20 @@ defmodule Medoru.AccountsFixtures do
   def user_fixture_with_registration(attrs \\ %{}) do
     # Ensure unique identifiers to avoid deadlocks in parallel tests
     unique_suffix = "_#{System.unique_integer([:positive])}"
-    
-    email = 
+
+    email =
       case attrs[:email] || attrs["email"] do
         nil -> unique_user_email()
         e -> "#{e}#{unique_suffix}"
       end
 
-    provider_uid = 
+    provider_uid =
       case attrs[:provider_uid] || attrs["provider_uid"] do
         nil -> unique_provider_uid()
         uid -> "#{uid}#{unique_suffix}"
       end
 
-    attrs = 
+    attrs =
       attrs
       |> Map.drop([:email, :provider_uid, "email", "provider_uid"])
       |> Enum.into(%{

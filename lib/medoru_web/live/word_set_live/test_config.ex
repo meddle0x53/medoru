@@ -9,16 +9,36 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
   alias Medoru.Learning.WordSets
 
   @available_step_types [
-    %{id: "word_to_meaning", label: gettext("Word to Meaning"), icon: "hero-book-open", 
-      description: gettext("Show a Japanese word and select the English meaning")},
-    %{id: "word_to_reading", label: gettext("Word to Reading"), icon: "hero-language",
-      description: gettext("Show a Japanese word and select the hiragana reading")},
-    %{id: "reading_text", label: gettext("Type Meaning & Reading"), icon: "hero-pencil",
-      description: gettext("Type both the English meaning and hiragana reading")},
-    %{id: "image_to_meaning", label: gettext("Image to Meaning"), icon: "hero-photo",
-      description: gettext("Show a Japanese word and select from image options")},
-    %{id: "kanji_writing", label: gettext("Kanji Writing"), icon: "hero-paint-brush",
-      description: gettext("Draw kanji with correct stroke order (3 points)")}
+    %{
+      id: "word_to_meaning",
+      label: gettext("Word to Meaning"),
+      icon: "hero-book-open",
+      description: gettext("Show a Japanese word and select the English meaning")
+    },
+    %{
+      id: "word_to_reading",
+      label: gettext("Word to Reading"),
+      icon: "hero-language",
+      description: gettext("Show a Japanese word and select the hiragana reading")
+    },
+    %{
+      id: "reading_text",
+      label: gettext("Type Meaning & Reading"),
+      icon: "hero-pencil",
+      description: gettext("Type both the English meaning and hiragana reading")
+    },
+    %{
+      id: "image_to_meaning",
+      label: gettext("Image to Meaning"),
+      icon: "hero-photo",
+      description: gettext("Show a Japanese word and select from image options")
+    },
+    %{
+      id: "kanji_writing",
+      label: gettext("Kanji Writing"),
+      icon: "hero-paint-brush",
+      description: gettext("Draw kanji with correct stroke order (3 points)")
+    }
   ]
 
   @impl true
@@ -107,8 +127,14 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
          |> push_navigate(to: ~p"/words/sets/#{word_set.id}")}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to create test: %{reason}", 
-          reason: inspect(reason)))}
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Failed to create test: %{reason}",
+             reason: inspect(reason)
+           )
+         )}
     end
   end
 
@@ -214,7 +240,9 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
                 </span>
               </div>
               <p class="text-sm text-secondary mt-2">
-                {gettext("Each word will get 1 to %{max} random questions from the selected types.", max: @max_steps_per_word)}
+                {gettext("Each word will get 1 to %{max} random questions from the selected types.",
+                  max: @max_steps_per_word
+                )}
               </p>
             </div>
 
@@ -225,8 +253,11 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
                 <div class="text-sm text-info-content">
                   <p class="font-medium mb-1">{gettext("How it works:")}</p>
                   <p>
-                    {gettext("The test will contain questions for each of your %{count} words. For each word, we'll randomly select between 1 and %{max} question types from your selection above.", 
-                      count: @word_set.word_count, max: @max_steps_per_word)}
+                    {gettext(
+                      "The test will contain questions for each of your %{count} words. For each word, we'll randomly select between 1 and %{max} question types from your selection above.",
+                      count: @word_set.word_count,
+                      max: @max_steps_per_word
+                    )}
                   </p>
                 </div>
               </div>

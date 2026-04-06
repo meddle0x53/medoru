@@ -144,6 +144,7 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
         # For backward compatibility: if question is plain meanings, try to localize
         # by looking up the kanji and getting its localized meanings
         localized = get_localized_meanings_for_step(step, locale)
+
         if localized != question and localized != "" do
           gettext("Write the kanji for '%{meanings}'", meanings: localized)
         else

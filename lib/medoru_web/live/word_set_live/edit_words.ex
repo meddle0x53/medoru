@@ -65,14 +65,13 @@ defmodule MedoruWeb.WordSetLive.EditWords do
     end
   end
 
-
-
   @impl true
   def handle_event("add_word", %{"word_id" => word_id}, socket) do
     word_set = socket.assigns.word_set
 
     if length(socket.assigns.word_set_words) >= @max_words do
-      {:noreply, put_flash(socket, :error, gettext("Word set is full (max %{max} words)", max: @max_words))}
+      {:noreply,
+       put_flash(socket, :error, gettext("Word set is full (max %{max} words)", max: @max_words))}
     else
       case WordSets.add_word_to_set(word_set, word_id) do
         {:ok, updated_set} ->
@@ -89,10 +88,16 @@ defmodule MedoruWeb.WordSetLive.EditWords do
            |> assign(:search_results, [])}
 
         {:error, :max_words_reached} ->
-          {:noreply, put_flash(socket, :error, gettext("Word set is full (max %{max} words)", max: @max_words))}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Word set is full (max %{max} words)", max: @max_words)
+           )}
 
         {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to add word. It may already be in the set."))}
+          {:noreply,
+           put_flash(socket, :error, gettext("Failed to add word. It may already be in the set."))}
       end
     end
   end
@@ -131,7 +136,7 @@ defmodule MedoruWeb.WordSetLive.EditWords do
         |> List.insert_at(current_index - 1, word_id)
 
       WordSets.reorder_words(socket.assigns.word_set.id, new_word_ids)
-      
+
       # Reload word set with preloaded words
       refreshed_set = WordSets.get_word_set!(socket.assigns.word_set.id)
       updated_words = load_word_set_words(refreshed_set)
@@ -156,7 +161,7 @@ defmodule MedoruWeb.WordSetLive.EditWords do
         |> List.insert_at(current_index + 1, word_id)
 
       WordSets.reorder_words(socket.assigns.word_set.id, new_word_ids)
-      
+
       # Reload word set with preloaded words
       refreshed_set = WordSets.get_word_set!(socket.assigns.word_set.id)
       updated_words = load_word_set_words(refreshed_set)
@@ -210,8 +215,10 @@ defmodule MedoruWeb.WordSetLive.EditWords do
               {gettext("Edit Words: %{name}", name: @word_set.name)}
             </h1>
             <p class="text-secondary mt-2">
-              {gettext("Add up to %{max} words to your set. Current: %{count}", 
-                max: @max_words, count: length(@word_set_words))}
+              {gettext("Add up to %{max} words to your set. Current: %{count}",
+                max: @max_words,
+                count: length(@word_set_words)
+              )}
             </p>
           </div>
           <.link
@@ -230,7 +237,10 @@ defmodule MedoruWeb.WordSetLive.EditWords do
                 {gettext("Search Words")}
               </label>
               <div class="relative">
-                <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary" />
+                <.icon
+                  name="hero-magnifying-glass"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary"
+                />
                 <form phx-change="search" class="contents">
                   <input
                     type="text"
@@ -243,7 +253,8 @@ defmodule MedoruWeb.WordSetLive.EditWords do
                 </form>
                 <%= if @search_loading do %>
                   <div class="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div class="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin">
+                    </div>
                   </div>
                 <% end %>
               </div>

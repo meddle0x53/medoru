@@ -12,7 +12,7 @@
         <p class="text-secondary mb-4 sm:mb-6 text-sm sm:text-base">
           {gettext("You completed the practice test for '%{name}'", name: @word_set.name)}
         </p>
-        
+
         <%!-- Stats Summary --%>
         <%= if assigns[:stats] do %>
           <div class="grid grid-cols-3 gap-3 mb-6">
@@ -25,12 +25,14 @@
               <div class="text-xs sm:text-sm text-error-content/70">{gettext("Incorrect")}</div>
             </div>
             <div class="bg-primary/10 rounded-xl p-4">
-              <div class="text-2xl sm:text-3xl font-bold text-primary">{@stats.percentage}<%= "%" %></div>
+              <div class="text-2xl sm:text-3xl font-bold text-primary">
+                {@stats.percentage}{"%"}
+              </div>
               <div class="text-xs sm:text-sm text-primary-content/70">{gettext("Score")}</div>
             </div>
           </div>
         <% end %>
-        
+
         <.link
           navigate={~p"/words/sets/#{@word_set.id}"}
           class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
@@ -49,7 +51,9 @@
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Set")}
           </.link>
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold text-base-content">{gettext("Practice Test")}</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-base-content">
+          {gettext("Practice Test")}
+        </h1>
         <p class="text-secondary mt-1 text-sm sm:text-base">
           {@word_set.name}
         </p>
@@ -66,7 +70,7 @@
               )}
             </span>
             <% progress = round(@step_number / @total_steps * 100) %>
-            <span class="text-secondary">{progress}<%= "%" %> {gettext("complete")}</span>
+            <span class="text-secondary">{progress}{"%"} {gettext("complete")}</span>
           </div>
           <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
             <div
@@ -176,13 +180,11 @@
               </div>
             <% true -> %>
               <%!-- Multichoice Question --%>
-              <% 
-                question_data = @current_step.question_data || %{}
-                question_label = question_data["question_label"] 
-                word_text = question_data["word_text"] || @current_step.question
-                options = question_data["options"] || @current_step.options || []
-              %>
-              
+              <% question_data = @current_step.question_data || %{}
+              question_label = question_data["question_label"]
+              word_text = question_data["word_text"] || @current_step.question
+              options = question_data["options"] || @current_step.options || [] %>
+
               <%!-- Question --%>
               <div class="mb-4 sm:mb-6">
                 <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
@@ -205,7 +207,7 @@
                 <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                   <%= for {option, index} <- Enum.with_index(options) do %>
                     <% is_selected = @selected_answer == option
-                       display_option = localize_option(option, @locale) %>
+                    display_option = localize_option(option, @locale) %>
                     <button
                       type="button"
                       phx-click="select_answer"
@@ -270,7 +272,9 @@
                       <div>
                         <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
                         <p class="text-error-content/80">
-                          {gettext("The correct answer is: %{answer}", answer: @current_step.correct_answer)}
+                          {gettext("The correct answer is: %{answer}",
+                            answer: @current_step.correct_answer
+                          )}
                         </p>
                       </div>
                     </div>

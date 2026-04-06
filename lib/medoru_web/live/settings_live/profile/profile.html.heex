@@ -257,7 +257,10 @@
         <%= if @new_token_plaintext do %>
           <div class="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-xl">
             <div class="flex items-start gap-3">
-              <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <.icon
+                name="hero-exclamation-triangle"
+                class="w-5 h-5 text-warning flex-shrink-0 mt-0.5"
+              />
               <div class="flex-1 min-w-0">
                 <p class="font-medium text-warning">{gettext("Copy your token now")}</p>
                 <p class="text-sm text-base-content/70 mb-3">
@@ -299,7 +302,11 @@
                   <div class="flex items-center gap-3 mt-1 text-xs text-base-content/60">
                     <span>{format_token_expiry(token.expires_at)}</span>
                     <span>•</span>
-                    <span>{gettext("Created %{date}", date: Calendar.strftime(token.inserted_at, "%b %d, %Y"))}</span>
+                    <span>
+                      {gettext("Created %{date}",
+                        date: Calendar.strftime(token.inserted_at, "%b %d, %Y")
+                      )}
+                    </span>
                     <span>•</span>
                     <span>{format_token_last_used(token.last_used_at)}</span>
                   </div>

@@ -40,12 +40,15 @@ IO.puts("")
 IO.puts("Starting validation with 10 second timeout...")
 IO.puts("-" |> String.duplicate(60))
 
-task = Task.async(fn ->
-  {time, result} = :timer.tc(fn ->
-    Validator.validate_with_details(sentence, pattern)
+task =
+  Task.async(fn ->
+    {time, result} =
+      :timer.tc(fn ->
+        Validator.validate_with_details(sentence, pattern)
+      end)
+
+    {time, result}
   end)
-  {time, result}
-end)
 
 case Task.yield(task, 10_000) do
   nil ->
@@ -53,28 +56,29 @@ case Task.yield(task, 10_000) do
     IO.puts("The validator is hanging - likely due to exponential backtracking")
     Task.shutdown(task)
     System.halt(1)
-    
+
   {:ok, {time_us, result}} ->
     time_ms = time_us / 1000
     IO.puts("✅ Completed in #{time_ms}ms")
     IO.puts("")
     IO.puts("Result.valid: #{result.valid}")
-    
+
     if result.valid do
       IO.puts("Breakdown:")
+
       Enum.each(result.breakdown, fn elem ->
         IO.puts("  - #{elem.text} (type: #{elem.type}, form: #{elem.form || "nil"})")
       end)
     else
       IO.puts("Error: #{inspect(result)}")
     end
-    
+
     if time_ms > 5000 do
       IO.puts("")
       IO.puts("⚠️ WARNING: Validation took > 5 seconds - still too slow!")
       System.halt(1)
     end
-    
+
     IO.puts("")
     IO.puts("=" |> String.duplicate(60))
     IO.puts("SUCCESS: Validation is fast enough!")

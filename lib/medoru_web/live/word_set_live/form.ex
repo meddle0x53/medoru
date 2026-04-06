@@ -17,7 +17,7 @@ defmodule MedoruWeb.WordSetLive.Form do
     case socket.assigns.live_action do
       :new ->
         changeset = WordSet.changeset(%WordSet{}, %{})
-        
+
         {:noreply,
          socket
          |> assign(:page_title, gettext("New Word Set"))
@@ -27,7 +27,7 @@ defmodule MedoruWeb.WordSetLive.Form do
       :edit ->
         user = socket.assigns.current_scope.current_user
         word_set = WordSets.get_word_set!(params["id"])
-        
+
         # Ensure user owns this word set
         if word_set.user_id != user.id do
           {:noreply,
@@ -36,7 +36,7 @@ defmodule MedoruWeb.WordSetLive.Form do
            |> push_navigate(to: ~p"/words/sets")}
         else
           changeset = WordSet.changeset(word_set, %{})
-          
+
           {:noreply,
            socket
            |> assign(:page_title, gettext("Edit Word Set"))
@@ -51,12 +51,13 @@ defmodule MedoruWeb.WordSetLive.Form do
     # For validation, we need to include user_id to avoid "can't be blank" errors
     # but we don't actually validate the user_id, just silence the error
     user = socket.assigns.current_scope.current_user
-    
+
     changeset =
       case socket.assigns.word_set do
-        nil -> 
+        nil ->
           WordSet.changeset(%WordSet{}, Map.put(word_set_params, "user_id", user.id))
-        word_set -> 
+
+        word_set ->
           WordSet.changeset(word_set, word_set_params)
       end
 
@@ -66,12 +67,12 @@ defmodule MedoruWeb.WordSetLive.Form do
   @impl true
   def handle_event("save", %{"word_set" => word_set_params}, socket) do
     user = socket.assigns.current_scope.current_user
-    
+
     case socket.assigns.word_set do
       nil ->
         # Create new
         attrs = Map.put(word_set_params, "user_id", user.id)
-        
+
         case WordSets.create_word_set(attrs) do
           {:ok, word_set} ->
             {:noreply,
@@ -208,7 +209,9 @@ defmodule MedoruWeb.WordSetLive.Form do
               <div class="text-sm text-info-content">
                 <p class="font-medium mb-1">{gettext("What's next?")}</p>
                 <p>
-                  {gettext("After creating your word set, you'll be able to add up to 100 words from our vocabulary database. You can then create a practice test with customizable question types.")}
+                  {gettext(
+                    "After creating your word set, you'll be able to add up to 100 words from our vocabulary database. You can then create a practice test with customizable question types."
+                  )}
                 </p>
               </div>
             </div>

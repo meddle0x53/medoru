@@ -337,9 +337,7 @@ defmodule Medoru.Grammar.ValidatorTest do
       result = Validator.validate_with_details(sentence, pattern)
 
       unless result.valid do
-        flunk(
-          "Expected valid but got error: #{inspect(result)}"
-        )
+        flunk("Expected valid but got error: #{inspect(result)}")
       end
 
       # Check breakdown has the verb and literal
@@ -361,7 +359,7 @@ defmodule Medoru.Grammar.ValidatorTest do
       sentence = "来なくてもいいです"
 
       result = Validator.validate_with_details(sentence, pattern)
-      
+
       unless result.valid do
         flunk("Expected valid but got: #{inspect(result)}")
       end

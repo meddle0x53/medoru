@@ -441,7 +441,9 @@ defmodule MedoruWeb.Layouts do
                   </li>
                   <li>
                     <.link navigate={~p"/moderator"} class="flex items-center gap-2 text-warning">
-                      <.icon name="hero-check-badge" class="w-4 h-4" /> {gettext("Moderator Dashboard")}
+                      <.icon name="hero-check-badge" class="w-4 h-4" /> {gettext(
+                        "Moderator Dashboard"
+                      )}
                     </.link>
                   </li>
                   <div class="divider my-1"></div>

@@ -544,16 +544,23 @@ defmodule Medoru.Accounts do
 
       expires_at =
         case attrs["expires_in_days"] || attrs[:expires_in_days] do
-          nil -> nil
-          "" -> nil
+          nil ->
+            nil
+
+          "" ->
+            nil
+
           days when is_binary(days) ->
             case Integer.parse(days) do
               {n, _} when n > 0 -> DateTime.utc_now() |> DateTime.add(n, :day)
               _ -> nil
             end
+
           days when is_integer(days) and days > 0 ->
             DateTime.utc_now() |> DateTime.add(days, :day)
-          _ -> nil
+
+          _ ->
+            nil
         end
 
       api_token_attrs = %{
