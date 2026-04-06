@@ -91,13 +91,14 @@ defmodule Medoru.Learning.WordSets do
   def get_word_set_with_words_paginated(id, opts \\ []) do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 30)
+    word_type = Keyword.get(opts, :word_type)
 
     word_set =
       WordSet
       |> Repo.get!(id)
       |> Repo.preload(:practice_test)
 
-    # Get paginated words
+    # Get paginated words with optional word_type filter
     words_query =
       from(w in Word,
         join: wsw in WordSetWord,
@@ -106,6 +107,14 @@ defmodule Medoru.Learning.WordSets do
         order_by: [asc: wsw.position],
         preload: [:word_kanjis]
       )
+
+    # Apply word_type filter if specified
+    words_query =
+      if word_type do
+        from(w in words_query, where: w.word_type == ^word_type)
+      else
+        words_query
+      end
 
     total_count = Repo.aggregate(words_query, :count, :id)
 

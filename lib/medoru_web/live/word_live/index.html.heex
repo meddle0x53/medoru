@@ -22,7 +22,7 @@
     <% end %>
 
     <%!-- Difficulty Selector --%>
-    <div class="flex flex-wrap gap-2 mb-6">
+    <div class="flex flex-wrap gap-2 mb-4">
       <.link
         patch={~p"/words"}
         class={[
@@ -47,6 +47,36 @@
           ]}
         >
           N{level}
+        </.link>
+      <% end %>
+    </div>
+
+    <%!-- Word Type Filter --%>
+    <div class="flex flex-wrap gap-2 mb-4">
+      <.link
+        patch={~p"/words?#{page_link_params(assigns, 1) |> Keyword.delete(:word_type)}"}
+        class={[
+          "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+          if(is_nil(@word_type),
+            do: "bg-primary text-primary-content shadow-md",
+            else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+          )
+        ]}
+      >
+        {gettext("All Types")}
+      </.link>
+      <%= for {label, type} <- word_type_options() |> Enum.filter(fn {_, v} -> v end) do %>
+        <.link
+          patch={~p"/words?#{page_link_params(assigns, 1) |> Keyword.put(:word_type, type)}"}
+          class={[
+            "px-4 py-2 rounded-xl font-medium transition-all duration-200 capitalize",
+            if(@word_type == type,
+              do: "bg-primary text-primary-content shadow-md",
+              else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+            )
+          ]}
+        >
+          {label}
         </.link>
       <% end %>
     </div>
@@ -195,6 +225,11 @@
       <%= if @difficulty do %>
         <span class="bg-base-200 px-3 py-1.5 rounded-full">
           JLPT N{@difficulty}
+        </span>
+      <% end %>
+      <%= if @word_type do %>
+        <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full capitalize">
+          {@word_type}
         </span>
       <% end %>
       <%= if @search && @search != "" do %>

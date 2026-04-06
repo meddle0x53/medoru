@@ -22,12 +22,18 @@ defmodule MedoruWeb.WordSetLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _url, socket) do
+  def handle_params(params, _url, socket) do
+    id = params["id"]
     user = socket.assigns.current_scope.current_user
-    page = parse_page(socket.assigns[:page])
+    page = parse_page(params["page"])
+    word_type = parse_word_type(params["word_type"])
 
     {word_set, words_result} =
-      WordSets.get_word_set_with_words_paginated(id, page: page, per_page: @per_page)
+      WordSets.get_word_set_with_words_paginated(id,
+        page: page,
+        per_page: @per_page,
+        word_type: word_type
+      )
 
     # Check if user owns this word set
     is_owner = user && word_set.user_id == user.id
@@ -39,6 +45,7 @@ defmodule MedoruWeb.WordSetLive.Show do
      |> assign(:total_count, words_result.total_count)
      |> assign(:total_pages, words_result.total_pages)
      |> assign(:page, page)
+     |> assign(:word_type, word_type)
      |> assign(:is_owner, is_owner)
      |> assign(:page_title, word_set.name)
      |> assign(:copy_modal_open, false)
@@ -51,18 +58,39 @@ defmodule MedoruWeb.WordSetLive.Show do
   @impl true
   def handle_event("change_page", %{"page" => page}, socket) do
     page = parse_page(page)
-    _word_set = socket.assigns.word_set
+    word_type = socket.assigns.word_type
 
     {_word_set, words_result} =
       WordSets.get_word_set_with_words_paginated(socket.assigns.word_set.id,
         page: page,
-        per_page: @per_page
+        per_page: @per_page,
+        word_type: word_type
       )
 
     {:noreply,
      socket
      |> assign(:words, words_result.words)
      |> assign(:page, page)}
+  end
+
+  @impl true
+  def handle_event("filter_word_type", %{"word_type" => word_type}, socket) do
+    word_type = if word_type == "", do: nil, else: String.to_existing_atom(word_type)
+
+    {_word_set, words_result} =
+      WordSets.get_word_set_with_words_paginated(socket.assigns.word_set.id,
+        page: 1,
+        per_page: @per_page,
+        word_type: word_type
+      )
+
+    {:noreply,
+     socket
+     |> assign(:words, words_result.words)
+     |> assign(:page, 1)
+     |> assign(:word_type, word_type)
+     |> assign(:total_count, words_result.total_count)
+     |> assign(:total_pages, words_result.total_pages)}
   end
 
   @impl true
@@ -203,6 +231,36 @@ defmodule MedoruWeb.WordSetLive.Show do
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
 
+  defp parse_word_type(nil), do: nil
+  defp parse_word_type(""), do: nil
+
+  defp parse_word_type(word_type) when is_binary(word_type) do
+    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+    if word_type in valid_types do
+      String.to_existing_atom(word_type)
+    else
+      nil
+    end
+  end
+
+  defp parse_word_type(_), do: nil
+
+  # Word type options for the filter dropdown
+  def word_type_options do
+    [
+      {gettext("All Types"), nil},
+      {gettext("Noun"), :noun},
+      {gettext("Verb"), :verb},
+      {gettext("Adjective"), :adjective},
+      {gettext("Adverb"), :adverb},
+      {gettext("Particle"), :particle},
+      {gettext("Pronoun"), :pronoun},
+      {gettext("Counter"), :counter},
+      {gettext("Expression"), :expression},
+      {gettext("Other"), :other}
+    ]
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -318,9 +376,26 @@ defmodule MedoruWeb.WordSetLive.Show do
         <%!-- Words List --%>
         <div class="card bg-base-100 border border-base-300">
           <div class="card-body">
-            <h2 class="text-lg font-semibold text-base-content mb-4">
-              {gettext("Words")}
-            </h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <h2 class="text-lg font-semibold text-base-content">
+                {gettext("Words")}
+              </h2>
+
+              <%!-- Word Type Filter --%>
+              <form phx-change="filter_word_type" class="flex items-center gap-2">
+                <label class="text-sm text-secondary">{gettext("Filter by type:")}</label>
+                <select
+                  name="word_type"
+                  class="px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg text-sm text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <%= for {label, value} <- word_type_options() do %>
+                    <option value={value || ""} selected={@word_type == value}>
+                      {label}
+                    </option>
+                  <% end %>
+                </select>
+              </form>
+            </div>
 
             <%= if length(@words) == 0 do %>
               <div class="text-center py-12">

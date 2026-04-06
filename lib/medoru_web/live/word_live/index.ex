@@ -36,6 +36,7 @@ defmodule MedoruWeb.WordLive.Index do
     sort_by = parse_sort_by(params["sort_by"])
     sort_order = parse_sort_order(params["sort_order"])
     learned_filter = parse_learned_filter(params["learned_filter"])
+    word_type = parse_word_type(params["word_type"])
 
     # Get user_id for learned filter
     user_id =
@@ -50,6 +51,7 @@ defmodule MedoruWeb.WordLive.Index do
         page: page,
         per_page: @per_page,
         difficulty: difficulty,
+        word_type: word_type,
         search: search,
         sort_by: sort_by,
         sort_order: sort_order,
@@ -65,6 +67,7 @@ defmodule MedoruWeb.WordLive.Index do
      |> assign(:sort_by, sort_by)
      |> assign(:sort_order, sort_order)
      |> assign(:learned_filter, learned_filter)
+     |> assign(:word_type, word_type)
      |> assign(:words, result.words)
      |> assign(:total_count, result.total_count)
      |> assign(:total_pages, result.total_pages)
@@ -75,6 +78,7 @@ defmodule MedoruWeb.WordLive.Index do
   def handle_event("search", %{"search" => %{"query" => query}}, socket) do
     params = [
       difficulty: socket.assigns.difficulty,
+      word_type: socket.assigns.word_type,
       search: query,
       page: 1,
       sort_by: socket.assigns.sort_by,
@@ -88,6 +92,7 @@ defmodule MedoruWeb.WordLive.Index do
   def handle_event("clear_search", _params, socket) do
     params = [
       difficulty: socket.assigns.difficulty,
+      word_type: socket.assigns.word_type,
       page: 1,
       sort_by: socket.assigns.sort_by,
       sort_order: socket.assigns.sort_order
@@ -111,12 +116,29 @@ defmodule MedoruWeb.WordLive.Index do
     params =
       [
         difficulty: socket.assigns.difficulty,
+        word_type: socket.assigns.word_type,
         search: socket.assigns.search,
         page: 1,
         sort_by: sort_by,
         sort_order: sort_order
       ]
       |> Enum.reject(fn {_, v} -> is_nil(v) end)
+
+    {:noreply, push_patch(socket, to: ~p"/words?#{params}")}
+  end
+
+  @impl true
+  def handle_event("filter_word_type", %{"word_type" => word_type}, socket) do
+    word_type = if word_type == "", do: nil, else: word_type
+
+    params = [
+      difficulty: socket.assigns.difficulty,
+      word_type: word_type,
+      search: socket.assigns.search,
+      page: 1,
+      sort_by: socket.assigns.sort_by,
+      sort_order: socket.assigns.sort_order
+    ]
 
     {:noreply, push_patch(socket, to: ~p"/words?#{params}")}
   end
@@ -196,6 +218,20 @@ defmodule MedoruWeb.WordLive.Index do
 
   defp parse_learned_filter(_), do: nil
 
+  defp parse_word_type(nil), do: nil
+  defp parse_word_type(""), do: nil
+
+  defp parse_word_type(word_type) when is_binary(word_type) do
+    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+    if word_type in valid_types do
+      String.to_existing_atom(word_type)
+    else
+      nil
+    end
+  end
+
+  defp parse_word_type(_), do: nil
+
   defp toggle_order(:asc), do: :desc
   defp toggle_order(:desc), do: :asc
 
@@ -215,6 +251,7 @@ defmodule MedoruWeb.WordLive.Index do
 
     [
       difficulty: Map.get(assigns, :difficulty),
+      word_type: Map.get(assigns, :word_type),
       search: Map.get(assigns, :search),
       page: page,
       sort_by: Map.get(assigns, :sort_by),
@@ -239,6 +276,7 @@ defmodule MedoruWeb.WordLive.Index do
 
     [
       difficulty: Map.get(assigns, :difficulty),
+      word_type: Map.get(assigns, :word_type),
       search: Map.get(assigns, :search),
       page: 1,
       sort_by: sort_by,
@@ -265,5 +303,21 @@ defmodule MedoruWeb.WordLive.Index do
   # Helper for template: get localized word meaning
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
+  end
+
+  # Word type options for the filter dropdown
+  def word_type_options do
+    [
+      {gettext("All Types"), nil},
+      {gettext("Noun"), :noun},
+      {gettext("Verb"), :verb},
+      {gettext("Adjective"), :adjective},
+      {gettext("Adverb"), :adverb},
+      {gettext("Particle"), :particle},
+      {gettext("Pronoun"), :pronoun},
+      {gettext("Counter"), :counter},
+      {gettext("Expression"), :expression},
+      {gettext("Other"), :other}
+    ]
   end
 end

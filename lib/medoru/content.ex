@@ -573,6 +573,7 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     search = Keyword.get(opts, :search)
     difficulty = Keyword.get(opts, :difficulty)
+    word_type = Keyword.get(opts, :word_type)
     learned_filter = Keyword.get(opts, :learned_filter)
     user_id = Keyword.get(opts, :user_id)
 
@@ -587,6 +588,14 @@ defmodule Medoru.Content do
       words =
         if difficulty do
           Enum.filter(words, &(&1.difficulty == difficulty))
+        else
+          words
+        end
+
+      # Apply word_type filter
+      words =
+        if word_type do
+          Enum.filter(words, &(&1.word_type == word_type))
         else
           words
         end
@@ -637,6 +646,9 @@ defmodule Medoru.Content do
 
       # Apply difficulty filter
       query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
+
+      # Apply word_type filter
+      query = if word_type, do: where(query, word_type: ^word_type), else: query
 
       # Apply learned filter if specified and user_id is provided
       query =
