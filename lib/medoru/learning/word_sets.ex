@@ -302,6 +302,60 @@ defmodule Medoru.Learning.WordSets do
     end
   end
 
+  @doc """
+  Creates a new word set from a custom lesson's words.
+  The word set name and description are copied from the lesson.
+  Duplicate words are skipped (only unique word_ids are added).
+
+  Returns {:ok, word_set} on success, {:error, reason} on failure.
+  """
+  def create_word_set_from_lesson(user_id, lesson_id) do
+    lesson = Medoru.Content.get_custom_lesson!(lesson_id)
+    lesson_words = Medoru.Content.list_lesson_words(lesson_id)
+
+    if lesson_words == [] do
+      {:error, :no_words_in_lesson}
+    else
+      word_set_attrs = %{
+        name: lesson.title,
+        description: lesson.description || "",
+        user_id: user_id,
+        word_count: 0
+      }
+
+      Repo.transaction(fn ->
+        {:ok, word_set} = create_word_set(word_set_attrs)
+
+        # Get unique word IDs
+        word_ids = 
+          lesson_words
+          |> Enum.map(& &1.word_id)
+          |> Enum.uniq()
+
+        # Batch insert all words at once
+        now = DateTime.utc_now()
+        
+        word_set_words =
+          Enum.with_index(word_ids, fn word_id, index ->
+            %{
+              word_set_id: word_set.id,
+              word_id: word_id,
+              position: index,
+              inserted_at: now,
+              updated_at: now
+            }
+          end)
+
+        {inserted_count, _} = Repo.insert_all(WordSetWord, word_set_words)
+
+        # Update word count
+        word_set
+        |> WordSet.update_word_count_changeset(inserted_count)
+        |> Repo.update!()
+      end)
+    end
+  end
+
   # Helper to reorder words sequentially (0, 1, 2, ...)
   defp reorder_words_sequential(word_set_id) do
     word_set_words =

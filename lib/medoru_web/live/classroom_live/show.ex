@@ -8,6 +8,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   import MedoruWeb.Components.Helpers, only: [display_name: 3]
 
   alias Medoru.Classrooms
+  alias Medoru.Learning.WordSets
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -43,7 +44,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
            |> assign(:lessons_filter, :all)
            |> assign(:lessons_page, 1)
            |> assign(:lessons_per_page, 10)
-           |> assign(:active_tab, "overview")}
+           |> assign(:active_tab, "overview")
+           |> assign(:copy_lesson_modal_open, false)
+           |> assign(:copy_lesson_id, nil)
+           |> assign(:copy_lesson_title, nil)}
         end
     end
   end
@@ -143,6 +147,53 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("open_copy_modal", %{"lesson_id" => lesson_id, "lesson_title" => lesson_title}, socket) do
+    {:noreply,
+     socket
+     |> assign(:copy_lesson_modal_open, true)
+     |> assign(:copy_lesson_id, lesson_id)
+     |> assign(:copy_lesson_title, lesson_title)}
+  end
+
+  @impl true
+  def handle_event("close_copy_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:copy_lesson_modal_open, false)
+     |> assign(:copy_lesson_id, nil)
+     |> assign(:copy_lesson_title, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_copy_lesson", _, socket) do
+    user_id = socket.assigns.current_scope.current_user.id
+    lesson_id = socket.assigns.copy_lesson_id
+
+    case WordSets.create_word_set_from_lesson(user_id, lesson_id) do
+      {:ok, word_set} ->
+        {:noreply,
+         socket
+         |> assign(:copy_lesson_modal_open, false)
+         |> assign(:copy_lesson_id, nil)
+         |> assign(:copy_lesson_title, nil)
+         |> put_flash(:info, gettext("Words copied to new word set: %{name}", name: word_set.name))
+         |> push_navigate(to: ~p"/words/sets/#{word_set.id}")}
+
+      {:error, :no_words_in_lesson} ->
+        {:noreply,
+         socket
+         |> assign(:copy_lesson_modal_open, false)
+         |> put_flash(:error, gettext("This lesson has no words to copy."))}
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> assign(:copy_lesson_modal_open, false)
+         |> put_flash(:error, gettext("Failed to copy words to word set."))}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
@@ -236,6 +287,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 lessons_total_count={@lessons_total_count}
                 lessons_page={@lessons_page}
                 lessons_total_pages={@lessons_total_pages}
+                copy_lesson_modal_open={@copy_lesson_modal_open}
+                copy_lesson_id={@copy_lesson_id}
+                copy_lesson_title={@copy_lesson_title}
               />
             <% "tests" -> %>
               <.tests_tab
@@ -441,6 +495,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :lessons_total_count, :integer, required: true
   attr :lessons_page, :integer, required: true
   attr :lessons_total_pages, :integer, required: true
+  attr :copy_lesson_modal_open, :boolean, required: true
+  attr :copy_lesson_id, :any, required: true
+  attr :copy_lesson_title, :any, required: true
 
   defp lessons_tab(assigns) do
     ~H"""
@@ -541,31 +598,45 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   </div>
 
                   <div class="sm:ml-4 self-start sm:self-auto">
-                    <%= case progress_status do %>
-                      <% "completed" -> %>
-                        <div class="flex items-center gap-2">
-                          <span class="badge badge-success">
-                            +{progress.points_earned} {gettext("pts")}
-                          </span>
+                    <div class="flex items-center gap-2">
+                      <%!-- Copy to Word Set button --%>
+                      <button
+                        type="button"
+                        phx-click="open_copy_modal"
+                        phx-value-lesson_id={lesson.id}
+                        phx-value-lesson_title={lesson.title}
+                        class="btn btn-ghost btn-sm"
+                        title={gettext("Copy words to word set")}
+                      >
+                        <.icon name="hero-document-plus" class="w-4 h-4" />
+                      </button>
+                      
+                      <%= case progress_status do %>
+                        <% "completed" -> %>
+                          <div class="flex items-center gap-2">
+                            <span class="badge badge-success">
+                              +{progress.points_earned} {gettext("pts")}
+                            </span>
+                            <.link
+                              navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                              class="btn btn-secondary btn-sm"
+                            >
+                              <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
+                            </.link>
+                          </div>
+                        <% _ -> %>
                           <.link
                             navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
-                            class="btn btn-secondary btn-sm"
+                            class="btn btn-primary btn-sm sm:btn-md"
                           >
-                            <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
+                            <%= if progress_status == "in_progress" do %>
+                              <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
+                            <% else %>
+                              <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}
+                            <% end %>
                           </.link>
-                        </div>
-                      <% _ -> %>
-                        <.link
-                          navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
-                          class="btn btn-primary btn-sm sm:btn-md"
-                        >
-                          <%= if progress_status == "in_progress" do %>
-                            <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
-                          <% else %>
-                            <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("Start")}
-                          <% end %>
-                        </.link>
-                    <% end %>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -589,6 +660,39 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 {page_num}
               </button>
             <% end %>
+          </div>
+        <% end %>
+
+        <%!-- Copy to Word Set Modal --%>
+        <%= if @copy_lesson_modal_open do %>
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 class="text-xl font-bold text-base-content mb-4">
+                {gettext("Copy to Word Set")}
+              </h3>
+              <p class="text-secondary mb-6">
+                {gettext("Create a new word set from '%{lesson}'?", lesson: @copy_lesson_title)}
+              </p>
+              <p class="text-sm text-secondary mb-6">
+                {gettext("All words from this lesson will be copied to a new word set with the same name and description.")}
+              </p>
+              <div class="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  phx-click="close_copy_modal"
+                  class="btn btn-ghost"
+                >
+                  {gettext("Cancel")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_copy_lesson"
+                  class="btn btn-primary"
+                >
+                  {gettext("Confirm")}
+                </button>
+              </div>
+            </div>
           </div>
         <% end %>
       <% end %>

@@ -85,7 +85,7 @@ msgstr "管理者"
 #: lib/medoru_web/live/admin/lesson_live/index/index.html.heex:42
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:31
 #: lib/medoru_web/live/admin/word_live/index/index.html.heex:42
-#: lib/medoru_web/live/classroom_live/show.ex:452
+#: lib/medoru_web/live/classroom_live/show.ex:503
 #: lib/medoru_web/live/lesson_live/index.html.heex:25
 #: lib/medoru_web/live/lesson_live/index.html.heex:25
 #: lib/medoru_web/live/lesson_live/index.html.heex:25
@@ -204,6 +204,7 @@ msgstr "Български"
 #: lib/medoru_web/live/admin/lesson_live/form/form_template.html.heex:220
 #: lib/medoru_web/live/admin/word_class_live/form/form_template.html.heex:113
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:325
+#: lib/medoru_web/live/classroom_live/show.ex:679
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:159
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:266
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:345
@@ -235,9 +236,9 @@ msgstr "この申請をキャンセルできません。"
 msgid "Classrooms"
 msgstr "教室"
 
-#: lib/medoru_web/live/classroom_live/show.ex:468
-#: lib/medoru_web/live/classroom_live/show.ex:529
-#: lib/medoru_web/live/classroom_live/show.ex:729
+#: lib/medoru_web/live/classroom_live/show.ex:519
+#: lib/medoru_web/live/classroom_live/show.ex:580
+#: lib/medoru_web/live/classroom_live/show.ex:827
 #: lib/medoru_web/live/dashboard_live.html.heex:59
 #: lib/medoru_web/live/dashboard_live.html.heex:59
 #: lib/medoru_web/live/lesson_live/index.html.heex:161
@@ -477,7 +478,7 @@ msgstr "レッスンの完了に失敗しました。"
 msgid "Failed to join classroom. Please try again."
 msgstr "教室への参加に失敗しました。もう一度お試しください。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:141
+#: lib/medoru_web/live/classroom_live/show.ex:145
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to leave classroom."
 msgstr "レッスンの完了に失敗しました。"
@@ -685,7 +686,7 @@ msgstr "先にレッスンを公開する必要があります。"
 #: lib/medoru_web/components/layouts.ex:529
 #: lib/medoru_web/components/layouts.ex:642
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:74
-#: lib/medoru_web/live/classroom_live/show.ex:213
+#: lib/medoru_web/live/classroom_live/show.ex:264
 #: lib/medoru_web/live/lesson_live/index.html.heex:5
 #: lib/medoru_web/live/lesson_live/index.html.heex:5
 #: lib/medoru_web/live/lesson_live/index.html.heex:5
@@ -766,9 +767,9 @@ msgstr "完了したテストが見つかりません。"
 
 #: lib/medoru_web/live/admin/classroom_live/show.ex:33
 #: lib/medoru_web/live/classroom_live/index.ex:437
-#: lib/medoru_web/live/classroom_live/show.ex:165
-#: lib/medoru_web/live/classroom_live/show.ex:502
-#: lib/medoru_web/live/classroom_live/show.ex:664
+#: lib/medoru_web/live/classroom_live/show.ex:216
+#: lib/medoru_web/live/classroom_live/show.ex:553
+#: lib/medoru_web/live/classroom_live/show.ex:762
 #: lib/medoru_web/live/teacher/classroom_live/index.ex:90
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:318
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:632
@@ -1205,7 +1206,7 @@ msgstr "すでにメンバーです"
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:25
 #: lib/medoru_web/live/classroom_live/custom_lesson_complete.ex:22
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:22
-#: lib/medoru_web/live/classroom_live/show.ex:20
+#: lib/medoru_web/live/classroom_live/show.ex:21
 #: lib/medoru_web/live/classroom_live/test.ex:20
 #: lib/medoru_web/live/classroom_live/test_results.ex:19
 #, elixir-autogen, elixir-format
@@ -1254,7 +1255,7 @@ msgstr "すでにこのテストを完了しています。"
 msgid "You have already taken this test."
 msgstr "すでにこのテストを受験しています。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:137
+#: lib/medoru_web/live/classroom_live/show.ex:141
 #, elixir-autogen, elixir-format
 msgid "You have left the classroom."
 msgstr "教室を退出しました。"
@@ -1282,7 +1283,7 @@ msgstr "言語設定はアカウントに保存され、すべてのデバイス
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:32
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:29
-#: lib/medoru_web/live/classroom_live/show.ex:27
+#: lib/medoru_web/live/classroom_live/show.ex:28
 #: lib/medoru_web/live/classroom_live/test.ex:27
 #: lib/medoru_web/live/classroom_live/test_results.ex:26
 #, elixir-autogen, elixir-format
@@ -1302,7 +1303,7 @@ msgstr "の新しい単語が利用可能"
 
 #: lib/medoru_web/live/admin/lesson_live/form/form_template.html.heex:186
 #: lib/medoru_web/live/admin/lesson_live/index/index.html.heex:147
-#: lib/medoru_web/live/classroom_live/show.ex:508
+#: lib/medoru_web/live/classroom_live/show.ex:559
 #: lib/medoru_web/live/kanji_live/show.html.heex:339
 #: lib/medoru_web/live/kanji_live/show.html.heex:339
 #: lib/medoru_web/live/kanji_live/show.html.heex:339
@@ -1482,7 +1483,7 @@ msgstr "他の人と一緒に学ぶために教室に参加しましょう"
 #: lib/medoru_web/live/admin/user_live/edit/edit.html.heex:37
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:107
 #: lib/medoru_web/live/classroom_live/index.ex:202
-#: lib/medoru_web/live/classroom_live/show.ex:417
+#: lib/medoru_web/live/classroom_live/show.ex:468
 #, elixir-autogen, elixir-format
 msgid "Joined"
 msgstr "参加済み"
@@ -1883,8 +1884,8 @@ msgstr "承認待ち"
 msgid "Finish"
 msgstr "終了"
 
-#: lib/medoru_web/live/classroom_live/show.ex:563
-#: lib/medoru_web/live/classroom_live/show.ex:725
+#: lib/medoru_web/live/classroom_live/show.ex:627
+#: lib/medoru_web/live/classroom_live/show.ex:823
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:124
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Continue"
@@ -2483,7 +2484,7 @@ msgstr "教室"
 msgid "Classroom Name"
 msgstr "教室"
 
-#: lib/medoru_web/live/classroom_live/show.ex:356
+#: lib/medoru_web/live/classroom_live/show.ex:407
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:474
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Classroom Rankings"
@@ -2603,7 +2604,7 @@ msgstr "まだテストの試行がありません。"
 msgid "No tests published to this classroom yet."
 msgstr "この教室にまだ公開されているテストはありません。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:206
+#: lib/medoru_web/live/classroom_live/show.ex:257
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:372
 #, elixir-autogen, elixir-format
 msgid "Overview"
@@ -2694,7 +2695,7 @@ msgstr "学生"
 msgid "Test reset successfully. Student can now retake it."
 msgstr "テストが正常にリセットされました。生徒は再受験できます。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:214
+#: lib/medoru_web/live/classroom_live/show.ex:265
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:381
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Tests"
@@ -2853,8 +2854,8 @@ msgstr "完了"
 msgid "Completion Rate"
 msgstr "完了率"
 
-#: lib/medoru_web/live/classroom_live/show.ex:463
-#: lib/medoru_web/live/classroom_live/show.ex:533
+#: lib/medoru_web/live/classroom_live/show.ex:514
+#: lib/medoru_web/live/classroom_live/show.ex:584
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:138
 #: lib/medoru_web/live/teacher/test_live/index.ex:130
 #: lib/medoru_web/live/teacher/test_live/index.ex:399
@@ -2899,7 +2900,7 @@ msgstr "テスト受験回数"
 msgid "Test Performance"
 msgstr "テストパフォーマンス"
 
-#: lib/medoru_web/live/classroom_live/show.ex:732
+#: lib/medoru_web/live/classroom_live/show.ex:830
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:104
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:257
 #, elixir-autogen, elixir-format, fuzzy
@@ -2921,14 +2922,14 @@ msgstr "総学生数"
 msgid "You don't have permission to view this analytics."
 msgstr "この分析を表示する権限がありません。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:687
+#: lib/medoru_web/live/classroom_live/show.ex:785
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:210
 #: lib/medoru_web/live/teacher/test_live/publish.ex:442
 #, elixir-autogen, elixir-format
 msgid "attempt"
 msgstr "受験"
 
-#: lib/medoru_web/live/classroom_live/show.ex:686
+#: lib/medoru_web/live/classroom_live/show.ex:784
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:209
 #: lib/medoru_web/live/teacher/test_live/index.ex:338
 #: lib/medoru_web/live/teacher/test_live/publish.ex:441
@@ -2936,7 +2937,7 @@ msgstr "受験"
 msgid "attempts"
 msgstr "受験回数"
 
-#: lib/medoru_web/live/classroom_live/show.ex:679
+#: lib/medoru_web/live/classroom_live/show.ex:777
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:180
 #, elixir-autogen, elixir-format
 msgid "points"
@@ -2957,8 +2958,8 @@ msgstr "最近のテスト受験"
 msgid "Top Performers"
 msgstr "トップパフォーマー"
 
-#: lib/medoru_web/live/classroom_live/show.ex:425
-#: lib/medoru_web/live/classroom_live/show.ex:548
+#: lib/medoru_web/live/classroom_live/show.ex:476
+#: lib/medoru_web/live/classroom_live/show.ex:612
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:213
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:260
 #, elixir-autogen, elixir-format
@@ -3158,7 +3159,7 @@ msgstr "進行中のテストはありません"
 msgid "No tests yet"
 msgstr "まだレッスンがありません"
 
-#: lib/medoru_web/live/classroom_live/show.ex:673
+#: lib/medoru_web/live/classroom_live/show.ex:771
 #: lib/medoru_web/live/teacher/test_live/new.ex:131
 #, elixir-autogen, elixir-format
 msgid "No time limit"
@@ -4424,7 +4425,7 @@ msgstr "この読みを削除してもよろしいですか？"
 msgid "Are you sure you want to delete this word?"
 msgstr "この単語を削除してもよろしいですか？"
 
-#: lib/medoru_web/live/classroom_live/show.ex:171
+#: lib/medoru_web/live/classroom_live/show.ex:222
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to leave this classroom?"
 msgstr "この教室から退室してもよろしいですか？"
@@ -4435,7 +4436,7 @@ msgstr "この教室から退室してもよろしいですか？"
 msgid "Back to Dashboard"
 msgstr "ダッシュボードに戻る"
 
-#: lib/medoru_web/live/classroom_live/show.ex:156
+#: lib/medoru_web/live/classroom_live/show.ex:207
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to My Classrooms"
 msgstr "レッスンに戻る"
@@ -4543,7 +4544,7 @@ msgstr "削除"
 msgid "Draw the kanji stroke by stroke. Yellow hint shows after wrong strokes."
 msgstr "一画ずつ漢字を書いてください。各画は10ピクセル以上の長さが必要です。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:703
+#: lib/medoru_web/live/classroom_live/show.ex:801
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Due"
 msgstr "期限"
@@ -4717,7 +4718,7 @@ msgstr "頻度"
 msgid "Frequency Rank (optional)"
 msgstr "頻度ランク（オプション）"
 
-#: lib/medoru_web/live/classroom_live/show.ex:362
+#: lib/medoru_web/live/classroom_live/show.ex:413
 #, elixir-autogen, elixir-format
 msgid "Full Rankings"
 msgstr "完全ランキング"
@@ -4860,7 +4861,7 @@ msgstr "最後のページ"
 msgid "Learning"
 msgstr "詳細を見る"
 
-#: lib/medoru_web/live/classroom_live/show.ex:174
+#: lib/medoru_web/live/classroom_live/show.ex:225
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Leave"
 msgstr "レベル"
@@ -4985,7 +4986,7 @@ msgstr "意味（カンマ区切り）"
 msgid "Menu"
 msgstr "メニュー"
 
-#: lib/medoru_web/live/classroom_live/show.ex:187
+#: lib/medoru_web/live/classroom_live/show.ex:238
 #, elixir-autogen, elixir-format
 msgid "My Points"
 msgstr "マイポイント"
@@ -5045,12 +5046,12 @@ msgstr "今週の新着"
 msgid "New Today"
 msgstr "今日の新着"
 
-#: lib/medoru_web/live/classroom_live/show.ex:480
+#: lib/medoru_web/live/classroom_live/show.ex:531
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No Lessons Available"
 msgstr "利用可能な問題がありません。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:646
+#: lib/medoru_web/live/classroom_live/show.ex:744
 #, elixir-autogen, elixir-format
 msgid "No Tests Available"
 msgstr "利用可能なテストがありません"
@@ -5067,7 +5068,7 @@ msgid "No lessons found matching your criteria."
 msgstr "条件に一致するユーザーが見つかりませんでした。"
 
 #: lib/medoru_web/live/admin/classroom_live/show.ex:248
-#: lib/medoru_web/live/classroom_live/show.ex:366
+#: lib/medoru_web/live/classroom_live/show.ex:417
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No members yet."
 msgstr "メンバー"
@@ -5090,8 +5091,8 @@ msgstr "特定の読み方なし"
 msgid "No words found matching your criteria."
 msgstr "条件に一致するユーザーが見つかりませんでした。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:458
-#: lib/medoru_web/live/classroom_live/show.ex:537
+#: lib/medoru_web/live/classroom_live/show.ex:509
+#: lib/medoru_web/live/classroom_live/show.ex:588
 #, elixir-autogen, elixir-format
 msgid "Not Started"
 msgstr "未開始"
@@ -5144,7 +5145,7 @@ msgstr "音読みは複合語で使用される中国語由来の発音です。
 msgid "Order Index"
 msgstr "順序インデックス"
 
-#: lib/medoru_web/live/classroom_live/show.ex:701
+#: lib/medoru_web/live/classroom_live/show.ex:799
 #, elixir-autogen, elixir-format
 msgid "Overdue"
 msgstr "期限切れ"
@@ -5205,12 +5206,12 @@ msgstr "練習モード - ポイントは付与されません"
 msgid "Pronoun"
 msgstr "代名詞"
 
-#: lib/medoru_web/live/classroom_live/show.ex:191
+#: lib/medoru_web/live/classroom_live/show.ex:242
 #, elixir-autogen, elixir-format
 msgid "Rank"
 msgstr "ランク"
 
-#: lib/medoru_web/live/classroom_live/show.ex:211
+#: lib/medoru_web/live/classroom_live/show.ex:262
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Rankings"
 msgstr "意味"
@@ -5281,12 +5282,12 @@ msgstr "完了にテストが必要"
 msgid "Require test to complete lesson"
 msgstr "レッスン完了にテストが必要"
 
-#: lib/medoru_web/live/classroom_live/show.ex:520
+#: lib/medoru_web/live/classroom_live/show.ex:571
 #, elixir-autogen, elixir-format
 msgid "Requires test to complete"
 msgstr "完了にテストが必要"
 
-#: lib/medoru_web/live/classroom_live/show.ex:554
+#: lib/medoru_web/live/classroom_live/show.ex:618
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Review"
 msgstr "答えを確認"
@@ -5379,12 +5380,12 @@ msgstr "ソーシャル"
 msgid "Speaking"
 msgstr "スピーキング"
 
-#: lib/medoru_web/live/classroom_live/show.ex:565
+#: lib/medoru_web/live/classroom_live/show.ex:629
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Start"
 msgstr "開始済み"
 
-#: lib/medoru_web/live/classroom_live/show.ex:718
+#: lib/medoru_web/live/classroom_live/show.ex:816
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Start Test"
 msgstr "開始済み"
@@ -5411,7 +5412,7 @@ msgstr "生徒はレッスンを終了するためにテストに合格する必
 msgid "System overview and management"
 msgstr "システム概要と管理"
 
-#: lib/medoru_web/live/classroom_live/show.ex:522
+#: lib/medoru_web/live/classroom_live/show.ex:573
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:646
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Test"
@@ -5592,7 +5593,7 @@ msgstr "復習した単語"
 msgid "Words are managed through the lesson content system. Edit words from the Word Management page."
 msgstr "単語はレッスンコンテンツシステムを通じて管理されます。単語管理ページから単語を編集してください。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:412
+#: lib/medoru_web/live/classroom_live/show.ex:463
 #, elixir-autogen, elixir-format
 msgid "You"
 msgstr "あなた"
@@ -5617,12 +5618,12 @@ msgstr "今日の毎日の復習はすでに完了しています。勉強を続
 msgid "You've completed all questions in today's daily review."
 msgstr "このレッスンテストのすべての問題を完了しました。"
 
-#: lib/medoru_web/live/classroom_live/show.ex:483
+#: lib/medoru_web/live/classroom_live/show.ex:534
 #, elixir-autogen, elixir-format
 msgid "Your teacher hasn't published any lessons to this classroom yet. Check back later!"
 msgstr "先生はまだこの教室にレッスンを公開していません。また後で確認してください！"
 
-#: lib/medoru_web/live/classroom_live/show.ex:649
+#: lib/medoru_web/live/classroom_live/show.ex:747
 #, elixir-autogen, elixir-format
 msgid "Your teacher hasn't published any tests to this classroom yet. Check back later!"
 msgstr "先生はまだこの教室にテストを公開していません。また後で確認してください！"
@@ -8785,3 +8786,43 @@ msgstr ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reading (Hiragana)"
 msgstr "読み方（ひらがな）:"
+
+#: lib/medoru_web/live/classroom_live/show.ex:671
+#, elixir-autogen, elixir-format
+msgid "All words from this lesson will be copied to a new word set with the same name and description."
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:686
+#, elixir-autogen, elixir-format
+msgid "Confirm"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:665
+#, elixir-autogen, elixir-format
+msgid "Copy to Word Set"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:603
+#, elixir-autogen, elixir-format
+msgid "Copy words to word set"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:668
+#, elixir-autogen, elixir-format
+msgid "Create a new word set from '%{lesson}'?"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:192
+#, elixir-autogen, elixir-format
+msgid "Failed to copy words to word set."
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:186
+#, elixir-autogen, elixir-format
+msgid "This lesson has no words to copy."
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/show.ex:179
+#, elixir-autogen, elixir-format
+msgid "Words copied to new word set: %{name}"
+msgstr ""

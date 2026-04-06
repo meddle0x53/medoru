@@ -17,6 +17,11 @@
   - Kanji writing with stroke validation
   - Answer validation and feedback
   - Test completion statistics (correct/incorrect/score)
+- Copy Lesson to Word Set: Students can copy classroom lesson words to a new word set
+  - Button in classroom lessons list
+  - Confirmation modal
+  - Batch insert for efficiency
+  - Auto-creates word set with lesson name/description
 - Full i18n support (Bulgarian, Japanese translations)
 - Routes: `/words/sets/*` with full CRUD
 
@@ -36,7 +41,7 @@
 
 ### What's Complete (v0.1.5) - Word Sets
 **Status**: ✅ COMPLETE  
-**Date**: 2026-04-05
+**Date**: 2026-04-06
 
 **Features:**
 - Word Sets: User-created collections of up to 100 words
@@ -50,6 +55,13 @@
   - Answer validation using server's validation logic
   - Test completion with statistics (correct/incorrect/score)
   - No points awarded (practice only)
+- Copy Lesson to Word Set: Students can copy classroom lesson words
+  - Button in classroom lessons list (`/classrooms/:id?tab=lessons`)
+  - Confirmation modal with i18n
+  - Creates new word set with lesson name/description
+  - Batch insert for efficiency (all words in one query)
+  - Duplicates automatically skipped (unique words only)
+  - Redirects to new word set after creation
 - Full i18n support: Bulgarian and Japanese translations for all UI text
 
 **Routes:** `/words/sets/*`
@@ -58,9 +70,11 @@
 - Migration: `word_sets` and `word_set_words` tables
 - Schemas: `WordSet`, `WordSetWord` with position tracking
 - Context: `Learning.WordSets` for CRUD and test generation
+  - Added `create_word_set_from_lesson/2` with batch insert
 - Generator: `Tests.WordSetTestGenerator` for practice test creation
 - LiveViews: Index, Form, EditWords, Show, TestConfig, Test
 - Added `show_submit` attribute to WritingComponent for flexible button display
+- Updated `ClassroomLive.Show` with copy lesson functionality
 
 ---
 
@@ -198,11 +212,12 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 
 ## Recent Changes
 
-### 2026-04-05 - Word Sets v0.1.5 Complete
+### 2026-04-06 - Word Sets v0.1.5 Complete
 - Word Sets: User-created collections of up to 100 words
 - Practice tests with all question types (multichoice, reading_text, kanji_writing, image_to_meaning)
 - Full test-taking experience with answer validation and feedback
 - Test completion statistics (correct/incorrect/score)
+- Copy Lesson to Word Set: Students can copy classroom lesson words to a new word set
 - Full i18n support (Bulgarian, Japanese)
 - Bug fixes: duplicate options, answer validation, boolean event handling
 
