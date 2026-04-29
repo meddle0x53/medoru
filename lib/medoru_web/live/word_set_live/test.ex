@@ -71,6 +71,51 @@ defmodule MedoruWeb.WordSetLive.Test do
   end
 
   @impl true
+  def handle_event("handle_key", %{"key" => key}, socket) do
+    cond do
+      # Navigation after feedback shown
+      socket.assigns.feedback && key in ["Enter", "ArrowRight"] ->
+        handle_event("next_step", %{}, socket)
+
+      # Multichoice keyboard selection
+      multichoice_step?(socket.assigns.current_step) && socket.assigns.feedback == nil ->
+        options = get_options(socket.assigns.current_step)
+
+        cond do
+          key in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] ->
+            index = String.to_integer(key) - 1
+
+            if index < length(options) do
+              selected = Enum.at(options, index)
+              {:noreply, assign(socket, :selected_answer, selected)}
+            else
+              {:noreply, socket}
+            end
+
+          key in ["Enter", "ArrowRight"] && socket.assigns.selected_answer != nil ->
+            handle_event("submit_answer", %{}, socket)
+
+          true ->
+            {:noreply, socket}
+        end
+
+      true ->
+        {:noreply, socket}
+    end
+  end
+
+  defp multichoice_step?(step) when is_nil(step), do: false
+
+  defp multichoice_step?(step) do
+    step.question_type == :multichoice
+  end
+
+  defp get_options(step) do
+    step_data = step.question_data || %{}
+    step_data["options"] || step.options || []
+  end
+
+  @impl true
   def handle_event("update_meaning", params, socket) do
     value = Map.get(params, "meaning_answer", params["value"] || "")
     {:noreply, assign(socket, :meaning_answer, value)}

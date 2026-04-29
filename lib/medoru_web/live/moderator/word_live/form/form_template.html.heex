@@ -157,6 +157,82 @@
             </div>
           </div>
 
+          <%!-- Pronunciation Upload Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+              <.icon name="hero-speaker-wave" class="w-5 h-5" />
+              {gettext("Pronunciation")}
+            </h3>
+
+            <div class="space-y-4">
+              <%!-- Current Pronunciation --%>
+              <%= if @word.pronunciation_path do %>
+                <div class="p-4 bg-base-200/50 rounded-lg">
+                  <p class="text-sm text-secondary mb-2">{gettext("Current pronunciation:")}</p>
+                  <audio controls class="w-full">
+                    <source src={@word.pronunciation_path} />
+                    {gettext("Your browser does not support the audio element.")}
+                  </audio>
+                </div>
+              <% end %>
+
+              <%!-- File Upload --%>
+              <div>
+                <label class="label">
+                  <span class="label-text">
+                    {gettext("Upload new pronunciation audio")}
+                  </span>
+                </label>
+
+                <.live_file_input
+                  upload={@uploads.pronunciation}
+                  class="file-input file-input-bordered w-full"
+                />
+
+                <p class="text-xs text-base-content/50 mt-1">
+                  {gettext("Accepted formats: MP3, WAV, WebM. Max size: 2MB")}
+                </p>
+
+                <%!-- Upload Preview --%>
+                <%= for entry <- @uploads.pronunciation.entries do %>
+                  <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                    <div class="flex items-center gap-4">
+                      <.icon name="hero-musical-note" class="w-12 h-12 text-primary" />
+                      <div class="flex-1">
+                        <p class="font-medium">{entry.client_name}</p>
+                        <p class="text-sm text-secondary">
+                          {trunc(entry.client_size / 1024)} KB
+                        </p>
+
+                        <%!-- Progress bar --%>
+                        <div class="w-full bg-base-300 rounded-full h-2 mt-2">
+                          <div
+                            class="bg-primary h-2 rounded-full transition-all"
+                            style={"width: #{entry.progress}%"}
+                          >
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        phx-click="cancel-pronunciation-upload"
+                        phx-value-ref={entry.ref}
+                        class="btn btn-sm btn-ghost btn-circle text-error"
+                      >
+                        <.icon name="hero-x-mark" class="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <%!-- Errors --%>
+                    <%= for err <- upload_errors(@uploads.pronunciation, entry) do %>
+                      <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
           <%!-- Image Upload Section --%>
           <div class="border-t border-base-300 pt-6">
             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">

@@ -568,6 +568,20 @@ defmodule Medoru.ContentTest do
       assert word.usage_frequency == 100
     end
 
+    test "create_word/1 with pronunciation_path creates a word with audio" do
+      valid_attrs = %{
+        text: unique_word_text(),
+        meaning: "test meaning",
+        reading: "てすと",
+        difficulty: 5,
+        usage_frequency: 100,
+        pronunciation_path: "/uploads/word_pronunciations/test.mp3"
+      }
+
+      assert {:ok, %Word{} = word} = Content.create_word(valid_attrs)
+      assert word.pronunciation_path == "/uploads/word_pronunciations/test.mp3"
+    end
+
     test "create_word/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Content.create_word(@invalid_attrs)
     end
@@ -680,6 +694,14 @@ defmodule Medoru.ContentTest do
       assert {:ok, %Word{} = word} = Content.update_word(word, update_attrs)
       assert word.meaning == "updated meaning"
       assert word.difficulty == 4
+    end
+
+    test "update_word/2 updates pronunciation_path" do
+      word = word_fixture()
+      update_attrs = %{pronunciation_path: "/uploads/word_pronunciations/new.mp3"}
+
+      assert {:ok, %Word{} = word} = Content.update_word(word, update_attrs)
+      assert word.pronunciation_path == "/uploads/word_pronunciations/new.mp3"
     end
 
     test "update_word/2 with invalid data returns error changeset" do

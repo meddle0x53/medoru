@@ -104,6 +104,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       hints: ["Think about the kanji meanings"],
       question_data: %{
         word_text: word.text,
+        word_reading: word.reading,
         question_label: "meaning"
       }
     }
@@ -122,6 +123,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       hints: ["Remember the kanji readings"],
       question_data: %{
         word_text: word.text,
+        word_meaning: word.meaning,
         question_label: "reading"
       }
     }
@@ -140,6 +142,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       hints: ["Type the English meaning and hiragana reading"],
       question_data: %{
         word_text: word.text,
+        word_reading: word.reading,
         question_label: "reading_text"
       }
     }

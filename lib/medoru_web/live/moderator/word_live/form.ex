@@ -39,6 +39,11 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
        accept: ~w(.jpg .jpeg .png .webp),
        max_entries: 1,
        max_file_size: 500_000
+     )
+     |> allow_upload(:pronunciation,
+       accept: ~w(.mp3 .wav .webm),
+       max_entries: 1,
+       max_file_size: 2_000_000
      )}
   end
 
@@ -96,6 +101,10 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
   @impl true
   def handle_event("cancel-upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
+  def handle_event("cancel-pronunciation-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :pronunciation, ref)}
   end
 
   @impl true
@@ -184,6 +193,7 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
 
   defp save_word(socket, :new, word_params) do
     word_params = handle_image_upload(socket, word_params)
+    word_params = handle_pronunciation_upload(socket, word_params)
 
     case Content.create_word(word_params) do
       {:ok, _word} ->
@@ -199,6 +209,7 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
 
   defp save_word(socket, :edit, word_params) do
     word_params = handle_image_upload(socket, word_params)
+    word_params = handle_pronunciation_upload(socket, word_params)
 
     case Content.update_word(socket.assigns.word, word_params) do
       {:ok, word} ->
@@ -212,6 +223,27 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset))}
+    end
+  end
+
+  # Handle pronunciation upload and return updated params with pronunciation_path
+  defp handle_pronunciation_upload(socket, word_params) do
+    uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+    case consume_uploaded_entries(socket, :pronunciation, fn %{path: path}, entry ->
+           ext = Path.extname(entry.client_name) |> String.downcase()
+           filename = "#{Ecto.UUID.generate()}#{ext}"
+           dest_dir = Path.join(uploads_dir, "word_pronunciations")
+           File.mkdir_p!(dest_dir)
+           dest_path = Path.join(dest_dir, filename)
+           File.cp!(path, dest_path)
+           {:ok, "/uploads/word_pronunciations/#{filename}"}
+         end) do
+      [] ->
+        word_params
+
+      [pronunciation_path | _] ->
+        Map.put(word_params, "pronunciation_path", pronunciation_path)
     end
   end
 
@@ -254,6 +286,6 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
   # Helper function to format upload errors
   defp error_to_string(:too_large), do: gettext("File is too large (max 500KB)")
   defp error_to_string(:too_many_files), do: gettext("You can only upload 1 file")
-  defp error_to_string(:not_accepted), do: gettext("Invalid file type (use JPG, PNG, or WebP)")
+  defp error_to_string(:not_accepted), do: gettext("Invalid file type")
   defp error_to_string(_), do: gettext("Upload failed")
 end

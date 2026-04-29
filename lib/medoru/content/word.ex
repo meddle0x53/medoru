@@ -38,6 +38,8 @@ defmodule Medoru.Content.Word do
     field :translations, :map, default: %{}
     # Image path for word illustration (stored in priv/static/uploads/word_images/)
     field :image_path, :string
+    # Pronunciation audio path for word (stored in priv/static/uploads/word_sounds/)
+    field :pronunciation_path, :string
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
 
@@ -60,7 +62,8 @@ defmodule Medoru.Content.Word do
       :example_reading,
       :example_meaning,
       :translations,
-      :image_path
+      :image_path,
+      :pronunciation_path
     ])
     |> validate_required([:text, :meaning, :reading, :difficulty])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)

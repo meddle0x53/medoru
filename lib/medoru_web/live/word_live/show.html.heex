@@ -37,6 +37,16 @@
             </div>
           <% end %>
 
+          <%!-- Pronunciation Audio --%>
+          <%= if @word.pronunciation_path do %>
+            <div class="mb-6 max-w-[300px] mx-auto">
+              <audio controls class="w-full">
+                <source src={@word.pronunciation_path} />
+                {gettext("Your browser does not support the audio element.")}
+              </audio>
+            </div>
+          <% end %>
+
           <div class="inline-block">
             <h1 class="text-5xl md:text-6xl font-medium text-base-content mb-4">
               {@word.text}
