@@ -92,7 +92,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                   field={@form[:title]}
                   type="text"
                   placeholder={gettext("e.g., N5 Vocabulary Quiz")}
-                  class="w-full"
+                  class="input input-bordered w-full"
                   phx-debounce="300"
                 />
               </div>
@@ -110,7 +110,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                   type="textarea"
                   placeholder={gettext("Describe what this test covers...")}
                   rows="3"
-                  class="w-full"
+                  class="textarea textarea-bordered w-full"
                   phx-debounce="300"
                 />
               </div>
@@ -129,7 +129,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                     type="select"
                     options={time_limit_options()}
                     prompt={gettext("No time limit")}
-                    class="w-full"
+                    class="select select-bordered w-full"
                   />
                   <p class="text-xs text-secondary mt-1">
                     {gettext("Students must complete within this time")}
@@ -149,7 +149,7 @@ defmodule MedoruWeb.Teacher.TestLive.New do
                     type="select"
                     options={max_attempts_options()}
                     prompt={gettext("Unlimited")}
-                    class="w-full"
+                    class="select select-bordered w-full"
                   />
                   <p class="text-xs text-secondary mt-1">
                     {gettext("How many times each student can take it")}
