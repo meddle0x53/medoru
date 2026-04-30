@@ -15,6 +15,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
   alias Medoru.Repo
   alias Medoru.Content.{Lesson, LessonWord, Word}
   alias Medoru.Tests
+  alias Medoru.Tests.TestStepBuilder
 
   # Mapping from user preference strings to internal step types
   @preference_to_type %{
@@ -130,7 +131,6 @@ defmodule Medoru.Tests.LessonTestGenerator do
   # Generates test steps for all words
   defp generate_steps(test, words, steps_per_word, distractor_count, lesson_id, user_preferences) do
     # Get distractor pool: same lesson + previous lessons
-    # Pass lesson_id only - we'll filter current word per-step
     distractor_pool = build_distractor_pool(lesson_id, words)
 
     # Build list of available step types from user preferences or defaults
@@ -139,12 +139,18 @@ defmodule Medoru.Tests.LessonTestGenerator do
     # Separate multichoice types from writing (handled separately)
     multichoice_types = Enum.reject(available_types, &(&1 == :kanji_writing))
 
-    # For each word, generate multichoice steps and flatten
+    # For each word, generate random number of steps (1 to steps_per_word)
     multichoice_steps =
       words
       |> Enum.flat_map(fn word ->
-        word
-        |> generate_word_steps(steps_per_word, multichoice_types)
+        num_steps = :rand.uniform(steps_per_word)
+        selected_types = Enum.take_random(multichoice_types, min(num_steps, length(multichoice_types)))
+
+        selected_types
+        |> Enum.map(fn step_type ->
+          build_step_data(word, step_type)
+        end)
+        |> Enum.reject(&is_nil/1)
         |> Enum.map(fn step ->
           add_distractors(step, word, distractor_count, distractor_pool)
         end)
@@ -223,32 +229,11 @@ defmodule Medoru.Tests.LessonTestGenerator do
     # Collect all unique kanji from words
     unique_kanji =
       words
-      |> Enum.flat_map(&get_word_kanji/1)
+      |> Enum.flat_map(&TestStepBuilder.extract_kanji_from_word/1)
       |> Enum.uniq_by(& &1.id)
 
     # Create a writing step for each unique kanji
     Enum.map(unique_kanji, &build_writing_step/1)
-  end
-
-  # Get kanji characters from a word
-  defp get_word_kanji(word) do
-    # Ensure word_kanjis is loaded
-    word_kanjis =
-      case word.word_kanjis do
-        %Ecto.Association.NotLoaded{} ->
-          # Fallback: load the word with kanji
-          word_with_kanji = Medoru.Content.get_word_with_kanji!(word.id)
-          word_with_kanji.word_kanjis
-
-        word_kanjis ->
-          word_kanjis
-      end
-
-    # Extract unique kanji
-    word_kanjis
-    |> Enum.map(& &1.kanji)
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq_by(& &1.id)
   end
 
   # Build a writing step for a kanji
@@ -301,18 +286,6 @@ defmodule Medoru.Tests.LessonTestGenerator do
     end
   end
 
-  # Generate steps for a single word
-  defp generate_word_steps(word, steps_per_word, available_types) do
-    # Select random step types for this word from available types
-    # Ensure we don't try to select more than available
-    count = min(steps_per_word, length(available_types))
-    selected_types = Enum.take_random(available_types, count)
-
-    Enum.map(selected_types, fn step_type ->
-      build_step_data(word, step_type)
-    end)
-  end
-
   # Build step data based on step type
   defp build_step_data(word, :meaning_to_word) do
     %{
@@ -322,7 +295,13 @@ defmodule Medoru.Tests.LessonTestGenerator do
       correct_answer: word.text,
       word_id: word.id,
       points: 1,
-      hints: ["Think about the kanji meanings"]
+      hints: ["Think about the kanji meanings"],
+      question_data: %{
+        type: :meaning_to_word,
+        word_text: word.text,
+        word_reading: word.reading,
+        word_meaning: word.meaning
+      }
     }
   end
 
@@ -334,7 +313,13 @@ defmodule Medoru.Tests.LessonTestGenerator do
       correct_answer: word.text,
       word_id: word.id,
       points: 1,
-      hints: ["Listen to the pronunciation in your head"]
+      hints: ["Listen to the pronunciation in your head"],
+      question_data: %{
+        type: :reading_to_word,
+        word_text: word.text,
+        word_reading: word.reading,
+        word_meaning: word.meaning
+      }
     }
   end
 
@@ -346,7 +331,13 @@ defmodule Medoru.Tests.LessonTestGenerator do
       correct_answer: word.meaning,
       word_id: word.id,
       points: 1,
-      hints: ["Break down the kanji meanings"]
+      hints: ["Break down the kanji meanings"],
+      question_data: %{
+        type: :word_to_meaning,
+        word_text: word.text,
+        word_reading: word.reading,
+        word_meaning: word.meaning
+      }
     }
   end
 
@@ -358,7 +349,13 @@ defmodule Medoru.Tests.LessonTestGenerator do
       correct_answer: word.reading,
       word_id: word.id,
       points: 1,
-      hints: ["Remember the kanji readings"]
+      hints: ["Remember the kanji readings"],
+      question_data: %{
+        type: :word_to_reading,
+        word_text: word.text,
+        word_reading: word.reading,
+        word_meaning: word.meaning
+      }
     }
   end
 
@@ -396,6 +393,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
         type: :image_to_meaning,
         word_text: word.text,
         word_reading: word.reading,
+        word_meaning: word.meaning,
         image_path: word.image_path
       }
     }
@@ -409,25 +407,21 @@ defmodule Medoru.Tests.LessonTestGenerator do
     if is_image_question do
       add_image_distractors(step, correct_word, distractor_count, distractor_pool)
     else
-      {distractors, distractor_ids} =
-        fetch_distractors(correct_word, distractor_count, step, distractor_pool)
-
-      # Shuffle options so correct answer isn't always in same position
-      options = [step.correct_answer | distractors] |> Enum.shuffle()
-      option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
-
-      # Store option_word_ids and options for locale-aware validation
-      question_data = Map.get(step, :question_data) || %{}
-
-      step
-      |> Map.put(:options, options)
-      |> Map.put(
-        :question_data,
-        Map.merge(question_data, %{
-          option_word_ids: option_word_ids,
-          options: options
-        })
+      field = distractor_field_for_step(step)
+      TestStepBuilder.add_distractors(step, correct_word, distractor_count, distractor_pool,
+        field: field,
+        deduplicate: true
       )
+    end
+  end
+
+  defp distractor_field_for_step(%{correct_answer: answer}) do
+    cond do
+      contains_japanese?(answer) ->
+        if only_kana?(answer), do: :reading, else: :text
+
+      true ->
+        :meaning
     end
   end
 
@@ -448,28 +442,22 @@ defmodule Medoru.Tests.LessonTestGenerator do
         |> Map.put(:type, :word_to_meaning)
         |> Map.put(:fallback_from_image, true)
 
-      # Fetch regular text distractors
-      {distractors, distractor_ids} =
-        fetch_distractors(correct_word, distractor_count, step, distractor_pool)
-
-      options = [step.correct_answer | distractors] |> Enum.shuffle()
-      option_word_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
-
-      step
-      |> Map.put(
-        :question_data,
-        Map.merge(question_data, %{options: options, option_word_ids: option_word_ids})
+      # Fetch regular text distractors using shared logic
+      step = %{step | question_data: question_data}
+      TestStepBuilder.add_distractors(step, correct_word, distractor_count, distractor_pool,
+        field: :meaning,
+        deduplicate: true
       )
-      |> Map.put(:options, options)
     else
       # Build image options with correct answer first
       correct_image = %{meaning: step.correct_answer, image_path: correct_word.image_path}
-      all_images = [correct_image | distractor_images]
+      _all_images = [correct_image | distractor_images]
 
-      # Shuffle images and track positions
-      shuffled_images = Enum.shuffle(all_images)
+      # Shuffle images and track positions using pair-based shuffling
+      pairs = [{correct_image, correct_word.id} | Enum.zip(distractor_images, distractor_ids)]
+      shuffled = Enum.shuffle(pairs)
+      {shuffled_images, shuffled_ids} = Enum.unzip(shuffled)
       shuffled_meanings = Enum.map(shuffled_images, & &1.meaning)
-      shuffled_ids = [correct_word.id | distractor_ids] |> Enum.shuffle()
 
       question_data =
         step
@@ -519,88 +507,6 @@ defmodule Medoru.Tests.LessonTestGenerator do
     else
       {images, ids}
     end
-  end
-
-  # Fetch distractor words based on step type
-  # Priority: 1) Same lesson words, 2) Previous lesson words, 3) Generic fallback
-  # Randomly samples from the pool to ensure variety across questions
-  # Returns {distractor_values, distractor_word_ids}
-  defp fetch_distractors(
-         correct_word,
-         count,
-         %{correct_answer: correct_answer},
-         distractor_pool
-       ) do
-    # Determine what type of distractors we need based on correct_answer
-    distractor_field =
-      cond do
-        contains_japanese?(correct_answer) ->
-          if only_kana?(correct_answer), do: :reading, else: :text
-
-        true ->
-          :meaning
-      end
-
-    # Get distractors from the pool - randomly sample for variety
-    # Keep both the word and the value for word_id tracking
-    selected_words =
-      distractor_pool
-      |> Enum.reject(&(&1.id == correct_word.id))
-      |> Enum.shuffle()
-      |> Enum.take(count)
-
-    pool_values =
-      Enum.map(selected_words, &Map.get(&1, distractor_field)) |> Enum.reject(&is_nil/1)
-
-    pool_ids = Enum.map(selected_words, & &1.id)
-
-    # If we have enough from the pool, use them
-    if length(pool_values) >= count do
-      {Enum.take(pool_values, count), Enum.take(pool_ids, count)}
-    else
-      # Otherwise, supplement with words from same difficulty (but not in current curriculum)
-      needed = count - length(pool_values)
-
-      existing_ids = [correct_word.id | Enum.map(distractor_pool, & &1.id)]
-
-      additional_words =
-        Word
-        |> where([w], w.id not in ^existing_ids and w.difficulty == ^correct_word.difficulty)
-        |> where([w], not is_nil(field(w, ^distractor_field)))
-        |> limit(^needed)
-        |> order_by(fragment("RANDOM()"))
-        |> Repo.all()
-
-      additional_values = Enum.map(additional_words, &Map.get(&1, distractor_field))
-      additional_ids = Enum.map(additional_words, & &1.id)
-
-      all_values = pool_values ++ additional_values
-      all_ids = pool_ids ++ additional_ids
-      pad_distractors(all_values, all_ids, count, distractor_field)
-    end
-  end
-
-  # Pad with generic distractors if not enough found
-  defp pad_distractors(values, ids, count, _field) when length(values) >= count do
-    {Enum.take(values, count), Enum.take(ids, count)}
-  end
-
-  defp pad_distractors(values, ids, count, :meaning) do
-    generic = ["to do something", "something", "place", "person", "time", "action", "object"]
-    needed = count - length(values)
-    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
-  end
-
-  defp pad_distractors(values, ids, count, :text) do
-    generic = ["あ", "い", "う", "え", "お", "か", "き", "く", "け", "こ"]
-    needed = count - length(values)
-    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
-  end
-
-  defp pad_distractors(values, ids, count, :reading) do
-    generic = ["ああ", "いい", "うう", "ええ", "おお", "かか", "きき", "くく"]
-    needed = count - length(values)
-    {values ++ Enum.take(generic, needed), ids ++ List.duplicate(nil, needed)}
   end
 
   # Helper functions for Japanese character detection

@@ -43,12 +43,20 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
     ~H"""
     <div class="space-y-6" id="reading-text-question">
       <%!-- Word Display --%>
-      <div class="text-center py-6 bg-base-200/50 rounded-xl">
-        <div class="text-4xl font-bold text-base-content mb-2">
-          {@step.question_data["word_text"]}
+      <div class="mb-4 sm:mb-6">
+        <div class="text-xs sm:text-sm text-secondary mb-3">
+          {gettext("Type the meaning and reading:")}
         </div>
+        <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1">
+          {@step.question_data["word_text"]}
+        </h2>
+        <%= if @step.question_data["word_reading"] do %>
+          <p class="text-xl sm:text-2xl text-secondary/80 font-japanese text-center">
+            {@step.question_data["word_reading"]}
+          </p>
+        <% end %>
         <%= if @show_hint do %>
-          <div class="text-sm text-secondary mt-2">
+          <div class="text-sm text-secondary mt-2 text-center">
             {gettext("Hint: Starts with \"%{hint}\"", hint: hint_text(@step))}
           </div>
         <% end %>

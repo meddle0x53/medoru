@@ -11,6 +11,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
   alias Medoru.Repo
   alias Medoru.Tests
+  alias Medoru.Tests.TestStepBuilder
 
   @doc """
   Generates a practice test for a word set.
@@ -61,6 +62,16 @@ defmodule Medoru.Tests.WordSetTestGenerator do
   end
 
   defp generate_steps(test, words, step_types, max_steps_per_word, distractor_count) do
+    # Filter step types based on image availability
+    words_with_images = Enum.filter(words, & &1.image_path)
+
+    step_types =
+      if :image_to_meaning in step_types and length(words_with_images) < 4 do
+        Enum.reject(step_types, &(&1 == :image_to_meaning))
+      else
+        step_types
+      end
+
     # Use words from the set as distractor pool
     distractor_pool = words
 
@@ -75,7 +86,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
         selected_types
         |> Enum.map(fn step_type ->
-          build_step_data(word, step_type, distractor_count, distractor_pool)
+          pool = if step_type == :image_to_meaning, do: words_with_images, else: distractor_pool
+          build_step_data(word, step_type, distractor_count, pool)
         end)
         |> Enum.reject(&is_nil/1)
       end)
@@ -109,7 +121,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       }
     }
 
-    add_distractors(step, word, distractor_count, :meaning, distractor_pool)
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool, field: :meaning)
   end
 
   defp build_step_data(word, :word_to_reading, distractor_count, distractor_pool) do
@@ -128,7 +140,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       }
     }
 
-    add_distractors(step, word, distractor_count, :reading, distractor_pool)
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool, field: :reading)
   end
 
   defp build_step_data(word, :reading_text, _distractor_count, _distractor_pool) do
@@ -146,6 +158,12 @@ defmodule Medoru.Tests.WordSetTestGenerator do
         question_label: "reading_text"
       }
     }
+  end
+
+  defp build_step_data(word, :image_to_meaning, _distractor_count, _distractor_pool)
+       when is_nil(word.image_path) do
+    # Skip image questions for words without images
+    nil
   end
 
   defp build_step_data(word, :image_to_meaning, distractor_count, distractor_pool) do
@@ -171,7 +189,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
   defp build_step_data(word, :kanji_writing, _distractor_count, _distractor_pool) do
     # Collect unique kanji from word
-    kanji_list = extract_kanji_from_word(word)
+    kanji_list = TestStepBuilder.extract_kanji_from_word(word)
 
     if length(kanji_list) > 0 do
       # Pick one random kanji for writing
@@ -206,39 +224,6 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       # No kanji in this word, skip this step type
       nil
     end
-  end
-
-  defp add_distractors(step, word, count, field, distractor_pool)
-       when field in [:meaning, :reading] do
-    # Get distractors from the word set (not random words)
-    # Deduplicate by field value to avoid duplicate options
-    distractors =
-      distractor_pool
-      |> Enum.reject(&(&1.id == word.id))
-      |> Enum.uniq_by(&Map.get(&1, field))
-      |> Enum.take_random(count)
-      |> Enum.map(&Map.get(&1, field))
-
-    # Create pairs and shuffle
-    pairs = [
-      {step.correct_answer, word.id}
-      | Enum.zip(distractors, List.duplicate(nil, length(distractors)))
-    ]
-
-    shuffled = Enum.shuffle(pairs)
-    {options, option_word_ids} = Enum.unzip(shuffled)
-
-    question_data = Map.get(step, :question_data) || %{}
-
-    step
-    |> Map.put(:options, options)
-    |> Map.put(
-      :question_data,
-      Map.merge(question_data, %{
-        option_word_ids: option_word_ids,
-        options: options
-      })
-    )
   end
 
   defp add_image_distractors(step, word, count, distractor_pool) do
@@ -286,18 +271,6 @@ defmodule Medoru.Tests.WordSetTestGenerator do
     step
     |> Map.put(:options, shuffled_meanings)
     |> Map.put(:question_data, question_data)
-  end
-
-  defp extract_kanji_from_word(word) do
-    case word.word_kanjis do
-      %Ecto.Association.NotLoaded{} ->
-        # Load word with kanji
-        word_with_kanji = Medoru.Content.get_word_with_kanji!(word.id)
-        Enum.map(word_with_kanji.word_kanjis, & &1.kanji) |> Enum.reject(&is_nil/1)
-
-      word_kanjis ->
-        Enum.map(word_kanjis, & &1.kanji) |> Enum.reject(&is_nil/1)
-    end
   end
 
   defp validate_step_types(types) do

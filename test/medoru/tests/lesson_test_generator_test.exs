@@ -340,8 +340,15 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
       steps = Medoru.Tests.list_test_steps(test.id)
       multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
 
-      # Should have multiple types of questions (defaults produce many steps)
-      assert length(multichoice_steps) >= 6
+      # With random 1-3 steps per word and 3 words, we should have at least some multichoice steps
+      assert length(multichoice_steps) >= 3
+      assert length(multichoice_steps) <= 9
+
+      # All steps should have options and correct answers
+      for step <- multichoice_steps do
+        assert length(step.options) >= 1
+        assert step.correct_answer in step.options
+      end
     end
   end
 end

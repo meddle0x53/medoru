@@ -3,6 +3,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
   alias Medoru.{Accounts, Content, Tests}
   alias Medoru.Tests.LessonTestSession
+  alias MedoruWeb.TestKeyboardShortcuts
 
   @impl true
   def mount(%{"lesson_id" => lesson_id}, session, socket) do
@@ -79,6 +80,29 @@ defmodule MedoruWeb.LessonTestLive.Show do
   @impl true
   def handle_event("select_answer", %{"answer" => answer}, socket) do
     {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  @impl true
+  def handle_event("handle_key", %{"key" => key}, socket) do
+    step = socket.assigns.current_step
+
+    cond do
+      is_nil(step) ->
+        {:noreply, socket}
+
+      step.question_type == :reading_text && socket.assigns.feedback == :incorrect &&
+          key in ["Enter", "ArrowRight"] ->
+        handle_event("continue_after_correction", %{}, socket)
+
+      step.question_type == :multichoice && socket.assigns.feedback == nil ->
+        case TestKeyboardShortcuts.handle_multichoice_key(socket, key) do
+          {:noreply, socket} -> {:noreply, socket}
+          {:submit, event} -> handle_event(event, %{}, socket)
+        end
+
+      true ->
+        {:noreply, socket}
+    end
   end
 
   @impl true
@@ -426,7 +450,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-3xl mx-auto px-4 py-8">
+      <div class="max-w-3xl mx-auto px-4 py-8" phx-window-keydown="handle_key">
         <%!-- Header --%>
         <div class="mb-8">
           <div class="mb-4">
@@ -481,15 +505,29 @@ defmodule MedoruWeb.LessonTestLive.Show do
             <% else %>
               <%!-- Question --%>
               <div class="mb-6">
-                <h2 class="text-xl font-semibold text-base-content leading-relaxed">
-                  <%= if @current_step.question_type == :writing do %>
-                    <div class="flex items-center gap-2 text-primary">
-                      <.icon name="hero-pencil" class="w-6 h-6" />
-                      <span>{gettext("Writing Challenge (5 points)")}</span>
+                <%= if @current_step.question_type == :writing do %>
+                  <div class="flex items-center gap-2 text-primary mb-3">
+                    <.icon name="hero-pencil" class="w-6 h-6" />
+                    <span>{gettext("Writing Challenge (5 points)")}</span>
+                  </div>
+                <% else %>
+                  <% display = step_display_info(@current_step) %>
+                  <%= if display.label do %>
+                    <div class="text-xs sm:text-sm text-secondary mb-3">
+                      {display.label}
                     </div>
                   <% end %>
-                  {translate_question(@current_step.question)}
-                </h2>
+                  <%= if display.main_text do %>
+                    <h2 class={["text-3xl sm:text-4xl font-bold text-primary text-center mb-1", display.main_class]}>
+                      {display.main_text}
+                    </h2>
+                  <% end %>
+                  <%= if display.sub_text do %>
+                    <p class={["text-xl sm:text-2xl text-secondary/80 text-center", display.sub_class]}>
+                      {display.sub_text}
+                    </p>
+                  <% end %>
+                <% end %>
               </div>
 
               <%!-- Hint --%>
@@ -780,6 +818,94 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   defp translate_question(question), do: question
+
+  # Infer question type from the raw question text for backward compatibility
+  # with existing tests that don't have type in question_data
+  defp infer_question_type("__MSG_WHICH_WORD_MEANS__|" <> _), do: "meaning_to_word"
+  defp infer_question_type("__MSG_WHICH_WORD_IS_READ__|" <> _), do: "reading_to_word"
+  defp infer_question_type("__MSG_WHAT_DOES_WORD_MEAN__|" <> _), do: "word_to_meaning"
+  defp infer_question_type("__MSG_HOW_DO_YOU_READ__|" <> _), do: "word_to_reading"
+  defp infer_question_type("__MSG_TYPE_MEANING_AND_READING__|" <> _), do: "reading_text"
+  defp infer_question_type("__MSG_WRITE_KANJI_FOR__|" <> _), do: "kanji_writing"
+  defp infer_question_type(_), do: nil
+
+  # Returns display info for a step in word-set-test format
+  defp step_display_info(step) do
+    qd = step.question_data || %{}
+    type = qd["type"] || infer_question_type(step.question)
+    word = step.word
+
+    case type do
+      "word_to_meaning" ->
+        %{
+          label: gettext("What does this word mean?"),
+          main_text: qd["word_text"] || (word && word.text) || "",
+          main_class: "font-japanese",
+          sub_text: qd["word_reading"] || (word && word.reading),
+          sub_class: "font-japanese"
+        }
+
+      "word_to_reading" ->
+        %{
+          label: gettext("How do you read this word?"),
+          main_text: qd["word_text"] || (word && word.text) || "",
+          main_class: "font-japanese",
+          sub_text: qd["word_meaning"] || (word && word.meaning),
+          sub_class: ""
+        }
+
+      "reading_text" ->
+        %{
+          label: gettext("Type the meaning and reading:"),
+          main_text: qd["word_text"] || (word && word.text) || "",
+          main_class: "font-japanese",
+          sub_text: qd["word_reading"] || (word && word.reading),
+          sub_class: "font-japanese"
+        }
+
+      "image_to_meaning" ->
+        %{
+          label: gettext("What does this word mean?"),
+          main_text: qd["word_text"] || (word && word.text) || "",
+          main_class: "font-japanese",
+          sub_text: qd["word_reading"] || (word && word.reading),
+          sub_class: "font-japanese"
+        }
+
+      "meaning_to_word" ->
+        %{
+          label:
+            gettext("Which word means '%{meaning}'?",
+              meaning: qd["word_meaning"] || (word && word.meaning) || ""
+            ),
+          main_text: nil,
+          main_class: "",
+          sub_text: nil,
+          sub_class: ""
+        }
+
+      "reading_to_word" ->
+        %{
+          label:
+            gettext("Which word is read as '%{reading}'?",
+              reading: qd["word_reading"] || (word && word.reading) || ""
+            ),
+          main_text: nil,
+          main_class: "",
+          sub_text: nil,
+          sub_class: ""
+        }
+
+      _ ->
+        %{
+          label: translate_question(step.question),
+          main_text: nil,
+          main_class: "",
+          sub_text: nil,
+          sub_class: ""
+        }
+    end
+  end
 
   # Get user's test step type preferences for lesson tests
   defp get_user_test_preferences(user_id) do

@@ -9,6 +9,7 @@ defmodule MedoruWeb.WordSetLive.Test do
   alias Medoru.Learning.WordSets
   alias Medoru.Content
   alias Medoru.Tests
+  alias MedoruWeb.TestKeyboardShortcuts
 
   @impl true
   def mount(%{"id" => word_set_id}, session, socket) do
@@ -79,40 +80,14 @@ defmodule MedoruWeb.WordSetLive.Test do
 
       # Multichoice keyboard selection
       multichoice_step?(socket.assigns.current_step) && socket.assigns.feedback == nil ->
-        options = get_options(socket.assigns.current_step)
-
-        cond do
-          key in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] ->
-            index = String.to_integer(key) - 1
-
-            if index < length(options) do
-              selected = Enum.at(options, index)
-              {:noreply, assign(socket, :selected_answer, selected)}
-            else
-              {:noreply, socket}
-            end
-
-          key in ["Enter", "ArrowRight"] && socket.assigns.selected_answer != nil ->
-            handle_event("submit_answer", %{}, socket)
-
-          true ->
-            {:noreply, socket}
+        case TestKeyboardShortcuts.handle_multichoice_key(socket, key) do
+          {:noreply, socket} -> {:noreply, socket}
+          {:submit, event} -> handle_event(event, %{}, socket)
         end
 
       true ->
         {:noreply, socket}
     end
-  end
-
-  defp multichoice_step?(step) when is_nil(step), do: false
-
-  defp multichoice_step?(step) do
-    step.question_type == :multichoice
-  end
-
-  defp get_options(step) do
-    step_data = step.question_data || %{}
-    step_data["options"] || step.options || []
   end
 
   @impl true
@@ -398,6 +373,9 @@ defmodule MedoruWeb.WordSetLive.Test do
       Tests.abandon_session(session, session.time_spent_seconds || 0)
     end)
   end
+
+  defp multichoice_step?(step) when is_nil(step), do: false
+  defp multichoice_step?(step), do: step.question_type == :multichoice
 
   # Localization helpers for multichoice options
   def localize_option(option_text, locale) when locale in ["bg", "ja"] do
