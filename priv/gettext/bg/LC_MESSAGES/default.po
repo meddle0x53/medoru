@@ -164,7 +164,7 @@ msgstr "Обратно към уроците"
 #: lib/medoru_web/live/classroom_live/test_results.ex:252
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Tests"
-msgstr "Обратно към уроците"
+msgstr "Обратно към тестовете"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:141
 #: lib/medoru_web/live/dashboard_live.html.heex:141
@@ -2467,7 +2467,7 @@ msgstr "Сигурни ли сте, че искате да премахнете 
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:308
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Classrooms"
-msgstr "Обратно към уроците"
+msgstr "Обратно към класните стаи"
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:83
 #, elixir-autogen, elixir-format
@@ -2839,7 +2839,7 @@ msgstr "Среден резултат на тест"
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:49
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Classroom"
-msgstr "Обратно към уроците"
+msgstr "Обратно към класните стаи"
 
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:52
 #, elixir-autogen, elixir-format, fuzzy
@@ -3013,7 +3013,7 @@ msgstr "Сигурни ли сте, че искате да архивирате 
 #: lib/medoru_web/live/teacher/test_live/show.ex:95
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to My Tests"
-msgstr "Обратно към уроците"
+msgstr "Обратно към Вашите тестове"
 
 #: lib/medoru_web/live/teacher/test_live/index.ex:355
 #, elixir-autogen, elixir-format, fuzzy
@@ -3023,7 +3023,7 @@ msgstr "Продължете"
 #: lib/medoru_web/live/teacher/test_live/new.ex:72
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create New Test"
-msgstr "Създайте нов урок"
+msgstr "Създайте нов тест"
 
 #: lib/medoru_web/live/teacher/test_live/index.ex:113
 #: lib/medoru_web/live/teacher/test_live/new.ex:26
@@ -3249,7 +3249,7 @@ msgstr "Опити за тест"
 #: lib/medoru_web/live/teacher/test_live/new.ex:89
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Test Title"
-msgstr "Заглавие на урока"
+msgstr "Заглавие на теста"
 
 #: lib/medoru_web/live/teacher/test_live/index.ex:63
 #: lib/medoru_web/live/teacher/test_live/show.ex:77
@@ -3432,7 +3432,7 @@ msgstr "Налични класни стаи"
 #: lib/medoru_web/live/teacher/test_live/publish.ex:321
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Test"
-msgstr "Обратно към уроците"
+msgstr "Обратно към тестовете"
 
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2206
 #, elixir-autogen, elixir-format
@@ -3870,7 +3870,7 @@ msgstr "Трябва да създадете класна стая, преди �
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2243
 #, elixir-autogen, elixir-format, fuzzy
 msgid "correct"
-msgstr "Грешно"
+msgstr "правилно"
 
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2170
 #, elixir-autogen, elixir-format
@@ -3891,7 +3891,7 @@ msgstr "Администратор"
 #: lib/medoru_web/live/admin/user_live/edit/edit.html.heex:9
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Users"
-msgstr "Обратно към уроците"
+msgstr "Обратно към потребителите"
 
 #: lib/medoru_web/live/admin/user_live/edit/edit.html.heex:110
 #, elixir-autogen, elixir-format
@@ -4441,7 +4441,7 @@ msgstr "Обратно към таблото"
 #: lib/medoru_web/live/classroom_live/show.ex:207
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to My Classrooms"
-msgstr "Обратно към уроците"
+msgstr "Обратно към Вашите класни стаи"
 
 #: lib/medoru_web/live/admin/lesson_live/form/form_template.html.heex:141
 #, elixir-autogen, elixir-format, fuzzy
@@ -4881,7 +4881,7 @@ msgstr "Управление на уроци"
 #: lib/medoru_web/live/admin/lesson_live/form/form_template.html.heex:79
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Lesson Type"
-msgstr "Заглавие на урока"
+msgstr "Тип на урока"
 
 #: lib/medoru_web/live/admin/lesson_live/form/form_template.html.heex:184
 #, elixir-autogen, elixir-format, fuzzy
@@ -5435,7 +5435,7 @@ msgstr "Настройки на теста"
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:620
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Test: %{title}"
-msgstr "Заглавие на урока"
+msgstr "Тест: %{title}"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:51
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:48
@@ -5454,7 +5454,7 @@ msgstr "Заглавие"
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:242
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Total Classrooms"
-msgstr "Обратно към уроците"
+msgstr "Обратно към класните стаи"
 
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:196
 #, elixir-autogen, elixir-format
@@ -6490,7 +6490,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/edit.ex:51
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit %{title}"
-msgstr "Заглавие на урока"
+msgstr "Промяна на %{title}"
 
 #: lib/medoru_web/components/layouts.ex:637
 #, elixir-autogen, elixir-format, fuzzy
@@ -7186,25 +7186,25 @@ msgstr "Назад към граматичните форми"
 #: lib/medoru_web/live/word_set_live/show.ex:401
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to My Word Sets"
-msgstr "Обратно към уроците"
+msgstr "Обратно към Вашите списъци от думи"
 
 #: lib/medoru_web/live/admin/word_class_live/form/form_template.html.heex:8
 #: lib/medoru_web/live/admin/word_class_live/show/show_template.html.heex:8
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Word Classes"
-msgstr "Обратно към уроците"
+msgstr "Обратно към класовете от думи"
 
 #: lib/medoru_web/live/word_set_live/test.html.heex:38
 #: lib/medoru_web/live/word_set_live/test.html.heex:49
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Word Set"
-msgstr "Обратно към уроците"
+msgstr "Обратно към списъците от думи"
 
 #: lib/medoru_web/live/word_live/conjugations.html.heex:170
 #: lib/medoru_web/live/word_live/conjugations.html.heex:170
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to word"
-msgstr "Обратно към таблото"
+msgstr "Обратно към думите"
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:365
 #, elixir-autogen, elixir-format

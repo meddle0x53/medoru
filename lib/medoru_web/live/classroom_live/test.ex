@@ -1005,6 +1005,34 @@ defmodule MedoruWeb.ClassroomLive.Test do
                         </label>
                       <% end %>
                     </div>
+                  <% :listening -> %>
+                    <div class="space-y-4">
+                      <%!-- Audio Player --%>
+                      <%= if @current_step.question_data["audio_path"] do %>
+                        <div class="bg-base-200 rounded-xl p-4">
+                          <audio controls class="w-full">
+                            <source src={@current_step.question_data["audio_path"]} />
+                            {gettext("Your browser does not support the audio element.")}
+                          </audio>
+                        </div>
+                      <% end %>
+
+                      <%!-- Options --%>
+                      <div class="space-y-2">
+                        <%= for option <- @current_step.options do %>
+                          <label class="flex items-center gap-3 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
+                            <input
+                              type="radio"
+                              name="answer"
+                              value={option}
+                              required
+                              class="radio radio-primary"
+                            />
+                            <span class="text-base-content">{option}</span>
+                          </label>
+                        <% end %>
+                      </div>
+                    </div>
                   <% :writing -> %>
                     <MedoruWeb.LessonTestLive.WritingComponent.writing_question
                       step={@current_step}

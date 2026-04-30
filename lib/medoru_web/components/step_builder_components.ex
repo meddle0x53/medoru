@@ -127,6 +127,7 @@ defmodule MedoruWeb.StepBuilderComponents do
       order: "bg-orange-100 text-orange-800",
       writing: "bg-red-100 text-red-800",
       reading_text: "bg-teal-100 text-teal-800",
+      listening: "bg-violet-100 text-violet-800",
       # Grammar types
       sentence_validation: "bg-emerald-100 text-emerald-800",
       conjugation: "bg-amber-100 text-amber-800",
@@ -142,6 +143,7 @@ defmodule MedoruWeb.StepBuilderComponents do
       order: "Order",
       writing: "Writing",
       reading_text: "Reading",
+      listening: "Listening",
       # Grammar labels
       sentence_validation: "Grammar: Sentence",
       conjugation: "Grammar: Conjugation",
@@ -232,6 +234,21 @@ defmodule MedoruWeb.StepBuilderComponents do
             title="Kanji Writing"
             description="Students draw kanji on canvas"
             points="5 points"
+            on_select={@on_select}
+          />
+        </div>
+      </div>
+
+      <%!-- Listening Steps --%>
+      <div>
+        <h4 class="text-sm font-medium text-secondary mb-3">{gettext("Listening Questions")}</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <.step_type_option
+            type={:listening}
+            icon="hero-speaker-wave"
+            title="Listening"
+            description="Students listen to audio and select answer"
+            points="10 points"
             on_select={@on_select}
           />
         </div>

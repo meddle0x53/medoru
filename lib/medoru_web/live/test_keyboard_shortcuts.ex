@@ -26,7 +26,6 @@ defmodule MedoruWeb.TestKeyboardShortcuts do
   def handle_multichoice_key(socket, key, opts \\ []) do
     options = get_options(socket.assigns.current_step, opts)
     submit_event = Keyword.get(opts, :submit_event, "submit_answer")
-    IO.inspect(options)
 
     cond do
       key in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] ->

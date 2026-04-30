@@ -33,6 +33,7 @@ defmodule Medoru.Tests.TestStep do
     :order,
     :writing,
     :reading_text,
+    :listening,
     :sentence_validation,
     :conjugation,
     :conjugation_multichoice,
@@ -117,6 +118,7 @@ defmodule Medoru.Tests.TestStep do
       :order -> 2
       :writing -> 5
       :reading_text -> 2
+      :listening -> 10
       # Grammar step types
       :sentence_validation -> 10
       :conjugation -> 3
@@ -183,9 +185,16 @@ defmodule Medoru.Tests.TestStep do
     correct_answer = get_field(changeset, :correct_answer)
 
     case question_type do
+      :listening ->
+        # For listening, correct answer is kept separate and merged on save.
+        # Only validate that there are enough incorrect options (1-7).
+        changeset
+        |> validate_multichoice_count(options, 1, 7)
+        |> validate_correct_answer_present(correct_answer)
+
       :multichoice ->
         changeset
-        |> validate_multichoice_count(options)
+        |> validate_multichoice_count(options, 4, 8)
         |> validate_correct_answer_in_options(options, correct_answer)
 
       _ ->
@@ -193,15 +202,15 @@ defmodule Medoru.Tests.TestStep do
     end
   end
 
-  defp validate_multichoice_count(changeset, options) do
+  defp validate_multichoice_count(changeset, options, min_count, max_count) do
     count = length(options)
 
     cond do
-      count < 4 ->
-        add_error(changeset, :options, "multiple choice questions need at least 4 options")
+      count < min_count ->
+        add_error(changeset, :options, "need at least #{min_count} options")
 
-      count > 8 ->
-        add_error(changeset, :options, "multiple choice questions can have at most 8 options")
+      count > max_count ->
+        add_error(changeset, :options, "can have at most #{max_count} options")
 
       true ->
         changeset
@@ -220,6 +229,14 @@ defmodule Medoru.Tests.TestStep do
       else
         changeset
       end
+    end
+  end
+
+  defp validate_correct_answer_present(changeset, correct_answer) do
+    if is_nil(correct_answer) or String.trim(correct_answer) == "" do
+      add_error(changeset, :correct_answer, "correct answer is required")
+    else
+      changeset
     end
   end
 end

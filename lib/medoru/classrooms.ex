@@ -1046,19 +1046,30 @@ defmodule Medoru.Classrooms do
     if classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
-      # Complete the old test session and clear its association
-      if attempt.test_session_id do
-        Medoru.Tests.complete_test_session(attempt.test_session_id)
-      end
+      Repo.transaction(fn ->
+        # Complete the old test session and clear its association
+        if attempt.test_session_id do
+          Medoru.Tests.complete_test_session(attempt.test_session_id)
+        end
 
-      attempt
-      |> ClassroomTestAttempt.reset_changeset(%{
-        reset_count: attempt.reset_count + 1,
-        reset_at: DateTime.utc_now(),
-        reset_by_id: teacher_id,
-        test_session_id: nil
-      })
-      |> Repo.update()
+        # Subtract points earned from the member's total
+        if attempt.points_earned && attempt.points_earned > 0 do
+          remove_member_points(
+            attempt.classroom_id,
+            attempt.user_id,
+            attempt.points_earned
+          )
+        end
+
+        attempt
+        |> ClassroomTestAttempt.reset_changeset(%{
+          reset_count: attempt.reset_count + 1,
+          reset_at: DateTime.utc_now(),
+          reset_by_id: teacher_id,
+          test_session_id: nil
+        })
+        |> Repo.update!()
+      end)
     end
   end
 

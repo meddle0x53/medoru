@@ -74,6 +74,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           # Grammar step state
           |> assign(:grammar_pattern_elements, [])
           |> assign(:selected_word_class_id, nil)
+          |> allow_upload(:audio,
+            accept: ~w(.mp3 .wav),
+            max_entries: 1,
+            max_file_size: 10_000_000
+          )
 
         {:ok, socket}
       end
@@ -106,6 +111,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         "match" -> {:match, "vocabulary"}
         "order" -> {:order, "vocabulary"}
         "reading_text" -> {:reading_text, "vocabulary"}
+        "listening" -> {:listening, "listening"}
         # Grammar types
         "sentence_validation" -> {:sentence_validation, "grammar"}
         "conjugation" -> {:conjugation, "grammar"}
@@ -177,6 +183,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:option_word_ids, [])
      |> assign(:option_word_search_query, "")
      |> assign(:available_option_words, [])}
+  end
+
+  @impl true
+  def handle_event("cancel_audio_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :audio, ref)}
   end
 
   @impl true
@@ -317,6 +328,23 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             [generated_answer | Enum.reject(options, &(String.trim(&1) == generated_answer))]
 
           Map.put(attrs, "options", new_options)
+        else
+          attrs
+        end
+      else
+        attrs
+      end
+
+    # For listening steps, handle audio upload and prepend correct answer to options
+    attrs = handle_audio_upload(socket, attrs)
+
+    attrs =
+      if step_type == :listening do
+        correct = Map.get(attrs, "correct_answer", "")
+        options = Map.get(attrs, "options", [])
+
+        if correct != "" and correct not in options do
+          Map.put(attrs, "options", [correct | options])
         else
           attrs
         end
@@ -476,6 +504,23 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             [generated_answer | Enum.reject(options, &(String.trim(&1) == generated_answer))]
 
           Map.put(attrs, "options", new_options)
+        else
+          attrs
+        end
+      else
+        attrs
+      end
+
+    # For listening steps, handle audio upload and prepend correct answer to options
+    attrs = handle_audio_upload(socket, attrs)
+
+    attrs =
+      if step_type == :listening do
+        correct = Map.get(attrs, "correct_answer", "")
+        options = Map.get(attrs, "options", [])
+
+        if correct != "" and correct not in options do
+          Map.put(attrs, "options", [correct | options])
         else
           attrs
         end
@@ -1904,12 +1949,21 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     get_in(@step_form[:question_data].value, ["selected_word"])
                   end %>
                 <% step_type_category =
-                  if @step_type in [
-                       :sentence_validation,
-                       :conjugation,
-                       :conjugation_multichoice,
-                       :word_order
-                     ], do: "grammar", else: "vocabulary" %>
+                  cond do
+                    @step_type in [
+                      :sentence_validation,
+                      :conjugation,
+                      :conjugation_multichoice,
+                      :word_order
+                    ] ->
+                      "grammar"
+
+                    @step_type == :listening ->
+                      "listening"
+
+                    true ->
+                      "vocabulary"
+                  end %>
                 <input type="hidden" name="step[question_type]" value={@step_type} />
                 <input type="hidden" name="step[step_type]" value={step_type_category} />
                 <input type="hidden" name="step[points]" value={TestStep.default_points(@step_type)} />
@@ -1926,7 +1980,106 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                     word_classes={@word_classes}
                   />
                 <% else %>
-                  <%!-- Vocabulary Step Forms --%>
+                  <%= if step_type_category == "listening" do %>
+                    <%!-- Listening Step Forms --%>
+
+                    <%!-- Audio Upload --%>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Audio File")}
+                        <span class="text-error">*</span>
+                      </label>
+                      <div class="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                        <.live_file_input upload={@uploads.audio} class="hidden" />
+                        <button
+                          type="button"
+                          phx-click={JS.dispatch("click", to: "##{@uploads.audio.ref}")}
+                          class="btn btn-outline btn-sm"
+                        >
+                          <.icon name="hero-arrow-up-tray" class="w-4 h-4 mr-1" />
+                          {gettext("Upload Audio")}
+                        </button>
+                        <p class="text-xs text-secondary mt-2">
+                          {gettext("MP3 or WAV, max 10MB")}
+                        </p>
+                      </div>
+                      <%= for entry <- @uploads.audio.entries do %>
+                        <div class="mt-3 flex items-center justify-between bg-base-200 rounded-lg p-3">
+                          <div class="flex items-center gap-2 min-w-0">
+                            <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary shrink-0" />
+                            <span class="text-sm truncate">{entry.client_name}</span>
+                            <span class="text-xs text-secondary">
+                              {entry.progress}%
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            phx-click="cancel_audio_upload"
+                            phx-value-ref={entry.ref}
+                            class="p-1 text-secondary hover:text-error rounded transition-colors shrink-0"
+                          >
+                            <.icon name="hero-x-mark" class="w-4 h-4" />
+                          </button>
+                        </div>
+                        <%= for err <- upload_errors(@uploads.audio, entry) do %>
+                          <p class="text-error text-xs mt-1">{error_to_string(err)}</p>
+                        <% end %>
+                      <% end %>
+                      <%= if @editing_step && @editing_step.question_data["audio_path"] do %>
+                        <div class="mt-3 flex items-center gap-2 bg-base-200 rounded-lg p-3">
+                          <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary" />
+                          <span class="text-sm">{gettext("Existing audio file")}</span>
+                          <audio controls class="h-8 ml-auto">
+                            <source src={@editing_step.question_data["audio_path"]} />
+                          </audio>
+                        </div>
+                      <% end %>
+                    </div>
+
+                    <%!-- Question --%>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Question")}
+                        <span class="text-error">*</span>
+                      </label>
+                      <.input
+                        field={@step_form[:question]}
+                        type="textarea"
+                        rows="3"
+                        placeholder={gettext("Enter your question...")}
+                      />
+                    </div>
+
+                    <%!-- Correct Answer --%>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Correct Answer")}
+                        <span class="text-error">*</span>
+                      </label>
+                      <.input
+                        field={@step_form[:correct_answer]}
+                        type="text"
+                        placeholder={gettext("Enter the correct answer...")}
+                      />
+                    </div>
+
+                    <%!-- Incorrect Answers --%>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Incorrect Answers")}
+                        <span class="text-xs text-secondary ml-2">
+                          ({gettext("1-7 options required")})
+                        </span>
+                      </label>
+                      <textarea
+                        name="step[options]"
+                        rows="4"
+                        class="textarea textarea-bordered w-full"
+                        placeholder={gettext("Enter one wrong answer per line...")}
+                      ><%= format_options_for_submission(@step_form[:options].value) %></textarea>
+                    </div>
+                  <% else %>
+                    <%!-- Vocabulary Step Forms --%>
 
                   <%!-- Question --%>
                   <div>
@@ -2365,8 +2518,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                       >{format_options_for_submission(all_options)}</textarea>
                     </div>
                   <% end %>
+                  <%!-- End of multichoice options --%>
                 <% end %>
-                <%!-- End of vocabulary/grammar conditional --%>
+                <%!-- End of vocabulary branch --%>
+              <% end %>
+              <%!-- End of listening/vocabulary/grammar conditional --%>
 
                 <%!-- Hints --%>
                 <div>
@@ -2426,7 +2582,59 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp format_question_type(:reading_text), do: gettext("Reading")
   defp format_question_type(:fill), do: gettext("Fill in Blank")
   defp format_question_type(:writing), do: gettext("Writing")
+  defp format_question_type(:listening), do: gettext("Listening")
   defp format_question_type(other), do: to_string(other)
+
+  # Handle audio upload for listening steps
+  defp handle_audio_upload(socket, attrs) do
+    step_type = socket.assigns.step_type
+
+    if step_type == :listening do
+      uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+      uploaded_paths =
+        consume_uploaded_entries(socket, :audio, fn %{path: path}, entry ->
+          ext = Path.extname(entry.client_name) |> String.downcase()
+          filename = "#{Ecto.UUID.generate()}#{ext}"
+          dest_dir = Path.join(uploads_dir, "listening_audio")
+          File.mkdir_p!(dest_dir)
+          dest_path = Path.join(dest_dir, filename)
+          File.cp!(path, dest_path)
+          {:ok, "/uploads/listening_audio/#{filename}"}
+        end)
+
+      question_data = Map.get(attrs, "question_data") || %{}
+
+      question_data =
+        case uploaded_paths do
+          [audio_path | _] ->
+            Map.put(question_data, "audio_path", audio_path)
+
+          [] ->
+            # No new upload - preserve existing audio_path when editing
+            existing_audio =
+              case socket.assigns.editing_step do
+                %{question_data: %{"audio_path" => path}} -> path
+                _ -> nil
+              end
+
+            if existing_audio do
+              Map.put_new(question_data, "audio_path", existing_audio)
+            else
+              question_data
+            end
+        end
+
+      Map.put(attrs, "question_data", question_data)
+    else
+      attrs
+    end
+  end
+
+  defp error_to_string(:too_large), do: gettext("File is too large (max 10MB)")
+  defp error_to_string(:too_many_files), do: gettext("You can only upload 1 file")
+  defp error_to_string(:not_accepted), do: gettext("Invalid file type")
+  defp error_to_string(_), do: gettext("Upload failed")
 
   defp format_options_for_submission(options) when is_list(options) do
     options
