@@ -4,6 +4,38 @@ This document outlines the long-term development plan for Medoru.
 
 ---
 
+## Version 0.1.6 - Content & Test Improvements ✅ COMPLETE
+
+**Status**: ✅ COMPLETE | **Completed**: 2026-05-11  
+**Log**: [PLAN-v0.1.6.md](./PLAN-v0.1.6.md) (if exists)
+
+**Goal:** Word filtering, pronunciations, and new test step types
+
+**Features:**
+- ✅ Word type filter (noun, verb, adjective, etc.)
+- ✅ Word pronunciations support
+- ✅ Listening custom test step for teacher tests
+- ✅ Test generator refactoring for shared code
+- ✅ Translation fixes and i18n improvements
+
+---
+
+## Version 0.1.5 - Word Sets ✅ COMPLETE
+
+**Status**: ✅ COMPLETE | **Completed**: 2026-04-06  
+**Log**: [PLAN-v0.1.5.md](./PLAN-v0.1.5.md)
+
+**Goal:** User-created word collections and practice tests
+
+**Features:**
+- ✅ Word Sets: User-created collections of up to 100 words
+- ✅ Word Set CRUD with pagination, search, and sorting
+- ✅ Practice Tests with all question types
+- ✅ Copy Lesson to Word Set
+- ✅ Full i18n support (Bulgarian, Japanese)
+
+---
+
 ## Version 0.1.4 - Grammar Lessons ✅ COMPLETE
 
 **Status**: ✅ COMPLETE | **Completed**: 2026-03-31  
@@ -230,5 +262,5 @@ Ideas that aren't ready for planning go in the "Future Ideas" section. To promot
 
 ---
 
-**Last Updated**: 2026-03-06  
-**Current Version**: 0.1.0 (in development)
+**Last Updated**: 2026-05-11  
+**Current Version**: 0.1.6 (deployed)

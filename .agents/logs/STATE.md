@@ -1,10 +1,36 @@
 # Medoru - Current State
 
-**Version**: 0.1.4 ✅ COMPLETE  
-**Status**: Bug fixing period  
-**Tests**: 630 passing  
+**Version**: 0.1.6 ✅ COMPLETE  
+**Status**: Deployed to production  
+**Tests**: 689 passing  
 **URL**: https://medoru.net  
-**Last Updated**: 2026-03-31
+**Last Updated**: 2026-05-11
+
+---
+
+## ✅ Completed (v0.1.6)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Word Type Filter | ✅ | Filter words by type (noun, verb, adjective, etc.) |
+| Word Pronunciations | ✅ | Audio pronunciations support for words |
+| Listening Custom Test Step | ✅ | New `listening` step type for teacher-created tests |
+| Test Generator Refactor | ✅ | Shared code across test generators |
+| Translation Fixes | ✅ | Various i18n improvements |
+
+---
+
+## ✅ Completed (v0.1.5)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Word Sets | ✅ | User-created collections of up to 100 words |
+| Word Set Management | ✅ | CRUD with pagination, search, sort |
+| Practice Tests | ✅ | All question types for word sets |
+| Copy Lesson to Word Set | ✅ | Students can copy classroom lesson words |
+| Full i18n | ✅ | Bulgarian and Japanese translations |
+
+**Log**: [PLAN-v0.1.5.md](PLAN-v0.1.5.md)
 
 ---
 
@@ -84,7 +110,7 @@ bin/qa server
 - **Kanji**: 2,212 (N5-N1)
 - **Words**: 145,936 (N5-N3)
 - **Lessons**: 300+ (100 N5 + 100 N4 + 100 N3)
-- **Tests**: 630
+- **Tests**: 689
 - **Conjugations**: 66,396
 
 ---

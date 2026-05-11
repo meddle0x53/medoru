@@ -2,10 +2,17 @@
 
 ## Current State
 
-**Version**: 0.1.5 ✅ COMPLETE  
-**Status**: Word Sets feature implemented and ready for testing  
-**Tests**: 630 passing (some flaky due to async DB locks)  
+**Version**: 0.1.6 ✅ COMPLETE  
+**Status**: Deployed to production  
+**Tests**: 689 passing  
 **URL**: https://medoru.net
+
+### What's Complete (v0.1.6)
+- Word type filter: Filter words by type (noun, verb, adjective, etc.)
+- Word pronunciations: Audio pronunciations support for words
+- Listening custom test step: New `listening` step type for teacher-created tests
+- Test generator refactoring: Shared code across test generators for maintainability
+- Translation fixes: Various i18n improvements
 
 ### What's Complete (v0.1.5)
 - Word Sets: User-created collections of up to 100 words
