@@ -9012,3 +9012,328 @@ msgstr "書き取りチャレンジ (5点)"
 #, elixir-autogen, elixir-format
 msgid "Your browser does not support the audio element."
 msgstr ""
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Games"
+msgstr "ゲーム"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create Game"
+msgstr "ゲームを作成"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create First Game"
+msgstr "最初のゲームを作成"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create memory card games to help your students practice vocabulary."
+msgstr "生徒の語彙練習を助ける神経衰弱ゲームを作成しましょう。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game published successfully."
+msgstr "ゲームが公開されました。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game unpublished."
+msgstr "ゲームの公開が停止されました。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to publish game."
+msgstr "ゲームの公開に失敗しました。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to unpublish game."
+msgstr "ゲーム公開の停止に失敗しました。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "You are not authorized to publish this game."
+msgstr "このゲームを公開する権限がありません。"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "You are not authorized to unpublish this game."
+msgstr "このゲームの公開を停止する権限がありません。"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No Games Available"
+msgstr "利用可能なゲームはありません"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Your teacher hasn't published any games to this classroom yet. Check back later!"
+msgstr "先生はまだこの教室にゲームを公開していません。また後で確認してください！"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Play"
+msgstr "プレイ"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Play Again"
+msgstr "もう一度プレイ"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Create Memory Card Game"
+msgstr "神経衰弱ゲームを作成"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Edit Memory Card Game"
+msgstr "神経衰弱ゲームを編集"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Basic Info"
+msgstr "基本情報"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game Name"
+msgstr "ゲーム名"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Max Players"
+msgstr "最大プレイヤー数"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Board Size"
+msgstr "ボードサイズ"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game Rules"
+msgstr "ゲームルール"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Collection Condition"
+msgstr "獲得条件"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Require correct meaning"
+msgstr "正しい意味が必要"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Require correct pronunciation"
+msgstr "正しい発音が必要"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Either meaning OR pronunciation (not both)"
+msgstr "意味または発音のどちらか（両方ではない）"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "No condition selected — cards will be collected automatically when matched."
+msgstr "条件が選択されていません — 一致したカードは自動的に獲得されます。"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "How many times a student can flip two cards."
+msgstr "生徒が2枚のカードをめくれる回数。"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Search words to add..."
+msgstr "追加する単語を検索..."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Points"
+msgstr "ポイント"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "No words selected yet. Search and add words above."
+msgstr "まだ単語が選択されていません。上で検索して追加してください。"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Name is required"
+msgstr "名前は必須です"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Must be at least 1"
+msgstr "1以上である必要があります"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "You must select exactly %{count} words for a %{size} board"
+msgstr "%{size}のボードには正確に%{count}個の単語を選択する必要があります"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game saved successfully."
+msgstr "ゲームが保存されました。"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Word already selected."
+msgstr "この単語はすでに選択されています。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game Details"
+msgstr "ゲーム詳細"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this game?"
+msgstr "このゲームを削除してもよろしいですか？"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game deleted."
+msgstr "ゲームが削除されました。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to delete game."
+msgstr "ゲームの削除に失敗しました。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No students have played this game yet."
+msgstr "まだこのゲームをプレイした生徒はいません。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Reset student"
+msgstr "生徒をリセット"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Reset this student's progress? They will lose their points."
+msgstr "この生徒の進捗をリセットしますか？ポイントが失われます。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Student progress reset successfully."
+msgstr "生徒の進捗がリセットされました。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to reset student progress."
+msgstr "生徒の進捗リセットに失敗しました。"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Collection"
+msgstr "獲得条件"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Direct"
+msgstr "直接"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Meaning OR Pronunciation"
+msgstr "意味または発音"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Meaning AND Pronunciation"
+msgstr "意味と発音"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Back to Games"
+msgstr "ゲーム一覧に戻る"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Memory Card Game"
+msgstr "神経衰弱ゲーム"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "🎉 Congratulations! All cards collected!"
+msgstr "🎉 おめでとうございます！すべてのカードを獲得しました！"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game Over!"
+msgstr "ゲームオーバー！"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Final Score: %{score} points"
+msgstr "最終スコア：%{score}点"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Match! +%{points} points"
+msgstr "一致！+%{points}点"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Match Found!"
+msgstr "一致しました！"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Enter the correct answer to collect these cards."
+msgstr "正しい答えを入力してカードを獲得してください。"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Wrong answer! One attempt lost."
+msgstr "不正解！試行回数が1回減りました。"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Correct! +%{points} points"
+msgstr "正解！+%{points}点"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game over! No attempts remaining."
+msgstr "ゲームオーバー！残りの試行回数がありません。"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Pronunciation (reading)"
+msgstr "発音（読み）"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Type the reading in hiragana..."
+msgstr "ひらがなで読みを入力..."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game reset. Good luck!"
+msgstr "ゲームがリセットされました。頑張ってください！"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "This game is not available yet."
+msgstr "このゲームはまだ利用できません。"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game not found in this classroom."
+msgstr "この教室にゲームが見つかりません。"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Single Player"
+msgstr "1人用"

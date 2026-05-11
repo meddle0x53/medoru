@@ -61,7 +61,7 @@ msgstr "Акаунт"
 #: lib/medoru_web/live/word_set_live/show.ex:411
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Words"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:352
 #, elixir-autogen, elixir-format
@@ -413,7 +413,7 @@ msgstr "Чернова"
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:54
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Lesson: %{title}"
-msgstr "Редактирай урок"
+msgstr "Редактирайте урок"
 
 #: lib/medoru_web/components/layouts.ex:348
 #: lib/medoru_web/components/layouts.ex:572
@@ -864,18 +864,18 @@ msgstr "Моля, изберете отговор"
 #: lib/medoru_web/live/teacher/test_live/show.ex:367
 #, elixir-autogen, elixir-format
 msgid "Publish"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/publish.ex:159
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:115
 #, elixir-autogen, elixir-format
 msgid "Publish Lesson"
-msgstr "Публикувай урок"
+msgstr "Публикувайте урок"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/publish.ex:59
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Publish: %{title}"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:197
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:259
@@ -953,7 +953,7 @@ msgstr "Търсете думи за добавяне към вашия урок
 #: lib/medoru_web/live/word_set_live/edit_words.ex:250
 #, elixir-autogen, elixir-format
 msgid "Search words..."
-msgstr "Търси думи..."
+msgstr "Търсете думи..."
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/publish.ex:173
 #, elixir-autogen, elixir-format, fuzzy
@@ -977,7 +977,7 @@ msgstr "Настройки"
 #: lib/medoru_web/live/classroom_live/test.ex:1137
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Show Hint"
-msgstr "Покажи подсказка"
+msgstr "Покажете подсказка"
 
 #: lib/medoru_web/components/layouts.ex:718
 #: lib/medoru_web/components/layouts.ex:727
@@ -1126,7 +1126,7 @@ msgstr "Напиши отговора си"
 #: lib/medoru_web/live/teacher/test_live/publish.ex:455
 #, elixir-autogen, elixir-format
 msgid "Unpublish"
-msgstr "Премахни публикация"
+msgstr "Премахнете публикация"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/publish.ex:135
 #, elixir-autogen, elixir-format
@@ -2621,7 +2621,7 @@ msgstr "Общ преглед"
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:687
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Publish a Test"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:681
 #, elixir-autogen, elixir-format, fuzzy
@@ -3100,7 +3100,7 @@ msgstr "Направете го достъпен за учениците"
 #: lib/medoru_web/live/teacher/test_live/show.ex:281
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Manage Publishing"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/test_live/show.ex:214
 #, elixir-autogen, elixir-format, fuzzy
@@ -3187,7 +3187,7 @@ msgstr "Само учители могат да достъпят тази стр
 #: lib/medoru_web/live/teacher/test_live/show.ex:246
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Publish Now"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/test_live/index.ex:284
 #, elixir-autogen, elixir-format
@@ -3636,7 +3636,7 @@ msgstr "Предишно публикувано"
 #: lib/medoru_web/live/teacher/test_live/publish.ex:325
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Publish Test"
-msgstr "Публикувай"
+msgstr "Публикувайте"
 
 #: lib/medoru_web/live/teacher/test_live/publish.ex:403
 #, elixir-autogen, elixir-format, fuzzy
@@ -3701,7 +3701,7 @@ msgstr "Премахнете опция"
 #: lib/medoru_web/live/teacher/test_live/publish.ex:486
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Republish"
-msgstr "Премахни публикация"
+msgstr "Премахнете публикация"
 
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2101
 #, elixir-autogen, elixir-format
@@ -4324,7 +4324,7 @@ msgstr "Добавете ново четене"
 #: lib/medoru_web/live/moderator/word_live/form.ex:59
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add New Word"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:193
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:193
@@ -4337,7 +4337,7 @@ msgstr "Добавете четене"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:364
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Word"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:690
 #, elixir-autogen, elixir-format
@@ -4379,7 +4379,7 @@ msgstr "Админ - Потребители"
 #: lib/medoru_web/live/moderator/word_live/index.ex:53
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Admin - Words"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 # Navigation
 #: lib/medoru_web/components/layouts.ex:287
@@ -4578,7 +4578,7 @@ msgstr "Редактиране на канджи - %{character}"
 #: lib/medoru_web/live/admin/lesson_live/form.ex:54
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Lesson - %{title}"
-msgstr "Редактирай урок"
+msgstr "Редактирайте урок"
 
 #: lib/medoru_web/live/admin/word_live/form.ex:80
 #: lib/medoru_web/live/moderator/word_live/form.ex:80
@@ -7063,12 +7063,12 @@ msgstr "Уроци"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:378
 #, elixir-autogen, elixir-format
 msgid "Add Text"
-msgstr "Добави текст"
+msgstr "Добавете текст"
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:371
 #, elixir-autogen, elixir-format
 msgid "Add Word Class"
-msgstr "Добави клас думи"
+msgstr "Добавете клас думи"
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:349
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:576
@@ -7120,7 +7120,7 @@ msgstr "Админ - Граматични форми"
 #: lib/medoru_web/live/admin/word_class_live/index.ex:29
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Admin - Word Classes"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/word_set_live/form.ex:212
 #, elixir-autogen, elixir-format
@@ -7140,7 +7140,7 @@ msgstr "Всички типове"
 #: lib/medoru_web/live/word_live/index.html.heex:97
 #, elixir-autogen, elixir-format, fuzzy
 msgid "All Words"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:504
 #, elixir-autogen, elixir-format
@@ -7357,7 +7357,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:29
 #, elixir-autogen, elixir-format
 msgid "Create Grammar Lesson"
-msgstr "Създай граматичен урок"
+msgstr "Създайте граматичен урок"
 
 #: lib/medoru_web/live/word_set_live/test_config.ex:48
 #: lib/medoru_web/live/word_set_live/test_config.ex:156
@@ -7423,12 +7423,12 @@ msgstr "Създадена"
 #: lib/medoru_web/live/admin/grammar_form_live/index/index.html.heex:82
 #, elixir-autogen, elixir-format
 msgid "Delete this grammar form?"
-msgstr "Изтрий тази граматична форма?"
+msgstr "Изтрийте тази граматична форма?"
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Delete this lesson?"
-msgstr "Изтрий този урок?"
+msgstr "Изтрийте този урок?"
 
 #: lib/medoru_web/live/word_set_live/show.ex:345
 #, elixir-autogen, elixir-format
@@ -7438,12 +7438,12 @@ msgstr ""
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:209
 #, elixir-autogen, elixir-format
 msgid "Delete this step?"
-msgstr "Изтрий тази стъпка?"
+msgstr "Изтрийте тази стъпка?"
 
 #: lib/medoru_web/live/admin/word_class_live/index/index.html.heex:72
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete this word class?"
-msgstr "Изтрий този урок?"
+msgstr "Изтрийте този урок?"
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:51
 #, elixir-autogen, elixir-format
@@ -7490,7 +7490,7 @@ msgstr "Редактиране на граматичен урок"
 #: lib/medoru_web/live/admin/word_class_live/form.ex:110
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Word Class"
-msgstr "Добави клас думи"
+msgstr "Добавете клас думи"
 
 #: lib/medoru_web/live/word_set_live/form.ex:42
 #, elixir-autogen, elixir-format, fuzzy
@@ -7501,7 +7501,7 @@ msgstr "Редактиране на дума - %{text}"
 #: lib/medoru_web/live/word_set_live/show.ex:297
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Words"
-msgstr "Добави дума"
+msgstr "Добавете дума"
 
 #: lib/medoru_web/live/word_set_live/edit_words.ex:215
 #, elixir-autogen, elixir-format, fuzzy
@@ -8151,7 +8151,7 @@ msgstr "Пробен тест"
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:556
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Published Lessons"
-msgstr "Публикувай урок"
+msgstr "Публикувайте урок"
 
 # Test-Related
 #: lib/medoru_web/live/word_set_live/test_config.ex:227
@@ -8188,7 +8188,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:675
 #, elixir-autogen, elixir-format
 msgid "Remove"
-msgstr "Премахни"
+msgstr "Премахнете"
 
 #: lib/medoru_web/live/word_set_live/edit_words.ex:365
 #, elixir-autogen, elixir-format, fuzzy
@@ -8249,7 +8249,7 @@ msgstr ""
 #: lib/medoru_web/live/word_set_live/edit_words.ex:237
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Search Words"
-msgstr "Търси думи..."
+msgstr "Търсете думи..."
 
 #: lib/medoru_web/live/word_set_live/edit_words.ex:316
 #, elixir-autogen, elixir-format, fuzzy
@@ -8273,22 +8273,22 @@ msgstr ""
 #: lib/medoru_web/live/word_set_live/index.ex:253
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Search word sets..."
-msgstr "Търси думи..."
+msgstr "Търсете думи..."
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:238
 #, elixir-autogen, elixir-format
 msgid "Select Base Word"
-msgstr "Избери основна дума"
+msgstr "Изберете основна дума"
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:766
 #, elixir-autogen, elixir-format
 msgid "Select a class..."
-msgstr "Избери клас..."
+msgstr "Изберете клас..."
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:52
 #, elixir-autogen, elixir-format
 msgid "Select a grammar step type"
-msgstr "Избери тип граматична стъпка"
+msgstr "Изберете тип граматична стъпка"
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:454
 #, elixir-autogen, elixir-format
@@ -8298,29 +8298,29 @@ msgstr ""
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:478
 #, elixir-autogen, elixir-format
 msgid "Select a word class..."
-msgstr "Избери клас думи..."
+msgstr "Изберете клас думи..."
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:446
 #, elixir-autogen, elixir-format
 msgid "Select particle..."
-msgstr "Избери частица..."
+msgstr "Изберете частица..."
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:299
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:409
 #, elixir-autogen, elixir-format
 msgid "Select target form..."
-msgstr "Избери целева форма..."
+msgstr "Изберете целева форма..."
 
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:157
 #, elixir-autogen, elixir-format
 msgid "Select the correct conjugation:"
-msgstr "Избери правилното спрежение:"
+msgstr "Изберете правилното спрежение:"
 
 #: lib/medoru_web/live/admin/grammar_form_live/form/form_template.html.heex:51
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:223
 #, elixir-autogen, elixir-format
 msgid "Select type..."
-msgstr "Избери тип..."
+msgstr "Изберете тип..."
 
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:323
 #, elixir-autogen, elixir-format
@@ -8335,7 +8335,7 @@ msgstr "Избрано:"
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:150
 #, elixir-autogen, elixir-format
 msgid "Show grammar pattern to students"
-msgstr "Покажи граматичния шаблон на учениците"
+msgstr "Покажете граматичния шаблон на учениците"
 
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:131
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:187
@@ -8452,12 +8452,12 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:521
 #, elixir-autogen, elixir-format
 msgid "Type a wrong answer..."
-msgstr "Въведи грешен отговор..."
+msgstr "Въведете грешен отговор..."
 
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:123
 #, elixir-autogen, elixir-format
 msgid "Type the conjugated form..."
-msgstr "Въведи спрегнатата форма..."
+msgstr "Въведете спрегнатата форма..."
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:550
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:48
@@ -8470,17 +8470,17 @@ msgstr "Напишете значението и четенето:"
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:247
 #, elixir-autogen, elixir-format
 msgid "Type to search for words..."
-msgstr "Въведи за търсене на думи..."
+msgstr "Въведете за търсене на думи..."
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:832
 #, elixir-autogen, elixir-format
 msgid "Type your answer in Japanese..."
-msgstr "Въведи отговора си на японски..."
+msgstr "Въведете отговора си на японски..."
 
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:60
 #, elixir-autogen, elixir-format
 msgid "Type your sentence here..."
-msgstr "Въведи изречението си тук..."
+msgstr "Въведете изречението си тук..."
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:296
 #, elixir-autogen, elixir-format
@@ -8661,7 +8661,7 @@ msgstr "Думи в този урок"
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:566
 #, elixir-autogen, elixir-format
 msgid "Words will be shuffled for students. Enter one word per line."
-msgstr "Думите ще бъдат разбъркани за учениците. Въведи по една дума на ред."
+msgstr "Думите ще бъдат разбъркани за учениците. Въведете по една дума на ред."
 
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:472
 #, elixir-autogen, elixir-format
@@ -8843,12 +8843,12 @@ msgstr "Потвърди"
 #: lib/medoru_web/live/word_set_live/show.ex:504
 #, elixir-autogen, elixir-format
 msgid "Copy to Word Set"
-msgstr "Копирай в списък с думи"
+msgstr "Копирайте в списък с думи"
 
 #: lib/medoru_web/live/classroom_live/show.ex:616
 #, elixir-autogen, elixir-format
 msgid "Copy words to word set"
-msgstr "Копирай думите в списък"
+msgstr "Копирайте думите в списък"
 
 #: lib/medoru_web/live/classroom_live/show.ex:681
 #, elixir-autogen, elixir-format
@@ -9014,3 +9014,328 @@ msgstr "Предизвикателство за писане (5 точки)"
 #, elixir-autogen, elixir-format
 msgid "Your browser does not support the audio element."
 msgstr ""
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Games"
+msgstr "Игри"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create Game"
+msgstr "Създайте игра"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create First Game"
+msgstr "Създайте първа игра"
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Create memory card games to help your students practice vocabulary."
+msgstr "Създайте игри с карти за запаметяване, за да помогнете на учениците си да упражняват речника."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game published successfully."
+msgstr "Играта е публикувана успешно."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game unpublished."
+msgstr "Публикацията на играта е отменена."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to publish game."
+msgstr "Неуспешно публикуване на играта."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to unpublish game."
+msgstr "Неуспешно отмяна на публикацията на играта."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "You are not authorized to publish this game."
+msgstr "Нямате право да публикувате тази игра."
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "You are not authorized to unpublish this game."
+msgstr "Нямате право да отменяте публикацията на тази игра."
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No Games Available"
+msgstr "Няма налични игри"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Your teacher hasn't published any games to this classroom yet. Check back later!"
+msgstr "Учителят ви все още не е публикувал игри в тази класна стая. Проверете отново по-късно!"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Play"
+msgstr "Играйте"
+
+#: lib/medoru_web/live/classroom_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Play Again"
+msgstr "Играйте отново"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Create Memory Card Game"
+msgstr "Създайте игра с карти за запаметяване"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Edit Memory Card Game"
+msgstr "Редактирайте игра с карти за запаметяване"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Basic Info"
+msgstr "Основна информация"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game Name"
+msgstr "Име на играта"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Max Players"
+msgstr "Макс. играчи"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Board Size"
+msgstr "Размер на дъската"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game Rules"
+msgstr "Правила на играта"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Collection Condition"
+msgstr "Условие за събиране"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Require correct meaning"
+msgstr "Изисквайте правилно значение"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Require correct pronunciation"
+msgstr "Изисквайте правилно произношение"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Either meaning OR pronunciation (not both)"
+msgstr "Или значение или произношение (не и двете)"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "No condition selected — cards will be collected automatically when matched."
+msgstr "Няма избрано условие — картите ще се събират автоматично при съвпадение."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "How many times a student can flip two cards."
+msgstr "Колко пъти ученикът може да обърне две карти."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Search words to add..."
+msgstr "Търсете думи за добавяне..."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Points"
+msgstr "Точки"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "No words selected yet. Search and add words above."
+msgstr "Все още няма избрани думи. Търсете и добавяйте думи по-горе."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Name is required"
+msgstr "Името е задължително"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Must be at least 1"
+msgstr "Трябва да е поне 1"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "You must select exactly %{count} words for a %{size} board"
+msgstr "Трябва да изберете точно %{count} думи за дъска %{size}"
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Game saved successfully."
+msgstr "Играта е запазена успешно."
+
+#: lib/medoru_web/live/teacher/game_live/form.ex
+#, elixir-autogen, elixir-format
+msgid "Word already selected."
+msgstr "Думата вече е избрана."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game Details"
+msgstr "Детайли за играта"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Are you sure you want to delete this game?"
+msgstr "Сигурни ли сте, че искате да изтриете тази игра?"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Game deleted."
+msgstr "Играта е изтрита."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to delete game."
+msgstr "Неуспешно изтриване на играта."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "No students have played this game yet."
+msgstr "Все още няма ученици, играли тази игра."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Reset student"
+msgstr "Нулирайте ученик"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Reset this student's progress? They will lose their points."
+msgstr "Нулиране на прогреса на този ученик? Те ще загубят точките си."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Student progress reset successfully."
+msgstr "Прогресът на ученика е нулиран успешно."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Failed to reset student progress."
+msgstr "Неуспешно нулиране на прогреса на ученика."
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Collection"
+msgstr "Събиране"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Direct"
+msgstr "Директно"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Meaning OR Pronunciation"
+msgstr "Значение или произношение"
+
+#: lib/medoru_web/live/teacher/game_live/show.ex
+#, elixir-autogen, elixir-format
+msgid "Meaning AND Pronunciation"
+msgstr "Значение и произношение"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Back to Games"
+msgstr "Обратно към игрите"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Memory Card Game"
+msgstr "Игра с карти за запаметяване"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "🎉 Congratulations! All cards collected!"
+msgstr "🎉 Поздравления! Всички карти са събрани!"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game Over!"
+msgstr "Край на играта!"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Final Score: %{score} points"
+msgstr "Краен резултат: %{score} точки"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Match! +%{points} points"
+msgstr "Съвпадение! +%{points} точки"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Match Found!"
+msgstr "Намерено съвпадение!"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Enter the correct answer to collect these cards."
+msgstr "Въведете правилния отговор, за да съберете тези карти."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Wrong answer! One attempt lost."
+msgstr "Грешен отговор! Загубихте един опит."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Correct! +%{points} points"
+msgstr "Правилно! +%{points} точки"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game over! No attempts remaining."
+msgstr "Край на играта! Няма останали опити."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Pronunciation (reading)"
+msgstr "Произношение (четене)"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Type the reading in hiragana..."
+msgstr "Въведете четенето на хирагана..."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game reset. Good luck!"
+msgstr "Играта е нулирана. Успех!"
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "This game is not available yet."
+msgstr "Тази игра все още не е достъпна."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Game not found in this classroom."
+msgstr "Играта не е намерена в тази класна стая."
+
+#: lib/medoru_web/live/classroom_game_live/play.ex
+#, elixir-autogen, elixir-format
+msgid "Single Player"
+msgstr "Един играч"

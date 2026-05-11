@@ -14,6 +14,7 @@ defmodule Medoru.Classrooms do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms.{Classroom, ClassroomMembership, ClassroomTest}
+  alias Medoru.Games
   alias Medoru.Notifications
 
   # ============================================================================
@@ -1938,5 +1939,35 @@ defmodule Medoru.Classrooms do
       total_test_attempts: total_test_attempts,
       total_lesson_completions: total_lesson_completions
     }
+  end
+
+  # ============================================================================
+  # Games Integration
+  # ============================================================================
+
+  @doc """
+  Lists games for a classroom.
+  """
+  def list_classroom_games(classroom_id, opts \\ []) do
+    Games.list_classroom_games(classroom_id, opts)
+  end
+
+  @doc """
+  Gets a game by ID.
+  """
+  def get_game!(id), do: Games.get_game!(id)
+
+  @doc """
+  Gets a user's session for a game.
+  """
+  def get_user_game_session(game_id, user_id) do
+    Games.get_user_session(game_id, user_id)
+  end
+
+  @doc """
+  Resets a user's game session.
+  """
+  def reset_user_game_session(game_id, user_id) do
+    Games.reset_session(game_id, user_id)
   end
 end

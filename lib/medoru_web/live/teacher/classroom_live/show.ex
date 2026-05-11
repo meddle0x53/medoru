@@ -9,6 +9,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   import MedoruWeb.Components.Helpers, only: [format_relative_time: 1, display_name: 3]
 
   alias Medoru.Classrooms
+  alias Medoru.Games
   alias Medoru.Notifications
 
   @impl true
@@ -34,6 +35,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     pending = Classrooms.list_pending_memberships(classroom.id)
     published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
     test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
+    classroom_games = Games.list_classroom_games(classroom.id)
 
     socket
     |> assign(:page_title, classroom.name)
@@ -43,6 +45,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:pending_memberships, pending)
     |> assign(:published_tests, published_tests)
     |> assign(:test_attempts, test_attempts)
+    |> assign(:classroom_games, classroom_games)
     |> assign(:active_tab, "overview")
   end
 
@@ -65,6 +68,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         "lessons" ->
           classroom = socket.assigns.classroom
           load_lessons_data(socket, classroom)
+
+        "games" ->
+          classroom = socket.assigns.classroom
+          games = Games.list_classroom_games(classroom.id)
+          assign(socket, :classroom_games, games)
 
         _ ->
           socket
@@ -203,6 +211,48 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to reset test."))}
+    end
+  end
+
+  @impl true
+  def handle_event("publish_game", %{"id" => game_id}, socket) do
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    case Games.publish_game(game_id, teacher_id) do
+      {:ok, _} ->
+        classroom = socket.assigns.classroom
+
+        {:noreply,
+         socket
+         |> assign(:classroom_games, Games.list_classroom_games(classroom.id))
+         |> put_flash(:info, gettext("Game published successfully."))}
+
+      {:error, :not_authorized} ->
+        {:noreply, put_flash(socket, :error, gettext("You are not authorized to publish this game."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to publish game."))}
+    end
+  end
+
+  @impl true
+  def handle_event("unpublish_game", %{"id" => game_id}, socket) do
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    case Games.unpublish_game(game_id, teacher_id) do
+      {:ok, _} ->
+        classroom = socket.assigns.classroom
+
+        {:noreply,
+         socket
+         |> assign(:classroom_games, Games.list_classroom_games(classroom.id))
+         |> put_flash(:info, gettext("Game unpublished."))}
+
+      {:error, :not_authorized} ->
+        {:noreply, put_flash(socket, :error, gettext("You are not authorized to unpublish this game."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to unpublish game."))}
     end
   end
 
@@ -379,6 +429,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             />
             <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
             <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
+            <.tab_button active={@active_tab == "games"} tab="games" label={gettext("Games")} />
             <.tab_button
               active={@active_tab == "settings"}
               tab="settings"
@@ -421,6 +472,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 published_tests={@published_tests}
                 test_attempts={@test_attempts}
                 current_scope={@current_scope}
+              />
+            <% "games" -> %>
+              <.games_tab
+                classroom={@classroom}
+                classroom_games={@classroom_games}
               />
             <% "settings" -> %>
               <.settings_tab classroom={@classroom} />
@@ -655,6 +711,106 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       class="btn btn-ghost btn-sm"
                     >
                       <.icon name="hero-pencil" class="w-4 h-4" />
+                    </.link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  attr :classroom, :map, required: true
+  attr :classroom_games, :list, required: true
+
+  defp games_tab(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <div class="flex items-center justify-between">
+        <h3 class="card-title text-base-content">
+          <.icon name="hero-puzzle-piece" class="w-5 h-5 mr-2" />
+          {gettext("Games")}
+          <span class="badge badge-ghost ml-2">{length(@classroom_games)}</span>
+        </h3>
+        <.link
+          navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
+          class="btn btn-primary btn-sm"
+        >
+          <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Game")}
+        </.link>
+      </div>
+
+      <%= if @classroom_games == [] do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-8 text-center">
+          <.icon name="hero-puzzle-piece" class="w-16 h-16 text-secondary/20 mx-auto mb-4" />
+          <h3 class="text-xl font-semibold text-base-content mb-2">{gettext("No Games Yet")}</h3>
+          <p class="text-secondary max-w-md mx-auto mb-6">
+            {gettext("Create memory card games to help your students practice vocabulary.")}
+          </p>
+          <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"} class="btn btn-primary">
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create First Game")}
+          </.link>
+        </div>
+      <% else %>
+        <div class="space-y-3">
+          <%= for game <- @classroom_games do %>
+            <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+              <div class="card-body p-4 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <h3 class="card-title text-base sm:text-lg text-base-content">{game.name}</h3>
+                      <%= if game.status == :published do %>
+                        <span class="badge badge-success badge-sm">{gettext("Published")}</span>
+                      <% else %>
+                        <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
+                      <% end %>
+                    </div>
+                    <%= if game.memory_card_game do %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                          {game.memory_card_game.board_size}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.memory_card_game.max_attempts} {gettext("attempts")}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-users" class="w-3 h-3 mr-1" />
+                          {if game.max_players == 1,
+                            do: gettext("Single Player"),
+                            else: gettext("%{count} Players", count: game.max_players)}
+                        </span>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="flex items-center gap-2 self-start">
+                    <%= if game.status == :draft do %>
+                      <button
+                        phx-click="publish_game"
+                        phx-value-id={game.id}
+                        class="btn btn-success btn-sm"
+                      >
+                        <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Publish")}
+                      </button>
+                    <% else %>
+                      <button
+                        phx-click="unpublish_game"
+                        phx-value-id={game.id}
+                        class="btn btn-ghost btn-outline btn-sm"
+                      >
+                        <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" /> {gettext("Unpublish")}
+                      </button>
+                    <% end %>
+                    <.link
+                      navigate={~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"}
+                      class="btn btn-primary btn-sm"
+                    >
+                      <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
                     </.link>
                   </div>
                 </div>

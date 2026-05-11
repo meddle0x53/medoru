@@ -8,6 +8,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   import MedoruWeb.Components.Helpers, only: [display_name: 3]
 
   alias Medoru.Classrooms
+  alias Medoru.Games
   alias Medoru.Learning.WordSets
 
   @impl true
@@ -32,6 +33,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           members = Classrooms.list_classroom_members(id)
           published_tests = Classrooms.list_classroom_tests(id, status: :active)
           user_attempts = Classrooms.list_user_test_attempts(id, user.id)
+          published_games = Games.list_classroom_games(id, status: :published)
 
           {:ok,
            socket
@@ -41,6 +43,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
            |> assign(:members, members)
            |> assign(:published_tests, published_tests)
            |> assign(:user_attempts, user_attempts)
+           |> assign(:published_games, published_games)
            |> assign(:lessons_filter, :all)
            |> assign(:lessons_page, 1)
            |> assign(:lessons_per_page, 10)
@@ -58,10 +61,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
     # Load lessons when on lessons tab
     socket =
-      if tab == "lessons" do
-        load_lessons_data(socket)
-      else
-        socket
+      cond do
+        tab == "lessons" ->
+          load_lessons_data(socket)
+
+        tab == "games" ->
+          load_games_data(socket)
+
+        true ->
+          socket
       end
 
     {:noreply, assign(socket, :active_tab, tab)}
@@ -87,6 +95,23 @@ defmodule MedoruWeb.ClassroomLive.Show do
     |> assign(:lessons_page, result.page)
     |> assign(:lessons_total_pages, result.total_pages)
     |> assign(:lessons_total_count, result.total_count)
+  end
+
+  defp load_games_data(socket) do
+    classroom_id = socket.assigns.classroom.id
+    user_id = socket.assigns.current_scope.current_user.id
+    published_games = Games.list_classroom_games(classroom_id, status: :published)
+
+    game_sessions =
+      Enum.map(published_games, fn game ->
+        session = Games.get_user_session(game.id, user_id)
+        {game.id, session}
+      end)
+      |> Enum.into(%{})
+
+    socket
+    |> assign(:published_games, published_games)
+    |> assign(:game_sessions, game_sessions)
   end
 
   @impl true
@@ -270,6 +295,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             />
             <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
             <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
+            <.tab_button active={@active_tab == "games"} tab="games" label={gettext("Games")} />
           </div>
         </div>
 
@@ -303,6 +329,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 classroom={@classroom}
                 published_tests={@published_tests}
                 user_attempts={@user_attempts}
+                current_user={@current_scope.current_user}
+              />
+            <% "games" -> %>
+              <.games_tab
+                classroom={@classroom}
+                published_games={@published_games}
+                game_sessions={@game_sessions}
                 current_user={@current_scope.current_user}
               />
           <% end %>
@@ -853,6 +886,103 @@ defmodule MedoruWeb.ClassroomLive.Show do
     </div>
     """
   end
+
+  attr :classroom, :map, required: true
+  attr :published_games, :list, required: true
+  attr :game_sessions, :map, required: true
+  attr :current_user, :map, required: true
+
+  defp games_tab(assigns) do
+    ~H"""
+    <div class="space-y-3 sm:space-y-4">
+      <%= if @published_games == [] do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
+          <.icon
+            name="hero-puzzle-piece"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4"
+          />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">
+            {gettext("No Games Available")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
+            {gettext("Your teacher hasn't published any games to this classroom yet. Check back later!")}
+          </p>
+        </div>
+      <% else %>
+        <%= for game <- @published_games do %>
+          <% session = Map.get(@game_sessions, game.id) %>
+          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+            <div class="card-body p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                <div class="flex-1 min-w-0">
+                  <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
+                    {game.name}
+                  </h3>
+                  <%= if game.memory_card_game do %>
+                    <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                        {game.memory_card_game.board_size}
+                      </span>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                        {game.memory_card_game.max_attempts} {gettext("attempts")}
+                      </span>
+                    </div>
+                  <% end %>
+                </div>
+
+                <div class="sm:ml-4 self-start sm:self-auto">
+                  <div class="flex items-center gap-2">
+                    <%= case get_game_status(session) do %>
+                      <% :not_started -> %>
+                        <.link
+                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          class="btn btn-primary btn-sm sm:btn-md"
+                        >
+                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Play")}
+                        </.link>
+                      <% :in_progress -> %>
+                        <.link
+                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          class="btn btn-warning btn-sm sm:btn-md"
+                        >
+                          <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
+                        </.link>
+                      <% :completed -> %>
+                        <span class="badge badge-success">
+                          {session.score} {gettext("pts")}
+                        </span>
+                        <.link
+                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          class="btn btn-secondary btn-sm"
+                        >
+                          <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
+                        </.link>
+                    <% end %>
+                    <.link
+                      navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}/rankings"}
+                      class="btn btn-ghost btn-sm"
+                    >
+                      <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
+                    </.link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp get_game_status(nil), do: :not_started
+  defp get_game_status(%{status: :in_progress}), do: :in_progress
+  defp get_game_status(%{status: :completed}), do: :completed
+  defp get_game_status(%{status: "in_progress"}), do: :in_progress
+  defp get_game_status(%{status: "completed"}), do: :completed
+  defp get_game_status(_), do: :not_started
 
   defp can_take_test?(classroom_id, user_id, test_id) do
     Classrooms.can_take_test?(classroom_id, user_id, test_id)

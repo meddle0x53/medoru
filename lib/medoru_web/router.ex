@@ -156,6 +156,9 @@ defmodule MedoruWeb.Router do
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show
       live "/classrooms/:id/analytics", ClassroomLive.Analytics
+      live "/classrooms/:classroom_id/games/new", GameLive.Form, :new
+      live "/classrooms/:classroom_id/games/:id/edit", GameLive.Form, :edit
+      live "/classrooms/:classroom_id/games/:id", GameLive.Show
 
       live "/tests", TestLive.Index
       live "/tests/new", TestLive.New
@@ -189,6 +192,8 @@ defmodule MedoruWeb.Router do
       live "/:id/custom-lessons/:lesson_id", ClassroomLive.CustomLesson
       live "/:id/custom-lessons/:lesson_id/test", ClassroomLive.CustomLessonTest
       live "/:id/custom-lessons/:lesson_id/complete", ClassroomLive.CustomLessonComplete
+      live "/:classroom_id/games/:game_id", ClassroomGameLive.Play
+      live "/:classroom_id/games/:game_id/rankings", ClassroomGameLive.Rankings
     end
   end
 

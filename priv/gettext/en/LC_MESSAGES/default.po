@@ -8973,7 +8973,7 @@ msgstr ""
 #: lib/medoru_web/components/step_builder_components.ex:244
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Listening Questions"
-msgstr "Въпроси от тип 'слушане с разбиране'"
+msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2003
 #, elixir-autogen, elixir-format
