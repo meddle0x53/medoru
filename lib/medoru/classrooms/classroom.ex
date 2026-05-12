@@ -16,6 +16,7 @@ defmodule Medoru.Classrooms.Classroom do
     field :description, :string
     field :invite_code, :string
     field :status, Ecto.Enum, values: [:active, :archived, :closed], default: :active
+    field :should_approve_memberships, :boolean, default: true
     field :settings, :map, default: %{}
 
     belongs_to :teacher, Medoru.Accounts.User
@@ -28,7 +29,7 @@ defmodule Medoru.Classrooms.Classroom do
   @doc false
   def changeset(classroom, attrs) do
     classroom
-    |> cast(attrs, [:name, :slug, :description, :invite_code, :status, :settings, :teacher_id])
+    |> cast(attrs, [:name, :slug, :description, :invite_code, :status, :should_approve_memberships, :settings, :teacher_id])
     |> validate_required([:name, :invite_code, :teacher_id])
     |> validate_length(:name, min: 3, max: 100)
     |> validate_slug()

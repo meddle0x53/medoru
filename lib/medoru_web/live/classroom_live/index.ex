@@ -114,13 +114,17 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
       classroom ->
         case Classrooms.apply_to_join(classroom.id, user.id) do
-          {:ok, _membership} ->
+          {:ok, membership} ->
+            message =
+              if membership.status == :approved do
+                gettext("You've joined the classroom!")
+              else
+                gettext("Application submitted! The teacher will review your request.")
+              end
+
             {:noreply,
              socket
-             |> put_flash(
-               :info,
-               gettext("Application submitted! The teacher will review your request.")
-             )
+             |> put_flash(:info, message)
              |> push_patch(to: ~p"/classrooms")}
 
           {:error, :already_member} ->

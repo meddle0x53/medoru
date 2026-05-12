@@ -1,0 +1,168 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <div class="mb-8">
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Classroom")}
+      </.link>
+      <h1 class="text-2xl font-bold text-base-content">
+        <%= if @mode == :edit do %>
+          {gettext("Edit Kana Game")}
+        <% else %>
+          {gettext("Create Kana Game")}
+        <% end %>
+      </h1>
+    </div>
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 sm:p-8">
+      <form phx-submit="save" class="space-y-8">
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-2">
+            {gettext("Game Name")}
+          </label>
+          <input
+            type="text" name="name" value={@name}
+            phx-change="update_field" phx-value-field="name" phx-debounce="blur"
+            placeholder={gettext("e.g., Hiragana Practice")}
+            class={["input input-bordered w-full", @form_errors[:name] && "input-error"]}
+          />
+          <%= if @form_errors[:name] do %>
+            <p class="text-error text-sm mt-1">{@form_errors[:name]}</p>
+          <% end %>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-base-content mb-2">
+              {gettext("Board Size")}
+            </label>
+            <select name="board_size" phx-change="update_field" phx-value-field="board_size"
+              class={["select select-bordered w-full", @form_errors[:board_size] && "select-error"]}
+            >
+              <%= for {label, value} <- board_sizes() do %>
+                <option value={value} selected={@board_size == value}>{label}</option>
+              <% end %>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-base-content mb-2">
+              {gettext("Max Attempts")}
+            </label>
+            <input type="number" name="max_attempts" value={@max_attempts}
+              phx-change="update_field" phx-value-field="max_attempts" phx-debounce="blur" min="1"
+              class={["input input-bordered w-full", @form_errors[:max_attempts] && "input-error"]}
+            />
+            <%= if @form_errors[:max_attempts] do %>
+              <p class="text-error text-sm mt-1">{@form_errors[:max_attempts]}</p>
+            <% end %>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <input type="checkbox" id="require_reading" phx-click="toggle_require_reading"
+            checked={@require_reading} class="checkbox checkbox-primary"
+          />
+          <label for="require_reading" class="text-sm text-base-content cursor-pointer">
+            {gettext("Require reading input to collect cards")}
+          </label>
+        </div>
+        <p class="text-xs text-secondary -mt-6 ml-8">
+          <%= if @require_reading do %>
+            {gettext("Students must type the romaji reading after finding a matching pair.")}
+          <% else %>
+            {gettext("Matching pairs are collected automatically.")}
+          <% end %>
+        </p>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <label class="block text-sm font-medium text-base-content">
+              {gettext("Select Kana")}
+            </label>
+            <span class={[
+              "text-sm font-medium",
+              length(@selected_kana) >= kana_needed_count(@board_size) && "text-success",
+              length(@selected_kana) < kana_needed_count(@board_size) && "text-error"
+            ]}>
+              {length(@selected_kana)} / {kana_needed_count(@board_size)} {gettext("selected")}
+            </span>
+          </div>
+          <%= if @form_errors[:selected_kana] do %>
+            <p class="text-error text-sm mb-3">{@form_errors[:selected_kana]}</p>
+          <% end %>
+          <div class="space-y-3 mb-4">
+            <%!-- Hiragana rows --%>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-medium text-pink-600 dark:text-pink-400 mr-1">{gettext("Hiragana")}</span>
+              <button type="button" phx-click="toggle_row" phx-value-row="hiragana"
+                class="px-3 py-1.5 text-sm rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300 transition-colors"
+              >{gettext("All")}</button>
+              <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
+                <button type="button" phx-click="toggle_row" phx-value-row={"hiragana_#{group}"}
+                  class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+                >{group}</button>
+              <% end %>
+              <button type="button" phx-click="toggle_row" phx-value-row="hiragana_ga"
+                class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+              >{gettext("Dakuten")}</button>
+              <button type="button" phx-click="toggle_row" phx-value-row="hiragana_pa"
+                class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+              >{gettext("Handakuten")}</button>
+              <button type="button" phx-click="toggle_row" phx-value-row="hiragana_small"
+                class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+              >{gettext("Small")}</button>
+            </div>
+            <%!-- Katakana rows --%>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">{gettext("Katakana")}</span>
+              <button type="button" phx-click="toggle_row" phx-value-row="katakana"
+                class="px-3 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
+              >{gettext("All")}</button>
+              <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
+                <button type="button" phx-click="toggle_row" phx-value-row={"katakana_#{group}"}
+                  class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+                >{group}</button>
+              <% end %>
+              <button type="button" phx-click="toggle_row" phx-value-row="katakana_ga"
+                class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+              >{gettext("Dakuten")}</button>
+              <button type="button" phx-click="toggle_row" phx-value-row="katakana_pa"
+                class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+              >{gettext("Handakuten")}</button>
+              <button type="button" phx-click="toggle_row" phx-value-row="katakana_small"
+                class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+              >{gettext("Small")}</button>
+            </div>
+          </div>
+          <div class="border border-base-300 rounded-xl p-4">
+            <% all_kana = Kana.list_all() %>
+            <div class="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-2">
+              <%= for kana <- all_kana do %>
+                <button type="button" phx-click="toggle_kana" phx-value-character={kana.character}
+                  class={[
+                    "aspect-square rounded-lg text-lg font-medium transition-all duration-200 flex items-center justify-center",
+                    kana.character in @selected_kana && "bg-primary text-primary-content shadow-md",
+                    kana.character not in @selected_kana && "bg-base-200 text-secondary hover:bg-base-300"
+                  ]}
+                >
+                  {kana.character}
+                </button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <.link navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"} class="btn btn-ghost">
+            {gettext("Cancel")}
+          </.link>
+          <button type="submit" class="btn btn-primary">
+            <%= if @mode == :edit do %>
+              {gettext("Update Game")}
+            <% else %>
+              {gettext("Create Game")}
+            <% end %>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layouts.app>

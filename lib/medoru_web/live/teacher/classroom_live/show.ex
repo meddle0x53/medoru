@@ -47,6 +47,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:test_attempts, test_attempts)
     |> assign(:classroom_games, classroom_games)
     |> assign(:active_tab, "overview")
+    |> assign(:editing_settings, false)
+    |> assign(:edit_name, classroom.name)
+    |> assign(:edit_description, classroom.description || "")
+    |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+    |> assign(:edit_errors, %{})
   end
 
   @impl true
@@ -188,6 +193,89 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to close classroom."))}
     end
+  end
+
+  @impl true
+  def handle_event("toggle_edit_settings", _, socket) do
+    classroom = socket.assigns.classroom
+
+    {:noreply,
+     socket
+     |> assign(:editing_settings, not socket.assigns.editing_settings)
+     |> assign(:edit_name, classroom.name)
+     |> assign(:edit_description, classroom.description || "")
+     |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+     |> assign(:edit_errors, %{})}
+  end
+
+  @impl true
+  def handle_event("update_classroom_field", %{} = params, socket) do
+    field = params["field"] || List.first(params["_target"] || []) || ""
+    value = params[field] || ""
+
+    socket =
+      case field do
+        "name" -> assign(socket, :edit_name, value)
+        "description" -> assign(socket, :edit_description, value)
+        "should_approve_memberships" -> assign(socket, :edit_should_approve_memberships, value == "true")
+        _ -> socket
+      end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("save_classroom_settings", _params, socket) do
+    classroom = socket.assigns.classroom
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    attrs = %{
+      "name" => String.trim(socket.assigns.edit_name),
+      "description" => String.trim(socket.assigns.edit_description),
+      "should_approve_memberships" => socket.assigns.edit_should_approve_memberships
+    }
+
+    case Classrooms.update_classroom(classroom, teacher_id, attrs) do
+      {:ok, updated_classroom} ->
+        {:noreply,
+         socket
+         |> assign(:classroom, updated_classroom)
+         |> assign(:page_title, updated_classroom.name)
+         |> assign(:editing_settings, false)
+         |> assign(:edit_errors, %{})
+         |> put_flash(:info, gettext("Classroom updated successfully."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Regex.replace(~r/%{(\w+)}/, msg, fn _, key ->
+              opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+            end)
+          end)
+          |> Map.new()
+
+        {:noreply,
+         socket
+         |> assign(:edit_errors, errors)
+         |> put_flash(:error, gettext("Please fix the errors below."))}
+
+      {:error, :not_authorized} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not authorized to update this classroom."))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit_settings", _, socket) do
+    classroom = socket.assigns.classroom
+
+    {:noreply,
+     socket
+     |> assign(:editing_settings, false)
+     |> assign(:edit_name, classroom.name)
+     |> assign(:edit_description, classroom.description || "")
+     |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+     |> assign(:edit_errors, %{})}
   end
 
   @impl true
@@ -479,7 +567,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 classroom_games={@classroom_games}
               />
             <% "settings" -> %>
-              <.settings_tab classroom={@classroom} />
+              <.settings_tab
+                classroom={@classroom}
+                editing_settings={@editing_settings}
+                edit_name={@edit_name}
+                edit_description={@edit_description}
+                edit_should_approve_memberships={@edit_should_approve_memberships}
+                edit_errors={@edit_errors}
+              />
           <% end %>
         </div>
       </div>
@@ -735,12 +830,20 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           {gettext("Games")}
           <span class="badge badge-ghost ml-2">{length(@classroom_games)}</span>
         </h3>
-        <.link
-          navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
-          class="btn btn-primary btn-sm"
-        >
-          <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Game")}
-        </.link>
+        <div class="flex gap-2">
+          <.link
+            navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
+            class="btn btn-primary btn-sm"
+          >
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Word Game")}
+          </.link>
+          <.link
+            navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"}
+            class="btn btn-secondary btn-sm"
+          >
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
+          </.link>
+        </div>
       </div>
 
       <%= if @classroom_games == [] do %>
@@ -750,9 +853,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           <p class="text-secondary max-w-md mx-auto mb-6">
             {gettext("Create memory card games to help your students practice vocabulary.")}
           </p>
-          <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"} class="btn btn-primary">
-            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create First Game")}
-          </.link>
+          <div class="flex gap-2 justify-center">
+            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"} class="btn btn-primary">
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Word Game")}
+            </.link>
+            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"} class="btn btn-secondary">
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
+            </.link>
+          </div>
         </div>
       <% else %>
         <div class="space-y-3">
@@ -769,23 +877,46 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                         <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
                       <% end %>
                     </div>
-                    <%= if game.memory_card_game do %>
-                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
-                        <span class="badge badge-outline badge-sm">
-                          <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
-                          {game.memory_card_game.board_size}
-                        </span>
-                        <span class="badge badge-outline badge-sm">
-                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
-                          {game.memory_card_game.max_attempts} {gettext("attempts")}
-                        </span>
-                        <span class="badge badge-outline badge-sm">
-                          <.icon name="hero-users" class="w-3 h-3 mr-1" />
-                          {if game.max_players == 1,
-                            do: gettext("Single Player"),
-                            else: gettext("%{count} Players", count: game.max_players)}
-                        </span>
-                      </div>
+                    <%= cond do %>
+                      <% game.memory_card_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                            {game.memory_card_game.board_size}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                            {game.memory_card_game.max_attempts} {gettext("attempts")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-users" class="w-3 h-3 mr-1" />
+                            {if game.max_players == 1,
+                              do: gettext("Single Player"),
+                              else: gettext("%{count} Players", count: game.max_players)}
+                          </span>
+                        </div>
+                      <% game.kana_memory_card_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                            {game.kana_memory_card_game.board_size}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                            {game.kana_memory_card_game.max_attempts} {gettext("attempts")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-language" class="w-3 h-3 mr-1" />
+                            {length(game.kana_memory_card_game.selected_kana)} {gettext("kana")}
+                          </span>
+                          <%= if game.kana_memory_card_game.require_reading do %>
+                            <span class="badge badge-outline badge-sm">
+                              <.icon name="hero-pencil" class="w-3 h-3 mr-1" />
+                              {gettext("Reading")}
+                            </span>
+                          <% end %>
+                        </div>
+                      <% true -> %>
                     <% end %>
                   </div>
                   <div class="flex items-center gap-2 self-start">
@@ -807,7 +938,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       </button>
                     <% end %>
                     <.link
-                      navigate={~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"}
+                      navigate={
+                        if game.type == "kana_memory_cards" do
+                          ~p"/teacher/classrooms/#{@classroom.id}/kana-games/#{game.id}"
+                        else
+                          ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"
+                        end
+                      }
                       class="btn btn-primary btn-sm"
                     >
                       <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("View")}
@@ -930,43 +1067,132 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :classroom, :map, required: true
+  attr :editing_settings, :boolean, required: true
+  attr :edit_name, :string, required: true
+  attr :edit_description, :string, required: true
+  attr :edit_should_approve_memberships, :boolean, required: true
+  attr :edit_errors, :map, required: true
+
   defp settings_tab(assigns) do
     ~H"""
     <div class="card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
       <div class="card-body">
-        <h3 class="card-title text-base-content mb-6">{gettext("Classroom Settings")}</h3>
-
-        <div class="space-y-4">
-          <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">{gettext("Classroom Name")}</span>
-            <span class="font-medium text-base-content">{@classroom.name}</span>
-          </div>
-
-          <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">{gettext("URL Slug")}</span>
-            <span class="font-medium text-base-content">{@classroom.slug}</span>
-          </div>
-
-          <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">{gettext("Status")}</span>
-            <.badge status={@classroom.status} />
-          </div>
-
-          <div class="flex justify-between items-center py-3 border-b border-base-200">
-            <span class="text-secondary">{gettext("Created")}</span>
-            <span class="text-base-content">
-              {Calendar.strftime(@classroom.inserted_at, "%B %d, %Y at %I:%M %p")}
-            </span>
-          </div>
-
-          <div class="pt-4">
-            <p class="text-sm text-secondary">
-              {gettext(
-                "Advanced settings like editing classroom details will be available in future updates."
-              )}
-            </p>
-          </div>
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="card-title text-base-content">{gettext("Classroom Settings")}</h3>
+          <%= if not @editing_settings do %>
+            <button phx-click="toggle_edit_settings" class="btn btn-ghost btn-sm">
+              <.icon name="hero-pencil-square" class="w-4 h-4 mr-1" /> {gettext("Edit")}
+            </button>
+          <% end %>
         </div>
+
+        <%= if @editing_settings do %>
+          <form phx-submit="save_classroom_settings" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Classroom Name")}
+              </label>
+              <input
+                type="text" name="name" value={@edit_name}
+                phx-change="update_classroom_field" phx-value-field="name" phx-debounce="blur"
+                class={["input input-bordered w-full", @edit_errors[:name] && "input-error"]}
+              />
+              <%= if @edit_errors[:name] do %>
+                <p class="text-error text-sm mt-1">{@edit_errors[:name]}</p>
+              <% end %>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Description")}
+              </label>
+              <textarea
+                name="description" rows="3"
+                phx-change="update_classroom_field" phx-value-field="description" phx-debounce="blur"
+                class={["textarea textarea-bordered w-full", @edit_errors[:description] && "textarea-error"]}
+              >{@edit_description}</textarea>
+              <%= if @edit_errors[:description] do %>
+                <p class="text-error text-sm mt-1">{@edit_errors[:description]}</p>
+              <% end %>
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox" id="edit_should_approve_memberships"
+                name="should_approve_memberships"
+                checked={@edit_should_approve_memberships}
+                phx-click="update_classroom_field"
+                phx-value-field="should_approve_memberships"
+                phx-value-should_approve_memberships={if @edit_should_approve_memberships, do: "false", else: "true"}
+                class="checkbox checkbox-primary"
+              />
+              <label for="edit_should_approve_memberships" class="text-sm text-base-content cursor-pointer">
+                {gettext("Require teacher approval for new members")}
+              </label>
+            </div>
+            <p class="text-xs text-secondary -mt-2 ml-8">
+              <%= if @edit_should_approve_memberships do %>
+                <%= gettext("Students will apply and wait for your approval before joining.") %>
+              <% else %>
+                <%= gettext("Students will be added immediately without approval.") %>
+              <% end %>
+            </p>
+
+            <div class="flex gap-3 pt-2">
+              <button type="button" phx-click="cancel_edit_settings" class="btn btn-ghost">
+                {gettext("Cancel")}
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Save Changes")}
+              </button>
+            </div>
+          </form>
+        <% else %>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Classroom Name")}</span>
+              <span class="font-medium text-base-content">{@classroom.name}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("URL Slug")}</span>
+              <span class="font-medium text-base-content">{@classroom.slug}</span>
+            </div>
+
+            <%= if @classroom.description && @classroom.description != "" do %>
+              <div class="flex justify-between items-start py-3 border-b border-base-200">
+                <span class="text-secondary">{gettext("Description")}</span>
+                <span class="font-medium text-base-content text-right max-w-xs">
+                  {@classroom.description}
+                </span>
+              </div>
+            <% end %>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Member Approval")}</span>
+              <span class="font-medium text-base-content">
+                <%= if @classroom.should_approve_memberships do %>
+                  {gettext("Teacher approval required")}
+                <% else %>
+                  {gettext("Auto-approve")}
+                <% end %>
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Status")}</span>
+              <.badge status={@classroom.status} />
+            </div>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Created")}</span>
+              <span class="text-base-content">
+                {Calendar.strftime(@classroom.inserted_at, "%B %d, %Y at %I:%M %p")}
+              </span>
+            </div>
+          </div>
+        <% end %>
       </div>
     </div>
     """

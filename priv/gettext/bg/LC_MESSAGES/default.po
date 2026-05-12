@@ -3941,7 +3941,7 @@ msgstr "Показвано име"
 #: lib/medoru_web/live/word_set_live/index.ex:368
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit"
-msgstr "Редактирайте стъпка"
+msgstr "Редактирайте"
 
 #: lib/medoru_web/live/admin/user_live/edit/edit.html.heex:11
 #, elixir-autogen, elixir-format

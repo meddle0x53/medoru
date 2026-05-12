@@ -65,10 +65,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 |> assign(:session, session)
                 |> assign(:show_input_modal, false)
                 |> assign(:input_word_id, nil)
+                |> assign(:input_kana_char, nil)
                 |> assign(:input_error, nil)
                 |> assign(:input_disabled, false)
                 |> assign(:answer_meaning, "")
                 |> assign(:answer_pronunciation, "")
+                |> assign(:answer_reading, "")
 
               {:ok, socket}
             end
@@ -81,8 +83,16 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   def handle_event("flip_card", %{"position" => position}, socket) do
     session = socket.assigns.session
     position = String.to_integer(position)
+    game = socket.assigns.game
 
-    case Games.flip_card(session.id, position) do
+    flip_result =
+      if game.type == "kana_memory_cards" do
+        Games.flip_kana_card(session.id, position)
+      else
+        Games.flip_card(session.id, position)
+      end
+
+    case flip_result do
       {:ok, updated_session} ->
         {:noreply, assign(socket, :session, updated_session)}
 
@@ -99,16 +109,28 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
         {:noreply, socket}
 
-      {:needs_input, updated_session, word_id} ->
-        {:noreply,
-         socket
-         |> assign(:session, updated_session)
-         |> assign(:show_input_modal, true)
-         |> assign(:input_word_id, word_id)
-         |> assign(:input_error, nil)
-         |> assign(:input_disabled, false)
-         |> assign(:answer_meaning, "")
-         |> assign(:answer_pronunciation, "")}
+      {:needs_input, updated_session, input_id} ->
+        if game.type == "kana_memory_cards" do
+          {:noreply,
+           socket
+           |> assign(:session, updated_session)
+           |> assign(:show_input_modal, true)
+           |> assign(:input_kana_char, input_id)
+           |> assign(:input_error, nil)
+           |> assign(:input_disabled, false)
+           |> assign(:answer_reading, "")}
+        else
+          {:noreply,
+           socket
+           |> assign(:session, updated_session)
+           |> assign(:show_input_modal, true)
+           |> assign(:input_word_id, input_id)
+           |> assign(:input_error, nil)
+           |> assign(:input_disabled, false)
+           |> assign(:answer_meaning, "")
+           |> assign(:answer_pronunciation, "")
+           |> assign(:answer_reading, "")}
+        end
 
       {:error, :game_over} ->
         {:noreply, put_flash(socket, :error, gettext("Game over! No attempts remaining."))}
@@ -130,51 +152,93 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   @impl true
   def handle_event("submit_answer", params, socket) do
     session = socket.assigns.session
+    game = socket.assigns.game
 
-    # Read from form params when available, otherwise fall back to socket assigns
-    answer = %{
-      "meaning" => params["meaning"] || socket.assigns.answer_meaning,
-      "pronunciation" => params["pronunciation"] || socket.assigns.answer_pronunciation
-    }
+    if game.type == "kana_memory_cards" do
+      answer = %{"reading" => params["reading"] || socket.assigns.answer_reading}
 
-    locale = socket.assigns.current_scope.locale
-    case Games.submit_collection_answer(session.id, answer, locale) do
-      {:ok, updated_session, :collected, points} ->
-        socket =
-          socket
-          |> assign(:session, updated_session)
-          |> assign(:show_input_modal, false)
-          |> assign(:input_word_id, nil)
-          |> assign(:input_error, nil)
-          |> assign(:input_disabled, false)
-          |> assign(:answer_meaning, "")
-          |> assign(:answer_pronunciation, "")
-          |> put_flash(:info, gettext("Correct! +%{points} points", points: points))
+      case Games.submit_kana_answer(session.id, answer) do
+        {:ok, updated_session, :collected, points} ->
+          socket =
+            socket
+            |> assign(:session, updated_session)
+            |> assign(:show_input_modal, false)
+            |> assign(:input_word_id, nil)
+            |> assign(:input_error, nil)
+            |> assign(:input_disabled, false)
+            |> assign(:answer_reading, "")
+            |> put_flash(:info, gettext("Correct! +%{points} points", points: points))
 
-        {:noreply, socket}
+          {:noreply, socket}
 
-      {:ok, updated_session, :wrong_answer} ->
-        # Keep modal open to show error, disable inputs, auto-close after 2.5s
-        Process.send_after(self(), :close_wrong_answer, 2500)
+        {:ok, updated_session, :wrong_answer} ->
+          Process.send_after(self(), :close_wrong_answer, 2500)
 
-        {:noreply,
-         socket
-         |> assign(:session, updated_session)
-         |> assign(:input_error, gettext("Wrong answer! One attempt lost."))
-         |> assign(:input_disabled, true)}
+          {:noreply,
+           socket
+           |> assign(:session, updated_session)
+           |> assign(:input_error, gettext("Wrong answer! One attempt lost."))
+           |> assign(:input_disabled, true)}
 
-      {:error, :game_over} ->
-        {:noreply,
-         socket
-         |> assign(:show_input_modal, false)
-         |> assign(:input_word_id, nil)
-         |> put_flash(:error, gettext("Game over! No attempts remaining."))}
+        {:error, :game_over} ->
+          {:noreply,
+           socket
+           |> assign(:show_input_modal, false)
+           |> assign(:input_word_id, nil)
+           |> put_flash(:error, gettext("Game over! No attempts remaining."))}
 
-      {:error, reason} ->
-        {:noreply,
-         socket
-         |> assign(:show_input_modal, false)
-         |> put_flash(:error, gettext("Error: %{reason}", reason: inspect(reason)))}
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> assign(:show_input_modal, false)
+           |> put_flash(:error, gettext("Error: %{reason}", reason: inspect(reason)))}
+      end
+    else
+      # Word game answer
+      answer = %{
+        "meaning" => params["meaning"] || socket.assigns.answer_meaning,
+        "pronunciation" => params["pronunciation"] || socket.assigns.answer_pronunciation
+      }
+
+      locale = socket.assigns.current_scope.locale
+
+      case Games.submit_collection_answer(session.id, answer, locale) do
+        {:ok, updated_session, :collected, points} ->
+          socket =
+            socket
+            |> assign(:session, updated_session)
+            |> assign(:show_input_modal, false)
+            |> assign(:input_word_id, nil)
+            |> assign(:input_error, nil)
+            |> assign(:input_disabled, false)
+            |> assign(:answer_meaning, "")
+            |> assign(:answer_pronunciation, "")
+            |> put_flash(:info, gettext("Correct! +%{points} points", points: points))
+
+          {:noreply, socket}
+
+        {:ok, updated_session, :wrong_answer} ->
+          Process.send_after(self(), :close_wrong_answer, 2500)
+
+          {:noreply,
+           socket
+           |> assign(:session, updated_session)
+           |> assign(:input_error, gettext("Wrong answer! One attempt lost."))
+           |> assign(:input_disabled, true)}
+
+        {:error, :game_over} ->
+          {:noreply,
+           socket
+           |> assign(:show_input_modal, false)
+           |> assign(:input_word_id, nil)
+           |> put_flash(:error, gettext("Game over! No attempts remaining."))}
+
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> assign(:show_input_modal, false)
+           |> put_flash(:error, gettext("Error: %{reason}", reason: inspect(reason)))}
+      end
     end
   end
 
@@ -190,8 +254,10 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
      |> assign(:session, cleared_session)
      |> assign(:show_input_modal, false)
      |> assign(:input_word_id, nil)
+     |> assign(:input_kana_char, nil)
      |> assign(:input_error, nil)
-     |> assign(:input_disabled, false)}
+     |> assign(:input_disabled, false)
+     |> assign(:answer_reading, "")}
   end
 
   @impl true
@@ -208,6 +274,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
          |> assign(:session, session)
          |> assign(:show_input_modal, false)
          |> assign(:input_word_id, nil)
+         |> assign(:input_kana_char, nil)
          |> assign(:input_error, nil)
          |> assign(:input_disabled, false)
          |> put_flash(:info, gettext("Game reset. Good luck!"))}
@@ -227,6 +294,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
       case field do
         "meaning" -> assign(socket, :answer_meaning, value)
         "pronunciation" -> assign(socket, :answer_pronunciation, value)
+        "reading" -> assign(socket, :answer_reading, value)
         _ -> socket
       end
 
@@ -255,10 +323,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
      |> assign(:session, cleared_session)
      |> assign(:show_input_modal, false)
      |> assign(:input_word_id, nil)
+     |> assign(:input_kana_char, nil)
      |> assign(:input_error, nil)
      |> assign(:input_disabled, false)
      |> assign(:answer_meaning, "")
-     |> assign(:answer_pronunciation, "")}
+     |> assign(:answer_pronunciation, "")
+     |> assign(:answer_reading, "")}
   end
 
   @impl true
@@ -278,7 +348,13 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 class="text-xl sm:text-2xl font-bold text-base-content">{@game.name}</h1>
-              <p class="text-secondary text-sm">{gettext("Memory Card Game")}</p>
+              <p class="text-secondary text-sm">
+                <%= if @game.type == "kana_memory_cards" do %>
+                  <%= gettext("Kana Memory Card Game") %>
+                <% else %>
+                  <%= gettext("Memory Card Game") %>
+                <% end %>
+              </p>
             </div>
             <div class="flex items-center gap-3">
               <.link
@@ -323,7 +399,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
         <%!-- Card Grid --%>
         <div class={[
           "grid gap-2 sm:gap-3 mx-auto",
-          grid_cols_class(@game.memory_card_game.board_size)
+          grid_cols_class(board_size(@game))
         ]}>
           <%= for {card_state, index} <- Enum.with_index(card_states(@session)) do %>
             <button
@@ -342,18 +418,23 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 <% :hidden -> %>
                   <span class="text-2xl sm:text-3xl">?</span>
                 <% :flipped -> %>
-                  <% word = word_at_position(@session, index, @game.memory_card_game.memory_card_game_words)
-                     mcg = @game.memory_card_game
-                     show_reading? = not (mcg.pronunciation_required_for_collection or
-                                          mcg.meaning_or_pronunciation_required_for_collection)
-                     show_meaning? = not (mcg.meaning_required_for_collection or
-                                          mcg.meaning_or_pronunciation_required_for_collection) %>
-                  <% meaning_text = Content.get_localized_meaning(word, @current_scope.locale) %>
-                  <div class="text-center px-1">
-                    <p class="text-sm sm:text-base lg:text-lg leading-tight">{word.text}</p>
-                    <p :if={show_reading?} class="text-xs text-secondary mt-1 hidden sm:block">{word.reading}</p>
-                    <p :if={show_meaning?} class="text-xs text-success mt-1 hidden sm:block">{meaning_text}</p>
-                  </div>
+                  <%= if @game.type == "kana_memory_cards" do %>
+                    <% kana_char = kana_at_position(@session, index) %>
+                    <span class="text-2xl sm:text-3xl lg:text-4xl">{kana_char}</span>
+                  <% else %>
+                    <% word = word_at_position(@session, index, @game.memory_card_game.memory_card_game_words)
+                       mcg = @game.memory_card_game
+                       show_reading? = not (mcg.pronunciation_required_for_collection or
+                                            mcg.meaning_or_pronunciation_required_for_collection)
+                       show_meaning? = not (mcg.meaning_required_for_collection or
+                                            mcg.meaning_or_pronunciation_required_for_collection) %>
+                    <% meaning_text = Content.get_localized_meaning(word, @current_scope.locale) %>
+                    <div class="text-center px-1">
+                      <p class="text-sm sm:text-base lg:text-lg leading-tight">{word.text}</p>
+                      <p :if={show_reading?} class="text-xs text-secondary mt-1 hidden sm:block">{word.reading}</p>
+                      <p :if={show_meaning?} class="text-xs text-success mt-1 hidden sm:block">{meaning_text}</p>
+                    </div>
+                  <% end %>
                 <% :collected -> %>
                   <.icon name="hero-check" class="w-6 h-6 sm:w-8 sm:h-8" />
               <% end %>
@@ -372,15 +453,22 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 {gettext("Enter the correct answer to collect these cards.")}
               </p>
 
-              <% input_word = Enum.find(@game.memory_card_game.memory_card_game_words, &(&1.word_id == @input_word_id))
-                 mcg = @game.memory_card_game
-                 show_reading? = not (mcg.pronunciation_required_for_collection or
-                                      mcg.meaning_or_pronunciation_required_for_collection) %>
-              <%= if input_word do %>
+              <%= if @game.type == "kana_memory_cards" do %>
+                <% kana_char = @input_kana_char || "" %>
                 <div class="card bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4 text-center">
-                  <p class="text-lg font-bold text-base-content">{input_word.word.text}</p>
-                  <p :if={show_reading?} class="text-sm text-secondary mt-1">{input_word.word.reading}</p>
+                  <p class="text-3xl font-bold text-base-content">{kana_char}</p>
                 </div>
+              <% else %>
+                <% input_word = Enum.find(@game.memory_card_game.memory_card_game_words, &(&1.word_id == @input_word_id))
+                   mcg = @game.memory_card_game
+                   show_reading? = not (mcg.pronunciation_required_for_collection or
+                                        mcg.meaning_or_pronunciation_required_for_collection) %>
+                <%= if input_word do %>
+                  <div class="card bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4 text-center">
+                    <p class="text-lg font-bold text-base-content">{input_word.word.text}</p>
+                    <p :if={show_reading?} class="text-sm text-secondary mt-1">{input_word.word.reading}</p>
+                  </div>
+                <% end %>
               <% end %>
 
               <%= if @input_error do %>
@@ -391,39 +479,58 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
               <% end %>
 
               <form phx-submit="submit_answer" class="space-y-3 mb-6">
-                <%= if mcg.meaning_required_for_collection or mcg.meaning_or_pronunciation_required_for_collection do %>
+                <%= if @game.type == "kana_memory_cards" do %>
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-1">
-                      {gettext("Meaning")}
+                      {gettext("Romaji")}
                     </label>
                     <input
                       type="text"
-                      name="meaning"
-                      value={@answer_meaning}
+                      name="reading"
+                      value={@answer_reading}
                       phx-change={not @input_disabled && "update_answer"}
-                      phx-value-field="meaning"
+                      phx-value-field="reading"
                       disabled={@input_disabled}
                       class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
-                      placeholder={gettext("Type the meaning...")}
+                      placeholder={gettext("Type the romaji...")}
                     />
                   </div>
-                <% end %>
-                <%= if mcg.pronunciation_required_for_collection or mcg.meaning_or_pronunciation_required_for_collection do %>
-                  <div>
-                    <label class="block text-sm font-medium text-base-content mb-1">
-                      {gettext("Pronunciation (reading)")}
-                    </label>
-                    <input
-                      type="text"
-                      name="pronunciation"
-                      value={@answer_pronunciation}
-                      phx-change={not @input_disabled && "update_answer"}
-                      phx-value-field="pronunciation"
-                      disabled={@input_disabled}
-                      class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
-                      placeholder={gettext("Type the reading in hiragana...")}
-                    />
-                  </div>
+                <% else %>
+                  <% mcg = @game.memory_card_game %>
+                  <%= if mcg.meaning_required_for_collection or mcg.meaning_or_pronunciation_required_for_collection do %>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-1">
+                        {gettext("Meaning")}
+                      </label>
+                      <input
+                        type="text"
+                        name="meaning"
+                        value={@answer_meaning}
+                        phx-change={not @input_disabled && "update_answer"}
+                        phx-value-field="meaning"
+                        disabled={@input_disabled}
+                        class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
+                        placeholder={gettext("Type the meaning...")}
+                      />
+                    </div>
+                  <% end %>
+                  <%= if mcg.pronunciation_required_for_collection or mcg.meaning_or_pronunciation_required_for_collection do %>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-1">
+                        {gettext("Pronunciation (reading)")}
+                      </label>
+                      <input
+                        type="text"
+                        name="pronunciation"
+                        value={@answer_pronunciation}
+                        phx-change={not @input_disabled && "update_answer"}
+                        phx-value-field="pronunciation"
+                        disabled={@input_disabled}
+                        class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
+                        placeholder={gettext("Type the reading in hiragana...")}
+                      />
+                    </div>
+                  <% end %>
                 <% end %>
 
                 <div class="flex gap-3 justify-end pt-2">
@@ -506,5 +613,21 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
       {:ok, _binary} -> word_id
       :error -> to_string(word_id)
     end
+  end
+
+  defp board_size(game) do
+    case game.type do
+      "kana_memory_cards" ->
+        game.kana_memory_card_game.board_size
+
+      _ ->
+        game.memory_card_game.board_size
+    end
+  end
+
+  defp kana_at_position(session, position) do
+    cards_state = session.cards_state || %{}
+    card_positions = cards_state["card_positions"] || []
+    Enum.at(card_positions, position) || "?"
   end
 end

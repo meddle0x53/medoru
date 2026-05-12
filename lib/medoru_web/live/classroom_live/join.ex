@@ -62,13 +62,17 @@ defmodule MedoruWeb.ClassroomLive.Join do
 
       classroom ->
         case Classrooms.apply_to_join(classroom.id, user.id) do
-          {:ok, _membership} ->
+          {:ok, membership} ->
+            message =
+              if membership.status == :approved do
+                gettext("You've joined the classroom!")
+              else
+                gettext("Application submitted! The teacher will review your request.")
+              end
+
             {:noreply,
              socket
-             |> put_flash(
-               :info,
-               gettext("Application submitted! The teacher will review your request.")
-             )
+             |> put_flash(:info, message)
              |> push_navigate(to: ~p"/classrooms")}
 
           {:error, :already_member} ->
@@ -149,6 +153,15 @@ defmodule MedoruWeb.ClassroomLive.Join do
                           user.type == "admin"
                         )}
                       </p>
+                      <%= if @classroom.should_approve_memberships do %>
+                        <span class="badge badge-warning badge-sm mt-2">
+                          <.icon name="hero-clock" class="w-3 h-3 mr-1" /> Approval required
+                        </span>
+                      <% else %>
+                        <span class="badge badge-success badge-sm mt-2">
+                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> Instant join
+                        </span>
+                      <% end %>
                     </div>
                   </div>
                 </div>
@@ -158,7 +171,11 @@ defmodule MedoruWeb.ClassroomLive.Join do
               <div class="flex items-center gap-4 pt-4 border-t border-base-200">
                 <%= if @classroom && is_nil(@error) do %>
                   <button type="submit" class="btn btn-primary">
-                    <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Apply to Join
+                    <%= if @classroom.should_approve_memberships do %>
+                      <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Apply to Join
+                    <% else %>
+                      <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> Join Classroom
+                    <% end %>
                   </button>
                 <% else %>
                   <button type="submit" class="btn btn-primary" disabled>
@@ -181,8 +198,12 @@ defmodule MedoruWeb.ClassroomLive.Join do
           <ul class="text-sm text-info/80 space-y-2">
             <li>• Ask your teacher for the classroom invite code</li>
             <li>• Enter the 8-character code above</li>
-            <li>• Click Apply to Join to submit your application</li>
-            <li>• Wait for the teacher to approve your request</li>
+            <%= if @classroom && not @classroom.should_approve_memberships do %>
+              <li>• Click Join Classroom to join immediately</li>
+            <% else %>
+              <li>• Click Apply to Join to submit your application</li>
+              <li>• Wait for the teacher to approve your request</li>
+            <% end %>
           </ul>
         </div>
       </div>

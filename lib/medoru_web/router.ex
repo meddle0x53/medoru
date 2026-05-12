@@ -163,6 +163,9 @@ defmodule MedoruWeb.Router do
       live "/classrooms/:classroom_id/games/new", GameLive.Form, :new
       live "/classrooms/:classroom_id/games/:id/edit", GameLive.Form, :edit
       live "/classrooms/:classroom_id/games/:id", GameLive.Show
+      live "/classrooms/:classroom_id/kana-games/new", KanaGameLive.Form, :new
+      live "/classrooms/:classroom_id/kana-games/:id/edit", KanaGameLive.Form, :edit
+      live "/classrooms/:classroom_id/kana-games/:id", KanaGameLive.Show
 
       live "/tests", TestLive.Index
       live "/tests/new", TestLive.New

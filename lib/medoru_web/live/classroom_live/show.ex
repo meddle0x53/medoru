@@ -918,17 +918,36 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
                     {game.name}
                   </h3>
-                  <%= if game.memory_card_game do %>
-                    <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
-                      <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
-                        {game.memory_card_game.board_size}
-                      </span>
-                      <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-heart" class="w-3 h-3 mr-1" />
-                        {game.memory_card_game.max_attempts} {gettext("attempts")}
-                      </span>
-                    </div>
+                  <%= cond do %>
+                    <% game.memory_card_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                          {game.memory_card_game.board_size}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.memory_card_game.max_attempts} {gettext("attempts")}
+                        </span>
+                      </div>
+                    <% game.kana_memory_card_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-squares-2x2" class="w-3 h-3 mr-1" />
+                          {game.kana_memory_card_game.board_size}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.kana_memory_card_game.max_attempts} {gettext("attempts")}
+                        </span>
+                        <%= if game.kana_memory_card_game.require_reading do %>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-pencil" class="w-3 h-3 mr-1" />
+                            {gettext("Reading")}
+                          </span>
+                        <% end %>
+                      </div>
+                    <% true -> %>
                   <% end %>
                 </div>
 

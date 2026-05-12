@@ -46,7 +46,7 @@ defmodule Medoru.Games do
         type -> where(query, [g], g.type == ^type)
       end
     end)
-    |> preload([:memory_card_game])
+    |> preload([:memory_card_game, :kana_memory_card_game])
     |> order_by([g], desc: g.inserted_at)
     |> Repo.all()
   end
@@ -69,7 +69,8 @@ defmodule Medoru.Games do
     |> Repo.get!(id)
     |> Repo.preload(
       classroom: [:teacher],
-      memory_card_game: [memory_card_game_words: [:word]]
+      memory_card_game: [memory_card_game_words: [:word]],
+      kana_memory_card_game: []
     )
   end
 
@@ -80,7 +81,8 @@ defmodule Medoru.Games do
     Game
     |> Repo.get!(id)
     |> Repo.preload(
-      memory_card_game: [memory_card_game_words: [word: [:word_kanjis]]]
+      memory_card_game: [memory_card_game_words: [word: [:word_kanjis]]],
+      kana_memory_card_game: []
     )
   end
 
@@ -206,6 +208,133 @@ defmodule Medoru.Games do
     end)
   end
 
+  # ============================================================================
+  # Kana Memory Card Game Creation & Updates
+  # ============================================================================
+
+  alias Medoru.Games.KanaMemoryCardGame
+
+  @doc """
+  Creates a kana memory card game with selected kana characters.
+
+  ## Parameters
+
+    * `classroom_id` - the classroom ID
+    * `teacher_id` - the teacher's user ID (for authorization)
+    * `attrs` - map with game attributes
+    * `selected_kana` - list of kana character strings
+
+  ## Examples
+
+      iex> create_kana_memory_card_game(classroom_id, teacher_id, %{name: "...", ...}, ["あ", "い", ...])
+      {:ok, %Game{}}
+  """
+  def create_kana_memory_card_game(classroom_id, teacher_id, attrs, selected_kana) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      board_size = get_in(attrs, ["memory_card_game", "board_size"]) || get_in(attrs, [:memory_card_game, :board_size])
+      kana_needed = KanaMemoryCardGame.kana_needed(board_size)
+
+      if length(selected_kana) < kana_needed do
+        {:error,
+         %{selected_kana: ["at least #{kana_needed} kana required for #{board_size} board"]}}
+      else
+        Repo.transaction(fn ->
+          game_attrs = %{
+            name: attrs["name"] || attrs[:name],
+            type: "kana_memory_cards",
+            status: :draft,
+            max_players: attrs["max_players"] || attrs[:max_players] || 1,
+            classroom_id: classroom_id
+          }
+
+          game =
+            %Game{}
+            |> Game.changeset(game_attrs)
+            |> Repo.insert!()
+
+          kana_for_game = Enum.take_random(selected_kana, kana_needed)
+
+          mcg_attrs = %{
+            game_id: game.id,
+            board_size: board_size,
+            max_attempts:
+              get_in(attrs, ["memory_card_game", "max_attempts"]) ||
+                get_in(attrs, [:memory_card_game, :max_attempts]),
+            require_reading: get_bool(attrs, ["memory_card_game", "require_reading"]),
+            selected_kana: kana_for_game
+          }
+
+          %KanaMemoryCardGame{}
+          |> KanaMemoryCardGame.changeset(mcg_attrs)
+          |> Repo.insert!()
+
+          get_game!(game.id)
+        end)
+      end
+    end
+  end
+
+  @doc """
+  Updates a kana memory card game and its selected kana.
+  """
+  def update_kana_memory_card_game(%Game{} = game, teacher_id, attrs, selected_kana) do
+    if game.classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      board_size =
+        get_in(attrs, ["memory_card_game", "board_size"]) ||
+          get_in(attrs, [:memory_card_game, :board_size]) ||
+          game.kana_memory_card_game.board_size
+
+      kana_needed = KanaMemoryCardGame.kana_needed(board_size)
+
+      if length(selected_kana) < kana_needed do
+        {:error,
+         %{selected_kana: ["at least #{kana_needed} kana required for #{board_size} board"]}}
+      else
+        Repo.transaction(fn ->
+          game_attrs = %{
+            name: attrs["name"] || attrs[:name] || game.name,
+            max_players: attrs["max_players"] || attrs[:max_players] || game.max_players
+          }
+
+          game =
+            game
+            |> Game.changeset(game_attrs)
+            |> Repo.update!()
+
+          kmcg = Repo.get_by!(KanaMemoryCardGame, game_id: game.id)
+
+          kana_for_game = Enum.take_random(selected_kana, kana_needed)
+
+          kmcg_attrs = %{
+            board_size: board_size,
+            max_attempts:
+              get_in(attrs, ["memory_card_game", "max_attempts"]) ||
+                get_in(attrs, [:memory_card_game, :max_attempts]) || kmcg.max_attempts,
+            require_reading:
+              get_bool(
+                attrs,
+                ["memory_card_game", "require_reading"],
+                kmcg.require_reading
+              ),
+            selected_kana: kana_for_game
+          }
+
+          kmcg
+          |> KanaMemoryCardGame.changeset(kmcg_attrs)
+          |> Repo.update!()
+
+          get_game!(game.id)
+        end)
+      end
+    end
+  end
+
   defp get_bool(attrs, keys, default \\ false) do
     value = get_in(attrs, keys)
 
@@ -283,10 +412,19 @@ defmodule Medoru.Games do
       %MemoryCardSession{status: :completed} = _session ->
         # Remove old session points and delete it before starting fresh
         reset_session(game_id, user_id)
-        create_session(game_id, user_id)
+        create_typed_session(game_id, user_id)
 
       _ ->
-        create_session(game_id, user_id)
+        create_typed_session(game_id, user_id)
+    end
+  end
+
+  defp create_typed_session(game_id, user_id) do
+    game = get_game_for_play!(game_id)
+
+    case game.type do
+      "kana_memory_cards" -> create_kana_session(game_id, user_id)
+      _ -> create_session(game_id, user_id)
     end
   end
 
@@ -333,6 +471,42 @@ defmodule Medoru.Games do
     %MemoryCardSession{}
     |> MemoryCardSession.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Creates a new kana memory card session with shuffled kana cards.
+  """
+  def create_kana_session(game_id, user_id) do
+    game = get_game_for_play!(game_id)
+    kmcg = game.kana_memory_card_game
+
+    kana_list = kmcg.selected_kana
+    card_positions = shuffle_kana(kana_list)
+
+    attrs = %{
+      game_id: game_id,
+      user_id: user_id,
+      status: :in_progress,
+      score: 0,
+      attempts_used: 0,
+      max_attempts: kmcg.max_attempts,
+      cards_state: %{
+        "card_positions" => card_positions,
+        "collected_indices" => [],
+        "flipped_indices" => []
+      },
+      started_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    }
+
+    %MemoryCardSession{}
+    |> MemoryCardSession.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  defp shuffle_kana(kana_list) do
+    kana_list
+    |> Enum.flat_map(&[&1, &1])
+    |> Enum.shuffle()
   end
 
   defp shuffle_cards(word_ids) do
@@ -564,6 +738,204 @@ defmodule Medoru.Games do
         end
       end
     end
+  end
+
+  # ============================================================================
+  # Kana Memory Card Gameplay
+  # ============================================================================
+
+  alias Medoru.Content.Kana
+
+  @doc """
+  Flips a kana card at the given position.
+
+  Same return types as flip_card/2 but works with kana characters.
+  """
+  def flip_kana_card(session_id, position) when is_integer(position) do
+    session = Repo.get!(MemoryCardSession, session_id)
+
+    if session.status != :in_progress do
+      {:error, :game_over}
+    else
+      cards_state = session.cards_state
+      card_positions = cards_state["card_positions"] || []
+      collected = cards_state["collected_indices"] || []
+      flipped = cards_state["flipped_indices"] || []
+
+      cond do
+        position in collected ->
+          {:error, :already_collected}
+
+        position in flipped ->
+          {:error, :already_flipped}
+
+        length(flipped) >= 2 ->
+          {:error, :too_many_flipped}
+
+        position < 0 or position >= length(card_positions) ->
+          {:error, :invalid_position}
+
+        true ->
+          new_flipped = flipped ++ [position]
+
+          if length(new_flipped) == 2 do
+            handle_two_flipped_kana(session, new_flipped, card_positions, collected)
+          else
+            update_session_cards_state(session, %{
+              "card_positions" => card_positions,
+              "collected_indices" => collected,
+              "flipped_indices" => new_flipped
+            })
+          end
+      end
+    end
+  end
+
+  defp handle_two_flipped_kana(session, [pos1, pos2], card_positions, collected) do
+    kana1 = Enum.at(card_positions, pos1)
+    kana2 = Enum.at(card_positions, pos2)
+
+    game = get_game_for_play!(session.game_id)
+    kmcg = game.kana_memory_card_game
+
+    if kana1 == kana2 do
+      if not kmcg.require_reading do
+        # Direct collection
+        new_score = session.score + 1
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        session
+        |> update_session_with_score(new_state, new_score)
+        |> case do
+          {:ok, updated} -> {:ok, updated, :collected, 1}
+          error -> error
+        end
+      else
+        # Need input - keep flipped but signal UI
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => [pos1, pos2]
+        }
+
+        {:ok, updated} = update_session_cards_state(session, new_state)
+        {:needs_input, updated, kana1}
+      end
+    else
+      # No match - consume attempt, keep cards flipped for reveal
+      new_attempts = session.attempts_used + 1
+
+      new_state = %{
+        "card_positions" => card_positions,
+        "collected_indices" => collected,
+        "flipped_indices" => [pos1, pos2]
+      }
+
+      if new_attempts >= session.max_attempts do
+        complete_session_with_state(session, new_state, new_attempts)
+        |> case do
+          {:ok, completed} -> {:ok, completed, :no_match}
+          error -> error
+        end
+      else
+        session
+        |> MemoryCardSession.changeset(%{
+          attempts_used: new_attempts,
+          cards_state: new_state
+        })
+        |> Repo.update()
+        |> case do
+          {:ok, updated} -> {:ok, updated, :no_match}
+          error -> error
+        end
+      end
+    end
+  end
+
+  @doc """
+  Submits a kana reading answer for collection.
+
+  Returns:
+    * `{:ok, session, :collected, points}` - answer correct, cards collected
+    * `{:ok, session, :wrong_answer}` - answer wrong, attempt consumed
+    * `{:error, :game_over}` - no attempts remaining after wrong answer
+  """
+  def submit_kana_answer(session_id, answer) do
+    session = Repo.get!(MemoryCardSession, session_id)
+
+    cards_state = session.cards_state
+    card_positions = cards_state["card_positions"] || []
+    collected = cards_state["collected_indices"] || []
+    flipped = cards_state["flipped_indices"] || []
+
+    if length(flipped) != 2 do
+      {:error, :no_flipped_cards}
+    else
+      [pos1, pos2] = flipped
+      kana_char = Enum.at(card_positions, pos1)
+      answer_reading = String.trim(answer["reading"] || "")
+
+      correct = validate_kana_answer(kana_char, answer_reading)
+
+      if correct do
+        new_score = session.score + 1
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        session
+        |> update_session_with_score(new_state, new_score)
+        |> case do
+          {:ok, updated} -> {:ok, updated, :collected, 1}
+          error -> error
+        end
+      else
+        new_attempts = session.attempts_used + 1
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => []
+        }
+
+        if new_attempts >= session.max_attempts do
+          complete_session_with_state(session, new_state, new_attempts)
+          |> case do
+            {:ok, completed} -> {:ok, completed, :wrong_answer}
+            error -> error
+          end
+        else
+          session
+          |> MemoryCardSession.changeset(%{
+            attempts_used: new_attempts,
+            cards_state: new_state
+          })
+          |> Repo.update()
+          |> case do
+            {:ok, updated} -> {:ok, updated, :wrong_answer}
+            error -> error
+          end
+        end
+      end
+    end
+  end
+
+  defp validate_kana_answer(kana_char, answer_reading) do
+    answer_reading != "" and
+      case Kana.get_by_character(kana_char) do
+        nil -> false
+        kana -> String.downcase(answer_reading) == String.downcase(List.first(kana.readings, %{romaji: ""}).romaji)
+      end
   end
 
   defp validate_answer(word, answer, collection_type, locale) do

@@ -176,6 +176,28 @@ defmodule Medoru.Classrooms do
   end
 
   @doc """
+  Updates a classroom if the given user is the teacher.
+
+  ## Examples
+
+      iex> update_classroom(classroom, teacher_id, %{name: "New Name"})
+      {:ok, %Classroom{}}
+
+      iex> update_classroom(classroom, wrong_teacher_id, %{name: "New Name"})
+      {:error, :not_authorized}
+
+  """
+  def update_classroom(%Classroom{} = classroom, teacher_id, attrs) do
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      classroom
+      |> Classroom.changeset(attrs)
+      |> Repo.update()
+    end
+  end
+
+  @doc """
   Archives a classroom (soft delete).
 
   ## Examples
@@ -433,10 +455,13 @@ defmodule Medoru.Classrooms do
     if is_member?(classroom_id, user_id) do
       {:error, :already_member}
     else
+      classroom = get_classroom!(classroom_id)
+      auto_approve? = not classroom.should_approve_memberships
+
       attrs = %{
         classroom_id: classroom_id,
         user_id: user_id,
-        status: :pending,
+        status: if(auto_approve?, do: :approved, else: :pending),
         role: :student,
         points: 0
       }
@@ -446,13 +471,12 @@ defmodule Medoru.Classrooms do
         |> ClassroomMembership.changeset(attrs)
         |> Repo.insert()
 
-      # Notify teacher of new application
-      with {:ok, _membership} <- result,
-           classroom = %Classroom{} <- get_classroom!(classroom_id),
+      # Notify teacher of new application (only when approval is required)
+      with false <- auto_approve?,
+           {:ok, _membership} <- result,
            user = %Medoru.Accounts.User{} <- Medoru.Accounts.get_user!(user_id) do
-        # Use display name (name > email > "Anonymous")
         display_name = user.name || user.email || gettext("Anonymous")
-        
+
         Notifications.notify_new_application(
           classroom.teacher_id,
           display_name,

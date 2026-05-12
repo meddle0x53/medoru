@@ -108,6 +108,22 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                   />
                 </div>
 
+                <%!-- Membership Approval --%>
+                <div class="flex items-center gap-3">
+                  <.input
+                    field={@form[:should_approve_memberships]}
+                    type="checkbox"
+                    label={gettext("Require teacher approval for new members")}
+                  />
+                </div>
+                <p class="text-sm text-secondary -mt-4 ml-8">
+                  <%= if @form[:should_approve_memberships].value do %>
+                    {gettext("Students will apply and wait for your approval before joining.")}
+                  <% else %>
+                    {gettext("Students will be added immediately without approval.")}
+                  <% end %>
+                </p>
+
                 <%!-- Actions --%>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-6 border-t border-base-200">
                   <button type="submit" class="btn btn-primary">
