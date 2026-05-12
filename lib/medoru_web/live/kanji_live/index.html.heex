@@ -41,6 +41,22 @@
       </form>
     </div>
 
+    <%!-- Kana Links --%>
+    <div class="flex gap-2 mb-6">
+      <.link
+        navigate={~p"/hiragana"}
+        class="px-5 py-2.5 rounded-xl font-medium bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:hover:bg-pink-900/50 transition-all duration-200"
+      >
+        {gettext("Hiragana")} あ
+      </.link>
+      <.link
+        navigate={~p"/katakana"}
+        class="px-5 py-2.5 rounded-xl font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-all duration-200"
+      >
+        {gettext("Katakana")} ア
+      </.link>
+    </div>
+
     <%!-- JLPT Level Selector --%>
     <div class="mb-2">
       <span class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2 block">

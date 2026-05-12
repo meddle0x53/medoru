@@ -1,0 +1,101 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        <.link
+          navigate={~p"/kanji"}
+          class="inline-flex items-center gap-2 text-secondary hover:text-primary transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Kanji")}
+        </.link>
+      </div>
+
+      <div class="flex items-center gap-4 mb-2">
+        <h1 class="text-3xl font-bold text-base-content">
+          <%= if @type == :hiragana do %>
+            {gettext("Hiragana")}
+          <% else %>
+            {gettext("Katakana")}
+          <% end %>
+        </h1>
+      </div>
+
+      <p class="text-secondary">
+        <%= if @type == :hiragana do %>
+          {gettext("Japanese syllabary used for native words and grammatical elements")}
+        <% else %>
+          {gettext("Japanese syllabary used for foreign words and emphasis")}
+        <% end %>
+      </p>
+    </div>
+
+    <%!-- Type Switcher --%>
+    <div class="flex gap-2 mb-8">
+      <.link
+        navigate={~p"/hiragana"}
+        class={[
+          "px-6 py-3 rounded-xl font-medium transition-all duration-200",
+          if(@type == :hiragana,
+            do: "bg-primary text-primary-content shadow-md",
+            else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+          )
+        ]}
+      >
+        {gettext("Hiragana")} あ
+      </.link>
+      <.link
+        navigate={~p"/katakana"}
+        class={[
+          "px-6 py-3 rounded-xl font-medium transition-all duration-200",
+          if(@type == :katakana,
+            do: "bg-primary text-primary-content shadow-md",
+            else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+          )
+        ]}
+      >
+        {gettext("Katakana")} ア
+      </.link>
+    </div>
+
+    <%!-- Gojuon Chart --%>
+    <div class="space-y-6">
+      <%= for {group, label, items} <- @groups do %>
+        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+          <div class="bg-base-200/50 px-6 py-3 border-b border-base-300">
+            <span class="text-sm font-semibold text-secondary uppercase tracking-wider">
+              {label}
+            </span>
+          </div>
+          <div class="p-4">
+            <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+              <%= for kana <- items do %>
+                <.link
+                  navigate={
+                    if @type == :hiragana do
+                      ~p"/hiragana/#{kana.character}"
+                    else
+                      ~p"/katakana/#{kana.character}"
+                    end
+                  }
+                  class="group"
+                >
+                  <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex items-center justify-center shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
+                    <span class="text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
+                      {kana.character}
+                    </span>
+                  </div>
+                  <div class="mt-1.5 text-center">
+                    <span class="text-xs text-secondary/70">
+                      {List.first(kana.meanings, "")}
+                    </span>
+                  </div>
+                </.link>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

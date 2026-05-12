@@ -1,0 +1,225 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Back Link --%>
+    <%= if @kana.type == :hiragana do %>
+      <.link
+        navigate={~p"/hiragana"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Hiragana")}
+      </.link>
+    <% else %>
+      <.link
+        navigate={~p"/katakana"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Katakana")}
+      </.link>
+    <% end %>
+
+    <%!-- Main Kana Card --%>
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
+      <div class="p-8">
+        <div class="flex flex-col md:flex-row gap-8">
+          <%!-- Large Kana Display --%>
+          <div class="flex-shrink-0">
+            <div class="w-32 h-32 md:w-40 md:h-40 bg-base-200/70 rounded-2xl flex items-center justify-center border border-base-300 shadow-inner">
+              <span class="text-7xl md:text-8xl font-medium text-base-content">
+                {@kana.character}
+              </span>
+            </div>
+          </div>
+
+          <%!-- Info Section --%>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
+                {if @kana.type == :hiragana, do: gettext("Hiragana"), else: gettext("Katakana")}
+              </span>
+              <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
+                {@kana.stroke_count} {gettext("strokes")}
+              </span>
+            </div>
+
+            <h1 class="text-2xl font-bold text-base-content mb-2">
+              {gettext("Reading")}
+            </h1>
+            <p class="text-lg text-secondary mb-6">
+              {Enum.join(@kana.meanings, ", ")}
+            </p>
+
+            <%= if @kana.group == :small do %>
+              <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div class="flex items-start gap-2">
+                  <.icon name="hero-information-circle" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p class="text-sm text-amber-800 dark:text-amber-300">
+                    {gettext("This is a small kana (sokuon/yoon) used in combination with other characters.")}
+                  </p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Stroke Order Section --%>
+    <%= if @has_stroke_data do %>
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
+            <h2 class="text-xl font-bold text-base-content">{gettext("Stroke Order")}</h2>
+          </div>
+          <button
+            phx-click="toggle_writing_practice"
+            class="text-sm bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-lg transition-colors"
+          >
+            <%= if @show_writing_practice do %>
+              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> {gettext("Hide Practice")}
+            <% else %>
+              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> {gettext("Practice Writing")}
+            <% end %>
+          </button>
+        </div>
+
+        <%= if @show_writing_practice do %>
+          <%= if @writing_completed do %>
+            <div class="text-center py-8">
+              <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-6 py-4 rounded-2xl mb-4">
+                <.icon name="hero-check-circle" class="w-8 h-8" />
+                <span class="text-xl font-bold">{gettext("Correct!")}</span>
+              </div>
+              <p class="text-secondary mb-4">
+                {gettext("You wrote %{kana} correctly!", kana: @kana.character)}
+              </p>
+              <div class="flex justify-center gap-3">
+                <button
+                  phx-click="toggle_writing_practice"
+                  phx-value-reset="true"
+                  class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-content rounded-xl font-medium transition-colors flex items-center gap-2"
+                >
+                  <.icon name="hero-arrow-path" class="w-5 h-5" /> {gettext("Practice Again")}
+                </button>
+                <button
+                  phx-click="toggle_writing_practice"
+                  class="px-6 py-3 bg-base-200 hover:bg-base-300 rounded-xl transition-colors"
+                >
+                  {gettext("Close")}
+                </button>
+              </div>
+            </div>
+          <% else %>
+            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4">
+              <div
+                data-stroke-data={Jason.encode!(@kana.stroke_data["strokes"] || [])}
+                class="hidden"
+              >
+              </div>
+
+              <div class="flex flex-col items-center gap-4">
+                <div class="text-center text-secondary text-sm">
+                  {gettext("Draw the character stroke by stroke. Yellow hint shows after wrong strokes.")}
+                </div>
+
+                <div
+                  id="writing-canvas-container"
+                  class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container"
+                  style="width: min(300px, 80vw); height: min(300px, 80vw); max-width: 300px; max-height: 300px;"
+                  phx-update="ignore"
+                >
+                </div>
+
+                <div class="flex justify-center gap-3">
+                  <button
+                    type="button"
+                    data-action="clear"
+                    class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-secondary transition-colors flex items-center gap-2"
+                  >
+                    <.icon name="hero-trash" class="w-5 h-5" /> {gettext("Clear")}
+                  </button>
+                  <button
+                    type="button"
+                    data-action="submit"
+                    class="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors flex items-center gap-2"
+                  >
+                    <.icon name="hero-check" class="w-5 h-5" /> {gettext("Check")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="mt-4">
+            <.live_component
+              module={MedoruWeb.StrokeAnimator}
+              id="kana-stroke-animator"
+              stroke_data={@kana.stroke_data}
+            />
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Navigation --%>
+    <div class="flex items-center justify-between">
+      <div>
+        <%= if @prev_kana do %>
+          <%= if @kana.type == :hiragana do %>
+            <.link
+              navigate={~p"/hiragana/#{@prev_kana.character}"}
+              class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4" />
+              <span class="text-2xl">{@prev_kana.character}</span>
+              <span class="text-sm">{List.first(@prev_kana.meanings)}</span>
+            </.link>
+          <% else %>
+            <.link
+              navigate={~p"/katakana/#{@prev_kana.character}"}
+              class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4" />
+              <span class="text-2xl">{@prev_kana.character}</span>
+              <span class="text-sm">{List.first(@prev_kana.meanings)}</span>
+            </.link>
+          <% end %>
+        <% else %>
+          <span class="text-secondary/40 inline-flex items-center gap-2">
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Previous")}
+          </span>
+        <% end %>
+      </div>
+
+      <div>
+        <%= if @next_kana do %>
+          <%= if @kana.type == :hiragana do %>
+            <.link
+              navigate={~p"/hiragana/#{@next_kana.character}"}
+              class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+            >
+              <span class="text-sm">{List.first(@next_kana.meanings)}</span>
+              <span class="text-2xl">{@next_kana.character}</span>
+              <.icon name="hero-arrow-right" class="w-4 h-4" />
+            </.link>
+          <% else %>
+            <.link
+              navigate={~p"/katakana/#{@next_kana.character}"}
+              class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
+            >
+              <span class="text-sm">{List.first(@next_kana.meanings)}</span>
+              <span class="text-2xl">{@next_kana.character}</span>
+              <.icon name="hero-arrow-right" class="w-4 h-4" />
+            </.link>
+          <% end %>
+        <% else %>
+          <span class="text-secondary/40 inline-flex items-center gap-2">
+            {gettext("Next")} <.icon name="hero-arrow-right" class="w-4 h-4" />
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
