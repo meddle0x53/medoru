@@ -51,6 +51,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:edit_name, classroom.name)
     |> assign(:edit_description, classroom.description || "")
     |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+    |> assign(:edit_public, classroom.public)
     |> assign(:edit_errors, %{})
   end
 
@@ -205,6 +206,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
      |> assign(:edit_name, classroom.name)
      |> assign(:edit_description, classroom.description || "")
      |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+     |> assign(:edit_public, classroom.public)
      |> assign(:edit_errors, %{})}
   end
 
@@ -218,6 +220,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         "name" -> assign(socket, :edit_name, value)
         "description" -> assign(socket, :edit_description, value)
         "should_approve_memberships" -> assign(socket, :edit_should_approve_memberships, value == "true")
+        "public" -> assign(socket, :edit_public, value == "true")
         _ -> socket
       end
 
@@ -232,7 +235,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     attrs = %{
       "name" => String.trim(socket.assigns.edit_name),
       "description" => String.trim(socket.assigns.edit_description),
-      "should_approve_memberships" => socket.assigns.edit_should_approve_memberships
+      "should_approve_memberships" => socket.assigns.edit_should_approve_memberships,
+      "public" => socket.assigns.edit_public
     }
 
     case Classrooms.update_classroom(classroom, teacher_id, attrs) do
@@ -275,6 +279,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
      |> assign(:edit_name, classroom.name)
      |> assign(:edit_description, classroom.description || "")
      |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
+     |> assign(:edit_public, classroom.public)
      |> assign(:edit_errors, %{})}
   end
 
@@ -573,6 +578,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 edit_name={@edit_name}
                 edit_description={@edit_description}
                 edit_should_approve_memberships={@edit_should_approve_memberships}
+                edit_public={@edit_public}
                 edit_errors={@edit_errors}
               />
           <% end %>
@@ -1072,6 +1078,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   attr :edit_name, :string, required: true
   attr :edit_description, :string, required: true
   attr :edit_should_approve_memberships, :boolean, required: true
+  attr :edit_public, :boolean, required: true
   attr :edit_errors, :map, required: true
 
   defp settings_tab(assigns) do
@@ -1139,6 +1146,28 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               <% end %>
             </p>
 
+            <div class="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox" id="edit_public"
+                name="public"
+                checked={@edit_public}
+                phx-click="update_classroom_field"
+                phx-value-field="public"
+                phx-value-public={if @edit_public, do: "false", else: "true"}
+                class="checkbox checkbox-primary"
+              />
+              <label for="edit_public" class="text-sm text-base-content cursor-pointer">
+                {gettext("Make classroom public")}
+              </label>
+            </div>
+            <p class="text-xs text-secondary -mt-2 ml-8">
+              <%= if @edit_public do %>
+                <%= gettext("Anyone can find and join this classroom without an invite code.") %>
+              <% else %>
+                <%= gettext("Only students with the invite code can join this classroom.") %>
+              <% end %>
+            </p>
+
             <div class="flex gap-3 pt-2">
               <button type="button" phx-click="cancel_edit_settings" class="btn btn-ghost">
                 {gettext("Cancel")}
@@ -1173,9 +1202,20 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               <span class="text-secondary">{gettext("Member Approval")}</span>
               <span class="font-medium text-base-content">
                 <%= if @classroom.should_approve_memberships do %>
-                  {gettext("Teacher approval required")}
+                  <%= gettext("Teacher approval required") %>
                 <% else %>
-                  {gettext("Auto-approve")}
+                  <%= gettext("Auto-approve") %>
+                <% end %>
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Visibility")}</span>
+              <span class="font-medium text-base-content">
+                <%= if @classroom.public do %>
+                  <%= gettext("Public") %>
+                <% else %>
+                  <%= gettext("Private") %>
                 <% end %>
               </span>
             </div>

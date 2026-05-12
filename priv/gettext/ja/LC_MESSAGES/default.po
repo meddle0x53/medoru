@@ -1327,8 +1327,8 @@ msgstr "の復習単語"
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:16
 #, elixir-autogen, elixir-format
-msgid "A social learning platform designed to make Japanese learning engaging and effective."
-msgstr "日本語学習を魅力的で効果的なものにするために設計されたソーシャル学習プラットフォームです。"
+msgid "A learning platform designed to make Japanese learning engaging and effective using interactive lessons, tests and games."
+msgstr "インタラクティブなレッスン、テスト、ゲームを活用し、日本語学習を楽しく効果的にするために設計された学習プラットフォーム。"
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:114
 #, elixir-autogen, elixir-format
@@ -1387,8 +1387,8 @@ msgstr "学習デュエル"
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:15
 #, elixir-autogen, elixir-format
-msgid "Master kanji, build vocabulary, and practice with friends."
-msgstr "漢字を習得し、語彙を構築し、友達と一緒に練習しましょう。"
+msgid "Master kanji, build vocabulary, and learn in classrooms created by real teachers."
+msgstr "漢字を習得し、語彙を増やし、実際の教師が作成したクラスルームで学びましょう。"
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:84
 #, elixir-autogen, elixir-format

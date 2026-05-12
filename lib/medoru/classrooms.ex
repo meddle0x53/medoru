@@ -59,6 +59,104 @@ defmodule Medoru.Classrooms do
   end
 
   @doc """
+  Returns visible classrooms for a user: public active classrooms,
+  classrooms they own, and classrooms they are a member of.
+
+  Supports pagination and search by name.
+
+  ## Options
+    * `:page` - Page number (default: 1)
+    * `:per_page` - Items per page (default: 20)
+    * `:search` - Filter by name (case-insensitive partial match)
+
+  Returns `%{classrooms: [...], total_count: integer, total_pages: integer}`
+  """
+  def list_visible_classrooms(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+    search = Keyword.get(opts, :search)
+
+    # Subquery: classrooms the user is an approved member of
+    member_classroom_ids =
+      from(m in ClassroomMembership,
+        where: m.user_id == ^user_id and m.status == :approved,
+        select: m.classroom_id
+      )
+
+    query =
+      from(c in Classroom,
+        where:
+          c.status == :active and
+            (c.public == true or
+               c.teacher_id == ^user_id or
+               c.id in subquery(member_classroom_ids)),
+        preload: [:teacher]
+      )
+
+    # Apply search filter
+    query =
+      if search && search != "" do
+        search_term = "%#{search}%"
+        from(c in query, where: ilike(c.name, ^search_term))
+      else
+        query
+      end
+
+    # Apply sorting
+    query = from(c in query, order_by: [desc: c.inserted_at])
+
+    # Get total count
+    total_count = Repo.aggregate(query, :count, :id)
+
+    # Get paginated results
+    classrooms =
+      query
+      |> limit(^per_page)
+      |> offset(^((page - 1) * per_page))
+      |> Repo.all()
+
+    total_pages = max(1, ceil(total_count / per_page))
+
+    %{
+      classrooms: classrooms,
+      total_count: total_count,
+      total_pages: total_pages
+    }
+  end
+
+  @doc """
+  Checks the relationship of a user to a classroom.
+
+  Returns one of:
+    * `:owner` - user is the teacher
+    * `:member` - user is an approved member
+    * `:pending` - user has a pending application
+    * `:none` - no relationship
+  """
+  def user_classroom_status(classroom_id, user_id) do
+    classroom = Repo.get(Classroom, classroom_id)
+
+    cond do
+      is_nil(classroom) ->
+        :none
+
+      classroom.teacher_id == user_id ->
+        :owner
+
+      true ->
+        ClassroomMembership
+        |> where([m], m.classroom_id == ^classroom_id and m.user_id == ^user_id)
+        |> Repo.one()
+        |> case do
+          nil -> :none
+          %{status: :approved} -> :member
+          %{status: :pending} -> :pending
+          _ -> :none
+        end
+    end
+  end
+
+  @doc """
   Gets a single classroom by ID.
 
   Raises `Ecto.NoResultsError` if the Classroom does not exist.
@@ -452,40 +550,46 @@ defmodule Medoru.Classrooms do
 
   """
   def apply_to_join(classroom_id, user_id) do
-    if is_member?(classroom_id, user_id) do
-      {:error, :already_member}
-    else
-      classroom = get_classroom!(classroom_id)
-      auto_approve? = not classroom.should_approve_memberships
+    classroom = get_classroom!(classroom_id)
 
-      attrs = %{
-        classroom_id: classroom_id,
-        user_id: user_id,
-        status: if(auto_approve?, do: :approved, else: :pending),
-        role: :student,
-        points: 0
-      }
+    cond do
+      classroom.teacher_id == user_id ->
+        {:error, :already_member}
 
-      result =
-        %ClassroomMembership{}
-        |> ClassroomMembership.changeset(attrs)
-        |> Repo.insert()
+      is_member?(classroom_id, user_id) ->
+        {:error, :already_member}
 
-      # Notify teacher of new application (only when approval is required)
-      with false <- auto_approve?,
-           {:ok, _membership} <- result,
-           user = %Medoru.Accounts.User{} <- Medoru.Accounts.get_user!(user_id) do
-        display_name = user.name || user.email || gettext("Anonymous")
+      true ->
+        auto_approve? = not classroom.should_approve_memberships
 
-        Notifications.notify_new_application(
-          classroom.teacher_id,
-          display_name,
-          classroom.name,
-          classroom.id
-        )
-      end
+        attrs = %{
+          classroom_id: classroom_id,
+          user_id: user_id,
+          status: if(auto_approve?, do: :approved, else: :pending),
+          role: :student,
+          points: 0
+        }
 
-      result
+        result =
+          %ClassroomMembership{}
+          |> ClassroomMembership.changeset(attrs)
+          |> Repo.insert()
+
+        # Notify teacher of new application (only when approval is required)
+        with false <- auto_approve?,
+             {:ok, _membership} <- result,
+             user = %Medoru.Accounts.User{} <- Medoru.Accounts.get_user!(user_id) do
+          display_name = user.name || user.email || gettext("Anonymous")
+
+          Notifications.notify_new_application(
+            classroom.teacher_id,
+            display_name,
+            classroom.name,
+            classroom.id
+          )
+        end
+
+        result
     end
   end
 
@@ -1668,14 +1772,19 @@ defmodule Medoru.Classrooms do
     lessons =
       ClassroomCustomLesson
       |> where([ccl], ccl.classroom_id == ^classroom_id)
-      |> order_by([ccl], asc: ccl.published_at)
+      |> order_by([ccl], asc: ccl.order_index, asc: ccl.published_at)
       |> Repo.all()
 
-    # Check if all lessons have the same order_index
-    order_indices = Enum.map(lessons, & &1.order_index) |> Enum.uniq()
+    # Check if all lessons have the same order_index or if there are duplicates
+    order_indices = Enum.map(lessons, & &1.order_index)
+    unique_indices = Enum.uniq(order_indices)
 
-    if length(order_indices) == 1 and length(lessons) > 1 do
-      # All lessons have the same index, need to reassign
+    needs_reassign? =
+      length(lessons) > 1 and
+        (length(unique_indices) == 1 or length(unique_indices) < length(order_indices))
+
+    if needs_reassign? do
+      # Reassign sequential indices based on current order
       lessons
       |> Enum.with_index(1)
       |> Enum.each(fn {lesson, index} ->

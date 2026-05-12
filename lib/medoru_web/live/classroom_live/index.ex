@@ -29,43 +29,44 @@ defmodule MedoruWeb.ClassroomLive.Index do
   def handle_params(params, _url, socket) do
     user = socket.assigns.current_scope.current_user
     page = parse_page(params["page"])
+    search = String.trim(params["search"] || "")
 
-    # Get owned classrooms (for teachers/admins)
-    owned_classrooms =
-      if user.type in ["teacher", "admin"] do
-        Classrooms.list_teacher_classrooms(user.id)
-      else
-        []
-      end
-
-    # Get joined classrooms (as student)
-    joined_classrooms = Classrooms.list_student_classrooms(user.id)
+    # Get visible classrooms with pagination and search
+    result =
+      Classrooms.list_visible_classrooms(user.id,
+        page: page,
+        per_page: @per_page,
+        search: if(search != "", do: search, else: nil)
+      )
 
     # Get pending applications
     pending_applications = list_pending_applications(user.id)
 
-    # Combine and paginate
-    all_classrooms = owned_classrooms ++ joined_classrooms
+    # Build membership status map for visible classrooms
+    membership_statuses = build_membership_statuses(result.classrooms, user.id)
 
-    # Sort by inserted_at desc
-    sorted_classrooms =
-      all_classrooms
-      |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
-      |> Enum.uniq_by(& &1.id)
+    # Count owned, joined, and public (from current page only)
+    owned_count = Enum.count(result.classrooms, &(&1.teacher_id == user.id))
+    joined_count = Enum.count(result.classrooms, &(Map.get(membership_statuses, &1.id) == :approved))
 
-    total_count = length(sorted_classrooms)
-    total_pages = max(1, ceil(total_count / @per_page))
-    paginated_classrooms = paginate(sorted_classrooms, page, @per_page)
+    public_count =
+      Enum.count(result.classrooms, fn c ->
+        c.public and c.teacher_id != user.id and
+          Map.get(membership_statuses, c.id) != :approved
+      end)
 
     {:noreply,
      socket
      |> assign(:page, page)
-     |> assign(:total_pages, total_pages)
-     |> assign(:total_count, total_count)
-     |> assign(:owned_count, length(owned_classrooms))
-     |> assign(:joined_count, length(joined_classrooms))
-     |> assign(:classrooms, paginated_classrooms)
-     |> assign(:pending_applications, pending_applications)}
+     |> assign(:total_pages, result.total_pages)
+     |> assign(:total_count, result.total_count)
+     |> assign(:owned_count, owned_count)
+     |> assign(:joined_count, joined_count)
+     |> assign(:public_count, public_count)
+     |> assign(:classrooms, result.classrooms)
+     |> assign(:membership_statuses, membership_statuses)
+     |> assign(:pending_applications, pending_applications)
+     |> assign(:search, search)}
   end
 
   @impl true
@@ -137,6 +138,42 @@ defmodule MedoruWeb.ClassroomLive.Index do
   end
 
   @impl true
+  def handle_event("search", %{} = params, socket) do
+    search = String.trim(params["search"] || "")
+
+    {:noreply,
+     socket
+     |> assign(:search, search)
+     |> push_patch(to: ~p"/classrooms?#{[search: search]}")}
+  end
+
+  @impl true
+  def handle_event("join_public", %{"id" => classroom_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case Classrooms.apply_to_join(classroom_id, user.id) do
+      {:ok, membership} ->
+        message =
+          if membership.status == :approved do
+            gettext("You've joined the classroom!")
+          else
+            gettext("Application submitted! The teacher will review your request.")
+          end
+
+        {:noreply,
+         socket
+         |> put_flash(:info, message)
+         |> push_patch(to: ~p"/classrooms")}
+
+      {:error, :already_member} ->
+        {:noreply, put_flash(socket, :error, gettext("You are already a member of this classroom."))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to join classroom. Please try again."))}
+    end
+  end
+
+  @impl true
   def handle_event("cancel_application", %{"id" => membership_id}, socket) do
     # Get the membership and delete it if it's still pending
     case Medoru.Repo.get(Medoru.Classrooms.ClassroomMembership, membership_id) do
@@ -164,10 +201,18 @@ defmodule MedoruWeb.ClassroomLive.Index do
     |> Repo.all()
   end
 
-  defp paginate(list, page, per_page) do
-    list
-    |> Enum.drop((page - 1) * per_page)
-    |> Enum.take(per_page)
+  defp build_membership_statuses(classrooms, user_id) do
+    classroom_ids = Enum.map(classrooms, & &1.id)
+
+    import Ecto.Query
+    alias Medoru.Repo
+    alias Medoru.Classrooms.ClassroomMembership
+
+    ClassroomMembership
+    |> where([m], m.user_id == ^user_id and m.classroom_id in ^classroom_ids)
+    |> select([m], {m.classroom_id, m.status})
+    |> Repo.all()
+    |> Enum.into(%{})
   end
 
   defp parse_page(nil), do: 1
@@ -181,18 +226,14 @@ defmodule MedoruWeb.ClassroomLive.Index do
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-base-content">{gettext("My Classrooms")}</h1>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Classrooms")}</h1>
           <p class="text-secondary mt-1">
-            <%= if @user.type in ["teacher", "admin"] do %>
-              {gettext("Manage your classrooms and memberships")}
-            <% else %>
-              {gettext("Join classrooms to learn with others")}
-            <% end %>
+            {gettext("Browse public classrooms or join one with an invite code")}
           </p>
         </div>
 
         <%!-- Stats Cards --%>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <%= if @user.type in ["teacher", "admin"] do %>
             <.stat_card
               icon="hero-building-office"
@@ -206,6 +247,12 @@ defmodule MedoruWeb.ClassroomLive.Index do
             label={gettext("Joined")}
             value={@joined_count}
             color="success"
+          />
+          <.stat_card
+            icon="hero-globe-alt"
+            label={gettext("Public")}
+            value={@public_count}
+            color="info"
           />
           <.stat_card
             icon="hero-clock"
@@ -255,17 +302,32 @@ defmodule MedoruWeb.ClassroomLive.Index do
           </div>
         <% end %>
 
-        <%!-- Join Classroom Form --%>
+        <%!-- Search & Join --%>
         <div class="card bg-base-100 border border-base-300 shadow-sm mb-8">
           <div class="card-body">
-            <h3 class="card-title text-base-content mb-4">{gettext("Join a Classroom")}</h3>
-            <form phx-change="validate_code" phx-submit="join" class="flex flex-col sm:flex-row gap-4">
-              <div class="flex-1">
+            <div class="flex flex-col lg:flex-row gap-4 mb-4">
+              <%!-- Search Public Classrooms --%>
+              <form phx-change="search" class="flex-1">
+                <div class="relative">
+                  <.icon name="hero-magnifying-glass" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                  <input
+                    type="text"
+                    name="search"
+                    value={@search}
+                    placeholder={gettext("Search public classrooms by name...")}
+                    class="input input-bordered w-full pl-10"
+                    phx-debounce="300"
+                  />
+                </div>
+              </form>
+
+              <%!-- Invite Code Join --%>
+              <form phx-change="validate_code" phx-submit="join" class="flex flex-col sm:flex-row gap-2 flex-1">
                 <input
                   type="text"
                   name="invite_code"
                   value={@invite_code}
-                  placeholder={gettext("Enter invite code (e.g., ABC12345)")}
+                  placeholder={gettext("Invite code")}
                   class={[
                     "input input-bordered w-full uppercase tracking-wider font-mono",
                     @join_error && "input-error",
@@ -275,18 +337,19 @@ defmodule MedoruWeb.ClassroomLive.Index do
                   autocomplete="off"
                   phx-debounce="300"
                 />
-                <%= if @join_error do %>
-                  <p class="text-error text-sm mt-1">{@join_error}</p>
-                <% end %>
-              </div>
-              <button
-                type="submit"
-                class="btn btn-primary"
-                disabled={@invite_code == "" || not is_nil(@join_error)}
-              >
-                <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> {gettext("Apply to Join")}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  disabled={@invite_code == "" || not is_nil(@join_error)}
+                >
+                  <.icon name="hero-user-plus" class="w-4 h-4 mr-2" /> {gettext("Join")}
+                </button>
+              </form>
+            </div>
+
+            <%= if @join_error do %>
+              <p class="text-error text-sm">{@join_error}</p>
+            <% end %>
 
             <%!-- Classroom Preview --%>
             <%= if assigns[:classroom_preview] && is_nil(@join_error) do %>
@@ -327,26 +390,31 @@ defmodule MedoruWeb.ClassroomLive.Index do
           <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">
             <.icon name="hero-academic-cap" class="w-16 h-16 text-secondary/30 mx-auto mb-4" />
             <h3 class="text-xl font-semibold text-base-content mb-2">
-              {gettext("No classrooms yet")}
+              {gettext("No classrooms found")}
             </h3>
             <p class="text-secondary mb-6">
-              <%= if @user.type in ["teacher", "admin"] do %>
-                {gettext("Create your first classroom or join one with an invite code above")}
+              <%= if @search != "" do %>
+                <%= gettext("No classrooms match your search. Try a different term.") %>
               <% else %>
-                {gettext("Join a classroom using an invite code above to start learning")}
+                <%= gettext("Browse public classrooms or join one with an invite code above.") %>
               <% end %>
             </p>
           </div>
         <% else %>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <%= for classroom <- @classrooms do %>
-              <.classroom_card classroom={classroom} user={@user} is_admin={@user.type == "admin"} />
+              <.classroom_card
+                classroom={classroom}
+                user={@user}
+                is_admin={@user.type == "admin"}
+                membership_status={Map.get(@membership_statuses, classroom.id)}
+              />
             <% end %>
           </div>
 
           <%!-- Pagination --%>
           <%= if @total_pages > 1 do %>
-            <.pagination page={@page} total_pages={@total_pages} />
+            <.pagination page={@page} total_pages={@total_pages} search={@search} />
           <% end %>
         <% end %>
       </div>
@@ -401,38 +469,63 @@ defmodule MedoruWeb.ClassroomLive.Index do
     """
   end
 
+  defp stat_card(%{color: "info"} = assigns) do
+    ~H"""
+    <div class="card bg-base-100 border border-base-300 p-4 flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-info/10 text-info">
+        <.icon name={@icon} class="w-6 h-6" />
+      </div>
+      <div>
+        <p class="text-2xl font-bold text-base-content">{@value}</p>
+        <p class="text-sm text-secondary">{@label}</p>
+      </div>
+    </div>
+    """
+  end
+
   attr :classroom, :map, required: true
   attr :user, :map, required: true
   attr :is_admin, :boolean, required: true
+  attr :membership_status, :atom, required: true
 
   defp classroom_card(assigns) do
     is_owner = assigns.classroom.teacher_id == assigns.user.id
+    is_member = assigns.membership_status == :approved
+    can_join = assigns.classroom.public and not is_owner and not is_member
     teacher_name = display_name(assigns.classroom.teacher, assigns.user.id, assigns.is_admin)
 
     assigns =
       assigns
       |> assign(:is_owner, is_owner)
+      |> assign(:is_member, is_member)
+      |> assign(:can_join, can_join)
       |> assign(:teacher_name, teacher_name)
 
     ~H"""
     <div class={[
       "card border shadow-sm hover:shadow-md transition-all duration-200",
       @is_owner && "bg-primary/5 border-primary/30",
-      !@is_owner && "bg-base-100 border-base-300 hover:border-primary/30"
+      @is_member && !@is_owner && "bg-base-100 border-base-300 hover:border-primary/30",
+      @can_join && "bg-base-100 border-base-300 hover:border-success/30"
     ]}>
       <div class="card-body">
         <div class="flex items-start justify-between mb-3">
           <div class={[
             "w-12 h-12 rounded-xl flex items-center justify-center",
             @is_owner && "bg-primary/20",
-            !@is_owner && "bg-primary/10"
+            @is_member && !@is_owner && "bg-primary/10",
+            @can_join && "bg-success/10"
           ]}>
             <.icon name="hero-academic-cap" class="w-6 h-6 text-primary" />
           </div>
-          <%= if @is_owner do %>
-            <span class="badge badge-primary">{gettext("Owner")}</span>
-          <% else %>
-            <span class="badge badge-success">{gettext("Member")}</span>
+          <%= cond do %>
+            <% @is_owner -> %>
+              <span class="badge badge-primary">{gettext("Owner")}</span>
+            <% @is_member -> %>
+              <span class="badge badge-success">{gettext("Member")}</span>
+            <% @can_join -> %>
+              <span class="badge badge-info">{gettext("Public")}</span>
+            <% true -> %>
           <% end %>
         </div>
 
@@ -453,17 +546,26 @@ defmodule MedoruWeb.ClassroomLive.Index do
         </div>
 
         <div class="card-actions justify-end pt-4 border-t border-base-200">
-          <%= if @is_owner do %>
-            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}"} class="btn btn-primary btn-sm">
-              {gettext("Manage")} →
-            </.link>
-          <% else %>
-            <.link
-              navigate={~p"/classrooms/#{@classroom.id}"}
-              class="btn btn-ghost btn-sm text-primary"
-            >
-              {gettext("View")} →
-            </.link>
+          <%= cond do %>
+            <% @is_owner -> %>
+              <.link navigate={~p"/teacher/classrooms/#{@classroom.id}"} class="btn btn-primary btn-sm">
+                {gettext("Manage")} →
+              </.link>
+            <% @can_join -> %>
+              <button
+                phx-click="join_public"
+                phx-value-id={@classroom.id}
+                class="btn btn-success btn-sm"
+              >
+                <.icon name="hero-user-plus" class="w-4 h-4 mr-1" /> {gettext("Join")}
+              </button>
+            <% true -> %>
+              <.link
+                navigate={~p"/classrooms/#{@classroom.id}"}
+                class="btn btn-ghost btn-sm text-primary"
+              >
+                {gettext("View")} →
+              </.link>
           <% end %>
         </div>
       </div>
@@ -473,13 +575,14 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
   attr :page, :integer, required: true
   attr :total_pages, :integer, required: true
+  attr :search, :string, required: true
 
   defp pagination(assigns) do
     ~H"""
     <div class="mt-8 flex justify-center">
       <div class="flex items-center gap-2">
         <%= if @page > 1 do %>
-          <.link patch={~p"/classrooms?page=#{@page - 1}"} class="btn btn-ghost btn-sm">
+          <.link patch={~p"/classrooms?#{[page: @page - 1, search: @search]}"} class="btn btn-ghost btn-sm">
             ← {gettext("Prev")}
           </.link>
         <% else %>
@@ -491,7 +594,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
         </span>
 
         <%= if @page < @total_pages do %>
-          <.link patch={~p"/classrooms?page=#{@page + 1}"} class="btn btn-ghost btn-sm">
+          <.link patch={~p"/classrooms?#{[page: @page + 1, search: @search]}"} class="btn btn-ghost btn-sm">
             {gettext("Next")} →
           </.link>
         <% else %>

@@ -1328,7 +1328,7 @@ msgstr ""
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:16
 #, elixir-autogen, elixir-format
-msgid "A social learning platform designed to make Japanese learning engaging and effective."
+msgid "A learning platform designed to make Japanese learning engaging and effective using interactive lessons, tests and games."
 msgstr ""
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:114
@@ -1388,7 +1388,7 @@ msgstr ""
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:15
 #, elixir-autogen, elixir-format
-msgid "Master kanji, build vocabulary, and practice with friends."
+msgid "Master kanji, build vocabulary, and learn in classrooms created by real teachers."
 msgstr ""
 
 #: lib/medoru_web/controllers/page_html/home.html.heex:84
