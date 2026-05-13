@@ -13,6 +13,9 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
   defp board_sizes do
     [
       {"4x4 (16 cards, 8 words)", "4x4"},
+      {"5x4 (20 cards, 10 words)", "5x4"},
+      {"6x4 (24 cards, 12 words)", "6x4"},
+      {"6x5 (30 cards, 15 words)", "6x5"},
       {"6x6 (36 cards, 18 words)", "6x6"},
       {"8x8 (64 cards, 32 words)", "8x8"},
       {"10x10 (100 cards, 50 words)", "10x10"}

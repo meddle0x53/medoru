@@ -14,6 +14,9 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
   defp board_sizes do
     [
       {"4x4 (16 cards, 8 kana)", "4x4"},
+      {"5x4 (20 cards, 10 kana)", "5x4"},
+      {"6x4 (24 cards, 12 kana)", "6x4"},
+      {"6x5 (30 cards, 15 kana)", "6x5"},
       {"6x6 (36 cards, 18 kana)", "6x6"}
     ]
   end

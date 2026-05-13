@@ -246,18 +246,36 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   def handle_event("cancel_input", _, socket) do
     session = socket.assigns.session
 
-    # Clear any flipped cards so the user can continue playing
-    {:ok, cleared_session} = Games.close_flipped_cards(session.id)
+    case Games.cancel_input_attempt(session.id) do
+      {:ok, cleared_session, :game_over} ->
+        {:noreply,
+         socket
+         |> assign(:session, cleared_session)
+         |> assign(:show_input_modal, false)
+         |> assign(:input_word_id, nil)
+         |> assign(:input_kana_char, nil)
+         |> assign(:input_error, nil)
+         |> assign(:input_disabled, false)
+         |> assign(:answer_reading, "")
+         |> put_flash(:error, gettext("Game over! No attempts remaining."))}
 
-    {:noreply,
-     socket
-     |> assign(:session, cleared_session)
-     |> assign(:show_input_modal, false)
-     |> assign(:input_word_id, nil)
-     |> assign(:input_kana_char, nil)
-     |> assign(:input_error, nil)
-     |> assign(:input_disabled, false)
-     |> assign(:answer_reading, "")}
+      {:ok, cleared_session, :cancelled} ->
+        {:noreply,
+         socket
+         |> assign(:session, cleared_session)
+         |> assign(:show_input_modal, false)
+         |> assign(:input_word_id, nil)
+         |> assign(:input_kana_char, nil)
+         |> assign(:input_error, nil)
+         |> assign(:input_disabled, false)
+         |> assign(:answer_reading, "")}
+
+      {:error, reason} ->
+        {:noreply,
+         socket
+         |> assign(:show_input_modal, false)
+         |> put_flash(:error, gettext("Error: %{reason}", reason: inspect(reason)))}
+    end
   end
 
   @impl true
@@ -444,8 +462,8 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
         <%!-- Collection Input Modal --%>
         <%= if @show_input_modal do %>
-          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-start sm:items-center justify-center p-4 pt-16 sm:pt-4">
+            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
               <h3 class="text-xl font-bold text-base-content mb-2">
                 {gettext("Match Found!")}
               </h3>
@@ -486,13 +504,15 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                     </label>
                     <input
                       type="text"
+                      id="reading-input"
                       name="reading"
                       value={@answer_reading}
                       phx-change={not @input_disabled && "update_answer"}
                       phx-value-field="reading"
                       disabled={@input_disabled}
-                      class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
+                      class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
                       placeholder={gettext("Type the romaji...")}
+                      phx-mounted={!@input_disabled && JS.focus(to: "#reading-input")}
                     />
                   </div>
                 <% else %>
@@ -504,13 +524,15 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                       </label>
                       <input
                         type="text"
+                        id="meaning-input"
                         name="meaning"
                         value={@answer_meaning}
                         phx-change={not @input_disabled && "update_answer"}
                         phx-value-field="meaning"
                         disabled={@input_disabled}
-                        class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
+                        class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
                         placeholder={gettext("Type the meaning...")}
+                        phx-mounted={!@input_disabled && JS.focus(to: "#meaning-input")}
                       />
                     </div>
                   <% end %>
@@ -521,13 +543,15 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                       </label>
                       <input
                         type="text"
+                        id="pronunciation-input"
                         name="pronunciation"
                         value={@answer_pronunciation}
                         phx-change={not @input_disabled && "update_answer"}
                         phx-value-field="pronunciation"
                         disabled={@input_disabled}
-                        class={["input input-bordered w-full", @input_disabled && "bg-base-200 opacity-60"]}
+                        class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
                         placeholder={gettext("Type the reading in hiragana...")}
+                        phx-mounted={!@input_disabled && JS.focus(to: "#pronunciation-input")}
                       />
                     </div>
                   <% end %>
@@ -553,6 +577,9 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   defp grid_cols_class(board_size) do
     case board_size do
       "4x4" -> "grid-cols-4 max-w-md"
+      "5x4" -> "grid-cols-5 max-w-lg"
+      "6x4" -> "grid-cols-6 max-w-lg"
+      "6x5" -> "grid-cols-6 max-w-xl"
       "6x6" -> "grid-cols-6 max-w-lg"
       "8x8" -> "grid-cols-8 max-w-xl"
       "10x10" -> "grid-cols-10 max-w-2xl"

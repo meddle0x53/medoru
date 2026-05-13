@@ -358,6 +358,87 @@ defmodule Medoru.GamesTest do
     end
   end
 
+  describe "cancel_input_attempt/1" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+      membership = Classrooms.get_user_membership(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      words = Enum.map(1..8, fn _ -> word_fixture() end)
+      word_ids_with_points = Enum.map(words, &{&1.id, 1})
+
+      attrs = %{
+        "name" => "Cancel Test Game",
+        "memory_card_game" => %{
+          "board_size" => "4x4",
+          "max_attempts" => 3,
+          "meaning_required_for_collection" => true,
+          "pronunciation_required_for_collection" => false,
+          "meaning_or_pronunciation_required_for_collection" => false
+        }
+      }
+
+      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, _} = Games.publish_game(game.id, teacher.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+
+      card_positions = session.cards_state["card_positions"]
+      word_id = Enum.at(card_positions, 0)
+      matching_pos = Enum.find_index(Enum.drop(card_positions, 1), &(&1 == word_id)) + 1
+
+      # Flip matching pair to trigger needs_input
+      {:ok, after_first} = Games.flip_card(session.id, 0)
+      {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
+
+      {:ok, student: student, classroom: classroom, game: game, session: after_both, matching_pos: matching_pos}
+    end
+
+    test "consumes one attempt and clears flipped cards", %{session: session} do
+      assert session.attempts_used == 0
+      assert length(session.cards_state["flipped_indices"]) == 2
+
+      assert {:ok, updated, :cancelled} = Games.cancel_input_attempt(session.id)
+      assert updated.attempts_used == 1
+      assert updated.cards_state["flipped_indices"] == []
+    end
+
+    test "game over when cancel exhausts last attempt", %{session: session, matching_pos: matching_pos} do
+      # Consume first attempt via cancel
+      assert {:ok, s1, :cancelled} = Games.cancel_input_attempt(session.id)
+      assert s1.attempts_used == 1
+
+      # Re-flip and cancel again
+      {:ok, after_first} = Games.flip_card(s1.id, 0)
+      {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
+      assert {:ok, s2, :cancelled} = Games.cancel_input_attempt(after_both.id)
+      assert s2.attempts_used == 2
+
+      # Re-flip and third cancel should end the game
+      {:ok, after_first} = Games.flip_card(s2.id, 0)
+      {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
+      assert {:ok, completed, :game_over} = Games.cancel_input_attempt(after_both.id)
+      assert completed.status == :completed
+      assert completed.attempts_used == 3
+    end
+
+    test "returns error when session is already completed", %{session: session, matching_pos: matching_pos} do
+      # Complete the session by cancelling until game over
+      {:ok, s1, :cancelled} = Games.cancel_input_attempt(session.id)
+      {:ok, after_first} = Games.flip_card(s1.id, 0)
+      {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
+      {:ok, s2, :cancelled} = Games.cancel_input_attempt(after_both.id)
+      {:ok, after_first} = Games.flip_card(s2.id, 0)
+      {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
+      {:ok, completed, :game_over} = Games.cancel_input_attempt(after_both.id)
+
+      assert {:error, :game_over} = Games.cancel_input_attempt(completed.id)
+    end
+  end
+
   # Helper functions
 
   defp create_memory_card_game(classroom_id, teacher_id, attrs \\ %{}) do

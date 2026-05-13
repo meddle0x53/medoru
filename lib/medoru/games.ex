@@ -665,6 +665,54 @@ defmodule Medoru.Games do
   end
 
   @doc """
+  Cancels an input attempt after a matched pair was found.
+
+  Consumes one attempt and closes the flipped cards, just like a wrong answer.
+
+  Returns:
+    * `{:ok, session, :cancelled}` - attempt consumed, cards closed
+    * `{:ok, session, :game_over}` - no attempts remaining after cancel
+    * `{:error, :game_over}` - session already completed
+    * `{:error, :no_flipped_cards}` - fewer than 2 cards flipped
+  """
+  def cancel_input_attempt(session_id) do
+    session = Repo.get!(MemoryCardSession, session_id)
+
+    if session.status != :in_progress do
+      {:error, :game_over}
+    else
+      cards_state = session.cards_state || %{}
+      flipped = cards_state["flipped_indices"] || []
+
+      if length(flipped) < 2 do
+        {:error, :no_flipped_cards}
+      else
+        new_attempts = session.attempts_used + 1
+        new_state = Map.put(cards_state, "flipped_indices", [])
+
+        if new_attempts >= session.max_attempts do
+          complete_session_with_state(session, new_state, new_attempts)
+          |> case do
+            {:ok, completed} -> {:ok, completed, :game_over}
+            error -> error
+          end
+        else
+          session
+          |> MemoryCardSession.changeset(%{
+            attempts_used: new_attempts,
+            cards_state: new_state
+          })
+          |> Repo.update()
+          |> case do
+            {:ok, updated} -> {:ok, updated, :cancelled}
+            error -> error
+          end
+        end
+      end
+    end
+  end
+
+  @doc """
   Submits a collection answer for pronunciation/meaning conditions.
 
   Returns:
@@ -1065,11 +1113,16 @@ defmodule Medoru.Games do
   Used for rankings display.
   """
   def list_game_sessions(game_id) do
+    best_session_ids =
+      MemoryCardSession
+      |> where([s], s.game_id == ^game_id and s.status == :completed)
+      |> distinct([s], asc: s.user_id)
+      |> order_by([s], asc: s.user_id, desc: s.score, asc: s.attempts_used, asc: s.completed_at)
+      |> select([s], s.id)
+
     MemoryCardSession
-    |> where([s], s.game_id == ^game_id)
-    |> where([s], s.status == :completed)
-    |> distinct([s], asc: s.user_id)
-    |> order_by([s], asc: s.user_id, desc: s.score, asc: s.completed_at)
+    |> where([s], s.id in subquery(best_session_ids))
+    |> order_by([s], desc: s.score, asc: s.attempts_used, asc: s.completed_at)
     |> preload(user: [:profile])
     |> Repo.all()
   end

@@ -9,7 +9,7 @@ defmodule Medoru.Games.KanaMemoryCardGame do
 
   alias Medoru.Games.Game
 
-  @board_sizes ["4x4", "6x6"]
+  @board_sizes ["4x4", "5x4", "6x4", "6x5", "6x6"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -46,6 +46,9 @@ defmodule Medoru.Games.KanaMemoryCardGame do
   def board_size_to_card_count(board_size) do
     case board_size do
       "4x4" -> 16
+      "5x4" -> 20
+      "6x4" -> 24
+      "6x5" -> 30
       "6x6" -> 36
     end
   end
