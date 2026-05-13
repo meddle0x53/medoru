@@ -4,7 +4,7 @@ defmodule MedoruWeb.LessonLive.Show do
   alias Medoru.Content
   alias Medoru.Learning
 
-  embed_templates "*.html"
+  embed_templates "show*.html"
 
   @impl true
   def mount(_params, session, socket) do

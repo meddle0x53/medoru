@@ -71,9 +71,9 @@ defmodule MedoruWeb.Layouts do
               class="hidden lg:block"
             />
             <.nav_link
-              path="/lessons"
-              icon={nil}
-              label={gettext("Lessons")}
+              path="/classrooms"
+              icon="hero-academic-cap"
+              label={gettext("Classrooms")}
               locale={@current_scope[:locale]}
               class="hidden lg:block"
             />
@@ -88,13 +88,6 @@ defmodule MedoruWeb.Layouts do
               path="/words"
               icon={nil}
               label={gettext("Words")}
-              locale={@current_scope[:locale]}
-              class="hidden xl:block"
-            />
-            <.nav_link
-              path="/classrooms"
-              icon="hero-academic-cap"
-              label={gettext("Classrooms")}
               locale={@current_scope[:locale]}
               class="hidden xl:block"
             />
@@ -206,9 +199,9 @@ defmodule MedoruWeb.Layouts do
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
-                    path="/lessons"
-                    icon="hero-book-open"
-                    label={gettext("Lessons")}
+                    path="/classrooms"
+                    icon="hero-academic-cap"
+                    label={gettext("Classrooms")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
@@ -227,16 +220,6 @@ defmodule MedoruWeb.Layouts do
                     path="/daily-test"
                     icon="hero-calendar"
                     label={gettext("Daily Test")}
-                    locale={@current_scope[:locale]}
-                  />
-
-                  <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
-                    {gettext("Social")}
-                  </div>
-                  <.mobile_nav_link
-                    path="/classrooms"
-                    icon="hero-academic-cap"
-                    label={gettext("Classrooms")}
                     locale={@current_scope[:locale]}
                   />
 
@@ -526,9 +509,9 @@ defmodule MedoruWeb.Layouts do
           <% else %>
             <%!-- Anonymous User Navigation --%>
             <.nav_link
-              path="/lessons"
-              icon={nil}
-              label={gettext("Lessons")}
+              path="/classrooms"
+              icon="hero-academic-cap"
+              label={gettext("Classrooms")}
               locale={@current_scope[:locale]}
               class="hidden md:block"
             />
@@ -639,9 +622,9 @@ defmodule MedoruWeb.Layouts do
                     {gettext("Explore")}
                   </div>
                   <.mobile_nav_link
-                    path="/lessons"
-                    icon="hero-book-open"
-                    label={gettext("Lessons")}
+                    path="/classrooms"
+                    icon="hero-academic-cap"
+                    label={gettext("Classrooms")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link

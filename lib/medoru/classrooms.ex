@@ -1876,6 +1876,83 @@ defmodule Medoru.Classrooms do
     }
   end
 
+  @doc """
+  Returns active custom lessons from all classrooms where the user is an approved student.
+
+  Supports pagination via `:page` and `:per_page` options.
+
+  ## Options
+    * `:page` - Page number (default: 1)
+    * `:per_page` - Items per page (default: 20)
+
+  Returns `%{lessons: [...], total_count: integer, total_pages: integer}`.
+  """
+  def list_all_student_classroom_lessons(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+
+    # Base query for all active classroom custom lessons
+    base_query =
+      ClassroomCustomLesson
+      |> join(:inner, [ccl], c in Classroom, on: ccl.classroom_id == c.id)
+      |> join(:inner, [ccl, c], m in ClassroomMembership,
+        on: m.classroom_id == c.id and m.user_id == ^user_id and m.status == :approved
+      )
+      |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
+      |> where([ccl], ccl.status == "active")
+      |> where([custom_lesson: cl], cl.status != "archived")
+      |> order_by([ccl], desc: ccl.published_at)
+      |> preload([:custom_lesson, :classroom])
+
+    # Get total count
+    total_count =
+      base_query
+      |> exclude(:preload)
+      |> exclude(:order_by)
+      |> select([ccl], count(ccl.id))
+      |> Repo.one()
+
+    # Paginated results
+    lessons =
+      base_query
+      |> limit(^per_page)
+      |> offset((^page - 1) * ^per_page)
+      |> Repo.all()
+
+    # Get all progress records for these lessons
+    classroom_ids = Enum.map(lessons, & &1.classroom_id)
+    custom_lesson_ids = Enum.map(lessons, & &1.custom_lesson_id)
+
+    progress_map =
+      if lessons == [] do
+        %{}
+      else
+        ClassroomLessonProgress
+        |> where([p], p.user_id == ^user_id)
+        |> where([p], p.lesson_source == "custom")
+        |> where([p], p.classroom_id in ^classroom_ids)
+        |> where([p], p.custom_lesson_id in ^custom_lesson_ids)
+        |> Repo.all()
+        |> Map.new(fn p ->
+          {{p.classroom_id, p.custom_lesson_id}, %{status: p.status, points_earned: p.points_earned}}
+        end)
+      end
+
+    lessons_with_progress =
+      Enum.map(lessons, fn ccl ->
+        progress = Map.get(progress_map, {ccl.classroom_id, ccl.custom_lesson_id})
+        Map.put(ccl, :student_progress, progress)
+      end)
+
+    total_pages = max(ceil(total_count / per_page), 1)
+
+    %{
+      lessons: lessons_with_progress,
+      total_count: total_count,
+      total_pages: total_pages
+    }
+  end
+
   # ============================================================================
   # Point Management
   # ============================================================================
