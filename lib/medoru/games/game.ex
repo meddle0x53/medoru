@@ -10,7 +10,7 @@ defmodule Medoru.Games.Game do
 
   alias Medoru.Classrooms.Classroom
 
-  @types ["memory_cards", "kana_memory_cards"]
+  @types ["memory_cards", "kana_memory_cards", "kana_falling"]
   @statuses [:draft, :published]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -25,7 +25,9 @@ defmodule Medoru.Games.Game do
     belongs_to :classroom, Classroom
     has_one :memory_card_game, Medoru.Games.MemoryCardGame
     has_one :kana_memory_card_game, Medoru.Games.KanaMemoryCardGame
+    has_one :kana_falling_game, Medoru.Games.KanaFallingGame
     has_many :memory_card_sessions, Medoru.Games.MemoryCardSession
+    has_many :kana_falling_sessions, Medoru.Games.KanaFallingSession
 
     timestamps(type: :utc_datetime)
   end

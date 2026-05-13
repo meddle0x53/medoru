@@ -947,23 +947,44 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           </span>
                         <% end %>
                       </div>
+                    <% game.kana_falling_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                          {gettext("Speed")} {game.kana_falling_game.initial_speed}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.kana_falling_game.lives} {gettext("lives")}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-language" class="w-3 h-3 mr-1" />
+                          {length(game.kana_falling_game.selected_kana)} {gettext("kana")}
+                        </span>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>
 
                 <div class="sm:ml-4 self-start sm:self-auto">
                   <div class="flex items-center gap-2">
+                    <% play_path =
+                      if game.type == "kana_falling" do
+                        ~p"/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+                      else
+                        ~p"/classrooms/#{@classroom.id}/games/#{game.id}"
+                      end %>
                     <%= case get_game_status(session) do %>
                       <% :not_started -> %>
                         <.link
-                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          navigate={play_path}
                           class="btn btn-primary btn-sm sm:btn-md"
                         >
                           <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Play")}
                         </.link>
                       <% :in_progress -> %>
                         <.link
-                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          navigate={play_path}
                           class="btn btn-warning btn-sm sm:btn-md"
                         >
                           <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
@@ -973,18 +994,22 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           {session.score} {gettext("pts")}
                         </span>
                         <.link
-                          navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}"}
+                          navigate={play_path}
                           class="btn btn-secondary btn-sm"
                         >
                           <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
                         </.link>
                     <% end %>
-                    <.link
-                      navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}/rankings"}
-                      class="btn btn-ghost btn-sm"
-                    >
-                      <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
-                    </.link>
+                    <%= if game.type == "kana_falling" do %>
+                      <%!-- No rankings link for falling game (shown on game over instead) --%>
+                    <% else %>
+                      <.link
+                        navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}/rankings"}
+                        class="btn btn-ghost btn-sm"
+                      >
+                        <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
+                      </.link>
+                    <% end %>
                   </div>
                 </div>
               </div>

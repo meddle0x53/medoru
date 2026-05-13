@@ -9,7 +9,7 @@ defmodule Medoru.Games do
   alias Medoru.Repo
 
   alias Medoru.Classrooms
-  alias Medoru.Games.{Game, MemoryCardGame, MemoryCardGameWord, MemoryCardSession}
+  alias Medoru.Games.{Game, MemoryCardGame, MemoryCardGameWord, MemoryCardSession, KanaFallingGame, KanaFallingSession}
 
   # ============================================================================
   # Game Queries
@@ -46,7 +46,7 @@ defmodule Medoru.Games do
         type -> where(query, [g], g.type == ^type)
       end
     end)
-    |> preload([:memory_card_game, :kana_memory_card_game])
+    |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game])
     |> order_by([g], desc: g.inserted_at)
     |> Repo.all()
   end
@@ -70,7 +70,8 @@ defmodule Medoru.Games do
     |> Repo.preload(
       classroom: [:teacher],
       memory_card_game: [memory_card_game_words: [:word]],
-      kana_memory_card_game: []
+      kana_memory_card_game: [],
+      kana_falling_game: []
     )
   end
 
@@ -82,7 +83,8 @@ defmodule Medoru.Games do
     |> Repo.get!(id)
     |> Repo.preload(
       memory_card_game: [memory_card_game_words: [word: [:word_kanjis]]],
-      kana_memory_card_game: []
+      kana_memory_card_game: [],
+      kana_falling_game: []
     )
   end
 
@@ -432,11 +434,23 @@ defmodule Medoru.Games do
   Gets the most recent session for a user and game.
   """
   def get_user_session(game_id, user_id) do
-    MemoryCardSession
-    |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
-    |> order_by([s], desc: s.inserted_at)
-    |> limit(1)
-    |> Repo.one()
+    game = Repo.get!(Game, game_id)
+
+    case game.type do
+      "kana_falling" ->
+        KanaFallingSession
+        |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+        |> order_by([s], desc: s.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      _ ->
+        MemoryCardSession
+        |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+        |> order_by([s], desc: s.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+    end
   end
 
   @doc """
@@ -1103,6 +1117,140 @@ defmodule Medoru.Games do
       {:ok, nil}
     end
   end
+
+  # ============================================================================
+  # Kana Falling Games
+  # ============================================================================
+
+  @doc """
+  Creates a kana falling game with kana selection.
+  """
+  def create_kana_falling_game(classroom_id, teacher_id, attrs, selected_kana) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name],
+          type: "kana_falling",
+          status: :draft,
+          max_players: 1,
+          classroom_id: classroom_id
+        }
+
+        game =
+          %Game{}
+          |> Game.changeset(game_attrs)
+          |> Repo.insert!()
+
+        kfg_attrs = %{
+          game_id: game.id,
+          initial_speed: parse_int(get_in(attrs, ["kana_falling_game", "initial_speed"]) || get_in(attrs, [:kana_falling_game, :initial_speed]), 1),
+          speed_increase_threshold: parse_int(get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kana_falling_game, :speed_increase_threshold]), 50),
+          lives: parse_int(get_in(attrs, ["kana_falling_game", "lives"]) || get_in(attrs, [:kana_falling_game, :lives]), 3),
+          extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), 100),
+          points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), 1),
+          selected_kana: selected_kana,
+          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image])
+        }
+
+        %KanaFallingGame{}
+        |> KanaFallingGame.changeset(kfg_attrs)
+        |> Repo.insert!()
+
+        get_game!(game.id)
+      end)
+    end
+  end
+
+  @doc """
+  Updates a kana falling game and its kana selection.
+  """
+  def update_kana_falling_game(%Game{} = game, teacher_id, attrs, selected_kana) do
+    if game.classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name] || game.name,
+          max_players: 1
+        }
+
+        game =
+          game
+          |> Game.changeset(game_attrs)
+          |> Repo.update!()
+
+        kfg = Repo.get_by!(KanaFallingGame, game_id: game.id)
+
+        kfg_attrs = %{
+          initial_speed: parse_int(get_in(attrs, ["kana_falling_game", "initial_speed"]) || get_in(attrs, [:kana_falling_game, :initial_speed]), kfg.initial_speed),
+          speed_increase_threshold: parse_int(get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kana_falling_game, :speed_increase_threshold]), kfg.speed_increase_threshold),
+          lives: parse_int(get_in(attrs, ["kana_falling_game", "lives"]) || get_in(attrs, [:kana_falling_game, :lives]), kfg.lives),
+          extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), kfg.extra_life_threshold),
+          points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), kfg.points_per_kana),
+          selected_kana: selected_kana,
+          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]) || kfg.background_image
+        }
+
+        kfg
+        |> KanaFallingGame.changeset(kfg_attrs)
+        |> Repo.update!()
+
+        get_game!(game.id)
+      end)
+    end
+  end
+
+  @doc """
+  Creates a completed kana falling session after game over.
+  """
+  def create_kana_falling_session(attrs) do
+    %KanaFallingSession{}
+    |> KanaFallingSession.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists kana falling sessions for rankings (best score per user).
+  """
+  def list_kana_falling_sessions(game_id) do
+    best_session_ids =
+      KanaFallingSession
+      |> where([s], s.game_id == ^game_id)
+      |> distinct([s], asc: s.user_id)
+      |> order_by([s], asc: s.user_id, desc: s.score, asc: s.completed_at)
+      |> select([s], s.id)
+
+    KanaFallingSession
+    |> where([s], s.id in subquery(best_session_ids))
+    |> order_by([s], desc: s.score, asc: s.completed_at)
+    |> preload(user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the user's high score for a kana falling game.
+  """
+  def get_kana_falling_high_score(game_id, user_id) do
+    KanaFallingSession
+    |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+    |> select([s], max(s.score))
+    |> Repo.one() || 0
+  end
+
+  defp parse_int(nil, default), do: default
+  defp parse_int("", default), do: default
+  defp parse_int(val, default) when is_binary(val) do
+    case Integer.parse(val) do
+      {n, _} -> n
+      :error -> default
+    end
+  end
+  defp parse_int(val, _default) when is_integer(val), do: val
+  defp parse_int(_, default), do: default
 
   # ============================================================================
   # Rankings

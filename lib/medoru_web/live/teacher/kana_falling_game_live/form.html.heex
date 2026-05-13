@@ -1,0 +1,207 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">{@page_title}</h1>
+      <p class="text-secondary">
+        {gettext("Configure a falling kana typing game for your students.")}
+      </p>
+    </div>
+
+    <%!-- Form --%>
+    <form phx-submit="save" phx-change="update_field" class="space-y-6">
+      <%!-- Game Name --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("Game Name")} <span class="text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          value={@name}
+          placeholder={gettext("e.g., Kana Falling Challenge")}
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+        <%= if @form_errors[:name] do %>
+          <p class="text-error text-sm mt-1">{@form_errors[:name]}</p>
+        <% end %>
+      </div>
+
+      <%!-- Settings Grid --%>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <%!-- Initial Speed --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Initial Speed")}
+          </label>
+          <select
+            name="initial_speed"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- speed_options() do %>
+              <option value={value} selected={@initial_speed == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+
+        <%!-- Lives --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Starting Lives")}
+          </label>
+          <input
+            type="number"
+            name="lives"
+            value={@lives}
+            min="1"
+            max="10"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Speed Increase Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Speed Up Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="speed_increase_threshold"
+            value={@speed_increase_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Extra Life Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Extra Life Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="extra_life_threshold"
+            value={@extra_life_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Points Per Kana --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Points Per Kana")}
+          </label>
+          <input
+            type="number"
+            name="points_per_kana"
+            value={@points_per_kana}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+      </div>
+
+      <%!-- Kana Selection --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Select Kana")} <span class="text-error">*</span>
+        </label>
+        <p class="text-secondary text-sm mb-3">
+          {gettext("Choose which kana characters will appear in the game.")}
+        </p>
+
+        <%= if @form_errors[:selected_kana] do %>
+          <p class="text-error text-sm mb-2">{@form_errors[:selected_kana]}</p>
+        <% end %>
+
+        <div class="space-y-4">
+          <%!-- Hiragana --%>
+          <div class="border border-base-300 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-base-content">{gettext("Hiragana")}</h3>
+              <button
+                type="button"
+                phx-click="toggle_row"
+                phx-value-row="hiragana"
+                class="text-sm text-primary hover:text-primary/80"
+              >
+                {gettext("Toggle All")}
+              </button>
+            </div>
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+              <%= for kana <- Medoru.Content.Kana.list_hiragana() do %>
+                <button
+                  type="button"
+                  phx-click="toggle_kana"
+                  phx-value-character={kana.character}
+                  class={[
+                    "w-10 h-10 rounded-lg text-lg font-medium transition-all",
+                    if(kana.character in @selected_kana,
+                      do: "bg-primary text-primary-content shadow-md",
+                      else: "bg-base-200 text-secondary hover:bg-base-300"
+                    )
+                  ]}
+                >
+                  {kana.character}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Katakana --%>
+          <div class="border border-base-300 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-base-content">{gettext("Katakana")}</h3>
+              <button
+                type="button"
+                phx-click="toggle_row"
+                phx-value-row="katakana"
+                class="text-sm text-primary hover:text-primary/80"
+              >
+                {gettext("Toggle All")}
+              </button>
+            </div>
+            <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+              <%= for kana <- Medoru.Content.Kana.list_katakana() do %>
+                <button
+                  type="button"
+                  phx-click="toggle_kana"
+                  phx-value-character={kana.character}
+                  class={[
+                    "w-10 h-10 rounded-lg text-lg font-medium transition-all",
+                    if(kana.character in @selected_kana,
+                      do: "bg-primary text-primary-content shadow-md",
+                      else: "bg-base-200 text-secondary hover:bg-base-300"
+                    )
+                  ]}
+                >
+                  {kana.character}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Selected Count --%>
+          <div class="text-sm text-secondary">
+            {gettext("Selected: %{count} kana", count: length(@selected_kana))}
+          </div>
+        </div>
+      </div>
+
+      <%!-- Actions --%>
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="btn btn-primary">
+          <.icon name="hero-check" class="w-4 h-4 mr-1" />
+          {if @mode == :new, do: gettext("Create Game"), else: gettext("Update Game")}
+        </button>
+        <.link
+          navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+          class="btn btn-ghost"
+        >
+          {gettext("Cancel")}
+        </.link>
+      </div>
+    </form>
+  </div>
+</Layouts.app>

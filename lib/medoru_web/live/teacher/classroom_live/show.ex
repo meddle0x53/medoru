@@ -849,6 +849,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           >
             <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
           </.link>
+          <.link
+            navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/new"}
+            class="btn btn-accent btn-sm"
+          >
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Falling Game")}
+          </.link>
         </div>
       </div>
 
@@ -865,6 +871,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             </.link>
             <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"} class="btn btn-secondary">
               <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
+            </.link>
+            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/new"} class="btn btn-accent">
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Falling Game")}
             </.link>
           </div>
         </div>
@@ -922,6 +931,21 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                             </span>
                           <% end %>
                         </div>
+                      <% game.kana_falling_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                            {gettext("Speed")} {game.kana_falling_game.initial_speed}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                            {game.kana_falling_game.lives} {gettext("lives")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-language" class="w-3 h-3 mr-1" />
+                            {length(game.kana_falling_game.selected_kana)} {gettext("kana")}
+                          </span>
+                        </div>
                       <% true -> %>
                     <% end %>
                   </div>
@@ -945,10 +969,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                     <% end %>
                     <.link
                       navigate={
-                        if game.type == "kana_memory_cards" do
-                          ~p"/teacher/classrooms/#{@classroom.id}/kana-games/#{game.id}"
-                        else
-                          ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"
+                        case game.type do
+                          "kana_memory_cards" ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/kana-games/#{game.id}"
+                          "kana_falling" ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+                          _ ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"
                         end
                       }
                       class="btn btn-primary btn-sm"
