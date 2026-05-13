@@ -1,10 +1,23 @@
 # Medoru - Current State
 
-**Version**: 0.1.6 ✅ COMPLETE  
-**Status**: Deployed to production  
-**Tests**: 689 passing  
+**Version**: 0.1.7 🔄 IN PROGRESS  
+**Status**: Kana games + classroom improvements complete, testing  
+**Tests**: 707 passing  
 **URL**: https://medoru.net  
-**Last Updated**: 2026-05-11
+**Last Updated**: 2026-05-12
+
+---
+
+## 🔄 In Progress (v0.1.7)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Kana Memory Card Games | ✅ | 4x4/6x6 boards, gojuon selection, romaji input option |
+| Classroom Settings Edit | ✅ | Teachers can edit name, description, public, approval |
+| Membership Auto-Approval | ✅ | `should_approve_memberships` toggle per classroom |
+| Public Classrooms | ✅ | Discoverable classrooms with search + pagination |
+| Lesson Reordering Fix | ✅ | Duplicate `order_index` detection + production migration |
+| Self-Join Prevention | ✅ | Teachers can't join their own classrooms |
 
 ---
 
@@ -110,7 +123,7 @@ bin/qa server
 - **Kanji**: 2,212 (N5-N1)
 - **Words**: 145,936 (N5-N3)
 - **Lessons**: 300+ (100 N5 + 100 N4 + 100 N3)
-- **Tests**: 689
+- **Tests**: 707
 - **Conjugations**: 66,396
 
 ---

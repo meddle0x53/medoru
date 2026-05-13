@@ -3,30 +3,28 @@
 ## Current State
 
 **Version**: 0.1.7 🔄 IN PROGRESS  
-**Status**: Single-player Classroom Memory Card Games complete — additional v0.1.7 features planned  
+**Status**: Kana memory card games + classroom improvements complete  
 **Tests**: 707 passing  
 **URL**: https://medoru.net
 
-### What's Complete (v0.1.7) — Single Player Card Game
-- Classroom Memory Card Games: Single-player memory card game for classroom vocabulary practice
-- Teacher game creation: Create memory card games with word selection, board size (4x4 to 10x10), max attempts, collection conditions
-- Collection conditions: Direct, meaning required, pronunciation required, meaning+pronunciation, meaning-or-pronunciation
-- Points per word: Configurable points for each word in the game
-- Word Set import: Teachers can import words from their word sets to fill missing slots
-- Publish/unpublish games: Teachers control game availability to students
-- Teacher rankings view: Shows best score per student with avatar, score, and attempts
-- Student gameplay: Flip cards, match pairs, 3-second mismatch reveal, input modal for collection conditions
-- Student rankings page: `/classrooms/:id/games/:game_id/rankings` — view leaderboard without playing
-- i18n-aware meaning validation: Students can answer in English or their own language
-- Reading/pronunciation hiding: Cards hide reading when pronunciation is required to be typed
-- Rectangular cards: Cards use 3:4 aspect ratio like real playing cards
-- Auto-clear stale flipped cards: On mount and cancel, handles crash recovery
-- Wrong answer display: Modal stays open 2.5s with error message and disabled inputs
-- Points reset on replay: Previous session points subtracted when starting a new game
-- Game over handling: Wrong answers on last attempt properly complete the session
+### What's Complete (v0.1.7) — Kana Games & Classroom Improvements
+- Kana Memory Card Games: Memory card game for hiragana/katakana practice
+  - Board sizes 4x4 and 6x6 with gojuon row selection
+  - Optional romaji input requirement after matching pairs
+  - Reuses existing session infrastructure with kana chars in card_positions
+- Classroom settings editing: Teachers can edit classroom name and description
+- Classroom membership approval toggle: `should_approve_memberships` field
+  - When true (default): students apply and wait for teacher approval
+  - When false: students are auto-approved on join
+- Public classrooms: `public` field makes classrooms discoverable
+  - Public classrooms listed in `/classrooms` with search and pagination
+  - Students can join public classrooms without an invite code
+  - Teachers can set public/private on creation and in settings
+- Lesson reordering bug fix: `ensure_lesson_order_indices` now handles duplicate indices
+- Invite code join protection: Teachers can no longer join their own classrooms
 
 ### What's Next (v0.1.7)
-- Additional features planned — see PLAN-v0.1.7.md for details
+- Bug fixes and polish — see STATE.md for details
 
 ### What's Complete (v0.1.6)
 - Word type filter: Filter words by type (noun, verb, adjective, etc.)
