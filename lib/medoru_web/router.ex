@@ -170,6 +170,9 @@ defmodule MedoruWeb.Router do
       live "/classrooms/:classroom_id/kana-falling-games/new", KanaFallingGameLive.Form, :new
       live "/classrooms/:classroom_id/kana-falling-games/:id/edit", KanaFallingGameLive.Form, :edit
       live "/classrooms/:classroom_id/kana-falling-games/:id", KanaFallingGameLive.Show
+      live "/classrooms/:classroom_id/kanji-falling-games/new", KanjiFallingGameLive.Form, :new
+      live "/classrooms/:classroom_id/kanji-falling-games/:id/edit", KanjiFallingGameLive.Form, :edit
+      live "/classrooms/:classroom_id/kanji-falling-games/:id", KanjiFallingGameLive.Show
 
       live "/tests", TestLive.Index
       live "/tests/new", TestLive.New
@@ -206,6 +209,7 @@ defmodule MedoruWeb.Router do
       live "/:classroom_id/games/:game_id", ClassroomGameLive.Play
       live "/:classroom_id/games/:game_id/rankings", ClassroomGameLive.Rankings
       live "/:classroom_id/kana-falling-games/:game_id", KanaFallingGameLive.Play
+      live "/:classroom_id/kanji-falling-games/:game_id", KanjiFallingGameLive.Play
     end
   end
 

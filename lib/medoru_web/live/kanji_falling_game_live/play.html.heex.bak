@@ -1,0 +1,423 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div
+    id="kana-falling-game-container"
+    class="w-full h-dvh flex flex-col bg-base-100"
+    data-kana-falling-game="true"
+    phx-hook="KanaFallingInput"
+  >
+    <%!-- Inner wrapper keeps proportions even in fullscreen --%>
+    <div class="flex-1 flex flex-col max-w-lg mx-auto w-full px-3 py-2 sm:px-4 sm:py-4">
+      <%!-- Header Info --%>
+      <div class="flex items-center justify-between shrink-0 mb-2 sm:mb-3">
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold text-base-content leading-tight truncate">
+            {@game.name}
+          </h1>
+          <div class="text-xs text-secondary">
+            {gettext("High Score")}: {@high_score}
+          </div>
+        </div>
+        <%= if @status in [:playing, :paused] do %>
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
+            <div class="text-center">
+              <div class="text-[10px] sm:text-xs text-secondary">{gettext("Score")}</div>
+              <div class="text-lg sm:text-xl font-bold text-primary">{@score}</div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] sm:text-xs text-secondary">{gettext("Speed")}</div>
+              <div class="text-lg sm:text-xl font-bold text-warning">{@speed}</div>
+            </div>
+            <div class="text-center">
+              <div class="text-[10px] sm:text-xs text-secondary">{gettext("Lives")}</div>
+              <div class="text-lg sm:text-xl font-bold text-error flex">
+                <%= if @lives > 0 do %>
+                  <%= for _i <- 1..@lives do %>
+                    <.icon name="hero-heart" class="w-4 h-4 sm:w-5 sm:h-5" />
+                  <% end %>
+                <% end %>
+                <%= if @max_lives > @lives do %>
+                  <%= for _i <- 1..(@max_lives - @lives) do %>
+                    <.icon name="hero-heart" class="w-4 h-4 sm:w-5 sm:h-5 opacity-30" />
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+            <%= if @status == :playing do %>
+              <button
+                phx-click="pause_game"
+                class="btn btn-ghost btn-circle btn-sm"
+                title={gettext("Pause")}
+              >
+                <.icon name="hero-pause" class="w-5 h-5" />
+              </button>
+            <% else %>
+              <button
+                phx-click="resume_game"
+                class="btn btn-primary btn-circle btn-sm"
+                title={gettext("Resume")}
+              >
+                <.icon name="hero-play" class="w-5 h-5" />
+              </button>
+            <% end %>
+            <button
+              phx-click="exit_game"
+              class="btn btn-ghost btn-circle btn-sm text-error"
+              title={gettext("Exit (Esc)")}
+            >
+              <.icon name="hero-x-mark" class="w-5 h-5" />
+            </button>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Game Field --%>
+      <div
+        class="flex-1 relative bg-base-200 sm:rounded-xl overflow-hidden border-2 border-base-300"
+        style={[
+          "min-height: 300px;",
+          if(@config.background_image, do: "background-image: url(#{@config.background_image}); background-size: cover; background-position: center;", else: "")
+        ]}
+        data-game-field="true"
+      >
+      <%!-- Grid lines --%>
+      <%= for row <- 1..40 do %>
+        <div
+          class="absolute left-0 right-0 border-b border-base-300/30"
+          style={"top: #{row * 2.5}%;"}
+        ></div>
+      <% end %>
+
+      <%!-- Death line (row 20) --%>
+      <div
+        class="absolute left-0 right-0 border-b-4 border-error z-10"
+        style="top: 50%;"
+      >
+        <span class="absolute right-1 -top-7 text-xs text-error font-bold bg-error/15 px-2 py-1 rounded">
+          {gettext("Danger")}
+        </span>
+      </div>
+
+      <%= cond do %>
+        <% @status == :ready -> %>
+          <%!-- Ready Screen --%>
+          <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-base-100/90 px-4 overflow-y-auto py-4">
+            <div class="text-5xl sm:text-6xl mb-4">⌨️</div>
+            <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
+              {gettext("Kana Cascade")}
+            </h2>
+            <p class="text-secondary text-center max-w-xs mb-2 text-sm sm:text-base">
+              {gettext("Type the romaji of the falling kana before it reaches the danger line!")}
+            </p>
+            <div class="text-xs sm:text-sm text-secondary mb-4 space-y-1">
+              <div>{gettext("Initial Speed")}: {@config.initial_speed}</div>
+              <div>{gettext("Lives")}: {@config.lives}</div>
+              <div>{gettext("Speed Up Every")}: {@config.speed_increase_threshold} {gettext("pts")}</div>
+            </div>
+            <%= if @high_score > 0 do %>
+              <div class="text-base sm:text-lg font-semibold text-primary mb-4">
+                {gettext("Your High Score")}: {@high_score}
+              </div>
+            <% end %>
+            <div class="flex flex-col gap-2">
+              <button
+                phx-click="start_game_fullscreen"
+                class="btn btn-primary btn-lg"
+                id="start-game-btn"
+                phx-mounted={JS.focus()}
+              >
+                <.icon name="hero-play" class="w-5 h-5 mr-1" />
+                {gettext("Start Game")}
+              </button>
+              <%= if @is_mobile == false do %>
+                <button
+                  phx-click="start_game"
+                  class="btn btn-ghost btn-sm text-secondary"
+                >
+                  <.icon name="hero-window" class="w-4 h-4 mr-1" />
+                  {gettext("Play Windowed")}
+                </button>
+              <% end %>
+            </div>
+            <.link
+              navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+              class="btn btn-ghost btn-sm mt-3"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
+              {gettext("Back to Games")}
+            </.link>
+
+            <%!-- Rankings --%>
+            <div class="w-full max-w-xs mt-4">
+              <h3 class="text-xs sm:text-sm font-semibold text-base-content mb-2 text-center">
+                <.icon name="hero-trophy" class="w-4 h-4 mr-1" />
+                {gettext("Rankings")}
+              </h3>
+              <%= if @sessions == [] do %>
+                <p class="text-center text-secondary text-xs sm:text-sm">
+                  {gettext("No scores yet.")}
+                </p>
+              <% else %>
+                <div class="space-y-1">
+                  <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+                    <div class={[
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm",
+                      if(session.user_id == @current_scope.current_user.id,
+                        do: "bg-primary/10",
+                        else: "bg-base-200"
+                      )
+                    ]}>
+                      <span class="w-5 text-center font-bold text-secondary">{index}</span>
+                      <span class="flex-1 truncate">
+                        {session.user.profile && session.user.profile.display_name || session.user.name || gettext("Anonymous")}
+                      </span>
+                      <span class="font-bold text-primary">{session.score}</span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+        <% @status == :playing and @current_kana -> %>
+          <%!-- Falling Kana --%>
+          <% {bg_color, text_color} = if @config.color_coded_rows, do: kana_color(@current_kana), else: {nil, nil} %>
+          <div
+            class={[
+              "absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg z-10 transition-all duration-100",
+              if(@config.color_coded_rows, do: "", else: "bg-primary text-primary-content")
+            ]}
+            style={[
+              row_position_css(@current_kana.row),
+              if(@config.color_coded_rows, do: "background-color: #{bg_color}; color: #{text_color};", else: "")
+            ]}
+          >
+            {@current_kana.char}
+          </div>
+
+          <%!-- On-screen Keyboard --%>
+          <% key_btn = "rounded bg-base-100/80 border border-base-300 text-xs font-bold text-base-content active:bg-primary active:text-primary-content shadow-sm" %>
+          <% key_btn_landscape = "rounded bg-slate-800 border border-slate-600 text-xs font-bold text-white active:bg-primary active:text-primary-content shadow-sm" %>
+
+          <%!-- Portrait: bottom center --%>
+          <div class="absolute left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-sm [@media(min-aspect-ratio:1/1)]:hidden" style="bottom: 100px;">
+            <div class="grid grid-cols-10 gap-1">
+              <%= for letter <- ["q","w","e","r","t","y","u","i","o","p"] do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn]}>
+                  {letter}
+                </button>
+              <% end %>
+              <%= for {letter, idx} <- Enum.with_index(["a","s","d","f","g","h","j","k","l"]) do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn, idx == 0 && "col-start-2"]}>
+                  {letter}
+                </button>
+              <% end %>
+              <%= for {letter, idx} <- Enum.with_index(["z","x","c","v","b","n","m"]) do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn, idx == 0 && "col-start-3"]}>
+                  {letter}
+                </button>
+              <% end %>
+            </div>
+            <div class="flex gap-1 mt-1">
+              <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["flex-1 py-1.5", key_btn, "active:bg-error active:text-error-content"]}>
+                <.icon name="hero-backspace" class="w-4 h-4" />
+              </button>
+              <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["flex-1 py-1.5", key_btn]}>
+                Enter
+              </button>
+            </div>
+          </div>
+
+          <%!-- Landscape: left side --%>
+          <div class="fixed left-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+            <div class="flex flex-col gap-1">
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["q","w","e","r","t"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["a","s","d","f","g"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["z","x","c","v","b"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["w-full h-9 sm:h-10", key_btn_landscape, "active:bg-error active:text-error-content"]}>
+                <.icon name="hero-backspace" class="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          <%!-- Landscape: right side --%>
+          <div class="fixed right-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+            <div class="flex flex-col gap-1">
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["y","u","i","o","p"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["h","j","k","l"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["n","m"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["w-full h-9 sm:h-10", key_btn_landscape]}>
+                Enter
+              </button>
+            </div>
+          </div>
+
+          <%!-- Input Buffer Display --%>
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-xs">
+            <div class="bg-base-100/90 backdrop-blur rounded-xl px-4 py-2 sm:px-6 sm:py-3 border border-base-300 shadow-lg text-center">
+              <div class="text-xs text-secondary mb-1">{gettext("Type the romaji")}</div>
+              <div class="text-xl sm:text-2xl font-mono font-bold text-base-content min-h-[1.5rem] sm:min-h-[2rem]">
+                {@input_buffer}<span class="animate-pulse text-primary">|</span>
+              </div>
+            </div>
+          </div>
+
+        <% @status == :paused -> %>
+          <%!-- Paused Overlay --%>
+          <div class="absolute inset-0 flex flex-col items-center justify-center z-30 bg-base-100/80 backdrop-blur-sm">
+            <.icon name="hero-pause-circle" class="w-16 h-16 sm:w-20 sm:h-20 text-primary mb-4" />
+            <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
+              {gettext("Paused")}
+            </h2>
+            <div class="text-sm text-secondary mb-6">
+              {gettext("Score")}: <span class="font-bold text-primary">{@score}</span>
+              <span class="mx-2">·</span>
+              {gettext("Speed")}: <span class="font-bold text-warning">{@speed}</span>
+            </div>
+            <div class="flex flex-col gap-3 w-[200px]">
+              <button
+                phx-click="resume_game"
+                class="btn btn-primary"
+                id="resume-game-btn"
+                phx-mounted={JS.focus()}
+              >
+                <.icon name="hero-play" class="w-5 h-5 mr-1" />
+                {gettext("Resume")}
+              </button>
+              <button
+                phx-click="exit_game"
+                class="btn btn-outline btn-error"
+              >
+                <.icon name="hero-arrow-left-start-on-rectangle" class="w-5 h-5 mr-1" />
+                {gettext("Exit Game")}
+              </button>
+            </div>
+            <div class="mt-4 text-xs text-secondary/60">
+              {gettext("Press Esc to exit")}
+            </div>
+          </div>
+
+        <% @status == :game_over -> %>
+          <%!-- Game Over Screen --%>
+          <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-base-100/95 overflow-y-auto py-4 px-4">
+            <div class="text-5xl sm:text-6xl mb-2">🏆</div>
+            <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-1">
+              {gettext("Game Over")}
+            </h2>
+            <div class="text-3xl sm:text-4xl font-bold text-primary mb-1">
+              {@score}
+            </div>
+            <div class="text-xs sm:text-sm text-secondary mb-4">
+              {gettext("points")}
+            </div>
+
+            <%= if @score >= @high_score do %>
+              <div class="badge badge-warning badge-lg mb-4">
+                <.icon name="hero-trophy" class="w-4 h-4 mr-1" />
+                {gettext("New High Score!")}
+              </div>
+            <% else %>
+              <div class="text-xs sm:text-sm text-secondary mb-4">
+                {gettext("High Score")}: {@high_score}
+              </div>
+            <% end %>
+
+            <div class="flex gap-4 mb-6 text-xs sm:text-sm">
+              <div class="text-center">
+                <div class="text-secondary">{gettext("Max Speed")}</div>
+                <div class="font-bold text-base-content">{@highest_speed_reached}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-secondary">{gettext("Lives Used")}</div>
+                <div class="font-bold text-base-content">{@lives_used}</div>
+              </div>
+            </div>
+
+            <%!-- Rankings --%>
+            <div class="w-full max-w-xs mb-6">
+              <h3 class="text-xs sm:text-sm font-semibold text-base-content mb-2 text-center">
+                {gettext("Rankings")}
+              </h3>
+              <%= if @sessions == [] do %>
+                <p class="text-center text-secondary text-xs sm:text-sm">
+                  {gettext("No scores yet.")}
+                </p>
+              <% else %>
+                <div class="space-y-1">
+                  <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+                    <div class={[
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm",
+                      if(session.user_id == @current_scope.current_user.id,
+                        do: "bg-primary/10",
+                        else: "bg-base-200"
+                      )
+                    ]}>
+                      <span class="w-5 text-center font-bold text-secondary">{index}</span>
+                      <span class="flex-1 truncate">
+                        {session.user.profile && session.user.profile.display_name || session.user.name || gettext("Anonymous")}
+                      </span>
+                      <span class="font-bold text-primary">{session.score}</span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <button
+                phx-click="restart_game"
+                class="btn btn-primary"
+                id="restart-game-btn"
+                phx-mounted={JS.focus()}
+              >
+                <.icon name="hero-arrow-path" class="w-5 h-5 mr-1" />
+                {gettext("Play Again")}
+              </button>
+              <.link
+                navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                class="btn btn-ghost btn-sm"
+              >
+                <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
+                {gettext("Back to Games")}
+              </.link>
+            </div>
+          </div>
+
+        <% true -> %>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Keyboard Capture Overlay (when playing or paused) --%>
+  <%= if @status in [:playing, :paused] do %>
+    <div
+      phx-window-keydown="key_pressed"
+      class="fixed inset-0 z-50"
+      style="pointer-events: none;"
+    ></div>
+  <% end %>
+</div>
+</Layouts.app>

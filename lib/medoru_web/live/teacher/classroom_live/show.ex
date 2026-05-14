@@ -928,6 +928,25 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                             {length(game.kana_falling_game.selected_kana)} {gettext("kana")}
                           </span>
                         </div>
+                      <% game.kanji_falling_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                            {gettext("Speed")} {game.kanji_falling_game.initial_speed}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                            {game.kanji_falling_game.lives} {gettext("lives")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-language" class="w-3 h-3 mr-1" />
+                            {length(game.kanji_falling_game.selected_kanji)} {gettext("kanji")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-pencil" class="w-3 h-3 mr-1" />
+                            {game.kanji_falling_game.reading_type}
+                          </span>
+                        </div>
                       <% true -> %>
                     <% end %>
                   </div>
@@ -956,6 +975,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                             ~p"/teacher/classrooms/#{@classroom.id}/kana-games/#{game.id}"
                           "kana_falling" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+                          "kanji_falling" ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
                           _ ->
                             ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"
                         end

@@ -1,0 +1,333 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">{@page_title}</h1>
+      <p class="text-secondary">
+        {gettext("Configure a falling kanji typing game for your students.")}
+      </p>
+    </div>
+
+    <%!-- Form --%>
+    <form phx-submit="save" phx-change="update_field" class="space-y-6">
+      <%!-- Game Name --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("Game Name")} <span class="text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          value={@name}
+          placeholder={gettext("e.g., N5 Kanji Challenge")}
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+        <%= if @form_errors[:name] do %>
+          <p class="text-error text-sm mt-1">{@form_errors[:name]}</p>
+        <% end %>
+      </div>
+
+      <%!-- Settings Grid --%>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <%!-- Initial Speed --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Initial Speed")}
+          </label>
+          <select
+            name="initial_speed"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- speed_options() do %>
+              <option value={value} selected={@initial_speed == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+
+        <%!-- Lives --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Starting Lives")}
+          </label>
+          <input
+            type="number"
+            name="lives"
+            value={@lives}
+            min="1"
+            max="10"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Speed Increase Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Speed Up Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="speed_increase_threshold"
+            value={@speed_increase_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Extra Life Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Extra Life Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="extra_life_threshold"
+            value={@extra_life_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Points Per Kanji --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Points Per Kanji")}
+          </label>
+          <input
+            type="number"
+            name="points_per_kanji"
+            value={@points_per_kanji}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+      </div>
+
+      <%!-- Reading Type --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("Reading Type")}
+        </label>
+        <select
+          name="reading_type"
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        >
+          <%= for {label, value} <- reading_type_options() do %>
+            <option value={value} selected={@reading_type == value}>{label}</option>
+          <% end %>
+        </select>
+        <p class="text-xs text-secondary mt-1">
+          {gettext("Which readings students must type to destroy the falling kanji.")}
+        </p>
+      </div>
+
+      <%!-- Keyboard Type --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("On-Screen Keyboard")}
+        </label>
+        <select
+          name="keyboard_type"
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        >
+          <%= for {label, value} <- keyboard_type_options() do %>
+            <option value={value} selected={@keyboard_type == value}>{label}</option>
+          <% end %>
+        </select>
+      </div>
+
+      <%!-- Background Image Upload --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Background Image")}
+        </label>
+        <p class="text-secondary text-sm mb-3">
+          {gettext("Optional background image for the game field.")}
+        </p>
+
+        <div class="space-y-4">
+          <%= if assigns[:background_image] && @background_image do %>
+            <div class="p-4 bg-base-200/50 rounded-lg">
+              <p class="text-sm text-secondary mb-2">{gettext("Current image:")}</p>
+              <img
+                src={@background_image}
+                alt={gettext("Background")}
+                class="w-full max-w-[300px] h-auto rounded-xl border border-base-300"
+              />
+            </div>
+          <% end %>
+
+          <div>
+            <.live_file_input
+              upload={@uploads.background_image}
+              class="file-input file-input-bordered w-full"
+            />
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Accepted formats: JPG, PNG, WebP. Max size: 2MB")}
+            </p>
+
+            <%= for entry <- @uploads.background_image.entries do %>
+              <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-4">
+                  <.live_img_preview
+                    entry={entry}
+                    class="w-24 h-24 object-cover rounded-lg border border-base-300"
+                  />
+                  <div class="flex-1">
+                    <p class="font-medium">{entry.client_name}</p>
+                    <p class="text-sm text-secondary">
+                      {trunc(entry.client_size / 1024)} KB
+                    </p>
+                    <div class="w-full bg-base-300 rounded-full h-2 mt-2">
+                      <div
+                        class="bg-primary h-2 rounded-full transition-all"
+                        style={"width: #{entry.progress}%"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="btn btn-sm btn-ghost btn-circle text-error"
+                  >
+                    <.icon name="hero-x-mark" class="w-5 h-5" />
+                  </button>
+                </div>
+                <%= for err <- upload_errors(@uploads.background_image, entry) do %>
+                  <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Kanji Selection --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Select Kanji")} <span class="text-error">*</span>
+        </label>
+        <p class="text-secondary text-sm mb-3">
+          {gettext("Choose which kanji will appear in the game. Minimum 5.")}
+        </p>
+
+        <%= if @form_errors[:selected_kanji] do %>
+          <p class="text-error text-sm mb-2">{@form_errors[:selected_kanji]}</p>
+        <% end %>
+
+        <%!-- Search --%>
+        <div class="relative mb-4">
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary"
+          />
+          <input
+            type="text"
+            name="query"
+            value={@search_query}
+            phx-change="search_kanji"
+            phx-debounce="300"
+            class="input input-bordered w-full pl-10"
+            placeholder={gettext("Search kanji by character, meaning, or reading...")}
+          />
+          <%= if @search_loading do %>
+            <div class="absolute right-3 top-1/2 -translate-y-1/2">
+              <div class="loading loading-spinner loading-sm"></div>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Search Results --%>
+        <%= if @search_results != [] do %>
+          <div class="border border-base-300 rounded-lg overflow-hidden mb-4 max-h-60 overflow-y-auto">
+            <%= for kanji <- @search_results do %>
+              <button
+                type="button"
+                phx-click="add_kanji"
+                phx-value-character={kanji.character}
+                class="w-full text-left px-4 py-3 hover:bg-base-200 transition-colors border-b border-base-200 last:border-b-0"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl font-bold text-base-content">{kanji.character}</span>
+                    <div class="text-sm">
+                      <span class="text-secondary">
+                        <%= for r <- kanji.kanji_readings do %>
+                          <span class={[
+                            r.reading_type == :on && "text-blue-600 dark:text-blue-400",
+                            r.reading_type == :kun && "text-green-600 dark:text-green-400"
+                          ]}>
+                            {r.reading}
+                          </span>
+                          <%= unless r == List.last(kanji.kanji_readings) do %>
+                            <span class="text-base-content/30">, </span>
+                          <% end %>
+                        <% end %>
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-secondary text-sm truncate max-w-[150px]">
+                    {Enum.join(kanji.meanings, ", ")}
+                  </span>
+                </div>
+              </button>
+            <% end %>
+          </div>
+        <% end %>
+
+        <%!-- Selected Kanji --%>
+        <%= if @selected_kanji != [] do %>
+          <div class="border border-base-300 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-sm font-medium text-base-content">
+                {gettext("Selected Kanji")}
+              </span>
+              <span class="badge badge-ghost">
+                {length(@selected_kanji)} {gettext("kanji")}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <%= for kanji <- @selected_kanji do %>
+                <div class="flex items-center gap-1 bg-base-200 rounded-lg px-3 py-2">
+                  <span class="text-xl font-bold text-base-content">{kanji.character}</span>
+                  <span class="text-xs text-secondary">
+                    <%= for r <- Enum.take(kanji.readings, 3) do %>
+                      {r.reading}
+                    <% end %>
+                  </span>
+                  <button
+                    type="button"
+                    phx-click="remove_kanji"
+                    phx-value-character={kanji.character}
+                    class="ml-1 text-error hover:text-error/70"
+                  >
+                    <.icon name="hero-x-mark" class="w-4 h-4" />
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <p class="text-secondary text-center py-4 border border-dashed border-base-300 rounded-xl">
+            {gettext("No kanji selected yet. Search and add kanji above.")}
+          </p>
+        <% end %>
+      </div>
+
+      <%!-- Actions --%>
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="btn btn-primary">
+          <.icon name="hero-check" class="w-4 h-4 mr-1" />
+          {if @mode == :new, do: gettext("Create Game"), else: gettext("Update Game")}
+        </button>
+        <.link
+          navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+          class="btn btn-ghost"
+        >
+          {gettext("Cancel")}
+        </.link>
+      </div>
+    </form>
+  </div>
+</Layouts.app>

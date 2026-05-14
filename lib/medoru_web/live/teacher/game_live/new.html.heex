@@ -72,6 +72,24 @@
           </p>
         </div>
       </.link>
+
+      <%!-- Kanji Cascade --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/kanji-falling-games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-error transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-error/10 flex items-center justify-center mb-3 group-hover:bg-error/20 transition-colors">
+            <.icon name="hero-language" class="w-7 h-7 text-error" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Kanji Cascade")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext("Type readings before kanji reach the bottom. Kanji recognition practice.")}
+          </p>
+        </div>
+      </.link>
     </div>
   </div>
 </Layouts.app>

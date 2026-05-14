@@ -1,0 +1,147 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h1 class="text-3xl font-bold text-base-content">{@game.name}</h1>
+          <%= if @game.status == :published do %>
+            <span class="badge badge-success badge-sm">{gettext("Published")}</span>
+          <% else %>
+            <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
+          <% end %>
+        </div>
+        <p class="text-secondary">{gettext("Kanji Cascade Game")}</p>
+      </div>
+      <div class="flex gap-2">
+        <%= if @game.status == :draft do %>
+          <button phx-click="publish_game" class="btn btn-success btn-sm">
+            <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Publish")}
+          </button>
+        <% else %>
+          <button phx-click="unpublish_game" class="btn btn-ghost btn-sm">
+            <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" /> {gettext("Unpublish")}
+          </button>
+        <% end %>
+        <.link
+          navigate={~p"/teacher/classrooms/#{@classroom.id}/kanji-falling-games/#{@game.id}/edit"}
+          class="btn btn-primary btn-sm"
+        >
+          <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit")}
+        </.link>
+        <button
+          phx-click="delete_game"
+          data-confirm={gettext("Are you sure you want to delete this game?")}
+          class="btn btn-error btn-sm btn-outline"
+        >
+          <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Delete")}
+        </button>
+      </div>
+    </div>
+
+    <%!-- Game Settings --%>
+    <div class="card bg-base-100 border border-base-300 mb-8">
+      <div class="card-body">
+        <h2 class="card-title text-lg">{gettext("Game Settings")}</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
+          <% kfg = @game.kanji_falling_game %>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Initial Speed")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.initial_speed}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Speed Up Every")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.speed_increase_threshold} {gettext("pts")}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Starting Lives")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.lives}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Extra Life Every")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.extra_life_threshold} {gettext("pts")}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Points Per Kanji")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.points_per_kanji}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Reading Type")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.reading_type}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Keyboard")}</div>
+            <div class="text-lg font-semibold text-base-content">{kfg.keyboard_type}</div>
+          </div>
+          <div class="bg-base-200 rounded-lg p-3">
+            <div class="text-xs text-secondary">{gettext("Kanji Count")}</div>
+            <div class="text-lg font-semibold text-base-content">{length(kfg.selected_kanji)}</div>
+          </div>
+        </div>
+
+        <%!-- Selected Kanji --%>
+        <div class="mt-4">
+          <div class="text-xs text-secondary mb-2">{gettext("Selected Kanji")}</div>
+          <div class="flex flex-wrap gap-2">
+            <%= for char <- kfg.selected_kanji do %>
+              <% color = Map.get(kfg.kanji_colors || %{}, char, "#1a1a1a") %>
+              <span
+                class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-lg font-bold text-white"
+                style={"background-color: #{color};"}
+              >
+                {char}
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Rankings --%>
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4">{gettext("Rankings")}</h2>
+
+        <%= if @sessions == [] do %>
+          <div class="text-center py-8 text-secondary">
+            <.icon name="hero-trophy" class="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>{gettext("No scores yet. Students will appear here after playing.")}</p>
+          </div>
+        <% else %>
+          <div class="space-y-2">
+            <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+              <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                <div class={[
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                  cond do
+                    index == 1 -> "bg-warning text-warning-content"
+                    index == 2 -> "bg-base-300 text-base-content"
+                    index == 3 -> "bg-orange-700 text-white"
+                    true -> "bg-base-100 text-secondary"
+                  end
+                ]}>
+                  {index}
+                </div>
+                <div class="flex-1">
+                  <div class="font-medium text-base-content">
+                    {display_name(session.user, :short, gettext("Anonymous"))}
+                  </div>
+                  <div class="text-xs text-secondary">
+                    {gettext("Speed %{speed} | Lives left: %{lives}",
+                      speed: session.highest_speed_reached,
+                      lives: session.lives_remaining
+                    )}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xl font-bold text-primary">{session.score}</div>
+                  <div class="text-xs text-secondary">{gettext("points")}</div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

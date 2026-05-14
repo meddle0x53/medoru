@@ -962,6 +962,25 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           {length(game.kana_falling_game.selected_kana)} {gettext("kana")}
                         </span>
                       </div>
+                    <% game.kanji_falling_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                          {gettext("Speed")} {game.kanji_falling_game.initial_speed}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.kanji_falling_game.lives} {gettext("lives")}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-language" class="w-3 h-3 mr-1" />
+                          {length(game.kanji_falling_game.selected_kanji)} {gettext("kanji")}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-pencil" class="w-3 h-3 mr-1" />
+                          {game.kanji_falling_game.reading_type}
+                        </span>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>
@@ -969,10 +988,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 <div class="sm:ml-4 self-start sm:self-auto">
                   <div class="flex items-center gap-2">
                     <% play_path =
-                      if game.type == "kana_falling" do
-                        ~p"/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
-                      else
-                        ~p"/classrooms/#{@classroom.id}/games/#{game.id}"
+                      cond do
+                        game.type == "kana_falling" ->
+                          ~p"/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+
+                        game.type == "kanji_falling" ->
+                          ~p"/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
+
+                        true ->
+                          ~p"/classrooms/#{@classroom.id}/games/#{game.id}"
                       end %>
                     <%= case get_game_status(session) do %>
                       <% :not_started -> %>
@@ -1000,8 +1024,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
                         </.link>
                     <% end %>
-                    <%= if game.type == "kana_falling" do %>
-                      <%!-- No rankings link for falling game (shown on game over instead) --%>
+                    <%= if game.type in ["kana_falling", "kanji_falling"] do %>
+                      <%!-- No rankings link for falling games (shown on game over instead) --%>
                     <% else %>
                       <.link
                         navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}/rankings"}

@@ -9,7 +9,7 @@ defmodule Medoru.Games do
   alias Medoru.Repo
 
   alias Medoru.Classrooms
-  alias Medoru.Games.{Game, MemoryCardGame, MemoryCardGameWord, MemoryCardSession, KanaFallingGame, KanaFallingSession}
+  alias Medoru.Games.{Game, MemoryCardGame, MemoryCardGameWord, MemoryCardSession, KanaFallingGame, KanaFallingSession, KanjiFallingGame, KanjiFallingSession}
 
   # ============================================================================
   # Game Queries
@@ -46,7 +46,7 @@ defmodule Medoru.Games do
         type -> where(query, [g], g.type == ^type)
       end
     end)
-    |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game])
+    |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game, :kanji_falling_game])
     |> order_by([g], desc: g.inserted_at)
     |> Repo.all()
   end
@@ -71,7 +71,8 @@ defmodule Medoru.Games do
       classroom: [:teacher],
       memory_card_game: [memory_card_game_words: [:word]],
       kana_memory_card_game: [],
-      kana_falling_game: []
+      kana_falling_game: [],
+      kanji_falling_game: []
     )
   end
 
@@ -84,7 +85,8 @@ defmodule Medoru.Games do
     |> Repo.preload(
       memory_card_game: [memory_card_game_words: [word: [:word_kanjis]]],
       kana_memory_card_game: [],
-      kana_falling_game: []
+      kana_falling_game: [],
+      kanji_falling_game: []
     )
   end
 
@@ -439,6 +441,13 @@ defmodule Medoru.Games do
     case game.type do
       "kana_falling" ->
         KanaFallingSession
+        |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+        |> order_by([s], desc: s.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      "kanji_falling" ->
+        KanjiFallingSession
         |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
         |> order_by([s], desc: s.inserted_at)
         |> limit(1)
@@ -1238,6 +1247,171 @@ defmodule Medoru.Games do
   """
   def get_kana_falling_high_score(game_id, user_id) do
     KanaFallingSession
+    |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+    |> select([s], max(s.score))
+    |> Repo.one() || 0
+  end
+
+  # ============================================================================
+  # Kanji Falling Games
+  # ============================================================================
+
+  @kanji_colors [
+    "#1a1a1a", "#2d1b1b", "#1b2d1b", "#1b1b2d", "#2d2d1b", "#1b2d2d", "#2d1b2d",
+    "#3d1a1a", "#1a3d1a", "#1a1a3d", "#3d3d1a", "#1a3d3d", "#3d1a3d", "#2a1a0a",
+    "#0a1a2a", "#1a0a2a", "#2a2a0a", "#0a2a2a", "#2a0a1a", "#1a2a0a", "#0a1a1a",
+    "#1a0a0a", "#0a0a1a", "#1a1a0a", "#0a1a0a", "#1a0a1a", "#2a1a1a", "#1a2a1a",
+    "#1a1a2a", "#2a2a1a", "#1a2a2a", "#2a1a2a", "#3a1a1a", "#1a3a1a", "#1a1a3a",
+    "#3a3a1a", "#1a3a3a", "#3a1a3a", "#2a0a0a", "#0a2a0a", "#0a0a2a", "#2a2a0a",
+    "#0a2a2a", "#2a0a2a", "#1a1a1a", "#0a0a0a", "#2a2a2a", "#1a2a0a", "#0a1a2a",
+    "#2a0a1a", "#1a0a2a", "#0a2a1a", "#2a1a0a", "#1a0a1a", "#0a1a0a", "#1a1a0a",
+    "#0a0a1a", "#1a0a0a", "#0a1a1a", "#2a1a2a", "#1a2a1a", "#2a2a1a", "#1a1a2a"
+  ]
+
+  @doc """
+  Creates a kanji falling game with kanji selection.
+  """
+  def create_kanji_falling_game(classroom_id, teacher_id, attrs, selected_kanji) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      selected_kanji = Enum.uniq(selected_kanji)
+
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name],
+          type: "kanji_falling",
+          status: :draft,
+          max_players: 1,
+          classroom_id: classroom_id
+        }
+
+        game =
+          %Game{}
+          |> Game.changeset(game_attrs)
+          |> Repo.insert!()
+
+        kfg_attrs = %{
+          game_id: game.id,
+          initial_speed: parse_int(get_in(attrs, ["kanji_falling_game", "initial_speed"]) || get_in(attrs, [:kanji_falling_game, :initial_speed]), 1),
+          speed_increase_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]), 50),
+          lives: parse_int(get_in(attrs, ["kanji_falling_game", "lives"]) || get_in(attrs, [:kanji_falling_game, :lives]), 3),
+          extra_life_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kanji_falling_game, :extra_life_threshold]), 100),
+          points_per_kanji: parse_int(get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) || get_in(attrs, [:kanji_falling_game, :points_per_kanji]), 1),
+          selected_kanji: selected_kanji,
+          reading_type: get_in(attrs, ["kanji_falling_game", "reading_type"]) || get_in(attrs, [:kanji_falling_game, :reading_type]) || "any",
+          keyboard_type: get_in(attrs, ["kanji_falling_game", "keyboard_type"]) || get_in(attrs, [:kanji_falling_game, :keyboard_type]) || "hiragana",
+          kanji_colors: assign_kanji_colors(selected_kanji),
+          background_image: get_in(attrs, ["kanji_falling_game", "background_image"]) || get_in(attrs, [:kanji_falling_game, :background_image])
+        }
+
+        case %KanjiFallingGame{}
+             |> KanjiFallingGame.changeset(kfg_attrs)
+             |> Repo.insert() do
+          {:ok, _} -> get_game!(game.id)
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  @doc """
+  Updates a kanji falling game and its kanji selection.
+  """
+  def update_kanji_falling_game(%Game{} = game, teacher_id, attrs, selected_kanji) do
+    if game.classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      selected_kanji = Enum.uniq(selected_kanji)
+
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name] || game.name,
+          max_players: 1
+        }
+
+        game =
+          game
+          |> Game.changeset(game_attrs)
+          |> Repo.update!()
+
+        kfg = Repo.get_by!(KanjiFallingGame, game_id: game.id)
+
+        existing_chars = kfg.selected_kanji || []
+        colors =
+          if Enum.sort(existing_chars) == Enum.sort(selected_kanji) do
+            kfg.kanji_colors || %{}
+          else
+            assign_kanji_colors(selected_kanji)
+          end
+
+        kfg_attrs = %{
+          initial_speed: parse_int(get_in(attrs, ["kanji_falling_game", "initial_speed"]) || get_in(attrs, [:kanji_falling_game, :initial_speed]), kfg.initial_speed),
+          speed_increase_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]), kfg.speed_increase_threshold),
+          lives: parse_int(get_in(attrs, ["kanji_falling_game", "lives"]) || get_in(attrs, [:kanji_falling_game, :lives]), kfg.lives),
+          extra_life_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kanji_falling_game, :extra_life_threshold]), kfg.extra_life_threshold),
+          points_per_kanji: parse_int(get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) || get_in(attrs, [:kanji_falling_game, :points_per_kanji]), kfg.points_per_kanji),
+          selected_kanji: selected_kanji,
+          reading_type: get_in(attrs, ["kanji_falling_game", "reading_type"]) || get_in(attrs, [:kanji_falling_game, :reading_type]) || kfg.reading_type,
+          keyboard_type: get_in(attrs, ["kanji_falling_game", "keyboard_type"]) || get_in(attrs, [:kanji_falling_game, :keyboard_type]) || kfg.keyboard_type,
+          kanji_colors: colors,
+          background_image: get_in(attrs, ["kanji_falling_game", "background_image"]) || get_in(attrs, [:kanji_falling_game, :background_image]) || kfg.background_image
+        }
+
+        case kfg
+             |> KanjiFallingGame.changeset(kfg_attrs)
+             |> Repo.update() do
+          {:ok, _} -> get_game!(game.id)
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  defp assign_kanji_colors(selected_kanji) do
+    selected_kanji
+    |> Enum.with_index()
+    |> Enum.map(fn {char, index} ->
+      color = Enum.at(@kanji_colors, rem(index, length(@kanji_colors)))
+      {char, color}
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  Creates a completed kanji falling session after game over.
+  """
+  def create_kanji_falling_session(attrs) do
+    %KanjiFallingSession{}
+    |> KanjiFallingSession.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists kanji falling sessions for rankings (best score per user).
+  """
+  def list_kanji_falling_sessions(game_id) do
+    best_session_ids =
+      KanjiFallingSession
+      |> where([s], s.game_id == ^game_id)
+      |> distinct([s], asc: s.user_id)
+      |> order_by([s], asc: s.user_id, desc: s.score, asc: s.completed_at)
+      |> select([s], s.id)
+
+    KanjiFallingSession
+    |> where([s], s.id in subquery(best_session_ids))
+    |> order_by([s], desc: s.score, asc: s.completed_at)
+    |> preload(user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the user's high score for a kanji falling game.
+  """
+  def get_kanji_falling_high_score(game_id, user_id) do
+    KanjiFallingSession
     |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
     |> select([s], max(s.score))
     |> Repo.one() || 0

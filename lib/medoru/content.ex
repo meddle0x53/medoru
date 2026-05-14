@@ -107,7 +107,10 @@ defmodule Medoru.Content do
 
   """
   def get_kanji_by_character(character) do
-    Repo.get_by(Kanji, character: character)
+    Kanji
+    |> where(character: ^character)
+    |> preload(:kanji_readings)
+    |> Repo.one()
   end
 
   @doc """
