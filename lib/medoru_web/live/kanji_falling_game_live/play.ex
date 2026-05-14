@@ -526,38 +526,4 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     end
   end
 
-  # Hiragana keyboard layout definitions
-  def hiragana_keyboard_rows do
-    [
-      ["あ", "い", "う", "え", "お"],
-      ["か", "き", "く", "け", "こ"],
-      ["が", "ぎ", "ぐ", "げ", "ご"],
-      ["さ", "し", "す", "せ", "そ"],
-      ["ざ", "じ", "ず", "ぜ", "ぞ"],
-      ["た", "ち", "つ", "て", "と"],
-      ["だ", "ぢ", "づ", "で", "ど"],
-      ["な", "に", "ぬ", "ね", "の"],
-      ["は", "ひ", "ふ", "へ", "ほ"],
-      ["ば", "び", "ぶ", "べ", "ぼ"],
-      ["ぱ", "ぴ", "ぷ", "ぺ", "ぽ"],
-      ["ま", "み", "む", "め", "も"],
-      ["や", "ゆ", "よ"],
-      ["ら", "り", "る", "れ", "ろ"],
-      ["わ", "を", "ん"],
-      ["っ", "ゃ", "ゅ", "ょ"],
-      ["ぁ", "ぃ", "ぅ", "ぇ", "ぉ"]
-    ]
-  end
-
-  def hiragana_keyboard_rows_landscape_left do
-    rows = hiragana_keyboard_rows()
-    mid = div(length(rows), 2)
-    Enum.take(rows, mid)
-  end
-
-  def hiragana_keyboard_rows_landscape_right do
-    rows = hiragana_keyboard_rows()
-    mid = div(length(rows), 2)
-    Enum.drop(rows, mid)
-  end
 end

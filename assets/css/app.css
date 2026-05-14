@@ -416,35 +416,25 @@ body {
   }
 }
 
-/* Flick Keyboard */
-.flick-keyboard,
+/* Flick Keyboard - always visible, aspect-ratio determines layout */
+.flick-keyboard {
+  display: block;
+}
+
 .flick-portrait,
 .flick-landscape {
   display: none;
 }
 
-/* Hide standard keyboard on phones and tablets */
-@media (max-width: 1366px) {
-  .standard-keyboard {
-    display: none !important;
-  }
-}
-
-/* Portrait flick keyboard (phones + tablets in portrait) */
-@media (max-width: 1366px) and (max-aspect-ratio: 1/1) {
-  .flick-keyboard {
-    display: block;
-  }
+/* Portrait: centered grid at bottom */
+@media (max-aspect-ratio: 1/1) {
   .flick-portrait {
     display: flex;
   }
 }
 
-/* Landscape flick keyboard (phones + tablets in landscape) */
-@media (max-width: 1366px) and (min-aspect-ratio: 1/1) {
-  .flick-keyboard {
-    display: block;
-  }
+/* Landscape: split left / right panels */
+@media (min-aspect-ratio: 1/1) {
   .flick-landscape {
     display: block;
   }
