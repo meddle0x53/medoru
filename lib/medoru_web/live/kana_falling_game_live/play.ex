@@ -263,15 +263,21 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
     |> Enum.map(fn char ->
       case Enum.find(all_kana, &(&1.character == char)) do
         nil -> nil
-        kana -> %{char: kana.character, romaji: kana_romaji(kana), type: kana.type, group: kana.group}
+        kana -> %{char: kana.character, romaji: kana_romaji_list(kana), type: kana.type, group: kana.group}
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  defp kana_romaji(kana) do
+  defp kana_romaji_list(kana) do
     reading = List.first(kana.readings) || %{}
-    String.downcase(reading[:romaji] || "")
+    base = String.downcase(reading[:romaji] || "")
+
+    case kana.character do
+      "づ" -> [base, "du"]
+      "ヅ" -> [base, "du"]
+      _ -> [base]
+    end
   end
 
   defp kana_color(kana) do
@@ -323,7 +329,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
 
       key == "Enter" ->
         socket =
-          if socket.assigns.input_buffer == socket.assigns.current_kana.romaji do
+          if socket.assigns.input_buffer in socket.assigns.current_kana.romaji do
             correct_answer(socket)
           else
             wrong_answer(socket)
@@ -334,16 +340,16 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
         buffer = socket.assigns.input_buffer <> String.downcase(key)
         socket = assign(socket, :input_buffer, buffer)
         current_kana = socket.assigns.current_kana
-        romaji = current_kana.romaji
+        romaji_list = current_kana.romaji
 
         cond do
-          buffer == romaji ->
+          buffer in romaji_list ->
             # Correct!
             socket = correct_answer(socket)
             {:noreply, socket}
 
-          not String.starts_with?(romaji, buffer) ->
-            # Wrong - buffer doesn't match prefix
+          not Enum.any?(romaji_list, &String.starts_with?(&1, buffer)) ->
+            # Wrong - buffer doesn't match any prefix
             socket = wrong_answer(socket)
             {:noreply, socket}
 

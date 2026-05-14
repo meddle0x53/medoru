@@ -1,0 +1,90 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content">{gettext("Teacher")}</h1>
+      <p class="mt-2 text-secondary">
+        {gettext("Manage your classrooms, tests, and lessons")}
+      </p>
+    </div>
+
+    <%!-- Quick Actions --%>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <.link
+        navigate={~p"/teacher/classrooms"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <.icon name="hero-users" class="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("My Classrooms")}</div>
+              <div class="text-sm text-base-content/60">
+                {ngettext("%{count} classroom", "%{count} classrooms", @classroom_count, count: @classroom_count)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/teacher/tests"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+              <.icon name="hero-clipboard-document-list" class="w-5 h-5 text-secondary" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("My Tests")}</div>
+              <div class="text-sm text-base-content/60">
+                {ngettext("%{count} test", "%{count} tests", @test_count, count: @test_count)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/teacher/custom-lessons"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+              <.icon name="hero-book-open" class="w-5 h-5 text-accent" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Custom Lessons")}</div>
+              <div class="text-sm text-base-content/60">
+                {ngettext("%{count} lesson", "%{count} lessons", @lesson_count, count: @lesson_count)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/teacher/grammar-lessons"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center">
+              <.icon name="hero-puzzle-piece" class="w-5 h-5 text-info" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Grammar Lessons")}</div>
+              <div class="text-sm text-base-content/60">
+                {ngettext("%{count} lesson", "%{count} lessons", @grammar_lesson_count, count: @grammar_lesson_count)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

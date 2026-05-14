@@ -108,6 +108,7 @@ defmodule MedoruWeb.Router do
     live_session :authenticated,
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
+      live "/games", GamesLive.Index
       live "/notifications", NotificationsLive
       live "/daily-review", DailyReviewLive
     end
@@ -156,6 +157,8 @@ defmodule MedoruWeb.Router do
         {MedoruWeb.UserAuth, :require_authenticated_user},
         {MedoruWeb.Plugs.Teacher, :default}
       ] do
+      live "/", DashboardLive
+
       live "/classrooms", ClassroomLive.Index
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show

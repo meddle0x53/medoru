@@ -91,41 +91,31 @@ defmodule MedoruWeb.Layouts do
               locale={@current_scope[:locale]}
               class="hidden xl:block"
             />
+            <.nav_link
+              path="/games"
+              icon="hero-puzzle-piece"
+              label={gettext("Games")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
 
-            <%= if @current_scope.current_user.type in ["teacher", "admin"] do %>
+            <%= if User.teacher?(@current_scope.current_user) do %>
               <.nav_link
-                path="/teacher/tests"
-                icon="hero-clipboard-document-list"
-                label={gettext("My Tests")}
-                locale={@current_scope[:locale]}
-                class="hidden xl:block"
-              />
-              <.nav_link
-                path="/teacher/custom-lessons"
-                icon="hero-book-open"
-                label={gettext("Custom Lessons")}
+                path="/teacher"
+                icon="hero-academic-cap"
+                label={gettext("Teacher")}
                 locale={@current_scope[:locale]}
                 class="hidden xl:block"
               />
             <% end %>
 
-            <%= if User.moderator?(@current_scope.current_user) do %>
+            <%= if User.staff?(@current_scope.current_user) do %>
               <.nav_link
-                path="/moderator"
-                icon="hero-check-badge"
-                label={gettext("Moderator")}
-                locale={@current_scope[:locale]}
-                class="hidden md:block text-warning"
-              />
-            <% end %>
-
-            <%= if @current_scope.current_user.type == "admin" do %>
-              <.nav_link
-                path="/admin"
+                path={if User.admin?(@current_scope.current_user), do: "/admin", else: "/moderator"}
                 icon="hero-shield-check"
                 label={gettext("Admin")}
                 locale={@current_scope[:locale]}
-                class="hidden md:block text-error"
+                class="hidden md:block"
               />
             <% end %>
 
@@ -217,16 +207,28 @@ defmodule MedoruWeb.Layouts do
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
+                    path="/games"
+                    icon="hero-puzzle-piece"
+                    label={gettext("Games")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
                     path="/daily-test"
                     icon="hero-calendar"
                     label={gettext("Daily Test")}
                     locale={@current_scope[:locale]}
                   />
 
-                  <%= if @current_scope.current_user.type in ["teacher", "admin"] do %>
+                  <%= if User.teacher?(@current_scope.current_user) do %>
                     <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                       {gettext("Teacher")}
                     </div>
+                    <.mobile_nav_link
+                      path="/teacher"
+                      icon="hero-academic-cap"
+                      label={gettext("Teacher Dashboard")}
+                      locale={@current_scope[:locale]}
+                    />
                     <.mobile_nav_link
                       path="/teacher/classrooms"
                       icon="hero-users"
@@ -245,32 +247,87 @@ defmodule MedoruWeb.Layouts do
                       label={gettext("Custom Lessons")}
                       locale={@current_scope[:locale]}
                     />
-                  <% end %>
-
-                  <%= if User.moderator?(@current_scope.current_user) do %>
-                    <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
-                      {gettext("Moderator")}
-                    </div>
                     <.mobile_nav_link
-                      path="/moderator"
-                      icon="hero-check-badge"
-                      label={gettext("Moderator Dashboard")}
+                      path="/teacher/grammar-lessons"
+                      icon="hero-puzzle-piece"
+                      label={gettext("Grammar Lessons")}
                       locale={@current_scope[:locale]}
-                      class="text-warning"
                     />
                   <% end %>
 
-                  <%= if @current_scope.current_user.type == "admin" do %>
+                  <%= if User.staff?(@current_scope.current_user) do %>
                     <div class="px-4 py-2 mt-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                       {gettext("Admin")}
                     </div>
-                    <.mobile_nav_link
-                      path="/admin"
-                      icon="hero-shield-check"
-                      label={gettext("Admin Dashboard")}
-                      locale={@current_scope[:locale]}
-                      class="text-error"
-                    />
+                    <%= if User.admin?(@current_scope.current_user) do %>
+                      <.mobile_nav_link
+                        path="/admin"
+                        icon="hero-shield-check"
+                        label={gettext("Admin Dashboard")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/users"
+                        icon="hero-users"
+                        label={gettext("Users")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/kanji"
+                        icon="hero-language"
+                        label={gettext("Kanji")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/words"
+                        icon="hero-document-text"
+                        label={gettext("Words")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/lessons"
+                        icon="hero-book-open"
+                        label={gettext("Lessons")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/classrooms"
+                        icon="hero-building-library"
+                        label={gettext("Classrooms")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/grammar-forms"
+                        icon="hero-puzzle-piece"
+                        label={gettext("Grammar Forms")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/admin/word-classes"
+                        icon="hero-tag"
+                        label={gettext("Word Classes")}
+                        locale={@current_scope[:locale]}
+                      />
+                    <% else %>
+                      <.mobile_nav_link
+                        path="/moderator"
+                        icon="hero-check-badge"
+                        label={gettext("Moderator Dashboard")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/moderator/kanji"
+                        icon="hero-language"
+                        label={gettext("Kanji")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/moderator/words"
+                        icon="hero-document-text"
+                        label={gettext("Words")}
+                        locale={@current_scope[:locale]}
+                      />
+                    <% end %>
                   <% end %>
                 </div>
 

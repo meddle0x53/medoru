@@ -52,6 +52,41 @@ defmodule Medoru.Games do
   end
 
   @doc """
+  Returns all published games across all classrooms a user has access to.
+
+  Includes classrooms the user owns (as teacher) and classrooms
+  they are an approved member of (as student).
+
+  ## Examples
+
+      iex> list_user_games(user_id)
+      [%Game{classroom: %Classroom{}}, ...]
+  """
+  def list_user_games(user_id) do
+    # Get classroom IDs the user is a teacher of
+    teacher_ids =
+      Classrooms.list_teacher_classrooms(user_id)
+      |> Enum.map(& &1.id)
+
+    # Get classroom IDs the user is an approved member of
+    member_ids =
+      Classrooms.list_student_classrooms(user_id)
+      |> Enum.map(& &1.id)
+
+    classroom_ids = Enum.uniq(teacher_ids ++ member_ids)
+
+    if classroom_ids == [] do
+      []
+    else
+      Game
+      |> where([g], g.classroom_id in ^classroom_ids and g.status == :published)
+      |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game, :kanji_falling_game, classroom: [:teacher]])
+      |> order_by([g], desc: g.inserted_at)
+      |> Repo.all()
+    end
+  end
+
+  @doc """
   Gets a single game.
 
   Raises `Ecto.NoResultsError` if the Game does not exist.
