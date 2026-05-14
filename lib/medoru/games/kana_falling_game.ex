@@ -28,6 +28,7 @@ defmodule Medoru.Games.KanaFallingGame do
     field :points_per_kana, :integer, default: 1
     field :selected_kana, {:array, :string}, default: []
     field :background_image, :string
+    field :color_coded_rows, :boolean, default: false
 
     belongs_to :game, Game
 
@@ -45,6 +46,7 @@ defmodule Medoru.Games.KanaFallingGame do
       :points_per_kana,
       :selected_kana,
       :background_image,
+      :color_coded_rows,
       :game_id
     ])
     |> validate_required([

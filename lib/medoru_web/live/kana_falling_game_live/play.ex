@@ -227,6 +227,35 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
   # Game Logic
   # ============================================================================
 
+  @row_colors %{
+    hiragana: %{
+      a: {"#1a1a1a", "#ffffff"},
+      ka: {"#5d4037", "#ffffff"},
+      sa: {"#424242", "#ffffff"},
+      ta: {"#4e342e", "#ffffff"},
+      na: {"#1a237e", "#ffffff"},
+      ma: {"#b71c1c", "#ffffff"},
+      ha: {"#006064", "#ffffff"},
+      ya: {"#4a148c", "#ffffff"},
+      ra: {"#1b5e20", "#ffffff"},
+      wa: {"#e65100", "#ffffff"},
+      small: {"#374151", "#ffffff"}
+    },
+    katakana: %{
+      a: {"#000000", "#ffffff"},
+      ka: {"#3e2723", "#ffffff"},
+      sa: {"#212121", "#ffffff"},
+      ta: {"#3e2723", "#ffffff"},
+      na: {"#0d47a1", "#ffffff"},
+      ma: {"#c62828", "#ffffff"},
+      ha: {"#00838f", "#ffffff"},
+      ya: {"#311b92", "#ffffff"},
+      ra: {"#2e7d32", "#ffffff"},
+      wa: {"#ef6c00", "#ffffff"},
+      small: {"#1f2937", "#ffffff"}
+    }
+  }
+
   defp build_kana_pool(selected_kana) do
     all_kana = Kana.list_all()
 
@@ -234,7 +263,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
     |> Enum.map(fn char ->
       case Enum.find(all_kana, &(&1.character == char)) do
         nil -> nil
-        kana -> %{char: kana.character, romaji: kana_romaji(kana)}
+        kana -> %{char: kana.character, romaji: kana_romaji(kana), type: kana.type, group: kana.group}
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -243,6 +272,23 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
   defp kana_romaji(kana) do
     reading = List.first(kana.readings) || %{}
     String.downcase(reading[:romaji] || "")
+  end
+
+  defp kana_color(kana) do
+    script = kana.type
+    group = base_group(kana.group)
+    get_in(@row_colors, [script, group]) || {"#1a1a1a", "#ffffff"}
+  end
+
+  defp base_group(group) do
+    case group do
+      :ga -> :ka
+      :za -> :sa
+      :da -> :ta
+      :ba -> :ha
+      :pa -> :ha
+      g -> g
+    end
   end
 
   defp spawn_kana(socket) do

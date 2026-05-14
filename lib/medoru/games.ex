@@ -1153,7 +1153,8 @@ defmodule Medoru.Games do
           extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), 100),
           points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), 1),
           selected_kana: selected_kana,
-          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image])
+          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]),
+          color_coded_rows: get_in(attrs, ["kana_falling_game", "color_coded_rows"]) || get_in(attrs, [:kana_falling_game, :color_coded_rows]) || false
         }
 
         %KanaFallingGame{}
@@ -1192,7 +1193,8 @@ defmodule Medoru.Games do
           extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), kfg.extra_life_threshold),
           points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), kfg.points_per_kana),
           selected_kana: selected_kana,
-          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]) || kfg.background_image
+          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]) || kfg.background_image,
+          color_coded_rows: get_in(attrs, ["kana_falling_game", "color_coded_rows"]) || get_in(attrs, [:kana_falling_game, :color_coded_rows]) || kfg.color_coded_rows
         }
 
         kfg

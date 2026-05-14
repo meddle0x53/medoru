@@ -102,6 +102,23 @@
         </div>
       </div>
 
+      <%!-- Color Coded Rows --%>
+      <div class="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id="color_coded_rows"
+          phx-click="toggle_color_coded_rows"
+          checked={@color_coded_rows}
+          class="checkbox checkbox-primary"
+        />
+        <label for="color_coded_rows" class="text-sm text-base-content cursor-pointer">
+          {gettext("Color-code kana by row")}
+        </label>
+      </div>
+      <p class="text-xs text-secondary -mt-4 ml-8">
+        {gettext("Each gojuon row gets a distinct background color in the game.")}
+      </p>
+
       <%!-- Background Image Upload --%>
       <div>
         <label class="block text-sm font-medium text-base-content mb-2">

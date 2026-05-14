@@ -89,10 +89,10 @@
 
       <%!-- Death line (row 20) --%>
       <div
-        class="absolute left-0 right-0 border-b-2 border-error/60 z-10"
+        class="absolute left-0 right-0 border-b-4 border-error z-10"
         style="top: 50%;"
       >
-        <span class="absolute right-1 -top-5 text-xs text-error/60 font-medium">
+        <span class="absolute right-1 -top-7 text-xs text-error font-bold bg-error/15 px-2 py-1 rounded">
           {gettext("Danger")}
         </span>
       </div>
@@ -180,11 +180,99 @@
 
         <% @status == :playing and @current_kana -> %>
           <%!-- Falling Kana --%>
+          <% {bg_color, text_color} = if @config.color_coded_rows, do: kana_color(@current_kana), else: {nil, nil} %>
           <div
-            class="absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold text-primary-content shadow-lg z-10 transition-all duration-100"
-            style={row_position_css(@current_kana.row)}
+            class={[
+              "absolute left-1/2 -translate-x-1/2 w-14 h-14 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg z-10 transition-all duration-100",
+              if(@config.color_coded_rows, do: "", else: "bg-primary text-primary-content")
+            ]}
+            style={[
+              row_position_css(@current_kana.row),
+              if(@config.color_coded_rows, do: "background-color: #{bg_color}; color: #{text_color};", else: "")
+            ]}
           >
             {@current_kana.char}
+          </div>
+
+          <%!-- On-screen Keyboard --%>
+          <% key_btn = "rounded bg-base-100/80 border border-base-300 text-xs font-bold text-base-content active:bg-primary active:text-primary-content shadow-sm" %>
+          <% key_btn_landscape = "rounded bg-slate-800 border border-slate-600 text-xs font-bold text-white active:bg-primary active:text-primary-content shadow-sm" %>
+
+          <%!-- Portrait: bottom center --%>
+          <div class="absolute left-1/2 -translate-x-1/2 z-20 w-[95%] max-w-sm [@media(min-aspect-ratio:1/1)]:hidden" style="bottom: 100px;">
+            <div class="grid grid-cols-10 gap-1">
+              <%= for letter <- ["q","w","e","r","t","y","u","i","o","p"] do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn]}>
+                  {letter}
+                </button>
+              <% end %>
+              <%= for {letter, idx} <- Enum.with_index(["a","s","d","f","g","h","j","k","l"]) do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn, idx == 0 && "col-start-2"]}>
+                  {letter}
+                </button>
+              <% end %>
+              <%= for {letter, idx} <- Enum.with_index(["z","x","c","v","b","n","m"]) do %>
+                <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["aspect-square", key_btn, idx == 0 && "col-start-3"]}>
+                  {letter}
+                </button>
+              <% end %>
+            </div>
+            <div class="flex gap-1 mt-1">
+              <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["flex-1 py-1.5", key_btn, "active:bg-error active:text-error-content"]}>
+                <.icon name="hero-backspace" class="w-4 h-4" />
+              </button>
+              <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["flex-1 py-1.5", key_btn]}>
+                Enter
+              </button>
+            </div>
+          </div>
+
+          <%!-- Landscape: left side --%>
+          <div class="fixed left-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+            <div class="flex flex-col gap-1">
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["q","w","e","r","t"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["a","s","d","f","g"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["z","x","c","v","b"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["w-full h-9 sm:h-10", key_btn_landscape, "active:bg-error active:text-error-content"]}>
+                <.icon name="hero-backspace" class="w-4 h-4 mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          <%!-- Landscape: right side --%>
+          <div class="fixed right-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+            <div class="flex flex-col gap-1">
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["y","u","i","o","p"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["h","j","k","l"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <div class="flex gap-1 justify-center">
+                <%= for letter <- ["n","m"] do %>
+                  <button type="button" phx-click="key_pressed" phx-value-key={letter} class={["w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14", key_btn_landscape]}>{letter}</button>
+                <% end %>
+              </div>
+              <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["w-full h-9 sm:h-10", key_btn_landscape]}>
+                Enter
+              </button>
+            </div>
           </div>
 
           <%!-- Input Buffer Display --%>

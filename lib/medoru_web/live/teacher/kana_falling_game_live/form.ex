@@ -38,6 +38,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
      |> assign(:extra_life_threshold, "100")
      |> assign(:points_per_kana, "1")
      |> assign(:selected_kana, [])
+     |> assign(:color_coded_rows, false)
      |> assign(:form_errors, %{})
      |> allow_upload(:background_image,
        accept: ~w(.jpg .jpeg .png .webp),
@@ -74,6 +75,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
        |> assign(:points_per_kana, Integer.to_string(kfg.points_per_kana))
        |> assign(:selected_kana, kfg.selected_kana || [])
        |> assign(:background_image, kfg.background_image)
+       |> assign(:color_coded_rows, kfg.color_coded_rows)
        |> assign(:form_errors, %{})}
     end
   end
@@ -101,8 +103,14 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
        |> assign(:extra_life_threshold, "100")
        |> assign(:points_per_kana, "1")
        |> assign(:selected_kana, [])
+       |> assign(:color_coded_rows, false)
        |> assign(:form_errors, %{})}
     end
+  end
+
+  @impl true
+  def handle_event("toggle_color_coded_rows", _params, socket) do
+    {:noreply, assign(socket, :color_coded_rows, not socket.assigns.color_coded_rows)}
   end
 
   @impl true
@@ -253,7 +261,8 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
       "speed_increase_threshold" => speed_increase_threshold,
       "lives" => lives,
       "extra_life_threshold" => extra_life_threshold,
-      "points_per_kana" => points_per_kana
+      "points_per_kana" => points_per_kana,
+      "color_coded_rows" => socket.assigns.color_coded_rows
     }
 
     kfg_attrs =
@@ -318,6 +327,11 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :background_image, ref)}
+  end
+
   defp validate_form(name, selected_kana) do
     errors = %{}
 
@@ -336,11 +350,6 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
       end
 
     errors
-  end
-
-  @impl true
-  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :background_image, ref)}
   end
 
   defp handle_background_image_upload(socket) do
