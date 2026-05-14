@@ -125,6 +125,7 @@
                 class="btn btn-primary btn-lg"
                 id="start-game-btn"
                 phx-mounted={JS.focus()}
+                phx-hook="GameFullscreenButton"
               >
                 <.icon name="hero-play" class="w-5 h-5 mr-1" />
                 {gettext("Start Game")}
@@ -377,7 +378,6 @@
                   <% end %>
                   <button type="button" data-modifier="dakuten" class="flick-modifier-btn aspect-square">゛</button>
                   <button type="button" data-modifier="handakuten" class="flick-modifier-btn aspect-square">゜</button>
-                  <button type="button" data-modifier="small" class="flick-modifier-btn aspect-square text-xs">小</button>
                   <button type="button" data-modifier="backspace" class="flick-action-btn aspect-square">
                     <.icon name="hero-backspace" class="w-4 h-4" />
                   </button>
@@ -421,7 +421,6 @@
                     <% end %>
                     <button type="button" data-modifier="dakuten" class="flick-modifier-btn w-11 h-11">゛</button>
                     <button type="button" data-modifier="handakuten" class="flick-modifier-btn w-11 h-11">゜</button>
-                    <button type="button" data-modifier="small" class="flick-modifier-btn w-11 h-11 text-xs">小</button>
                     <button type="button" data-modifier="enter" class="flick-action-btn enter-btn w-11 h-11">
                       <.icon name="hero-arrow-right" class="w-4 h-4" />
                     </button>

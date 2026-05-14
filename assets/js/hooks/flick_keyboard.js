@@ -27,13 +27,13 @@ const flickKeys = {
     center: "ま", up: "み", right: "む", down: "め", left: "も"
   },
   "や": {
-    center: "や", up: "ゆ", right: "よ"
+    center: "や", up: "ゆ", right: "よ", down: "ゃ", left: "ゅ"
   },
   "ら": {
     center: "ら", up: "り", right: "る", down: "れ", left: "ろ"
   },
   "わ": {
-    center: "わ", up: "を", right: "ん"
+    center: "わ", up: "を", right: "ん", down: "っ", left: "ょ"
   },
 }
 
