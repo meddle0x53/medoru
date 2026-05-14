@@ -179,23 +179,28 @@ const FlickKeyboard = {
     const popupSize = 140
     const cellSize = popupSize / 3
 
-    let popupLeft = rect.left + rect.width / 2 - popupSize / 2
-    let popupTop = rect.top + rect.height / 2 - popupSize / 2
-
-    // Keep popup within viewport
-    popupLeft = Math.max(8, Math.min(popupLeft, window.innerWidth - popupSize - 8))
-    popupTop = Math.max(8, Math.min(popupTop, window.innerHeight - popupSize - 8))
+    // Center popup on the pressed key (positioned relative to the key button)
+    let popupLeft = rect.width / 2 - popupSize / 2
+    let popupTop = rect.height / 2 - popupSize / 2
 
     this.popup = document.createElement("div")
-    this.popup.className = "flick-popup"
     this.popup.style.cssText = `
-      position: fixed;
+      position: absolute;
       z-index: 100;
       pointer-events: none;
       width: ${popupSize}px;
       height: ${popupSize}px;
       left: ${popupLeft}px;
       top: ${popupTop}px;
+      opacity: 1;
+      visibility: visible;
+      display: block;
+      will-change: transform, opacity;
+      background: rgba(255,255,255,0.3);
+      border-radius: 12px;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     `
 
     const cells = [
@@ -232,7 +237,10 @@ const FlickKeyboard = {
       this.popup.appendChild(el)
     })
 
-    document.body.appendChild(this.popup)
+    if (this.activeKey) {
+      this.activeKey.style.position = "relative"
+      this.activeKey.appendChild(this.popup)
+    }
   },
 
   hidePopup() {
