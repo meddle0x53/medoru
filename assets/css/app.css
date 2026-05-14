@@ -415,3 +415,156 @@ body {
     font-size: 1.75rem;
   }
 }
+
+/* Flick Keyboard */
+.flick-keyboard,
+.flick-portrait,
+.flick-landscape {
+  display: none;
+}
+
+/* Hide standard keyboard on phones and tablets */
+@media (max-width: 1366px) {
+  .standard-keyboard {
+    display: none !important;
+  }
+}
+
+/* Portrait flick keyboard (phones + tablets in portrait) */
+@media (max-width: 1366px) and (max-aspect-ratio: 1/1) {
+  .flick-keyboard {
+    display: block;
+  }
+  .flick-portrait {
+    display: flex;
+  }
+}
+
+/* Landscape flick keyboard (phones + tablets in landscape) */
+@media (max-width: 1366px) and (min-aspect-ratio: 1/1) {
+  .flick-keyboard {
+    display: block;
+  }
+  .flick-landscape {
+    display: block;
+  }
+}
+
+.flick-key-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #1f2937;
+  user-select: none;
+  touch-action: none;
+  position: relative;
+  cursor: pointer;
+}
+
+.flick-key-btn:active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.flick-modifier-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: #4b5563;
+  user-select: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.flick-modifier-btn:active,
+.flick-modifier-active {
+  background: #f59e0b;
+  color: #fff;
+  border-color: #d97706;
+}
+
+.flick-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: #4b5563;
+  user-select: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.flick-action-btn:active {
+  background: #ef4444;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.flick-action-btn.enter-btn:active {
+  background: #10b981;
+  color: #fff;
+  border-color: #059669;
+}
+
+/* Dark mode support for flick keyboard */
+@media (prefers-color-scheme: dark) {
+  .flick-key-btn {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e5e7eb;
+  }
+  .flick-key-btn:active {
+    background: #3b82f6;
+    color: #fff;
+  }
+  .flick-modifier-btn,
+  .flick-action-btn {
+    background: rgba(30, 41, 59, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #9ca3af;
+  }
+  .flick-modifier-btn:active,
+  .flick-modifier-active {
+    background: #f59e0b;
+    color: #fff;
+  }
+  .flick-action-btn:active {
+    background: #ef4444;
+    color: #fff;
+  }
+  .flick-action-btn.enter-btn:active {
+    background: #10b981;
+    color: #fff;
+  }
+}
+
+/* Flick popup styles */
+.flick-popup {
+  animation: flick-popup-in 0.08s ease-out;
+}
+
+@keyframes flick-popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

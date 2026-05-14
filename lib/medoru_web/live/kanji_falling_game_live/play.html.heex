@@ -276,81 +276,157 @@
             <% key_btn = "rounded bg-base-100/80 border border-base-300 text-xs sm:text-sm font-bold text-base-content active:bg-primary active:text-primary-content shadow-sm h-5 sm:h-6" %>
             <% key_btn_landscape = "rounded bg-slate-800 border border-slate-600 text-sm font-bold text-white active:bg-primary active:text-primary-content shadow-sm h-8 sm:h-9 md:h-10" %>
 
-            <%!-- Portrait: bottom center --%>
-            <div class="absolute left-1/2 -translate-x-1/2 z-20 w-[98%] max-w-sm [@media(min-aspect-ratio:1/1)]:hidden" style="bottom: 60px;">
-              <div class="grid grid-cols-10 gap-0.5 sm:gap-1">
-                <%!-- Row 1 --%>
-                <%= for char <- ["あ","い","う","え","お","か","き","く","け","こ"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 2 --%>
-                <%= for char <- ["が","ぎ","ぐ","げ","ご","さ","し","す","せ","そ"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 3 --%>
-                <%= for char <- ["ざ","じ","ず","ぜ","ぞ","た","ち","つ","て","と"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 4 --%>
-                <%= for char <- ["だ","ぢ","づ","で","ど","な","に","ぬ","ね","の"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 5 --%>
-                <%= for char <- ["は","ひ","ふ","へ","ほ","ば","び","ぶ","べ","ぼ"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 6 --%>
-                <%= for char <- ["ぱ","ぴ","ぷ","ぺ","ぽ","ま","み","む","め","も"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 7 --%>
-                <%= for char <- ["や","ゆ","よ","ら","り","る","れ","ろ","わ","を"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
-                <%!-- Row 8 --%>
-                <%= for char <- ["ん","っ","ゃ","ゅ","ょ","ぁ","ぃ","ぅ","ぇ","ぉ"] do %>
-                  <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
-                <% end %>
+            <%!-- Standard Hiragana Keyboards (tablets / desktops) --%>
+            <div class="standard-keyboard">
+              <%!-- Portrait: bottom center --%>
+              <div class="absolute left-1/2 -translate-x-1/2 z-20 w-[98%] max-w-sm [@media(min-aspect-ratio:1/1)]:hidden" style="bottom: 60px;">
+                <div class="grid grid-cols-10 gap-0.5 sm:gap-1">
+                  <%!-- Row 1 --%>
+                  <%= for char <- ["あ","い","う","え","お","か","き","く","け","こ"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 2 --%>
+                  <%= for char <- ["が","ぎ","ぐ","げ","ご","さ","し","す","せ","そ"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 3 --%>
+                  <%= for char <- ["ざ","じ","ず","ぜ","ぞ","た","ち","つ","て","と"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 4 --%>
+                  <%= for char <- ["だ","ぢ","づ","で","ど","な","に","ぬ","ね","の"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 5 --%>
+                  <%= for char <- ["は","ひ","ふ","へ","ほ","ば","び","ぶ","べ","ぼ"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 6 --%>
+                  <%= for char <- ["ぱ","ぴ","ぷ","ぺ","ぽ","ま","み","む","め","も"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 7 --%>
+                  <%= for char <- ["や","ゆ","よ","ら","り","る","れ","ろ","わ","を"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                  <%!-- Row 8 --%>
+                  <%= for char <- ["ん","っ","ゃ","ゅ","ょ","ぁ","ぃ","ぅ","ぇ","ぉ"] do %>
+                    <button type="button" phx-click="key_pressed" phx-value-key={char} class={["aspect-[3/2]", key_btn]}>{char}</button>
+                  <% end %>
+                </div>
+                <div class="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
+                  <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["flex-1 py-1", key_btn, "active:bg-error active:text-error-content"]}>
+                    <.icon name="hero-backspace" class="w-3 h-3 sm:w-4 sm:h-4" />
+                  </button>
+                  <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["flex-1 py-1", key_btn]}>
+                    Enter
+                  </button>
+                </div>
               </div>
-              <div class="flex gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
-                <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["flex-1 py-1", key_btn, "active:bg-error active:text-error-content"]}>
-                  <.icon name="hero-backspace" class="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
-                <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["flex-1 py-1", key_btn]}>
-                  Enter
-                </button>
+
+              <%!-- Landscape: left side --%>
+              <div class="fixed left-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+                <div class="flex flex-col gap-1">
+                  <%= for row <- hiragana_keyboard_rows_landscape_left() do %>
+                    <div class="flex gap-1 justify-center">
+                      <%= for char <- row do %>
+                        <button type="button" phx-click="key_pressed" phx-value-key={char} class={["w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10", key_btn_landscape]}>{char}</button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                  <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["w-full h-9 sm:h-10", key_btn_landscape, "active:bg-error active:text-error-content"]}>
+                    <.icon name="hero-backspace" class="w-4 h-4 mx-auto" />
+                  </button>
+                </div>
+              </div>
+
+              <%!-- Landscape: right side --%>
+              <div class="fixed right-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
+                <div class="flex flex-col gap-1">
+                  <%= for row <- hiragana_keyboard_rows_landscape_right() do %>
+                    <div class="flex gap-1 justify-center">
+                      <%= for char <- row do %>
+                        <button type="button" phx-click="key_pressed" phx-value-key={char} class={["w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10", key_btn_landscape]}>{char}</button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                  <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["w-full h-9 sm:h-10", key_btn_landscape]}>
+                    Enter
+                  </button>
+                </div>
               </div>
             </div>
 
-            <%!-- Landscape: left side --%>
-            <div class="fixed left-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
-              <div class="flex flex-col gap-1">
-                <%= for row <- hiragana_keyboard_rows_landscape_left() do %>
-                  <div class="flex gap-1 justify-center">
-                    <%= for char <- row do %>
-                      <button type="button" phx-click="key_pressed" phx-value-key={char} class={["w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10", key_btn_landscape]}>{char}</button>
-                    <% end %>
-                  </div>
-                <% end %>
-                <button type="button" phx-click="key_pressed" phx-value-key="Backspace" class={["w-full h-9 sm:h-10", key_btn_landscape, "active:bg-error active:text-error-content"]}>
-                  <.icon name="hero-backspace" class="w-4 h-4 mx-auto" />
-                </button>
+            <%!-- Flick Keyboard (phones / small screens) --%>
+            <div
+              id="flick-keyboard"
+              class="flick-keyboard"
+              phx-hook="FlickKeyboard"
+            >
+              <%!-- Portrait: centered grid at bottom --%>
+              <div class="flick-portrait absolute inset-x-0 bottom-[100px] flex justify-center px-2">
+                <div class="w-full max-w-xs grid grid-cols-5 gap-1">
+                  <%= for base <- ["あ", "か", "さ", "た", "な", "は", "ま", "や", "ら", "わ"] do %>
+                    <button
+                      type="button"
+                      data-flick-base={base}
+                      class="flick-key-btn aspect-square text-lg sm:text-xl"
+                    >
+                      {base}
+                    </button>
+                  <% end %>
+                  <button type="button" data-modifier="dakuten" class="flick-modifier-btn aspect-square">゛</button>
+                  <button type="button" data-modifier="handakuten" class="flick-modifier-btn aspect-square">゜</button>
+                  <button type="button" data-modifier="small" class="flick-modifier-btn aspect-square text-xs">小</button>
+                  <button type="button" data-modifier="backspace" class="flick-action-btn aspect-square">
+                    <.icon name="hero-backspace" class="w-4 h-4" />
+                  </button>
+                  <button type="button" data-modifier="enter" class="flick-action-btn enter-btn aspect-square">
+                    <.icon name="hero-arrow-right" class="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <%!-- Landscape: right side --%>
-            <div class="fixed right-2 top-1/2 -translate-y-1/2 z-20 [@media(max-aspect-ratio:1/1)]:hidden">
-              <div class="flex flex-col gap-1">
-                <%= for row <- hiragana_keyboard_rows_landscape_right() do %>
-                  <div class="flex gap-1 justify-center">
-                    <%= for char <- row do %>
-                      <button type="button" phx-click="key_pressed" phx-value-key={char} class={["w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10", key_btn_landscape]}>{char}</button>
+              <%!-- Landscape: split left / right (fixed to viewport, outside game field) --%>
+              <div class="flick-landscape">
+                <%!-- Left panel --%>
+                <div class="fixed left-2 bottom-4 z-20">
+                  <div class="grid grid-cols-2 gap-1">
+                    <%= for base <- ["あ", "か", "さ", "た", "な", "は", "ま"] do %>
+                      <button
+                        type="button"
+                        data-flick-base={base}
+                        class="flick-key-btn w-11 h-11 text-base"
+                      >
+                        {base}
+                      </button>
                     <% end %>
+                    <button type="button" data-modifier="backspace" class="flick-action-btn w-11 h-11">
+                      <.icon name="hero-backspace" class="w-4 h-4" />
+                    </button>
                   </div>
-                <% end %>
-                <button type="button" phx-click="key_pressed" phx-value-key="Enter" class={["w-full h-9 sm:h-10", key_btn_landscape]}>
-                  Enter
-                </button>
+                </div>
+
+                <%!-- Right panel --%>
+                <div class="fixed right-2 bottom-4 z-20">
+                  <div class="grid grid-cols-2 gap-1">
+                    <%= for base <- ["や", "ら", "わ"] do %>
+                      <button
+                        type="button"
+                        data-flick-base={base}
+                        class="flick-key-btn w-11 h-11 text-base"
+                      >
+                        {base}
+                      </button>
+                    <% end %>
+                    <button type="button" data-modifier="dakuten" class="flick-modifier-btn w-11 h-11">゛</button>
+                    <button type="button" data-modifier="handakuten" class="flick-modifier-btn w-11 h-11">゜</button>
+                    <button type="button" data-modifier="small" class="flick-modifier-btn w-11 h-11 text-xs">小</button>
+                    <button type="button" data-modifier="enter" class="flick-action-btn enter-btn w-11 h-11">
+                      <.icon name="hero-arrow-right" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           <% end %>
