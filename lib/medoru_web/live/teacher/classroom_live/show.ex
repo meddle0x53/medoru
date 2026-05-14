@@ -838,22 +838,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         </h3>
         <div class="flex gap-2">
           <.link
-            navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
+            navigate={~p"/teacher/classrooms/#{@classroom.id}/games/create"}
             class="btn btn-primary btn-sm"
           >
-            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Word Game")}
-          </.link>
-          <.link
-            navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"}
-            class="btn btn-secondary btn-sm"
-          >
-            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
-          </.link>
-          <.link
-            navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/new"}
-            class="btn btn-accent btn-sm"
-          >
-            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Falling Game")}
+            <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Game")}
           </.link>
         </div>
       </div>
@@ -867,13 +855,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           </p>
           <div class="flex gap-2 justify-center">
             <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"} class="btn btn-primary">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Word Game")}
-            </.link>
-            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"} class="btn btn-secondary">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Kana Game")}
-            </.link>
-            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/new"} class="btn btn-accent">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Falling Game")}
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Game")}
             </.link>
           </div>
         </div>

@@ -46,7 +46,7 @@
               <button
                 phx-click="pause_game"
                 class="btn btn-ghost btn-circle btn-sm"
-                title={gettext("Pause (P)")}
+                title={gettext("Pause")}
               >
                 <.icon name="hero-pause" class="w-5 h-5" />
               </button>
@@ -54,7 +54,7 @@
               <button
                 phx-click="resume_game"
                 class="btn btn-primary btn-circle btn-sm"
-                title={gettext("Resume (P)")}
+                title={gettext("Resume")}
               >
                 <.icon name="hero-play" class="w-5 h-5" />
               </button>
@@ -73,7 +73,11 @@
       <%!-- Game Field --%>
       <div
         class="flex-1 relative bg-base-200 sm:rounded-xl overflow-hidden border-2 border-base-300"
-        style="min-height: 300px;"
+        style={[
+          "min-height: 300px;",
+          if(@config.background_image, do: "background-image: url(#{@config.background_image}); background-size: cover; background-position: center;", else: "")
+        ]}
+        data-game-field="true"
       >
       <%!-- Grid lines --%>
       <%= for row <- 1..40 do %>
@@ -96,15 +100,15 @@
       <%= cond do %>
         <% @status == :ready -> %>
           <%!-- Ready Screen --%>
-          <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-base-100/90 px-4">
+          <div class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-base-100/90 px-4 overflow-y-auto py-4">
             <div class="text-5xl sm:text-6xl mb-4">⌨️</div>
             <h2 class="text-xl sm:text-2xl font-bold text-base-content mb-2">
-              {gettext("Kana Falling")}
+              {gettext("Kana Cascade")}
             </h2>
             <p class="text-secondary text-center max-w-xs mb-2 text-sm sm:text-base">
               {gettext("Type the romaji of the falling kana before it reaches the danger line!")}
             </p>
-            <div class="text-xs sm:text-sm text-secondary mb-6 space-y-1">
+            <div class="text-xs sm:text-sm text-secondary mb-4 space-y-1">
               <div>{gettext("Initial Speed")}: {@config.initial_speed}</div>
               <div>{gettext("Lives")}: {@config.lives}</div>
               <div>{gettext("Speed Up Every")}: {@config.speed_increase_threshold} {gettext("pts")}</div>
@@ -114,15 +118,26 @@
                 {gettext("Your High Score")}: {@high_score}
               </div>
             <% end %>
-            <button
-              phx-click="start_game"
-              class="btn btn-primary btn-lg"
-              id="start-game-btn"
-              phx-mounted={JS.focus()}
-            >
-              <.icon name="hero-play" class="w-5 h-5 mr-1" />
-              {gettext("Start Game")}
-            </button>
+            <div class="flex flex-col gap-2">
+              <button
+                phx-click="start_game_fullscreen"
+                class="btn btn-primary btn-lg"
+                id="start-game-btn"
+                phx-mounted={JS.focus()}
+              >
+                <.icon name="hero-play" class="w-5 h-5 mr-1" />
+                {gettext("Start Game")}
+              </button>
+              <%= if @is_mobile == false do %>
+                <button
+                  phx-click="start_game"
+                  class="btn btn-ghost btn-sm text-secondary"
+                >
+                  <.icon name="hero-window" class="w-4 h-4 mr-1" />
+                  {gettext("Play Windowed")}
+                </button>
+              <% end %>
+            </div>
             <.link
               navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
               class="btn btn-ghost btn-sm mt-3"
@@ -130,6 +145,37 @@
               <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
               {gettext("Back to Games")}
             </.link>
+
+            <%!-- Rankings --%>
+            <div class="w-full max-w-xs mt-4">
+              <h3 class="text-xs sm:text-sm font-semibold text-base-content mb-2 text-center">
+                <.icon name="hero-trophy" class="w-4 h-4 mr-1" />
+                {gettext("Rankings")}
+              </h3>
+              <%= if @sessions == [] do %>
+                <p class="text-center text-secondary text-xs sm:text-sm">
+                  {gettext("No scores yet.")}
+                </p>
+              <% else %>
+                <div class="space-y-1">
+                  <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+                    <div class={[
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm",
+                      if(session.user_id == @current_scope.current_user.id,
+                        do: "bg-primary/10",
+                        else: "bg-base-200"
+                      )
+                    ]}>
+                      <span class="w-5 text-center font-bold text-secondary">{index}</span>
+                      <span class="flex-1 truncate">
+                        {session.user.profile && session.user.profile.display_name || session.user.name || gettext("Anonymous")}
+                      </span>
+                      <span class="font-bold text-primary">{session.score}</span>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
           </div>
 
         <% @status == :playing and @current_kana -> %>
@@ -182,7 +228,7 @@
               </button>
             </div>
             <div class="mt-4 text-xs text-secondary/60">
-              {gettext("Press P to resume, Esc to exit")}
+              {gettext("Press Esc to exit")}
             </div>
           </div>
 
@@ -243,7 +289,7 @@
                     ]}>
                       <span class="w-5 text-center font-bold text-secondary">{index}</span>
                       <span class="flex-1 truncate">
-                        {session.user.name || gettext("Anonymous")}
+                        {session.user.profile && session.user.profile.display_name || session.user.name || gettext("Anonymous")}
                       </span>
                       <span class="font-bold text-primary">{session.score}</span>
                     </div>
@@ -252,15 +298,24 @@
               <% end %>
             </div>
 
-            <button
-              phx-click="restart_game"
-              class="btn btn-primary"
-              id="restart-game-btn"
-              phx-mounted={JS.focus()}
-            >
-              <.icon name="hero-arrow-path" class="w-5 h-5 mr-1" />
-              {gettext("Play Again")}
-            </button>
+            <div class="flex flex-col gap-2">
+              <button
+                phx-click="restart_game"
+                class="btn btn-primary"
+                id="restart-game-btn"
+                phx-mounted={JS.focus()}
+              >
+                <.icon name="hero-arrow-path" class="w-5 h-5 mr-1" />
+                {gettext("Play Again")}
+              </button>
+              <.link
+                navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                class="btn btn-ghost btn-sm"
+              >
+                <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
+                {gettext("Back to Games")}
+              </.link>
+            </div>
           </div>
 
         <% true -> %>

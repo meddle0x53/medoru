@@ -13,16 +13,16 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
   defp speed_options do
     [
-      {"1 - Very Slow (2s/row)", "1"},
-      {"2 - Slow (1.8s/row)", "2"},
-      {"3 - Slow-Medium (1.6s/row)", "3"},
-      {"4 - Medium (1.4s/row)", "4"},
-      {"5 - Medium-Fast (1s/row)", "5"},
-      {"6 - Fast (0.9s/row)", "6"},
-      {"7 - Fast (0.8s/row)", "7"},
-      {"8 - Very Fast (0.6s/row)", "8"},
-      {"9 - Very Fast (0.5s/row)", "9"},
-      {"10 - Extreme (0.3s/row)", "10"}
+      {"1 - Very Slow (1.8s/row)", "1"},
+      {"2 - Slow (1.6s/row)", "2"},
+      {"3 - Slow-Medium (1.3s/row)", "3"},
+      {"4 - Medium (1s/row)", "4"},
+      {"5 - Medium-Fast (0.8s/row)", "5"},
+      {"6 - Fast (0.7s/row)", "6"},
+      {"7 - Fast (0.5s/row)", "7"},
+      {"8 - Very Fast (0.4s/row)", "8"},
+      {"9 - Very Fast (0.3s/row)", "9"},
+      {"10 - Extreme (0.1s/row)", "10"}
     ]
   end
 
@@ -30,7 +30,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, gettext("Create Kana Falling Game"))
+     |> assign(:page_title, gettext("Create Kana Cascade Game"))
      |> assign(:name, "")
      |> assign(:initial_speed, "1")
      |> assign(:speed_increase_threshold, "50")
@@ -38,7 +38,12 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
      |> assign(:extra_life_threshold, "100")
      |> assign(:points_per_kana, "1")
      |> assign(:selected_kana, [])
-     |> assign(:form_errors, %{})}
+     |> assign(:form_errors, %{})
+     |> allow_upload(:background_image,
+       accept: ~w(.jpg .jpeg .png .webp),
+       max_entries: 1,
+       max_file_size: 2_000_000
+     )}
   end
 
   @impl true
@@ -57,7 +62,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
       {:noreply,
        socket
-       |> assign(:page_title, gettext("Edit Kana Falling Game"))
+       |> assign(:page_title, gettext("Edit Kana Cascade Game"))
        |> assign(:classroom, classroom)
        |> assign(:game, game)
        |> assign(:mode, :edit)
@@ -68,6 +73,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
        |> assign(:extra_life_threshold, Integer.to_string(kfg.extra_life_threshold))
        |> assign(:points_per_kana, Integer.to_string(kfg.points_per_kana))
        |> assign(:selected_kana, kfg.selected_kana || [])
+       |> assign(:background_image, kfg.background_image)
        |> assign(:form_errors, %{})}
     end
   end
@@ -240,15 +246,26 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
       |> assign(:extra_life_threshold, extra_life_threshold)
       |> assign(:points_per_kana, points_per_kana)
 
+    background_image = handle_background_image_upload(socket)
+
+    kfg_attrs = %{
+      "initial_speed" => initial_speed,
+      "speed_increase_threshold" => speed_increase_threshold,
+      "lives" => lives,
+      "extra_life_threshold" => extra_life_threshold,
+      "points_per_kana" => points_per_kana
+    }
+
+    kfg_attrs =
+      if background_image do
+        Map.put(kfg_attrs, "background_image", background_image)
+      else
+        kfg_attrs
+      end
+
     attrs = %{
       "name" => name,
-      "kana_falling_game" => %{
-        "initial_speed" => initial_speed,
-        "speed_increase_threshold" => speed_increase_threshold,
-        "lives" => lives,
-        "extra_life_threshold" => extra_life_threshold,
-        "points_per_kana" => points_per_kana
-      }
+      "kana_falling_game" => kfg_attrs
     }
 
     errors = validate_form(name, selected_kana)
@@ -277,8 +294,8 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
            |> put_flash(
              :info,
              if(socket.assigns.mode == :new,
-               do: gettext("Kana falling game created successfully."),
-               else: gettext("Kana falling game updated successfully.")
+               do: gettext("Kana Cascade game created successfully."),
+               else: gettext("Kana Cascade game updated successfully.")
              )
            )
            |> push_navigate(to: ~p"/teacher/classrooms/#{classroom_id}?tab=games")}
@@ -320,6 +337,36 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
     errors
   end
+
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :background_image, ref)}
+  end
+
+  defp handle_background_image_upload(socket) do
+    uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+    case consume_uploaded_entries(socket, :background_image, fn %{path: path}, entry ->
+           ext = Path.extname(entry.client_name) |> String.downcase()
+           filename = "#{Ecto.UUID.generate()}#{ext}"
+           dest_dir = Path.join(uploads_dir, "game_backgrounds")
+           File.mkdir_p!(dest_dir)
+           dest_path = Path.join(dest_dir, filename)
+           File.cp!(path, dest_path)
+           {:ok, "/uploads/game_backgrounds/#{filename}"}
+         end) do
+      [] ->
+        nil
+
+      [image_path | _] ->
+        image_path
+    end
+  end
+
+  defp error_to_string(:too_large), do: gettext("File is too large (max 2MB)")
+  defp error_to_string(:too_many_files), do: gettext("You can only upload 1 file")
+  defp error_to_string(:not_accepted), do: gettext("Invalid file type")
+  defp error_to_string(_), do: gettext("Upload failed")
 
   defp format_changeset_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->

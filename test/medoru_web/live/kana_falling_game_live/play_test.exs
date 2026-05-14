@@ -47,7 +47,7 @@ defmodule MedoruWeb.KanaFallingGameLive.PlayTest do
         live(conn, ~p"/classrooms/#{classroom.id}/kana-falling-games/#{game.id}")
 
       assert html =~ "Falling Game"
-      assert html =~ "Kana Falling"
+      assert html =~ "Kana Cascade"
       assert html =~ "Start Game"
     end
 

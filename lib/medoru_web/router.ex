@@ -160,6 +160,7 @@ defmodule MedoruWeb.Router do
       live "/classrooms/new", ClassroomLive.New
       live "/classrooms/:id", ClassroomLive.Show
       live "/classrooms/:id/analytics", ClassroomLive.Analytics
+      live "/classrooms/:classroom_id/games/create", GameLive.New
       live "/classrooms/:classroom_id/games/new", GameLive.Form, :new
       live "/classrooms/:classroom_id/games/:id/edit", GameLive.Form, :edit
       live "/classrooms/:classroom_id/games/:id", GameLive.Show

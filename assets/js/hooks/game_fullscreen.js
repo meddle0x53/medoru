@@ -1,6 +1,5 @@
-const KanaFallingInput = {
+const GameFullscreen = {
   mounted() {
-    // this.el is the element with phx-hook="KanaFallingInput"
     this.isFullscreen = false
 
     // Detect mobile/touch devices
@@ -10,25 +9,13 @@ const KanaFallingInput = {
 
     this.pushEvent("device_info", { is_mobile: isMobile })
 
-    this.handleKeyDown = (e) => {
-      if (!this.el) return
-
-      e.preventDefault()
-
-      if (e.ctrlKey || e.altKey || e.metaKey) {
-        e.stopPropagation()
-      }
-    }
-
     this.handleFullscreenChange = () => {
       this.isFullscreen = !!document.fullscreenElement
     }
 
-    window.addEventListener("keydown", this.handleKeyDown, true)
     document.addEventListener("fullscreenchange", this.handleFullscreenChange)
 
     this.handleEvent("request_fullscreen", () => {
-      // Only auto-fullscreen on mobile devices
       if (isMobile) {
         this.enterFullscreen()
       }
@@ -41,32 +28,9 @@ const KanaFallingInput = {
     this.handleEvent("exit_fullscreen", () => {
       this.exitFullscreen()
     })
-
-    this.handleEvent("kana_destroyed", ({ char, row }) => {
-      this.showExplosion(char, row)
-    })
-  },
-
-  showExplosion(char, row) {
-    const gameField = this.el.querySelector("[data-game-field]") || this.el
-    if (!gameField) return
-
-    const explosion = document.createElement("div")
-    explosion.className = "kana-explosion"
-    explosion.textContent = char
-    explosion.style.top = `${(row - 1) * 2.5}%`
-
-    gameField.appendChild(explosion)
-
-    setTimeout(() => {
-      if (explosion.parentNode) {
-        explosion.parentNode.removeChild(explosion)
-      }
-    }, 450)
   },
 
   destroyed() {
-    window.removeEventListener("keydown", this.handleKeyDown, true)
     document.removeEventListener("fullscreenchange", this.handleFullscreenChange)
     this.exitFullscreen()
   },
@@ -94,11 +58,10 @@ const KanaFallingInput = {
   },
 
   hideMobileChrome() {
-    // Fallback for browsers without fullscreen API (iOS Safari)
     setTimeout(() => {
       window.scrollTo(0, 1)
     }, 100)
   },
 }
 
-export default KanaFallingInput
+export default GameFullscreen

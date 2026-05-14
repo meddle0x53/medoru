@@ -19,7 +19,7 @@
           type="text"
           name="name"
           value={@name}
-          placeholder={gettext("e.g., Kana Falling Challenge")}
+          placeholder={gettext("e.g., Kana Cascade Challenge")}
           class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
         <%= if @form_errors[:name] do %>
@@ -102,6 +102,74 @@
         </div>
       </div>
 
+      <%!-- Background Image Upload --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Background Image")}
+        </label>
+        <p class="text-secondary text-sm mb-3">
+          {gettext("Optional background image for the game field.")}
+        </p>
+
+        <div class="space-y-4">
+          <%= if assigns[:background_image] && @background_image do %>
+            <div class="p-4 bg-base-200/50 rounded-lg">
+              <p class="text-sm text-secondary mb-2">{gettext("Current image:")}</p>
+              <img
+                src={@background_image}
+                alt={gettext("Background")}
+                class="w-full max-w-[300px] h-auto rounded-xl border border-base-300"
+              />
+            </div>
+          <% end %>
+
+          <div>
+            <.live_file_input
+              upload={@uploads.background_image}
+              class="file-input file-input-bordered w-full"
+            />
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Accepted formats: JPG, PNG, WebP. Max size: 2MB")}
+            </p>
+
+            <%= for entry <- @uploads.background_image.entries do %>
+              <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-4">
+                  <.live_img_preview
+                    entry={entry}
+                    class="w-24 h-24 object-cover rounded-lg border border-base-300"
+                  />
+                  <div class="flex-1">
+                    <p class="font-medium">{entry.client_name}</p>
+                    <p class="text-sm text-secondary">
+                      {trunc(entry.client_size / 1024)} KB
+                    </p>
+                    <div class="w-full bg-base-300 rounded-full h-2 mt-2">
+                      <div
+                        class="bg-primary h-2 rounded-full transition-all"
+                        style={"width: #{entry.progress}%"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="btn btn-sm btn-ghost btn-circle text-error"
+                  >
+                    <.icon name="hero-x-mark" class="w-5 h-5" />
+                  </button>
+                </div>
+                <%= for err <- upload_errors(@uploads.background_image, entry) do %>
+                  <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
       <%!-- Kana Selection --%>
       <div>
         <label class="block text-sm font-medium text-base-content mb-2">
@@ -115,77 +183,71 @@
           <p class="text-error text-sm mb-2">{@form_errors[:selected_kana]}</p>
         <% end %>
 
-        <div class="space-y-4">
-          <%!-- Hiragana --%>
-          <div class="border border-base-300 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-base-content">{gettext("Hiragana")}</h3>
-              <button
-                type="button"
-                phx-click="toggle_row"
-                phx-value-row="hiragana"
-                class="text-sm text-primary hover:text-primary/80"
-              >
-                {gettext("Toggle All")}
-              </button>
-            </div>
-            <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
-              <%= for kana <- Medoru.Content.Kana.list_hiragana() do %>
-                <button
-                  type="button"
-                  phx-click="toggle_kana"
-                  phx-value-character={kana.character}
-                  class={[
-                    "w-10 h-10 rounded-lg text-lg font-medium transition-all",
-                    if(kana.character in @selected_kana,
-                      do: "bg-primary text-primary-content shadow-md",
-                      else: "bg-base-200 text-secondary hover:bg-base-300"
-                    )
-                  ]}
-                >
-                  {kana.character}
-                </button>
-              <% end %>
-            </div>
+        <div class="space-y-3 mb-4">
+          <%!-- Hiragana rows --%>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-medium text-pink-600 dark:text-pink-400 mr-1">{gettext("Hiragana")}</span>
+            <button type="button" phx-click="toggle_row" phx-value-row="hiragana"
+              class="px-3 py-1.5 text-sm rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300 transition-colors"
+            >{gettext("All")}</button>
+            <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
+              <button type="button" phx-click="toggle_row" phx-value-row={"hiragana_#{group}"}
+                class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+              >{group}</button>
+            <% end %>
+            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_ga"
+              class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+            >{gettext("Dakuten")}</button>
+            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_pa"
+              class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+            >{gettext("Handakuten")}</button>
+            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_small"
+              class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
+            >{gettext("Small")}</button>
           </div>
+          <%!-- Katakana rows --%>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">{gettext("Katakana")}</span>
+            <button type="button" phx-click="toggle_row" phx-value-row="katakana"
+              class="px-3 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
+            >{gettext("All")}</button>
+            <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
+              <button type="button" phx-click="toggle_row" phx-value-row={"katakana_#{group}"}
+                class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+              >{group}</button>
+            <% end %>
+            <button type="button" phx-click="toggle_row" phx-value-row="katakana_ga"
+              class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+            >{gettext("Dakuten")}</button>
+            <button type="button" phx-click="toggle_row" phx-value-row="katakana_pa"
+              class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+            >{gettext("Handakuten")}</button>
+            <button type="button" phx-click="toggle_row" phx-value-row="katakana_small"
+              class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
+            >{gettext("Small")}</button>
+          </div>
+        </div>
 
-          <%!-- Katakana --%>
-          <div class="border border-base-300 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold text-base-content">{gettext("Katakana")}</h3>
-              <button
-                type="button"
-                phx-click="toggle_row"
-                phx-value-row="katakana"
-                class="text-sm text-primary hover:text-primary/80"
+        <div class="border border-base-300 rounded-xl p-4">
+          <% all_kana = Medoru.Content.Kana.list_all() %>
+          <div class="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-2">
+            <%= for kana <- all_kana do %>
+              <button type="button" phx-click="toggle_kana" phx-value-character={kana.character}
+                class={[
+                  "aspect-square rounded-lg text-lg font-medium transition-all duration-200 flex items-center justify-center",
+                  kana.character in @selected_kana && "bg-primary text-primary-content shadow-md",
+                  kana.character not in @selected_kana && "bg-base-200 text-secondary hover:bg-base-300"
+                ]}
               >
-                {gettext("Toggle All")}
+                {kana.character}
               </button>
-            </div>
-            <div class="grid grid-cols-5 sm:grid-cols-10 gap-2">
-              <%= for kana <- Medoru.Content.Kana.list_katakana() do %>
-                <button
-                  type="button"
-                  phx-click="toggle_kana"
-                  phx-value-character={kana.character}
-                  class={[
-                    "w-10 h-10 rounded-lg text-lg font-medium transition-all",
-                    if(kana.character in @selected_kana,
-                      do: "bg-primary text-primary-content shadow-md",
-                      else: "bg-base-200 text-secondary hover:bg-base-300"
-                    )
-                  ]}
-                >
-                  {kana.character}
-                </button>
-              <% end %>
-            </div>
+            <% end %>
           </div>
+        </div>
 
-          <%!-- Selected Count --%>
-          <div class="text-sm text-secondary">
-            {gettext("Selected: %{count} kana", count: length(@selected_kana))}
-          </div>
+        <%!-- Selected Count --%>
+        <div class="text-sm text-secondary mt-3">
+          {gettext("Selected: %{count} kana", count: length(@selected_kana))}
         </div>
       </div>
 

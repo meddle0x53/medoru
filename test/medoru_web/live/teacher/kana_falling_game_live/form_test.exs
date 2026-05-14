@@ -24,7 +24,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.FormTest do
       {:ok, _view, html} =
         live(conn, ~p"/teacher/classrooms/#{classroom.id}/kana-falling-games/new")
 
-      assert html =~ "Create Kana Falling Game"
+      assert html =~ "Create Kana Cascade Game"
       assert html =~ "Game Name"
       assert html =~ "Initial Speed"
       assert html =~ "Select Kana"

@@ -40,6 +40,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
       true ->
         config = game.kana_falling_game
         high_score = Games.get_kana_falling_high_score(game_id, user.id)
+        sessions = Games.list_kana_falling_sessions(game_id)
 
         socket =
           socket
@@ -48,6 +49,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
           |> assign(:game, game)
           |> assign(:config, config)
           |> assign(:high_score, high_score)
+          |> assign(:sessions, sessions)
           |> assign(:status, :ready)
           |> assign(:current_kana, nil)
           |> assign(:score, 0)
@@ -57,6 +59,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
           |> assign(:next_speed_up_score, config.speed_increase_threshold)
           |> assign(:next_extra_life_score, config.extra_life_threshold)
           |> assign(:input_buffer, "")
+          |> assign(:is_mobile, nil)
           |> assign(:kana_pool, build_kana_pool(config.selected_kana))
           |> assign(:started_at, nil)
           |> assign(:highest_speed_reached, config.initial_speed)
@@ -65,6 +68,11 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
 
         {:ok, socket}
     end
+  end
+
+  @impl true
+  def handle_event("device_info", %{"is_mobile" => is_mobile}, socket) do
+    {:noreply, assign(socket, :is_mobile, is_mobile)}
   end
 
   @impl true
@@ -83,15 +91,27 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
   end
 
   @impl true
+  def handle_event("start_game_fullscreen", _params, socket) do
+    socket = spawn_kana(socket)
+    tick_ms = Games.KanaFallingGame.speed_to_ms(socket.assigns.speed)
+
+    timer_ref = Process.send_after(self(), :tick, tick_ms)
+
+    {:noreply,
+     socket
+     |> assign(:status, :playing)
+     |> assign(:started_at, DateTime.utc_now())
+     |> assign(:timer_ref, timer_ref)
+     |> push_event("force_fullscreen", %{})}
+  end
+
+  @impl true
   def handle_event("key_pressed", %{"key" => key}, socket) do
     cond do
-      key in ["p", "P"] and socket.assigns.status == :playing ->
+      key == "Escape" and socket.assigns.status == :playing ->
         {:noreply, pause_game(socket)}
 
-      key in ["p", "P"] and socket.assigns.status == :paused ->
-        {:noreply, resume_game(socket)}
-
-      key == "Escape" and socket.assigns.status in [:playing, :paused] ->
+      key == "Escape" and socket.assigns.status == :paused ->
         {:noreply, exit_game(socket)}
 
       socket.assigns.status == :playing ->
@@ -324,6 +344,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
       end
 
     # Spawn new kana
+    socket = push_kana_destroyed(socket)
     spawn_kana(socket)
   end
 
@@ -351,9 +372,24 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
       |> assign(:lives_used, lives_used)
 
     if new_lives <= 0 do
+      push_kana_destroyed(socket)
       game_over(socket)
     else
+      socket = push_kana_destroyed(socket)
       spawn_kana(socket)
+    end
+  end
+
+  defp push_kana_destroyed(socket) do
+    current_kana = socket.assigns.current_kana
+
+    if current_kana do
+      push_event(socket, "kana_destroyed", %{
+        char: current_kana.char,
+        row: current_kana.row
+      })
+    else
+      socket
     end
   end
 

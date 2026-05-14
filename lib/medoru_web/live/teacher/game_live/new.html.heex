@@ -1,0 +1,77 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Classroom")}
+      </.link>
+      <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
+        {gettext("Create Game")}
+      </h1>
+      <p class="text-secondary mt-1">
+        {gettext("Choose a game type for your students.")}
+      </p>
+    </div>
+
+    <%!-- Game Type Cards --%>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <%!-- Word Memory Card Game --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-primary transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+            <.icon name="hero-squares-2x2" class="w-7 h-7 text-primary" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Word Memory Cards")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext("Flip cards to match word pairs. Great for vocabulary practice.")}
+          </p>
+        </div>
+      </.link>
+
+      <%!-- Kana Memory Card Game --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-secondary transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-secondary/10 flex items-center justify-center mb-3 group-hover:bg-secondary/20 transition-colors">
+            <.icon name="hero-squares-plus" class="w-7 h-7 text-secondary" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Kana Memory Cards")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext("Match hiragana and katakana pairs. Perfect for kana recognition.")}
+          </p>
+        </div>
+      </.link>
+
+      <%!-- Kana Cascade --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-accent transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-3 group-hover:bg-accent/20 transition-colors">
+            <.icon name="hero-bolt" class="w-7 h-7 text-accent" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Kana Cascade")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext("Type romaji before kana reach the bottom. Fast-paced typing practice.")}
+          </p>
+        </div>
+      </.link>
+    </div>
+  </div>
+</Layouts.app>

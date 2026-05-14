@@ -71,12 +71,23 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 |> assign(:answer_meaning, "")
                 |> assign(:answer_pronunciation, "")
                 |> assign(:answer_reading, "")
+                |> assign(:is_mobile, nil)
 
-              {:ok, socket}
+              {:ok, push_event(socket, "request_fullscreen", %{})}
             end
           end
         end
     end
+  end
+
+  @impl true
+  def handle_event("device_info", %{"is_mobile" => is_mobile}, socket) do
+    {:noreply, assign(socket, :is_mobile, is_mobile)}
+  end
+
+  @impl true
+  def handle_event("enter_fullscreen", _params, socket) do
+    {:noreply, push_event(socket, "force_fullscreen", %{})}
   end
 
   @impl true
@@ -353,7 +364,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-4xl mx-auto px-4 py-6">
+      <div
+        id="memory-card-game-container"
+        class="max-w-4xl mx-auto px-4 py-6"
+        data-memory-card-game="true"
+        phx-hook="GameFullscreen"
+      >
         <%!-- Header --%>
         <div class="mb-4 sm:mb-6">
           <.link
@@ -381,6 +397,16 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
               >
                 <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
               </.link>
+              <%= if @is_mobile == false do %>
+                <button
+                  type="button"
+                  phx-click="enter_fullscreen"
+                  class="btn btn-ghost btn-sm"
+                  title={gettext("Full Screen")}
+                >
+                  <.icon name="hero-arrows-pointing-out" class="w-4 h-4" />
+                </button>
+              <% end %>
               <div class="badge badge-outline badge-lg">
                 <.icon name="hero-heart" class="w-4 h-4 mr-1" />
                 {attempts_remaining(@session)} / {@session.max_attempts} {gettext("attempts")}
