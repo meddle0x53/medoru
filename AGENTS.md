@@ -3,15 +3,29 @@
 ## Current State
 
 **Version**: 0.1.7 🔄 IN PROGRESS  
-**Status**: Kana memory card games + classroom improvements complete  
-**Tests**: 707 passing  
+**Status**: Kana Cascade polish in progress — Kanji Reading typing game next within v0.1.7  
+**Tests**: 736 passing, 1 pre-existing flaky failure (`lesson_test_keyboard_test.exs:21`)  
 **URL**: https://medoru.net
 
-### What's Complete (v0.1.7) — Kana Games & Classroom Improvements
-- Kana Memory Card Games: Memory card game for hiragana/katakana practice
-  - Board sizes 4x4 and 6x6 with gojuon row selection
-  - Optional romaji input requirement after matching pairs
-  - Reuses existing session infrastructure with kana chars in card_positions
+### What's Complete (v0.1.7) — Kana Cascade & Classroom Improvements
+- **Kana Cascade** (formerly Kana Falling): Typing game for hiragana/katakana practice
+  - Falling kana with configurable speed (10 levels, 1800ms → 100ms per row)
+  - Lives system with extra life thresholds; danger line at row 20
+  - Score persistence via `KanaFallingSession` with classroom rankings
+  - Explosion animation on kana destruction (CSS keyframe + JS hook)
+  - Color-coded rows: each gojūon row gets a unique background color (teacher toggle)
+  - Optional background image upload for game field (≤2MB)
+  - Teacher row picker: All, a–wa, Dakuten, Handakuten, Small
+  - Game creation selector: Word Memory, Kana Memory, Kana Cascade cards
+- **On-screen keyboard** (portrait + landscape)
+  - Portrait: QWERTY staggered layout at bottom (`bottom: 100px`)
+  - Landscape: split left/right halves fixed to viewport sides
+  - Landscape keys: dark bluish background (`bg-slate-800`) for contrast
+  - Responsive sizing: 36px → 40px → 48px → 56px across breakpoints
+  - Same `key_pressed` event as physical keyboard
+- **Pause/exit controls**: Esc toggles pause/resume→exit; no `P` shortcut conflict
+- **Fullscreen behavior**: Mobile auto-fullscreens; PC shows Start Game + Play Windowed
+- **Rankings & nicknames**: Ready and game-over screens show `display_name` with fallback
 - Classroom settings editing: Teachers can edit classroom name and description
 - Classroom membership approval toggle: `should_approve_memberships` field
   - When true (default): students apply and wait for teacher approval
@@ -25,6 +39,12 @@
 
 ### What's Next (v0.1.7)
 - Bug fixes and polish — see STATE.md for details
+
+### What's Next (v0.1.7) — Kanji Reading Game
+- Kanji falling/typing game where students type on'yomi or kun'yomi readings
+- Teacher-configurable kanji pool by JLPT level (N5–N1)
+- Reading type selection: on'yomi only, kun'yomi only, or mixed
+- Reuses Kana Cascade game engine infrastructure where applicable
 
 ### What's Complete (v0.1.6)
 - Word type filter: Filter words by type (noun, verb, adjective, etc.)
