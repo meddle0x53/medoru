@@ -54,9 +54,9 @@ const FlickKeyboard = {
     document.addEventListener("pointerup", this.onPointerUp)
     document.addEventListener("pointermove", this.onPointerMove)
 
-    // Modifier buttons
+    // Modifier buttons (use pointerdown for immediate response and to avoid double-click on touch)
     this.el.querySelectorAll("[data-modifier]").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("pointerdown", (e) => {
         e.stopPropagation()
         const mod = btn.dataset.modifier
         if (mod === "dakuten" || mod === "handakuten" || mod === "small") {

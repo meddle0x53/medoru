@@ -477,11 +477,17 @@ body {
   cursor: pointer;
 }
 
-.flick-modifier-btn:active,
-.flick-modifier-active {
+.flick-modifier-btn:active {
   background: #f59e0b;
   color: #fff;
   border-color: #d97706;
+}
+
+.flick-modifier-btn.flick-modifier-active {
+  background: #f59e0b !important;
+  color: #fff !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
 }
 
 .flick-action-btn {
@@ -528,10 +534,15 @@ body {
     border-color: rgba(255, 255, 255, 0.15);
     color: #9ca3af;
   }
-  .flick-modifier-btn:active,
-  .flick-modifier-active {
+  .flick-modifier-btn:active {
     background: #f59e0b;
     color: #fff;
+  }
+  .flick-modifier-btn.flick-modifier-active {
+    background: #f59e0b !important;
+    color: #fff !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4);
   }
   .flick-action-btn:active {
     background: #ef4444;
