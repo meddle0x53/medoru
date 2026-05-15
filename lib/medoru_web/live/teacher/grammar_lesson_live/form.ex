@@ -102,7 +102,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
       :new ->
         changeset =
           Content.change_custom_lesson(%Content.CustomLesson{}, %{
-            "lesson_subtype" => "grammar"
+            "lesson_subtype" => "grammar",
+            "difficulty" => 1
           })
 
         {:noreply,

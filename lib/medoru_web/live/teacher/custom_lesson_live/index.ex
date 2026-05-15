@@ -282,11 +282,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                         {lesson.word_count} {gettext("words")}
                       <% end %>
                     </span>
-                    <%= if lesson.difficulty do %>
-                      <span class="flex items-center gap-1">
-                        <.icon name="hero-signal" class="w-4 h-4" /> N{lesson.difficulty}
-                      </span>
-                    <% end %>
+                    <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                      {skill_level_label(lesson.difficulty)}
+                    </span>
                   </div>
 
                   <%!-- Actions --%>
@@ -356,4 +354,18 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
     </Layouts.app>
     """
   end
+
+  defp skill_level_color(1), do: "bg-success/10 text-success border-success/20"
+  defp skill_level_color(2), do: "bg-info/10 text-info border-info/20"
+  defp skill_level_color(3), do: "bg-purple-500/20 text-purple-500 border-purple-500/40"
+  defp skill_level_color(4), do: "bg-error/10 text-error border-error/20"
+  defp skill_level_color(5), do: "bg-warning/10 text-warning border-warning/20"
+  defp skill_level_color(_), do: "bg-base-200 text-base-content border-base-300"
+
+  defp skill_level_label(1), do: gettext("Beginner")
+  defp skill_level_label(2), do: gettext("Elementary")
+  defp skill_level_label(3), do: gettext("Intermediate")
+  defp skill_level_label(4), do: gettext("Advanced")
+  defp skill_level_label(5), do: gettext("Expert")
+  defp skill_level_label(_), do: gettext("Unknown")
 end

@@ -189,6 +189,20 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("update_difficulty", %{"level" => level}, socket) do
+    lesson = socket.assigns.lesson
+    difficulty = String.to_integer(level)
+
+    case Content.update_custom_lesson(lesson, %{difficulty: difficulty}) do
+      {:ok, updated_lesson} ->
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update skill level."))}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_requires_test", _params, socket) do
     lesson = socket.assigns.lesson
     new_value = !lesson.requires_test
@@ -638,6 +652,33 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                 </h3>
 
                 <div class="space-y-4">
+                  <%!-- Skill Level --%>
+                  <div>
+                    <div class="font-medium text-sm mb-2">{gettext("Skill Level")}</div>
+                    <div class="flex gap-2 flex-wrap">
+                      <%= for {level, label} <- [
+                        {1, gettext("Beginner")},
+                        {2, gettext("Elementary")},
+                        {3, gettext("Intermediate")},
+                        {4, gettext("Advanced")},
+                        {5, gettext("Expert")}
+                      ] do %>
+                        <button
+                          type="button"
+                          phx-click="update_difficulty"
+                          phx-value-level={level}
+                          class={[
+                            "btn btn-sm",
+                            @lesson.difficulty == level && skill_level_btn_active(level),
+                            @lesson.difficulty != level && "btn-outline"
+                          ]}
+                        >
+                          {label}
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+
                   <%!-- Description --%>
                   <div>
                     <div class="font-medium text-sm mb-1">{gettext("Description")}</div>
@@ -738,4 +779,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
     </Layouts.app>
     """
   end
+
+  defp skill_level_btn_active(1), do: "btn-success"
+  defp skill_level_btn_active(2), do: "btn-info"
+  defp skill_level_btn_active(3), do: "bg-purple-500 text-white border-purple-500 hover:bg-purple-600"
+  defp skill_level_btn_active(4), do: "btn-error"
+  defp skill_level_btn_active(5), do: "btn-warning"
+  defp skill_level_btn_active(_), do: "btn-primary"
 end

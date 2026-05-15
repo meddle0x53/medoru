@@ -54,19 +54,25 @@
 
               <div>
                 <label class="label" for="lesson_difficulty">
-                  <span class="label-text">{gettext("Difficulty")}</span>
+                  <span class="label-text">{gettext("Skill Level")}</span>
                 </label>
                 <select
                   id="lesson_difficulty"
                   name="custom_lesson[difficulty]"
                   class="select select-bordered w-full"
                 >
-                  <%= for level <- 1..5 do %>
+                  <%= for {level, label} <- [
+                    {1, gettext("Beginner")},
+                    {2, gettext("Elementary")},
+                    {3, gettext("Intermediate")},
+                    {4, gettext("Advanced")},
+                    {5, gettext("Expert")}
+                  ] do %>
                     <option
                       value={level}
                       selected={Ecto.Changeset.get_field(@changeset, :difficulty) == level}
                     >
-                      N{level}
+                      {label}
                     </option>
                   <% end %>
                 </select>

@@ -28,7 +28,7 @@ defmodule Medoru.Content.CustomLesson do
     field :description, :string
     field :lesson_type, :string, default: "reading"
     field :lesson_subtype, :string, default: "vocabulary"
-    field :difficulty, :integer
+    field :difficulty, :integer, default: 1
     field :status, :string, default: "draft"
     field :word_count, :integer, default: 0
 
@@ -68,7 +68,7 @@ defmodule Medoru.Content.CustomLesson do
       :include_writing,
       :steps_per_word
     ])
-    |> validate_required([:title, :lesson_type, :lesson_subtype, :status, :creator_id])
+    |> validate_required([:title, :lesson_type, :lesson_subtype, :status, :difficulty, :creator_id])
     |> validate_length(:title, min: 1, max: 100)
     |> validate_length(:description, max: 500)
     |> validate_inclusion(:lesson_type, ["reading"])

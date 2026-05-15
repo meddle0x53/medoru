@@ -1901,7 +1901,7 @@ defmodule Medoru.Classrooms do
       |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson), as: :custom_lesson)
       |> where([ccl], ccl.status == "active")
       |> where([custom_lesson: cl], cl.status != "archived")
-      |> order_by([ccl], desc: ccl.published_at)
+      |> order_by([ccl, custom_lesson: cl], asc: cl.difficulty, desc: ccl.published_at)
       |> preload([:custom_lesson, :classroom])
 
     # Get total count

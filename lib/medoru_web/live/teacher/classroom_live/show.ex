@@ -790,7 +790,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <div class="space-y-3">
           <%= for {classroom_lesson, index} <- Enum.with_index(@classroom_lessons, 1) do %>
             <% lesson = classroom_lesson.custom_lesson %>
-            <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+            <div class={["card border shadow-sm hover:shadow-md transition-shadow", skill_level_card_bg(lesson.difficulty)]}>
               <div class="card-body p-4">
                 <div class="flex items-center gap-4">
                   <%= if @reordering do %>
@@ -828,11 +828,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                         <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
                         {lesson.word_count} {gettext("words")}
                       </span>
-                      <%= if lesson.difficulty do %>
-                        <span class="badge badge-outline badge-sm">
-                          <.icon name="hero-signal" class="w-3 h-3 mr-1" /> N{lesson.difficulty}
-                        </span>
-                      <% end %>
+                      <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                        {skill_level_label(lesson.difficulty)}
+                      </span>
                       <%= if lesson.requires_test do %>
                         <span class="badge badge-info badge-sm">
                           <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}

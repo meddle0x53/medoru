@@ -109,13 +109,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                 <p class="text-xs text-secondary mt-1">{gettext("Maximum 500 characters")}</p>
               </div>
 
-              <%!-- Difficulty --%>
+              <%!-- Skill Level --%>
               <div>
                 <label class="block text-sm font-medium text-base-content mb-2">
-                  {gettext("Difficulty Level (optional)")}
+                  {gettext("Skill Level")} <span class="text-error">*</span>
                 </label>
-                <div class="flex gap-2">
-                  <%= for level <- [5, 4, 3, 2, 1] do %>
+                <div class="flex gap-2 flex-wrap">
+                  <%= for {level, label} <- [
+                    {1, gettext("Beginner")},
+                    {2, gettext("Elementary")},
+                    {3, gettext("Intermediate")},
+                    {4, gettext("Advanced")},
+                    {5, gettext("Expert")}
+                  ] do %>
                     <label class="cursor-pointer">
                       <input
                         type="radio"
@@ -126,17 +132,14 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
                       />
                       <span class={[
                         "btn btn-sm",
-                        to_string(@form[:difficulty].value) == to_string(level) && "btn-primary",
+                        to_string(@form[:difficulty].value) == to_string(level) && skill_level_btn_active(level),
                         to_string(@form[:difficulty].value) != to_string(level) && "btn-outline"
                       ]}>
-                        N{level}
+                        {label}
                       </span>
                     </label>
                   <% end %>
                 </div>
-                <p class="text-xs text-secondary mt-1">
-                  {gettext("Helps students find appropriate lessons. Leave blank for mixed levels.")}
-                </p>
               </div>
 
               <%!-- Test Options --%>
@@ -207,4 +210,11 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.New do
     </Layouts.app>
     """
   end
+
+  defp skill_level_btn_active(1), do: "btn-success"
+  defp skill_level_btn_active(2), do: "btn-info"
+  defp skill_level_btn_active(3), do: "bg-purple-500 text-white border-purple-500 hover:bg-purple-600"
+  defp skill_level_btn_active(4), do: "btn-error"
+  defp skill_level_btn_active(5), do: "btn-warning"
+  defp skill_level_btn_active(_), do: "btn-primary"
 end
