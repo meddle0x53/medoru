@@ -146,7 +146,7 @@
                 <% end %>
               </div>
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
                 class="btn btn-ghost btn-sm mt-3"
               >
                 <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
@@ -511,7 +511,7 @@
                   {gettext("Play Again")}
                 </button>
                 <.link
-                  navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                  navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
                   class="btn btn-ghost btn-sm"
                 >
                   <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />

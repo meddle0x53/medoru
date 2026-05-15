@@ -13,15 +13,18 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
   @impl true
   def mount(%{"id" => classroom_id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
+    classroom = Classrooms.get_classroom!(classroom_id)
 
-    # Verify user is a member
-    if not Classrooms.is_approved_member?(classroom_id, user.id) do
+    # Verify user is an approved member or the teacher
+    is_teacher = classroom.teacher_id == user.id
+    is_approved = Classrooms.is_approved_member?(classroom_id, user.id)
+
+    if not is_teacher and not is_approved do
       {:ok,
        socket
        |> put_flash(:error, gettext("You must be a member to view rankings."))
        |> push_navigate(to: ~p"/classrooms")}
     else
-      classroom = Classrooms.get_classroom!(classroom_id)
       my_rank = Classrooms.get_user_classroom_rank(classroom_id, user.id)
       my_points = get_my_points(classroom_id, user.id)
 

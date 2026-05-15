@@ -97,7 +97,7 @@ defmodule MedoruWeb.GamesLive.Index do
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <%= for game <- games do %>
                   <.link
-                    navigate={play_path(game)}
+                    navigate={"#{play_path(game)}?return_to=/games"}
                     class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}
                   >
                     <div class="card-body p-4">

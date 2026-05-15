@@ -10,73 +10,77 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   alias Medoru.Games
 
   @impl true
-  def mount(%{"classroom_id" => classroom_id, "game_id" => game_id}, _session, socket) do
+  def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
+    return_to = params["return_to"]
+    classroom = Classrooms.get_classroom!(classroom_id)
 
-    # Verify membership
-    case Classrooms.get_user_membership(classroom_id, user.id) do
-      nil ->
+    # Verify user is an approved member or the teacher
+    membership = Classrooms.get_user_membership(classroom_id, user.id)
+    is_teacher = classroom.teacher_id == user.id
+    is_approved = membership != nil and membership.status == :approved
+
+    if not is_teacher and not is_approved do
+      message =
+        if membership == nil do
+          gettext("You are not a member of this classroom.")
+        else
+          gettext("Your membership is pending approval.")
+        end
+
+      {:ok,
+       socket
+       |> put_flash(:error, message)
+       |> push_navigate(to: ~p"/classrooms")}
+    else
+      game = Games.get_game_for_play!(game_id)
+
+      if game.classroom_id != classroom_id do
         {:ok,
          socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
-
-      membership ->
-        if membership.status != :approved do
+         |> put_flash(:error, gettext("Game not found in this classroom."))
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+      else
+        if game.status != :published do
           {:ok,
            socket
-           |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms")}
+           |> put_flash(:error, gettext("This game is not available yet."))
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=games")}
         else
-          classroom = Classrooms.get_classroom!(classroom_id)
-          game = Games.get_game_for_play!(game_id)
+          # Get or create session
+          {:ok, session} = Games.get_or_create_session(game_id, user.id)
 
-          if game.classroom_id != classroom_id do
-            {:ok,
-             socket
-             |> put_flash(:error, gettext("Game not found in this classroom."))
-             |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-          else
-            if game.status != :published do
-              {:ok,
-               socket
-               |> put_flash(:error, gettext("This game is not available yet."))
-               |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=games")}
+          # If a previous crash left cards flipped, clear them so the game is playable
+          session =
+            if has_two_flipped?(session) do
+              case Games.close_flipped_cards(session.id) do
+                {:ok, cleared} -> cleared
+                {:error, _} -> session
+              end
             else
-              # Get or create session
-              {:ok, session} = Games.get_or_create_session(game_id, user.id)
-
-              # If a previous crash left cards flipped, clear them so the game is playable
-              session =
-                if has_two_flipped?(session) do
-                  case Games.close_flipped_cards(session.id) do
-                    {:ok, cleared} -> cleared
-                    {:error, _} -> session
-                  end
-                else
-                  session
-                end
-
-              socket =
-                socket
-                |> assign(:page_title, game.name)
-                |> assign(:classroom, classroom)
-                |> assign(:game, game)
-                |> assign(:session, session)
-                |> assign(:show_input_modal, false)
-                |> assign(:input_word_id, nil)
-                |> assign(:input_kana_char, nil)
-                |> assign(:input_error, nil)
-                |> assign(:input_disabled, false)
-                |> assign(:answer_meaning, "")
-                |> assign(:answer_pronunciation, "")
-                |> assign(:answer_reading, "")
-                |> assign(:is_mobile, nil)
-
-              {:ok, push_event(socket, "request_fullscreen", %{})}
+              session
             end
-          end
+
+          socket =
+            socket
+            |> assign(:page_title, game.name)
+            |> assign(:classroom, classroom)
+            |> assign(:game, game)
+            |> assign(:return_to, return_to)
+            |> assign(:session, session)
+            |> assign(:show_input_modal, false)
+            |> assign(:input_word_id, nil)
+            |> assign(:input_kana_char, nil)
+            |> assign(:input_error, nil)
+            |> assign(:input_disabled, false)
+            |> assign(:answer_meaning, "")
+            |> assign(:answer_pronunciation, "")
+            |> assign(:answer_reading, "")
+            |> assign(:is_mobile, nil)
+
+          {:ok, push_event(socket, "request_fullscreen", %{})}
         end
+      end
     end
   end
 
@@ -374,7 +378,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
         <%!-- Header --%>
         <div class="mb-4 sm:mb-6">
           <.link
-            navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+            navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-3 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Games")}
@@ -393,7 +397,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
             </div>
             <div class="flex items-center gap-3">
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}
+                navigate={if @return_to, do: "#{~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}?return_to=#{@return_to}", else: ~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}
                 class="btn btn-ghost btn-sm"
               >
                 <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}

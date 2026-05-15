@@ -17,8 +17,9 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   embed_templates "*.html"
 
   @impl true
-  def mount(%{"classroom_id" => classroom_id, "game_id" => game_id}, _session, socket) do
+  def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
+    return_to = params["return_to"]
 
     classroom = Classrooms.get_classroom!(classroom_id)
     game = Games.get_game_for_play!(game_id)
@@ -30,7 +31,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
       game.status != :published ->
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
-      not Classrooms.is_approved_member?(classroom_id, user.id) ->
+      not Classrooms.is_approved_member?(classroom_id, user.id) and classroom.teacher_id != user.id ->
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
       game.type != "kanji_falling" ->
@@ -46,6 +47,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
           |> assign(:page_title, game.name)
           |> assign(:classroom, classroom)
           |> assign(:game, game)
+          |> assign(:return_to, return_to)
           |> assign(:config, config)
           |> assign(:high_score, high_score)
           |> assign(:sessions, sessions)

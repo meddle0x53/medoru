@@ -20,6 +20,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     5 => "bg-warning/10 text-warning border-warning/20"
   }
 
+  @skill_level_card_bgs %{
+    1 => "bg-success/5 border-success/20 hover:border-success/40",
+    2 => "bg-info/5 border-info/20 hover:border-info/40",
+    3 => "bg-purple-500/5 border-purple-500/20 hover:border-purple-500/40",
+    4 => "bg-error/5 border-error/20 hover:border-error/40",
+    5 => "bg-warning/5 border-warning/20 hover:border-warning/40"
+  }
+
   @skill_level_labels %{
     1 => gettext("Beginner"),
     2 => gettext("Elementary"),
@@ -892,7 +900,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <% else %>
         <div class="space-y-3">
           <%= for game <- @classroom_games do %>
-            <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow">
+            <div class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}>
               <div class="card-body p-4 sm:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div class="flex-1 min-w-0">
@@ -1542,4 +1550,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     do: Map.get(@skill_level_colors, level, "bg-base-200 text-base-content border-base-300")
 
   defp skill_level_label(level), do: Map.get(@skill_level_labels, level, "")
+
+  defp skill_level_card_bg(level),
+    do: Map.get(@skill_level_card_bgs, level, "bg-base-100 border-base-300 hover:border-primary")
 end

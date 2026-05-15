@@ -150,7 +150,7 @@
                 <% end %>
               </div>
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
                 class="btn btn-ghost btn-sm mt-3"
               >
                 <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
@@ -440,7 +440,7 @@
                 <%!-- Landscape: split left / right (fixed to viewport, outside game field) --%>
                 <div class="flick-landscape">
                   <%!-- Left panel --%>
-                  <div class="fixed left-2 bottom-4 z-20">
+                  <div class="fixed left-11 bottom-11 z-20">
                     <div class="grid grid-cols-2 gap-1">
                       <%= for base <- ["あ", "か", "さ", "た", "な", "は", "ま"] do %>
                         <button
@@ -462,7 +462,7 @@
                   </div>
 
                   <%!-- Right panel --%>
-                  <div class="fixed right-2 bottom-4 z-20">
+                  <div class="fixed right-11 bottom-11 z-20">
                     <div class="grid grid-cols-2 gap-1">
                       <%= for base <- ["や", "ら", "わ"] do %>
                         <button
@@ -627,7 +627,7 @@
                   {gettext("Play Again")}
                 </button>
                 <.link
-                  navigate={~p"/classrooms/#{@classroom.id}?tab=games"}
+                  navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
                   class="btn btn-ghost btn-sm"
                 >
                   <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" />
