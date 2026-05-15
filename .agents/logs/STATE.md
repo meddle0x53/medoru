@@ -1,23 +1,41 @@
 # Medoru - Current State
 
-**Version**: 0.1.7 🔄 IN PROGRESS  
-**Status**: Kana games + classroom improvements complete, testing  
-**Tests**: 707 passing  
+**Version**: 0.1.8 🔄 IN PROGRESS  
+**Status**: Kana Cascade polish + navigation restructuring  
+**Tests**: 761 passing  
 **URL**: https://medoru.net  
-**Last Updated**: 2026-05-12
+**Last Updated**: 2026-05-14
 
 ---
 
-## 🔄 In Progress (v0.1.7)
+## 🔄 In Progress (v0.1.8)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Flick keyboard dakuten active state | ✅ | `pointerdown` + `phx-update="ignore"` fixes touch persistence |
+| "du" for づ/ヅ | ✅ | `kana_romaji_list/1` returns `["zu", "du"]` |
+| Flick keyboard popup Android Firefox | ✅ | Appended to key, removed animation class causing opacity:0 |
+| Navigation restructuring | ✅ | `/teacher` dashboard, `/games` index, mobile drawer groups |
+| Grid hiragana keyboard removal | ✅ | Flick keyboard on all sizes |
+| Kanji Falling Game | ✅ | Reuses Kana Cascade engine for kanji reading input |
+
+---
+
+## ✅ Completed (v0.1.7)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Kana Memory Card Games | ✅ | 4x4/6x6 boards, gojuon selection, romaji input option |
+| Kana Cascade | ✅ | Falling kana typing game with speed/lives/rankings |
+| Flick Keyboard | ✅ | Directional flick input with dakuten/handakuten/small |
+| On-screen QWERTY | ✅ | Portrait + landscape layouts |
 | Classroom Settings Edit | ✅ | Teachers can edit name, description, public, approval |
 | Membership Auto-Approval | ✅ | `should_approve_memberships` toggle per classroom |
 | Public Classrooms | ✅ | Discoverable classrooms with search + pagination |
 | Lesson Reordering Fix | ✅ | Duplicate `order_index` detection + production migration |
 | Self-Join Prevention | ✅ | Teachers can't join their own classrooms |
+
+**Log**: [ITERATION-2026-05-12-v0.1.7-classroom-improvements.md](ITERATION-2026-05-12-v0.1.7-classroom-improvements.md)
 
 ---
 
@@ -123,7 +141,7 @@ bin/qa server
 - **Kanji**: 2,212 (N5-N1)
 - **Words**: 145,936 (N5-N3)
 - **Lessons**: 300+ (100 N5 + 100 N4 + 100 N3)
-- **Tests**: 707
+- **Tests**: 761
 - **Conjugations**: 66,396
 
 ---

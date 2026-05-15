@@ -2,10 +2,27 @@
 
 ## Current State
 
-**Version**: 0.1.7 🔄 IN PROGRESS  
-**Status**: Kana Cascade polish in progress — Kanji Reading typing game next within v0.1.7  
-**Tests**: 736 passing, 1 pre-existing flaky failure (`lesson_test_keyboard_test.exs:21`)  
+**Version**: 0.1.8 🔄 IN PROGRESS  
+**Status**: Kana Cascade polish + navigation restructuring  
+**Tests**: 761 passing, 1 pre-existing flaky failure (`lesson_test_keyboard_test.exs:21`)  
 **URL**: https://medoru.net
+
+### What's Complete (v0.1.7)
+- All Kana Cascade & Classroom improvements — see v0.1.7 section below for full list
+
+### What's Complete (v0.1.8) — Kana Cascade Polish & Navigation
+- **"du" accepted for づ/ヅ**: `kana_romaji_list/1` returns `["zu", "du"]`; exact match and prefix check both support multiple romaji
+- **Flick keyboard popup Android Firefox fix**: Popup appended to pressed key with `position: absolute`; removed `flick-popup` animation class causing `opacity: 0`
+- **Dakuten active state on touch devices**: Fixed modifier button orange state persistence
+  - Changed modifier buttons from `click` to `pointerdown` with `stopPropagation`
+  - Added `phx-update="ignore"` on flick keyboard container to prevent LiveView DOM patches from resetting classes
+  - High-specificity CSS `.flick-modifier-btn.flick-modifier-active` with `!important`
+- **Navigation v0.1.8 restructuring**: New `/teacher` dashboard with cards, new `/games` index
+  - Desktop nav: Dashboard, Classrooms, Kanji, Words, Games, [Teacher], [Admin]
+  - Mobile drawer with smart grouping (Learning / Teacher / Admin)
+  - i18n extracted for all nav labels
+- **Grid hiragana keyboard removed**: Flick keyboard now used on all screen sizes
+- **Kanji Falling Game**: Full game using Kana Cascade engine with kanji reading input
 
 ### What's Complete (v0.1.7) — Kana Cascade & Classroom Improvements
 - **Kana Cascade** (formerly Kana Falling): Typing game for hiragana/katakana practice
@@ -37,10 +54,10 @@
 - Lesson reordering bug fix: `ensure_lesson_order_indices` now handles duplicate indices
 - Invite code join protection: Teachers can no longer join their own classrooms
 
-### What's Next (v0.1.7)
+### What's Next (v0.1.8)
 - Bug fixes and polish — see STATE.md for details
 
-### What's Next (v0.1.7) — Kanji Reading Game
+### What's Next (v0.1.8) — Kanji Reading Game
 - Kanji falling/typing game where students type on'yomi or kun'yomi readings
 - Teacher-configurable kanji pool by JLPT level (N5–N1)
 - Reading type selection: on'yomi only, kun'yomi only, or mixed
