@@ -19,6 +19,11 @@
 | Grid hiragana keyboard removal | ✅ | Flick keyboard on all sizes |
 | Kanji Falling Game | ✅ | Reuses Kana Cascade engine for kanji reading input |
 | Game skill levels | ✅ | 5 levels (Beginner→Expert) with color coding, teacher-configurable |
+| Lesson skill levels | ✅ | Repurposed `difficulty` on custom_lessons, color-coded UI, sorted by difficulty |
+| Site settings | ✅ | `featured_classroom_id` on `site_settings`, admin dropdown to select public classroom |
+| Anonymous public access | ✅ | Anonymous users can browse `/games` and `/lessons` from featured classroom |
+| Anonymous game play | ✅ | Memory cards, Kana Cascade, Kanji Cascade playable without login (in-memory sessions) |
+| Anonymous lesson study | ✅ | Custom lessons viewable, tests skipped, completion shows sign-in CTA |
 
 ---
 

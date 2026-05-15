@@ -24,6 +24,11 @@
 - **Grid hiragana keyboard removed**: Flick keyboard now used on all screen sizes
 - **Kanji Falling Game**: Full game using Kana Cascade engine with kanji reading input
 - **Game Skill Levels**: 5 levels (Beginner→Expert) with color coding, teacher-configurable dropdown, sorted by difficulty in Games tab
+- **Lesson Skill Levels**: Repurposed `difficulty` field on `custom_lessons`, color-coded UI in forms/tabs, sorted by difficulty
+- **Site Settings for Featured Classroom**: Admin can select a public classroom to be accessible without registration
+- **Anonymous Public Access**: `/games` and `/lessons` available to anonymous users via featured classroom
+  - Games: Memory cards, Kana Cascade, Kanji Cascade playable with in-memory sessions (no DB persistence)
+  - Lessons: Custom lessons viewable, progress not saved, tests skipped, completion shows sign-in CTA
 
 ### What's Complete (v0.1.7) — Kana Cascade & Classroom Improvements
 - **Kana Cascade** (formerly Kana Falling): Typing game for hiragana/katakana practice
@@ -57,12 +62,6 @@
 
 ### What's Next (v0.1.8)
 - Bug fixes and polish — see STATE.md for details
-
-### What's Next (v0.1.8) — Kanji Reading Game
-- Kanji falling/typing game where students type on'yomi or kun'yomi readings
-- Teacher-configurable kanji pool by JLPT level (N5–N1)
-- Reading type selection: on'yomi only, kun'yomi only, or mixed
-- Reuses Kana Cascade game engine infrastructure where applicable
 
 ### What's Complete (v0.1.6)
 - Word type filter: Filter words by type (noun, verb, adjective, etc.)
