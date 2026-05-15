@@ -125,6 +125,17 @@ defmodule Medoru.Classrooms do
   end
 
   @doc """
+  Returns all public active classrooms.
+  """
+  def list_public_classrooms do
+    Classroom
+    |> where([c], c.status == :active and c.public == true)
+    |> order_by([c], asc: c.name)
+    |> preload([:teacher])
+    |> Repo.all()
+  end
+
+  @doc """
   Checks the relationship of a user to a classroom.
 
   Returns one of:

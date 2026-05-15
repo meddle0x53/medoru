@@ -9,29 +9,40 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
 
   alias Medoru.Classrooms
   alias Medoru.Games
+  alias MedoruWeb.PublicAccess
 
   @impl true
   def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     return_to = params["return_to"]
+    is_anonymous = is_nil(user)
 
     classroom = Classrooms.get_classroom!(classroom_id)
-    is_teacher = classroom.teacher_id == user.id
-    membership = Classrooms.get_user_membership(classroom_id, user.id)
-    is_approved = membership != nil and membership.status == :approved
 
-    if not is_teacher and not is_approved do
+    has_access =
+      if is_anonymous do
+        PublicAccess.featured_classroom?(classroom_id)
+      else
+        is_teacher = classroom.teacher_id == user.id
+        membership = Classrooms.get_user_membership(classroom_id, user.id)
+        is_approved = membership != nil and membership.status == :approved
+        is_teacher or is_approved
+      end
+
+    if not has_access do
+      redirect_path = if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms"
+
       message =
-        if membership == nil do
-          gettext("You are not a member of this classroom.")
-        else
-          gettext("Your membership is pending approval.")
+        cond do
+          is_anonymous -> gettext("You must sign in to view this page.")
+          Classrooms.get_user_membership(classroom_id, user.id) == nil -> gettext("You are not a member of this classroom.")
+          true -> gettext("Your membership is pending approval.")
         end
 
       {:ok,
        socket
        |> put_flash(:error, message)
-       |> push_navigate(to: ~p"/classrooms")}
+       |> push_navigate(to: redirect_path)}
     else
       game = Games.get_game_for_play!(game_id)
 
@@ -55,7 +66,8 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
            |> assign(:classroom, classroom)
            |> assign(:game, game)
            |> assign(:return_to, return_to)
-           |> assign(:sessions, sessions)}
+           |> assign(:sessions, sessions)
+           |> assign(:is_anonymous, is_anonymous)}
         end
       end
     end
@@ -141,8 +153,8 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
                       <span class="truncate text-base-content">
                         {display_name(
                           session.user,
-                          @current_scope.current_user.id,
-                          @current_scope.current_user.type == "admin"
+                          @current_scope.current_user && @current_scope.current_user.id,
+                          @current_scope.current_user && @current_scope.current_user.type == "admin"
                         )}
                       </span>
                     </div>

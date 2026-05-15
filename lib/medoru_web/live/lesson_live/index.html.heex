@@ -4,12 +4,16 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Lessons")}</h1>
       <p class="text-secondary">
-        {gettext("All the lessons available to you from your classrooms.")}
+        <%= if @current_scope && @current_scope.current_user do %>
+          {gettext("All the lessons available to you from your classrooms.")}
+        <% else %>
+          {gettext("Try lessons from our featured classroom.")}
+        <% end %>
       </p>
     </div>
 
-    <%= if @current_scope && @current_scope.current_user do %>
-      <%= if @classroom_lessons == [] do %>
+    <%= if @classroom_lessons == [] do %>
+      <%= if @current_scope && @current_scope.current_user do %>
         <%!-- Empty State for Authenticated Users --%>
         <div class="text-center py-16">
           <div class="text-6xl mb-4">📚</div>
@@ -30,55 +34,77 @@
           </div>
         </div>
       <% else %>
-        <%!-- Classroom Lessons List --%>
-        <div class="space-y-3">
-          <%= for ccl <- @classroom_lessons do %>
-            <% lesson = ccl.custom_lesson %>
-            <% progress = ccl.student_progress %>
-            <% progress_status = if progress, do: progress.status, else: "not_started" %>
-            <.link
-              navigate={~p"/classrooms/#{ccl.classroom_id}/custom-lessons/#{lesson.id}"}
-              class="group block"
-            >
-              <div class={[
-                "border rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200",
-                if(progress_status == "completed",
-                  do: "bg-success/5 border-success/30 hover:border-success/50",
-                  else: skill_level_card_bg(lesson.difficulty)
-                )
-              ]}>
-                <div class="flex items-start gap-4">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-1">
-                      <h3 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
-                        {lesson.title}
-                      </h3>
-                      <%= if progress_status == "completed" do %>
-                        <span class="badge badge-success badge-sm">
-                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
-                        </span>
-                      <% end %>
-                    </div>
-                    <p class="text-secondary text-sm mb-2">
-                      {lesson.description || gettext("No description")}
-                    </p>
-                    <div class="flex flex-wrap items-center gap-2 text-xs">
+        <%!-- Empty State for Anonymous Users --%>
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">🔒</div>
+          <h3 class="text-lg font-medium text-base-content mb-2">
+            {gettext("Sign in to see your lessons")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto mb-6">
+            {gettext("Join a classroom to access lessons from your teachers.")}
+          </p>
+          <.link href={~p"/auth/google"} class="btn btn-primary">
+            <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" /> {gettext(
+              "Sign in with Google"
+            )}
+          </.link>
+        </div>
+      <% end %>
+    <% else %>
+      <%!-- Lessons List --%>
+      <div class="space-y-3">
+        <%= for ccl <- @classroom_lessons do %>
+          <% lesson = ccl.custom_lesson %>
+          <% is_authenticated = @current_scope && @current_scope.current_user %>
+          <% progress = if is_authenticated, do: ccl.student_progress, else: nil %>
+          <% progress_status = if progress, do: progress.status, else: "not_started" %>
+          <% lesson_path = ~p"/classrooms/#{ccl.classroom_id}/custom-lessons/#{lesson.id}" %>
+          <.link
+            navigate={lesson_path}
+            class="group block"
+          >
+            <div class={[
+              "border rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200",
+              if(progress_status == "completed",
+                do: "bg-success/5 border-success/30 hover:border-success/50",
+                else: skill_level_card_bg(lesson.difficulty)
+              )
+            ]}>
+              <div class="flex items-start gap-4">
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
+                      {lesson.title}
+                    </h3>
+                    <%= if progress_status == "completed" do %>
+                      <span class="badge badge-success badge-sm">
+                        <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Completed")}
+                      </span>
+                    <% end %>
+                  </div>
+                  <p class="text-secondary text-sm mb-2">
+                    {lesson.description || gettext("No description")}
+                  </p>
+                  <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <%= if is_authenticated && ccl.classroom do %>
                       <span class="badge badge-outline badge-sm">
                         <.icon name="hero-building-office-2" class="w-3 h-3 mr-1" />
                         {ccl.classroom.name}
                       </span>
-                      <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
-                        {lesson.word_count} {gettext("words")}
+                    <% end %>
+                    <span class="badge badge-outline badge-sm">
+                      <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
+                      {lesson.word_count} {gettext("words")}
+                    </span>
+                    <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                      {skill_level_label(lesson.difficulty)}
+                    </span>
+                    <%= if lesson.requires_test do %>
+                      <span class="badge badge-info badge-sm">
+                        <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
                       </span>
-                      <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
-                        {skill_level_label(lesson.difficulty)}
-                      </span>
-                      <%= if lesson.requires_test do %>
-                        <span class="badge badge-info badge-sm">
-                          <.icon name="hero-pencil" class="w-3 h-3 mr-1" /> {gettext("Test")}
-                        </span>
-                      <% end %>
+                    <% end %>
+                    <%= if is_authenticated do %>
                       <%= case progress_status do %>
                         <% "in_progress" -> %>
                           <span class="badge badge-warning badge-sm">
@@ -92,69 +118,53 @@
                           </span>
                         <% _ -> %>
                       <% end %>
-                    </div>
+                    <% end %>
                   </div>
-                  <.icon
-                    name="hero-chevron-right"
-                    class="w-5 h-5 text-secondary/50 group-hover:text-primary transition-colors self-center"
-                  />
                 </div>
+                <.icon
+                  name="hero-chevron-right"
+                  class="w-5 h-5 text-secondary/50 group-hover:text-primary transition-colors self-center"
+                />
               </div>
+            </div>
+          </.link>
+        <% end %>
+      </div>
+
+      <%!-- Pagination --%>
+      <%= if @total_pages > 1 do %>
+        <div class="flex justify-center gap-2 mt-8">
+          <%= if @page > 1 do %>
+            <.link
+              patch={~p"/lessons?#{page_link_params(@page - 1)}"}
+              class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
+            >
+              <.icon name="hero-chevron-left" class="w-5 h-5" />
             </.link>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              <.icon name="hero-chevron-left" class="w-5 h-5" />
+            </span>
+          <% end %>
+
+          <span class="px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content">
+            {@page} / {@total_pages}
+          </span>
+
+          <%= if @page < @total_pages do %>
+            <.link
+              patch={~p"/lessons?#{page_link_params(@page + 1)}"}
+              class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
+            >
+              <.icon name="hero-chevron-right" class="w-5 h-5" />
+            </.link>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              <.icon name="hero-chevron-right" class="w-5 h-5" />
+            </span>
           <% end %>
         </div>
-
-        <%!-- Pagination --%>
-        <%= if @total_pages > 1 do %>
-          <div class="flex justify-center gap-2 mt-8">
-            <%= if @page > 1 do %>
-              <.link
-                patch={~p"/lessons?#{page_link_params(@page - 1)}"}
-                class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
-              >
-                <.icon name="hero-chevron-left" class="w-5 h-5" />
-              </.link>
-            <% else %>
-              <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-                <.icon name="hero-chevron-left" class="w-5 h-5" />
-              </span>
-            <% end %>
-
-            <span class="px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content">
-              {@page} / {@total_pages}
-            </span>
-
-            <%= if @page < @total_pages do %>
-              <.link
-                patch={~p"/lessons?#{page_link_params(@page + 1)}"}
-                class="px-4 py-2 bg-base-200 hover:bg-base-300 rounded-lg text-base-content transition-colors"
-              >
-                <.icon name="hero-chevron-right" class="w-5 h-5" />
-              </.link>
-            <% else %>
-              <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
-                <.icon name="hero-chevron-right" class="w-5 h-5" />
-              </span>
-            <% end %>
-          </div>
-        <% end %>
       <% end %>
-    <% else %>
-      <%!-- Empty State for Anonymous Users --%>
-      <div class="text-center py-16">
-        <div class="text-6xl mb-4">🔒</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">
-          {gettext("Sign in to see your lessons")}
-        </h3>
-        <p class="text-secondary max-w-md mx-auto mb-6">
-          {gettext("Join a classroom to access lessons from your teachers.")}
-        </p>
-        <.link href={~p"/auth/google"} class="btn btn-primary">
-          <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" /> {gettext(
-            "Sign in with Google"
-          )}
-        </.link>
-      </div>
     <% end %>
   </div>
 </Layouts.app>

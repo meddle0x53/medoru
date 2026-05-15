@@ -11,6 +11,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   alias Medoru.Classrooms
   alias Medoru.Content
   alias Medoru.Games
+  alias MedoruWeb.PublicAccess
 
   @death_row 20
 
@@ -20,9 +21,17 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     return_to = params["return_to"]
+    is_anonymous = is_nil(user)
 
     classroom = Classrooms.get_classroom!(classroom_id)
     game = Games.get_game_for_play!(game_id)
+
+    has_access =
+      if is_anonymous do
+        PublicAccess.featured_classroom?(classroom_id)
+      else
+        Classrooms.is_approved_member?(classroom_id, user.id) or classroom.teacher_id == user.id
+      end
 
     cond do
       game.classroom_id != classroom_id ->
@@ -31,16 +40,17 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
       game.status != :published ->
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
-      not Classrooms.is_approved_member?(classroom_id, user.id) and classroom.teacher_id != user.id ->
-        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
+      not has_access ->
+        redirect_path = if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms/#{classroom_id}"
+        {:ok, push_navigate(socket, to: redirect_path)}
 
       game.type != "kanji_falling" ->
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
       true ->
         config = game.kanji_falling_game
-        high_score = Games.get_kanji_falling_high_score(game_id, user.id)
-        sessions = Games.list_kanji_falling_sessions(game_id)
+        high_score = if is_anonymous, do: nil, else: Games.get_kanji_falling_high_score(game_id, user.id)
+        sessions = if is_anonymous, do: [], else: Games.list_kanji_falling_sessions(game_id)
 
         socket =
           socket
@@ -48,6 +58,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
           |> assign(:classroom, classroom)
           |> assign(:game, game)
           |> assign(:return_to, return_to)
+          |> assign(:is_anonymous, is_anonymous)
           |> assign(:config, config)
           |> assign(:high_score, high_score)
           |> assign(:sessions, sessions)
@@ -467,32 +478,38 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
     game = socket.assigns.game
     user = socket.assigns.current_scope.current_user
-    started_at = socket.assigns.started_at
-    now = DateTime.utc_now()
+    is_anonymous = socket.assigns.is_anonymous
 
-    attrs = %{
-      game_id: game.id,
-      user_id: user.id,
-      status: "completed",
-      score: socket.assigns.score,
-      highest_speed_reached: socket.assigns.highest_speed_reached,
-      lives_remaining: 0,
-      lives_used: socket.assigns.lives_used,
-      highest_row_reached: socket.assigns.highest_row_reached,
-      started_at: started_at,
-      completed_at: now
-    }
+    if is_anonymous do
+      assign(socket, status: :game_over)
+    else
+      started_at = socket.assigns.started_at
+      now = DateTime.utc_now()
 
-    {:ok, _session} = Games.create_kanji_falling_session(attrs)
+      attrs = %{
+        game_id: game.id,
+        user_id: user.id,
+        status: "completed",
+        score: socket.assigns.score,
+        highest_speed_reached: socket.assigns.highest_speed_reached,
+        lives_remaining: 0,
+        lives_used: socket.assigns.lives_used,
+        highest_row_reached: socket.assigns.highest_row_reached,
+        started_at: started_at,
+        completed_at: now
+      }
 
-    high_score = Games.get_kanji_falling_high_score(game.id, user.id)
-    sessions = Games.list_kanji_falling_sessions(game.id)
+      {:ok, _session} = Games.create_kanji_falling_session(attrs)
 
-    assign(socket,
-      status: :game_over,
-      high_score: high_score,
-      sessions: sessions
-    )
+      high_score = Games.get_kanji_falling_high_score(game.id, user.id)
+      sessions = Games.list_kanji_falling_sessions(game.id)
+
+      assign(socket,
+        status: :game_over,
+        high_score: high_score,
+        sessions: sessions
+      )
+    end
   end
 
   # ============================================================================

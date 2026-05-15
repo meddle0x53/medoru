@@ -573,6 +573,20 @@ defmodule MedoruWeb.Layouts do
               class="hidden md:block"
             />
             <.nav_link
+              path="/lessons"
+              icon={nil}
+              label={gettext("Lessons")}
+              locale={@current_scope[:locale]}
+              class="hidden lg:block"
+            />
+            <.nav_link
+              path="/games"
+              icon="hero-puzzle-piece"
+              label={gettext("Games")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
+            <.nav_link
               path="/kanji"
               icon={nil}
               label={gettext("Kanji")}
@@ -694,6 +708,18 @@ defmodule MedoruWeb.Layouts do
                     path="/words"
                     icon="hero-document-text"
                     label={gettext("Words")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/lessons"
+                    icon="hero-book-open"
+                    label={gettext("Lessons")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/games"
+                    icon="hero-puzzle-piece"
+                    label={gettext("Games")}
                     locale={@current_scope[:locale]}
                   />
 

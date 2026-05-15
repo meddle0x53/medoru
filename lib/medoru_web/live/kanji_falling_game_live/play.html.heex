@@ -13,9 +13,11 @@
           <h1 class="text-base sm:text-lg font-bold text-base-content leading-tight truncate">
             {@game.name}
           </h1>
-          <div class="text-xs text-secondary">
-            {gettext("High Score")}: {@high_score}
-          </div>
+          <%= if not @is_anonymous do %>
+            <div class="text-xs text-secondary">
+              {gettext("High Score")}: {@high_score}
+            </div>
+          <% end %>
         </div>
         <%= if @status in [:playing, :paused] do %>
           <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
@@ -123,7 +125,7 @@
                   {gettext("Speed Up Every")}: {@config.speed_increase_threshold} {gettext("pts")}
                 </div>
               </div>
-              <%= if @high_score > 0 do %>
+              <%= if not @is_anonymous and @high_score > 0 do %>
                 <div class="text-base sm:text-lg font-semibold text-primary mb-4">
                   {gettext("Your High Score")}: {@high_score}
                 </div>
@@ -563,15 +565,17 @@
                 {gettext("points")}
               </div>
 
-              <%= if @score >= @high_score do %>
-                <div class="badge badge-warning badge-lg mb-4">
-                  <.icon name="hero-trophy" class="w-4 h-4 mr-1" />
-                  {gettext("New High Score!")}
-                </div>
-              <% else %>
-                <div class="text-xs sm:text-sm text-secondary mb-4">
-                  {gettext("High Score")}: {@high_score}
-                </div>
+              <%= if not @is_anonymous do %>
+                <%= if @score >= @high_score do %>
+                  <div class="badge badge-warning badge-lg mb-4">
+                    <.icon name="hero-trophy" class="w-4 h-4 mr-1" />
+                    {gettext("New High Score!")}
+                  </div>
+                <% else %>
+                  <div class="text-xs sm:text-sm text-secondary mb-4">
+                    {gettext("High Score")}: {@high_score}
+                  </div>
+                <% end %>
               <% end %>
 
               <div class="flex gap-4 mb-6 text-xs sm:text-sm">
@@ -585,36 +589,48 @@
                 </div>
               </div>
 
-              <%!-- Rankings --%>
-              <div class="w-full max-w-xs mb-6">
-                <h3 class="text-xs sm:text-sm font-semibold text-base-content mb-2 text-center">
-                  {gettext("Rankings")}
-                </h3>
-                <%= if @sessions == [] do %>
-                  <p class="text-center text-secondary text-xs sm:text-sm">
-                    {gettext("No scores yet.")}
+              <%= if @is_anonymous do %>
+                <div class="w-full max-w-xs mb-6 p-4 bg-info/10 border border-info/20 rounded-xl">
+                  <p class="text-sm text-info text-center">
+                    {gettext("Sign in to save your score and compete on the leaderboard!")}
                   </p>
-                <% else %>
-                  <div class="space-y-1">
-                    <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
-                      <div class={[
-                        "flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm",
-                        if(session.user_id == @current_scope.current_user.id,
-                          do: "bg-primary/10",
-                          else: "bg-base-200"
-                        )
-                      ]}>
-                        <span class="w-5 text-center font-bold text-secondary">{index}</span>
-                        <span class="flex-1 truncate">
-                          {(session.user.profile && session.user.profile.display_name) ||
-                            session.user.name || gettext("Anonymous")}
-                        </span>
-                        <span class="font-bold text-primary">{session.score}</span>
-                      </div>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
+                  <.link href={~p"/auth/google"} class="btn btn-primary btn-sm w-full mt-3">
+                    <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" />
+                    {gettext("Sign in with Google")}
+                  </.link>
+                </div>
+              <% else %>
+                <%!-- Rankings --%>
+                <div class="w-full max-w-xs mb-6">
+                  <h3 class="text-xs sm:text-sm font-semibold text-base-content mb-2 text-center">
+                    {gettext("Rankings")}
+                  </h3>
+                  <%= if @sessions == [] do %>
+                    <p class="text-center text-secondary text-xs sm:text-sm">
+                      {gettext("No scores yet.")}
+                    </p>
+                  <% else %>
+                    <div class="space-y-1">
+                      <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+                        <div class={[
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs sm:text-sm",
+                          if(session.user_id == @current_scope.current_user.id,
+                            do: "bg-primary/10",
+                            else: "bg-base-200"
+                          )
+                        ]}>
+                          <span class="w-5 text-center font-bold text-secondary">{index}</span>
+                          <span class="flex-1 truncate">
+                            {(session.user.profile && session.user.profile.display_name) ||
+                              session.user.name || gettext("Anonymous")}
+                          </span>
+                          <span class="font-bold text-primary">{session.score}</span>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
 
               <div class="flex flex-col gap-2">
                 <button

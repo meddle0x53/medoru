@@ -130,6 +130,50 @@
       </.link>
     </div>
 
+    <%!-- Site Settings --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg flex items-center gap-2">
+          <.icon name="hero-globe-alt" class="w-5 h-5 text-primary" />
+          {gettext("Site Settings")}
+        </h2>
+        <p class="text-sm text-secondary mt-1">
+          {gettext("Select a public classroom to be accessible without registration.")}
+        </p>
+
+        <form phx-submit="set_featured_classroom" class="mt-4 flex flex-col sm:flex-row gap-3 items-start">
+          <select name="classroom_id" class="select select-bordered w-full sm:w-auto min-w-[280px]">
+            <option value="">{gettext("None (disable public access)")}</option>
+            <%= for classroom <- @public_classrooms do %>
+              <option value={classroom.id} selected={@featured_classroom && @featured_classroom.id == classroom.id}>
+                {classroom.name} ({classroom.teacher.name || classroom.teacher.email})
+              </option>
+            <% end %>
+          </select>
+          <button type="submit" class="btn btn-primary">
+            <.icon name="hero-check" class="w-4 h-4 mr-1" />
+            {gettext("Save")}
+          </button>
+        </form>
+
+        <%= if @featured_classroom do %>
+          <div class="mt-3 p-3 bg-success/10 rounded-lg flex items-center gap-2">
+            <.icon name="hero-check-circle" class="w-5 h-5 text-success" />
+            <span class="text-sm text-success">
+              {gettext("Featured classroom: %{name}", name: @featured_classroom.name)}
+            </span>
+          </div>
+        <% else %>
+          <div class="mt-3 p-3 bg-warning/10 rounded-lg flex items-center gap-2">
+            <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-warning" />
+            <span class="text-sm text-warning">
+              {gettext("No featured classroom set. Anonymous users will see empty lessons/games tabs.")}
+            </span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
     <%!-- Stats Grid --%>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <%!-- User Stats --%>

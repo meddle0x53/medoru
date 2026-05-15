@@ -13,18 +13,48 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     practice = params["practice"] == "true"
+    is_anonymous = is_nil(user)
 
-    # Verify membership
-    case Classrooms.get_user_membership(classroom_id, user.id) do
-      nil ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
+    if is_anonymous do
+      load_anonymous_completion(socket, classroom_id, lesson_id, practice)
+    else
+      # Verify membership for authenticated users
+      case Classrooms.get_user_membership(classroom_id, user.id) do
+        nil ->
+          {:ok,
+           socket
+           |> put_flash(:error, gettext("You are not a member of this classroom."))
+           |> push_navigate(to: ~p"/classrooms")}
 
-      _membership ->
-        load_completion(socket, classroom_id, lesson_id, user, practice)
+        _membership ->
+          load_completion(socket, classroom_id, lesson_id, user, practice)
+      end
     end
+  end
+
+  defp load_anonymous_completion(socket, classroom_id, lesson_id, practice) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+    lesson = Content.get_custom_lesson_with_lesson_data!(lesson_id)
+
+    is_grammar = lesson.lesson_subtype == "grammar"
+    word_count = length(lesson.custom_lesson_words)
+    grammar_step_count = length(lesson.grammar_lesson_steps || [])
+
+    {:ok,
+     socket
+     |> assign(:classroom, classroom)
+     |> assign(:lesson, lesson)
+     |> assign(:is_grammar, is_grammar)
+     |> assign(:word_count, word_count)
+     |> assign(:grammar_step_count, grammar_step_count)
+     |> assign(:points_earned, 0)
+     |> assign(:practice, practice)
+     |> assign(:lesson_words, [])
+     |> assign(:all_kanji, [])
+     |> assign(:selected_word_ids, [])
+     |> assign(:selected_kanji_ids, [])
+     |> assign(:marked_as_learned, false)
+     |> assign(:is_anonymous, true)}
   end
 
   defp load_completion(socket, classroom_id, lesson_id, user, practice) do
@@ -97,7 +127,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
      |> assign(:all_kanji, all_kanji)
      |> assign(:selected_word_ids, selected_word_ids)
      |> assign(:selected_kanji_ids, selected_kanji_ids)
-     |> assign(:marked_as_learned, false)}
+     |> assign(:marked_as_learned, false)
+     |> assign(:is_anonymous, false)}
   end
 
   @impl true
@@ -325,6 +356,24 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
                 <span>
                   {gettext("Items added to your study list! They will appear in your daily reviews.")}
                 </span>
+              </div>
+            <% end %>
+
+            <%!-- Anonymous CTA --%>
+            <%= if @is_anonymous do %>
+              <div class="card bg-info/10 border border-info/20 mb-8">
+                <div class="card-body text-center">
+                  <h3 class="text-lg font-semibold text-info mb-2">
+                    {gettext("Want to save your progress?")}
+                  </h3>
+                  <p class="text-sm text-secondary mb-4">
+                    {gettext("Create an account to track your learning, earn points, and join the rankings!")}
+                  </p>
+                  <.link href={~p"/auth/google"} class="btn btn-primary">
+                    <.icon name="hero-arrow-right-end-on-rectangle" class="w-5 h-5 mr-2" />
+                    {gettext("Sign in with Google")}
+                  </.link>
+                </div>
               </div>
             <% end %>
 

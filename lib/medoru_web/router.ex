@@ -64,6 +64,7 @@ defmodule MedoruWeb.Router do
       live "/users/:id/words", LearnedWordsLive.Index
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
+      live "/games", GamesLive.Index
       live "/attribution", SettingsLive.Attribution
       live "/privacy", PrivacyLive
       live "/cookies", CookiesLive
@@ -108,7 +109,6 @@ defmodule MedoruWeb.Router do
     live_session :authenticated,
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
-      live "/games", GamesLive.Index
       live "/notifications", NotificationsLive
       live "/daily-review", DailyReviewLive
     end
@@ -202,7 +202,7 @@ defmodule MedoruWeb.Router do
     end
   end
 
-  # Student classroom routes
+  # Student classroom routes (auth required)
   scope "/classrooms", MedoruWeb do
     pipe_through [:browser, :require_authenticated_user]
 
@@ -214,6 +214,15 @@ defmodule MedoruWeb.Router do
       live "/:id/rankings", ClassroomLive.Rankings
       live "/:id/tests/:test_id", ClassroomLive.Test
       live "/:id/tests/:test_id/results", ClassroomLive.TestResults
+    end
+  end
+
+  # Public classroom content routes (allow anonymous for featured classroom)
+  scope "/classrooms", MedoruWeb do
+    pipe_through :browser
+
+    live_session :public_classroom_content,
+      on_mount: [{MedoruWeb.UserAuth, :default}] do
       live "/:id/custom-lessons/:lesson_id", ClassroomLive.CustomLesson
       live "/:id/custom-lessons/:lesson_id/test", ClassroomLive.CustomLessonTest
       live "/:id/custom-lessons/:lesson_id/complete", ClassroomLive.CustomLessonComplete

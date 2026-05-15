@@ -2,6 +2,8 @@ defmodule MedoruWeb.LessonLive.Index do
   use MedoruWeb, :live_view
 
   alias Medoru.Classrooms
+  alias Medoru.Content
+  alias Medoru.SiteSettings
 
   @per_page 20
 
@@ -25,7 +27,7 @@ defmodule MedoruWeb.LessonLive.Index do
           per_page: @per_page
         )
       else
-        %{lessons: [], total_count: 0, total_pages: 1}
+        load_featured_classroom_lessons(page)
       end
 
     {:noreply,
@@ -35,6 +37,24 @@ defmodule MedoruWeb.LessonLive.Index do
      |> assign(:total_count, result.total_count)
      |> assign(:total_pages, result.total_pages)
      |> assign(:page_title, gettext("Lessons"))}
+  end
+
+  defp load_featured_classroom_lessons(page) do
+    case SiteSettings.featured_classroom_id() do
+      nil ->
+        %{lessons: [], total_count: 0, total_pages: 1}
+
+      classroom_id ->
+        result = Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: @per_page, page: page)
+
+        # Annotate each lesson with classroom info so the template can navigate correctly
+        lessons =
+          Enum.map(result.lessons, fn ccl ->
+            Map.put(ccl, :classroom_id, classroom_id)
+          end)
+
+        %{lessons: lessons, total_count: result.total_count, total_pages: result.total_pages}
+    end
   end
 
   defp parse_page(nil), do: 1

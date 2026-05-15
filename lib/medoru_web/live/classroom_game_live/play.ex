@@ -7,31 +7,44 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
   alias Medoru.Classrooms
   alias Medoru.Content
+  alias Medoru.Content.Kana
   alias Medoru.Games
+  alias Medoru.Games.MemoryCardGame
+  alias MedoruWeb.PublicAccess
 
   @impl true
   def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     return_to = params["return_to"]
     classroom = Classrooms.get_classroom!(classroom_id)
+    is_anonymous = is_nil(user)
 
-    # Verify user is an approved member or the teacher
-    membership = Classrooms.get_user_membership(classroom_id, user.id)
-    is_teacher = classroom.teacher_id == user.id
-    is_approved = membership != nil and membership.status == :approved
+    # Verify access: authenticated members/teacher, or anonymous on featured classroom
+    has_access =
+      if is_anonymous do
+        PublicAccess.featured_classroom?(classroom_id)
+      else
+        is_teacher = classroom.teacher_id == user.id
+        membership = Classrooms.get_user_membership(classroom_id, user.id)
+        is_approved = membership != nil and membership.status == :approved
+        is_teacher or is_approved
+      end
 
-    if not is_teacher and not is_approved do
+    if not has_access do
+      redirect_path =
+        if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms"
+
       message =
-        if membership == nil do
-          gettext("You are not a member of this classroom.")
-        else
-          gettext("Your membership is pending approval.")
+        cond do
+          is_anonymous -> gettext("You must sign in to play this game.")
+          Classrooms.get_user_membership(classroom_id, user.id) == nil -> gettext("You are not a member of this classroom.")
+          true -> gettext("Your membership is pending approval.")
         end
 
       {:ok,
        socket
        |> put_flash(:error, message)
-       |> push_navigate(to: ~p"/classrooms")}
+       |> push_navigate(to: redirect_path)}
     else
       game = Games.get_game_for_play!(game_id)
 
@@ -47,12 +60,18 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
            |> put_flash(:error, gettext("This game is not available yet."))
            |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=games")}
         else
-          # Get or create session
-          {:ok, session} = Games.get_or_create_session(game_id, user.id)
+          # Get or create session (in-memory for anonymous)
+          session =
+            if is_anonymous do
+              create_anonymous_session(game)
+            else
+              {:ok, s} = Games.get_or_create_session(game_id, user.id)
+              s
+            end
 
           # If a previous crash left cards flipped, clear them so the game is playable
           session =
-            if has_two_flipped?(session) do
+            if not is_anonymous and has_two_flipped?(session) do
               case Games.close_flipped_cards(session.id) do
                 {:ok, cleared} -> cleared
                 {:error, _} -> session
@@ -77,6 +96,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
             |> assign(:answer_pronunciation, "")
             |> assign(:answer_reading, "")
             |> assign(:is_mobile, nil)
+            |> assign(:is_anonymous, is_anonymous)
 
           {:ok, push_event(socket, "request_fullscreen", %{})}
         end
@@ -99,12 +119,21 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
     session = socket.assigns.session
     position = String.to_integer(position)
     game = socket.assigns.game
+    is_anonymous = socket.assigns.is_anonymous
 
     flip_result =
-      if game.type == "kana_memory_cards" do
-        Games.flip_kana_card(session.id, position)
+      if is_anonymous do
+        if game.type == "kana_memory_cards" do
+          anonymous_flip_kana_card(session, position, game)
+        else
+          anonymous_flip_card(session, position, game)
+        end
       else
-        Games.flip_card(session.id, position)
+        if game.type == "kana_memory_cards" do
+          Games.flip_kana_card(session.id, position)
+        else
+          Games.flip_card(session.id, position)
+        end
       end
 
     case flip_result do
@@ -169,11 +198,19 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   def handle_event("submit_answer", params, socket) do
     session = socket.assigns.session
     game = socket.assigns.game
+    is_anonymous = socket.assigns.is_anonymous
 
     if game.type == "kana_memory_cards" do
       answer = %{"reading" => params["reading"] || socket.assigns.answer_reading}
 
-      case Games.submit_kana_answer(session.id, answer) do
+      result =
+        if is_anonymous do
+          anonymous_submit_kana_answer(session, answer)
+        else
+          Games.submit_kana_answer(session.id, answer)
+        end
+
+      case result do
         {:ok, updated_session, :collected, points} ->
           socket =
             socket
@@ -218,7 +255,14 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
       locale = socket.assigns.current_scope.locale
 
-      case Games.submit_collection_answer(session.id, answer, locale) do
+      result =
+        if is_anonymous do
+          anonymous_submit_collection_answer(session, answer, game, locale)
+        else
+          Games.submit_collection_answer(session.id, answer, locale)
+        end
+
+      case result do
         {:ok, updated_session, :collected, points} ->
           socket =
             socket
@@ -261,8 +305,16 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   @impl true
   def handle_event("cancel_input", _, socket) do
     session = socket.assigns.session
+    is_anonymous = socket.assigns.is_anonymous
 
-    case Games.cancel_input_attempt(session.id) do
+    result =
+      if is_anonymous do
+        anonymous_cancel_input_attempt(session)
+      else
+        Games.cancel_input_attempt(session.id)
+      end
+
+    case result do
       {:ok, cleared_session, :game_over} ->
         {:noreply,
          socket
@@ -297,24 +349,40 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   @impl true
   def handle_event("reset_game", _, socket) do
     game = socket.assigns.game
-    user = socket.assigns.current_scope.current_user
+    is_anonymous = socket.assigns.is_anonymous
 
-    case Games.reset_session(game.id, user.id) do
-      {:ok, _} ->
-        {:ok, session} = Games.get_or_create_session(game.id, user.id)
+    if is_anonymous do
+      session = create_anonymous_session(game)
 
-        {:noreply,
-         socket
-         |> assign(:session, session)
-         |> assign(:show_input_modal, false)
-         |> assign(:input_word_id, nil)
-         |> assign(:input_kana_char, nil)
-         |> assign(:input_error, nil)
-         |> assign(:input_disabled, false)
-         |> put_flash(:info, gettext("Game reset. Good luck!"))}
+      {:noreply,
+       socket
+       |> assign(:session, session)
+       |> assign(:show_input_modal, false)
+       |> assign(:input_word_id, nil)
+       |> assign(:input_kana_char, nil)
+       |> assign(:input_error, nil)
+       |> assign(:input_disabled, false)
+       |> put_flash(:info, gettext("Game reset. Good luck!"))}
+    else
+      user = socket.assigns.current_scope.current_user
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to reset game."))}
+      case Games.reset_session(game.id, user.id) do
+        {:ok, _} ->
+          {:ok, session} = Games.get_or_create_session(game.id, user.id)
+
+          {:noreply,
+           socket
+           |> assign(:session, session)
+           |> assign(:show_input_modal, false)
+           |> assign(:input_word_id, nil)
+           |> assign(:input_kana_char, nil)
+           |> assign(:input_error, nil)
+           |> assign(:input_disabled, false)
+           |> put_flash(:info, gettext("Game reset. Good luck!"))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reset game."))}
+      end
     end
   end
 
@@ -337,7 +405,17 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
   @impl true
   def handle_info(:close_unmatched, socket) do
-    case Games.close_flipped_cards(socket.assigns.session.id) do
+    session = socket.assigns.session
+    is_anonymous = socket.assigns.is_anonymous
+
+    result =
+      if is_anonymous do
+        anonymous_close_flipped_cards(session)
+      else
+        Games.close_flipped_cards(session.id)
+      end
+
+    case result do
       {:ok, updated_session} ->
         {:noreply, assign(socket, :session, updated_session)}
 
@@ -349,8 +427,14 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   @impl true
   def handle_info(:close_wrong_answer, socket) do
     session = socket.assigns.session
+    is_anonymous = socket.assigns.is_anonymous
 
-    {:ok, cleared_session} = Games.close_flipped_cards(session.id)
+    {:ok, cleared_session} =
+      if is_anonymous do
+        anonymous_close_flipped_cards(session)
+      else
+        Games.close_flipped_cards(session.id)
+      end
 
     {:noreply,
      socket
@@ -364,6 +448,501 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
      |> assign(:answer_pronunciation, "")
      |> assign(:answer_reading, "")}
   end
+
+  # ============================================================================
+  # Anonymous Session Management
+  # ============================================================================
+
+  defp create_anonymous_session(game) do
+    case game.type do
+      "kana_memory_cards" -> create_anonymous_kana_session(game)
+      _ -> create_anonymous_word_session(game)
+    end
+  end
+
+  defp create_anonymous_word_session(game) do
+    mcg = game.memory_card_game
+
+    word_ids =
+      mcg.memory_card_game_words
+      |> Enum.sort_by(& &1.position)
+      |> Enum.map(& &1.word_id)
+
+    card_positions =
+      word_ids
+      |> Enum.flat_map(&[&1, &1])
+      |> Enum.shuffle()
+      |> Enum.map(&encode_word_id/1)
+
+    %{
+      id: :anonymous,
+      status: :in_progress,
+      score: 0,
+      attempts_used: 0,
+      max_attempts: mcg.max_attempts,
+      cards_state: %{
+        "card_positions" => card_positions,
+        "collected_indices" => [],
+        "flipped_indices" => []
+      },
+      game_id: game.id,
+      user_id: nil
+    }
+  end
+
+  defp create_anonymous_kana_session(game) do
+    kmcg = game.kana_memory_card_game
+
+    card_positions =
+      kmcg.selected_kana
+      |> Enum.flat_map(&[&1, &1])
+      |> Enum.shuffle()
+
+    %{
+      id: :anonymous,
+      status: :in_progress,
+      score: 0,
+      attempts_used: 0,
+      max_attempts: kmcg.max_attempts,
+      cards_state: %{
+        "card_positions" => card_positions,
+        "collected_indices" => [],
+        "flipped_indices" => []
+      },
+      game_id: game.id,
+      user_id: nil
+    }
+  end
+
+  defp anonymous_flip_card(session, position, game) do
+    if session.status != :in_progress do
+      {:error, :game_over}
+    else
+      cards_state = session.cards_state
+      card_positions = cards_state["card_positions"] || []
+      collected = cards_state["collected_indices"] || []
+      flipped = cards_state["flipped_indices"] || []
+
+      cond do
+        position in collected ->
+          {:error, :already_collected}
+
+        position in flipped ->
+          {:error, :already_flipped}
+
+        length(flipped) >= 2 ->
+          {:error, :too_many_flipped}
+
+        position < 0 or position >= length(card_positions) ->
+          {:error, :invalid_position}
+
+        true ->
+          new_flipped = flipped ++ [position]
+
+          if length(new_flipped) == 2 do
+            anonymous_handle_two_flipped(session, new_flipped, card_positions, collected, game)
+          else
+            updated = put_in(session.cards_state["flipped_indices"], new_flipped)
+            {:ok, updated}
+          end
+      end
+    end
+  end
+
+  defp anonymous_handle_two_flipped(session, [pos1, pos2], card_positions, collected, game) do
+    word1 = Enum.at(card_positions, pos1)
+    word2 = Enum.at(card_positions, pos2)
+    mcg = game.memory_card_game
+
+    if word1 == word2 do
+      collection_type = MemoryCardGame.collection_type(mcg)
+
+      if collection_type == :direct do
+        points = get_word_points(mcg, word1)
+        new_score = session.score + points
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:score, new_score)
+          |> maybe_complete_session()
+
+        {:ok, updated, :collected, points}
+      else
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => [pos1, pos2]
+        }
+
+        updated = Map.put(session, :cards_state, new_state)
+        {:needs_input, updated, word1}
+      end
+    else
+      new_attempts = session.attempts_used + 1
+
+      new_state = %{
+        "card_positions" => card_positions,
+        "collected_indices" => collected,
+        "flipped_indices" => [pos1, pos2]
+      }
+
+      if new_attempts >= session.max_attempts do
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:attempts_used, new_attempts)
+          |> Map.put(:status, :completed)
+
+        {:ok, updated, :no_match}
+      else
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:attempts_used, new_attempts)
+
+        {:ok, updated, :no_match}
+      end
+    end
+  end
+
+  defp anonymous_flip_kana_card(session, position, game) do
+    if session.status != :in_progress do
+      {:error, :game_over}
+    else
+      cards_state = session.cards_state
+      card_positions = cards_state["card_positions"] || []
+      collected = cards_state["collected_indices"] || []
+      flipped = cards_state["flipped_indices"] || []
+
+      cond do
+        position in collected ->
+          {:error, :already_collected}
+
+        position in flipped ->
+          {:error, :already_flipped}
+
+        length(flipped) >= 2 ->
+          {:error, :too_many_flipped}
+
+        position < 0 or position >= length(card_positions) ->
+          {:error, :invalid_position}
+
+        true ->
+          new_flipped = flipped ++ [position]
+
+          if length(new_flipped) == 2 do
+            anonymous_handle_two_flipped_kana(session, new_flipped, card_positions, collected, game)
+          else
+            updated = put_in(session.cards_state["flipped_indices"], new_flipped)
+            {:ok, updated}
+          end
+      end
+    end
+  end
+
+  defp anonymous_handle_two_flipped_kana(session, [pos1, pos2], card_positions, collected, game) do
+    kana1 = Enum.at(card_positions, pos1)
+    kana2 = Enum.at(card_positions, pos2)
+    kmcg = game.kana_memory_card_game
+
+    if kana1 == kana2 do
+      if not kmcg.require_reading do
+        new_score = session.score + 1
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:score, new_score)
+          |> maybe_complete_session()
+
+        {:ok, updated, :collected, 1}
+      else
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => [pos1, pos2]
+        }
+
+        updated = Map.put(session, :cards_state, new_state)
+        {:needs_input, updated, kana1}
+      end
+    else
+      new_attempts = session.attempts_used + 1
+
+      new_state = %{
+        "card_positions" => card_positions,
+        "collected_indices" => collected,
+        "flipped_indices" => [pos1, pos2]
+      }
+
+      if new_attempts >= session.max_attempts do
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:attempts_used, new_attempts)
+          |> Map.put(:status, :completed)
+
+        {:ok, updated, :no_match}
+      else
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:attempts_used, new_attempts)
+
+        {:ok, updated, :no_match}
+      end
+    end
+  end
+
+  defp anonymous_submit_collection_answer(session, answer, game, locale) do
+    mcg = game.memory_card_game
+    cards_state = session.cards_state
+    card_positions = cards_state["card_positions"] || []
+    collected = cards_state["collected_indices"] || []
+    flipped = cards_state["flipped_indices"] || []
+
+    if length(flipped) != 2 do
+      {:error, :no_flipped_cards}
+    else
+      [pos1, pos2] = flipped
+      word_id = Enum.at(card_positions, pos1)
+
+      word =
+        Enum.find(mcg.memory_card_game_words, %{word: %{meaning: "", reading: ""}}, fn mgw ->
+          encode_word_id(mgw.word_id) == word_id
+        end)
+
+      collection_type = MemoryCardGame.collection_type(mcg)
+      correct = validate_answer(word, answer, collection_type, locale)
+
+      if correct do
+        points = get_word_points(mcg, word_id)
+        new_score = session.score + points
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:score, new_score)
+          |> maybe_complete_session()
+
+        {:ok, updated, :collected, points}
+      else
+        new_attempts = session.attempts_used + 1
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => []
+        }
+
+        if new_attempts >= session.max_attempts do
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+            |> Map.put(:status, :completed)
+
+          {:ok, updated, :wrong_answer}
+        else
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+
+          {:ok, updated, :wrong_answer}
+        end
+      end
+    end
+  end
+
+  defp anonymous_submit_kana_answer(session, answer) do
+    cards_state = session.cards_state
+    card_positions = cards_state["card_positions"] || []
+    collected = cards_state["collected_indices"] || []
+    flipped = cards_state["flipped_indices"] || []
+
+    if length(flipped) != 2 do
+      {:error, :no_flipped_cards}
+    else
+      [pos1, pos2] = flipped
+      kana_char = Enum.at(card_positions, pos1)
+      answer_reading = String.trim(answer["reading"] || "")
+
+      correct = validate_kana_answer(kana_char, answer_reading)
+
+      if correct do
+        new_score = session.score + 1
+        new_collected = collected ++ [pos1, pos2]
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => new_collected,
+          "flipped_indices" => []
+        }
+
+        updated =
+          session
+          |> Map.put(:cards_state, new_state)
+          |> Map.put(:score, new_score)
+          |> maybe_complete_session()
+
+        {:ok, updated, :collected, 1}
+      else
+        new_attempts = session.attempts_used + 1
+
+        new_state = %{
+          "card_positions" => card_positions,
+          "collected_indices" => collected,
+          "flipped_indices" => []
+        }
+
+        if new_attempts >= session.max_attempts do
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+            |> Map.put(:status, :completed)
+
+          {:ok, updated, :wrong_answer}
+        else
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+
+          {:ok, updated, :wrong_answer}
+        end
+      end
+    end
+  end
+
+  defp anonymous_cancel_input_attempt(session) do
+    if session.status != :in_progress do
+      {:error, :game_over}
+    else
+      cards_state = session.cards_state || %{}
+      flipped = cards_state["flipped_indices"] || []
+
+      if length(flipped) < 2 do
+        {:error, :no_flipped_cards}
+      else
+        new_attempts = session.attempts_used + 1
+        new_state = Map.put(cards_state, "flipped_indices", [])
+
+        if new_attempts >= session.max_attempts do
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+            |> Map.put(:status, :completed)
+
+          {:ok, updated, :game_over}
+        else
+          updated =
+            session
+            |> Map.put(:cards_state, new_state)
+            |> Map.put(:attempts_used, new_attempts)
+
+          {:ok, updated, :cancelled}
+        end
+      end
+    end
+  end
+
+  defp anonymous_close_flipped_cards(session) do
+    cards_state = session.cards_state || %{}
+    new_state = Map.put(cards_state, "flipped_indices", [])
+    {:ok, Map.put(session, :cards_state, new_state)}
+  end
+
+  defp maybe_complete_session(session) do
+    cards_state = session.cards_state
+    collected = cards_state["collected_indices"] || []
+    card_positions = cards_state["card_positions"] || []
+
+    if length(collected) == length(card_positions) do
+      Map.put(session, :status, :completed)
+    else
+      session
+    end
+  end
+
+  defp validate_answer(word, answer, collection_type, locale) do
+    answer_meaning = String.trim(answer["meaning"] || "")
+    answer_pronunciation = String.trim(answer["pronunciation"] || "")
+
+    word_meaning_default = String.trim(word.word.meaning || "")
+
+    word_meaning_localized =
+      String.trim(Content.get_localized_meaning(word.word, locale) || "")
+
+    word_reading = String.trim(word.word.reading || "")
+
+    meaning_correct =
+      answer_meaning != "" and
+        (String.downcase(answer_meaning) == String.downcase(word_meaning_default) or
+           String.downcase(answer_meaning) == String.downcase(word_meaning_localized))
+
+    pronunciation_correct =
+      answer_pronunciation != "" and
+        String.downcase(answer_pronunciation) == String.downcase(word_reading)
+
+    case collection_type do
+      :meaning -> meaning_correct
+      :pronunciation -> pronunciation_correct
+      :meaning_or_pronunciation -> meaning_correct or pronunciation_correct
+      :meaning_and_pronunciation -> meaning_correct and pronunciation_correct
+      _ -> true
+    end
+  end
+
+  defp validate_kana_answer(kana_char, answer_reading) do
+    answer_reading != "" and
+      case Kana.get_by_character(kana_char) do
+        nil ->
+          false
+
+        kana ->
+          String.downcase(answer_reading) ==
+            String.downcase(List.first(kana.readings, %{romaji: ""}).romaji)
+      end
+  end
+
+  defp get_word_points(mcg, word_id) do
+    word_id_str = encode_word_id(word_id)
+
+    Enum.find_value(mcg.memory_card_game_words, 1, fn mgw ->
+      if encode_word_id(mgw.word_id) == word_id_str do
+        mgw.points
+      end
+    end)
+  end
+
+  # ============================================================================
+  # Template Helpers
+  # ============================================================================
 
   @impl true
   def render(assigns) do
@@ -438,9 +1017,21 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
               <p class="text-lg text-base-content mb-4">
                 {gettext("Final Score: %{score} points", score: @session.score)}
               </p>
-              <button phx-click="reset_game" class="btn btn-primary">
-                <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
-              </button>
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button phx-click="reset_game" class="btn btn-primary">
+                  <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
+                </button>
+                <%= if @is_anonymous do %>
+                  <.link navigate={~p"/auth/google"} class="btn btn-secondary">
+                    <.icon name="hero-user-plus" class="w-4 h-4 mr-1" /> {gettext("Sign in to Save Progress")}
+                  </.link>
+                <% end %>
+              </div>
+              <%= if @is_anonymous do %>
+                <p class="text-sm text-secondary mt-3">
+                  {gettext("Create an account to save your scores and compete on the rankings!")}
+                </p>
+              <% end %>
             </div>
           </div>
         <% end %>

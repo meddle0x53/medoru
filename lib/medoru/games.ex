@@ -57,6 +57,7 @@ defmodule Medoru.Games do
       end
     end)
     |> preload([
+      :classroom,
       :memory_card_game,
       :kana_memory_card_game,
       :kana_falling_game,

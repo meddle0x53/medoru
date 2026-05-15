@@ -7,6 +7,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   alias Medoru.Classrooms
   alias Medoru.Content
+  alias MedoruWeb.PublicAccess
 
   @impl true
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
@@ -17,23 +18,36 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     # Store step from query param (will be processed in handle_params)
     step = session["step"] || 0
 
-    # Verify user is an approved member
-    case Classrooms.get_user_membership(classroom_id, user.id) do
-      nil ->
+    cond do
+      not is_nil(user) ->
+        # Authenticated user - verify membership
+        case Classrooms.get_user_membership(classroom_id, user.id) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, gettext("You are not a member of this classroom."))
+             |> push_navigate(to: ~p"/classrooms")}
+
+          membership ->
+            if membership.status != :approved do
+              {:ok,
+               socket
+               |> put_flash(:error, gettext("Your membership is pending approval."))
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+            else
+              load_lesson(socket, classroom_id, lesson_id, user, locale, practice, step)
+            end
+        end
+
+      PublicAccess.featured_classroom?(classroom_id) ->
+        # Anonymous user accessing featured classroom
+        load_lesson(socket, classroom_id, lesson_id, nil, locale, false, step)
+
+      true ->
         {:ok,
          socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
-
-      membership ->
-        if membership.status != :approved do
-          {:ok,
-           socket
-           |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-        else
-          load_lesson(socket, classroom_id, lesson_id, user, locale, practice, step)
-        end
+         |> put_flash(:error, gettext("You must sign in to access this lesson."))
+         |> push_navigate(to: ~p"/auth/google")}
     end
   end
 
@@ -51,14 +65,21 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
        |> put_flash(:error, gettext("This lesson is not available in this classroom."))
        |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     else
-      # Get existing progress (don't create new one in practice mode)
-      progress = Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id)
+      is_anonymous = is_nil(user)
+
+      # Get existing progress (skip for anonymous users)
+      progress =
+        if is_anonymous do
+          nil
+        else
+          Classrooms.get_custom_lesson_progress(classroom_id, user.id, lesson_id)
+        end
+
       is_completed = progress && progress.status == "completed"
 
-      # In practice mode, we can always access the lesson
-      # For new lessons, create progress
+      # For new lessons, create progress (skip for anonymous users)
       progress =
-        if is_nil(progress) and not practice do
+        if is_nil(progress) and not practice and not is_anonymous do
           {:ok, prog} = Classrooms.start_custom_lesson(classroom_id, user.id, lesson_id)
           prog
         else
@@ -284,6 +305,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     lesson_id = socket.assigns.lesson.id
     lesson = socket.assigns.lesson
     practice = socket.assigns.practice
+    is_anonymous = is_nil(user)
 
     # In practice mode, just show completion without awarding points
     if practice do
@@ -295,29 +317,46 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     else
       # Check if test is required
       if lesson.requires_test and lesson.test_id do
-        # Check if test is already completed
-        case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
-          nil ->
-            # Redirect to test
-            {:noreply,
-             socket
-             |> push_navigate(
-               to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test"
-             )}
+        if is_anonymous do
+          # Anonymous user - skip test, go to completion with prompt to sign in
+          {:noreply,
+           socket
+           |> push_navigate(
+             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?anonymous=true"
+           )}
+        else
+          # Check if test is already completed
+          case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
+            nil ->
+              # Redirect to test
+              {:noreply,
+               socket
+               |> push_navigate(
+                 to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test"
+               )}
 
-          _session ->
-            # Test already completed, show already completed message
-            {:noreply,
-             socket
-             |> put_flash(
-               :info,
-               gettext("You've already completed this lesson. Use Practice Mode to review.")
-             )
-             |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
+            _session ->
+              # Test already completed, show already completed message
+              {:noreply,
+               socket
+               |> put_flash(
+                 :info,
+                 gettext("You've already completed this lesson. Use Practice Mode to review.")
+               )
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
+          end
         end
       else
-        # No test required, mark lesson complete
-        complete_lesson(socket, classroom_id, user.id, lesson_id)
+        # No test required, mark lesson complete (skip DB for anonymous)
+        if is_anonymous do
+          {:noreply,
+           socket
+           |> push_navigate(
+             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete"
+           )}
+        else
+          complete_lesson(socket, classroom_id, user.id, lesson_id)
+        end
       end
     end
   end

@@ -5,6 +5,7 @@ defmodule MedoruWeb.GamesLive.Index do
   use MedoruWeb, :live_view
 
   alias Medoru.Games
+  alias Medoru.SiteSettings
 
   @game_type_labels %{
     "memory_cards" => gettext("Memory Cards"),
@@ -47,13 +48,33 @@ defmodule MedoruWeb.GamesLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    games = Games.list_user_games(user.id)
 
-    # Group games by classroom
-    games_by_classroom =
-      games
-      |> Enum.group_by(& &1.classroom)
-      |> Enum.sort_by(fn {classroom, _} -> classroom.name end)
+    {games, games_by_classroom} =
+      if user do
+        games = Games.list_user_games(user.id)
+
+        games_by_classroom =
+          games
+          |> Enum.group_by(& &1.classroom)
+          |> Enum.sort_by(fn {classroom, _} -> classroom.name end)
+
+        {games, games_by_classroom}
+      else
+        case SiteSettings.featured_classroom_id() do
+          nil ->
+            {[], []}
+
+          classroom_id ->
+            games = Games.list_classroom_games(classroom_id, status: :published)
+
+            games_by_classroom =
+              games
+              |> Enum.group_by(& &1.classroom)
+              |> Enum.sort_by(fn {classroom, _} -> classroom.name end)
+
+            {games, games_by_classroom}
+        end
+      end
 
     {:ok,
      socket
