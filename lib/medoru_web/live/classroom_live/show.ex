@@ -11,6 +11,22 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias Medoru.Games
   alias Medoru.Learning.WordSets
 
+  @skill_level_colors %{
+    1 => "bg-success/10 text-success border-success/20",
+    2 => "bg-info/10 text-info border-info/20",
+    3 => "bg-purple-500/20 text-purple-500 border-purple-500/40",
+    4 => "bg-error/10 text-error border-error/20",
+    5 => "bg-warning/10 text-warning border-warning/20"
+  }
+
+  @skill_level_labels %{
+    1 => gettext("Beginner"),
+    2 => gettext("Elementary"),
+    3 => gettext("Intermediate"),
+    4 => gettext("Advanced"),
+    5 => gettext("Expert")
+  }
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
@@ -905,7 +921,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
             {gettext("No Games Available")}
           </h3>
           <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
-            {gettext("Your teacher hasn't published any games to this classroom yet. Check back later!")}
+            {gettext(
+              "Your teacher hasn't published any games to this classroom yet. Check back later!"
+            )}
           </p>
         </div>
       <% else %>
@@ -915,9 +933,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <div class="card-body p-4 sm:p-6">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div class="flex-1 min-w-0">
-                  <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
-                    {game.name}
-                  </h3>
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="card-title text-base sm:text-lg text-base-content">
+                      {game.name}
+                    </h3>
+                    <span class={[
+                      "text-xs px-2 py-0.5 rounded-full border font-medium",
+                      skill_level_color(game.skill_level)
+                    ]}>
+                      {skill_level_label(game.skill_level)}
+                    </span>
+                  </div>
                   <%= cond do %>
                     <% game.memory_card_game -> %>
                       <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
@@ -1124,4 +1150,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
       {_member, index} -> index
     end
   end
+
+  defp skill_level_color(level),
+    do: Map.get(@skill_level_colors, level, "bg-base-200 text-base-content border-base-300")
+
+  defp skill_level_label(level), do: Map.get(@skill_level_labels, level, "")
 end

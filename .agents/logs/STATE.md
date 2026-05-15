@@ -4,7 +4,7 @@
 **Status**: Kana Cascade polish + navigation restructuring  
 **Tests**: 761 passing  
 **URL**: https://medoru.net  
-**Last Updated**: 2026-05-14
+**Last Updated**: 2026-05-15
 
 ---
 
@@ -18,6 +18,7 @@
 | Navigation restructuring | ✅ | `/teacher` dashboard, `/games` index, mobile drawer groups |
 | Grid hiragana keyboard removal | ✅ | Flick keyboard on all sizes |
 | Kanji Falling Game | ✅ | Reuses Kana Cascade engine for kanji reading input |
+| Game skill levels | ✅ | 5 levels (Beginner→Expert) with color coding, teacher-configurable |
 
 ---
 

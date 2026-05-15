@@ -156,7 +156,8 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, put_flash(socket, :error, gettext("Error: %{reason}", reason: inspect(reason)))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Error: %{reason}", reason: inspect(reason)))}
     end
   end
 
@@ -384,9 +385,9 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
               <h1 class="text-xl sm:text-2xl font-bold text-base-content">{@game.name}</h1>
               <p class="text-secondary text-sm">
                 <%= if @game.type == "kana_memory_cards" do %>
-                  <%= gettext("Kana Memory Card Game") %>
+                  {gettext("Kana Memory Card Game")}
                 <% else %>
-                  <%= gettext("Memory Card Game") %>
+                  {gettext("Memory Card Game")}
                 <% end %>
               </p>
             </div>
@@ -452,9 +453,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
               disabled={card_state == :collected or card_state == :flipped or game_over?(@session)}
               class={[
                 "aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex items-center justify-center relative overflow-hidden",
-                card_state == :hidden && "bg-gradient-to-br from-primary to-primary/70 text-primary-content hover:from-primary/90 hover:to-primary/60 shadow-md hover:shadow-lg hover:scale-105",
-                card_state == :flipped && "bg-base-100 border-2 border-primary text-base-content shadow-lg scale-105",
-                card_state == :collected && "bg-success/20 border-2 border-success text-success opacity-50 cursor-default",
+                card_state == :hidden &&
+                  "bg-gradient-to-br from-primary to-primary/70 text-primary-content hover:from-primary/90 hover:to-primary/60 shadow-md hover:shadow-lg hover:scale-105",
+                card_state == :flipped &&
+                  "bg-base-100 border-2 border-primary text-base-content shadow-lg scale-105",
+                card_state == :collected &&
+                  "bg-success/20 border-2 border-success text-success opacity-50 cursor-default",
                 game_over?(@session) && card_state == :hidden && "opacity-60 cursor-not-allowed"
               ]}
             >
@@ -466,17 +470,27 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                     <% kana_char = kana_at_position(@session, index) %>
                     <span class="text-2xl sm:text-3xl lg:text-4xl">{kana_char}</span>
                   <% else %>
-                    <% word = word_at_position(@session, index, @game.memory_card_game.memory_card_game_words)
-                       mcg = @game.memory_card_game
-                       show_reading? = not (mcg.pronunciation_required_for_collection or
-                                            mcg.meaning_or_pronunciation_required_for_collection)
-                       show_meaning? = not (mcg.meaning_required_for_collection or
-                                            mcg.meaning_or_pronunciation_required_for_collection) %>
+                    <% word =
+                      word_at_position(@session, index, @game.memory_card_game.memory_card_game_words)
+
+                    mcg = @game.memory_card_game
+
+                    show_reading? =
+                      not (mcg.pronunciation_required_for_collection or
+                             mcg.meaning_or_pronunciation_required_for_collection)
+
+                    show_meaning? =
+                      not (mcg.meaning_required_for_collection or
+                             mcg.meaning_or_pronunciation_required_for_collection) %>
                     <% meaning_text = Content.get_localized_meaning(word, @current_scope.locale) %>
                     <div class="text-center px-1">
                       <p class="text-sm sm:text-base lg:text-lg leading-tight">{word.text}</p>
-                      <p :if={show_reading?} class="text-xs text-secondary mt-1 hidden sm:block">{word.reading}</p>
-                      <p :if={show_meaning?} class="text-xs text-success mt-1 hidden sm:block">{meaning_text}</p>
+                      <p :if={show_reading?} class="text-xs text-secondary mt-1 hidden sm:block">
+                        {word.reading}
+                      </p>
+                      <p :if={show_meaning?} class="text-xs text-success mt-1 hidden sm:block">
+                        {meaning_text}
+                      </p>
                     </div>
                   <% end %>
                 <% :collected -> %>
@@ -503,14 +517,23 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                   <p class="text-3xl font-bold text-base-content">{kana_char}</p>
                 </div>
               <% else %>
-                <% input_word = Enum.find(@game.memory_card_game.memory_card_game_words, &(&1.word_id == @input_word_id))
-                   mcg = @game.memory_card_game
-                   show_reading? = not (mcg.pronunciation_required_for_collection or
-                                        mcg.meaning_or_pronunciation_required_for_collection) %>
+                <% input_word =
+                  Enum.find(
+                    @game.memory_card_game.memory_card_game_words,
+                    &(&1.word_id == @input_word_id)
+                  )
+
+                mcg = @game.memory_card_game
+
+                show_reading? =
+                  not (mcg.pronunciation_required_for_collection or
+                         mcg.meaning_or_pronunciation_required_for_collection) %>
                 <%= if input_word do %>
                   <div class="card bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4 text-center">
                     <p class="text-lg font-bold text-base-content">{input_word.word.text}</p>
-                    <p :if={show_reading?} class="text-sm text-secondary mt-1">{input_word.word.reading}</p>
+                    <p :if={show_reading?} class="text-sm text-secondary mt-1">
+                      {input_word.word.reading}
+                    </p>
                   </div>
                 <% end %>
               <% end %>
@@ -536,7 +559,10 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                       phx-change={not @input_disabled && "update_answer"}
                       phx-value-field="reading"
                       disabled={@input_disabled}
-                      class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
+                      class={[
+                        "input input-bordered w-full text-base",
+                        @input_disabled && "bg-base-200 opacity-60"
+                      ]}
                       placeholder={gettext("Type the romaji...")}
                       phx-mounted={!@input_disabled && JS.focus(to: "#reading-input")}
                     />
@@ -556,7 +582,10 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                         phx-change={not @input_disabled && "update_answer"}
                         phx-value-field="meaning"
                         disabled={@input_disabled}
-                        class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
+                        class={[
+                          "input input-bordered w-full text-base",
+                          @input_disabled && "bg-base-200 opacity-60"
+                        ]}
                         placeholder={gettext("Type the meaning...")}
                         phx-mounted={!@input_disabled && JS.focus(to: "#meaning-input")}
                       />
@@ -575,7 +604,10 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                         phx-change={not @input_disabled && "update_answer"}
                         phx-value-field="pronunciation"
                         disabled={@input_disabled}
-                        class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
+                        class={[
+                          "input input-bordered w-full text-base",
+                          @input_disabled && "bg-base-200 opacity-60"
+                        ]}
                         placeholder={gettext("Type the reading in hiragana...")}
                         phx-mounted={!@input_disabled && JS.focus(to: "#pronunciation-input")}
                       />
@@ -584,10 +616,19 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 <% end %>
 
                 <div class="flex gap-3 justify-end pt-2">
-                  <button type="button" phx-click="cancel_input" disabled={@input_disabled} class={["btn btn-ghost", @input_disabled && "opacity-50 cursor-not-allowed"]}>
+                  <button
+                    type="button"
+                    phx-click="cancel_input"
+                    disabled={@input_disabled}
+                    class={["btn btn-ghost", @input_disabled && "opacity-50 cursor-not-allowed"]}
+                  >
                     {gettext("Cancel")}
                   </button>
-                  <button type="submit" disabled={@input_disabled} class={["btn btn-primary", @input_disabled && "opacity-50 cursor-not-allowed"]}>
+                  <button
+                    type="submit"
+                    disabled={@input_disabled}
+                    class={["btn btn-primary", @input_disabled && "opacity-50 cursor-not-allowed"]}
+                  >
                     <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Submit")}
                   </button>
                 </div>

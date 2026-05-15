@@ -11,7 +11,10 @@ defmodule Medoru.GamesTest do
   describe "list_classroom_games/2" do
     setup do
       teacher = user_fixture(%{type: "teacher"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
       {:ok, teacher: teacher, classroom: classroom}
     end
 
@@ -35,7 +38,10 @@ defmodule Medoru.GamesTest do
   describe "get_game!/1" do
     setup do
       teacher = user_fixture(%{type: "teacher"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
       {:ok, teacher: teacher, classroom: classroom}
     end
 
@@ -50,12 +56,19 @@ defmodule Medoru.GamesTest do
   describe "create_memory_card_game/4" do
     setup do
       teacher = user_fixture(%{type: "teacher"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
       words = Enum.map(1..8, fn _ -> word_fixture() end)
       {:ok, teacher: teacher, classroom: classroom, words: words}
     end
 
-    test "creates a memory card game with words", %{teacher: teacher, classroom: classroom, words: words} do
+    test "creates a memory card game with words", %{
+      teacher: teacher,
+      classroom: classroom,
+      words: words
+    } do
       word_ids_with_points = Enum.map(words, &{&1.id, 1})
 
       attrs = %{
@@ -69,7 +82,14 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      assert {:ok, %Game{} = game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      assert {:ok, %Game{} = game} =
+               Games.create_memory_card_game(
+                 classroom.id,
+                 teacher.id,
+                 attrs,
+                 word_ids_with_points
+               )
+
       assert game.name == "Test Game"
       assert game.type == "memory_cards"
       assert game.status == :draft
@@ -78,7 +98,10 @@ defmodule Medoru.GamesTest do
       assert length(game.memory_card_game.memory_card_game_words) == 8
     end
 
-    test "returns error when teacher does not own classroom", %{classroom: classroom, words: words} do
+    test "returns error when teacher does not own classroom", %{
+      classroom: classroom,
+      words: words
+    } do
       other_teacher = user_fixture(%{type: "teacher"})
       word_ids_with_points = Enum.map(words, &{&1.id, 1})
 
@@ -90,14 +113,23 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      assert {:error, :not_authorized} = Games.create_memory_card_game(classroom.id, other_teacher.id, attrs, word_ids_with_points)
+      assert {:error, :not_authorized} =
+               Games.create_memory_card_game(
+                 classroom.id,
+                 other_teacher.id,
+                 attrs,
+                 word_ids_with_points
+               )
     end
   end
 
   describe "publish_game/2 and unpublish_game/2" do
     setup do
       teacher = user_fixture(%{type: "teacher"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
       words = Enum.map(1..8, fn _ -> word_fixture() end)
       word_ids_with_points = Enum.map(words, &{&1.id, 1})
 
@@ -109,7 +141,9 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
       {:ok, teacher: teacher, classroom: classroom, game: game}
     end
 
@@ -131,7 +165,10 @@ defmodule Medoru.GamesTest do
   describe "delete_game/2" do
     setup do
       teacher = user_fixture(%{type: "teacher"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
       words = Enum.map(1..8, fn _ -> word_fixture() end)
       word_ids_with_points = Enum.map(words, &{&1.id, 1})
 
@@ -143,7 +180,9 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
       {:ok, teacher: teacher, classroom: classroom, game: game}
     end
 
@@ -162,7 +201,9 @@ defmodule Medoru.GamesTest do
     setup do
       teacher = user_fixture(%{type: "teacher"})
       student = user_fixture(%{type: "student"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
 
       # Approve student membership
       {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
@@ -180,14 +221,18 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
       {:ok, _} = Games.publish_game(game.id, teacher.id)
 
       {:ok, teacher: teacher, student: student, classroom: classroom, game: game, words: words}
     end
 
     test "get_or_create_session creates new session", %{student: student, game: game} do
-      assert {:ok, %MemoryCardSession{} = session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, %MemoryCardSession{} = session} =
+               Games.get_or_create_session(game.id, student.id)
+
       assert session.status == :in_progress
       assert session.score == 0
       assert session.attempts_used == 0
@@ -213,7 +258,11 @@ defmodule Medoru.GamesTest do
       # Find two positions with different words
       card_positions = session.cards_state["card_positions"]
       pos0_word = Enum.at(card_positions, 0)
-      pos1 = Enum.find_index(Enum.with_index(card_positions), fn {word_id, idx} -> idx != 0 and word_id != pos0_word end) || 1
+
+      pos1 =
+        Enum.find_index(Enum.with_index(card_positions), fn {word_id, idx} ->
+          idx != 0 and word_id != pos0_word
+        end) || 1
 
       # First card
       assert {:ok, session_after_first} = Games.flip_card(session.id, 0)
@@ -239,13 +288,19 @@ defmodule Medoru.GamesTest do
       # First card
       assert {:ok, session_after_first} = Games.flip_card(session.id, 0)
       # Second card (same word)
-      assert {:ok, updated, :collected, points} = Games.flip_card(session_after_first.id, matching_pos)
+      assert {:ok, updated, :collected, points} =
+               Games.flip_card(session_after_first.id, matching_pos)
+
       assert updated.score == points
       assert 0 in (updated.cards_state["collected_indices"] || [])
       assert matching_pos in (updated.cards_state["collected_indices"] || [])
     end
 
-    test "complete_session adds points to classroom membership", %{student: student, classroom: classroom, game: game} do
+    test "complete_session adds points to classroom membership", %{
+      student: student,
+      classroom: classroom,
+      game: game
+    } do
       {:ok, session} = Games.get_or_create_session(game.id, student.id)
 
       # Flip and collect a pair
@@ -265,7 +320,11 @@ defmodule Medoru.GamesTest do
       assert membership.points == points
     end
 
-    test "reset_session removes points and deletes session", %{student: student, classroom: classroom, game: game} do
+    test "reset_session removes points and deletes session", %{
+      student: student,
+      classroom: classroom,
+      game: game
+    } do
       {:ok, session} = Games.get_or_create_session(game.id, student.id)
 
       # Complete a session to earn points
@@ -297,7 +356,9 @@ defmodule Medoru.GamesTest do
     setup do
       teacher = user_fixture(%{type: "teacher"})
       student = user_fixture(%{type: "student"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
 
       # Approve student membership
       {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
@@ -307,10 +368,21 @@ defmodule Medoru.GamesTest do
       words = Enum.map(1..8, fn _ -> word_fixture() end)
       word_ids_with_points = Enum.map(words, &{&1.id, 1})
 
-      {:ok, teacher: teacher, student: student, classroom: classroom, words: words, word_ids_with_points: word_ids_with_points}
+      {:ok,
+       teacher: teacher,
+       student: student,
+       classroom: classroom,
+       words: words,
+       word_ids_with_points: word_ids_with_points}
     end
 
-    test "meaning condition requires correct meaning", %{teacher: teacher, student: student, classroom: classroom, words: words, word_ids_with_points: word_ids_with_points} do
+    test "meaning condition requires correct meaning", %{
+      teacher: teacher,
+      student: student,
+      classroom: classroom,
+      words: words,
+      word_ids_with_points: word_ids_with_points
+    } do
       attrs = %{
         "name" => "Meaning Game",
         "memory_card_game" => %{
@@ -322,7 +394,9 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
       {:ok, _} = Games.publish_game(game.id, teacher.id)
       {:ok, session} = Games.get_or_create_session(game.id, student.id)
 
@@ -337,23 +411,38 @@ defmodule Medoru.GamesTest do
       assert updated.cards_state["flipped_indices"] == [0, matching_pos]
 
       # Submit wrong answer
-      assert {:ok, after_wrong, :wrong_answer} = Games.submit_collection_answer(updated.id, %{"meaning" => "wrong", "pronunciation" => ""})
+      assert {:ok, after_wrong, :wrong_answer} =
+               Games.submit_collection_answer(updated.id, %{
+                 "meaning" => "wrong",
+                 "pronunciation" => ""
+               })
+
       assert after_wrong.attempts_used == 1
 
       # Need to re-flip cards after wrong answer
       assert {:ok, after_wrong_first} = Games.flip_card(after_wrong.id, 0)
-      assert {:needs_input, after_wrong_both, _} = Games.flip_card(after_wrong_first.id, matching_pos)
+
+      assert {:needs_input, after_wrong_both, _} =
+               Games.flip_card(after_wrong_first.id, matching_pos)
 
       # Submit correct answer
-      word = Enum.find(words, fn w ->
-        encoded = case Ecto.UUID.dump(w.id) do
-          {:ok, _} -> w.id
-          :error -> to_string(w.id)
-        end
-        encoded == word_id
-      end)
+      word =
+        Enum.find(words, fn w ->
+          encoded =
+            case Ecto.UUID.dump(w.id) do
+              {:ok, _} -> w.id
+              :error -> to_string(w.id)
+            end
 
-      assert {:ok, after_correct, :collected, _} = Games.submit_collection_answer(after_wrong_both.id, %{"meaning" => word.meaning, "pronunciation" => ""})
+          encoded == word_id
+        end)
+
+      assert {:ok, after_correct, :collected, _} =
+               Games.submit_collection_answer(after_wrong_both.id, %{
+                 "meaning" => word.meaning,
+                 "pronunciation" => ""
+               })
+
       assert 0 in (after_correct.cards_state["collected_indices"] || [])
     end
   end
@@ -362,7 +451,9 @@ defmodule Medoru.GamesTest do
     setup do
       teacher = user_fixture(%{type: "teacher"})
       student = user_fixture(%{type: "student"})
-      {:ok, classroom} = Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
 
       {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
       membership = Classrooms.get_user_membership(classroom.id, student.id)
@@ -382,7 +473,9 @@ defmodule Medoru.GamesTest do
         }
       }
 
-      {:ok, game} = Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
       {:ok, _} = Games.publish_game(game.id, teacher.id)
       {:ok, session} = Games.get_or_create_session(game.id, student.id)
 
@@ -394,7 +487,12 @@ defmodule Medoru.GamesTest do
       {:ok, after_first} = Games.flip_card(session.id, 0)
       {:needs_input, after_both, _} = Games.flip_card(after_first.id, matching_pos)
 
-      {:ok, student: student, classroom: classroom, game: game, session: after_both, matching_pos: matching_pos}
+      {:ok,
+       student: student,
+       classroom: classroom,
+       game: game,
+       session: after_both,
+       matching_pos: matching_pos}
     end
 
     test "consumes one attempt and clears flipped cards", %{session: session} do
@@ -406,7 +504,10 @@ defmodule Medoru.GamesTest do
       assert updated.cards_state["flipped_indices"] == []
     end
 
-    test "game over when cancel exhausts last attempt", %{session: session, matching_pos: matching_pos} do
+    test "game over when cancel exhausts last attempt", %{
+      session: session,
+      matching_pos: matching_pos
+    } do
       # Consume first attempt via cancel
       assert {:ok, s1, :cancelled} = Games.cancel_input_attempt(session.id)
       assert s1.attempts_used == 1
@@ -425,7 +526,10 @@ defmodule Medoru.GamesTest do
       assert completed.attempts_used == 3
     end
 
-    test "returns error when session is already completed", %{session: session, matching_pos: matching_pos} do
+    test "returns error when session is already completed", %{
+      session: session,
+      matching_pos: matching_pos
+    } do
       # Complete the session by cancelling until game over
       {:ok, s1, :cancelled} = Games.cancel_input_attempt(session.id)
       {:ok, after_first} = Games.flip_card(s1.id, 0)

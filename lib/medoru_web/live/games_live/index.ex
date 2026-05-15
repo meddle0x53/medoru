@@ -20,11 +20,28 @@ defmodule MedoruWeb.GamesLive.Index do
     "kanji_falling" => "hero-bolt"
   }
 
-  @game_type_colors %{
-    "memory_cards" => "bg-primary/10 text-primary",
-    "kana_memory_cards" => "bg-secondary/10 text-secondary",
-    "kana_falling" => "bg-accent/10 text-accent",
-    "kanji_falling" => "bg-info/10 text-info"
+  @skill_level_colors %{
+    1 => "bg-success/10 text-success border-success/20",
+    2 => "bg-info/10 text-info border-info/20",
+    3 => "bg-purple-500/20 text-purple-500 border-purple-500/40",
+    4 => "bg-error/10 text-error border-error/20",
+    5 => "bg-warning/10 text-warning border-warning/20"
+  }
+
+  @skill_level_card_bgs %{
+    1 => "bg-success/5 border-success/20 hover:border-success/40",
+    2 => "bg-info/5 border-info/20 hover:border-info/40",
+    3 => "bg-purple-500/5 border-purple-500/20 hover:border-purple-500/40",
+    4 => "bg-error/5 border-error/20 hover:border-error/40",
+    5 => "bg-warning/5 border-warning/20 hover:border-warning/40"
+  }
+
+  @skill_level_labels %{
+    1 => gettext("Beginner"),
+    2 => gettext("Elementary"),
+    3 => gettext("Intermediate"),
+    4 => gettext("Advanced"),
+    5 => gettext("Expert")
   }
 
   @impl true
@@ -81,18 +98,27 @@ defmodule MedoruWeb.GamesLive.Index do
                 <%= for game <- games do %>
                   <.link
                     navigate={play_path(game)}
-                    class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary hover:shadow-md transition-all"
+                    class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}
                   >
                     <div class="card-body p-4">
                       <div class="flex items-start justify-between">
                         <div class="flex items-center gap-3">
-                          <div class={["w-10 h-10 rounded-full flex items-center justify-center", game_type_color(game.type)]}>
+                          <div class={[
+                            "w-10 h-10 rounded-full flex items-center justify-center border",
+                            skill_level_color(game.skill_level)
+                          ]}>
                             <.icon name={game_type_icon(game.type)} class="w-5 h-5" />
                           </div>
                           <div>
                             <div class="font-semibold text-base-content">{game.name}</div>
-                            <div class="text-sm text-base-content/60">
+                            <div class="text-sm text-base-content/60 flex items-center gap-2">
                               {game_type_label(game.type)}
+                              <span class={[
+                                "text-xs px-2 py-0.5 rounded-full border font-medium",
+                                skill_level_color(game.skill_level)
+                              ]}>
+                                {skill_level_label(game.skill_level)}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -122,5 +148,12 @@ defmodule MedoruWeb.GamesLive.Index do
 
   defp game_type_label(type), do: Map.get(@game_type_labels, type, type)
   defp game_type_icon(type), do: Map.get(@game_type_icons, type, "hero-puzzle-piece")
-  defp game_type_color(type), do: Map.get(@game_type_colors, type, "bg-base-200 text-base-content")
+
+  defp skill_level_color(level),
+    do: Map.get(@skill_level_colors, level, "bg-base-200 text-base-content border-base-300")
+
+  defp skill_level_label(level), do: Map.get(@skill_level_labels, level, "")
+
+  defp skill_level_card_bg(level),
+    do: Map.get(@skill_level_card_bgs, level, "bg-base-100 border-base-300 hover:border-primary")
 end

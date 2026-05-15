@@ -11,7 +11,11 @@ defmodule MedoruWeb.LessonTestKeyboardTest do
       %{user: user, lesson: lesson}
     end
 
-    test "phx-window-keydown is present in rendered HTML", %{conn: conn, user: user, lesson: lesson} do
+    test "phx-window-keydown is present in rendered HTML", %{
+      conn: conn,
+      user: user,
+      lesson: lesson
+    } do
       conn = log_in_user(conn, user)
       {:ok, _view, html} = live(conn, ~p"/lessons/#{lesson.id}/test")
 

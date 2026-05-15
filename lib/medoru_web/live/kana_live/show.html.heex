@@ -53,9 +53,14 @@
             <%= if @kana.group == :small do %>
               <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                 <div class="flex items-start gap-2">
-                  <.icon name="hero-information-circle" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <.icon
+                    name="hero-information-circle"
+                    class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                  />
                   <p class="text-sm text-amber-800 dark:text-amber-300">
-                    {gettext("This is a small kana (sokuon/yoon) used in combination with other characters.")}
+                    {gettext(
+                      "This is a small kana (sokuon/yoon) used in combination with other characters."
+                    )}
                   </p>
                 </div>
               </div>
@@ -78,9 +83,13 @@
             class="text-sm bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-lg transition-colors"
           >
             <%= if @show_writing_practice do %>
-              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> {gettext("Hide Practice")}
+              <.icon name="hero-eye-slash" class="w-4 h-4 inline mr-1" /> {gettext(
+                "Hide Practice"
+              )}
             <% else %>
-              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> {gettext("Practice Writing")}
+              <.icon name="hero-pencil-square" class="w-4 h-4 inline mr-1" /> {gettext(
+                "Practice Writing"
+              )}
             <% end %>
           </button>
         </div>
@@ -121,7 +130,9 @@
 
               <div class="flex flex-col items-center gap-4">
                 <div class="text-center text-secondary text-sm">
-                  {gettext("Draw the character stroke by stroke. Yellow hint shows after wrong strokes.")}
+                  {gettext(
+                    "Draw the character stroke by stroke. Yellow hint shows after wrong strokes."
+                  )}
                 </div>
 
                 <div

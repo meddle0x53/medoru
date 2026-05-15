@@ -121,7 +121,9 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       }
     }
 
-    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool, field: :meaning)
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
+      field: :meaning
+    )
   end
 
   defp build_step_data(word, :word_to_reading, distractor_count, distractor_pool) do
@@ -140,7 +142,9 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       }
     }
 
-    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool, field: :reading)
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
+      field: :reading
+    )
   end
 
   defp build_step_data(word, :reading_text, _distractor_count, _distractor_pool) do

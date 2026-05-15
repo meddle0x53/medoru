@@ -1934,7 +1934,8 @@ defmodule Medoru.Classrooms do
         |> where([p], p.custom_lesson_id in ^custom_lesson_ids)
         |> Repo.all()
         |> Map.new(fn p ->
-          {{p.classroom_id, p.custom_lesson_id}, %{status: p.status, points_earned: p.points_earned}}
+          {{p.classroom_id, p.custom_lesson_id},
+           %{status: p.status, points_earned: p.points_earned}}
         end)
       end
 

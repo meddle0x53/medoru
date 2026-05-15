@@ -122,9 +122,9 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
               <div class="flex items-center gap-3 mb-2">
                 <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{@game.name}</h1>
                 <%= if @game.status == :published do %>
-                  <span class="badge badge-success"><%= gettext("Published") %></span>
+                  <span class="badge badge-success">{gettext("Published")}</span>
                 <% else %>
-                  <span class="badge badge-ghost"><%= gettext("Draft") %></span>
+                  <span class="badge badge-ghost">{gettext("Draft")}</span>
                 <% end %>
               </div>
               <p class="text-secondary">
@@ -134,11 +134,11 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
             <div class="flex gap-2">
               <%= if @game.status == :draft do %>
                 <button phx-click="publish_game" class="btn btn-success btn-sm">
-                  <.icon name="hero-eye" class="w-4 h-4 mr-1" /> <%= gettext("Publish") %>
+                  <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Publish")}
                 </button>
               <% else %>
                 <button phx-click="unpublish_game" class="btn btn-ghost btn-outline btn-sm">
-                  <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" /> <%= gettext("Unpublish") %>
+                  <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" /> {gettext("Unpublish")}
                 </button>
               <% end %>
               <.link
@@ -174,9 +174,9 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
                 <p class="text-secondary text-sm">{gettext("Max Players")}</p>
                 <p class="text-lg font-bold text-base-content">
                   <%= if @game.max_players == 1 do %>
-                    <%= gettext("Single Player") %>
+                    {gettext("Single Player")}
                   <% else %>
-                    <%= @game.max_players %>
+                    {@game.max_players}
                   <% end %>
                 </p>
               </div>
@@ -233,7 +233,8 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
                         {index}
                       </span>
                       <% avatar_src =
-                        (session.user.profile && session.user.profile.avatar) || session.user.avatar_url %>
+                        (session.user.profile && session.user.profile.avatar) ||
+                          session.user.avatar_url %>
                       <%= if avatar_src do %>
                         <div class="avatar shrink-0">
                           <div class="w-8 h-8 rounded-full">
@@ -245,14 +246,21 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
                           <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
                             <% initial =
                               if session.user.profile && session.user.profile.display_name,
-                                do: String.first(session.user.profile.display_name) |> String.upcase(),
-                                else: String.first(session.user.name || session.user.email) |> String.upcase() %>
+                                do:
+                                  String.first(session.user.profile.display_name) |> String.upcase(),
+                                else:
+                                  String.first(session.user.name || session.user.email)
+                                  |> String.upcase() %>
                             <span class="text-xs">{initial}</span>
                           </div>
                         </div>
                       <% end %>
                       <span class="truncate text-base-content">
-                        {display_name(session.user, @current_scope.current_user.id, @current_scope.current_user.type == "admin")}
+                        {display_name(
+                          session.user,
+                          @current_scope.current_user.id,
+                          @current_scope.current_user.type == "admin"
+                        )}
                       </span>
                     </div>
                     <div class="flex items-center gap-4 shrink-0 ml-2">
@@ -265,7 +273,9 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Show do
                       <button
                         phx-click="reset_student"
                         phx-value-user_id={session.user_id}
-                        data-confirm={gettext("Reset this student's progress? They will lose their points.")}
+                        data-confirm={
+                          gettext("Reset this student's progress? They will lose their points.")
+                        }
                         class="btn btn-ghost btn-sm btn-circle text-error"
                         title={gettext("Reset student")}
                       >

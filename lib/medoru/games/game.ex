@@ -12,6 +12,7 @@ defmodule Medoru.Games.Game do
 
   @types ["memory_cards", "kana_memory_cards", "kana_falling", "kanji_falling"]
   @statuses [:draft, :published]
+  @skill_levels 1..5
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -21,6 +22,7 @@ defmodule Medoru.Games.Game do
     field :status, Ecto.Enum, values: @statuses, default: :draft
     field :max_players, :integer, default: 1
     field :settings, :map, default: %{}
+    field :skill_level, :integer, default: 1
 
     belongs_to :classroom, Classroom
     has_one :memory_card_game, Medoru.Games.MemoryCardGame
@@ -37,10 +39,11 @@ defmodule Medoru.Games.Game do
   @doc false
   def changeset(game, attrs) do
     game
-    |> cast(attrs, [:name, :type, :status, :max_players, :settings, :classroom_id])
-    |> validate_required([:name, :type, :status, :max_players, :classroom_id])
+    |> cast(attrs, [:name, :type, :status, :max_players, :settings, :skill_level, :classroom_id])
+    |> validate_required([:name, :type, :status, :max_players, :skill_level, :classroom_id])
     |> validate_inclusion(:type, @types)
     |> validate_number(:max_players, greater_than_or_equal_to: 1, less_than_or_equal_to: 10)
+    |> validate_inclusion(:skill_level, @skill_levels)
     |> foreign_key_constraint(:classroom_id)
   end
 

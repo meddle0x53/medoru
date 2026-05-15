@@ -400,7 +400,8 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
       end
 
     socket =
-      if new_score >= socket.assigns.next_extra_life_score and socket.assigns.lives < socket.assigns.max_lives do
+      if new_score >= socket.assigns.next_extra_life_score and
+           socket.assigns.lives < socket.assigns.max_lives do
         socket
         |> assign(:lives, socket.assigns.lives + 1)
         |> assign(:next_extra_life_score, new_score + config.extra_life_threshold)
@@ -525,5 +526,4 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
       _ -> type
     end
   end
-
 end

@@ -11,6 +11,16 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
   embed_templates "form*.html"
 
+  defp skill_level_options do
+    [
+      {gettext("Beginner"), "1"},
+      {gettext("Elementary"), "2"},
+      {gettext("Intermediate"), "3"},
+      {gettext("Advanced"), "4"},
+      {gettext("Expert"), "5"}
+    ]
+  end
+
   defp speed_options do
     [
       {"1 - Very Slow (1.8s/row)", "1"},
@@ -37,6 +47,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
      |> assign(:lives, "3")
      |> assign(:extra_life_threshold, "100")
      |> assign(:points_per_kana, "1")
+     |> assign(:skill_level, "1")
      |> assign(:selected_kana, [])
      |> assign(:color_coded_rows, false)
      |> assign(:form_errors, %{})
@@ -73,6 +84,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
        |> assign(:lives, Integer.to_string(kfg.lives))
        |> assign(:extra_life_threshold, Integer.to_string(kfg.extra_life_threshold))
        |> assign(:points_per_kana, Integer.to_string(kfg.points_per_kana))
+       |> assign(:skill_level, Integer.to_string(game.skill_level))
        |> assign(:selected_kana, kfg.selected_kana || [])
        |> assign(:background_image, kfg.background_image)
        |> assign(:color_coded_rows, kfg.color_coded_rows)
@@ -88,7 +100,10 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
     if classroom.teacher_id != user.id do
       {:noreply,
        socket
-       |> put_flash(:error, gettext("You don't have permission to create games in this classroom."))
+       |> put_flash(
+         :error,
+         gettext("You don't have permission to create games in this classroom.")
+       )
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       {:noreply,
@@ -102,6 +117,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
        |> assign(:lives, "3")
        |> assign(:extra_life_threshold, "100")
        |> assign(:points_per_kana, "1")
+       |> assign(:skill_level, "1")
        |> assign(:selected_kana, [])
        |> assign(:color_coded_rows, false)
        |> assign(:form_errors, %{})}
@@ -126,6 +142,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
         "lives" -> assign(socket, :lives, value)
         "extra_life_threshold" -> assign(socket, :extra_life_threshold, value)
         "points_per_kana" -> assign(socket, :points_per_kana, value)
+        "skill_level" -> assign(socket, :skill_level, value)
         _ -> socket
       end
 
@@ -137,6 +154,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
         "lives" -> :lives
         "extra_life_threshold" -> :extra_life_threshold
         "points_per_kana" -> :points_per_kana
+        "skill_level" -> :skill_level
         _ -> nil
       end
 
@@ -240,10 +258,17 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
     name = String.trim(params["name"] || socket.assigns.name || "")
     initial_speed = params["initial_speed"] || socket.assigns.initial_speed || "1"
-    speed_increase_threshold = params["speed_increase_threshold"] || socket.assigns.speed_increase_threshold || "50"
+
+    speed_increase_threshold =
+      params["speed_increase_threshold"] || socket.assigns.speed_increase_threshold || "50"
+
     lives = params["lives"] || socket.assigns.lives || "3"
-    extra_life_threshold = params["extra_life_threshold"] || socket.assigns.extra_life_threshold || "100"
+
+    extra_life_threshold =
+      params["extra_life_threshold"] || socket.assigns.extra_life_threshold || "100"
+
     points_per_kana = params["points_per_kana"] || socket.assigns.points_per_kana || "1"
+    skill_level = params["skill_level"] || socket.assigns.skill_level || "1"
 
     socket =
       socket
@@ -253,6 +278,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
       |> assign(:lives, lives)
       |> assign(:extra_life_threshold, extra_life_threshold)
       |> assign(:points_per_kana, points_per_kana)
+      |> assign(:skill_level, skill_level)
 
     background_image = handle_background_image_upload(socket)
 
@@ -274,6 +300,7 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Form do
 
     attrs = %{
       "name" => name,
+      "skill_level" => skill_level,
       "kana_falling_game" => kfg_attrs
     }
 

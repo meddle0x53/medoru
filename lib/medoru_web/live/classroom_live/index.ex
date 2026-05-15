@@ -47,7 +47,9 @@ defmodule MedoruWeb.ClassroomLive.Index do
 
     # Count owned, joined, and public (from current page only)
     owned_count = Enum.count(result.classrooms, &(&1.teacher_id == user.id))
-    joined_count = Enum.count(result.classrooms, &(Map.get(membership_statuses, &1.id) == :approved))
+
+    joined_count =
+      Enum.count(result.classrooms, &(Map.get(membership_statuses, &1.id) == :approved))
 
     public_count =
       Enum.count(result.classrooms, fn c ->
@@ -166,10 +168,12 @@ defmodule MedoruWeb.ClassroomLive.Index do
          |> push_patch(to: ~p"/classrooms")}
 
       {:error, :already_member} ->
-        {:noreply, put_flash(socket, :error, gettext("You are already a member of this classroom."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("You are already a member of this classroom."))}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to join classroom. Please try again."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to join classroom. Please try again."))}
     end
   end
 
@@ -309,7 +313,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
               <%!-- Search Public Classrooms --%>
               <form phx-change="search" class="flex-1">
                 <div class="relative">
-                  <.icon name="hero-magnifying-glass" class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+                  <.icon
+                    name="hero-magnifying-glass"
+                    class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary"
+                  />
                   <input
                     type="text"
                     name="search"
@@ -322,7 +329,11 @@ defmodule MedoruWeb.ClassroomLive.Index do
               </form>
 
               <%!-- Invite Code Join --%>
-              <form phx-change="validate_code" phx-submit="join" class="flex flex-col sm:flex-row gap-2 flex-1">
+              <form
+                phx-change="validate_code"
+                phx-submit="join"
+                class="flex flex-col sm:flex-row gap-2 flex-1"
+              >
                 <input
                   type="text"
                   name="invite_code"
@@ -394,9 +405,9 @@ defmodule MedoruWeb.ClassroomLive.Index do
             </h3>
             <p class="text-secondary mb-6">
               <%= if @search != "" do %>
-                <%= gettext("No classrooms match your search. Try a different term.") %>
+                {gettext("No classrooms match your search. Try a different term.")}
               <% else %>
-                <%= gettext("Browse public classrooms or join one with an invite code above.") %>
+                {gettext("Browse public classrooms or join one with an invite code above.")}
               <% end %>
             </p>
           </div>
@@ -548,7 +559,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
         <div class="card-actions justify-end pt-4 border-t border-base-200">
           <%= cond do %>
             <% @is_owner -> %>
-              <.link navigate={~p"/teacher/classrooms/#{@classroom.id}"} class="btn btn-primary btn-sm">
+              <.link
+                navigate={~p"/teacher/classrooms/#{@classroom.id}"}
+                class="btn btn-primary btn-sm"
+              >
                 {gettext("Manage")} →
               </.link>
             <% @can_join -> %>
@@ -582,7 +596,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
     <div class="mt-8 flex justify-center">
       <div class="flex items-center gap-2">
         <%= if @page > 1 do %>
-          <.link patch={~p"/classrooms?#{[page: @page - 1, search: @search]}"} class="btn btn-ghost btn-sm">
+          <.link
+            patch={~p"/classrooms?#{[page: @page - 1, search: @search]}"}
+            class="btn btn-ghost btn-sm"
+          >
             ← {gettext("Prev")}
           </.link>
         <% else %>
@@ -594,7 +611,10 @@ defmodule MedoruWeb.ClassroomLive.Index do
         </span>
 
         <%= if @page < @total_pages do %>
-          <.link patch={~p"/classrooms?#{[page: @page + 1, search: @search]}"} class="btn btn-ghost btn-sm">
+          <.link
+            patch={~p"/classrooms?#{[page: @page + 1, search: @search]}"}
+            class="btn btn-ghost btn-sm"
+          >
             {gettext("Next")} →
           </.link>
         <% else %>

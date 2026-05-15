@@ -4,7 +4,10 @@ defmodule Medoru.Repo.Migrations.CreateGames do
   def change do
     create table(:games, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :classroom_id, references(:classrooms, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :classroom_id, references(:classrooms, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :name, :string, null: false
       add :type, :string, null: false
       add :status, :string, null: false, default: "draft"

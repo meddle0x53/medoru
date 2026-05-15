@@ -30,7 +30,10 @@ defmodule MedoruWeb.GamesLive.IndexTest do
         Games.create_memory_card_game(
           classroom.id,
           teacher.id,
-          %{"name" => "Test Game", "memory_card_game" => %{"board_size" => "4x4", "max_attempts" => 20}},
+          %{
+            "name" => "Test Game",
+            "memory_card_game" => %{"board_size" => "4x4", "max_attempts" => 20}
+          },
           Enum.map(words, &{&1.id, 10})
         )
 

@@ -13,13 +13,19 @@
         <%!-- Empty State for Authenticated Users --%>
         <div class="text-center py-16">
           <div class="text-6xl mb-4">📚</div>
-          <h3 class="text-lg font-medium text-base-content mb-2">{gettext("No Lessons Available")}</h3>
+          <h3 class="text-lg font-medium text-base-content mb-2">
+            {gettext("No Lessons Available")}
+          </h3>
           <p class="text-secondary max-w-md mx-auto">
-            {gettext("You don't have any lessons from your classrooms yet. Join a classroom or ask your teacher to publish lessons.")}
+            {gettext(
+              "You don't have any lessons from your classrooms yet. Join a classroom or ask your teacher to publish lessons."
+            )}
           </p>
           <div class="mt-6">
             <.link navigate={~p"/classrooms"} class="btn btn-primary">
-              <.icon name="hero-academic-cap" class="w-4 h-4 mr-1" /> {gettext("Browse Classrooms")}
+              <.icon name="hero-academic-cap" class="w-4 h-4 mr-1" /> {gettext(
+                "Browse Classrooms"
+              )}
             </.link>
           </div>
         </div>
@@ -78,7 +84,9 @@
                       <%= case progress_status do %>
                         <% "in_progress" -> %>
                           <span class="badge badge-warning badge-sm">
-                            <.icon name="hero-play" class="w-3 h-3 mr-1" /> {gettext("In Progress")}
+                            <.icon name="hero-play" class="w-3 h-3 mr-1" /> {gettext(
+                              "In Progress"
+                            )}
                           </span>
                         <% "not_started" -> %>
                           <span class="badge badge-ghost badge-sm">
@@ -137,12 +145,16 @@
       <%!-- Empty State for Anonymous Users --%>
       <div class="text-center py-16">
         <div class="text-6xl mb-4">🔒</div>
-        <h3 class="text-lg font-medium text-base-content mb-2">{gettext("Sign in to see your lessons")}</h3>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          {gettext("Sign in to see your lessons")}
+        </h3>
         <p class="text-secondary max-w-md mx-auto mb-6">
           {gettext("Join a classroom to access lessons from your teachers.")}
         </p>
         <.link href={~p"/auth/google"} class="btn btn-primary">
-          <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" /> {gettext("Sign in with Google")}
+          <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" /> {gettext(
+            "Sign in with Google"
+          )}
         </.link>
       </div>
     <% end %>

@@ -83,7 +83,7 @@ defmodule Medoru.Games.MemoryCardGame do
   def collection_type(%__MODULE__{} = mcg) do
     cond do
       not mcg.meaning_required_for_collection and
-          not mcg.pronunciation_required_for_collection and
+        not mcg.pronunciation_required_for_collection and
           not mcg.meaning_or_pronunciation_required_for_collection ->
         :direct
 

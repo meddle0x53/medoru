@@ -776,7 +776,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                     </div>
                   <% end %>
                   <%= if display.main_text do %>
-                    <h2 class={["text-3xl sm:text-4xl font-bold text-primary text-center mb-1", display.main_class]}>
+                    <h2 class={[
+                      "text-3xl sm:text-4xl font-bold text-primary text-center mb-1",
+                      display.main_class
+                    ]}>
                       {display.main_text}
                     </h2>
                   <% end %>

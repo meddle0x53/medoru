@@ -18,7 +18,10 @@ defmodule Medoru.Games.KanaFallingTest do
       %{teacher: teacher, classroom: classroom}
     end
 
-    test "creates a kana falling game with selected kana", %{teacher: teacher, classroom: classroom} do
+    test "creates a kana falling game with selected kana", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
       attrs = %{
         "name" => "Falling Kana Test",
         "kana_falling_game" => %{

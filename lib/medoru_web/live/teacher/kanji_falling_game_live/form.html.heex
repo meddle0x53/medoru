@@ -100,6 +100,21 @@
             class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
+
+        <%!-- Skill Level --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Skill Level")}
+          </label>
+          <select
+            name="skill_level"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- skill_level_options() do %>
+              <option value={value} selected={@skill_level == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
       </div>
 
       <%!-- Reading Type --%>

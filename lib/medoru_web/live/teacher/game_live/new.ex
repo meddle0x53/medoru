@@ -15,7 +15,10 @@ defmodule MedoruWeb.Teacher.GameLive.New do
     if classroom.teacher_id != user.id do
       {:ok,
        socket
-       |> put_flash(:error, gettext("You don't have permission to create games in this classroom."))
+       |> put_flash(
+         :error,
+         gettext("You don't have permission to create games in this classroom.")
+       )
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       {:ok,

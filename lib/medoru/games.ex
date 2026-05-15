@@ -9,7 +9,17 @@ defmodule Medoru.Games do
   alias Medoru.Repo
 
   alias Medoru.Classrooms
-  alias Medoru.Games.{Game, MemoryCardGame, MemoryCardGameWord, MemoryCardSession, KanaFallingGame, KanaFallingSession, KanjiFallingGame, KanjiFallingSession}
+
+  alias Medoru.Games.{
+    Game,
+    MemoryCardGame,
+    MemoryCardGameWord,
+    MemoryCardSession,
+    KanaFallingGame,
+    KanaFallingSession,
+    KanjiFallingGame,
+    KanjiFallingSession
+  }
 
   # ============================================================================
   # Game Queries
@@ -46,8 +56,13 @@ defmodule Medoru.Games do
         type -> where(query, [g], g.type == ^type)
       end
     end)
-    |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game, :kanji_falling_game])
-    |> order_by([g], desc: g.inserted_at)
+    |> preload([
+      :memory_card_game,
+      :kana_memory_card_game,
+      :kana_falling_game,
+      :kanji_falling_game
+    ])
+    |> order_by([g], asc: g.skill_level, desc: g.inserted_at)
     |> Repo.all()
   end
 
@@ -80,8 +95,14 @@ defmodule Medoru.Games do
     else
       Game
       |> where([g], g.classroom_id in ^classroom_ids and g.status == :published)
-      |> preload([:memory_card_game, :kana_memory_card_game, :kana_falling_game, :kanji_falling_game, classroom: [:teacher]])
-      |> order_by([g], desc: g.inserted_at)
+      |> preload([
+        :memory_card_game,
+        :kana_memory_card_game,
+        :kana_falling_game,
+        :kanji_falling_game,
+        classroom: [:teacher]
+      ])
+      |> order_by([g], asc: g.skill_level, desc: g.inserted_at)
       |> Repo.all()
     end
   end
@@ -157,6 +178,7 @@ defmodule Medoru.Games do
           type: "memory_cards",
           status: :draft,
           max_players: attrs["max_players"] || attrs[:max_players] || 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
           classroom_id: classroom_id
         }
 
@@ -168,11 +190,21 @@ defmodule Medoru.Games do
         # Create memory card game config
         mcg_attrs = %{
           game_id: game.id,
-          board_size: get_in(attrs, ["memory_card_game", "board_size"]) || get_in(attrs, [:memory_card_game, :board_size]),
-          max_attempts: get_in(attrs, ["memory_card_game", "max_attempts"]) || get_in(attrs, [:memory_card_game, :max_attempts]),
-          meaning_required_for_collection: get_bool(attrs, ["memory_card_game", "meaning_required_for_collection"]),
-          pronunciation_required_for_collection: get_bool(attrs, ["memory_card_game", "pronunciation_required_for_collection"]),
-          meaning_or_pronunciation_required_for_collection: get_bool(attrs, ["memory_card_game", "meaning_or_pronunciation_required_for_collection"])
+          board_size:
+            get_in(attrs, ["memory_card_game", "board_size"]) ||
+              get_in(attrs, [:memory_card_game, :board_size]),
+          max_attempts:
+            get_in(attrs, ["memory_card_game", "max_attempts"]) ||
+              get_in(attrs, [:memory_card_game, :max_attempts]),
+          meaning_required_for_collection:
+            get_bool(attrs, ["memory_card_game", "meaning_required_for_collection"]),
+          pronunciation_required_for_collection:
+            get_bool(attrs, ["memory_card_game", "pronunciation_required_for_collection"]),
+          meaning_or_pronunciation_required_for_collection:
+            get_bool(attrs, [
+              "memory_card_game",
+              "meaning_or_pronunciation_required_for_collection"
+            ])
         }
 
         mcg =
@@ -200,7 +232,8 @@ defmodule Medoru.Games do
         # Update base game
         game_attrs = %{
           name: attrs["name"] || attrs[:name],
-          max_players: attrs["max_players"] || attrs[:max_players] || game.max_players
+          max_players: attrs["max_players"] || attrs[:max_players] || game.max_players,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
         }
 
         game =
@@ -212,11 +245,30 @@ defmodule Medoru.Games do
         mcg = Repo.get_by!(MemoryCardGame, game_id: game.id)
 
         mcg_attrs = %{
-          board_size: get_in(attrs, ["memory_card_game", "board_size"]) || get_in(attrs, [:memory_card_game, :board_size]) || mcg.board_size,
-          max_attempts: get_in(attrs, ["memory_card_game", "max_attempts"]) || get_in(attrs, [:memory_card_game, :max_attempts]) || mcg.max_attempts,
-          meaning_required_for_collection: get_bool(attrs, ["memory_card_game", "meaning_required_for_collection"], mcg.meaning_required_for_collection),
-          pronunciation_required_for_collection: get_bool(attrs, ["memory_card_game", "pronunciation_required_for_collection"], mcg.pronunciation_required_for_collection),
-          meaning_or_pronunciation_required_for_collection: get_bool(attrs, ["memory_card_game", "meaning_or_pronunciation_required_for_collection"], mcg.meaning_or_pronunciation_required_for_collection)
+          board_size:
+            get_in(attrs, ["memory_card_game", "board_size"]) ||
+              get_in(attrs, [:memory_card_game, :board_size]) || mcg.board_size,
+          max_attempts:
+            get_in(attrs, ["memory_card_game", "max_attempts"]) ||
+              get_in(attrs, [:memory_card_game, :max_attempts]) || mcg.max_attempts,
+          meaning_required_for_collection:
+            get_bool(
+              attrs,
+              ["memory_card_game", "meaning_required_for_collection"],
+              mcg.meaning_required_for_collection
+            ),
+          pronunciation_required_for_collection:
+            get_bool(
+              attrs,
+              ["memory_card_game", "pronunciation_required_for_collection"],
+              mcg.pronunciation_required_for_collection
+            ),
+          meaning_or_pronunciation_required_for_collection:
+            get_bool(
+              attrs,
+              ["memory_card_game", "meaning_or_pronunciation_required_for_collection"],
+              mcg.meaning_or_pronunciation_required_for_collection
+            )
         }
 
         mcg
@@ -274,7 +326,10 @@ defmodule Medoru.Games do
     if classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
-      board_size = get_in(attrs, ["memory_card_game", "board_size"]) || get_in(attrs, [:memory_card_game, :board_size])
+      board_size =
+        get_in(attrs, ["memory_card_game", "board_size"]) ||
+          get_in(attrs, [:memory_card_game, :board_size])
+
       kana_needed = KanaMemoryCardGame.kana_needed(board_size)
 
       if length(selected_kana) < kana_needed do
@@ -287,6 +342,7 @@ defmodule Medoru.Games do
             type: "kana_memory_cards",
             status: :draft,
             max_players: attrs["max_players"] || attrs[:max_players] || 1,
+            skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
             classroom_id: classroom_id
           }
 
@@ -338,7 +394,8 @@ defmodule Medoru.Games do
         Repo.transaction(fn ->
           game_attrs = %{
             name: attrs["name"] || attrs[:name] || game.name,
-            max_players: attrs["max_players"] || attrs[:max_players] || game.max_players
+            max_players: attrs["max_players"] || attrs[:max_players] || game.max_players,
+            skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
           }
 
           game =
@@ -1039,8 +1096,12 @@ defmodule Medoru.Games do
   defp validate_kana_answer(kana_char, answer_reading) do
     answer_reading != "" and
       case Kana.get_by_character(kana_char) do
-        nil -> false
-        kana -> String.downcase(answer_reading) == String.downcase(List.first(kana.readings, %{romaji: ""}).romaji)
+        nil ->
+          false
+
+        kana ->
+          String.downcase(answer_reading) ==
+            String.downcase(List.first(kana.readings, %{romaji: ""}).romaji)
       end
   end
 
@@ -1049,7 +1110,10 @@ defmodule Medoru.Games do
     answer_pronunciation = String.trim(answer["pronunciation"] || "")
 
     word_meaning_default = String.trim(word.word.meaning || "")
-    word_meaning_localized = String.trim(Medoru.Content.get_localized_meaning(word.word, locale) || "")
+
+    word_meaning_localized =
+      String.trim(Medoru.Content.get_localized_meaning(word.word, locale) || "")
+
     word_reading = String.trim(word.word.reading || "")
 
     meaning_correct =
@@ -1181,6 +1245,7 @@ defmodule Medoru.Games do
           type: "kana_falling",
           status: :draft,
           max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
           classroom_id: classroom_id
         }
 
@@ -1191,14 +1256,43 @@ defmodule Medoru.Games do
 
         kfg_attrs = %{
           game_id: game.id,
-          initial_speed: parse_int(get_in(attrs, ["kana_falling_game", "initial_speed"]) || get_in(attrs, [:kana_falling_game, :initial_speed]), 1),
-          speed_increase_threshold: parse_int(get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kana_falling_game, :speed_increase_threshold]), 50),
-          lives: parse_int(get_in(attrs, ["kana_falling_game", "lives"]) || get_in(attrs, [:kana_falling_game, :lives]), 3),
-          extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), 100),
-          points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), 1),
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:kana_falling_game, :initial_speed]),
+              1
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:kana_falling_game, :speed_increase_threshold]),
+              50
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "lives"]) ||
+                get_in(attrs, [:kana_falling_game, :lives]),
+              3
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:kana_falling_game, :extra_life_threshold]),
+              100
+            ),
+          points_per_kana:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "points_per_kana"]) ||
+                get_in(attrs, [:kana_falling_game, :points_per_kana]),
+              1
+            ),
           selected_kana: selected_kana,
-          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]),
-          color_coded_rows: get_in(attrs, ["kana_falling_game", "color_coded_rows"]) || get_in(attrs, [:kana_falling_game, :color_coded_rows]) || false
+          background_image:
+            get_in(attrs, ["kana_falling_game", "background_image"]) ||
+              get_in(attrs, [:kana_falling_game, :background_image]),
+          color_coded_rows:
+            get_in(attrs, ["kana_falling_game", "color_coded_rows"]) ||
+              get_in(attrs, [:kana_falling_game, :color_coded_rows]) || false
         }
 
         %KanaFallingGame{}
@@ -1220,7 +1314,8 @@ defmodule Medoru.Games do
       Repo.transaction(fn ->
         game_attrs = %{
           name: attrs["name"] || attrs[:name] || game.name,
-          max_players: 1
+          max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
         }
 
         game =
@@ -1231,14 +1326,43 @@ defmodule Medoru.Games do
         kfg = Repo.get_by!(KanaFallingGame, game_id: game.id)
 
         kfg_attrs = %{
-          initial_speed: parse_int(get_in(attrs, ["kana_falling_game", "initial_speed"]) || get_in(attrs, [:kana_falling_game, :initial_speed]), kfg.initial_speed),
-          speed_increase_threshold: parse_int(get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kana_falling_game, :speed_increase_threshold]), kfg.speed_increase_threshold),
-          lives: parse_int(get_in(attrs, ["kana_falling_game", "lives"]) || get_in(attrs, [:kana_falling_game, :lives]), kfg.lives),
-          extra_life_threshold: parse_int(get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kana_falling_game, :extra_life_threshold]), kfg.extra_life_threshold),
-          points_per_kana: parse_int(get_in(attrs, ["kana_falling_game", "points_per_kana"]) || get_in(attrs, [:kana_falling_game, :points_per_kana]), kfg.points_per_kana),
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:kana_falling_game, :initial_speed]),
+              kfg.initial_speed
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:kana_falling_game, :speed_increase_threshold]),
+              kfg.speed_increase_threshold
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "lives"]) ||
+                get_in(attrs, [:kana_falling_game, :lives]),
+              kfg.lives
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:kana_falling_game, :extra_life_threshold]),
+              kfg.extra_life_threshold
+            ),
+          points_per_kana:
+            parse_int(
+              get_in(attrs, ["kana_falling_game", "points_per_kana"]) ||
+                get_in(attrs, [:kana_falling_game, :points_per_kana]),
+              kfg.points_per_kana
+            ),
           selected_kana: selected_kana,
-          background_image: get_in(attrs, ["kana_falling_game", "background_image"]) || get_in(attrs, [:kana_falling_game, :background_image]) || kfg.background_image,
-          color_coded_rows: get_in(attrs, ["kana_falling_game", "color_coded_rows"]) || get_in(attrs, [:kana_falling_game, :color_coded_rows]) || kfg.color_coded_rows
+          background_image:
+            get_in(attrs, ["kana_falling_game", "background_image"]) ||
+              get_in(attrs, [:kana_falling_game, :background_image]) || kfg.background_image,
+          color_coded_rows:
+            get_in(attrs, ["kana_falling_game", "color_coded_rows"]) ||
+              get_in(attrs, [:kana_falling_game, :color_coded_rows]) || kfg.color_coded_rows
         }
 
         kfg
@@ -1292,15 +1416,69 @@ defmodule Medoru.Games do
   # ============================================================================
 
   @kanji_colors [
-    "#1a1a1a", "#2d1b1b", "#1b2d1b", "#1b1b2d", "#2d2d1b", "#1b2d2d", "#2d1b2d",
-    "#3d1a1a", "#1a3d1a", "#1a1a3d", "#3d3d1a", "#1a3d3d", "#3d1a3d", "#2a1a0a",
-    "#0a1a2a", "#1a0a2a", "#2a2a0a", "#0a2a2a", "#2a0a1a", "#1a2a0a", "#0a1a1a",
-    "#1a0a0a", "#0a0a1a", "#1a1a0a", "#0a1a0a", "#1a0a1a", "#2a1a1a", "#1a2a1a",
-    "#1a1a2a", "#2a2a1a", "#1a2a2a", "#2a1a2a", "#3a1a1a", "#1a3a1a", "#1a1a3a",
-    "#3a3a1a", "#1a3a3a", "#3a1a3a", "#2a0a0a", "#0a2a0a", "#0a0a2a", "#2a2a0a",
-    "#0a2a2a", "#2a0a2a", "#1a1a1a", "#0a0a0a", "#2a2a2a", "#1a2a0a", "#0a1a2a",
-    "#2a0a1a", "#1a0a2a", "#0a2a1a", "#2a1a0a", "#1a0a1a", "#0a1a0a", "#1a1a0a",
-    "#0a0a1a", "#1a0a0a", "#0a1a1a", "#2a1a2a", "#1a2a1a", "#2a2a1a", "#1a1a2a"
+    "#1a1a1a",
+    "#2d1b1b",
+    "#1b2d1b",
+    "#1b1b2d",
+    "#2d2d1b",
+    "#1b2d2d",
+    "#2d1b2d",
+    "#3d1a1a",
+    "#1a3d1a",
+    "#1a1a3d",
+    "#3d3d1a",
+    "#1a3d3d",
+    "#3d1a3d",
+    "#2a1a0a",
+    "#0a1a2a",
+    "#1a0a2a",
+    "#2a2a0a",
+    "#0a2a2a",
+    "#2a0a1a",
+    "#1a2a0a",
+    "#0a1a1a",
+    "#1a0a0a",
+    "#0a0a1a",
+    "#1a1a0a",
+    "#0a1a0a",
+    "#1a0a1a",
+    "#2a1a1a",
+    "#1a2a1a",
+    "#1a1a2a",
+    "#2a2a1a",
+    "#1a2a2a",
+    "#2a1a2a",
+    "#3a1a1a",
+    "#1a3a1a",
+    "#1a1a3a",
+    "#3a3a1a",
+    "#1a3a3a",
+    "#3a1a3a",
+    "#2a0a0a",
+    "#0a2a0a",
+    "#0a0a2a",
+    "#2a2a0a",
+    "#0a2a2a",
+    "#2a0a2a",
+    "#1a1a1a",
+    "#0a0a0a",
+    "#2a2a2a",
+    "#1a2a0a",
+    "#0a1a2a",
+    "#2a0a1a",
+    "#1a0a2a",
+    "#0a2a1a",
+    "#2a1a0a",
+    "#1a0a1a",
+    "#0a1a0a",
+    "#1a1a0a",
+    "#0a0a1a",
+    "#1a0a0a",
+    "#0a1a1a",
+    "#2a1a2a",
+    "#1a2a1a",
+    "#2a2a1a",
+    "#1a1a2a"
   ]
 
   @doc """
@@ -1320,6 +1498,7 @@ defmodule Medoru.Games do
           type: "kanji_falling",
           status: :draft,
           max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
           classroom_id: classroom_id
         }
 
@@ -1330,16 +1509,47 @@ defmodule Medoru.Games do
 
         kfg_attrs = %{
           game_id: game.id,
-          initial_speed: parse_int(get_in(attrs, ["kanji_falling_game", "initial_speed"]) || get_in(attrs, [:kanji_falling_game, :initial_speed]), 1),
-          speed_increase_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]), 50),
-          lives: parse_int(get_in(attrs, ["kanji_falling_game", "lives"]) || get_in(attrs, [:kanji_falling_game, :lives]), 3),
-          extra_life_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kanji_falling_game, :extra_life_threshold]), 100),
-          points_per_kanji: parse_int(get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) || get_in(attrs, [:kanji_falling_game, :points_per_kanji]), 1),
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:kanji_falling_game, :initial_speed]),
+              1
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]),
+              50
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "lives"]) ||
+                get_in(attrs, [:kanji_falling_game, :lives]),
+              3
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:kanji_falling_game, :extra_life_threshold]),
+              100
+            ),
+          points_per_kanji:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) ||
+                get_in(attrs, [:kanji_falling_game, :points_per_kanji]),
+              1
+            ),
           selected_kanji: selected_kanji,
-          reading_type: get_in(attrs, ["kanji_falling_game", "reading_type"]) || get_in(attrs, [:kanji_falling_game, :reading_type]) || "any",
-          keyboard_type: get_in(attrs, ["kanji_falling_game", "keyboard_type"]) || get_in(attrs, [:kanji_falling_game, :keyboard_type]) || "hiragana",
+          reading_type:
+            get_in(attrs, ["kanji_falling_game", "reading_type"]) ||
+              get_in(attrs, [:kanji_falling_game, :reading_type]) || "any",
+          keyboard_type:
+            get_in(attrs, ["kanji_falling_game", "keyboard_type"]) ||
+              get_in(attrs, [:kanji_falling_game, :keyboard_type]) || "hiragana",
           kanji_colors: assign_kanji_colors(selected_kanji),
-          background_image: get_in(attrs, ["kanji_falling_game", "background_image"]) || get_in(attrs, [:kanji_falling_game, :background_image])
+          background_image:
+            get_in(attrs, ["kanji_falling_game", "background_image"]) ||
+              get_in(attrs, [:kanji_falling_game, :background_image])
         }
 
         case %KanjiFallingGame{}
@@ -1364,7 +1574,8 @@ defmodule Medoru.Games do
       Repo.transaction(fn ->
         game_attrs = %{
           name: attrs["name"] || attrs[:name] || game.name,
-          max_players: 1
+          max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
         }
 
         game =
@@ -1375,6 +1586,7 @@ defmodule Medoru.Games do
         kfg = Repo.get_by!(KanjiFallingGame, game_id: game.id)
 
         existing_chars = kfg.selected_kanji || []
+
         colors =
           if Enum.sort(existing_chars) == Enum.sort(selected_kanji) do
             kfg.kanji_colors || %{}
@@ -1383,16 +1595,47 @@ defmodule Medoru.Games do
           end
 
         kfg_attrs = %{
-          initial_speed: parse_int(get_in(attrs, ["kanji_falling_game", "initial_speed"]) || get_in(attrs, [:kanji_falling_game, :initial_speed]), kfg.initial_speed),
-          speed_increase_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) || get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]), kfg.speed_increase_threshold),
-          lives: parse_int(get_in(attrs, ["kanji_falling_game", "lives"]) || get_in(attrs, [:kanji_falling_game, :lives]), kfg.lives),
-          extra_life_threshold: parse_int(get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) || get_in(attrs, [:kanji_falling_game, :extra_life_threshold]), kfg.extra_life_threshold),
-          points_per_kanji: parse_int(get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) || get_in(attrs, [:kanji_falling_game, :points_per_kanji]), kfg.points_per_kanji),
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:kanji_falling_game, :initial_speed]),
+              kfg.initial_speed
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:kanji_falling_game, :speed_increase_threshold]),
+              kfg.speed_increase_threshold
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "lives"]) ||
+                get_in(attrs, [:kanji_falling_game, :lives]),
+              kfg.lives
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:kanji_falling_game, :extra_life_threshold]),
+              kfg.extra_life_threshold
+            ),
+          points_per_kanji:
+            parse_int(
+              get_in(attrs, ["kanji_falling_game", "points_per_kanji"]) ||
+                get_in(attrs, [:kanji_falling_game, :points_per_kanji]),
+              kfg.points_per_kanji
+            ),
           selected_kanji: selected_kanji,
-          reading_type: get_in(attrs, ["kanji_falling_game", "reading_type"]) || get_in(attrs, [:kanji_falling_game, :reading_type]) || kfg.reading_type,
-          keyboard_type: get_in(attrs, ["kanji_falling_game", "keyboard_type"]) || get_in(attrs, [:kanji_falling_game, :keyboard_type]) || kfg.keyboard_type,
+          reading_type:
+            get_in(attrs, ["kanji_falling_game", "reading_type"]) ||
+              get_in(attrs, [:kanji_falling_game, :reading_type]) || kfg.reading_type,
+          keyboard_type:
+            get_in(attrs, ["kanji_falling_game", "keyboard_type"]) ||
+              get_in(attrs, [:kanji_falling_game, :keyboard_type]) || kfg.keyboard_type,
           kanji_colors: colors,
-          background_image: get_in(attrs, ["kanji_falling_game", "background_image"]) || get_in(attrs, [:kanji_falling_game, :background_image]) || kfg.background_image
+          background_image:
+            get_in(attrs, ["kanji_falling_game", "background_image"]) ||
+              get_in(attrs, [:kanji_falling_game, :background_image]) || kfg.background_image
         }
 
         case kfg
@@ -1454,12 +1697,14 @@ defmodule Medoru.Games do
 
   defp parse_int(nil, default), do: default
   defp parse_int("", default), do: default
+
   defp parse_int(val, default) when is_binary(val) do
     case Integer.parse(val) do
       {n, _} -> n
       :error -> default
     end
   end
+
   defp parse_int(val, _default) when is_integer(val), do: val
   defp parse_int(_, default), do: default
 

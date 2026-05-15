@@ -12,6 +12,22 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   alias Medoru.Games
   alias Medoru.Notifications
 
+  @skill_level_colors %{
+    1 => "bg-success/10 text-success border-success/20",
+    2 => "bg-info/10 text-info border-info/20",
+    3 => "bg-purple-500/20 text-purple-500 border-purple-500/40",
+    4 => "bg-error/10 text-error border-error/20",
+    5 => "bg-warning/10 text-warning border-warning/20"
+  }
+
+  @skill_level_labels %{
+    1 => gettext("Beginner"),
+    2 => gettext("Elementary"),
+    3 => gettext("Intermediate"),
+    4 => gettext("Advanced"),
+    5 => gettext("Expert")
+  }
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
@@ -217,11 +233,20 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
     socket =
       case field do
-        "name" -> assign(socket, :edit_name, value)
-        "description" -> assign(socket, :edit_description, value)
-        "should_approve_memberships" -> assign(socket, :edit_should_approve_memberships, value == "true")
-        "public" -> assign(socket, :edit_public, value == "true")
-        _ -> socket
+        "name" ->
+          assign(socket, :edit_name, value)
+
+        "description" ->
+          assign(socket, :edit_description, value)
+
+        "should_approve_memberships" ->
+          assign(socket, :edit_should_approve_memberships, value == "true")
+
+        "public" ->
+          assign(socket, :edit_public, value == "true")
+
+        _ ->
+          socket
       end
 
     {:noreply, socket}
@@ -321,7 +346,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
          |> put_flash(:info, gettext("Game published successfully."))}
 
       {:error, :not_authorized} ->
-        {:noreply, put_flash(socket, :error, gettext("You are not authorized to publish this game."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not authorized to publish this game."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to publish game."))}
@@ -342,7 +368,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
          |> put_flash(:info, gettext("Game unpublished."))}
 
       {:error, :not_authorized} ->
-        {:noreply, put_flash(socket, :error, gettext("You are not authorized to unpublish this game."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("You are not authorized to unpublish this game."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to unpublish game."))}
@@ -854,7 +881,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             {gettext("Create memory card games to help your students practice vocabulary.")}
           </p>
           <div class="flex gap-2 justify-center">
-            <.link navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"} class="btn btn-primary">
+            <.link
+              navigate={~p"/teacher/classrooms/#{@classroom.id}/games/new"}
+              class="btn btn-primary"
+            >
               <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Create Game")}
             </.link>
           </div>
@@ -873,6 +903,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       <% else %>
                         <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
                       <% end %>
+                      <span class={[
+                        "text-xs px-2 py-0.5 rounded-full border font-medium",
+                        skill_level_color(game.skill_level)
+                      ]}>
+                        {skill_level_label(game.skill_level)}
+                      </span>
                     </div>
                     <%= cond do %>
                       <% game.memory_card_game -> %>
@@ -973,10 +1009,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                         case game.type do
                           "kana_memory_cards" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/kana-games/#{game.id}"
+
                           "kana_falling" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+
                           "kanji_falling" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
+
                           _ ->
                             ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"
                         end
@@ -1131,8 +1170,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 {gettext("Classroom Name")}
               </label>
               <input
-                type="text" name="name" value={@edit_name}
-                phx-change="update_classroom_field" phx-value-field="name" phx-debounce="blur"
+                type="text"
+                name="name"
+                value={@edit_name}
+                phx-change="update_classroom_field"
+                phx-value-field="name"
+                phx-debounce="blur"
                 class={["input input-bordered w-full", @edit_errors[:name] && "input-error"]}
               />
               <%= if @edit_errors[:name] do %>
@@ -1145,9 +1188,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 {gettext("Description")}
               </label>
               <textarea
-                name="description" rows="3"
-                phx-change="update_classroom_field" phx-value-field="description" phx-debounce="blur"
-                class={["textarea textarea-bordered w-full", @edit_errors[:description] && "textarea-error"]}
+                name="description"
+                rows="3"
+                phx-change="update_classroom_field"
+                phx-value-field="description"
+                phx-debounce="blur"
+                class={[
+                  "textarea textarea-bordered w-full",
+                  @edit_errors[:description] && "textarea-error"
+                ]}
               >{@edit_description}</textarea>
               <%= if @edit_errors[:description] do %>
                 <p class="text-error text-sm mt-1">{@edit_errors[:description]}</p>
@@ -1156,29 +1205,36 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
             <div class="flex items-center gap-3 pt-2">
               <input
-                type="checkbox" id="edit_should_approve_memberships"
+                type="checkbox"
+                id="edit_should_approve_memberships"
                 name="should_approve_memberships"
                 checked={@edit_should_approve_memberships}
                 phx-click="update_classroom_field"
                 phx-value-field="should_approve_memberships"
-                phx-value-should_approve_memberships={if @edit_should_approve_memberships, do: "false", else: "true"}
+                phx-value-should_approve_memberships={
+                  if @edit_should_approve_memberships, do: "false", else: "true"
+                }
                 class="checkbox checkbox-primary"
               />
-              <label for="edit_should_approve_memberships" class="text-sm text-base-content cursor-pointer">
+              <label
+                for="edit_should_approve_memberships"
+                class="text-sm text-base-content cursor-pointer"
+              >
                 {gettext("Require teacher approval for new members")}
               </label>
             </div>
             <p class="text-xs text-secondary -mt-2 ml-8">
               <%= if @edit_should_approve_memberships do %>
-                <%= gettext("Students will apply and wait for your approval before joining.") %>
+                {gettext("Students will apply and wait for your approval before joining.")}
               <% else %>
-                <%= gettext("Students will be added immediately without approval.") %>
+                {gettext("Students will be added immediately without approval.")}
               <% end %>
             </p>
 
             <div class="flex items-center gap-3 pt-2">
               <input
-                type="checkbox" id="edit_public"
+                type="checkbox"
+                id="edit_public"
                 name="public"
                 checked={@edit_public}
                 phx-click="update_classroom_field"
@@ -1192,9 +1248,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             </div>
             <p class="text-xs text-secondary -mt-2 ml-8">
               <%= if @edit_public do %>
-                <%= gettext("Anyone can find and join this classroom without an invite code.") %>
+                {gettext("Anyone can find and join this classroom without an invite code.")}
               <% else %>
-                <%= gettext("Only students with the invite code can join this classroom.") %>
+                {gettext("Only students with the invite code can join this classroom.")}
               <% end %>
             </p>
 
@@ -1232,9 +1288,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               <span class="text-secondary">{gettext("Member Approval")}</span>
               <span class="font-medium text-base-content">
                 <%= if @classroom.should_approve_memberships do %>
-                  <%= gettext("Teacher approval required") %>
+                  {gettext("Teacher approval required")}
                 <% else %>
-                  <%= gettext("Auto-approve") %>
+                  {gettext("Auto-approve")}
                 <% end %>
               </span>
             </div>
@@ -1243,9 +1299,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               <span class="text-secondary">{gettext("Visibility")}</span>
               <span class="font-medium text-base-content">
                 <%= if @classroom.public do %>
-                  <%= gettext("Public") %>
+                  {gettext("Public")}
                 <% else %>
-                  <%= gettext("Private") %>
+                  {gettext("Private")}
                 <% end %>
               </span>
             </div>
@@ -1481,4 +1537,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     </div>
     """
   end
+
+  defp skill_level_color(level),
+    do: Map.get(@skill_level_colors, level, "bg-base-200 text-base-content border-base-300")
+
+  defp skill_level_label(level), do: Map.get(@skill_level_labels, level, "")
 end

@@ -11,6 +11,16 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
 
   embed_templates "form*.html"
 
+  defp skill_level_options do
+    [
+      {gettext("Beginner"), "1"},
+      {gettext("Elementary"), "2"},
+      {gettext("Intermediate"), "3"},
+      {gettext("Advanced"), "4"},
+      {gettext("Expert"), "5"}
+    ]
+  end
+
   defp speed_options do
     [
       {"1 - Very Slow (1.8s/row)", "1"},
@@ -52,6 +62,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
      |> assign(:lives, "3")
      |> assign(:extra_life_threshold, "100")
      |> assign(:points_per_kanji, "1")
+     |> assign(:skill_level, "1")
      |> assign(:reading_type, "any")
      |> assign(:keyboard_type, "hiragana")
      |> assign(:selected_kanji, [])
@@ -101,6 +112,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
        |> assign(:lives, Integer.to_string(kfg.lives))
        |> assign(:extra_life_threshold, Integer.to_string(kfg.extra_life_threshold))
        |> assign(:points_per_kanji, Integer.to_string(kfg.points_per_kanji))
+       |> assign(:skill_level, Integer.to_string(game.skill_level))
        |> assign(:reading_type, kfg.reading_type)
        |> assign(:keyboard_type, kfg.keyboard_type)
        |> assign(:selected_kanji, selected_kanji)
@@ -117,7 +129,10 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
     if classroom.teacher_id != user.id do
       {:noreply,
        socket
-       |> put_flash(:error, gettext("You don't have permission to create games in this classroom."))
+       |> put_flash(
+         :error,
+         gettext("You don't have permission to create games in this classroom.")
+       )
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       {:noreply,
@@ -131,6 +146,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
        |> assign(:lives, "3")
        |> assign(:extra_life_threshold, "100")
        |> assign(:points_per_kanji, "1")
+       |> assign(:skill_level, "1")
        |> assign(:reading_type, "any")
        |> assign(:keyboard_type, "hiragana")
        |> assign(:selected_kanji, [])
@@ -181,7 +197,11 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
 
           socket =
             if socket.assigns.form_errors[:selected_kanji] do
-              assign(socket, :form_errors, Map.delete(socket.assigns.form_errors, :selected_kanji))
+              assign(
+                socket,
+                :form_errors,
+                Map.delete(socket.assigns.form_errors, :selected_kanji)
+              )
             else
               socket
             end
@@ -225,6 +245,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
         "points_per_kanji" -> assign(socket, :points_per_kanji, value)
         "reading_type" -> assign(socket, :reading_type, value)
         "keyboard_type" -> assign(socket, :keyboard_type, value)
+        "skill_level" -> assign(socket, :skill_level, value)
         _ -> socket
       end
 
@@ -238,6 +259,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
         "points_per_kanji" -> :points_per_kanji
         "reading_type" -> :reading_type
         "keyboard_type" -> :keyboard_type
+        "skill_level" -> :skill_level
         _ -> nil
       end
 
@@ -259,10 +281,17 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
 
     name = String.trim(params["name"] || socket.assigns.name || "")
     initial_speed = params["initial_speed"] || socket.assigns.initial_speed || "1"
-    speed_increase_threshold = params["speed_increase_threshold"] || socket.assigns.speed_increase_threshold || "50"
+
+    speed_increase_threshold =
+      params["speed_increase_threshold"] || socket.assigns.speed_increase_threshold || "50"
+
     lives = params["lives"] || socket.assigns.lives || "3"
-    extra_life_threshold = params["extra_life_threshold"] || socket.assigns.extra_life_threshold || "100"
+
+    extra_life_threshold =
+      params["extra_life_threshold"] || socket.assigns.extra_life_threshold || "100"
+
     points_per_kanji = params["points_per_kanji"] || socket.assigns.points_per_kanji || "1"
+    skill_level = params["skill_level"] || socket.assigns.skill_level || "1"
     reading_type = params["reading_type"] || socket.assigns.reading_type || "any"
     keyboard_type = params["keyboard_type"] || socket.assigns.keyboard_type || "hiragana"
 
@@ -274,6 +303,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
       |> assign(:lives, lives)
       |> assign(:extra_life_threshold, extra_life_threshold)
       |> assign(:points_per_kanji, points_per_kanji)
+      |> assign(:skill_level, skill_level)
       |> assign(:reading_type, reading_type)
       |> assign(:keyboard_type, keyboard_type)
 
@@ -298,6 +328,7 @@ defmodule MedoruWeb.Teacher.KanjiFallingGameLive.Form do
 
     attrs = %{
       "name" => name,
+      "skill_level" => skill_level,
       "kanji_falling_game" => kfg_attrs
     }
 

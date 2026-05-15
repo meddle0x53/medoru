@@ -118,9 +118,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                 </div>
                 <p class="text-sm text-secondary -mt-4 ml-8">
                   <%= if @form[:should_approve_memberships].value do %>
-                    <%= gettext("Students will apply and wait for your approval before joining.") %>
+                    {gettext("Students will apply and wait for your approval before joining.")}
                   <% else %>
-                    <%= gettext("Students will be added immediately without approval.") %>
+                    {gettext("Students will be added immediately without approval.")}
                   <% end %>
                 </p>
 
@@ -134,9 +134,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.New do
                 </div>
                 <p class="text-sm text-secondary -mt-4 ml-8">
                   <%= if @form[:public].value do %>
-                    <%= gettext("Anyone can find and join this classroom without an invite code.") %>
+                    {gettext("Anyone can find and join this classroom without an invite code.")}
                   <% else %>
-                    <%= gettext("Only students with the invite code can join this classroom.") %>
+                    {gettext("Only students with the invite code can join this classroom.")}
                   <% end %>
                 </p>
 

@@ -17,35 +17,44 @@ defmodule Medoru.Games.KanjiFallingTest do
         })
 
       # Create test kanji with readings
-      _kanji1 = kanji_with_readings_fixture(%{character: "日"}, [
-        %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""},
-        %{reading_type: :kun, reading: "ひ", romaji: "hi", usage_notes: ""}
-      ])
+      _kanji1 =
+        kanji_with_readings_fixture(%{character: "日"}, [
+          %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""},
+          %{reading_type: :kun, reading: "ひ", romaji: "hi", usage_notes: ""}
+        ])
 
-      _kanji2 = kanji_with_readings_fixture(%{character: "月"}, [
-        %{reading_type: :on, reading: "ゲツ", romaji: "getsu", usage_notes: ""},
-        %{reading_type: :kun, reading: "つき", romaji: "tsuki", usage_notes: ""}
-      ])
+      _kanji2 =
+        kanji_with_readings_fixture(%{character: "月"}, [
+          %{reading_type: :on, reading: "ゲツ", romaji: "getsu", usage_notes: ""},
+          %{reading_type: :kun, reading: "つき", romaji: "tsuki", usage_notes: ""}
+        ])
 
-      _kanji3 = kanji_with_readings_fixture(%{character: "火"}, [
-        %{reading_type: :on, reading: "カ", romaji: "ka", usage_notes: ""},
-        %{reading_type: :kun, reading: "ひ", romaji: "hi", usage_notes: ""}
-      ])
+      _kanji3 =
+        kanji_with_readings_fixture(%{character: "火"}, [
+          %{reading_type: :on, reading: "カ", romaji: "ka", usage_notes: ""},
+          %{reading_type: :kun, reading: "ひ", romaji: "hi", usage_notes: ""}
+        ])
 
-      _kanji4 = kanji_with_readings_fixture(%{character: "水"}, [
-        %{reading_type: :on, reading: "スイ", romaji: "sui", usage_notes: ""},
-        %{reading_type: :kun, reading: "みず", romaji: "mizu", usage_notes: ""}
-      ])
+      _kanji4 =
+        kanji_with_readings_fixture(%{character: "水"}, [
+          %{reading_type: :on, reading: "スイ", romaji: "sui", usage_notes: ""},
+          %{reading_type: :kun, reading: "みず", romaji: "mizu", usage_notes: ""}
+        ])
 
-      _kanji5 = kanji_with_readings_fixture(%{character: "木"}, [
-        %{reading_type: :on, reading: "モク", romaji: "moku", usage_notes: ""},
-        %{reading_type: :kun, reading: "き", romaji: "ki", usage_notes: ""}
-      ])
+      _kanji5 =
+        kanji_with_readings_fixture(%{character: "木"}, [
+          %{reading_type: :on, reading: "モク", romaji: "moku", usage_notes: ""},
+          %{reading_type: :kun, reading: "き", romaji: "ki", usage_notes: ""}
+        ])
 
       %{teacher: teacher, classroom: classroom, kanji_chars: ["日", "月", "火", "水", "木"]}
     end
 
-    test "creates a kanji falling game with selected kanji", %{teacher: teacher, classroom: classroom, kanji_chars: chars} do
+    test "creates a kanji falling game with selected kanji", %{
+      teacher: teacher,
+      classroom: classroom,
+      kanji_chars: chars
+    } do
       attrs = %{
         "name" => "Falling Kanji Test",
         "kanji_falling_game" => %{
@@ -108,29 +117,35 @@ defmodule Medoru.Games.KanjiFallingTest do
           teacher_id: teacher.id
         })
 
-      _kanji1 = kanji_with_readings_fixture(%{character: "日"}, [
-        %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""}
-      ])
+      _kanji1 =
+        kanji_with_readings_fixture(%{character: "日"}, [
+          %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""}
+        ])
 
-      _kanji2 = kanji_with_readings_fixture(%{character: "月"}, [
-        %{reading_type: :on, reading: "ゲツ", romaji: "getsu", usage_notes: ""}
-      ])
+      _kanji2 =
+        kanji_with_readings_fixture(%{character: "月"}, [
+          %{reading_type: :on, reading: "ゲツ", romaji: "getsu", usage_notes: ""}
+        ])
 
-      _kanji3 = kanji_with_readings_fixture(%{character: "火"}, [
-        %{reading_type: :on, reading: "カ", romaji: "ka", usage_notes: ""}
-      ])
+      _kanji3 =
+        kanji_with_readings_fixture(%{character: "火"}, [
+          %{reading_type: :on, reading: "カ", romaji: "ka", usage_notes: ""}
+        ])
 
-      _kanji4 = kanji_with_readings_fixture(%{character: "水"}, [
-        %{reading_type: :on, reading: "スイ", romaji: "sui", usage_notes: ""}
-      ])
+      _kanji4 =
+        kanji_with_readings_fixture(%{character: "水"}, [
+          %{reading_type: :on, reading: "スイ", romaji: "sui", usage_notes: ""}
+        ])
 
-      _kanji5 = kanji_with_readings_fixture(%{character: "木"}, [
-        %{reading_type: :on, reading: "モク", romaji: "moku", usage_notes: ""}
-      ])
+      _kanji5 =
+        kanji_with_readings_fixture(%{character: "木"}, [
+          %{reading_type: :on, reading: "モク", romaji: "moku", usage_notes: ""}
+        ])
 
-      _kanji6 = kanji_with_readings_fixture(%{character: "土"}, [
-        %{reading_type: :on, reading: "ド", romaji: "do", usage_notes: ""}
-      ])
+      _kanji6 =
+        kanji_with_readings_fixture(%{character: "土"}, [
+          %{reading_type: :on, reading: "ド", romaji: "do", usage_notes: ""}
+        ])
 
       attrs = %{
         "name" => "Original Name",
@@ -160,7 +175,14 @@ defmodule Medoru.Games.KanjiFallingTest do
       }
 
       assert {:ok, updated} =
-               Games.update_kanji_falling_game(game, teacher.id, attrs, ["日", "月", "火", "水", "木", "土"])
+               Games.update_kanji_falling_game(game, teacher.id, attrs, [
+                 "日",
+                 "月",
+                 "火",
+                 "水",
+                 "木",
+                 "土"
+               ])
 
       assert updated.name == "Updated Name"
       assert updated.kanji_falling_game.initial_speed == 5
@@ -170,7 +192,11 @@ defmodule Medoru.Games.KanjiFallingTest do
       assert updated.kanji_falling_game.selected_kanji == ["日", "月", "火", "水", "木", "土"]
     end
 
-    test "recomputes colors when kanji selection changes", %{teacher: teacher, game: game, extra_kanji: extra} do
+    test "recomputes colors when kanji selection changes", %{
+      teacher: teacher,
+      game: game,
+      extra_kanji: extra
+    } do
       original_colors = game.kanji_falling_game.kanji_colors
 
       attrs = %{
@@ -179,7 +205,14 @@ defmodule Medoru.Games.KanjiFallingTest do
       }
 
       assert {:ok, updated} =
-               Games.update_kanji_falling_game(game, teacher.id, attrs, ["日", "月", "火", "水", "木", extra])
+               Games.update_kanji_falling_game(game, teacher.id, attrs, [
+                 "日",
+                 "月",
+                 "火",
+                 "水",
+                 "木",
+                 extra
+               ])
 
       assert updated.kanji_falling_game.kanji_colors != original_colors
     end
@@ -213,9 +246,10 @@ defmodule Medoru.Games.KanjiFallingTest do
 
       Classrooms.apply_to_join(classroom.id, student.id)
 
-      _kanji = kanji_with_readings_fixture(%{character: "日"}, [
-        %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""}
-      ])
+      _kanji =
+        kanji_with_readings_fixture(%{character: "日"}, [
+          %{reading_type: :on, reading: "ニチ", romaji: "nichi", usage_notes: ""}
+        ])
 
       attrs = %{
         "name" => "Falling Game",

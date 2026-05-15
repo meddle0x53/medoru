@@ -30,7 +30,17 @@ defmodule Medoru.Classrooms.Classroom do
   @doc false
   def changeset(classroom, attrs) do
     classroom
-    |> cast(attrs, [:name, :slug, :description, :invite_code, :status, :should_approve_memberships, :public, :settings, :teacher_id])
+    |> cast(attrs, [
+      :name,
+      :slug,
+      :description,
+      :invite_code,
+      :status,
+      :should_approve_memberships,
+      :public,
+      :settings,
+      :teacher_id
+    ])
     |> validate_required([:name, :invite_code, :teacher_id])
     |> validate_length(:name, min: 3, max: 100)
     |> validate_slug()

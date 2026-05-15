@@ -88,5 +88,4 @@ defmodule MedoruWeb.Teacher.KanaFallingGameLive.Show do
         {:noreply, put_flash(socket, :error, gettext("Failed to delete game."))}
     end
   end
-
 end

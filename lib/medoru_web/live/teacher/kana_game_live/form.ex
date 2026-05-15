@@ -11,6 +11,16 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
 
   embed_templates "*.html"
 
+  defp skill_level_options do
+    [
+      {gettext("Beginner"), "1"},
+      {gettext("Elementary"), "2"},
+      {gettext("Intermediate"), "3"},
+      {gettext("Advanced"), "4"},
+      {gettext("Expert"), "5"}
+    ]
+  end
+
   defp board_sizes do
     [
       {"4x4 (16 cards, 8 kana)", "4x4"},
@@ -29,6 +39,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
      |> assign(:name, "")
      |> assign(:board_size, "4x4")
      |> assign(:max_attempts, "10")
+     |> assign(:skill_level, "1")
      |> assign(:require_reading, false)
      |> assign(:selected_kana, [])
      |> assign(:form_errors, %{})}
@@ -58,6 +69,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
        |> assign(:name, game.name)
        |> assign(:board_size, kmcg.board_size)
        |> assign(:max_attempts, Integer.to_string(kmcg.max_attempts))
+       |> assign(:skill_level, Integer.to_string(game.skill_level))
        |> assign(:require_reading, kmcg.require_reading)
        |> assign(:selected_kana, kmcg.selected_kana || [])
        |> assign(:form_errors, %{})}
@@ -73,7 +85,10 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
     if classroom.teacher_id != user.id do
       {:noreply,
        socket
-       |> put_flash(:error, gettext("You don't have permission to create games in this classroom."))
+       |> put_flash(
+         :error,
+         gettext("You don't have permission to create games in this classroom.")
+       )
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       {:noreply,
@@ -84,6 +99,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
        |> assign(:name, "")
        |> assign(:board_size, "4x4")
        |> assign(:max_attempts, "10")
+       |> assign(:skill_level, "1")
        |> assign(:require_reading, false)
        |> assign(:selected_kana, [])
        |> assign(:form_errors, %{})}
@@ -101,6 +117,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
         "name" -> assign(socket, :name, value)
         "board_size" -> assign(socket, :board_size, value)
         "max_attempts" -> assign(socket, :max_attempts, value)
+        "skill_level" -> assign(socket, :skill_level, value)
         _ -> socket
       end
 
@@ -109,6 +126,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
         "name" -> :name
         "board_size" -> :board_size
         "max_attempts" -> :max_attempts
+        "skill_level" -> :skill_level
         _ -> nil
       end
 
@@ -220,6 +238,7 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
     name = String.trim(params["name"] || socket.assigns.name || "")
     board_size = params["board_size"] || socket.assigns.board_size || "4x4"
     max_attempts = params["max_attempts"] || socket.assigns.max_attempts || "10"
+    skill_level = params["skill_level"] || socket.assigns.skill_level || "1"
     require_reading = socket.assigns.require_reading
 
     # Sync values back to socket so the form shows submitted values on validation failure
@@ -228,9 +247,11 @@ defmodule MedoruWeb.Teacher.KanaGameLive.Form do
       |> assign(:name, name)
       |> assign(:board_size, board_size)
       |> assign(:max_attempts, max_attempts)
+      |> assign(:skill_level, skill_level)
 
     attrs = %{
       "name" => name,
+      "skill_level" => skill_level,
       "memory_card_game" => %{
         "board_size" => board_size,
         "max_attempts" => max_attempts,

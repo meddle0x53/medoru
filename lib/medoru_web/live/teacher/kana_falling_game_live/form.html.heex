@@ -100,6 +100,21 @@
             class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
+
+        <%!-- Skill Level --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Skill Level")}
+          </label>
+          <select
+            name="skill_level"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- skill_level_options() do %>
+              <option value={value} selected={@skill_level == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
       </div>
 
       <%!-- Color Coded Rows --%>
@@ -203,45 +218,99 @@
         <div class="space-y-3 mb-4">
           <%!-- Hiragana rows --%>
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-medium text-pink-600 dark:text-pink-400 mr-1">{gettext("Hiragana")}</span>
-            <button type="button" phx-click="toggle_row" phx-value-row="hiragana"
+            <span class="text-xs font-medium text-pink-600 dark:text-pink-400 mr-1">
+              {gettext("Hiragana")}
+            </span>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="hiragana"
               class="px-3 py-1.5 text-sm rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300 transition-colors"
-            >{gettext("All")}</button>
+            >
+              {gettext("All")}
+            </button>
             <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
-              <button type="button" phx-click="toggle_row" phx-value-row={"hiragana_#{group}"}
+              <button
+                type="button"
+                phx-click="toggle_row"
+                phx-value-row={"hiragana_#{group}"}
                 class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
-              >{group}</button>
+              >
+                {group}
+              </button>
             <% end %>
-            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_ga"
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="hiragana_ga"
               class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
-            >{gettext("Dakuten")}</button>
-            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_pa"
+            >
+              {gettext("Dakuten")}
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="hiragana_pa"
               class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
-            >{gettext("Handakuten")}</button>
-            <button type="button" phx-click="toggle_row" phx-value-row="hiragana_small"
+            >
+              {gettext("Handakuten")}
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="hiragana_small"
               class="px-3 py-1.5 text-sm rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 dark:bg-pink-900/20 dark:text-pink-300 transition-colors"
-            >{gettext("Small")}</button>
+            >
+              {gettext("Small")}
+            </button>
           </div>
           <%!-- Katakana rows --%>
           <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">{gettext("Katakana")}</span>
-            <button type="button" phx-click="toggle_row" phx-value-row="katakana"
+            <span class="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">
+              {gettext("Katakana")}
+            </span>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="katakana"
               class="px-3 py-1.5 text-sm rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 transition-colors"
-            >{gettext("All")}</button>
+            >
+              {gettext("All")}
+            </button>
             <%= for group <- [:a, :ka, :sa, :ta, :na, :ha, :ma, :ya, :ra, :wa] do %>
-              <button type="button" phx-click="toggle_row" phx-value-row={"katakana_#{group}"}
+              <button
+                type="button"
+                phx-click="toggle_row"
+                phx-value-row={"katakana_#{group}"}
                 class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
-              >{group}</button>
+              >
+                {group}
+              </button>
             <% end %>
-            <button type="button" phx-click="toggle_row" phx-value-row="katakana_ga"
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="katakana_ga"
               class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
-            >{gettext("Dakuten")}</button>
-            <button type="button" phx-click="toggle_row" phx-value-row="katakana_pa"
+            >
+              {gettext("Dakuten")}
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="katakana_pa"
               class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
-            >{gettext("Handakuten")}</button>
-            <button type="button" phx-click="toggle_row" phx-value-row="katakana_small"
+            >
+              {gettext("Handakuten")}
+            </button>
+            <button
+              type="button"
+              phx-click="toggle_row"
+              phx-value-row="katakana_small"
               class="px-3 py-1.5 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 transition-colors"
-            >{gettext("Small")}</button>
+            >
+              {gettext("Small")}
+            </button>
           </div>
         </div>
 
@@ -249,11 +318,15 @@
           <% all_kana = Medoru.Content.Kana.list_all() %>
           <div class="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 gap-2">
             <%= for kana <- all_kana do %>
-              <button type="button" phx-click="toggle_kana" phx-value-character={kana.character}
+              <button
+                type="button"
+                phx-click="toggle_kana"
+                phx-value-character={kana.character}
                 class={[
                   "aspect-square rounded-lg text-lg font-medium transition-all duration-200 flex items-center justify-center",
                   kana.character in @selected_kana && "bg-primary text-primary-content shadow-md",
-                  kana.character not in @selected_kana && "bg-base-200 text-secondary hover:bg-base-300"
+                  kana.character not in @selected_kana &&
+                    "bg-base-200 text-secondary hover:bg-base-300"
                 ]}
               >
                 {kana.character}

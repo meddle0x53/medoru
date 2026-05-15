@@ -235,7 +235,18 @@ defmodule MedoruWeb.WordSetLive.Show do
   defp parse_word_type(""), do: nil
 
   defp parse_word_type(word_type) when is_binary(word_type) do
-    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+    valid_types = [
+      "noun",
+      "verb",
+      "adjective",
+      "adverb",
+      "particle",
+      "pronoun",
+      "counter",
+      "expression",
+      "other"
+    ]
+
     if word_type in valid_types do
       String.to_existing_atom(word_type)
     else

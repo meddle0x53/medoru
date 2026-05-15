@@ -22,7 +22,9 @@
             <div>
               <div class="font-semibold text-base-content">{gettext("My Classrooms")}</div>
               <div class="text-sm text-base-content/60">
-                {ngettext("%{count} classroom", "%{count} classrooms", @classroom_count, count: @classroom_count)}
+                {ngettext("%{count} classroom", "%{count} classrooms", @classroom_count,
+                  count: @classroom_count
+                )}
               </div>
             </div>
           </div>
@@ -60,7 +62,9 @@
             <div>
               <div class="font-semibold text-base-content">{gettext("Custom Lessons")}</div>
               <div class="text-sm text-base-content/60">
-                {ngettext("%{count} lesson", "%{count} lessons", @lesson_count, count: @lesson_count)}
+                {ngettext("%{count} lesson", "%{count} lessons", @lesson_count,
+                  count: @lesson_count
+                )}
               </div>
             </div>
           </div>
@@ -79,7 +83,9 @@
             <div>
               <div class="font-semibold text-base-content">{gettext("Grammar Lessons")}</div>
               <div class="text-sm text-base-content/60">
-                {ngettext("%{count} lesson", "%{count} lessons", @grammar_lesson_count, count: @grammar_lesson_count)}
+                {ngettext("%{count} lesson", "%{count} lessons", @grammar_lesson_count,
+                  count: @grammar_lesson_count
+                )}
               </div>
             </div>
           </div>

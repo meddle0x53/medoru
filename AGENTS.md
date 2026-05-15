@@ -23,6 +23,7 @@
   - i18n extracted for all nav labels
 - **Grid hiragana keyboard removed**: Flick keyboard now used on all screen sizes
 - **Kanji Falling Game**: Full game using Kana Cascade engine with kanji reading input
+- **Game Skill Levels**: 5 levels (Beginner→Expert) with color coding, teacher-configurable dropdown, sorted by difficulty in Games tab
 
 ### What's Complete (v0.1.7) — Kana Cascade & Classroom Improvements
 - **Kana Cascade** (formerly Kana Falling): Typing game for hiragana/katakana practice

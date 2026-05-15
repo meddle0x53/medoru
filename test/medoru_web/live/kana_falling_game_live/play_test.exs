@@ -102,8 +102,9 @@ defmodule MedoruWeb.KanaFallingGameLive.PlayTest do
       other_conn = log_in_user(build_conn(), other_user)
 
       expected_path = "/classrooms/#{classroom.id}"
+
       assert {:error, {:live_redirect, %{to: ^expected_path}}} =
-        live(other_conn, ~p"/classrooms/#{classroom.id}/kana-falling-games/#{game.id}")
+               live(other_conn, ~p"/classrooms/#{classroom.id}/kana-falling-games/#{game.id}")
     end
   end
 

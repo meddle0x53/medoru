@@ -10,6 +10,16 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
   alias Medoru.Games
   alias Medoru.Learning.WordSets
 
+  defp skill_level_options do
+    [
+      {gettext("Beginner"), "1"},
+      {gettext("Elementary"), "2"},
+      {gettext("Intermediate"), "3"},
+      {gettext("Advanced"), "4"},
+      {gettext("Expert"), "5"}
+    ]
+  end
+
   defp board_sizes do
     [
       {"4x4 (16 cards, 8 words)", "4x4"},
@@ -77,6 +87,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
        |> assign(:board_size, mcg.board_size)
        |> assign(:max_attempts, Integer.to_string(mcg.max_attempts))
        |> assign(:max_players, Integer.to_string(game.max_players))
+       |> assign(:skill_level, Integer.to_string(game.skill_level))
        |> assign(:meaning_required, mcg.meaning_required_for_collection)
        |> assign(:pronunciation_required, mcg.pronunciation_required_for_collection)
        |> assign(:meaning_or_pronunciation, mcg.meaning_or_pronunciation_required_for_collection)
@@ -95,7 +106,10 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
     if classroom.teacher_id != user.id do
       {:noreply,
        socket
-       |> put_flash(:error, gettext("You don't have permission to create games in this classroom."))
+       |> put_flash(
+         :error,
+         gettext("You don't have permission to create games in this classroom.")
+       )
        |> push_navigate(to: ~p"/teacher/classrooms")}
     else
       word_sets = WordSets.list_user_word_sets(user.id, per_page: 100).word_sets
@@ -109,6 +123,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
        |> assign(:board_size, "4x4")
        |> assign(:max_attempts, "10")
        |> assign(:max_players, "1")
+       |> assign(:skill_level, "1")
        |> assign(:meaning_required, false)
        |> assign(:pronunciation_required, false)
        |> assign(:meaning_or_pronunciation, false)
@@ -249,12 +264,16 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
           end)
 
         if new_words == [] do
-          {:noreply, put_flash(socket, :error, gettext("No new words available in this word set."))}
+          {:noreply,
+           put_flash(socket, :error, gettext("No new words available in this word set."))}
         else
           socket =
             socket
             |> assign(:selected_words, selected_words ++ new_words)
-            |> put_flash(:info, gettext("Imported %{count} words from word set.", count: length(new_words)))
+            |> put_flash(
+              :info,
+              gettext("Imported %{count} words from word set.", count: length(new_words))
+            )
 
           {:noreply, socket}
         end
@@ -276,6 +295,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
         "board_size" -> assign(socket, :board_size, value)
         "max_attempts" -> assign(socket, :max_attempts, value)
         "max_players" -> assign(socket, :max_players, value)
+        "skill_level" -> assign(socket, :skill_level, value)
         _ -> socket
       end
 
@@ -286,6 +306,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
         "board_size" -> :board_size
         "max_attempts" -> :max_attempts
         "max_players" -> :max_players
+        "skill_level" -> :skill_level
         _ -> nil
       end
 
@@ -328,6 +349,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
     board_size = socket.assigns.board_size
     max_attempts = parse_int(socket.assigns.max_attempts)
     max_players = parse_int(socket.assigns.max_players)
+    skill_level = parse_int(socket.assigns.skill_level)
     selected_words = socket.assigns.selected_words
 
     # Validation
@@ -344,7 +366,9 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
 
     errors =
       if length(selected_words) != required_words do
-        Map.put(errors, :words,
+        Map.put(
+          errors,
+          :words,
           gettext("You must select exactly %{count} words for a %{size} board",
             count: required_words,
             size: board_size
@@ -367,12 +391,14 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
       attrs = %{
         "name" => name,
         "max_players" => max_players,
+        "skill_level" => skill_level,
         "memory_card_game" => %{
           "board_size" => board_size,
           "max_attempts" => max_attempts,
           "meaning_required_for_collection" => socket.assigns.meaning_required,
           "pronunciation_required_for_collection" => socket.assigns.pronunciation_required,
-          "meaning_or_pronunciation_required_for_collection" => socket.assigns.meaning_or_pronunciation
+          "meaning_or_pronunciation_required_for_collection" =>
+            socket.assigns.meaning_or_pronunciation
         }
       }
 
@@ -384,7 +410,12 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
             Games.create_memory_card_game(classroom.id, user.id, attrs, word_ids_with_points)
 
           :edit ->
-            Games.update_memory_card_game(socket.assigns.game, user.id, attrs, word_ids_with_points)
+            Games.update_memory_card_game(
+              socket.assigns.game,
+              user.id,
+              attrs,
+              word_ids_with_points
+            )
         end
 
       case result do
@@ -406,7 +437,12 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
           {:noreply, assign(socket, :form_errors, errors)}
 
         {:error, reason} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to save game: %{reason}", reason: inspect(reason)))}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to save game: %{reason}", reason: inspect(reason))
+           )}
       end
     end
   end
@@ -481,7 +517,7 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                   <% end %>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-base-content mb-1">
                       {gettext("Max Players")}
@@ -495,6 +531,18 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                         max="10"
                         class="input input-bordered w-full"
                       />
+                    </form>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-base-content mb-1">
+                      {gettext("Skill Level")}
+                    </label>
+                    <form phx-change="update_field" phx-value-field="skill_level" class="contents">
+                      <select name="skill_level" class="select select-bordered w-full">
+                        <%= for {label, value} <- skill_level_options() do %>
+                          <option value={value} selected={@skill_level == value}>{label}</option>
+                        <% end %>
+                      </select>
                     </form>
                   </div>
                   <div>
@@ -600,7 +648,10 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                         type="button"
                         phx-click="import_from_word_set"
                         disabled={@selected_word_set_id == ""}
-                        class={["btn btn-secondary btn-sm", @selected_word_set_id == "" && "opacity-50 cursor-not-allowed"]}
+                        class={[
+                          "btn btn-secondary btn-sm",
+                          @selected_word_set_id == "" && "opacity-50 cursor-not-allowed"
+                        ]}
                       >
                         <.icon name="hero-arrow-down-tray" class="w-4 h-4 mr-1" />
                         {gettext("Import")}
@@ -621,7 +672,11 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                         <span class="text-secondary text-sm ml-2">{sw.word.meaning}</span>
                       </div>
                       <div class="flex items-center gap-2">
-                        <form phx-change="update_points" phx-value-word_id={sw.word_id} class="contents">
+                        <form
+                          phx-change="update_points"
+                          phx-value-word_id={sw.word_id}
+                          class="contents"
+                        >
                           <div class="flex items-center gap-1">
                             <span class="text-sm text-secondary">{gettext("Points")}:</span>
                             <input
@@ -683,7 +738,9 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                     {gettext("Collection Condition")}
                   </label>
                   <p class="text-secondary text-sm mb-3">
-                    {gettext("When two matching cards are found, what must the student do to collect them?")}
+                    {gettext(
+                      "When two matching cards are found, what must the student do to collect them?"
+                    )}
                   </p>
                   <div class="space-y-2">
                     <label class="flex items-center gap-3 cursor-pointer">
@@ -704,7 +761,9 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                         phx-value-condition="pronunciation_required"
                         class="checkbox checkbox-primary"
                       />
-                      <span class="text-base-content">{gettext("Require correct pronunciation")}</span>
+                      <span class="text-base-content">
+                        {gettext("Require correct pronunciation")}
+                      </span>
                     </label>
                     <label class="flex items-center gap-3 cursor-pointer">
                       <input
@@ -714,12 +773,16 @@ defmodule MedoruWeb.Teacher.GameLive.Form do
                         phx-value-condition="meaning_or_pronunciation"
                         class="checkbox checkbox-primary"
                       />
-                      <span class="text-base-content">{gettext("Either meaning OR pronunciation (not both)")}</span>
+                      <span class="text-base-content">
+                        {gettext("Either meaning OR pronunciation (not both)")}
+                      </span>
                     </label>
                   </div>
                   <%= if not @meaning_required and not @pronunciation_required and not @meaning_or_pronunciation do %>
                     <p class="text-sm text-secondary mt-2">
-                      {gettext("No condition selected — cards will be collected automatically when matched.")}
+                      {gettext(
+                        "No condition selected — cards will be collected automatically when matched."
+                      )}
                     </p>
                   <% end %>
                 </div>

@@ -262,8 +262,16 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
     selected_kana
     |> Enum.map(fn char ->
       case Enum.find(all_kana, &(&1.character == char)) do
-        nil -> nil
-        kana -> %{char: kana.character, romaji: kana_romaji_list(kana), type: kana.type, group: kana.group}
+        nil ->
+          nil
+
+        kana ->
+          %{
+            char: kana.character,
+            romaji: kana_romaji_list(kana),
+            type: kana.type,
+            group: kana.group
+          }
       end
     end)
     |> Enum.reject(&is_nil/1)
@@ -334,6 +342,7 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
           else
             wrong_answer(socket)
           end
+
         {:noreply, socket}
 
       String.length(key) == 1 and key =~ ~r/^[a-zA-Z]$/ ->
@@ -387,7 +396,8 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
 
     # Check extra life
     socket =
-      if new_score >= socket.assigns.next_extra_life_score and socket.assigns.lives < socket.assigns.max_lives do
+      if new_score >= socket.assigns.next_extra_life_score and
+           socket.assigns.lives < socket.assigns.max_lives do
         socket
         |> assign(:lives, socket.assigns.lives + 1)
         |> assign(:next_extra_life_score, new_score + config.extra_life_threshold)

@@ -112,7 +112,8 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
                         {index}
                       </span>
                       <% avatar_src =
-                        (session.user.profile && session.user.profile.avatar) || session.user.avatar_url %>
+                        (session.user.profile && session.user.profile.avatar) ||
+                          session.user.avatar_url %>
                       <%= if avatar_src do %>
                         <div class="avatar shrink-0">
                           <div class="w-8 h-8 rounded-full">
@@ -124,14 +125,21 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
                           <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
                             <% initial =
                               if session.user.profile && session.user.profile.display_name,
-                                do: String.first(session.user.profile.display_name) |> String.upcase(),
-                                else: String.first(session.user.name || session.user.email) |> String.upcase() %>
+                                do:
+                                  String.first(session.user.profile.display_name) |> String.upcase(),
+                                else:
+                                  String.first(session.user.name || session.user.email)
+                                  |> String.upcase() %>
                             <span class="text-xs">{initial}</span>
                           </div>
                         </div>
                       <% end %>
                       <span class="truncate text-base-content">
-                        {display_name(session.user, @current_scope.current_user.id, @current_scope.current_user.type == "admin")}
+                        {display_name(
+                          session.user,
+                          @current_scope.current_user.id,
+                          @current_scope.current_user.type == "admin"
+                        )}
                       </span>
                     </div>
                     <div class="flex items-center gap-4 shrink-0 ml-2">

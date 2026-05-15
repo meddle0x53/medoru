@@ -115,7 +115,9 @@
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
                   {@current_step.question}
                 </h2>
-                <% word_reading = @current_step.question_data["word_reading"] || (@current_step.word && @current_step.word.reading) %>
+                <% word_reading =
+                  @current_step.question_data["word_reading"] ||
+                    (@current_step.word && @current_step.word.reading) %>
                 <%= if word_reading do %>
                   <p class="text-xl sm:text-2xl text-secondary/80 font-japanese text-center">
                     {word_reading}
@@ -206,13 +208,17 @@
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
                   {word_text}
                 </h2>
-                <% word_reading = question_data["word_reading"] || (@current_step.word && @current_step.word.reading) %>
+                <% word_reading =
+                  question_data["word_reading"] ||
+                    (@current_step.word && @current_step.word.reading) %>
                 <%= if word_reading && question_label != "reading" do %>
                   <p class="text-xl sm:text-2xl text-secondary/80 font-japanese text-center">
                     {word_reading}
                   </p>
                 <% end %>
-                <% word_meaning = question_data["word_meaning"] || (@current_step.word && @current_step.word.meaning) %>
+                <% word_meaning =
+                  question_data["word_meaning"] ||
+                    (@current_step.word && @current_step.word.meaning) %>
                 <%= if word_meaning && question_label == "reading" do %>
                   <p class="text-lg sm:text-xl text-secondary/80 text-center">
                     {word_meaning}

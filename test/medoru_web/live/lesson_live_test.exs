@@ -93,7 +93,8 @@ defmodule MedoruWeb.LessonLiveTest do
           should_approve_memberships: false
         })
 
-      custom_lesson = custom_lesson_fixture(%{creator_id: teacher.id, status: "published", word_count: 15})
+      custom_lesson =
+        custom_lesson_fixture(%{creator_id: teacher.id, status: "published", word_count: 15})
 
       {:ok, _ccl} =
         Content.publish_lesson_to_classroom(custom_lesson.id, classroom.id, teacher.id)
@@ -120,7 +121,13 @@ defmodule MedoruWeb.LessonLiveTest do
 
       # Create 21 lessons to trigger pagination (default per_page is 20)
       for i <- 1..21 do
-        lesson = custom_lesson_fixture(%{creator_id: teacher.id, status: "published", title: "Lesson #{String.pad_leading("#{i}", 2, "0")}"})
+        lesson =
+          custom_lesson_fixture(%{
+            creator_id: teacher.id,
+            status: "published",
+            title: "Lesson #{String.pad_leading("#{i}", 2, "0")}"
+          })
+
         {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
       end
 

@@ -19,6 +19,10 @@ defmodule Medoru.Repo.Migrations.CreateMemoryCardSessions do
 
     create index(:memory_card_sessions, [:game_id])
     create index(:memory_card_sessions, [:game_id, :user_id])
-    create unique_index(:memory_card_sessions, [:game_id, :user_id], where: "status = 'in_progress'", name: :memory_card_sessions_in_progress_unique)
+
+    create unique_index(:memory_card_sessions, [:game_id, :user_id],
+             where: "status = 'in_progress'",
+             name: :memory_card_sessions_in_progress_unique
+           )
   end
 end

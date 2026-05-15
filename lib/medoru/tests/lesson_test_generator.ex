@@ -144,7 +144,9 @@ defmodule Medoru.Tests.LessonTestGenerator do
       words
       |> Enum.flat_map(fn word ->
         num_steps = :rand.uniform(steps_per_word)
-        selected_types = Enum.take_random(multichoice_types, min(num_steps, length(multichoice_types)))
+
+        selected_types =
+          Enum.take_random(multichoice_types, min(num_steps, length(multichoice_types)))
 
         selected_types
         |> Enum.map(fn step_type ->
@@ -408,6 +410,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
       add_image_distractors(step, correct_word, distractor_count, distractor_pool)
     else
       field = distractor_field_for_step(step)
+
       TestStepBuilder.add_distractors(step, correct_word, distractor_count, distractor_pool,
         field: field,
         deduplicate: true
@@ -444,6 +447,7 @@ defmodule Medoru.Tests.LessonTestGenerator do
 
       # Fetch regular text distractors using shared logic
       step = %{step | question_data: question_data}
+
       TestStepBuilder.add_distractors(step, correct_word, distractor_count, distractor_pool,
         field: :meaning,
         deduplicate: true

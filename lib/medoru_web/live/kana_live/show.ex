@@ -37,7 +37,10 @@ defmodule MedoruWeb.KanaLive.Show do
         current_index = Enum.find_index(list, &(&1.character == kana.character))
 
         prev_kana = if current_index && current_index > 0, do: Enum.at(list, current_index - 1)
-        next_kana = if current_index && current_index < length(list) - 1, do: Enum.at(list, current_index + 1)
+
+        next_kana =
+          if current_index && current_index < length(list) - 1,
+            do: Enum.at(list, current_index + 1)
 
         {:noreply,
          socket
@@ -45,10 +48,13 @@ defmodule MedoruWeb.KanaLive.Show do
          |> assign(:has_stroke_data, has_stroke_data)
          |> assign(:prev_kana, prev_kana)
          |> assign(:next_kana, next_kana)
-         |> assign(:page_title, gettext("%{character} - %{type}",
-           character: kana.character,
-           type: type_label(kana.type)
-         ))}
+         |> assign(
+           :page_title,
+           gettext("%{character} - %{type}",
+             character: kana.character,
+             type: type_label(kana.type)
+           )
+         )}
     end
   end
 
