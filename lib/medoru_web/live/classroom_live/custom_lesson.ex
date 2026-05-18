@@ -474,7 +474,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp vocabulary_content(assigns) do
     ~H"""
     <%= if @current_word do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg">
+      <div class="card bg-base-100 border border-base-300 shadow-lg"  phx-no-format>
         <div class="card-body text-center py-12">
           <%!-- Japanese Text --%>
           <.link
@@ -585,7 +585,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp grammar_content(assigns) do
     ~H"""
     <%= if @current_step do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg">
+      <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
         <div class="card-body">
           <%!-- Step Title --%>
           <div class="flex items-center gap-2 mb-4">
@@ -637,11 +637,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           </div>
 
           <%!-- Explanation --%>
-          <div class="mb-6">
+          <div class="mb-6" phx-no-format>
             <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
-            <div class="text-base-content whitespace-pre-wrap leading-relaxed">
-              <.colored_segments segments={apply_word_colors(@current_step.explanation, @step_word_colors, :explanation)} />
-            </div>
+            <div class="text-base-content whitespace-pre-wrap leading-relaxed"><.colored_segments segments={apply_word_colors(@current_step.explanation, @step_word_colors, :explanation)} /></div>
           </div>
 
           <%!-- Examples --%>
