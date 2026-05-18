@@ -20,6 +20,7 @@ defmodule Medoru.Content.GrammarLessonStep do
     field :explanation, :string
     field :examples, {:array, :map}, default: []
     field :pattern_elements, {:array, :map}, default: []
+    field :word_colors, {:array, :map}, default: []
     field :difficulty, :integer
 
     belongs_to :custom_lesson, CustomLesson
@@ -36,6 +37,7 @@ defmodule Medoru.Content.GrammarLessonStep do
       :explanation,
       :examples,
       :pattern_elements,
+      :word_colors,
       :difficulty,
       :custom_lesson_id
     ])
@@ -44,6 +46,7 @@ defmodule Medoru.Content.GrammarLessonStep do
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_examples()
     |> validate_pattern_elements()
+    |> validate_word_colors()
     |> foreign_key_constraint(:custom_lesson_id)
   end
 
@@ -73,6 +76,28 @@ defmodule Medoru.Content.GrammarLessonStep do
     validate_change(changeset, :pattern_elements, fn :pattern_elements, elements ->
       if Enum.empty?(elements) do
         [pattern_elements: "must have at least one pattern element"]
+      else
+        []
+      end
+    end)
+  end
+
+  defp validate_word_colors(changeset) do
+    validate_change(changeset, :word_colors, fn :word_colors, colors ->
+      invalid? =
+        Enum.any?(colors, fn color ->
+          not is_map(color) or
+            is_nil(color["word"]) or
+            is_nil(color["color_index"]) or
+            not is_integer(color["color_index"]) or
+            color["color_index"] < 0 or
+            color["color_index"] > 31 or
+            is_nil(color["apply_to"]) or
+            color["apply_to"] not in ["examples", "explanation", "both"]
+        end)
+
+      if invalid? do
+        [word_colors: "each entry must have word, color_index (0-31), and apply_to"]
       else
         []
       end

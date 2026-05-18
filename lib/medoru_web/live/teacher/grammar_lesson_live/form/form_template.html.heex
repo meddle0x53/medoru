@@ -102,6 +102,30 @@
                 </div>
               <% end %>
 
+              <%!-- Lesson Word Colors --%>
+              <%= if @lesson do %>
+                <div class="border-t border-base-200 pt-4 mt-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-medium text-sm">
+                      <.icon name="hero-swatch" class="w-4 h-4 mr-1 inline" />
+                      {gettext("Word Colors")}
+                    </h3>
+                    <button type="button" phx-click="add_lesson_word_color" class="btn btn-ghost btn-xs">
+                      <.icon name="hero-plus" class="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p class="text-xs text-secondary mb-2">
+                    {gettext("Highlight words across all steps")}
+                  </p>
+                  <.word_color_editor
+                    word_colors={@lesson.word_colors || []}
+                    color_palette={@color_palette}
+                    update_event="update_lesson_word_color"
+                    remove_event="remove_lesson_word_color"
+                  />
+                </div>
+              <% end %>
+
               <button
                 type="submit"
                 class="btn btn-primary w-full"
@@ -532,6 +556,28 @@
                     style="min-height: 200px;"
                     placeholder={gettext("Explain how this grammar pattern works...")}
                   >{@current_step.explanation}</textarea>
+                </div>
+
+                <%!-- Step Word Colors --%>
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-medium text-sm">
+                      <.icon name="hero-swatch" class="w-4 h-4 mr-1 inline" />
+                      {gettext("Step Word Colors")}
+                    </h3>
+                    <button type="button" phx-click="add_step_word_color" class="btn btn-ghost btn-xs">
+                      <.icon name="hero-plus" class="w-3 h-3" />
+                    </button>
+                  </div>
+                  <p class="text-xs text-secondary mb-2">
+                    {gettext("Overrides lesson-level colors for this step")}
+                  </p>
+                  <.word_color_editor
+                    word_colors={@current_step.word_colors || []}
+                    color_palette={@color_palette}
+                    update_event="update_step_word_color"
+                    remove_event="remove_step_word_color"
+                  />
                 </div>
 
                 <%!-- Examples --%>

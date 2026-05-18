@@ -36,6 +36,7 @@ defmodule Medoru.Content.CustomLesson do
     field :requires_test, :boolean, default: false
     field :include_writing, :boolean, default: false
     field :steps_per_word, :integer, default: 3
+    field :word_colors, {:array, :map}, default: []
 
     belongs_to :creator, User
     belongs_to :test, Test
@@ -66,7 +67,8 @@ defmodule Medoru.Content.CustomLesson do
       :creator_id,
       :requires_test,
       :include_writing,
-      :steps_per_word
+      :steps_per_word,
+      :word_colors
     ])
     |> validate_required([
       :title,
@@ -83,7 +85,30 @@ defmodule Medoru.Content.CustomLesson do
     |> validate_inclusion(:status, ["draft", "published", "archived"])
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:word_count, greater_than_or_equal_to: 0)
+    |> validate_word_colors()
     |> foreign_key_constraint(:creator_id)
+  end
+
+  defp validate_word_colors(changeset) do
+    validate_change(changeset, :word_colors, fn :word_colors, colors ->
+      invalid? =
+        Enum.any?(colors, fn color ->
+          not is_map(color) or
+            is_nil(color["word"]) or
+            is_nil(color["color_index"]) or
+            not is_integer(color["color_index"]) or
+            color["color_index"] < 0 or
+            color["color_index"] > 31 or
+            is_nil(color["apply_to"]) or
+            color["apply_to"] not in ["examples", "explanation", "both"]
+        end)
+
+      if invalid? do
+        [word_colors: "each entry must have word, color_index (0-31), and apply_to"]
+      else
+        []
+      end
+    end)
   end
 
   @doc """

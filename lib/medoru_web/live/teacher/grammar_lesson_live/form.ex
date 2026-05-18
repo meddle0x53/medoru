@@ -63,6 +63,27 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     "particle" => "bg-orange-500 text-white"
   }
 
+  # 32 background colors for teacher-defined word highlighting
+  @color_palette [
+    "bg-red-200", "bg-red-300",
+    "bg-orange-200", "bg-orange-300",
+    "bg-amber-200", "bg-amber-300",
+    "bg-yellow-200", "bg-yellow-300",
+    "bg-lime-200", "bg-lime-300",
+    "bg-green-200", "bg-green-300",
+    "bg-emerald-200", "bg-emerald-300",
+    "bg-teal-200", "bg-teal-300",
+    "bg-cyan-200", "bg-cyan-300",
+    "bg-sky-200", "bg-sky-300",
+    "bg-blue-200", "bg-blue-300",
+    "bg-indigo-200", "bg-indigo-300",
+    "bg-violet-200", "bg-violet-300",
+    "bg-purple-200", "bg-purple-300",
+    "bg-fuchsia-200", "bg-fuchsia-300",
+    "bg-pink-200", "bg-pink-300",
+    "bg-rose-200", "bg-rose-300"
+  ]
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -90,6 +111,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
        |> assign(:word_classes, word_classes)
        |> assign(:word_types, @word_types)
        |> assign(:word_type_colors, @word_type_colors)
+       |> assign(:color_palette, @color_palette)
        |> assign(:particles, @particles)}
     end
   end
@@ -204,6 +226,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
         explanation: "",
         pattern_elements: [],
         examples: [],
+        word_colors: [],
         difficulty: 1
       }
 
@@ -511,6 +534,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
         explanation: step.explanation,
         pattern_elements: step.pattern_elements,
         examples: step.examples,
+        word_colors: step.word_colors || [],
         difficulty: step.difficulty || 1,
         custom_lesson_id: lesson.id
       }
@@ -611,6 +635,200 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
            )}
       end
     end
+  end
+
+  # Lesson-level word color handlers
+
+  @impl true
+  def handle_event("add_lesson_word_color", _params, socket) do
+    lesson = socket.assigns.lesson
+
+    if is_nil(lesson) do
+      {:noreply, put_flash(socket, :error, gettext("Save the lesson first before adding word colors."))}
+    else
+      word_colors = lesson.word_colors || []
+
+      new_color = %{
+        "word" => "",
+        "color_index" => 0,
+        "apply_to" => "both"
+      }
+
+      case Content.update_custom_lesson(lesson, %{word_colors: word_colors ++ [new_color]}) do
+        {:ok, updated_lesson} ->
+          {:noreply, assign(socket, :lesson, updated_lesson)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to add word color."))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("remove_lesson_word_color", %{"index" => index}, socket) do
+    lesson = socket.assigns.lesson
+    index = String.to_integer(index)
+    word_colors = List.delete_at(lesson.word_colors || [], index)
+
+    case Content.update_custom_lesson(lesson, %{word_colors: word_colors}) do
+      {:ok, updated_lesson} ->
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to remove word color."))}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "update_lesson_word_color",
+        %{"index" => index, "field" => field} = params,
+        socket
+      ) do
+    lesson = socket.assigns.lesson
+    index = String.to_integer(index)
+    word_colors = lesson.word_colors || []
+
+    value = params["color"] || params["value"] || params[field]
+
+    color = Enum.at(word_colors, index)
+
+    updated_value =
+      case field do
+        "color_index" -> String.to_integer(value)
+        _ -> value
+      end
+
+    color = Map.put(color, field, updated_value)
+    word_colors = List.replace_at(word_colors, index, color)
+
+    case Content.update_custom_lesson(lesson, %{word_colors: word_colors}) do
+      {:ok, updated_lesson} ->
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update word color."))}
+    end
+  end
+
+  # Step-level word color handlers
+
+  @impl true
+  def handle_event("add_step_word_color", _params, socket) do
+    step = socket.assigns.current_step
+
+    new_color = %{
+      "word" => "",
+      "color_index" => 0,
+      "apply_to" => "both"
+    }
+
+    word_colors = (step.word_colors || []) ++ [new_color]
+    step = Map.put(step, :word_colors, word_colors)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("remove_step_word_color", %{"index" => index}, socket) do
+    step = socket.assigns.current_step
+    index = String.to_integer(index)
+    word_colors = List.delete_at(step.word_colors || [], index)
+    step = Map.put(step, :word_colors, word_colors)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event(
+        "update_step_word_color",
+        %{"index" => index, "field" => field} = params,
+        socket
+      ) do
+    step = socket.assigns.current_step
+    index = String.to_integer(index)
+    word_colors = step.word_colors || []
+
+    value = params["color"] || params["value"] || params[field]
+
+    color = Enum.at(word_colors, index)
+
+    updated_value =
+      case field do
+        "color_index" -> String.to_integer(value)
+        _ -> value
+      end
+
+    color = Map.put(color, field, updated_value)
+    word_colors = List.replace_at(word_colors, index, color)
+    step = Map.put(step, :word_colors, word_colors)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  # Word Color Editor Component
+
+  attr :word_colors, :list, default: []
+  attr :color_palette, :list, required: true
+  attr :update_event, :string, required: true
+  attr :remove_event, :string, required: true
+
+  def word_color_editor(assigns) do
+    ~H"""
+    <div class="space-y-2 max-h-80 overflow-y-auto">
+      <%= for {color, idx} <- Enum.with_index(@word_colors) do %>
+        <div class="border border-base-300 rounded-lg p-2 bg-base-50">
+          <div class="flex items-center gap-2 mb-2">
+            <input
+              type="text"
+              value={color["word"]}
+              phx-blur={@update_event}
+              phx-value-index={idx}
+              phx-value-field="word"
+              class="input input-bordered input-sm w-full font-jp"
+              placeholder={gettext("Word")}
+            />
+            <button
+              type="button"
+              phx-click={@remove_event}
+              phx-value-index={idx}
+              class="text-error hover:opacity-70 shrink-0"
+            >
+              <.icon name="hero-trash" class="w-4 h-4" />
+            </button>
+          </div>
+          <div class="grid grid-cols-8 gap-1 mb-2">
+            <%= for {color_class, cidx} <- Enum.with_index(@color_palette) do %>
+              <button
+                type="button"
+                phx-click={@update_event}
+                phx-value-index={idx}
+                phx-value-field="color_index"
+                phx-value-color={cidx}
+                class={[
+                  "w-full aspect-square rounded border-2 transition-all",
+                  color_class,
+                  if(color["color_index"] == cidx, do: "border-primary scale-110", else: "border-transparent hover:border-base-content/30")
+                ]}
+                title={cidx + 1}
+              />
+            <% end %>
+          </div>
+          <select
+            name="apply_to"
+            phx-change={@update_event}
+            phx-value-index={idx}
+            phx-value-field="apply_to"
+            class="select select-bordered select-sm w-full"
+          >
+            <option value="both" selected={color["apply_to"] == "both"}>{gettext("Both")}</option>
+            <option value="examples" selected={color["apply_to"] == "examples"}>{gettext("Examples only")}</option>
+            <option value="explanation" selected={color["apply_to"] == "explanation"}>{gettext("Explanation only")}</option>
+          </select>
+        </div>
+      <% end %>
+    </div>
+    """
   end
 
   # Helper functions

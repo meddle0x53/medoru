@@ -9,6 +9,29 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   alias Medoru.Content
   alias MedoruWeb.PublicAccess
 
+  @color_palette [
+    "bg-red-200", "bg-red-300",
+    "bg-orange-200", "bg-orange-300",
+    "bg-amber-200", "bg-amber-300",
+    "bg-yellow-200", "bg-yellow-300",
+    "bg-lime-200", "bg-lime-300",
+    "bg-green-200", "bg-green-300",
+    "bg-emerald-200", "bg-emerald-300",
+    "bg-teal-200", "bg-teal-300",
+    "bg-cyan-200", "bg-cyan-300",
+    "bg-sky-200", "bg-sky-300",
+    "bg-blue-200", "bg-blue-300",
+    "bg-indigo-200", "bg-indigo-300",
+    "bg-violet-200", "bg-violet-300",
+    "bg-purple-200", "bg-purple-300",
+    "bg-fuchsia-200", "bg-fuchsia-300",
+    "bg-pink-200", "bg-pink-300",
+    "bg-rose-200", "bg-rose-300"
+  ]
+
+  # Text color for word highlights (ensure Tailwind scans it)
+  @word_highlight_text_color "text-gray-900"
+
   @impl true
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
     locale = session["locale"] || "en"
@@ -160,6 +183,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       |> Enum.map(fn wc -> {wc.id, wc.display_name} end)
       |> Enum.into(%{})
 
+    step_word_colors = build_step_word_colors(lesson, current_step)
+
     {:ok,
      socket
      |> assign(:locale, locale)
@@ -174,6 +199,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
      |> assign(:practice, practice)
      |> assign(:current_index, current_index)
      |> assign(:current_step, current_step)
+     |> assign(:step_word_colors, step_word_colors)
      |> assign(:total_items, length(grammar_steps))}
   end
 
@@ -200,9 +226,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               | explanation: String.trim(current_step.explanation || "")
             }
 
+            step_word_colors = build_step_word_colors(socket.assigns.lesson, current_step)
+
             assign(socket,
               current_index: step,
-              current_step: current_step
+              current_step: current_step,
+              step_word_colors: step_word_colors
             )
 
           _ ->
@@ -250,10 +279,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           :grammar ->
             next_step = Enum.at(socket.assigns.grammar_steps, next_index)
             next_step = %{next_step | explanation: String.trim(next_step.explanation || "")}
+            step_word_colors = build_step_word_colors(socket.assigns.lesson, next_step)
 
             assign(socket,
               current_index: next_index,
-              current_step: next_step
+              current_step: next_step,
+              step_word_colors: step_word_colors
             )
         end
 
@@ -283,10 +314,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           :grammar ->
             prev_step = Enum.at(socket.assigns.grammar_steps, prev_index)
             prev_step = %{prev_step | explanation: String.trim(prev_step.explanation || "")}
+            step_word_colors = build_step_word_colors(socket.assigns.lesson, prev_step)
 
             assign(socket,
               current_index: prev_index,
-              current_step: prev_step
+              current_step: prev_step,
+              step_word_colors: step_word_colors
             )
         end
 
@@ -607,7 +640,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <div class="mb-6">
             <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
             <div class="text-base-content whitespace-pre-wrap leading-relaxed">
-              {@current_step.explanation}
+              <.colored_segments segments={apply_word_colors(@current_step.explanation, @step_word_colors, :explanation)} />
             </div>
           </div>
 
@@ -618,8 +651,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               <div class="space-y-4">
                 <%= for example <- @current_step.examples do %>
                   <div class="bg-base-100 border border-base-300 rounded-lg p-4">
-                    <p class="text-xl font-jp mb-1">{example["sentence"]}</p>
-                    <p class="text-sm text-secondary font-jp mb-1">{example["reading"]}</p>
+                    <p class="text-xl font-jp mb-1">
+                      <.colored_segments segments={apply_word_colors(example["sentence"], @step_word_colors, :examples)} />
+                    </p>
+                    <p class="text-sm text-secondary font-jp mb-1">
+                      <.colored_segments segments={apply_word_colors(example["reading"], @step_word_colors, :examples)} />
+                    </p>
                     <p class="text-secondary">{example["meaning"]}</p>
                   </div>
                 <% end %>
@@ -691,6 +728,92 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         <% end %>
       </div>
     <% end %>
+    """
+  end
+
+  # Build merged word colors for a step (step overrides lesson-level)
+  defp build_step_word_colors(lesson, current_step) do
+    lesson_colors = lesson.word_colors || []
+    step_colors = current_step.word_colors || []
+
+    # Step colors override lesson colors for same word
+    merged =
+      lesson_colors
+      |> Enum.map(fn c -> {c["word"], c} end)
+      |> Enum.into(%{})
+
+    merged =
+      step_colors
+      |> Enum.reduce(merged, fn c, acc -> Map.put(acc, c["word"], c) end)
+
+    Map.values(merged)
+  end
+
+  # Apply word colors to text, returning segments
+  defp apply_word_colors(text, word_colors, scope) when is_binary(text) do
+    # Filter by scope
+    applicable =
+      Enum.filter(word_colors, fn c ->
+        apply_to = c["apply_to"] || "both"
+        apply_to == "both" or apply_to == to_string(scope)
+      end)
+
+    # Build color lookup map (bg + text color for contrast)
+    color_map =
+      Enum.into(applicable, %{}, fn c ->
+        bg_class = Enum.at(@color_palette, c["color_index"] || 0)
+        {c["word"], "#{bg_class} #{@word_highlight_text_color}"}
+      end)
+
+    words =
+      Map.keys(color_map)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.sort_by(&String.length/1, :desc)
+
+    do_color_split(text, words, color_map, [])
+  end
+
+  defp apply_word_colors(nil, _word_colors, _scope), do: [{:text, ""}]
+
+  defp do_color_split("", _words, _color_map, acc), do: Enum.reverse(acc)
+
+  defp do_color_split(text, words, color_map, acc) do
+    case find_leftmost_match(text, words, color_map) do
+      nil ->
+        Enum.reverse([{:text, text} | acc])
+
+      {word, color_class, before, after_text} ->
+        acc = if before != "", do: [{:text, before} | acc], else: acc
+        do_color_split(after_text, words, color_map, [{:colored, word, color_class} | acc])
+    end
+  end
+
+  defp find_leftmost_match(text, words, color_map) do
+    matches =
+      Enum.flat_map(words, fn word ->
+        case :binary.match(text, word) do
+          {pos, len} -> [{pos, len, word, color_map[word]}]
+          :nomatch -> []
+        end
+      end)
+
+    case Enum.sort_by(matches, fn {pos, _, _, _} -> pos end) |> List.first() do
+      nil ->
+        nil
+
+      {pos, len, word, color_class} ->
+        before = binary_part(text, 0, pos)
+        after_text = binary_part(text, pos + len, byte_size(text) - pos - len)
+        {word, color_class, before, after_text}
+    end
+  end
+
+  # Render colored segments without inter-element whitespace
+  attr :segments, :list, required: true
+
+  defp colored_segments(assigns) do
+    ~H"""
+    <%= for segment <- @segments do %><%= case segment do %><% {:text, text} -> %><span><%= text %></span><% {:colored, text, classes} -> %><span class={["rounded", classes]}><%= text %></span><% end %><% end %>
     """
   end
 
