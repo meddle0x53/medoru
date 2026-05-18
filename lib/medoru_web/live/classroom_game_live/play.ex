@@ -36,9 +36,14 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
 
       message =
         cond do
-          is_anonymous -> gettext("You must sign in to play this game.")
-          Classrooms.get_user_membership(classroom_id, user.id) == nil -> gettext("You are not a member of this classroom.")
-          true -> gettext("Your membership is pending approval.")
+          is_anonymous ->
+            gettext("You must sign in to play this game.")
+
+          Classrooms.get_user_membership(classroom_id, user.id) == nil ->
+            gettext("You are not a member of this classroom.")
+
+          true ->
+            gettext("Your membership is pending approval.")
         end
 
       {:ok,
@@ -639,7 +644,13 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
           new_flipped = flipped ++ [position]
 
           if length(new_flipped) == 2 do
-            anonymous_handle_two_flipped_kana(session, new_flipped, card_positions, collected, game)
+            anonymous_handle_two_flipped_kana(
+              session,
+              new_flipped,
+              card_positions,
+              collected,
+              game
+            )
           else
             updated = put_in(session.cards_state["flipped_indices"], new_flipped)
             {:ok, updated}
@@ -976,7 +987,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
             </div>
             <div class="flex items-center gap-3">
               <.link
-                navigate={if @return_to, do: "#{~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}?return_to=#{@return_to}", else: ~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}
+                navigate={
+                  if @return_to,
+                    do:
+                      "#{~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}?return_to=#{@return_to}",
+                    else: ~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"
+                }
                 class="btn btn-ghost btn-sm"
               >
                 <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
@@ -1023,7 +1039,9 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 </button>
                 <%= if @is_anonymous do %>
                   <.link navigate={~p"/auth/google"} class="btn btn-secondary">
-                    <.icon name="hero-user-plus" class="w-4 h-4 mr-1" /> {gettext("Sign in to Save Progress")}
+                    <.icon name="hero-user-plus" class="w-4 h-4 mr-1" /> {gettext(
+                      "Sign in to Save Progress"
+                    )}
                   </.link>
                 <% end %>
               </div>

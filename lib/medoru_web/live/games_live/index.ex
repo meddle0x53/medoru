@@ -11,14 +11,16 @@ defmodule MedoruWeb.GamesLive.Index do
     "memory_cards" => gettext("Memory Cards"),
     "kana_memory_cards" => gettext("Kana Memory"),
     "kana_falling" => gettext("Kana Cascade"),
-    "kanji_falling" => gettext("Kanji Cascade")
+    "kanji_falling" => gettext("Kanji Cascade"),
+    "words_falling" => gettext("Words Cascade")
   }
 
   @game_type_icons %{
     "memory_cards" => "hero-squares-2x2",
     "kana_memory_cards" => "hero-squares-2x2",
     "kana_falling" => "hero-bolt",
-    "kanji_falling" => "hero-bolt"
+    "kanji_falling" => "hero-bolt",
+    "words_falling" => "hero-book-open"
   }
 
   @skill_level_colors %{
@@ -119,7 +121,10 @@ defmodule MedoruWeb.GamesLive.Index do
                 <%= for game <- games do %>
                   <.link
                     navigate={"#{play_path(game)}?return_to=/games"}
-                    class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}
+                    class={[
+                      "card shadow-sm hover:shadow-md transition-all",
+                      skill_level_card_bg(game.skill_level)
+                    ]}
                   >
                     <div class="card-body p-4">
                       <div class="flex items-start justify-between">
@@ -163,6 +168,7 @@ defmodule MedoruWeb.GamesLive.Index do
     case game.type do
       "kana_falling" -> ~p"/classrooms/#{classroom_id}/kana-falling-games/#{game.id}"
       "kanji_falling" -> ~p"/classrooms/#{classroom_id}/kanji-falling-games/#{game.id}"
+      "words_falling" -> ~p"/classrooms/#{classroom_id}/words-falling-games/#{game.id}"
       _ -> ~p"/classrooms/#{classroom_id}/games/#{game.id}"
     end
   end

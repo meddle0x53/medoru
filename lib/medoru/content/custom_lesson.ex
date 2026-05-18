@@ -68,7 +68,14 @@ defmodule Medoru.Content.CustomLesson do
       :include_writing,
       :steps_per_word
     ])
-    |> validate_required([:title, :lesson_type, :lesson_subtype, :status, :difficulty, :creator_id])
+    |> validate_required([
+      :title,
+      :lesson_type,
+      :lesson_subtype,
+      :status,
+      :difficulty,
+      :creator_id
+    ])
     |> validate_length(:title, min: 1, max: 100)
     |> validate_length(:description, max: 500)
     |> validate_inclusion(:lesson_type, ["reading"])

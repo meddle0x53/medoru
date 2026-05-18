@@ -612,7 +612,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <% lesson = classroom_lesson.custom_lesson %>
             <% progress = get_lesson_progress_map(@lesson_progress, lesson.id) %>
             <% progress_status = progress.status %>
-            <div class={["card border shadow-sm hover:shadow-md transition-shadow", skill_level_card_bg(lesson.difficulty)]}>
+            <div class={[
+              "card border shadow-sm hover:shadow-md transition-shadow",
+              skill_level_card_bg(lesson.difficulty)
+            ]}>
               <div class="card-body p-4 sm:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                   <div class="flex-1 min-w-0">
@@ -629,7 +632,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         {lesson.word_count} {gettext("words")}
                       </span>
 
-                      <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                      <span class={[
+                        "px-2 py-0.5 rounded-full border text-xs font-medium",
+                        skill_level_color(lesson.difficulty)
+                      ]}>
                         {skill_level_label(lesson.difficulty)}
                       </span>
 
@@ -935,7 +941,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
       <% else %>
         <%= for game <- @published_games do %>
           <% session = Map.get(@game_sessions, game.id) %>
-          <div class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}>
+          <div class={[
+            "card shadow-sm hover:shadow-md transition-all",
+            skill_level_card_bg(game.skill_level)
+          ]}>
             <div class="card-body p-4 sm:p-6">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div class="flex-1 min-w-0">

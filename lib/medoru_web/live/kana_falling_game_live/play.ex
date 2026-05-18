@@ -42,7 +42,9 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
       not has_access ->
-        redirect_path = if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms/#{classroom_id}"
+        redirect_path =
+          if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms/#{classroom_id}"
+
         {:ok, push_navigate(socket, to: redirect_path)}
 
       game.type != "kana_falling" ->
@@ -50,7 +52,10 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
 
       true ->
         config = game.kana_falling_game
-        high_score = if is_anonymous, do: nil, else: Games.get_kana_falling_high_score(game_id, user.id)
+
+        high_score =
+          if is_anonymous, do: nil, else: Games.get_kana_falling_high_score(game_id, user.id)
+
         sessions = if is_anonymous, do: [], else: Games.list_kana_falling_sessions(game_id)
 
         socket =

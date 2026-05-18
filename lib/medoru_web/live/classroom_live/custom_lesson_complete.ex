@@ -367,7 +367,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
                     {gettext("Want to save your progress?")}
                   </h3>
                   <p class="text-sm text-secondary mb-4">
-                    {gettext("Create an account to track your learning, earn points, and join the rankings!")}
+                    {gettext(
+                      "Create an account to track your learning, earn points, and join the rankings!"
+                    )}
                   </p>
                   <.link href={~p"/auth/google"} class="btn btn-primary">
                     <.icon name="hero-arrow-right-end-on-rectangle" class="w-5 h-5 mr-2" />

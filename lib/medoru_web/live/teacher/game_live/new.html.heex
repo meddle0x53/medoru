@@ -90,6 +90,26 @@
           </p>
         </div>
       </.link>
+
+      <%!-- Words Cascade --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/words-falling-games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-info transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-info/10 flex items-center justify-center mb-3 group-hover:bg-info/20 transition-colors">
+            <.icon name="hero-book-open" class="w-7 h-7 text-info" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Words Cascade")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext(
+              "Type meaning or reading before words reach the bottom. Vocabulary practice."
+            )}
+          </p>
+        </div>
+      </.link>
     </div>
   </div>
 </Layouts.app>

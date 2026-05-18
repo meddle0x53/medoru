@@ -57,7 +57,10 @@ defmodule MedoruWeb.Admin.DashboardLive do
       {:ok, updated_settings} ->
         featured_classroom =
           if updated_settings.featured_classroom_id do
-            Enum.find(socket.assigns.public_classrooms, &(&1.id == updated_settings.featured_classroom_id))
+            Enum.find(
+              socket.assigns.public_classrooms,
+              &(&1.id == updated_settings.featured_classroom_id)
+            )
           end
 
         {:noreply,

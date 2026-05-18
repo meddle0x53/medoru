@@ -782,7 +782,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
 
   defp skill_level_btn_active(1), do: "btn-success"
   defp skill_level_btn_active(2), do: "btn-info"
-  defp skill_level_btn_active(3), do: "bg-purple-500 text-white border-purple-500 hover:bg-purple-600"
+
+  defp skill_level_btn_active(3),
+    do: "bg-purple-500 text-white border-purple-500 hover:bg-purple-600"
+
   defp skill_level_btn_active(4), do: "btn-error"
   defp skill_level_btn_active(5), do: "btn-warning"
   defp skill_level_btn_active(_), do: "btn-primary"

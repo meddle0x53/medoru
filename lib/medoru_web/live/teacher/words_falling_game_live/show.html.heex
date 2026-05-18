@@ -1,0 +1,141 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Classroom")}
+      </.link>
+      <h1 class="text-2xl sm:text-3xl font-bold text-base-content">{@game.name}</h1>
+      <p class="text-secondary mt-1">
+        {gettext("Words Cascade Game")}
+      </p>
+    </div>
+
+    <%!-- Game Details Card --%>
+    <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-base-content mb-4">
+          <.icon name="hero-cog-6-tooth" class="w-5 h-5" />
+          {gettext("Game Settings")}
+        </h2>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-secondary">{gettext("Type")}</span>
+            <p class="font-medium text-base-content">{gettext("Words Cascade")}</p>
+          </div>
+          <div>
+            <span class="text-secondary">{gettext("Status")}</span>
+            <p class="font-medium">
+              <%= if @game.status == :published do %>
+                <span class="text-success">{gettext("Published")}</span>
+              <% else %>
+                <span class="text-warning">{gettext("Draft")}</span>
+              <% end %>
+            </p>
+          </div>
+          <div>
+            <span class="text-secondary">{gettext("Skill Level")}</span>
+            <p class="font-medium text-base-content">{@game.skill_level}</p>
+          </div>
+          <%= if @game.words_falling_game do %>
+            <% wfg = @game.words_falling_game %>
+            <div>
+              <span class="text-secondary">{gettext("Initial Speed")}</span>
+              <p class="font-medium text-base-content">{wfg.initial_speed}</p>
+            </div>
+            <div>
+              <span class="text-secondary">{gettext("Lives")}</span>
+              <p class="font-medium text-base-content">{wfg.lives}</p>
+            </div>
+            <div>
+              <span class="text-secondary">{gettext("Game Mode")}</span>
+              <p class="font-medium text-base-content">
+                <%= if wfg.game_mode == 0 do %>
+                  {gettext("Word Meaning")}
+                <% else %>
+                  {gettext("Word Reading")}
+                <% end %>
+              </p>
+            </div>
+            <%= if wfg.game_mode == 1 do %>
+              <div>
+                <span class="text-secondary">{gettext("Keyboard")}</span>
+                <p class="font-medium text-base-content">{wfg.keyboard_type}</p>
+              </div>
+            <% end %>
+            <div>
+              <span class="text-secondary">{gettext("Words")}</span>
+              <p class="font-medium text-base-content">{length(wfg.selected_words || [])}</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Actions --%>
+    <div class="flex flex-wrap gap-3 mb-6">
+      <%= if @game.status == :draft do %>
+        <button
+          phx-click="publish_game"
+          class="btn btn-success btn-sm"
+        >
+          <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Publish")}
+        </button>
+      <% else %>
+        <button
+          phx-click="unpublish_game"
+          class="btn btn-ghost btn-outline btn-sm"
+        >
+          <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" /> {gettext("Unpublish")}
+        </button>
+      <% end %>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/words-falling-games/#{@game.id}/edit"}
+        class="btn btn-primary btn-sm"
+      >
+        <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit")}
+      </.link>
+      <button
+        phx-click="delete_game"
+        data-confirm={gettext("Are you sure? This will delete all game data.")}
+        class="btn btn-error btn-sm btn-outline"
+      >
+        <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Delete")}
+      </button>
+    </div>
+
+    <%!-- Rankings --%>
+    <div class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base-content mb-4">
+          <.icon name="hero-trophy" class="w-5 h-5" />
+          {gettext("Rankings")}
+        </h2>
+
+        <%= if @sessions == [] do %>
+          <p class="text-secondary">{gettext("No scores yet.")}</p>
+        <% else %>
+          <div class="space-y-2">
+            <%= for {session, index} <- Enum.with_index(@sessions, 1) do %>
+              <div class="flex items-center gap-3 px-4 py-3 bg-base-200 rounded-lg">
+                <span class="w-8 text-center font-bold text-secondary">{index}</span>
+                <span class="flex-1 truncate">
+                  {display_name(session.user, :full, gettext("Anonymous"))}
+                </span>
+                <span class="font-bold text-primary">{session.score}</span>
+                <span class="text-xs text-secondary">
+                  {gettext("Speed %{speed}", speed: session.highest_speed_reached)}
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

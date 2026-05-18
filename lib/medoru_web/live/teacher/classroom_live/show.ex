@@ -790,7 +790,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <div class="space-y-3">
           <%= for {classroom_lesson, index} <- Enum.with_index(@classroom_lessons, 1) do %>
             <% lesson = classroom_lesson.custom_lesson %>
-            <div class={["card border shadow-sm hover:shadow-md transition-shadow", skill_level_card_bg(lesson.difficulty)]}>
+            <div class={[
+              "card border shadow-sm hover:shadow-md transition-shadow",
+              skill_level_card_bg(lesson.difficulty)
+            ]}>
               <div class="card-body p-4">
                 <div class="flex items-center gap-4">
                   <%= if @reordering do %>
@@ -828,7 +831,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                         <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
                         {lesson.word_count} {gettext("words")}
                       </span>
-                      <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                      <span class={[
+                        "px-2 py-0.5 rounded-full border text-xs font-medium",
+                        skill_level_color(lesson.difficulty)
+                      ]}>
                         {skill_level_label(lesson.difficulty)}
                       </span>
                       <%= if lesson.requires_test do %>
@@ -898,7 +904,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <% else %>
         <div class="space-y-3">
           <%= for game <- @classroom_games do %>
-            <div class={["card shadow-sm hover:shadow-md transition-all", skill_level_card_bg(game.skill_level)]}>
+            <div class={[
+              "card shadow-sm hover:shadow-md transition-all",
+              skill_level_card_bg(game.skill_level)
+            ]}>
               <div class="card-body p-4 sm:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div class="flex-1 min-w-0">
@@ -1021,6 +1030,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
                           "kanji_falling" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
+
+                          "words_falling" ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/words-falling-games/#{game.id}"
 
                           _ ->
                             ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"

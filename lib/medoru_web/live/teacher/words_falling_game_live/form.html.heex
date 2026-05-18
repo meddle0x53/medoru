@@ -1,0 +1,349 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">{@page_title}</h1>
+      <p class="text-secondary">
+        {gettext("Configure a falling words typing game for your students.")}
+      </p>
+    </div>
+
+    <%!-- Form --%>
+    <form phx-submit="save" phx-change="update_field" class="space-y-6">
+      <%!-- Game Name --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("Game Name")} <span class="text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          value={@name}
+          placeholder={gettext("e.g., N5 Vocabulary Challenge")}
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        />
+        <%= if @form_errors[:name] do %>
+          <p class="text-error text-sm mt-1">{@form_errors[:name]}</p>
+        <% end %>
+      </div>
+
+      <%!-- Settings Grid --%>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <%!-- Initial Speed --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Initial Speed")}
+          </label>
+          <select
+            name="initial_speed"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- speed_options() do %>
+              <option value={value} selected={@initial_speed == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+
+        <%!-- Lives --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Starting Lives")}
+          </label>
+          <input
+            type="number"
+            name="lives"
+            value={@lives}
+            min="1"
+            max="10"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Speed Increase Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Speed Up Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="speed_increase_threshold"
+            value={@speed_increase_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Extra Life Threshold --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Extra Life Every N Points")}
+          </label>
+          <input
+            type="number"
+            name="extra_life_threshold"
+            value={@extra_life_threshold}
+            min="1"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          />
+        </div>
+
+        <%!-- Skill Level --%>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Skill Level")}
+          </label>
+          <select
+            name="skill_level"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- skill_level_options() do %>
+              <option value={value} selected={@skill_level == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+      </div>
+
+      <%!-- Game Mode --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-1">
+          {gettext("Game Mode")}
+        </label>
+        <select
+          name="game_mode"
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+        >
+          <%= for {label, value} <- game_mode_options() do %>
+            <option value={value} selected={@game_mode == value}>{label}</option>
+          <% end %>
+        </select>
+        <p class="text-xs text-secondary mt-1">
+          {gettext("Meaning: students type the meaning. Reading: students type the reading.")}
+        </p>
+      </div>
+
+      <%!-- Keyboard Type (only for reading mode) --%>
+      <%= if @game_mode == "1" do %>
+        <div>
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("On-Screen Keyboard")}
+          </label>
+          <select
+            name="keyboard_type"
+            class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <%= for {label, value} <- keyboard_type_options() do %>
+              <option value={value} selected={@keyboard_type == value}>{label}</option>
+            <% end %>
+          </select>
+        </div>
+      <% end %>
+
+      <%!-- Background Image Upload --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Background Image")}
+        </label>
+        <p class="text-secondary text-sm mb-3">
+          {gettext("Optional background image for the game field.")}
+        </p>
+
+        <div class="space-y-4">
+          <%= if assigns[:background_image] && @background_image do %>
+            <div class="p-4 bg-base-200/50 rounded-lg">
+              <p class="text-sm text-secondary mb-2">{gettext("Current image:")}</p>
+              <img
+                src={@background_image}
+                alt={gettext("Background")}
+                class="w-full max-w-[300px] h-auto rounded-xl border border-base-300"
+              />
+            </div>
+          <% end %>
+
+          <div>
+            <.live_file_input
+              upload={@uploads.background_image}
+              class="file-input file-input-bordered w-full"
+            />
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Accepted formats: JPG, PNG, WebP. Max size: 2MB")}
+            </p>
+
+            <%= for entry <- @uploads.background_image.entries do %>
+              <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-4">
+                  <.live_img_preview
+                    entry={entry}
+                    class="w-24 h-24 object-cover rounded-lg border border-base-300"
+                  />
+                  <div class="flex-1">
+                    <p class="font-medium">{entry.client_name}</p>
+                    <p class="text-sm text-secondary">
+                      {trunc(entry.client_size / 1024)} KB
+                    </p>
+                    <div class="w-full bg-base-300 rounded-full h-2 mt-2">
+                      <div
+                        class="bg-primary h-2 rounded-full transition-all"
+                        style={"width: #{entry.progress}%"}
+                      >
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="btn btn-ghost btn-circle btn-sm"
+                  >
+                    <.icon name="hero-x-mark" class="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            <% end %>
+
+            <%= for err <- upload_errors(@uploads.background_image) do %>
+              <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Word Selection --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title text-base-content text-lg mb-4">
+            <.icon name="hero-book-open" class="w-5 h-5" />
+            {gettext("Word Selection")}
+            <span class="text-error">*</span>
+          </h3>
+
+          <%!-- Word Set Quick Add --%>
+          <div class="flex items-end gap-2 mb-4">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Add from Word Set")}
+              </label>
+              <select
+                name="word_set_id"
+                phx-change="add_from_word_set"
+                class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              >
+                <option value="">{gettext("Select a word set...")}</option>
+                <%= for ws <- @word_sets.word_sets do %>
+                  <option value={ws.id}>{ws.name} ({ws.word_count} {gettext("words")})</option>
+                <% end %>
+              </select>
+            </div>
+          </div>
+
+          <%!-- Word Search --%>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-base-content mb-1">
+              {gettext("Search Words")}
+            </label>
+            <div class="relative">
+              <input
+                type="text"
+                name="query"
+                value={@search_query}
+                placeholder={gettext("Type to search words...")}
+                phx-change="search_words"
+                phx-debounce="300"
+                class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+              <%= if @search_loading do %>
+                <div class="absolute right-3 top-2.5">
+                  <span class="loading loading-spinner loading-sm text-primary"></span>
+                </div>
+              <% end %>
+            </div>
+
+            <%!-- Search Results --%>
+            <%= if @search_results != [] do %>
+              <div class="mt-2 bg-base-200 rounded-lg border border-base-300 max-h-48 overflow-y-auto">
+                <%= for word <- @search_results do %>
+                  <button
+                    type="button"
+                    phx-click="add_word"
+                    phx-value-word_id={word.id}
+                    class="w-full text-left px-4 py-2 hover:bg-base-300 transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <span class="font-medium text-base-content">{word.text}</span>
+                      <span class="text-sm text-secondary ml-2">{word.reading}</span>
+                    </div>
+                    <span class="text-sm text-secondary">{word.meaning}</span>
+                    <.icon name="hero-plus" class="w-4 h-4 text-success" />
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+
+          <%!-- Selected Words --%>
+          <%= if @selected_words == [] do %>
+            <p class="text-secondary text-sm">
+              {gettext("No words selected yet. Search or use a word set above.")}
+            </p>
+          <% else %>
+            <div class="space-y-2 max-h-80 overflow-y-auto">
+              <p class="text-sm text-secondary">
+                {gettext("%{count} words selected", count: length(@selected_words))}
+              </p>
+              <%= for word <- @selected_words do %>
+                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-base-content">{word.text}</div>
+                    <div class="text-sm text-secondary truncate">
+                      {word.reading} — {word.meaning}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <label class="text-sm text-secondary whitespace-nowrap">
+                      {gettext("Pts:")}
+                    </label>
+                    <input
+                      type="number"
+                      name="points"
+                      value={Map.get(@word_points, to_string(word.id), 1)}
+                      min="1"
+                      max="100"
+                      phx-blur="update_word_points"
+                      phx-value-word_id={word.id}
+                      class="w-16 px-2 py-1 bg-base-100 border border-base-300 rounded text-base-content text-sm focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="remove_word"
+                    phx-value-word_id={word.id}
+                    class="btn btn-ghost btn-circle btn-sm text-error"
+                  >
+                    <.icon name="hero-x-mark" class="w-4 h-4" />
+                  </button>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= if @form_errors[:selected_words] do %>
+            <p class="text-error text-sm mt-2">{@form_errors[:selected_words]}</p>
+          <% end %>
+        </div>
+      </div>
+
+      <%!-- Actions --%>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn btn-primary">
+          <.icon name="hero-check" class="w-4 h-4 mr-1" />
+          {gettext("Save Game")}
+        </button>
+        <.link
+          navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+          class="btn btn-ghost"
+        >
+          {gettext("Cancel")}
+        </.link>
+      </div>
+    </form>
+  </div>
+</Layouts.app>

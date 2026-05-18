@@ -4,7 +4,9 @@ defmodule Medoru.Repo.Migrations.CreateSiteSettings do
   def change do
     create table(:site_settings, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :featured_classroom_id, references(:classrooms, type: :binary_id, on_delete: :nilify_all)
+
+      add :featured_classroom_id,
+          references(:classrooms, type: :binary_id, on_delete: :nilify_all)
 
       timestamps(type: :utc_datetime)
     end

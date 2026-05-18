@@ -45,7 +45,12 @@ defmodule MedoruWeb.LessonLive.Index do
         %{lessons: [], total_count: 0, total_pages: 1}
 
       classroom_id ->
-        result = Content.list_classroom_custom_lessons(classroom_id, status: "active", per_page: @per_page, page: page)
+        result =
+          Content.list_classroom_custom_lessons(classroom_id,
+            status: "active",
+            per_page: @per_page,
+            page: page
+          )
 
         # Annotate each lesson with classroom info so the template can navigate correctly
         lessons =

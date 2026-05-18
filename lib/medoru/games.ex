@@ -18,7 +18,9 @@ defmodule Medoru.Games do
     KanaFallingGame,
     KanaFallingSession,
     KanjiFallingGame,
-    KanjiFallingSession
+    KanjiFallingSession,
+    WordsFallingGame,
+    WordsFallingSession
   }
 
   # ============================================================================
@@ -61,7 +63,8 @@ defmodule Medoru.Games do
       :memory_card_game,
       :kana_memory_card_game,
       :kana_falling_game,
-      :kanji_falling_game
+      :kanji_falling_game,
+      :words_falling_game
     ])
     |> order_by([g], asc: g.skill_level, desc: g.inserted_at)
     |> Repo.all()
@@ -101,6 +104,7 @@ defmodule Medoru.Games do
         :kana_memory_card_game,
         :kana_falling_game,
         :kanji_falling_game,
+        :words_falling_game,
         classroom: [:teacher]
       ])
       |> order_by([g], asc: g.skill_level, desc: g.inserted_at)
@@ -129,7 +133,8 @@ defmodule Medoru.Games do
       memory_card_game: [memory_card_game_words: [:word]],
       kana_memory_card_game: [],
       kana_falling_game: [],
-      kanji_falling_game: []
+      kanji_falling_game: [],
+      words_falling_game: []
     )
   end
 
@@ -143,7 +148,8 @@ defmodule Medoru.Games do
       memory_card_game: [memory_card_game_words: [word: [:word_kanjis]]],
       kana_memory_card_game: [],
       kana_falling_game: [],
-      kanji_falling_game: []
+      kanji_falling_game: [],
+      words_falling_game: []
     )
   end
 
@@ -541,6 +547,13 @@ defmodule Medoru.Games do
 
       "kanji_falling" ->
         KanjiFallingSession
+        |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+        |> order_by([s], desc: s.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      "words_falling" ->
+        WordsFallingSession
         |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
         |> order_by([s], desc: s.inserted_at)
         |> limit(1)
@@ -1657,6 +1670,228 @@ defmodule Medoru.Games do
       {char, color}
     end)
     |> Map.new()
+  end
+
+  # ============================================================================
+  # Words Falling Games
+  # ============================================================================
+
+  @doc """
+  Creates a words falling game with word selection.
+  """
+  def create_words_falling_game(classroom_id, teacher_id, attrs, selected_word_ids) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      selected_word_ids = Enum.uniq(selected_word_ids)
+
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name],
+          type: "words_falling",
+          status: :draft,
+          max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
+          classroom_id: classroom_id
+        }
+
+        game =
+          %Game{}
+          |> Game.changeset(game_attrs)
+          |> Repo.insert!()
+
+        word_points =
+          attrs["word_points"] || attrs[:word_points] ||
+            Map.new(selected_word_ids, fn id -> {to_string(id), 1} end)
+
+        wfg_attrs = %{
+          game_id: game.id,
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:words_falling_game, :initial_speed]),
+              1
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:words_falling_game, :speed_increase_threshold]),
+              50
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "lives"]) ||
+                get_in(attrs, [:words_falling_game, :lives]),
+              3
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:words_falling_game, :extra_life_threshold]),
+              100
+            ),
+          selected_words: selected_word_ids,
+          word_points: word_points,
+          game_mode:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "game_mode"]) ||
+                get_in(attrs, [:words_falling_game, :game_mode]),
+              0
+            ),
+          keyboard_type:
+            get_in(attrs, ["words_falling_game", "keyboard_type"]) ||
+              get_in(attrs, [:words_falling_game, :keyboard_type]) || "latin",
+          word_colors: assign_word_colors(selected_word_ids),
+          background_image:
+            get_in(attrs, ["words_falling_game", "background_image"]) ||
+              get_in(attrs, [:words_falling_game, :background_image])
+        }
+
+        case %WordsFallingGame{}
+             |> WordsFallingGame.changeset(wfg_attrs)
+             |> Repo.insert() do
+          {:ok, _} -> get_game!(game.id)
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  @doc """
+  Updates a words falling game and its word selection.
+  """
+  def update_words_falling_game(%Game{} = game, teacher_id, attrs, selected_word_ids) do
+    if game.classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      selected_word_ids = Enum.uniq(selected_word_ids)
+
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name] || game.name,
+          max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
+        }
+
+        game =
+          game
+          |> Game.changeset(game_attrs)
+          |> Repo.update!()
+
+        wfg = Repo.get_by!(WordsFallingGame, game_id: game.id)
+
+        existing_words = wfg.selected_words || []
+
+        colors =
+          if Enum.sort(existing_words) == Enum.sort(selected_word_ids) do
+            wfg.word_colors || %{}
+          else
+            assign_word_colors(selected_word_ids)
+          end
+
+        word_points =
+          attrs["word_points"] || attrs[:word_points] || wfg.word_points ||
+            Map.new(selected_word_ids, fn id -> {to_string(id), 1} end)
+
+        wfg_attrs = %{
+          initial_speed:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "initial_speed"]) ||
+                get_in(attrs, [:words_falling_game, :initial_speed]),
+              wfg.initial_speed
+            ),
+          speed_increase_threshold:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "speed_increase_threshold"]) ||
+                get_in(attrs, [:words_falling_game, :speed_increase_threshold]),
+              wfg.speed_increase_threshold
+            ),
+          lives:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "lives"]) ||
+                get_in(attrs, [:words_falling_game, :lives]),
+              wfg.lives
+            ),
+          extra_life_threshold:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "extra_life_threshold"]) ||
+                get_in(attrs, [:words_falling_game, :extra_life_threshold]),
+              wfg.extra_life_threshold
+            ),
+          selected_words: selected_word_ids,
+          word_points: word_points,
+          game_mode:
+            parse_int(
+              get_in(attrs, ["words_falling_game", "game_mode"]) ||
+                get_in(attrs, [:words_falling_game, :game_mode]),
+              wfg.game_mode
+            ),
+          keyboard_type:
+            get_in(attrs, ["words_falling_game", "keyboard_type"]) ||
+              get_in(attrs, [:words_falling_game, :keyboard_type]) || wfg.keyboard_type,
+          word_colors: colors,
+          background_image:
+            get_in(attrs, ["words_falling_game", "background_image"]) ||
+              get_in(attrs, [:words_falling_game, :background_image]) || wfg.background_image
+        }
+
+        case wfg
+             |> WordsFallingGame.changeset(wfg_attrs)
+             |> Repo.update() do
+          {:ok, _} -> get_game!(game.id)
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end
+  end
+
+  defp assign_word_colors(selected_word_ids) do
+    selected_word_ids
+    |> Enum.with_index()
+    |> Enum.map(fn {word_id, index} ->
+      color = Enum.at(@kanji_colors, rem(index, length(@kanji_colors)))
+      {to_string(word_id), color}
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  Creates a completed words falling session after game over.
+  """
+  def create_words_falling_session(attrs) do
+    %WordsFallingSession{}
+    |> WordsFallingSession.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Lists words falling sessions for rankings (best score per user).
+  """
+  def list_words_falling_sessions(game_id) do
+    best_session_ids =
+      WordsFallingSession
+      |> where([s], s.game_id == ^game_id)
+      |> distinct([s], asc: s.user_id)
+      |> order_by([s], asc: s.user_id, desc: s.score, asc: s.completed_at)
+      |> select([s], s.id)
+
+    WordsFallingSession
+    |> where([s], s.id in subquery(best_session_ids))
+    |> order_by([s], desc: s.score, asc: s.completed_at)
+    |> preload(user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the user's high score for a words falling game.
+  """
+  def get_words_falling_high_score(game_id, user_id) do
+    WordsFallingSession
+    |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+    |> select([s], max(s.score))
+    |> Repo.one() || 0
   end
 
   @doc """

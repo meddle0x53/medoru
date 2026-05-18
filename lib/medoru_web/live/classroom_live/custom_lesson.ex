@@ -322,7 +322,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           {:noreply,
            socket
            |> push_navigate(
-             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?anonymous=true"
+             to:
+               ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?anonymous=true"
            )}
         else
           # Check if test is already completed

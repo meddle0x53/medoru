@@ -34,9 +34,14 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
 
       message =
         cond do
-          is_anonymous -> gettext("You must sign in to view this page.")
-          Classrooms.get_user_membership(classroom_id, user.id) == nil -> gettext("You are not a member of this classroom.")
-          true -> gettext("Your membership is pending approval.")
+          is_anonymous ->
+            gettext("You must sign in to view this page.")
+
+          Classrooms.get_user_membership(classroom_id, user.id) == nil ->
+            gettext("You are not a member of this classroom.")
+
+          true ->
+            gettext("Your membership is pending approval.")
         end
 
       {:ok,

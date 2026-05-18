@@ -96,7 +96,10 @@
                       <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
                       {lesson.word_count} {gettext("words")}
                     </span>
-                    <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                    <span class={[
+                      "px-2 py-0.5 rounded-full border text-xs font-medium",
+                      skill_level_color(lesson.difficulty)
+                    ]}>
                       {skill_level_label(lesson.difficulty)}
                     </span>
                     <%= if lesson.requires_test do %>

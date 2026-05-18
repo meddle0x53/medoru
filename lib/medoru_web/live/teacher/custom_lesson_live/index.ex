@@ -282,7 +282,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
                         {lesson.word_count} {gettext("words")}
                       <% end %>
                     </span>
-                    <span class={["px-2 py-0.5 rounded-full border text-xs font-medium", skill_level_color(lesson.difficulty)]}>
+                    <span class={[
+                      "px-2 py-0.5 rounded-full border text-xs font-medium",
+                      skill_level_color(lesson.difficulty)
+                    ]}>
                       {skill_level_label(lesson.difficulty)}
                     </span>
                   </div>

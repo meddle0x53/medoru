@@ -1,6 +1,6 @@
-defmodule MedoruWeb.KanjiFallingGameLive.Play do
+defmodule MedoruWeb.WordsFallingGameLive.Play do
   @moduledoc """
-  LiveView for playing the kanji falling typing game.
+  LiveView for playing the words falling typing game.
 
   Game state is kept entirely in memory (socket assigns) until game over.
   Only then is a session record created in the database.
@@ -10,7 +10,9 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
   alias Medoru.Classrooms
   alias Medoru.Content
+  alias Medoru.Content.Kana
   alias Medoru.Games
+  alias Medoru.Games.WordsFallingGame
   alias MedoruWeb.PublicAccess
 
   @death_row 20
@@ -46,16 +48,17 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
         {:ok, push_navigate(socket, to: redirect_path)}
 
-      game.type != "kanji_falling" ->
+      game.type != "words_falling" ->
         {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
 
       true ->
-        config = game.kanji_falling_game
+        config = game.words_falling_game
 
         high_score =
-          if is_anonymous, do: nil, else: Games.get_kanji_falling_high_score(game_id, user.id)
+          if is_anonymous, do: nil, else: Games.get_words_falling_high_score(game_id, user.id)
 
-        sessions = if is_anonymous, do: [], else: Games.list_kanji_falling_sessions(game_id)
+        sessions = if is_anonymous, do: [], else: Games.list_words_falling_sessions(game.id)
+        locale = socket.assigns.current_scope.locale || "en"
 
         socket =
           socket
@@ -68,7 +71,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
           |> assign(:high_score, high_score)
           |> assign(:sessions, sessions)
           |> assign(:status, :ready)
-          |> assign(:current_kanji, nil)
+          |> assign(:current_word, nil)
           |> assign(:score, 0)
           |> assign(:speed, config.initial_speed)
           |> assign(:lives, config.lives)
@@ -77,7 +80,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
           |> assign(:next_extra_life_score, config.extra_life_threshold)
           |> assign(:input_buffer, "")
           |> assign(:is_mobile, nil)
-          |> assign(:kanji_pool, build_kanji_pool(config.selected_kanji, config))
+          |> assign(:word_pool, build_word_pool(config, locale))
           |> assign(:started_at, nil)
           |> assign(:highest_speed_reached, config.initial_speed)
           |> assign(:highest_row_reached, 0)
@@ -94,8 +97,8 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
   @impl true
   def handle_event("start_game", _params, socket) do
-    socket = spawn_kanji(socket)
-    tick_ms = Games.KanjiFallingGame.speed_to_ms(socket.assigns.speed)
+    socket = spawn_word(socket)
+    tick_ms = WordsFallingGame.speed_to_ms(socket.assigns.speed)
 
     timer_ref = Process.send_after(self(), :tick, tick_ms)
 
@@ -109,8 +112,8 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
   @impl true
   def handle_event("start_game_fullscreen", _params, socket) do
-    socket = spawn_kanji(socket)
-    tick_ms = Games.KanjiFallingGame.speed_to_ms(socket.assigns.speed)
+    socket = spawn_word(socket)
+    tick_ms = WordsFallingGame.speed_to_ms(socket.assigns.speed)
 
     timer_ref = Process.send_after(self(), :tick, tick_ms)
 
@@ -157,11 +160,12 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   @impl true
   def handle_event("restart_game", _params, socket) do
     config = socket.assigns.config
+    locale = socket.assigns.current_scope.locale || "en"
 
     {:noreply,
      socket
      |> assign(:status, :ready)
-     |> assign(:current_kanji, nil)
+     |> assign(:current_word, nil)
      |> assign(:score, 0)
      |> assign(:speed, config.initial_speed)
      |> assign(:lives, config.lives)
@@ -172,7 +176,8 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
      |> assign(:highest_speed_reached, config.initial_speed)
      |> assign(:highest_row_reached, 0)
      |> assign(:lives_used, 0)
-     |> assign(:timer_ref, nil)}
+     |> assign(:timer_ref, nil)
+     |> assign(:word_pool, build_word_pool(config, locale))}
   end
 
   @impl true
@@ -180,12 +185,12 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     if socket.assigns.status != :playing do
       {:noreply, socket}
     else
-      socket = move_kanji_down(socket)
+      socket = move_word_down(socket)
 
       if socket.assigns.status == :game_over do
         {:noreply, socket}
       else
-        tick_ms = Games.KanjiFallingGame.speed_to_ms(socket.assigns.speed)
+        tick_ms = WordsFallingGame.speed_to_ms(socket.assigns.speed)
         timer_ref = Process.send_after(self(), :tick, tick_ms)
         {:noreply, assign(socket, :timer_ref, timer_ref)}
       end
@@ -201,7 +206,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   end
 
   defp resume_game(socket) do
-    tick_ms = Games.KanjiFallingGame.speed_to_ms(socket.assigns.speed)
+    tick_ms = WordsFallingGame.speed_to_ms(socket.assigns.speed)
     timer_ref = Process.send_after(self(), :tick, tick_ms)
     assign(socket, status: :playing, timer_ref: timer_ref)
   end
@@ -212,10 +217,11 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     end
 
     config = socket.assigns.config
+    locale = socket.assigns.current_scope.locale || "en"
 
     socket
     |> assign(:status, :ready)
-    |> assign(:current_kanji, nil)
+    |> assign(:current_word, nil)
     |> assign(:score, 0)
     |> assign(:speed, config.initial_speed)
     |> assign(:lives, config.lives)
@@ -227,6 +233,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     |> assign(:highest_row_reached, 0)
     |> assign(:lives_used, 0)
     |> assign(:timer_ref, nil)
+    |> assign(:word_pool, build_word_pool(config, locale))
     |> push_event("exit_fullscreen", %{})
   end
 
@@ -243,78 +250,87 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
   # Game Logic
   # ============================================================================
 
-  defp build_kanji_pool(selected_kanji, config) do
-    colors = config.kanji_colors || %{}
+  defp build_word_pool(config, locale) do
+    colors = config.word_colors || %{}
+    word_points = config.word_points || %{}
+    kana_map = build_kana_romaji_map()
 
-    selected_kanji
-    |> Enum.map(fn char ->
-      case Content.get_kanji_by_character(char) do
+    config.selected_words
+    |> Enum.map(fn word_id ->
+      case Content.get_word(word_id) do
         nil ->
           nil
 
-        kanji ->
-          readings = kanji.kanji_readings || []
+        word ->
+          word_id_str = to_string(word_id)
 
-          filtered =
-            case config.reading_type do
-              "onyomi" -> Enum.filter(readings, &(&1.reading_type == :on))
-              "kunyomi" -> Enum.filter(readings, &(&1.reading_type == :kun))
-              _ -> readings
-            end
+          meanings =
+            [word.meaning, Content.get_localized_meaning(word, locale)]
+            |> Enum.reject(&is_nil/1)
+            |> Enum.flat_map(&split_alternatives/1)
+            |> Enum.map(&String.downcase(String.trim(&1)))
+            |> Enum.uniq()
 
           readings_hiragana =
-            filtered
-            |> Enum.map(fn r ->
-              reading = r.reading
-              reading = katakana_to_hiragana(reading)
-              String.replace(reading, ".", "")
-            end)
-            |> Enum.uniq()
+            if word.reading do
+              word.reading
+              |> split_alternatives()
+              |> Enum.map(&String.trim/1)
+              |> Enum.uniq()
+            else
+              []
+            end
 
           readings_romaji =
-            filtered
-            |> Enum.map(fn r ->
-              String.downcase(r.romaji || "")
-            end)
-            |> Enum.reject(&(&1 == ""))
-            |> Enum.uniq()
+            if word.reading do
+              word.reading
+              |> split_alternatives()
+              |> Enum.map(fn reading ->
+                reading
+                |> String.trim()
+                |> hiragana_to_romaji(kana_map)
+              end)
+              |> Enum.reject(&(&1 == ""))
+              |> Enum.uniq()
+            else
+              []
+            end
 
           %{
-            char: char,
-            readings_hiragana: readings_hiragana,
+            id: word_id,
+            char: word.text,
+            meanings: meanings,
+            readings: readings_hiragana,
             readings_romaji: readings_romaji,
-            color: Map.get(colors, char, "#1a1a1a")
+            color: Map.get(colors, word_id_str, "#1a1a1a"),
+            points: Map.get(word_points, word_id_str, 1)
           }
       end
     end)
     |> Enum.reject(&is_nil/1)
   end
 
-  defp katakana_to_hiragana(str) do
-    str
-    |> String.to_charlist()
-    |> Enum.map(fn cp ->
-      if cp >= 0x30A1 and cp <= 0x30F6 do
-        cp - 0x60
-      else
-        cp
-      end
-    end)
-    |> List.to_string()
+  defp split_alternatives(text) when is_binary(text) do
+    text
+    |> String.split("/")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
 
-  defp spawn_kanji(socket) do
-    pool = socket.assigns.kanji_pool
-    kanji = Enum.random(pool)
+  defp split_alternatives(_), do: []
+
+  defp spawn_word(socket) do
+    pool = socket.assigns.word_pool
+    word = Enum.random(pool)
 
     socket
-    |> assign(:current_kanji, Map.put(kanji, :row, 1))
+    |> assign(:current_word, Map.put(word, :row, 1))
     |> assign(:input_buffer, "")
   end
 
-  defp move_kanji_down(socket) do
-    current_kanji = socket.assigns.current_kanji
-    new_row = current_kanji.row + 1
+  defp move_word_down(socket) do
+    current_word = socket.assigns.current_word
+    new_row = current_word.row + 1
 
     highest_row = max(socket.assigns.highest_row_reached, new_row)
     socket = assign(socket, :highest_row_reached, highest_row)
@@ -322,7 +338,7 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     if new_row >= @death_row do
       lose_life(socket)
     else
-      assign(socket, :current_kanji, %{current_kanji | row: new_row})
+      assign(socket, :current_word, %{current_word | row: new_row})
     end
   end
 
@@ -349,21 +365,17 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
   defp check_buffer(socket) do
     buffer = socket.assigns.input_buffer
-    current_kanji = socket.assigns.current_kanji
+    current_word = socket.assigns.current_word
 
-    readings_list =
-      if contains_hiragana?(buffer) do
-        current_kanji.readings_hiragana
-      else
-        current_kanji.readings_romaji
-      end
+    answers_list = answers_for_buffer(buffer, current_word, socket.assigns.config)
+    buffer_check = String.downcase(String.trim(buffer))
 
     cond do
-      buffer in readings_list ->
+      buffer_check in answers_list ->
         socket = correct_answer(socket)
         {:noreply, socket}
 
-      Enum.any?(readings_list, &String.starts_with?(&1, buffer)) ->
+      Enum.any?(answers_list, &String.starts_with?(&1, buffer_check)) ->
         {:noreply, socket}
 
       true ->
@@ -374,19 +386,31 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
   defp check_answer(socket) do
     buffer = socket.assigns.input_buffer
-    current_kanji = socket.assigns.current_kanji
+    current_word = socket.assigns.current_word
 
-    readings_list =
-      if contains_hiragana?(buffer) do
-        current_kanji.readings_hiragana
-      else
-        current_kanji.readings_romaji
-      end
+    answers_list = answers_for_buffer(buffer, current_word, socket.assigns.config)
+    buffer_check = String.downcase(String.trim(buffer))
 
-    if buffer in readings_list do
+    if buffer_check in answers_list do
       correct_answer(socket)
     else
       wrong_answer(socket)
+    end
+  end
+
+  defp answers_for_buffer(buffer, current_word, config) do
+    game_mode = WordsFallingGame.game_mode_label(config.game_mode)
+
+    case game_mode do
+      :meaning ->
+        current_word.meanings
+
+      :reading ->
+        if contains_hiragana?(buffer) do
+          current_word.readings
+        else
+          current_word.readings_romaji
+        end
     end
   end
 
@@ -396,9 +420,78 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     |> Enum.any?(fn cp -> cp >= 0x3040 and cp <= 0x309F end)
   end
 
+  defp build_kana_romaji_map do
+    Kana.list_all()
+    |> Enum.map(fn kana ->
+      romaji = List.first(kana.readings, %{romaji: ""}).romaji
+      {kana.character, String.downcase(romaji)}
+    end)
+    |> Map.new()
+  end
+
+  defp hiragana_to_romaji(hiragana, kana_map) do
+    hiragana
+    |> String.graphemes()
+    |> Enum.reduce({"", nil}, fn char, {acc, prev} ->
+      romaji = Map.get(kana_map, char, "")
+
+      cond do
+        char == "っ" ->
+          {acc, "っ"}
+
+        char in ["ゃ", "ゅ", "ょ"] and prev != nil ->
+          vowel =
+            case char do
+              "ゃ" -> "a"
+              "ゅ" -> "u"
+              "ょ" -> "o"
+            end
+
+          base =
+            case prev do
+              "shi" -> "sh"
+              "chi" -> "ch"
+              "ji" -> "j"
+              "tsu" -> "ts"
+              other -> String.replace_trailing(other, "i", "")
+            end
+
+          combined =
+            if base == String.replace_trailing(prev, "i", "") and
+                 prev not in ["shi", "chi", "ji", "tsu"] do
+              base <> "y" <> vowel
+            else
+              base <> vowel
+            end
+
+          prev_len = String.length(prev)
+          acc_len = String.length(acc)
+          new_acc = String.slice(acc, 0, max(acc_len - prev_len, 0)) <> combined
+          {new_acc, nil}
+
+        prev == "っ" ->
+          consonant =
+            case romaji do
+              "chi" -> "t"
+              "tsu" -> "t"
+              "shi" -> "s"
+              "ji" -> "j"
+              "fu" -> "f"
+              other -> String.first(other) || ""
+            end
+
+          {acc <> consonant <> romaji, romaji}
+
+        true ->
+          {acc <> romaji, romaji}
+      end
+    end)
+    |> elem(0)
+  end
+
   defp correct_answer(socket) do
-    config = socket.assigns.config
-    new_score = socket.assigns.score + config.points_per_kanji
+    current_word = socket.assigns.current_word
+    new_score = socket.assigns.score + current_word.points
 
     socket =
       socket
@@ -411,7 +504,10 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
 
         socket
         |> assign(:speed, new_speed)
-        |> assign(:next_speed_up_score, new_score + config.speed_increase_threshold)
+        |> assign(
+          :next_speed_up_score,
+          new_score + socket.assigns.config.speed_increase_threshold
+        )
         |> assign(:highest_speed_reached, max(socket.assigns.highest_speed_reached, new_speed))
       else
         socket
@@ -422,24 +518,24 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
            socket.assigns.lives < socket.assigns.max_lives do
         socket
         |> assign(:lives, socket.assigns.lives + 1)
-        |> assign(:next_extra_life_score, new_score + config.extra_life_threshold)
+        |> assign(:next_extra_life_score, new_score + socket.assigns.config.extra_life_threshold)
       else
         socket
       end
 
-    socket = push_kanji_destroyed(socket)
-    spawn_kanji(socket)
+    socket = push_word_destroyed(socket)
+    spawn_word(socket)
   end
 
   defp wrong_answer(socket) do
-    current_kanji = socket.assigns.current_kanji
-    new_row = current_kanji.row + 2
+    current_word = socket.assigns.current_word
+    new_row = current_word.row + 2
 
     socket =
       if new_row >= @death_row do
         lose_life(socket)
       else
-        assign(socket, :current_kanji, %{current_kanji | row: new_row})
+        assign(socket, :current_word, %{current_word | row: new_row})
       end
 
     assign(socket, :input_buffer, "")
@@ -455,21 +551,21 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
       |> assign(:lives_used, lives_used)
 
     if new_lives <= 0 do
-      push_kanji_destroyed(socket)
+      push_word_destroyed(socket)
       game_over(socket)
     else
-      socket = push_kanji_destroyed(socket)
-      spawn_kanji(socket)
+      socket = push_word_destroyed(socket)
+      spawn_word(socket)
     end
   end
 
-  defp push_kanji_destroyed(socket) do
-    current_kanji = socket.assigns.current_kanji
+  defp push_word_destroyed(socket) do
+    current_word = socket.assigns.current_word
 
-    if current_kanji do
+    if current_word do
       push_event(socket, "kana_destroyed", %{
-        char: current_kanji.char,
-        row: current_kanji.row
+        char: current_word.char,
+        row: current_word.row
       })
     else
       socket
@@ -504,10 +600,10 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
         completed_at: now
       }
 
-      {:ok, _session} = Games.create_kanji_falling_session(attrs)
+      {:ok, _session} = Games.create_words_falling_session(attrs)
 
-      high_score = Games.get_kanji_falling_high_score(game.id, user.id)
-      sessions = Games.list_kanji_falling_sessions(game.id)
+      high_score = Games.get_words_falling_high_score(game.id, user.id)
+      sessions = Games.list_words_falling_sessions(game.id)
 
       assign(socket,
         status: :game_over,
@@ -542,12 +638,11 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
     end
   end
 
-  def reading_type_label(type) do
-    case type do
-      "any" -> gettext("Any reading")
-      "onyomi" -> gettext("On'yomi only")
-      "kunyomi" -> gettext("Kun'yomi only")
-      _ -> type
+  def game_mode_label(mode) do
+    case mode do
+      0 -> gettext("Word Meaning")
+      1 -> gettext("Word Reading")
+      _ -> gettext("Unknown")
     end
   end
 end
