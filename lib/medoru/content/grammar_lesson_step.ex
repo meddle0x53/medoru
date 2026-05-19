@@ -18,10 +18,12 @@ defmodule Medoru.Content.GrammarLessonStep do
     field :position, :integer
     field :title, :string
     field :explanation, :string
+    field :explanation_sections, {:array, :string}, default: []
     field :examples, {:array, :map}, default: []
     field :pattern_elements, {:array, :map}, default: []
     field :word_colors, {:array, :map}, default: []
     field :difficulty, :integer
+    field :step_type, :string, default: "grammar"
 
     belongs_to :custom_lesson, CustomLesson
 
@@ -35,19 +37,35 @@ defmodule Medoru.Content.GrammarLessonStep do
       :position,
       :title,
       :explanation,
+      :explanation_sections,
       :examples,
       :pattern_elements,
       :word_colors,
       :difficulty,
+      :step_type,
       :custom_lesson_id
     ])
     |> validate_required([:position, :custom_lesson_id])
+    |> validate_inclusion(:step_type, ["grammar", "text"])
     |> validate_number(:position, greater_than_or_equal_to: 0)
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
-    |> validate_examples()
-    |> validate_pattern_elements()
+    |> validate_step_fields()
     |> validate_word_colors()
     |> foreign_key_constraint(:custom_lesson_id)
+  end
+
+  defp validate_step_fields(changeset) do
+    step_type = get_field(changeset, :step_type) || "grammar"
+
+    case step_type do
+      "grammar" ->
+        changeset
+        |> validate_examples()
+        |> validate_pattern_elements()
+
+      _ ->
+        changeset
+    end
   end
 
   defp validate_examples(changeset) do

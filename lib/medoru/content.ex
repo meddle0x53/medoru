@@ -2718,6 +2718,28 @@ defmodule Medoru.Content do
     GrammarLessonStep.changeset(step, attrs)
   end
 
+  @doc """
+  Swaps the positions of two grammar lesson steps.
+  """
+  def swap_step_positions(%GrammarLessonStep{} = step1, %GrammarLessonStep{} = step2) do
+    Repo.transaction(fn ->
+      pos1 = step1.position
+      pos2 = step2.position
+
+      step1
+      |> Ecto.Changeset.change(position: pos2)
+      |> Repo.update!()
+
+      step2
+      |> Ecto.Changeset.change(position: pos1)
+      |> Repo.update!()
+    end)
+    |> case do
+      {:ok, _} -> :ok
+      {:error, _} -> :error
+    end
+  end
+
   # ============================================================================
   # Word Conjugations Functions
   # ============================================================================

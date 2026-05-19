@@ -33,7 +33,9 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
 
     steps = lesson.grammar_lesson_steps
 
-    if length(steps) == 0 do
+    grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
+
+    if length(grammar_steps) == 0 do
       {:error, :no_steps_in_lesson}
     else
       # Archive existing test if present
@@ -67,9 +69,11 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
 
   # Generates test steps for all grammar lesson steps
   defp generate_steps(test, lesson_steps) do
-    # For each lesson step with examples, generate 2 sentence_validation steps
+    # For each grammar lesson step with examples, generate 2 sentence_validation steps
+    # Skip text steps
     all_steps =
       lesson_steps
+      |> Enum.filter(fn step -> step.step_type == "grammar" end)
       |> Enum.filter(fn step -> has_examples?(step) end)
       |> Enum.flat_map(fn step ->
         build_sentence_validation_steps(step)

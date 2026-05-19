@@ -595,71 +595,84 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             <h2 class="text-xl font-semibold">{@current_step.title}</h2>
           </div>
 
-          <%!-- Grammar Pattern --%>
-          <div class="bg-base-200 rounded-lg p-4 mb-6">
-            <p class="text-sm text-secondary mb-2">{gettext("Pattern:")}</p>
-            <div class="flex flex-wrap gap-2 items-center">
-              <%= for element <- @current_step.pattern_elements || [] do %>
-                <%= case element["type"] do %>
-                  <% "word_slot" -> %>
-                    <% word_type_colors = %{
-                      "verb" => "bg-emerald-500 text-white",
-                      "noun" => "bg-blue-500 text-white",
-                      "adjective" => "bg-rose-500 text-white",
-                      "expression" => "bg-amber-400 text-amber-950",
-                      "particle" => "bg-orange-500 text-white"
-                    }
-
-                    color = word_type_colors[element["word_type"]] || "bg-gray-500 text-white" %>
-                    <span class={["px-3 py-1.5 rounded-lg text-sm font-medium", color]}>
-                      {String.capitalize(element["word_type"] || "word")}
-                      <%= if element["form"] do %>
-                        <span class="font-jp ml-1">[{element["form"]}]</span>
-                      <% end %>
-                    </span>
-                  <% "word_class" -> %>
-                    <% class = @word_classes[element["word_class_id"]] %>
-                    <span class="px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-content">
-                      <%= if class do %>
-                        {class}
-                      <% else %>
-                        {gettext("Class")}
-                      <% end %>
-                    </span>
-                  <% "literal" -> %>
-                    <span class="px-3 py-1.5 rounded-lg text-lg font-bold bg-white text-gray-900 border border-base-300 font-jp">
-                      {element["value"] || element["text"] || "..."}
-                    </span>
-                  <% _ -> %>
-                <% end %>
+          <%= if @current_step.step_type == "text" do %>
+            <%!-- Text Step Content --%>
+            <div class="space-y-6">
+              <%= for section <- @current_step.explanation_sections || [] do %>
+                <div class="markdown-content text-base-content leading-relaxed">
+                  {raw(markdown_with_colors(section, @step_word_colors, :explanation))}
+                </div>
               <% end %>
             </div>
-          </div>
+          <% else %>
+            <%!-- Grammar Pattern --%>
+            <div class="bg-base-200 rounded-lg p-4 mb-6">
+              <p class="text-sm text-secondary mb-2">{gettext("Pattern:")}</p>
+              <div class="flex flex-wrap gap-2 items-center">
+                <%= for element <- @current_step.pattern_elements || [] do %>
+                  <%= case element["type"] do %>
+                    <% "word_slot" -> %>
+                      <% word_type_colors = %{
+                        "verb" => "bg-emerald-500 text-white",
+                        "noun" => "bg-blue-500 text-white",
+                        "adjective" => "bg-rose-500 text-white",
+                        "expression" => "bg-amber-400 text-amber-950",
+                        "particle" => "bg-orange-500 text-white"
+                      }
 
-          <%!-- Explanation --%>
-          <div class="mb-6" phx-no-format>
-            <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
-            <div class="text-base-content whitespace-pre-wrap leading-relaxed"><.colored_segments segments={apply_word_colors(@current_step.explanation, @step_word_colors, :explanation)} /></div>
-          </div>
-
-          <%!-- Examples --%>
-          <%= if @current_step.examples && @current_step.examples != [] do %>
-            <div class="border-t border-base-200 pt-6">
-              <h3 class="text-sm font-medium text-secondary mb-4">{gettext("Examples:")}</h3>
-              <div class="space-y-4">
-                <%= for example <- @current_step.examples do %>
-                  <div class="bg-base-100 border border-base-300 rounded-lg p-4">
-                    <p class="text-xl font-jp mb-1">
-                      <.colored_segments segments={apply_word_colors(example["sentence"], @step_word_colors, :examples)} />
-                    </p>
-                    <p class="text-sm text-secondary font-jp mb-1">
-                      <.colored_segments segments={apply_word_colors(example["reading"], @step_word_colors, :examples)} />
-                    </p>
-                    <p class="text-secondary">{example["meaning"]}</p>
-                  </div>
+                      color = word_type_colors[element["word_type"]] || "bg-gray-500 text-white" %>
+                      <span class={["px-3 py-1.5 rounded-lg text-sm font-medium", color]}>
+                        {String.capitalize(element["word_type"] || "word")}
+                        <%= if element["form"] do %>
+                          <span class="font-jp ml-1">[{element["form"]}]</span>
+                        <% end %>
+                      </span>
+                    <% "word_class" -> %>
+                      <% class = @word_classes[element["word_class_id"]] %>
+                      <span class="px-3 py-1.5 rounded-lg text-sm font-medium bg-secondary text-secondary-content">
+                        <%= if class do %>
+                          {class}
+                        <% else %>
+                          {gettext("Class")}
+                        <% end %>
+                      </span>
+                    <% "literal" -> %>
+                      <span class="px-3 py-1.5 rounded-lg text-lg font-bold bg-white text-gray-900 border border-base-300 font-jp">
+                        {element["value"] || element["text"] || "..."}
+                      </span>
+                    <% _ -> %>
+                  <% end %>
                 <% end %>
               </div>
             </div>
+
+            <%!-- Explanation --%>
+            <div class="mb-6">
+              <h3 class="text-sm font-medium text-secondary mb-2">{gettext("Explanation:")}</h3>
+              <div class="markdown-content text-base-content leading-relaxed">
+                {raw(markdown_with_colors(@current_step.explanation, @step_word_colors, :explanation))}
+              </div>
+            </div>
+
+            <%!-- Examples --%>
+            <%= if @current_step.examples && @current_step.examples != [] do %>
+              <div class="border-t border-base-200 pt-6">
+                <h3 class="text-sm font-medium text-secondary mb-4">{gettext("Examples:")}</h3>
+                <div class="space-y-4">
+                  <%= for example <- @current_step.examples do %>
+                    <div class="bg-base-100 border border-base-300 rounded-lg p-4">
+                      <p class="text-xl font-jp mb-1">
+                        <.colored_segments segments={apply_word_colors(example["sentence"], @step_word_colors, :examples)} />
+                      </p>
+                      <p class="text-sm text-secondary font-jp mb-1">
+                        <.colored_segments segments={apply_word_colors(example["reading"], @step_word_colors, :examples)} />
+                      </p>
+                      <p class="text-secondary">{example["meaning"]}</p>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           <% end %>
         </div>
       </div>
@@ -814,6 +827,27 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     <%= for segment <- @segments do %><%= case segment do %><% {:text, text} -> %><span><%= text %></span><% {:colored, text, classes} -> %><span class={["rounded", classes]}><%= text %></span><% end %><% end %>
     """
   end
+
+  # Render markdown with word colors applied
+  # Word coloring is applied first (inserting inline HTML spans),
+  # then markdown is parsed to HTML with inline HTML preserved.
+  defp markdown_with_colors(text, word_colors, scope) when is_binary(text) do
+    segments = apply_word_colors(text, word_colors, scope)
+
+    # Build a single string with inline spans for colored words
+    markdown_text =
+      Enum.map_join(segments, "", fn
+        {:text, text} -> text
+        {:colored, word, classes} -> ~s(<span class="#{classes}">#{word}</span>)
+      end)
+
+    # Parse markdown to HTML, preserving inline HTML
+    # smartypants: false prevents curly quotes from breaking HTML attributes
+    {:ok, html, _} = Earmark.as_html(markdown_text, escape: false, smartypants: false)
+    html
+  end
+
+  defp markdown_with_colors(nil, _word_colors, _scope), do: ""
 
   # Helper to generate word detail path with return step
   defp word_detail_path(classroom_id, lesson_id, word_id, step, practice) do

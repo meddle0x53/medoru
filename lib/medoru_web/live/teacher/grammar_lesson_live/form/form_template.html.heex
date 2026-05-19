@@ -155,9 +155,14 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 class="text-xl font-semibold">{gettext("Grammar Steps")}</h2>
           <%= if @lesson do %>
-            <button phx-click="add_step" class="btn btn-primary btn-sm w-full sm:w-auto">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Step")}
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button phx-click="add_step" phx-value-type="grammar" class="btn btn-primary btn-sm">
+                <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Grammar")}
+              </button>
+              <button phx-click="add_step" phx-value-type="text" class="btn btn-outline btn-sm">
+                <.icon name="hero-document-text" class="w-4 h-4 mr-1" /> {gettext("Text")}
+              </button>
+            </div>
           <% end %>
         </div>
 
@@ -166,7 +171,7 @@
             <div class="card-body text-center py-12">
               <.icon name="hero-document-text" class="w-12 h-12 mx-auto text-base-300 mb-4" />
               <p class="text-secondary">
-                {gettext("No steps yet. Add your first grammar step!")}
+                {gettext("No steps yet. Add your first step!")}
               </p>
             </div>
           </div>
@@ -184,48 +189,81 @@
                         <span class="badge badge-ghost shrink-0">
                           {gettext("Step")} #{index + 1}
                         </span>
+                        <% step_type_label = %{
+                          "grammar" => gettext("Grammar"),
+                          "text" => gettext("Text")
+                        }[step.step_type || "grammar"] %>
+                        <% step_type_class = %{
+                          "grammar" => "badge-primary",
+                          "text" => "badge-secondary"
+                        }[step.step_type || "grammar"] %>
+                        <span class={["badge badge-sm", step_type_class]}>
+                          {step_type_label}
+                        </span>
                         <h3 class="font-semibold truncate">
                           {step.title || gettext("Untitled Step")}
                         </h3>
                       </div>
-                      <div class="flex flex-wrap gap-2 mb-2">
-                        <%= for element <- step.pattern_elements || [] do %>
-                          <%= case element["type"] do %>
-                            <% "word_slot" -> %>
-                              <% color =
-                                @word_type_colors[element["word_type"]] ||
-                                  "bg-gray-500 text-white" %>
-                              <span class={["px-2 py-1 rounded text-xs font-medium", color]}>
-                                {String.capitalize(element["word_type"])}
-                                <%= if element["form"] do %>
-                                  <span class="font-jp ml-1">[{element["form"]}]</span>
-                                <% end %>
-                              </span>
-                            <% "word_class" -> %>
-                              <% class =
-                                Enum.find(@word_classes, fn c ->
-                                  c.id == element["word_class_id"]
-                                end) %>
-                              <span class="px-2 py-1 rounded text-xs font-medium bg-purple-400 text-white">
-                                <%= if class do %>
-                                  {class.display_name}
-                                <% else %>
-                                  {gettext("Class")}
-                                <% end %>
-                              </span>
-                            <% "literal" -> %>
-                              <span class="px-2 py-1 rounded text-xs font-medium bg-white text-gray-900 border border-base-300 font-jp">
-                                {element["text"]}
-                              </span>
-                            <% _ -> %>
+                      <%= if step.step_type == "grammar" do %>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                          <%= for element <- step.pattern_elements || [] do %>
+                            <%= case element["type"] do %>
+                              <% "word_slot" -> %>
+                                <% color =
+                                  @word_type_colors[element["word_type"]] ||
+                                    "bg-gray-500 text-white" %>
+                                <span class={["px-2 py-1 rounded text-xs font-medium", color]}>
+                                  {String.capitalize(element["word_type"])}
+                                  <%= if element["form"] do %>
+                                    <span class="font-jp ml-1">[{element["form"]}]</span>
+                                  <% end %>
+                                </span>
+                              <% "word_class" -> %>
+                                <% class =
+                                  Enum.find(@word_classes, fn c ->
+                                    c.id == element["word_class_id"]
+                                  end) %>
+                                <span class="px-2 py-1 rounded text-xs font-medium bg-purple-400 text-white">
+                                  <%= if class do %>
+                                    {class.display_name}
+                                  <% else %>
+                                    {gettext("Class")}
+                                  <% end %>
+                                </span>
+                              <% "literal" -> %>
+                                <span class="px-2 py-1 rounded text-xs font-medium bg-white text-gray-900 border border-base-300 font-jp">
+                                  {element["text"]}
+                                </span>
+                              <% _ -> %>
+                            <% end %>
                           <% end %>
-                        <% end %>
-                      </div>
-                      <p class="text-sm text-secondary">
-                        {length(step.examples || [])} {gettext("examples")}
-                      </p>
+                        </div>
+                        <p class="text-sm text-secondary">
+                          {length(step.examples || [])} {gettext("examples")}
+                        </p>
+                      <% else %>
+                        <p class="text-sm text-secondary">
+                          {length(step.explanation_sections || [])} {gettext("sections")}
+                        </p>
+                      <% end %>
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button
+                        phx-click="move_step_up"
+                        phx-value-index={index}
+                        disabled={index == 0}
+                        class={["btn btn-ghost btn-xs", index == 0 && "btn-disabled opacity-30"]}
+                      >
+                        <.icon name="hero-arrow-up" class="w-4 h-4" />
+                      </button>
+                      <button
+                        phx-click="move_step_down"
+                        phx-value-index={index}
+                        disabled={index == length(@steps) - 1}
+                        class={["btn btn-ghost btn-xs", index == length(@steps) - 1 && "btn-disabled opacity-30"]}
+                      >
+                        <.icon name="hero-arrow-down" class="w-4 h-4" />
+                      </button>
                       <button
                         phx-click="edit_step"
                         phx-value-index={index}
@@ -282,6 +320,7 @@
                   </form>
                 </div>
 
+                <%= if @current_step.step_type == "grammar" do %>
                 <%!-- Grammar Pattern Preview --%>
                 <div>
                   <label class="label">
@@ -540,7 +579,9 @@
                     </div>
                   <% end %>
                 </div>
+                <% end %>
 
+                <%= if @current_step.step_type == "grammar" do %>
                 <%!-- Explanation --%>
                 <div>
                   <label class="label">
@@ -557,6 +598,45 @@
                     placeholder={gettext("Explain how this grammar pattern works...")}
                   >{@current_step.explanation}</textarea>
                 </div>
+                <% else %>
+                <%!-- Explanation Sections --%>
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="label mb-0">
+                      <span class="label-text">{gettext("Explanation Sections")}</span>
+                    </label>
+                    <button phx-click="add_explanation_section" class="btn btn-outline btn-xs">
+                      <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Add Section")}
+                    </button>
+                  </div>
+                  <div class="space-y-3">
+                    <%= for {section, idx} <- Enum.with_index(@current_step.explanation_sections || []) do %>
+                      <div class="border border-base-300 rounded-lg p-3 bg-base-50">
+                        <div class="flex justify-between items-start mb-2">
+                          <span class="text-xs text-secondary">
+                            {gettext("Section")} #{idx + 1}
+                          </span>
+                          <button
+                            phx-click="remove_explanation_section"
+                            phx-value-index={idx}
+                            class="text-error hover:opacity-70"
+                          >
+                            <.icon name="hero-trash" class="w-4 h-4" />
+                          </button>
+                        </div>
+                        <form phx-change="update_explanation_section" phx-value-index={idx}>
+                          <textarea
+                            name="value"
+                            class="textarea textarea-bordered w-full"
+                            rows="4"
+                            placeholder={gettext("Enter explanation text...")}
+                          ><%= section %></textarea>
+                        </form>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+                <% end %>
 
                 <%!-- Step Word Colors --%>
                 <div>
@@ -580,6 +660,7 @@
                   />
                 </div>
 
+                <%= if @current_step.step_type == "grammar" do %>
                 <%!-- Examples --%>
                 <div>
                   <div class="flex items-center justify-between mb-3">
@@ -662,6 +743,7 @@
                     <% end %>
                   </div>
                 </div>
+                <% end %>
 
                 <%!-- Save Button --%>
                 <div class="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-base-300">

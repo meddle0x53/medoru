@@ -213,22 +213,13 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   end
 
   @impl true
-  def handle_event("add_step", _params, socket) do
+  def handle_event("add_step", %{"type" => step_type}, socket) do
     lesson = socket.assigns.lesson
 
     if is_nil(lesson) do
       {:noreply, put_flash(socket, :error, gettext("Save the lesson first before adding steps."))}
     else
-      new_step = %{
-        id: Ecto.UUID.generate(),
-        position: length(socket.assigns.steps),
-        title: "",
-        explanation: "",
-        pattern_elements: [],
-        examples: [],
-        word_colors: [],
-        difficulty: 1
-      }
+      new_step = create_step(step_type, length(socket.assigns.steps))
 
       {:noreply,
        socket
@@ -266,6 +257,52 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to delete step."))}
+    end
+  end
+
+  @impl true
+  def handle_event("move_step_up", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+    steps = socket.assigns.steps
+
+    if index > 0 do
+      step = Enum.at(steps, index)
+      prev_step = Enum.at(steps, index - 1)
+
+      case Content.swap_step_positions(step, prev_step) do
+        :ok ->
+          lesson = socket.assigns.lesson
+          steps = Content.list_grammar_lesson_steps(lesson.id)
+          {:noreply, assign(socket, :steps, steps)}
+
+        :error ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder steps."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("move_step_down", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+    steps = socket.assigns.steps
+
+    if index < length(steps) - 1 do
+      step = Enum.at(steps, index)
+      next_step = Enum.at(steps, index + 1)
+
+      case Content.swap_step_positions(step, next_step) do
+        :ok ->
+          lesson = socket.assigns.lesson
+          steps = Content.list_grammar_lesson_steps(lesson.id)
+          {:noreply, assign(socket, :steps, steps)}
+
+        :error ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder steps."))}
+      end
+    else
+      {:noreply, socket}
     end
   end
 
@@ -434,23 +471,6 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     {:noreply, assign(socket, :current_step, step)}
   end
 
-  # Handle blur event from example inputs
-  @impl true
-  def handle_event(
-        "update_example",
-        %{"index" => index, "field" => field, "_target" => _, "value" => value},
-        socket
-      ) do
-    step = socket.assigns.current_step
-    index = String.to_integer(index)
-    examples = step.examples
-    example = Enum.at(examples, index)
-    example = Map.put(example, field, value)
-    examples = List.replace_at(examples, index, example)
-    step = Map.put(step, :examples, examples)
-
-    {:noreply, assign(socket, :current_step, step)}
-  end
 
   @impl true
   def handle_event("remove_example", %{"index" => index}, socket) do
@@ -458,6 +478,37 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     index = String.to_integer(index)
     examples = List.delete_at(step.examples, index)
     step = Map.put(step, :examples, examples)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("add_explanation_section", _params, socket) do
+    step = socket.assigns.current_step
+    sections = step.explanation_sections || []
+    sections = sections ++ [""]
+    step = Map.put(step, :explanation_sections, sections)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("update_explanation_section", %{"index" => index, "value" => value}, socket) do
+    step = socket.assigns.current_step
+    index = String.to_integer(index)
+    sections = step.explanation_sections || []
+    sections = List.replace_at(sections, index, value)
+    step = Map.put(step, :explanation_sections, sections)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("remove_explanation_section", %{"index" => index}, socket) do
+    step = socket.assigns.current_step
+    index = String.to_integer(index)
+    sections = List.delete_at(step.explanation_sections || [], index)
+    step = Map.put(step, :explanation_sections, sections)
 
     {:noreply, assign(socket, :current_step, step)}
   end
@@ -511,68 +562,97 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   def handle_event("save_step", _params, socket) do
     step = socket.assigns.current_step
     lesson = socket.assigns.lesson
+    step_type = step.step_type || "grammar"
 
-    # Validate all examples before saving
-    all_valid =
-      Enum.all?(step.examples, fn example ->
-        example["sentence"] != "" and
-          example["reading"] != "" and
-          example["meaning"] != ""
-      end)
-
-    if not all_valid do
-      {:noreply,
-       put_flash(
-         socket,
-         :error,
-         gettext("All examples must have sentence, reading, and meaning.")
-       )}
-    else
-      attrs = %{
-        position: step.position,
-        title: step.title,
-        explanation: step.explanation,
-        pattern_elements: step.pattern_elements,
-        examples: step.examples,
-        word_colors: step.word_colors || [],
-        difficulty: step.difficulty || 1,
-        custom_lesson_id: lesson.id
-      }
-
-      result =
-        if socket.assigns.current_step_index == :new do
-          Content.create_grammar_lesson_step(attrs)
-        else
-          existing_step = Enum.at(socket.assigns.steps, socket.assigns.current_step_index)
-          Content.update_grammar_lesson_step(existing_step, attrs)
-        end
-
-      case result do
-        {:ok, _} ->
-          steps = Content.list_grammar_lesson_steps(lesson.id)
-
-          {:noreply,
-           socket
-           |> assign(:steps, steps)
-           |> assign(:current_step_index, nil)
-           |> assign(:current_step, nil)
-           |> put_flash(:info, gettext("Step saved successfully."))}
-
-        {:error, changeset} ->
-          errors =
-            Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-              Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
-                opts[String.to_existing_atom(key)] |> to_string()
-              end)
+    attrs =
+      case step_type do
+        "grammar" ->
+          # Validate all examples before saving
+          all_valid =
+            Enum.all?(step.examples, fn example ->
+              example["sentence"] != "" and
+                example["reading"] != "" and
+                example["meaning"] != ""
             end)
 
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext("Failed to save step: %{errors}", errors: inspect(errors))
-           )}
+          if not all_valid do
+            {:error, :invalid_examples}
+          else
+            {:ok,
+             %{
+               position: step.position,
+               step_type: "grammar",
+               title: step.title,
+               explanation: step.explanation,
+               explanation_sections: [],
+               pattern_elements: step.pattern_elements,
+               examples: step.examples,
+               word_colors: step.word_colors || [],
+               difficulty: step.difficulty || 1,
+               custom_lesson_id: lesson.id
+             }}
+          end
+
+        _ ->
+          {:ok,
+           %{
+             position: step.position,
+             step_type: step_type,
+             title: step.title,
+             explanation: "",
+             explanation_sections: step.explanation_sections || [],
+             pattern_elements: [],
+             examples: [],
+             word_colors: step.word_colors || [],
+             difficulty: step.difficulty || 1,
+             custom_lesson_id: lesson.id
+           }}
       end
+
+    case attrs do
+      {:error, :invalid_examples} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("All examples must have sentence, reading, and meaning.")
+         )}
+
+      {:ok, attrs} ->
+        result =
+          if socket.assigns.current_step_index == :new do
+            Content.create_grammar_lesson_step(attrs)
+          else
+            existing_step = Enum.at(socket.assigns.steps, socket.assigns.current_step_index)
+            Content.update_grammar_lesson_step(existing_step, attrs)
+          end
+
+        case result do
+          {:ok, _} ->
+            steps = Content.list_grammar_lesson_steps(lesson.id)
+
+            {:noreply,
+             socket
+             |> assign(:steps, steps)
+             |> assign(:current_step_index, nil)
+             |> assign(:current_step, nil)
+             |> put_flash(:info, gettext("Step saved successfully."))}
+
+          {:error, changeset} ->
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                Regex.replace(~r/%\{(\w+)\}/, msg, fn _, key ->
+                  opts[String.to_existing_atom(key)] |> to_string()
+                end)
+              end)
+
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Failed to save step: %{errors}", errors: inspect(errors))
+             )}
+        end
     end
   end
 
@@ -595,45 +675,56 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     lesson = socket.assigns.lesson
     steps = socket.assigns.steps
 
-    # Check minimum content - at least 1 grammar step
-    if length(steps) < 1 do
-      {:noreply,
-       put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
-    else
-      # Generate test if required and not already generated
-      test_result =
-        if lesson.requires_test and is_nil(lesson.test_id) do
-          Medoru.Tests.GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
-        else
-          {:ok, nil}
-        end
+    grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
 
-      case test_result do
-        {:ok, _} ->
-          # Reload lesson to get updated test_id
-          lesson = Content.get_custom_lesson!(lesson.id)
+    cond do
+      length(steps) < 1 ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Add at least 1 step before publishing."))}
 
-          # Mark as published
-          case Content.publish_custom_lesson(lesson) do
-            {:ok, lesson} ->
-              {:noreply,
-               socket
-               |> assign(:lesson, lesson)
-               |> put_flash(:info, gettext("Lesson published successfully!"))
-               |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+      lesson.requires_test and length(grammar_steps) < 1 ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Add at least 1 grammar step to generate a test.")
+         )}
 
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+      true ->
+        # Generate test if required and not already generated
+        test_result =
+          if lesson.requires_test and is_nil(lesson.test_id) do
+            Medoru.Tests.GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
+          else
+            {:ok, nil}
           end
 
-        {:error, reason} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext("Failed to generate test: %{reason}", reason: inspect(reason))
-           )}
-      end
+        case test_result do
+          {:ok, _} ->
+            # Reload lesson to get updated test_id
+            lesson = Content.get_custom_lesson!(lesson.id)
+
+            # Mark as published
+            case Content.publish_custom_lesson(lesson) do
+              {:ok, lesson} ->
+                {:noreply,
+                 socket
+                 |> assign(:lesson, lesson)
+                 |> put_flash(:info, gettext("Lesson published successfully!"))
+                 |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
+
+              {:error, _} ->
+                {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
+            end
+
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Failed to generate test: %{reason}", reason: inspect(reason))
+             )}
+        end
     end
   end
 
@@ -860,5 +951,35 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   # Get forms for a specific word type
   def get_forms_for_word_type(grammar_forms, word_type) do
     Enum.filter(grammar_forms, fn form -> form.word_type == word_type end)
+  end
+
+  defp create_step("grammar", position) do
+    %{
+      id: Ecto.UUID.generate(),
+      position: position,
+      step_type: "grammar",
+      title: "",
+      explanation: "",
+      explanation_sections: [],
+      pattern_elements: [],
+      examples: [],
+      word_colors: [],
+      difficulty: 1
+    }
+  end
+
+  defp create_step("text", position) do
+    %{
+      id: Ecto.UUID.generate(),
+      position: position,
+      step_type: "text",
+      title: "",
+      explanation: "",
+      explanation_sections: [""],
+      pattern_elements: [],
+      examples: [],
+      word_colors: [],
+      difficulty: 1
+    }
   end
 end

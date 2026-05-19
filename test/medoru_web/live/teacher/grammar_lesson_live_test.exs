@@ -71,7 +71,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
 
       # Add a step
       view
-      |> element("button", "Add Step")
+      |> element("button[phx-click='add_step'][phx-value-type='grammar']", "Grammar")
       |> render_click()
 
       # Add a word slot
@@ -112,7 +112,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
       {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
 
       # Add a step and word slot
-      view |> element("button", "Add Step") |> render_click()
+      view |> element("button[phx-click='add_step'][phx-value-type='grammar']", "Grammar") |> render_click()
       view |> element("button[phx-value-type='word_slot']", "Add Word") |> render_click()
 
       # Select a form using form
@@ -145,7 +145,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
       {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
 
       # Add a step and word class element
-      view |> element("button", "Add Step") |> render_click()
+      view |> element("button[phx-click='add_step'][phx-value-type='grammar']", "Grammar") |> render_click()
       view |> element("button[phx-value-type='word_class']", "Add Word Class") |> render_click()
 
       # Initially shows "Select..."
@@ -173,7 +173,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
       {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
 
       # Add a step and literal element
-      view |> element("button", "Add Step") |> render_click()
+      view |> element("button[phx-click='add_step'][phx-value-type='grammar']", "Grammar") |> render_click()
       view |> element("button[phx-value-type='literal']", "Add Text") |> render_click()
 
       # Initially shows "..."
