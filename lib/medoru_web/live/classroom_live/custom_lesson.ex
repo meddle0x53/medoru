@@ -33,6 +33,34 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   @word_highlight_text_color "text-gray-900"
 
   @impl true
+  def mount(%{"lesson_id" => lesson_id}, session, socket) when socket.assigns.live_action == :preview do
+    locale = session["locale"] || "en"
+    user = socket.assigns.current_scope.current_user
+    step = session["step"] || 0
+
+    lesson = Content.get_custom_lesson!(lesson_id)
+
+    # Only allow creator or teacher/admin to preview
+    if user && (lesson.creator_id == user.id || user.type in ["teacher", "admin"]) do
+      # Find a classroom this lesson is published to for context
+      published = Content.list_classroom_custom_lessons_for_lesson(lesson.id)
+
+      classroom =
+        case published do
+          [first | _] -> Classrooms.get_classroom!(first.classroom_id)
+          [] -> nil
+        end
+
+      preview_lesson(socket, lesson, classroom, user, locale, step)
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, gettext("You don't have permission to preview this lesson."))
+       |> push_navigate(to: ~p"/teacher/custom-lessons")}
+    end
+  end
+
+  @impl true
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
     locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
@@ -127,6 +155,23 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
+  defp preview_lesson(socket, lesson, classroom, _user, locale, step) do
+    # Preview mode: show lesson as student would see it, without progress tracking
+    classroom = classroom || %{id: nil, name: gettext("Preview")}
+
+    if lesson.lesson_subtype == "grammar" do
+      load_grammar_lesson(socket, classroom, lesson, nil, false, false, locale, step)
+      |> elem(1)
+      |> assign(:is_preview, true)
+      |> then(&{:ok, &1})
+    else
+      load_vocabulary_lesson(socket, classroom, lesson, nil, false, false, locale, step)
+      |> elem(1)
+      |> assign(:is_preview, true)
+      |> then(&{:ok, &1})
+    end
+  end
+
   defp load_vocabulary_lesson(
          socket,
          classroom,
@@ -157,6 +202,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
      |> assign(:practice, practice)
      |> assign(:current_index, current_index)
      |> assign(:current_word, current_word)
+     |> assign(:is_preview, false)
+     |> assign(:presentation_mode, false)
      |> assign(:total_items, length(lesson_words))}
   end
 
@@ -200,6 +247,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
      |> assign(:current_index, current_index)
      |> assign(:current_step, current_step)
      |> assign(:step_word_colors, step_word_colors)
+     |> assign(:student_sentence, "")
+     |> assign(:is_preview, false)
+     |> assign(:presentation_mode, false)
      |> assign(:total_items, length(grammar_steps))}
   end
 
@@ -231,7 +281,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             assign(socket,
               current_index: step,
               current_step: current_step,
-              step_word_colors: step_word_colors
+              step_word_colors: step_word_colors,
+              student_sentence: ""
             )
 
           _ ->
@@ -284,7 +335,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             assign(socket,
               current_index: next_index,
               current_step: next_step,
-              step_word_colors: step_word_colors
+              step_word_colors: step_word_colors,
+              student_sentence: ""
             )
         end
 
@@ -319,7 +371,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             assign(socket,
               current_index: prev_index,
               current_step: prev_step,
-              step_word_colors: step_word_colors
+              step_word_colors: step_word_colors,
+              student_sentence: ""
             )
         end
 
@@ -395,6 +448,77 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
+  @impl true
+  def handle_event("toggle_presentation", _params, socket) do
+    socket =
+      if socket.assigns.presentation_mode do
+        socket
+        |> assign(:presentation_mode, false)
+        |> push_event("exit_presentation", %{})
+      else
+        socket
+        |> assign(:presentation_mode, true)
+        |> push_event("enter_presentation", %{})
+      end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("presentation_exited", _params, socket) do
+    {:noreply, assign(socket, :presentation_mode, false)}
+  end
+
+  @impl true
+  def handle_event("validate_student_sentence", %{"sentence" => sentence}, socket) do
+    step = socket.assigns.current_step
+    sentence = String.trim(sentence)
+
+    if sentence == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter a sentence."))}
+    else
+      socket = assign(socket, :student_sentence, sentence)
+      alias Medoru.Grammar.Validator
+
+      case Validator.validate_sentence(sentence, step.pattern_elements) do
+        {:ok, _} ->
+          {:noreply, put_flash(socket, :info, gettext("Your sentence matches the pattern!"))}
+
+        {:error, %{expected: expected, got: got}} when got == "" or is_nil(got) ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Expected: %{expected}. Make sure you've entered the correct form.",
+               expected: expected
+             )
+           )}
+
+        {:error, %{expected: expected, got: got}} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext(
+               "Expected: %{expected}, but got: %{got}. Make sure you've entered the correct conjugated form.",
+               expected: expected,
+               got: got
+             )
+           )}
+
+        {:error, reason} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Doesn't match pattern. Expected: %{expected}.",
+               expected: reason[:expected] || "pattern"
+             )
+           )}
+      end
+    end
+  end
+
   defp complete_lesson(socket, classroom_id, user_id, lesson_id) do
     case Classrooms.complete_custom_lesson(classroom_id, user_id, lesson_id) do
       {:ok, _} ->
@@ -411,15 +535,22 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   # Helper to update URL with current step
   defp push_step_to_url(socket, step) do
-    classroom_id = socket.assigns.classroom.id
+    is_preview = socket.assigns.is_preview
     lesson_id = socket.assigns.lesson.id
     practice = socket.assigns.practice
 
     path =
-      if practice do
-        ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}&practice=true"
-      else
-        ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}"
+      cond do
+        is_preview ->
+          ~p"/teacher/custom-lessons/#{lesson_id}/preview?step=#{step}"
+
+        practice ->
+          classroom_id = socket.assigns.classroom.id
+          ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}&practice=true"
+
+        true ->
+          classroom_id = socket.assigns.classroom.id
+          ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}?step=#{step}"
       end
 
     push_patch(socket, to: path)
@@ -429,9 +560,29 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-3xl mx-auto px-4 py-8">
+      <div
+        id="lesson-container"
+        phx-hook="LessonPlayer"
+        class="max-w-3xl mx-auto px-4 py-8"
+      >
+        <%!-- Preview Banner --%>
+        <%= if @is_preview do %>
+          <div class="bg-info/10 border border-info rounded-lg p-3 mb-6 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-info">
+              <.icon name="hero-eye" class="w-5 h-5" />
+              <span class="font-medium">{gettext("Preview Mode")}</span>
+            </div>
+            <.link
+              navigate={~p"/teacher/custom-lessons/#{@lesson.id}/edit"}
+              class="btn btn-ghost btn-xs"
+            >
+              <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit Lesson")}
+            </.link>
+          </div>
+        <% end %>
+
         <%!-- Header --%>
-        <div class="mb-6">
+        <div class="mb-6 lesson-header">
           <.link
             navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
@@ -442,9 +593,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             <h1 class="text-2xl font-bold text-base-content">
               {Content.get_localized_lesson_title(@lesson, @locale)}
             </h1>
-            <span class="text-secondary">
-              {@current_index + 1} / {@total_items}
-            </span>
+            <div class="flex items-center gap-3">
+              <button
+                phx-click="toggle_presentation"
+                class="btn btn-ghost btn-sm"
+                title={gettext("Presentation Mode")}
+              >
+                <.icon name="hero-presentation-chart-line" class="w-5 h-5" />
+              </button>
+              <span class="text-secondary">
+                {@current_index + 1} / {@total_items}
+              </span>
+            </div>
           </div>
           <%= if @lesson.description do %>
             <p class="text-secondary mt-2">{@lesson.description}</p>
@@ -459,12 +619,14 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           />
         </div>
 
-        <%= case @lesson_type do %>
-          <% :vocabulary -> %>
-            <.vocabulary_content {assigns} />
-          <% :grammar -> %>
-            <.grammar_content {assigns} />
-        <% end %>
+        <div class="lesson-content">
+          <%= case @lesson_type do %>
+            <% :vocabulary -> %>
+              <.vocabulary_content {assigns} />
+            <% :grammar -> %>
+              <.grammar_content {assigns} />
+          <% end %>
+        </div>
       </div>
     </Layouts.app>
     """
@@ -588,10 +750,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
         <div class="card-body">
           <%!-- Step Title --%>
-          <div class="flex items-center gap-2 mb-4">
-            <span class="badge badge-ghost">
-              {gettext("Step")} #{@current_index + 1}
-            </span>
+          <div class="mb-4">
             <h2 class="text-xl font-semibold">{@current_step.title}</h2>
           </div>
 
@@ -670,6 +829,31 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                       <p class="text-secondary">{example["meaning"]}</p>
                     </div>
                   <% end %>
+                </div>
+              </div>
+            <% end %>
+
+            <%!-- Student Sentence Validation --%>
+            <%= if @current_step.allows_student_validation do %>
+              <div class="border-t border-base-200 pt-6">
+                <h3 class="text-sm font-medium text-secondary mb-4">{gettext("Try it yourself:")}</h3>
+                <div class="bg-base-100 border border-base-300 rounded-lg p-4">
+                  <p class="text-sm text-secondary mb-3">
+                    {gettext("Enter a sentence using this grammar pattern:")}
+                  </p>
+                  <form phx-submit="validate_student_sentence" class="space-y-3">
+                    <input
+                      type="text"
+                      name="sentence"
+                      value={@student_sentence}
+                      class="input input-bordered w-full font-jp"
+                      placeholder={gettext("Type your sentence here...")}
+                      autocomplete="off"
+                    />
+                    <button type="submit" class="btn btn-outline btn-sm">
+                      <.icon name="hero-check-circle" class="w-4 h-4 mr-1" /> {gettext("Validate")}
+                    </button>
+                  </form>
                 </div>
               </div>
             <% end %>

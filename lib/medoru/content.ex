@@ -2740,6 +2740,16 @@ defmodule Medoru.Content do
     end
   end
 
+  @doc """
+  Returns the list of classrooms that have published a given custom lesson.
+  """
+  def list_classroom_custom_lessons_for_lesson(custom_lesson_id) do
+    ClassroomCustomLesson
+    |> where([ccl], ccl.custom_lesson_id == ^custom_lesson_id)
+    |> where([ccl], ccl.status == "active")
+    |> Repo.all()
+  end
+
   # ============================================================================
   # Word Conjugations Functions
   # ============================================================================

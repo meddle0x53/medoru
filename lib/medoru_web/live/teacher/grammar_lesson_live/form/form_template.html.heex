@@ -7,7 +7,18 @@
       >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
       </.link>
-      <h1 class="text-2xl md:text-3xl font-bold text-base-content">{@page_title}</h1>
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl md:text-3xl font-bold text-base-content">{@page_title}</h1>
+        <%= if @lesson do %>
+          <.link
+            navigate={~p"/teacher/custom-lessons/#{@lesson.id}/preview"}
+            target="_blank"
+            class="btn btn-outline btn-sm"
+          >
+            <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Preview")}
+          </.link>
+        <% end %>
+      </div>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
@@ -319,6 +330,32 @@
                     />
                   </form>
                 </div>
+
+                <%= if @current_step.step_type == "grammar" do %>
+                <%!-- Step Options --%>
+                <div class="flex flex-wrap gap-4">
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@current_step.include_in_test || false}
+                      phx-click="toggle_step_include_in_test"
+                      phx-value-index={@current_step_index}
+                      class="checkbox checkbox-sm"
+                    />
+                    {gettext("Include in test")}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@current_step.allows_student_validation || false}
+                      phx-click="toggle_step_validation"
+                      phx-value-index={@current_step_index}
+                      class="checkbox checkbox-sm"
+                    />
+                    {gettext("Allow student sentence validation")}
+                  </label>
+                </div>
+                <% end %>
 
                 <%= if @current_step.step_type == "grammar" do %>
                 <%!-- Grammar Pattern Preview --%>

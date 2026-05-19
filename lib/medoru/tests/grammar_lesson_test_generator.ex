@@ -69,11 +69,12 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
 
   # Generates test steps for all grammar lesson steps
   defp generate_steps(test, lesson_steps) do
-    # For each grammar lesson step with examples, generate 2 sentence_validation steps
-    # Skip text steps
+    # For each grammar lesson step marked for testing, generate 2 sentence_validation steps
+    # Skip text steps and grammar steps not included in test
     all_steps =
       lesson_steps
       |> Enum.filter(fn step -> step.step_type == "grammar" end)
+      |> Enum.filter(fn step -> step.include_in_test == true end)
       |> Enum.filter(fn step -> has_examples?(step) end)
       |> Enum.flat_map(fn step ->
         build_sentence_validation_steps(step)

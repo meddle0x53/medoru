@@ -669,3 +669,42 @@ body {
   border-color: hsl(var(--b3));
   margin: 1rem 0;
 }
+
+/* Presentation mode styles */
+.presentation-active {
+  background-color: hsl(var(--b1));
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.presentation-active .lesson-header,
+.presentation-active .lesson-nav {
+  display: none;
+}
+
+.presentation-active .lesson-content {
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: 1.5rem;
+  line-height: 1.8;
+}
+
+.presentation-active .lesson-content h2 {
+  font-size: 2.5rem;
+}
+
+.presentation-active .lesson-content .badge {
+  font-size: 1rem;
+}
+
+.presentation-controls {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  gap: 0.5rem;
+}

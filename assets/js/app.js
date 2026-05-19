@@ -34,6 +34,7 @@ import KanaFallingInput from "./hooks/kana_falling_input"
 import GameFullscreen from "./hooks/game_fullscreen"
 import FlickKeyboard from "./hooks/flick_keyboard"
 import GameFullscreenButton from "./hooks/game_fullscreen_button"
+import LessonPlayer from "./hooks/lesson_player"
 
 // Make KanjiRecognizer available globally for hooks
 import { KanjiWriter, KanjiVGParser } from "../vendor/kanji-recognizer-bundle.js"
@@ -44,7 +45,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton},
+  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer},
 })
 
 // Show progress bar on live navigation and form submits

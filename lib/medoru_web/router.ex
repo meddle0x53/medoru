@@ -209,6 +209,19 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Teacher preview routes (need full module path)
+  scope "/teacher", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :teacher_preview,
+      on_mount: [
+        {MedoruWeb.UserAuth, :require_authenticated_user},
+        {MedoruWeb.Plugs.Teacher, :default}
+      ] do
+      live "/custom-lessons/:lesson_id/preview", ClassroomLive.CustomLesson, :preview
+    end
+  end
+
   # Student classroom routes (auth required)
   scope "/classrooms", MedoruWeb do
     pipe_through [:browser, :require_authenticated_user]

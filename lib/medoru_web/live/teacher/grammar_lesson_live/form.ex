@@ -589,6 +589,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
                examples: step.examples,
                word_colors: step.word_colors || [],
                difficulty: step.difficulty || 1,
+               include_in_test: step.include_in_test || false,
+               allows_student_validation: step.allows_student_validation || false,
                custom_lesson_id: lesson.id
              }}
           end
@@ -605,6 +607,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
              examples: [],
              word_colors: step.word_colors || [],
              difficulty: step.difficulty || 1,
+             include_in_test: false,
+             allows_student_validation: false,
              custom_lesson_id: lesson.id
            }}
       end
@@ -628,8 +632,20 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
           end
 
         case result do
-          {:ok, _} ->
+          {:ok, saved_step} ->
             steps = Content.list_grammar_lesson_steps(lesson.id)
+
+            # If this grammar step is included in test, ensure lesson requires_test
+            socket =
+              if saved_step.step_type == "grammar" and saved_step.include_in_test and
+                   not lesson.requires_test do
+                case Content.update_custom_lesson(lesson, %{requires_test: true}) do
+                  {:ok, updated_lesson} -> assign(socket, :lesson, updated_lesson)
+                  {:error, _} -> socket
+                end
+              else
+                socket
+              end
 
             {:noreply,
              socket
@@ -660,14 +676,56 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   def handle_event("toggle_requires_test", _params, socket) do
     lesson = socket.assigns.lesson
     new_value = !lesson.requires_test
+    steps = socket.assigns.steps
 
+    # Update lesson test setting
     case Content.update_custom_lesson(lesson, %{requires_test: new_value}) do
       {:ok, updated_lesson} ->
-        {:noreply, assign(socket, :lesson, updated_lesson)}
+        socket = assign(socket, :lesson, updated_lesson)
+
+        # If enabling tests, mark all grammar steps as included
+        if new_value do
+          grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
+
+          Enum.each(grammar_steps, fn step ->
+            Content.update_grammar_lesson_step(step, %{include_in_test: true})
+          end)
+
+          steps = Content.list_grammar_lesson_steps(lesson.id)
+          {:noreply, assign(socket, :steps, steps)}
+        else
+          # If disabling tests, mark all grammar steps as not included
+          grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
+
+          Enum.each(grammar_steps, fn step ->
+            Content.update_grammar_lesson_step(step, %{include_in_test: false})
+          end)
+
+          steps = Content.list_grammar_lesson_steps(lesson.id)
+          {:noreply, assign(socket, :steps, steps)}
+        end
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to update test setting."))}
     end
+  end
+
+  @impl true
+  def handle_event("toggle_step_include_in_test", %{"index" => _index}, socket) do
+    step = socket.assigns.current_step
+    new_value = !(step.include_in_test || false)
+    step = Map.put(step, :include_in_test, new_value)
+
+    {:noreply, assign(socket, :current_step, step)}
+  end
+
+  @impl true
+  def handle_event("toggle_step_validation", %{"index" => _index}, socket) do
+    step = socket.assigns.current_step
+    new_value = !(step.allows_student_validation || false)
+    step = Map.put(step, :allows_student_validation, new_value)
+
+    {:noreply, assign(socket, :current_step, step)}
   end
 
   @impl true
@@ -964,7 +1022,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
       pattern_elements: [],
       examples: [],
       word_colors: [],
-      difficulty: 1
+      difficulty: 1,
+      include_in_test: false,
+      allows_student_validation: false
     }
   end
 

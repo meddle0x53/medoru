@@ -24,6 +24,8 @@ defmodule Medoru.Content.GrammarLessonStep do
     field :word_colors, {:array, :map}, default: []
     field :difficulty, :integer
     field :step_type, :string, default: "grammar"
+    field :include_in_test, :boolean, default: false
+    field :allows_student_validation, :boolean, default: false
 
     belongs_to :custom_lesson, CustomLesson
 
@@ -43,6 +45,8 @@ defmodule Medoru.Content.GrammarLessonStep do
       :word_colors,
       :difficulty,
       :step_type,
+      :include_in_test,
+      :allows_student_validation,
       :custom_lesson_id
     ])
     |> validate_required([:position, :custom_lesson_id])

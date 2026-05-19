@@ -293,7 +293,9 @@ defmodule Medoru.ContentFixtures do
         explanation: "Test explanation",
         pattern_elements: [],
         examples: [],
-        difficulty: 1
+        difficulty: 1,
+        include_in_test: true,
+        allows_student_validation: false
       })
 
     {:ok, step} = Content.create_grammar_lesson_step(attrs)

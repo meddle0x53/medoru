@@ -108,7 +108,8 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
             explanation: step_attrs.explanation,
             pattern_elements: step_attrs.pattern_elements,
             examples: step_attrs.examples,
-            difficulty: 1
+            difficulty: 1,
+            include_in_test: true
           })
       end
 
@@ -225,7 +226,8 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
             explanation: "Test explanation",
             pattern_elements: [%{"type" => "literal", "value" => "と"}],
             examples: [%{"sentence" => "テスト", "reading" => "てすと", "meaning" => "Test"}],
-            difficulty: 1
+            difficulty: 1,
+            include_in_test: true
           })
       end
 
