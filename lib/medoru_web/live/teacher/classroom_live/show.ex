@@ -846,8 +846,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                   </div>
 
                   <div class="flex items-center gap-2">
+                    <% edit_path =
+                      if lesson.lesson_subtype == "grammar",
+                        do: ~p"/teacher/grammar-lessons/#{lesson.id}/edit",
+                        else: ~p"/teacher/custom-lessons/#{lesson.id}/edit" %>
                     <.link
-                      navigate={~p"/teacher/custom-lessons/#{lesson.id}/edit"}
+                      navigate={edit_path}
                       class="btn btn-ghost btn-sm"
                     >
                       <.icon name="hero-pencil" class="w-4 h-4" />

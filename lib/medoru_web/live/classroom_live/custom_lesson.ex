@@ -572,8 +572,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               <.icon name="hero-eye" class="w-5 h-5" />
               <span class="font-medium">{gettext("Preview Mode")}</span>
             </div>
+            <% edit_path =
+              if @lesson.lesson_subtype == "grammar",
+                do: ~p"/teacher/grammar-lessons/#{@lesson.id}/edit",
+                else: ~p"/teacher/custom-lessons/#{@lesson.id}/edit" %>
             <.link
-              navigate={~p"/teacher/custom-lessons/#{@lesson.id}/edit"}
+              navigate={edit_path}
               class="btn btn-ghost btn-xs"
             >
               <.icon name="hero-pencil" class="w-4 h-4 mr-1" /> {gettext("Edit Lesson")}

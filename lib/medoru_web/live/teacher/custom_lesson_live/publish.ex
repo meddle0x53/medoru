@@ -30,10 +30,15 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
            |> push_navigate(to: ~p"/teacher/custom-lessons")}
 
         lesson.status != "published" ->
+          edit_path =
+            if lesson.lesson_subtype == "grammar",
+              do: ~p"/teacher/grammar-lessons/#{lesson.id}/edit",
+              else: ~p"/teacher/custom-lessons/#{lesson.id}/edit"
+
           {:ok,
            socket
            |> put_flash(:error, gettext("Lesson must be published first."))
-           |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/edit")}
+           |> push_navigate(to: edit_path)}
 
         true ->
           classrooms = Classrooms.list_teacher_classrooms(user.id)
