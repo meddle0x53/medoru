@@ -2,16 +2,14 @@
 
 ## Current State
 
-**Version**: 0.1.8 🔄 IN PROGRESS  
-**Status**: Kana Cascade polish + navigation restructuring  
-**Tests**: 761 passing, 1 pre-existing flaky failure (`lesson_test_keyboard_test.exs:21`)  
+**Version**: 0.1.8 ✅ COMPLETE  
+**Status**: Grammar lesson system + v0.1.8 polish finalized  
+**Tests**: 781 passing  
 **URL**: https://medoru.net
 
-### What's Complete (v0.1.7)
-- All Kana Cascade & Classroom improvements — see v0.1.7 section below for full list
-
-### What's Complete (v0.1.8) — Kana Cascade Polish & Navigation
+### What's Complete (v0.1.8) — Grammar Lessons + Kana Cascade Polish & Navigation
 - **"du" accepted for づ/ヅ**: `kana_romaji_list/1` returns `["zu", "du"]`; exact match and prefix check both support multiple romaji
+- **"di" accepted for ぢ/ヂ**: Added to Kana/Kanji/Words falling games
 - **Flick keyboard popup Android Firefox fix**: Popup appended to pressed key with `position: absolute`; removed `flick-popup` animation class causing `opacity: 0`
 - **Dakuten active state on touch devices**: Fixed modifier button orange state persistence
   - Changed modifier buttons from `click` to `pointerdown` with `stopPropagation`
@@ -29,6 +27,17 @@
 - **Anonymous Public Access**: `/games` and `/lessons` available to anonymous users via featured classroom
   - Games: Memory cards, Kana Cascade, Kanji Cascade playable with in-memory sessions (no DB persistence)
   - Lessons: Custom lessons viewable, progress not saved, tests skipped, completion shows sign-in CTA
+- **Grammar lesson word coloring**: Teacher can highlight words with 32-color palette; works in explanation + examples
+- **Markdown support**: Explanation (grammar steps) and explanation sections (text steps) render markdown via Earmark with `escape: false, smartypants: false`
+- **Text steps**: Replaced intro/outro with unified `text` step type (title + multiple explanation sections, no pattern/examples, no test generation)
+- **Step reordering**: Up/down arrows in teacher form swap positions atomically
+- **Keyboard navigation**: Left/right arrow keys navigate steps (LessonPlayer JS hook)
+- **Presentation mode**: Fullscreen button + `P` keyboard shortcut, `.presentation-active` CSS class hides chrome
+- **Teacher preview**: Route `/teacher/custom-lessons/:id/preview` renders lesson as student sees it
+- **Per-step test inclusion**: `include_in_test` boolean per grammar step; lesson-level `requires_test` syncs with step checkboxes; test generator filters by this flag
+- **Student sentence validation**: `allows_student_validation` flag per grammar step; student gets input + validate button using `Grammar.Validator`
+- **Validation input persistence**: Typed sentence persists after validation so student can edit and retry
+- **Grammar edit routing fix**: Preview and classroom lesson edit links correctly route to grammar edit form
 
 ### What's Complete (v0.1.7) — Kana Cascade & Classroom Improvements
 - **Kana Cascade** (formerly Kana Falling): Typing game for hiragana/katakana practice
@@ -60,8 +69,9 @@
 - Lesson reordering bug fix: `ensure_lesson_order_indices` now handles duplicate indices
 - Invite code join protection: Teachers can no longer join their own classrooms
 
-### What's Next (v0.1.8)
-- Bug fixes and polish — see STATE.md for details
+### What's Next (v0.2.0)
+- See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+- Real-time infrastructure, game engine, classroom chat, user levels, badges
 
 ### What's Complete (v0.1.6)
 - Word type filter: Filter words by type (noun, verb, adjective, etc.)

@@ -65,23 +65,40 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
   # 32 background colors for teacher-defined word highlighting
   @color_palette [
-    "bg-red-200", "bg-red-300",
-    "bg-orange-200", "bg-orange-300",
-    "bg-amber-200", "bg-amber-300",
-    "bg-yellow-200", "bg-yellow-300",
-    "bg-lime-200", "bg-lime-300",
-    "bg-green-200", "bg-green-300",
-    "bg-emerald-200", "bg-emerald-300",
-    "bg-teal-200", "bg-teal-300",
-    "bg-cyan-200", "bg-cyan-300",
-    "bg-sky-200", "bg-sky-300",
-    "bg-blue-200", "bg-blue-300",
-    "bg-indigo-200", "bg-indigo-300",
-    "bg-violet-200", "bg-violet-300",
-    "bg-purple-200", "bg-purple-300",
-    "bg-fuchsia-200", "bg-fuchsia-300",
-    "bg-pink-200", "bg-pink-300",
-    "bg-rose-200", "bg-rose-300"
+    "bg-red-200",
+    "bg-red-300",
+    "bg-orange-200",
+    "bg-orange-300",
+    "bg-amber-200",
+    "bg-amber-300",
+    "bg-yellow-200",
+    "bg-yellow-300",
+    "bg-lime-200",
+    "bg-lime-300",
+    "bg-green-200",
+    "bg-green-300",
+    "bg-emerald-200",
+    "bg-emerald-300",
+    "bg-teal-200",
+    "bg-teal-300",
+    "bg-cyan-200",
+    "bg-cyan-300",
+    "bg-sky-200",
+    "bg-sky-300",
+    "bg-blue-200",
+    "bg-blue-300",
+    "bg-indigo-200",
+    "bg-indigo-300",
+    "bg-violet-200",
+    "bg-violet-300",
+    "bg-purple-200",
+    "bg-purple-300",
+    "bg-fuchsia-200",
+    "bg-fuchsia-300",
+    "bg-pink-200",
+    "bg-pink-300",
+    "bg-rose-200",
+    "bg-rose-300"
   ]
 
   @impl true
@@ -471,7 +488,6 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     {:noreply, assign(socket, :current_step, step)}
   end
 
-
   @impl true
   def handle_event("remove_example", %{"index" => index}, socket) do
     step = socket.assigns.current_step
@@ -737,8 +753,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
     cond do
       length(steps) < 1 ->
-        {:noreply,
-         put_flash(socket, :error, gettext("Add at least 1 step before publishing."))}
+        {:noreply, put_flash(socket, :error, gettext("Add at least 1 step before publishing."))}
 
       lesson.requires_test and length(grammar_steps) < 1 ->
         {:noreply,
@@ -793,7 +808,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
     lesson = socket.assigns.lesson
 
     if is_nil(lesson) do
-      {:noreply, put_flash(socket, :error, gettext("Save the lesson first before adding word colors."))}
+      {:noreply,
+       put_flash(socket, :error, gettext("Save the lesson first before adding word colors."))}
     else
       word_colors = lesson.word_colors || []
 
@@ -957,7 +973,10 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
                 class={[
                   "w-full aspect-square rounded border-2 transition-all",
                   color_class,
-                  if(color["color_index"] == cidx, do: "border-primary scale-110", else: "border-transparent hover:border-base-content/30")
+                  if(color["color_index"] == cidx,
+                    do: "border-primary scale-110",
+                    else: "border-transparent hover:border-base-content/30"
+                  )
                 ]}
                 title={cidx + 1}
               />
@@ -971,8 +990,12 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
             class="select select-bordered select-sm w-full"
           >
             <option value="both" selected={color["apply_to"] == "both"}>{gettext("Both")}</option>
-            <option value="examples" selected={color["apply_to"] == "examples"}>{gettext("Examples only")}</option>
-            <option value="explanation" selected={color["apply_to"] == "explanation"}>{gettext("Explanation only")}</option>
+            <option value="examples" selected={color["apply_to"] == "examples"}>
+              {gettext("Examples only")}
+            </option>
+            <option value="explanation" selected={color["apply_to"] == "explanation"}>
+              {gettext("Explanation only")}
+            </option>
           </select>
         </div>
       <% end %>

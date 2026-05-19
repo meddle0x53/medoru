@@ -1,19 +1,20 @@
 # Medoru - Current State
 
-**Version**: 0.1.8 🔄 IN PROGRESS  
-**Status**: Kana Cascade polish + navigation restructuring  
-**Tests**: 761 passing  
+**Version**: 0.1.8 ✅ COMPLETE  
+**Status**: Grammar lesson system + v0.1.8 polish finalized  
+**Tests**: 781 passing  
 **URL**: https://medoru.net  
-**Last Updated**: 2026-05-15
+**Last Updated**: 2026-05-19
 
 ---
 
-## 🔄 In Progress (v0.1.8)
+## ✅ Completed (v0.1.8)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Flick keyboard dakuten active state | ✅ | `pointerdown` + `phx-update="ignore"` fixes touch persistence |
 | "du" for づ/ヅ | ✅ | `kana_romaji_list/1` returns `["zu", "du"]` |
+| "di" for ぢ/ヂ | ✅ | Added to Kana/Kanji/Words falling games |
 | Flick keyboard popup Android Firefox | ✅ | Appended to key, removed animation class causing opacity:0 |
 | Navigation restructuring | ✅ | `/teacher` dashboard, `/games` index, mobile drawer groups |
 | Grid hiragana keyboard removal | ✅ | Flick keyboard on all sizes |
@@ -24,6 +25,19 @@
 | Anonymous public access | ✅ | Anonymous users can browse `/games` and `/lessons` from featured classroom |
 | Anonymous game play | ✅ | Memory cards, Kana Cascade, Kanji Cascade playable without login (in-memory sessions) |
 | Anonymous lesson study | ✅ | Custom lessons viewable, tests skipped, completion shows sign-in CTA |
+| **Grammar word coloring** | ✅ | Teacher highlights words with 32-color palette; works in explanation + examples |
+| **Markdown support** | ✅ | Explanation and explanation sections render markdown via Earmark |
+| **Text steps** | ✅ | Unified `text` step type (title + explanation sections, no pattern/examples) |
+| **Step reordering** | ✅ | Up/down arrows swap positions atomically in teacher form |
+| **Keyboard navigation** | ✅ | Left/right arrow keys navigate steps via LessonPlayer JS hook |
+| **Presentation mode** | ✅ | Fullscreen button + `P` shortcut, `.presentation-active` hides chrome |
+| **Teacher preview** | ✅ | `/teacher/custom-lessons/:id/preview` renders lesson as student sees it |
+| **Per-step test inclusion** | ✅ | `include_in_test` boolean per grammar step; lesson-level sync |
+| **Student sentence validation** | ✅ | `allows_student_validation` flag; input + validate button with Grammar.Validator |
+| **Validation input persistence** | ✅ | Typed sentence persists after validation so student can edit/retry |
+| **Grammar edit routing fix** | ✅ | Preview and classroom lesson links route to grammar edit form correctly |
+
+**Log**: [ITERATION-2026-05-19-v0.1.8-grammar-lessons.md](ITERATION-2026-05-19-v0.1.8-grammar-lessons.md)
 
 ---
 
@@ -147,7 +161,7 @@ bin/qa server
 - **Kanji**: 2,212 (N5-N1)
 - **Words**: 145,936 (N5-N3)
 - **Lessons**: 300+ (100 N5 + 100 N4 + 100 N3)
-- **Tests**: 761
+- **Tests**: 781
 - **Conjugations**: 66,396
 
 ---

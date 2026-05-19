@@ -10,30 +10,48 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   alias MedoruWeb.PublicAccess
 
   @color_palette [
-    "bg-red-200", "bg-red-300",
-    "bg-orange-200", "bg-orange-300",
-    "bg-amber-200", "bg-amber-300",
-    "bg-yellow-200", "bg-yellow-300",
-    "bg-lime-200", "bg-lime-300",
-    "bg-green-200", "bg-green-300",
-    "bg-emerald-200", "bg-emerald-300",
-    "bg-teal-200", "bg-teal-300",
-    "bg-cyan-200", "bg-cyan-300",
-    "bg-sky-200", "bg-sky-300",
-    "bg-blue-200", "bg-blue-300",
-    "bg-indigo-200", "bg-indigo-300",
-    "bg-violet-200", "bg-violet-300",
-    "bg-purple-200", "bg-purple-300",
-    "bg-fuchsia-200", "bg-fuchsia-300",
-    "bg-pink-200", "bg-pink-300",
-    "bg-rose-200", "bg-rose-300"
+    "bg-red-200",
+    "bg-red-300",
+    "bg-orange-200",
+    "bg-orange-300",
+    "bg-amber-200",
+    "bg-amber-300",
+    "bg-yellow-200",
+    "bg-yellow-300",
+    "bg-lime-200",
+    "bg-lime-300",
+    "bg-green-200",
+    "bg-green-300",
+    "bg-emerald-200",
+    "bg-emerald-300",
+    "bg-teal-200",
+    "bg-teal-300",
+    "bg-cyan-200",
+    "bg-cyan-300",
+    "bg-sky-200",
+    "bg-sky-300",
+    "bg-blue-200",
+    "bg-blue-300",
+    "bg-indigo-200",
+    "bg-indigo-300",
+    "bg-violet-200",
+    "bg-violet-300",
+    "bg-purple-200",
+    "bg-purple-300",
+    "bg-fuchsia-200",
+    "bg-fuchsia-300",
+    "bg-pink-200",
+    "bg-pink-300",
+    "bg-rose-200",
+    "bg-rose-300"
   ]
 
   # Text color for word highlights (ensure Tailwind scans it)
   @word_highlight_text_color "text-gray-900"
 
   @impl true
-  def mount(%{"lesson_id" => lesson_id}, session, socket) when socket.assigns.live_action == :preview do
+  def mount(%{"lesson_id" => lesson_id}, session, socket)
+      when socket.assigns.live_action == :preview do
     locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
     step = session["step"] || 0
@@ -640,7 +658,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp vocabulary_content(assigns) do
     ~H"""
     <%= if @current_word do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg"  phx-no-format>
+      <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
         <div class="card-body text-center py-12">
           <%!-- Japanese Text --%>
           <.link
@@ -1012,7 +1030,14 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   defp colored_segments(assigns) do
     ~H"""
-    <%= for segment <- @segments do %><%= case segment do %><% {:text, text} -> %><span><%= text %></span><% {:colored, text, classes} -> %><span class={["rounded", classes]}><%= text %></span><% end %><% end %>
+    <%= for segment <- @segments do %>
+      <%= case segment do %>
+        <% {:text, text} -> %>
+          <span>{text}</span>
+        <% {:colored, text, classes} -> %>
+          <span class={["rounded", classes]}>{text}</span>
+      <% end %>
+    <% end %>
     """
   end
 
