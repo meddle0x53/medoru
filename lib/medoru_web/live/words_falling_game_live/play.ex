@@ -271,30 +271,44 @@ defmodule MedoruWeb.WordsFallingGameLive.Play do
             |> Enum.map(&String.downcase(String.trim(&1)))
             |> Enum.uniq()
 
-          readings_hiragana =
-            if word.reading do
-              word.reading
-              |> split_alternatives()
-              |> Enum.map(&String.trim/1)
-              |> Enum.uniq()
-            else
-              []
-            end
-
-          readings_romaji =
+          readings =
             if word.reading do
               word.reading
               |> split_alternatives()
               |> Enum.map(fn reading ->
-                reading
-                |> String.trim()
-                |> hiragana_to_romaji(kana_map)
+                hira = String.trim(reading)
+                romaji = hira |> hiragana_to_romaji(kana_map)
+                {hira, romaji}
               end)
-              |> Enum.reject(&(&1 == ""))
-              |> Enum.uniq()
+              |> Enum.reject(fn {_, romaji} -> romaji == "" end)
             else
               []
             end
+
+          readings_hiragana = readings |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
+
+          readings_romaji =
+            readings
+            |> Enum.flat_map(fn {hira, romaji} ->
+              variants = [romaji]
+
+              variants =
+                if String.contains?(hira, ["ぢ", "ヂ"]) and String.contains?(romaji, "ji") do
+                  [String.replace(romaji, "ji", "di", global: false) | variants]
+                else
+                  variants
+                end
+
+              variants =
+                if String.contains?(hira, ["づ", "ヅ"]) and String.contains?(romaji, "zu") do
+                  [String.replace(romaji, "zu", "du", global: false) | variants]
+                else
+                  variants
+                end
+
+              variants
+            end)
+            |> Enum.uniq()
 
           %{
             id: word_id,

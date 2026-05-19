@@ -302,6 +302,8 @@ defmodule MedoruWeb.KanaFallingGameLive.Play do
     case kana.character do
       "づ" -> [base, "du"]
       "ヅ" -> [base, "du"]
+      "ぢ" -> [base, "di"]
+      "ヂ" -> [base, "di"]
       _ -> [base]
     end
   end

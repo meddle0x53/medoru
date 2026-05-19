@@ -262,21 +262,38 @@ defmodule MedoruWeb.KanjiFallingGameLive.Play do
               _ -> readings
             end
 
-          readings_hiragana =
+          readings =
             filtered
             |> Enum.map(fn r ->
-              reading = r.reading
-              reading = katakana_to_hiragana(reading)
-              String.replace(reading, ".", "")
+              hira = r.reading |> katakana_to_hiragana() |> String.replace(".", "")
+              romaji = String.downcase(r.romaji || "")
+              {hira, romaji}
             end)
-            |> Enum.uniq()
+            |> Enum.reject(fn {_, romaji} -> romaji == "" end)
+
+          readings_hiragana = readings |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
 
           readings_romaji =
-            filtered
-            |> Enum.map(fn r ->
-              String.downcase(r.romaji || "")
+            readings
+            |> Enum.flat_map(fn {hira, romaji} ->
+              variants = [romaji]
+
+              variants =
+                if String.contains?(hira, ["ぢ", "ヂ"]) and String.contains?(romaji, "ji") do
+                  [String.replace(romaji, "ji", "di", global: false) | variants]
+                else
+                  variants
+                end
+
+              variants =
+                if String.contains?(hira, ["づ", "ヅ"]) and String.contains?(romaji, "zu") do
+                  [String.replace(romaji, "zu", "du", global: false) | variants]
+                else
+                  variants
+                end
+
+              variants
             end)
-            |> Enum.reject(&(&1 == ""))
             |> Enum.uniq()
 
           %{
