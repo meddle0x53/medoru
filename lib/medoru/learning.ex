@@ -13,7 +13,7 @@ defmodule Medoru.Learning do
   alias Medoru.Repo
 
   alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule}
-  alias Medoru.Content.{Lesson, Word, WordKanji}
+  alias Medoru.Content.{Kanji, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
   # ============================================================================
@@ -510,6 +510,29 @@ defmodule Medoru.Learning do
     |> limit(^limit)
     |> offset(^offset)
     |> select([up, w], w)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the list of learned kanji for a user with pagination.
+
+  ## Examples
+
+      iex> list_learned_kanji(user_id, limit: 30, offset: 0)
+      [%Kanji{}, ...]
+
+  """
+  def list_learned_kanji(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 30)
+    offset = Keyword.get(opts, :offset, 0)
+
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+    |> join(:inner, [up], k in Kanji, on: k.id == up.kanji_id)
+    |> order_by([up, k], desc: up.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> select([up, k], k)
     |> Repo.all()
   end
 

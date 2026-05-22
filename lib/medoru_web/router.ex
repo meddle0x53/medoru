@@ -62,6 +62,7 @@ defmodule MedoruWeb.Router do
       live "/words/:id", WordLive.Show
       live "/words/:id/conjugations", WordLive.Conjugations
       live "/users/:id/words", LearnedWordsLive.Index
+      live "/users/:id/kanji", LearnedKanjiLive.Index
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
       live "/games", GamesLive.Index

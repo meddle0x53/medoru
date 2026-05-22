@@ -81,12 +81,14 @@
         icon="trophy"
         color="yellow"
       />
-      <.stat_card
-        label={gettext("Kanji Learned")}
-        value={@stats.total_kanji_learned}
-        icon="book-open"
-        color="blue"
-      />
+      <.link navigate={~p"/users/#{@user.id}/kanji"} class="block">
+        <.stat_card
+          label={gettext("Kanji Learned")}
+          value={@stats.total_kanji_learned}
+          icon="book-open"
+          color="blue"
+        />
+      </.link>
       <.link navigate={~p"/users/#{@user.id}/words"} class="block">
         <.stat_card
           label={gettext("Words Learned")}
