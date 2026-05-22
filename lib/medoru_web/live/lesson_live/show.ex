@@ -19,7 +19,7 @@ defmodule MedoruWeb.LessonLive.Show do
 
     # Get localized content
     localized_title = Content.get_localized_lesson_title(lesson, locale)
-    localized_description = Content.get_localized_lesson_description(lesson, locale)
+    localized_description = render_markdown(Content.get_localized_lesson_description(lesson, locale))
 
     # Fetch lesson progress if user is authenticated
     lesson_progress =
@@ -80,4 +80,11 @@ defmodule MedoruWeb.LessonLive.Show do
   def localized_lesson_description(lesson, locale) do
     Content.get_localized_lesson_description(lesson, locale)
   end
+
+  defp render_markdown(text) when is_binary(text) do
+    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
+    html
+  end
+
+  defp render_markdown(nil), do: ""
 end

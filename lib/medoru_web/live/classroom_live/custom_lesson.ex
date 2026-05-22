@@ -629,7 +629,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             </div>
           </div>
           <%= if @lesson.description do %>
-            <p class="text-secondary mt-2">{@lesson.description}</p>
+            <div class="text-secondary mt-2 prose prose-sm max-w-none">
+              {raw(render_markdown(@lesson.description))}
+            </div>
           <% end %>
         </div>
 
@@ -1054,13 +1056,19 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         {:colored, word, classes} -> ~s(<span class="#{classes}">#{word}</span>)
       end)
 
+    render_markdown(markdown_text)
+  end
+
+  defp markdown_with_colors(nil, _word_colors, _scope), do: ""
+
+  defp render_markdown(markdown_text) when is_binary(markdown_text) do
     # Parse markdown to HTML, preserving inline HTML
     # smartypants: false prevents curly quotes from breaking HTML attributes
     {:ok, html, _} = Earmark.as_html(markdown_text, escape: false, smartypants: false)
     html
   end
 
-  defp markdown_with_colors(nil, _word_colors, _scope), do: ""
+  defp render_markdown(nil), do: ""
 
   # Helper to generate word detail path with return step
   defp word_detail_path(classroom_id, lesson_id, word_id, step, practice) do

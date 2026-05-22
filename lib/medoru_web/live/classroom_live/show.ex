@@ -622,9 +622,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <h3 class="card-title text-base sm:text-lg text-base-content mb-1">
                       {lesson.title}
                     </h3>
-                    <p class="text-secondary text-sm mb-2 sm:mb-3">
-                      {lesson.description || gettext("No description")}
-                    </p>
+                    <div class="text-secondary text-sm mb-2 sm:mb-3 line-clamp-2">
+                      {raw(render_markdown(lesson.description || gettext("No description")))}
+                    </div>
 
                     <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
                       <span class="badge badge-outline badge-sm">
@@ -1173,4 +1173,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp skill_level_card_bg(level),
     do: Map.get(@skill_level_card_bgs, level, "bg-base-100 border-base-300 hover:border-primary")
+
+  defp render_markdown(text) when is_binary(text) do
+    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
+    html
+  end
+
+  defp render_markdown(nil), do: ""
 end

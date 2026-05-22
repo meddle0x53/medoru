@@ -60,9 +60,9 @@
       <h1 class="text-3xl font-bold text-base-content mb-3">
         {@localized_title}
       </h1>
-      <p class="text-lg text-secondary">
-        {@localized_description}
-      </p>
+      <div class="text-lg text-secondary prose prose-sm max-w-none">
+        {raw(@localized_description)}
+      </div>
     </div>
 
     <%!-- Progress Bar --%>

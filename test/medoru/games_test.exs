@@ -445,6 +445,77 @@ defmodule Medoru.GamesTest do
 
       assert 0 in (after_correct.cards_state["collected_indices"] || [])
     end
+
+    test "accepts slash-separated meanings flexibly", %{
+      teacher: teacher,
+      student: student,
+      classroom: classroom
+    } do
+      word = word_fixture(meaning: "to eat / to consume / to devour")
+      word_ids_with_points = [{word.id, 1}]
+
+      attrs = %{
+        "name" => "Slash Meaning Game",
+        "memory_card_game" => %{
+          "board_size" => "4x4",
+          "max_attempts" => 10,
+          "meaning_required_for_collection" => true,
+          "pronunciation_required_for_collection" => false,
+          "meaning_or_pronunciation_required_for_collection" => false
+        }
+      }
+
+      {:ok, game} =
+        Games.create_memory_card_game(classroom.id, teacher.id, attrs, word_ids_with_points)
+
+      {:ok, _} = Games.publish_game(game.id, teacher.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+
+      # Find matching pair
+      card_positions = session.cards_state["card_positions"]
+      word_id = Enum.at(card_positions, 0)
+      matching_pos = Enum.find_index(Enum.drop(card_positions, 1), &(&1 == word_id)) + 1
+
+      flip_and_answer = fn sess, answer_meaning ->
+        {:ok, s1} = Games.flip_card(sess.id, 0)
+        {:needs_input, s2, _} = Games.flip_card(s1.id, matching_pos)
+        Games.submit_collection_answer(s2.id, %{"meaning" => answer_meaning, "pronunciation" => ""})
+      end
+
+      # Single alternative works
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to eat")
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to consume")
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to devour")
+
+      # Whole string works
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to eat / to consume / to devour")
+
+      # Subset works
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to eat / to consume")
+
+      # Case insensitive
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :collected, _} = flip_and_answer.(session, "TO EAT")
+
+      # Wrong meaning is rejected
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :wrong_answer} = flip_and_answer.(session, "to drink")
+
+      # Mixed correct and wrong is rejected
+      {:ok, _} = Games.reset_session(game.id, student.id)
+      {:ok, session} = Games.get_or_create_session(game.id, student.id)
+      assert {:ok, _, :wrong_answer} = flip_and_answer.(session, "to eat / to drink")
+    end
   end
 
   describe "cancel_input_attempt/1" do

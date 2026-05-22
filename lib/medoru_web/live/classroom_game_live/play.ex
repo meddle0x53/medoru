@@ -912,9 +912,8 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
     word_reading = String.trim(word.word.reading || "")
 
     meaning_correct =
-      answer_meaning != "" and
-        (String.downcase(answer_meaning) == String.downcase(word_meaning_default) or
-           String.downcase(answer_meaning) == String.downcase(word_meaning_localized))
+      meaning_matches?(answer_meaning, word_meaning_default) or
+        meaning_matches?(answer_meaning, word_meaning_localized)
 
     pronunciation_correct =
       answer_pronunciation != "" and
@@ -927,6 +926,26 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
       :meaning_and_pronunciation -> meaning_correct and pronunciation_correct
       _ -> true
     end
+  end
+
+  defp meaning_matches?("", _correct_meaning), do: false
+
+  defp meaning_matches?(answer_meaning, correct_meaning) do
+    answer_parts = split_meaning(answer_meaning)
+    correct_parts = split_meaning(correct_meaning)
+
+    Enum.all?(answer_parts, fn answer_part ->
+      Enum.any?(correct_parts, fn correct_part ->
+        String.downcase(answer_part) == String.downcase(correct_part)
+      end)
+    end)
+  end
+
+  defp split_meaning(meaning) do
+    meaning
+    |> String.split(" / ")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
 
   defp validate_kana_answer(kana_char, answer_reading) do

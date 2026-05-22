@@ -82,9 +82,9 @@
                       </span>
                     <% end %>
                   </div>
-                  <p class="text-secondary text-sm mb-2">
-                    {lesson.description || gettext("No description")}
-                  </p>
+                  <div class="text-secondary text-sm mb-2 line-clamp-2">
+                    {raw(render_markdown(lesson.description || gettext("No description")))}
+                  </div>
                   <div class="flex flex-wrap items-center gap-2 text-xs">
                     <%= if is_authenticated && ccl.classroom do %>
                       <span class="badge badge-outline badge-sm">
