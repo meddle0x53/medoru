@@ -1179,11 +1179,18 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> TestStep.changeset(updated_params)
       |> Map.put(:action, :validate)
 
+    show_kanji_preview =
+      case kanji.stroke_data do
+        %{"strokes" => s} when is_list(s) and length(s) > 0 -> true
+        _ -> false
+      end
+
     {:noreply,
      socket
      |> assign(:step_changeset, changeset)
      |> assign(:step_form, to_form(changeset, as: :step))
      |> assign(:selected_kanji, kanji)
+     |> assign(:show_kanji_preview, show_kanji_preview)
      |> assign(:kanji_search_query, "")
      |> assign(:available_kanji, [])}
   end
