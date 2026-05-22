@@ -131,16 +131,21 @@ defmodule MedoruWeb.SettingsLive.Profile do
         unread_count = Medoru.Notifications.count_unread_notifications(user.id)
         locale = socket.assigns.current_scope.locale
 
-        {:noreply,
-         socket
-         |> assign(:profile, updated_profile)
-         |> assign(:current_scope, %{
-           current_user: refreshed_user,
-           unread_count: unread_count,
-           locale: locale
-         })
-         |> put_flash(:info, gettext("Profile updated successfully."))
-         |> push_navigate(to: ~p"/settings/profile")}
+        socket =
+          socket
+          |> assign(:profile, updated_profile)
+          |> assign(:current_scope, %{
+            current_user: refreshed_user,
+            unread_count: unread_count,
+            locale: locale,
+            theme: updated_profile.theme
+          })
+          |> put_flash(:info, gettext("Profile updated successfully."))
+
+        # Apply theme immediately in the browser
+        socket = push_event(socket, "set_theme", %{theme: updated_profile.theme})
+
+        {:noreply, push_navigate(socket, to: ~p"/settings/profile")}
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}

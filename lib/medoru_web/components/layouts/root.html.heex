@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang={@conn.assigns[:locale] || "en"}>
+<html lang={@conn.assigns[:locale] || "en"} data-theme={@conn.assigns[:current_scope][:theme] || "system"}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,6 +13,7 @@
     </script>
     <script>
       (() => {
+        const serverTheme = document.documentElement.getAttribute("data-theme");
         const setTheme = (theme) => {
           if (theme === "system") {
             localStorage.removeItem("phx:theme");
@@ -22,12 +23,14 @@
             document.documentElement.setAttribute("data-theme", theme);
           }
         };
-        if (!document.documentElement.hasAttribute("data-theme")) {
+        if (serverTheme) {
+          setTheme(serverTheme);
+        } else if (!document.documentElement.hasAttribute("data-theme")) {
           setTheme(localStorage.getItem("phx:theme") || "system");
         }
         window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
 
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+        window.addEventListener("phx:set-theme", (e) => setTheme(e.detail.theme));
       })();
     </script>
   </head>

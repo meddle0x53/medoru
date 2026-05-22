@@ -17,10 +17,11 @@ defmodule MedoruWeb.UserAuth do
     user = user_id && Accounts.get_user_with_profile(user_id)
     unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
     locale = conn.assigns[:locale] || "en"
+    theme = if user && user.profile, do: user.profile.theme, else: "system"
 
     conn
     |> assign(:current_user, user)
-    |> assign(:current_scope, %{current_user: user, unread_count: unread_count, locale: locale})
+    |> assign(:current_scope, %{current_user: user, unread_count: unread_count, locale: locale, theme: theme})
   end
 
   @doc """
@@ -101,14 +102,15 @@ defmodule MedoruWeb.UserAuth do
         # Returns nil if user no longer exists (e.g., database cleaned)
         user = Accounts.get_user_with_profile(user_id)
         unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
+        theme = if user && user.profile, do: user.profile.theme, else: "system"
 
         Phoenix.Component.assign(socket,
-          current_scope: %{current_user: user, unread_count: unread_count, locale: locale}
+          current_scope: %{current_user: user, unread_count: unread_count, locale: locale, theme: theme}
         )
 
       %{} ->
         Phoenix.Component.assign(socket,
-          current_scope: %{current_user: nil, unread_count: 0, locale: locale}
+          current_scope: %{current_user: nil, unread_count: 0, locale: locale, theme: "system"}
         )
     end
   end
