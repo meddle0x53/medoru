@@ -10,6 +10,16 @@ const KanaFallingInput = {
 
     this.pushEvent("device_info", { is_mobile: isMobile })
 
+    // Prevent iOS zoom on game pages by locking the viewport
+    this.viewportMeta = document.querySelector('meta[name="viewport"]')
+    if (this.viewportMeta) {
+      this.originalViewport = this.viewportMeta.getAttribute("content")
+      this.viewportMeta.setAttribute(
+        "content",
+        "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+      )
+    }
+
     this.handleKeyDown = (e) => {
       if (!this.el) return
 
@@ -69,6 +79,11 @@ const KanaFallingInput = {
     window.removeEventListener("keydown", this.handleKeyDown, true)
     document.removeEventListener("fullscreenchange", this.handleFullscreenChange)
     this.exitFullscreen()
+
+    // Restore original viewport
+    if (this.viewportMeta && this.originalViewport) {
+      this.viewportMeta.setAttribute("content", this.originalViewport)
+    }
   },
 
   enterFullscreen() {
