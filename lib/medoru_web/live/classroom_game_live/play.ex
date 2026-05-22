@@ -1004,7 +1004,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 <% end %>
               </p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
               <.link
                 navigate={
                   if @return_to,
@@ -1012,27 +1012,33 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                       "#{~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}?return_to=#{@return_to}",
                     else: ~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"
                 }
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm btn-circle sm:btn-square"
+                title={gettext("Rankings")}
               >
-                <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}
+                <.icon name="hero-trophy" class="w-4 h-4" />
+                <span class="hidden sm:inline">{gettext("Rankings")}</span>
               </.link>
               <%= if @is_mobile == false do %>
                 <button
                   type="button"
                   phx-click="enter_fullscreen"
-                  class="btn btn-ghost btn-sm"
+                  class="btn btn-ghost btn-sm btn-circle"
                   title={gettext("Full Screen")}
                 >
                   <.icon name="hero-arrows-pointing-out" class="w-4 h-4" />
                 </button>
               <% end %>
-              <div class="badge badge-outline badge-lg">
-                <.icon name="hero-heart" class="w-4 h-4 mr-1" />
-                {attempts_remaining(@session)} / {@session.max_attempts} {gettext("attempts")}
+              <div class="badge badge-outline badge-sm sm:badge-lg whitespace-nowrap">
+                <.icon name="hero-heart" class="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span class="text-xs sm:text-sm">
+                  {attempts_remaining(@session)} / {@session.max_attempts}
+                </span>
+                <span class="hidden sm:inline ml-0.5">{gettext("attempts")}</span>
               </div>
-              <div class="badge badge-primary badge-lg">
-                <.icon name="hero-star" class="w-4 h-4 mr-1" />
-                {@session.score} {gettext("pts")}
+              <div class="badge badge-primary badge-sm sm:badge-lg whitespace-nowrap">
+                <.icon name="hero-star" class="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                <span class="text-xs sm:text-sm">{@session.score}</span>
+                <span class="hidden sm:inline ml-0.5">{gettext("pts")}</span>
               </div>
             </div>
           </div>
@@ -1115,12 +1121,12 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                       not (mcg.meaning_required_for_collection or
                              mcg.meaning_or_pronunciation_required_for_collection) %>
                     <% meaning_text = Content.get_localized_meaning(word, @current_scope.locale) %>
-                    <div class="text-center px-1">
-                      <p class="text-sm sm:text-base lg:text-lg leading-tight">{word.text}</p>
-                      <p :if={show_reading?} class="text-xs text-secondary mt-1 hidden sm:block">
+                    <div class="text-center px-1 w-full overflow-hidden">
+                      <p class="text-[10px] sm:text-sm lg:text-base leading-tight truncate">{word.text}</p>
+                      <p :if={show_reading?} class="text-[8px] sm:text-xs text-secondary mt-0.5 truncate hidden sm:block">
                         {word.reading}
                       </p>
-                      <p :if={show_meaning?} class="text-xs text-success mt-1 hidden sm:block">
+                      <p :if={show_meaning?} class="text-[8px] sm:text-xs text-success mt-0.5 truncate hidden sm:block">
                         {meaning_text}
                       </p>
                     </div>
@@ -1277,11 +1283,11 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
     case board_size do
       "4x4" -> "grid-cols-4 max-w-md"
       "5x4" -> "grid-cols-5 max-w-lg"
-      "6x4" -> "grid-cols-6 max-w-lg"
-      "6x5" -> "grid-cols-6 max-w-xl"
-      "6x6" -> "grid-cols-6 max-w-lg"
-      "8x8" -> "grid-cols-8 max-w-xl"
-      "10x10" -> "grid-cols-10 max-w-2xl"
+      "6x4" -> "grid-cols-4 sm:grid-cols-6 max-w-lg"
+      "6x5" -> "grid-cols-4 sm:grid-cols-6 max-w-xl"
+      "6x6" -> "grid-cols-4 sm:grid-cols-6 max-w-lg"
+      "8x8" -> "grid-cols-4 sm:grid-cols-8 max-w-xl"
+      "10x10" -> "grid-cols-5 sm:grid-cols-10 max-w-2xl"
       _ -> "grid-cols-4 max-w-md"
     end
   end
