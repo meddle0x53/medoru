@@ -81,8 +81,16 @@ defmodule Medoru.Tests.WordSetTestGenerator do
         # Random number of steps for this word (1 to max)
         num_steps = :rand.uniform(max_steps_per_word)
 
+        # Filter out reading types for pure kana words
+        word_types =
+          if only_kana?(word.text) do
+            Enum.reject(step_types, &(&1 in [:word_to_reading, :reading_to_word]))
+          else
+            step_types
+          end
+
         # Randomly select step types for this word
-        selected_types = Enum.take_random(step_types, min(num_steps, length(step_types)))
+        selected_types = Enum.take_random(word_types, min(num_steps, length(word_types)))
 
         selected_types
         |> Enum.map(fn step_type ->
@@ -294,4 +302,17 @@ defmodule Medoru.Tests.WordSetTestGenerator do
   end
 
   defp clamp(_, min, max), do: div(min + max, 2)
+
+  defp only_kana?(string) do
+    string
+    |> String.to_charlist()
+    |> Enum.all?(&kana_char?/1)
+  end
+
+  defp kana_char?(codepoint) do
+    # Hiragana, Katakana, Half-width Katakana
+    (codepoint >= 0x3040 and codepoint <= 0x309F) or
+      (codepoint >= 0x30A0 and codepoint <= 0x30FF) or
+      (codepoint >= 0xFF65 and codepoint <= 0xFF9F)
+  end
 end

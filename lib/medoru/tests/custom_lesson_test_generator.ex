@@ -189,7 +189,14 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
   defp generate_word_steps(word, steps_per_word) do
     # Select random step types for this word
     # Limit to available types if word count is low
-    selected_types = Enum.take_random(@step_types, min(steps_per_word, length(@step_types)))
+    available_types =
+      if only_kana?(word.text) do
+        Enum.reject(@step_types, &(&1 in [:word_to_reading, :reading_to_word]))
+      else
+        @step_types
+      end
+
+    selected_types = Enum.take_random(available_types, min(steps_per_word, length(available_types)))
 
     Enum.map(selected_types, fn step_type ->
       build_step_data(word, step_type)

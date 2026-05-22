@@ -145,8 +145,15 @@ defmodule Medoru.Tests.LessonTestGenerator do
       |> Enum.flat_map(fn word ->
         num_steps = :rand.uniform(steps_per_word)
 
+        word_types =
+          if only_kana?(word.text) do
+            Enum.reject(multichoice_types, &(&1 in [:word_to_reading, :reading_to_word]))
+          else
+            multichoice_types
+          end
+
         selected_types =
-          Enum.take_random(multichoice_types, min(num_steps, length(multichoice_types)))
+          Enum.take_random(word_types, min(num_steps, length(word_types)))
 
         selected_types
         |> Enum.map(fn step_type ->
