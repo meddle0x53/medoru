@@ -130,9 +130,9 @@ defmodule MedoruWeb.Layouts do
               </div>
 
               <%!-- Drawer Panel --%>
-              <nav class="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-base-100 shadow-2xl flex flex-col">
+              <nav class="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-base-100 shadow-2xl flex flex-col overflow-y-auto">
                 <%!-- Drawer Header --%>
-                <div class="p-4 border-b border-base-300 flex items-center justify-between">
+                <div class="p-4 border-b border-base-300 flex items-center justify-between shrink-0">
                   <.link navigate={~p"/"} class="flex items-center gap-2">
                     <img src={~p"/images/medoru_logo_h.png"} alt="Medoru" class="h-8 w-auto" />
                   </.link>
@@ -178,7 +178,7 @@ defmodule MedoruWeb.Layouts do
                 </div>
 
                 <%!-- Navigation Links --%>
-                <div class="flex-1 overflow-y-auto py-2">
+                <div class="flex-1 py-2">
                   <div class="px-4 py-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                     {gettext("Learning")}
                   </div>
@@ -671,9 +671,9 @@ defmodule MedoruWeb.Layouts do
               </div>
 
               <%!-- Drawer Panel --%>
-              <nav class="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-base-100 shadow-2xl flex flex-col">
+              <nav class="absolute left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-base-100 shadow-2xl flex flex-col overflow-y-auto">
                 <%!-- Drawer Header --%>
-                <div class="p-4 border-b border-base-300 flex items-center justify-between">
+                <div class="p-4 border-b border-base-300 flex items-center justify-between shrink-0">
                   <.link navigate={~p"/"} class="flex items-center gap-2">
                     <img src={~p"/images/medoru_logo_h.png"} alt="Medoru" class="h-8 w-auto" />
                   </.link>
@@ -688,7 +688,7 @@ defmodule MedoruWeb.Layouts do
                 </div>
 
                 <%!-- Anonymous Navigation Links --%>
-                <div class="flex-1 overflow-y-auto py-2">
+                <div class="flex-1 py-2">
                   <div class="px-4 py-2 text-xs font-semibold text-secondary uppercase tracking-wider">
                     {gettext("Explore")}
                   </div>
