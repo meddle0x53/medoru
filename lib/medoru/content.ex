@@ -1827,7 +1827,7 @@ defmodule Medoru.Content do
     CustomLessonWord
     |> where([lw], lw.custom_lesson_id == ^lesson_id)
     |> order_by([lw], asc: lw.position)
-    |> preload(:word)
+    |> preload(word: [word_kanjis: :kanji])
     |> Repo.all()
   end
 

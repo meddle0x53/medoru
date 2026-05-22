@@ -662,9 +662,31 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     <%= if @current_word do %>
       <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
         <div class="card-body text-center py-12">
+          <%!-- Word Picture --%>
+          <%= if @lesson.show_pictures && @current_word.word.image_path do %>
+            <div class="mb-6">
+              <img
+                src={@current_word.word.image_path}
+                alt={@current_word.word.text}
+                class="w-full max-w-[300px] h-auto mx-auto rounded-2xl border border-base-300 shadow-sm"
+                loading="lazy"
+              />
+            </div>
+          <% end %>
+
+          <%!-- Pronunciation Audio --%>
+          <%= if @lesson.show_sounds && @current_word.word.pronunciation_path do %>
+            <div class="mb-6 max-w-[300px] mx-auto">
+              <audio controls class="w-full">
+                <source src={@current_word.word.pronunciation_path} />
+                {gettext("Your browser does not support the audio element.")}
+              </audio>
+            </div>
+          <% end %>
+
           <%!-- Japanese Text --%>
-          <.link
-            navigate={
+          <a
+            href={
               word_detail_path(
                 @classroom.id,
                 @lesson.id,
@@ -673,11 +695,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                 @practice
               )
             }
+            target="_blank"
+            rel="noopener noreferrer"
             class="text-6xl font-jp mb-4 hover:text-primary transition-colors inline-block"
-            title="View word details"
+            title={gettext("View word details")}
           >
             {@current_word.word.text}
-          </.link>
+          </a>
 
           <%!-- Reading --%>
           <div class="text-xl text-secondary mb-6">{@current_word.word.reading}</div>
@@ -687,6 +711,30 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             {@current_word.custom_meaning ||
               Content.get_localized_meaning(@current_word.word, @locale)}
           </div>
+
+          <%!-- Kanji Links --%>
+          <%= if @current_word.word.word_kanjis != [] do %>
+            <div class="border-t border-base-200 pt-6 mt-2 mb-6">
+              <h3 class="text-sm font-medium text-secondary mb-4">
+                {gettext("Kanji Breakdown")}
+              </h3>
+              <div class="flex items-center justify-center gap-3 flex-wrap">
+                <%= for word_kanji <- @current_word.word.word_kanjis do %>
+                  <a
+                    href={~p"/kanji/#{word_kanji.kanji.id}"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="bg-base-100 border border-base-300 rounded-xl px-4 py-3 hover:border-primary/30
+                           hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 text-center group"
+                  >
+                    <div class="text-2xl text-base-content group-hover:text-primary transition-colors">
+                      {word_kanji.kanji.character}
+                    </div>
+                  </a>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
 
           <%!-- Examples --%>
           <%= if @current_word.examples && @current_word.examples != [] do %>

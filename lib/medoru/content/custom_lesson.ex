@@ -38,6 +38,10 @@ defmodule Medoru.Content.CustomLesson do
     field :steps_per_word, :integer, default: 3
     field :word_colors, {:array, :map}, default: []
 
+    # Vocabulary display configuration
+    field :show_pictures, :boolean, default: true
+    field :show_sounds, :boolean, default: true
+
     belongs_to :creator, User
     belongs_to :test, Test
     has_many :custom_lesson_words, CustomLessonWord, preload_order: [asc: :position]
@@ -68,7 +72,9 @@ defmodule Medoru.Content.CustomLesson do
       :requires_test,
       :include_writing,
       :steps_per_word,
-      :word_colors
+      :word_colors,
+      :show_pictures,
+      :show_sounds
     ])
     |> validate_required([
       :title,

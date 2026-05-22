@@ -292,6 +292,36 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("toggle_show_pictures", _params, socket) do
+    lesson = socket.assigns.lesson
+    new_value = !lesson.show_pictures
+
+    case Content.update_custom_lesson(lesson, %{show_pictures: new_value}) do
+      {:ok, _updated_lesson} ->
+        updated_lesson = Content.get_custom_lesson!(lesson.id)
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update picture setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_show_sounds", _params, socket) do
+    lesson = socket.assigns.lesson
+    new_value = !lesson.show_sounds
+
+    case Content.update_custom_lesson(lesson, %{show_sounds: new_value}) do
+      {:ok, _updated_lesson} ->
+        updated_lesson = Content.get_custom_lesson!(lesson.id)
+        {:noreply, assign(socket, :lesson, updated_lesson)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update sound setting."))}
+    end
+  end
+
+  @impl true
   def handle_event("update_steps_per_word", %{"value" => value}, socket) do
     lesson = socket.assigns.lesson
     steps_per_word = String.to_integer(value)
@@ -729,6 +759,38 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                       <div class="font-medium text-sm">{gettext("Include kanji writing")}</div>
                       <div class="text-xs text-secondary">
                         {gettext("Add drawing steps for kanji in lesson words")}
+                      </div>
+                    </div>
+                  </label>
+
+                  <%!-- Show Pictures --%>
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@lesson.show_pictures}
+                      phx-click="toggle_show_pictures"
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Show pictures")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Display word images in vocabulary lessons")}
+                      </div>
+                    </div>
+                  </label>
+
+                  <%!-- Show Sounds --%>
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={@lesson.show_sounds}
+                      phx-click="toggle_show_sounds"
+                      class="checkbox checkbox-primary mt-0.5"
+                    />
+                    <div>
+                      <div class="font-medium text-sm">{gettext("Show sounds")}</div>
+                      <div class="text-xs text-secondary">
+                        {gettext("Display pronunciation audio in vocabulary lessons")}
                       </div>
                     </div>
                   </label>
