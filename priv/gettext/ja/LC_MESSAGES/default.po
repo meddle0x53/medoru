@@ -11878,3 +11878,60 @@ msgstr "チャットは利用できません"
 
 msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
 msgstr "クラスチャットが見つかりませんでした。クラス作成時に自動的に作成されるはずです。"
+
+msgid "Chat Security"
+msgstr "チャットセキュリティ"
+
+msgid "Manage your end-to-end encryption keys for secure messaging."
+msgstr "安全なメッセージングのためのエンドツーエンド暗号化キーを管理します。"
+
+msgid "Encryption Key Status"
+msgstr "暗号化キーの状態"
+
+msgid "Checking key status..."
+msgstr "キーの状態を確認中..."
+
+msgid "We've detected that you've used a different encryption key before. If you're on a new device, make sure to import your original key to access old messages."
+msgstr "以前に異なる暗号化キーを使用したことが検出されました。新しいデバイスを使用している場合は、元のキーをインポートして古いメッセージにアクセスしてください。"
+
+msgid "Your Encryption Key"
+msgstr "あなたの暗号化キー"
+
+msgid "Copy to Clipboard"
+msgstr "クリップボードにコピー"
+
+msgid "Import Key from Another Device"
+msgstr "別のデバイスからキーをインポート"
+
+msgid "Paste your encryption key"
+msgstr "暗号化キーを貼り付け"
+
+msgid "Paste your private key here..."
+msgstr "ここに秘密鍵を貼り付け..."
+
+msgid "Import Key"
+msgstr "キーをインポート"
+
+msgid "Important"
+msgstr "重要"
+
+msgid "Your private encryption key is stored only in your browser's local storage. If you clear your browser data or switch devices, you will lose access to your encrypted messages unless you back up this key."
+msgstr "秘密鍵はブラウザのローカルストレージにのみ保存されます。ブラウザデータを消去したり、デバイスを切り替えたりすると、このキーをバックアップしていない限り、暗号化されたメッセージにアクセスできなくなります。"
+
+msgid "Never share your private key with anyone. Medoru staff will never ask for it."
+msgstr "秘密鍵を誰とも共有しないでください。Medoruのスタッフがそれを求めることは決してありません。"
+
+msgid "Encryption key registered successfully."
+msgstr "暗号化キーが正常に登録されました。"
+
+msgid "It looks like you're using a new device or browser. You can't decrypt old messages without your original encryption key."
+msgstr "新しいデバイスまたはブラウザを使用しているようです。元の暗号化キーがないと、古いメッセージを復号できません。"
+
+msgid "Request key from others"
+msgstr "他の人にキーを依頼"
+
+msgid "Request Key from Others"
+msgstr "他の人にキーを依頼"
+
+msgid "Failed to store re-encrypted key."
+msgstr "再暗号化されたキーの保存に失敗しました。"

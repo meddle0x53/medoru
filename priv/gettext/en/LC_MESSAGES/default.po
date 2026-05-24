@@ -11877,3 +11877,60 @@ msgstr ""
 
 msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
 msgstr ""
+
+msgid "Chat Security"
+msgstr ""
+
+msgid "Manage your end-to-end encryption keys for secure messaging."
+msgstr ""
+
+msgid "Encryption Key Status"
+msgstr ""
+
+msgid "Checking key status..."
+msgstr ""
+
+msgid "We've detected that you've used a different encryption key before. If you're on a new device, make sure to import your original key to access old messages."
+msgstr ""
+
+msgid "Your Encryption Key"
+msgstr ""
+
+msgid "Copy to Clipboard"
+msgstr ""
+
+msgid "Import Key from Another Device"
+msgstr ""
+
+msgid "Paste your encryption key"
+msgstr ""
+
+msgid "Paste your private key here..."
+msgstr ""
+
+msgid "Import Key"
+msgstr ""
+
+msgid "Important"
+msgstr ""
+
+msgid "Your private encryption key is stored only in your browser's local storage. If you clear your browser data or switch devices, you will lose access to your encrypted messages unless you back up this key."
+msgstr ""
+
+msgid "Never share your private key with anyone. Medoru staff will never ask for it."
+msgstr ""
+
+msgid "Encryption key registered successfully."
+msgstr ""
+
+msgid "It looks like you're using a new device or browser. You can't decrypt old messages without your original encryption key."
+msgstr ""
+
+msgid "Request key from others"
+msgstr ""
+
+msgid "Request Key from Others"
+msgstr ""
+
+msgid "Failed to store re-encrypted key."
+msgstr ""

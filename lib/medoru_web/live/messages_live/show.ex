@@ -54,6 +54,31 @@ defmodule MedoruWeb.MessagesLive.Show do
         conversation_key = Chat.get_conversation_key(conversation_id, current_user.id)
         encrypted_key = if conversation_key, do: Base.encode64(conversation_key.encrypted_key)
 
+        # Detect if the user's current public key is newer than the conversation key.
+        # If so, the conversation key was likely encrypted with an older public key
+        # and the user won't be able to decrypt it.
+        key_mismatch =
+          if conversation_key && encrypted_key do
+            current_key = Encryption.get_public_key(current_user.id)
+
+            if current_key do
+              # If conversation key was last updated before current public key was created,
+              # the current key probably can't decrypt it
+              DateTime.compare(conversation_key.updated_at, current_key.inserted_at) == :lt
+            else
+              # No active public key at all — definitely can't decrypt
+              true
+            end
+          else
+            false
+          end
+
+        # If this user has a key mismatch (new device/browser), auto-request
+        # re-encryption from other online participants
+        if connected?(socket) && key_mismatch do
+          Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+        end
+
         messages = Chat.list_messages(conversation_id, limit: @per_page)
         has_more = length(messages) == @per_page
 
@@ -80,6 +105,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:typing_users, [])
          |> assign(:is_blocked, is_blocked)
          |> assign(:missing_keys, missing_keys)
+         |> assign(:key_mismatch, key_mismatch)
          |> push_event("scroll_to_bottom", %{})}
       else
         {:ok, push_navigate(socket, to: ~p"/messages")}
@@ -227,6 +253,77 @@ defmodule MedoruWeb.MessagesLive.Show do
   def handle_event("set_reply", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.messages, &(&1.id == message_id))
     {:noreply, assign(socket, :reply_to, message)}
+  end
+
+  @impl true
+  def handle_event("request_key_reencryption", _params, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+
+    Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("submit_re_encrypted_key", %{"target_user_id" => target_id, "encrypted_key" => key_b64}, socket) do
+    conversation = socket.assigns.conversation
+    require Logger
+    Logger.debug("[ChatRekey] Received submit_re_encrypted_key from user #{socket.assigns.current_scope.current_user.id} for target #{target_id}")
+
+    case Chat.upsert_conversation_key(conversation.id, target_id, key_b64) do
+      {:ok, _} ->
+        Logger.debug("[ChatRekey] Stored re-encrypted key, broadcasting to conversation #{conversation.id}")
+        Chat.broadcast_reencrypted_key(conversation.id, target_id, key_b64)
+        {:noreply, socket}
+
+      {:error, reason} ->
+        Logger.warning("[ChatRekey] Failed to store re-encrypted key: #{inspect(reason)}")
+        {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
+    end
+  end
+
+  @impl true
+  def handle_info({:request_key_reencryption, target_user_id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    # Only ask other participants (not the target user) to re-encrypt
+    if current_user.id != target_user_id do
+      # Get the target user's new public key
+      target_key = Encryption.get_public_key(target_user_id)
+
+      if target_key do
+        require Logger
+        Logger.debug("[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}")
+
+        {:noreply,
+         push_event(socket, "re_encrypt_for_user", %{
+           target_user_id: target_user_id,
+           public_key: Base.encode64(target_key.public_key_spki)
+         })}
+      else
+        require Logger
+        Logger.warning("[ChatRekey] No active public key found for target user #{target_user_id}")
+        {:noreply, socket}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:reencrypted_key, target_user_id, encrypted_key_b64}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    # Only the target user should process this
+    if current_user.id == target_user_id do
+      {:noreply,
+       socket
+       |> assign(:key_mismatch, false)
+       |> push_event("conversation_key", %{encrypted_key: encrypted_key_b64})}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

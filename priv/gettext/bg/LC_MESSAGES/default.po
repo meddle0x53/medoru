@@ -11883,3 +11883,60 @@ msgstr "Чатът не е наличен"
 
 msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
 msgstr "Чатът на класната стая не беше намерен. Той трябва да бъде създаден автоматично при създаване на класната стая."
+
+msgid "Chat Security"
+msgstr "Сигурност на чата"
+
+msgid "Manage your end-to-end encryption keys for secure messaging."
+msgstr "Управлявайте ключовете си за криптиране за сигурно съобщаване."
+
+msgid "Encryption Key Status"
+msgstr "Статус на ключа за криптиране"
+
+msgid "Checking key status..."
+msgstr "Проверка на статуса на ключа..."
+
+msgid "We've detected that you've used a different encryption key before. If you're on a new device, make sure to import your original key to access old messages."
+msgstr "Открихме, че сте използвали различен ключ за криптиране преди. Ако сте на ново устройство, не забравяйте да импортирате оригиналния си ключ, за да получите достъп до старите съобщения."
+
+msgid "Your Encryption Key"
+msgstr "Вашият ключ за криптиране"
+
+msgid "Copy to Clipboard"
+msgstr "Копирай в клипборда"
+
+msgid "Import Key from Another Device"
+msgstr "Импортирай ключ от друго устройство"
+
+msgid "Paste your encryption key"
+msgstr "Поставете ключа си за криптиране"
+
+msgid "Paste your private key here..."
+msgstr "Поставете частния си ключ тук..."
+
+msgid "Import Key"
+msgstr "Импортирай ключ"
+
+msgid "Important"
+msgstr "Важно"
+
+msgid "Your private encryption key is stored only in your browser's local storage. If you clear your browser data or switch devices, you will lose access to your encrypted messages unless you back up this key."
+msgstr "Вашият частен ключ за криптиране се съхранява само в локалното хранилище на браузъра. Ако изчистите данните на браузъра или смените устройство, ще загубите достъп до криптираните си съобщения, освен ако не направите резервно копие на този ключ."
+
+msgid "Never share your private key with anyone. Medoru staff will never ask for it."
+msgstr "Никога не споделяйте частния си ключ с никого. Екипът на Medoru никога няма да го поиска."
+
+msgid "Encryption key registered successfully."
+msgstr "Ключът за криптиране е регистриран успешно."
+
+msgid "It looks like you're using a new device or browser. You can't decrypt old messages without your original encryption key."
+msgstr "Изглежда, че използвате ново устройство или браузър. Не можете да декриптирате стари съобщения без оригиналния си ключ за криптиране."
+
+msgid "Request key from others"
+msgstr "Поискай ключ от другите"
+
+msgid "Request Key from Others"
+msgstr "Поискай ключ от другите"
+
+msgid "Failed to store re-encrypted key."
+msgstr "Неуспешно съхраняване на повторно криптирания ключ."

@@ -224,6 +224,30 @@ defmodule Medoru.Chat do
     |> Repo.insert()
   end
 
+  @doc """
+  Updates or inserts an encrypted conversation key for a user.
+  Used when a participant's public key changes and the key needs re-encryption.
+  """
+  def upsert_conversation_key(conversation_id, user_id, encrypted_key_b64) do
+    encrypted_key = Base.decode64!(encrypted_key_b64)
+
+    case get_conversation_key(conversation_id, user_id) do
+      nil ->
+        %ConversationKey{}
+        |> ConversationKey.changeset(%{
+          conversation_id: conversation_id,
+          user_id: user_id,
+          encrypted_key: encrypted_key
+        })
+        |> Repo.insert()
+
+      existing ->
+        existing
+        |> ConversationKey.changeset(%{encrypted_key: encrypted_key})
+        |> Repo.update()
+    end
+  end
+
   # ============================================================================
   # Messages
   # ============================================================================
@@ -541,5 +565,28 @@ defmodule Medoru.Chat do
   """
   def unsubscribe_from_conversation(conversation_id) do
     Phoenix.PubSub.unsubscribe(PubSub, "chat:#{conversation_id}")
+  end
+
+  @doc """
+  Broadcasts a request for other participants to re-encrypt the conversation key
+  for a user whose public key has changed.
+  """
+  def broadcast_key_reencryption_request(conversation_id, target_user_id) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:request_key_reencryption, target_user_id}
+    )
+  end
+
+  @doc """
+  Broadcasts a re-encrypted conversation key to a specific user.
+  """
+  def broadcast_reencrypted_key(conversation_id, target_user_id, encrypted_key_b64) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:reencrypted_key, target_user_id, encrypted_key_b64}
+    )
   end
 end

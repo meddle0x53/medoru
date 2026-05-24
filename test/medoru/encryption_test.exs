@@ -36,7 +36,7 @@ defmodule Medoru.EncryptionTest do
       assert key.is_active == true
     end
 
-    test "store_public_key/3 replaces old keys" do
+    test "store_public_key/3 deactivates old keys" do
       user = user_fixture()
       old_spki = <<1, 2, 3>>
       new_spki = <<4, 5, 6>>
@@ -44,9 +44,14 @@ defmodule Medoru.EncryptionTest do
       {:ok, _} = Encryption.store_public_key(user.id, old_spki)
       {:ok, _} = Encryption.store_public_key(user.id, new_spki)
 
+      # Old keys are deactivated, not deleted
       keys = Encryption.list_public_keys(user.id)
-      assert length(keys) == 1
-      assert hd(keys).public_key_spki == new_spki
+      assert length(keys) == 2
+
+      # Most recent (active) key should be the new one
+      active_keys = Enum.filter(keys, & &1.is_active)
+      assert length(active_keys) == 1
+      assert hd(active_keys).public_key_spki == new_spki
     end
 
     test "get_public_key/1 returns nil when no key exists" do
@@ -128,9 +133,12 @@ defmodule Medoru.EncryptionTest do
       Encryption.store_public_key(user.id, <<1>>)
       Encryption.store_public_key(user.id, <<2>>)
 
-      # After replacement, only 1 key remains
+      # Both keys remain (old deactivated, new active)
       keys = Encryption.list_public_keys(user.id)
-      assert length(keys) == 1
+      assert length(keys) == 2
+
+      active_keys = Enum.filter(keys, & &1.is_active)
+      assert length(active_keys) == 1
     end
   end
 end

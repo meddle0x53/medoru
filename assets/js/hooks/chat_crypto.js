@@ -8,8 +8,8 @@
  * - Messages are encrypted/decrypted with the conversation AES key
  */
 
-const PRIV_KEY_STORAGE = "medoru_chat_privkey_v2"
-const PUB_KEY_STORAGE = "medoru_chat_pubkey_v2"
+function getPrivKeyStorage(userId) { return `medoru_chat_privkey_v2_${userId}` }
+function getPubKeyStorage(userId) { return `medoru_chat_pubkey_v2_${userId}` }
 
 // --- Base64 helpers ---
 function ab2b64(buffer) {
@@ -111,21 +111,47 @@ export const CryptoState = {
   conversationKeys: new Map(), // conversation_id -> AES key
   ready: false,
 
-  async init() {
+  async init(userId) {
     if (!window.crypto || !window.crypto.subtle) {
       console.error("[ChatCrypto] WebCrypto not available")
       return { ready: false }
     }
 
-    let privB64 = localStorage.getItem(PRIV_KEY_STORAGE)
-    let pubB64 = localStorage.getItem(PUB_KEY_STORAGE)
+    if (!userId) {
+      console.error("[ChatCrypto] No userId provided for key isolation")
+      return { ready: false }
+    }
+
+    this.userId = userId
+    const privStore = getPrivKeyStorage(userId)
+    const pubStore = getPubKeyStorage(userId)
+
+    let privB64 = localStorage.getItem(privStore)
+    let pubB64 = localStorage.getItem(pubStore)
+    let migrated = false
+
+    // Always prefer the legacy key if it still exists — it can decrypt existing messages.
+    // A new key may have been auto-generated before this migration ran; the old key
+    // should take precedence so the user doesn't lose access to historical chats.
+    const oldPriv = localStorage.getItem("medoru_chat_privkey_v2")
+    const oldPub = localStorage.getItem("medoru_chat_pubkey_v2")
+    if (oldPriv && oldPub) {
+      console.log("[ChatCrypto] Migrating legacy keys to user-isolated storage")
+      localStorage.setItem(privStore, oldPriv)
+      localStorage.setItem(pubStore, oldPub)
+      localStorage.removeItem("medoru_chat_privkey_v2")
+      localStorage.removeItem("medoru_chat_pubkey_v2")
+      privB64 = oldPriv
+      pubB64 = oldPub
+      migrated = true
+    }
 
     if (!privB64 || !pubB64) {
       const kp = await generateUserKeyPair()
       privB64 = await exportPrivateKey(kp)
       pubB64 = await exportPublicKey(kp)
-      localStorage.setItem(PRIV_KEY_STORAGE, privB64)
-      localStorage.setItem(PUB_KEY_STORAGE, pubB64)
+      localStorage.setItem(privStore, privB64)
+      localStorage.setItem(pubStore, pubB64)
       this.privateKey = kp.privateKey
       this.publicKeyB64 = pubB64
       this.ready = true
@@ -135,7 +161,7 @@ export const CryptoState = {
     this.privateKey = await importPrivateKey(privB64)
     this.publicKeyB64 = pubB64
     this.ready = true
-    return { ready: true, newKey: false, publicKey: pubB64 }
+    return { ready: true, newKey: false, migrated: migrated, publicKey: pubB64 }
   },
 
   async getConversationKey(convId, encryptedKeyB64) {
@@ -181,9 +207,12 @@ const ChatCrypto = {
   async mounted() {
     this.convId = this.el.dataset.conversationId
 
+    // Get current user ID from data attribute for key isolation
+    const currentUserId = this.el.dataset.currentUserId
+
     // Initialize user key pair
-    const result = await CryptoState.init()
-    if (result.newKey && result.publicKey) {
+    const result = await CryptoState.init(currentUserId)
+    if ((result.newKey || result.migrated) && result.publicKey) {
       this.pushEvent("register_public_key", { public_key: result.publicKey })
     }
 
@@ -232,6 +261,45 @@ const ChatCrypto = {
         this.pushEvent("store_conversation_keys", { encrypted_keys: encryptedKeys })
       } catch (e) {
         console.error("[ChatCrypto] Failed to create conversation key:", e)
+      }
+    })
+
+    // Handle request to re-encrypt conversation key for another user
+    this.handleEvent("re_encrypt_for_user", async ({ target_user_id, public_key }) => {
+      console.log("[ChatCrypto] Received re_encrypt_for_user for target", target_user_id)
+      if (!CryptoState.ready) {
+        console.error("[ChatCrypto] Cannot re-encrypt: crypto not ready")
+        return
+      }
+      try {
+        let aesKey = CryptoState.conversationKeys.get(this.convId)
+
+        // Fallback: try to load from DOM if not cached
+        if (!aesKey) {
+          const encryptedKey = this.el.dataset.encryptedKey
+          if (encryptedKey) {
+            console.log("[ChatCrypto] Key not cached, attempting decrypt from DOM")
+            try {
+              aesKey = await CryptoState.getConversationKey(this.convId, encryptedKey)
+            } catch (e) {
+              console.error("[ChatCrypto] Failed to decrypt conversation key from DOM:", e)
+            }
+          }
+        }
+
+        if (!aesKey) {
+          console.error("[ChatCrypto] Cannot re-encrypt: no conversation key available")
+          return
+        }
+        console.log("[ChatCrypto] Re-encrypting conversation key for target", target_user_id)
+        const encryptedKey = await encryptConversationKey(aesKey, public_key)
+        this.pushEvent("submit_re_encrypted_key", {
+          target_user_id: target_user_id,
+          encrypted_key: encryptedKey
+        })
+        console.log("[ChatCrypto] Submitted re-encrypted key for target", target_user_id)
+      } catch (e) {
+        console.error("[ChatCrypto] Failed to re-encrypt conversation key:", e)
       }
     })
 

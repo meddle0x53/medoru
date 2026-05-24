@@ -140,6 +140,7 @@ defmodule MedoruWeb.Router do
       live "/language", SettingsLive.Language
       live "/data-privacy", SettingsLive.DataPrivacy
       live "/blocks", SettingsLive.Blocks
+      live "/chat-security", SettingsLive.ChatSecurity
       live "/daily-test-preferences", SettingsLive.DailyTestPreferences
     end
   end
