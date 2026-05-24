@@ -40,12 +40,12 @@
             </p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">{gettext("Level")}</label>
-            <p class="font-medium">{(@user.stats && @user.stats.level) || 1}</p>
+            <label class="text-sm text-base-content/60">{gettext("Kanji Learned")}</label>
+            <p class="font-medium">{(@user.stats && @user.stats.total_kanji_learned) || 0}</p>
           </div>
           <div>
-            <label class="text-sm text-base-content/60">{gettext("XP")}</label>
-            <p class="font-medium">{(@user.stats && @user.stats.xp) || 0}</p>
+            <label class="text-sm text-base-content/60">{gettext("Words Learned")}</label>
+            <p class="font-medium">{(@user.stats && @user.stats.total_words_learned) || 0}</p>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ defmodule MedoruWeb.UserLive.Show do
   alias Medoru.Accounts
   alias Medoru.Gamification
   alias Medoru.Learning
+  alias Medoru.Social
 
   embed_templates "show/*"
 
@@ -39,8 +40,6 @@ defmodule MedoruWeb.UserLive.Show do
             longest_streak = if streak, do: streak.longest_streak, else: 0
 
             real_stats = %{
-              level: cached_stats.level,
-              xp: cached_stats.xp,
               current_streak: current_streak,
               longest_streak: longest_streak,
               total_kanji_learned: Learning.count_learned_kanji(user.id),
@@ -55,6 +54,14 @@ defmodule MedoruWeb.UserLive.Show do
             # Get daily test status for admin reset feature
             daily_test_status = Learning.get_daily_test_status(user.id)
 
+            # Check block status if viewing another user
+            is_blocked =
+              if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+                Social.blocked_by?(socket.assigns.current_scope.current_user.id, user.id)
+              else
+                false
+              end
+
             {:ok,
              socket
              |> assign(:page_title, profile_title(user))
@@ -63,7 +70,8 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:stats, real_stats)
              |> assign(:user_badges, user_badges)
              |> assign(:featured_badge, featured_badge)
-             |> assign(:daily_test_status, daily_test_status)}
+             |> assign(:daily_test_status, daily_test_status)
+             |> assign(:is_blocked, is_blocked)}
         end
 
       :error ->
@@ -78,6 +86,44 @@ defmodule MedoruWeb.UserLive.Show do
     name = (user.profile && user.profile.display_name) || user.name || gettext("User")
 
     gettext("%{name}'s Profile", name: name)
+  end
+
+  @impl true
+  def handle_event("block_user", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    user = socket.assigns.user
+
+    if current_user && current_user.id != user.id do
+      case Social.block_user(current_user.id, user.id) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:is_blocked, true)
+           |> put_flash(:info, gettext("User blocked."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not block user."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("unblock_user", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    user = socket.assigns.user
+
+    if current_user && current_user.id != user.id do
+      Social.unblock_user(current_user.id, user.id)
+
+      {:noreply,
+       socket
+       |> assign(:is_blocked, false)
+       |> put_flash(:info, gettext("User unblocked."))}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true

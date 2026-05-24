@@ -1,0 +1,119 @@
+defmodule MedoruWeb.UsersLive.Index do
+  @moduledoc """
+  LiveView for the public users directory.
+  Displays searchable list of users with public profiles.
+  """
+  use MedoruWeb, :live_view
+  use Gettext, backend: MedoruWeb.Gettext
+
+  alias Medoru.Social
+
+  @per_page 24
+
+  @impl true
+  def mount(_params, session, socket) do
+    locale = session["locale"] || "en"
+    {:ok, assign(socket, locale: locale, selected_users: [])}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    page = parse_page(params["page"])
+    search = params["search"] || ""
+
+    viewer_id =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        socket.assigns.current_scope.current_user.id
+      else
+        nil
+      end
+
+    users =
+      if search != "" do
+        Social.search_users(search, viewer_id, page: page, per_page: @per_page)
+      else
+        Social.list_users(viewer_id, page: page, per_page: @per_page)
+      end
+
+    total_count =
+      if search != "" do
+        Social.count_search_users(search, viewer_id)
+      else
+        Social.count_users(viewer_id)
+      end
+
+    total_pages = max(1, ceil(total_count / @per_page))
+
+    {:noreply,
+     socket
+     |> assign(:page, page)
+     |> assign(:search, search)
+     |> assign(:users, users)
+     |> assign(:total_count, total_count)
+     |> assign(:total_pages, total_pages)
+     |> assign(:page_title, gettext("Users"))}
+  end
+
+  @impl true
+  def handle_event("search", %{"search" => search}, socket) do
+    {:noreply, push_patch(socket, to: ~p"/users?#{[search: search, page: 1]}")}
+  end
+
+  @impl true
+  def handle_event("change_page", %{"page" => page}, socket) do
+    page = parse_page(page)
+    search = socket.assigns.search
+
+    {:noreply,
+     push_patch(socket, to: ~p"/users?#{[search: search, page: page]}")}
+  end
+
+  @impl true
+  def handle_event("toggle_select", %{"user_id" => user_id}, socket) do
+    selected = socket.assigns.selected_users
+
+    new_selected =
+      if user_id in selected do
+        List.delete(selected, user_id)
+      else
+        [user_id | selected]
+      end
+
+    {:noreply, assign(socket, :selected_users, new_selected)}
+  end
+
+  @impl true
+  def handle_event("clear_selection", _params, socket) do
+    {:noreply, assign(socket, :selected_users, [])}
+  end
+
+  @impl true
+  def handle_event("create_group", _params, socket) do
+    selected = socket.assigns.selected_users
+
+    if length(selected) >= 1 do
+      {:noreply, push_navigate(socket, to: ~p"/messages/new-group?#{[users: Enum.join(selected, ",")]}")}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp parse_page(page) when is_binary(page) do
+    case Integer.parse(page) do
+      {n, _} when n > 0 -> n
+      _ -> 1
+    end
+  end
+
+  defp parse_page(page) when is_integer(page) and page > 0, do: page
+  defp parse_page(_), do: 1
+
+  # Helpers for template
+  def user_display_name(user) do
+    (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+  end
+
+  def user_avatar(user) do
+    (user.profile && user.profile.avatar) || user.avatar_url
+  end
+end

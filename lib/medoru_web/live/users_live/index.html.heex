@@ -1,0 +1,206 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">
+        {gettext("Users")}
+      </h1>
+      <p class="text-secondary">
+        {gettext("Discover other Japanese learners")}
+      </p>
+    </div>
+
+    <%!-- Search --%>
+    <div class="mb-6">
+      <form phx-change="search" phx-submit="search" class="relative">
+        <.icon
+          name="hero-magnifying-glass"
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
+        />
+        <input
+          type="text"
+          name="search"
+          value={@search}
+          placeholder={gettext("Search by name or nickname...")}
+          class="w-full pl-10 pr-4 py-3 bg-base-100 border border-base-300 rounded-xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+          phx-debounce="300"
+        />
+        <%= if @search != "" do %>
+          <button
+            type="button"
+            phx-click="search"
+            phx-value-search=""
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
+          >
+            <.icon name="hero-x-mark" class="w-5 h-5" />
+          </button>
+        <% end %>
+      </form>
+    </div>
+
+    <%!-- Selection Bar --%>
+    <%= if @selected_users != [] do %>
+      <div class="mb-4 flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+        <span class="text-sm text-base-content">
+          {gettext("%{count} selected", count: length(@selected_users))}
+        </span>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            phx-click="clear_selection"
+            class="btn btn-sm btn-ghost"
+          >
+            {gettext("Clear")}
+          </button>
+          <button
+            type="button"
+            phx-click="create_group"
+            class="btn btn-sm btn-primary"
+          >
+            <.icon name="hero-users" class="w-4 h-4 mr-1" />
+            {gettext("Group Chat")}
+          </button>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Stats --%>
+    <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        {@total_count} {gettext("users")}
+      </span>
+      <%= if @total_pages > 1 do %>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </span>
+      <% end %>
+    </div>
+
+    <%!-- Users Grid --%>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <%= for user <- @users do %>
+        <div class="group bg-base-100 border border-base-300 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 relative">
+          <%!-- Selection Checkbox (only for logged-in users, not self) --%>
+          <%= if @current_scope.current_user && @current_scope.current_user.id != user.id do %>
+            <div class="absolute top-3 left-3 z-10">
+              <input
+                type="checkbox"
+                phx-click="toggle_select"
+                phx-value-user_id={user.id}
+                checked={user.id in @selected_users}
+                class="checkbox checkbox-primary checkbox-sm"
+              />
+            </div>
+          <% end %>
+
+          <%!-- Avatar --%>
+          <.link navigate={~p"/users/#{user.id}"} class="block text-center">
+            <%= if avatar = user_avatar(user) do %>
+              <img
+                src={avatar}
+                alt=""
+                class="w-16 h-16 rounded-full object-cover mx-auto mb-3 ring-2 ring-base-200 group-hover:ring-primary/30 transition-all"
+              />
+            <% else %>
+              <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 ring-2 ring-base-200 group-hover:ring-primary/30 transition-all">
+                <.icon name="hero-user" class="w-8 h-8 text-primary/50" />
+              </div>
+            <% end %>
+
+            <%!-- Name --%>
+            <h3 class="font-semibold text-base-content group-hover:text-primary transition-colors truncate">
+              {user_display_name(user)}
+            </h3>
+          </.link>
+
+          <%!-- Message Button --%>
+          <%= if @current_scope.current_user && @current_scope.current_user.id != user.id do %>
+            <div class="mt-4">
+              <.link
+                navigate={~p"/messages?user=#{user.id}"}
+                class="btn btn-sm btn-outline btn-primary w-full"
+              >
+                <.icon name="hero-chat-bubble-left" class="w-4 h-4 mr-1" />
+                {gettext("Message")}
+              </.link>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Empty State --%>
+    <%= if @users == [] do %>
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">👥</div>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          <%= if @search != "" do %>
+            {gettext("No users found for \"%{query}\"", query: @search)}
+          <% else %>
+            {gettext("No users yet")}
+          <% end %>
+        </h3>
+        <p class="text-secondary">
+          <%= if @search != "" do %>
+            {gettext("Try a different search term.")}
+          <% else %>
+            {gettext("Users will appear here once they set up their profiles.")}
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          <%= if @page > 1 do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page - 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              ← {gettext("Prev")}
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              ← {gettext("Prev")}
+            </span>
+          <% end %>
+
+          <div class="flex items-center gap-1">
+            <%= for p <- max(1, @page - 2)..min(@total_pages, @page + 2) do %>
+              <%= if p == @page do %>
+                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                  {p}
+                </span>
+              <% else %>
+                <button
+                  phx-click="change_page"
+                  phx-value-page={p}
+                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                >
+                  {p}
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%= if @page < @total_pages do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page + 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              {gettext("Next")} →
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              {gettext("Next")} →
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

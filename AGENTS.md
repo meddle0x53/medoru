@@ -2,10 +2,39 @@
 
 ## Current State
 
-**Version**: 0.1.8 ✅ COMPLETE  
-**Status**: Grammar lesson system + v0.1.8 polish finalized  
-**Tests**: 781 passing  
+**Version**: 0.1.9 🔄 IN PROGRESS  
+**Status**: Chat, messaging, user directory, and group E2EE encryption  
+**Tests**: 782 passing  
 **URL**: https://medoru.net
+
+### What's In Progress (v0.1.9) — Chat, User Directory & End-to-End Encryption
+- **User Directory**: Public `/users` page with searchable, paginated list of learners
+  - Filtered by users with display names set
+  - PostgreSQL trigram similarity search by display name
+  - Avatar, name, and direct message button per user
+- **User Blocking**: Block/unblock users via profile page or `/settings/blocks`
+  - Bidirectional block check prevents messaging between blocked users
+  - Blocked users filtered from directory and conversation lists
+- **1:1 Messaging**: Direct conversations between any two users
+  - Auto-creates conversation on first message from user profile
+  - Real-time messaging via Phoenix PubSub
+  - Typing indicators and read receipts
+  - Reply-to-message support with threaded preview
+- **Group Chat**: Multi-user conversations with group name
+  - Multi-select users on `/users` directory to start group
+  - `/messages/new-group` page for group creation with title
+  - Participant list and group avatars in UI
+  - Same real-time infrastructure as 1:1 chats
+- **End-to-End Encryption (Group-Capable)**: Replaced old 1:1-only ECDH with RSA-OAEP + AES-256-GCM shared keys
+  - Each user generates an RSA-OAEP 2048 key pair in-browser (private key in `localStorage`)
+  - Each conversation has one shared AES-256-GCM key
+  - Conversation key is encrypted per-participant with their RSA public key and stored server-side
+  - Messages encrypted/decrypted client-side; server stores only ciphertext + IV
+  - First sender generates and distributes the conversation key
+  - Missing-key detection disables messaging until all participants register RSA keys
+  - Old ECDH keys migrated to legacy status and ignored by new system
+- **Mobile Reply**: Reply button always visible on mobile (`<sm`), hover-only on desktop
+- **Navigation updates**: Added "Users" and "Messages" links to desktop nav and mobile drawer
 
 ### What's Complete (v0.1.8) — Grammar Lessons + Kana Cascade Polish & Navigation
 - **"du" accepted for づ/ヅ**: `kana_romaji_list/1` returns `["zu", "du"]`; exact match and prefix check both support multiple romaji
@@ -190,6 +219,28 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 ---
 
 ## Version History
+
+### v0.1.9 - Chat & User Directory (2026-05-24)
+**Status**: 🔄 IN PROGRESS
+
+**Features:**
+- User Directory (`/users`): Searchable public directory of learners with profiles
+- User Blocking: Block/unblock users, bidirectional enforcement
+- 1:1 Messaging (`/messages`): Direct conversations with real-time PubSub
+- Group Chat: Multi-user conversations with group names
+- End-to-End Encryption: RSA-OAEP 2048 + AES-256-GCM shared conversation keys
+- Mobile reply buttons, read receipts, typing indicators, reply-to-message
+
+**Routes:** `/users`, `/messages`, `/messages/new-group`, `/settings/blocks`
+
+**Key Technical Changes:**
+- Migrations: `conversations` (group fields), `conversation_keys` (encrypted AES keys), `conversation_participants` (joined_at)
+- New schemas: `ConversationKey`, updated `Conversation` with `is_group`/`title`
+- New JS hooks: `ChatCrypto` (RSA/AES encryption), `ChatInput`, `GroupChatCreator`
+- Contexts: `Medoru.Chat` (group support), `Medoru.Social` (blocking), `Medoru.Encryption` (RSA public keys)
+- Presence tracking via `MedoruWeb.Presence`
+
+---
 
 ### v0.1.5 - Word Sets (2026-04-05)
 **Status**: ✅ COMPLETE

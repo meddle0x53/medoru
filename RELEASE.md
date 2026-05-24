@@ -7,7 +7,7 @@
 MIX_ENV=prod mix release
 
 # Or with explicit version
-MIX_ENV=prod mix release --version 0.1.8
+MIX_ENV=prod mix release --version 0.1.9
 ```
 
 ## Release Structure

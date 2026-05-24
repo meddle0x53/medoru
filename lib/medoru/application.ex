@@ -14,6 +14,8 @@ defmodule Medoru.Application do
       Medoru.Repo,
       {DNSCluster, query: Application.get_env(:medoru, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Medoru.PubSub},
+      # Presence tracking for online users and chat
+      MedoruWeb.Presence,
       # Grammar validator cache for fast lookups
       Medoru.Grammar.ValidatorCache,
       # Start to serve requests, typically the last entry

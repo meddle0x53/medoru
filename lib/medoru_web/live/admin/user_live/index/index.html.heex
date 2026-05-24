@@ -103,7 +103,7 @@
             <tr class="bg-base-200/50">
               <th class="text-base-content/70">{gettext("User")}</th>
               <th class="text-base-content/70">{gettext("Type")}</th>
-              <th class="text-base-content/70">{gettext("Level")}</th>
+              <th class="text-base-content/70">{gettext("Kanji")}</th>
               <th class="text-base-content/70">{gettext("Joined")}</th>
               <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
             </tr>
@@ -150,10 +150,7 @@
                   </span>
                 </td>
                 <td>
-                  <div class="flex items-center gap-2">
-                    <.icon name="hero-star" class="w-4 h-4 text-warning" />
-                    <span class="font-medium">{(user.stats && user.stats.level) || 1}</span>
-                  </div>
+                  <span class="font-medium">{(user.stats && user.stats.total_kanji_learned) || 0}</span>
                 </td>
                 <td class="text-base-content/70">
                   {Calendar.strftime(user.inserted_at, "%b %d, %Y")}
@@ -217,10 +214,7 @@
                 </div>
                 <div class="text-sm text-base-content/60 truncate">{user.email}</div>
                 <div class="flex items-center gap-3 mt-2 text-sm text-secondary">
-                  <div class="flex items-center gap-1">
-                    <.icon name="hero-star" class="w-4 h-4 text-warning" />
-                    <span class="font-medium">{(user.stats && user.stats.level) || 1}</span>
-                  </div>
+                  <span class="font-medium">{(user.stats && user.stats.total_kanji_learned) || 0}</span>
                   <div class="flex items-center gap-1">
                     <.icon name="hero-calendar" class="w-4 h-4" />
                     <span>{Calendar.strftime(user.inserted_at, "%b %d, %Y")}</span>

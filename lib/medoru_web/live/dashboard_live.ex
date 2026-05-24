@@ -22,11 +22,9 @@ defmodule MedoruWeb.DashboardLive do
     daily_stats = Learning.get_daily_review_stats(user.id)
 
     # Merge learning stats with user stats (level, xp from gamification)
-    user_stats = user.stats || %Accounts.UserStats{}
+    _user_stats = user.stats || %Accounts.UserStats{}
 
     stats = %{
-      level: user_stats.level,
-      xp: user_stats.xp,
       total_kanji_learned: learning_stats.total_kanji_learned,
       total_words_learned: learning_stats.total_words_learned,
       current_streak: daily_stats.current_streak,

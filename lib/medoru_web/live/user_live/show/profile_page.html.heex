@@ -54,6 +54,39 @@
               </p>
             <% end %>
 
+            <%!-- Message & Block Buttons (only for other users) --%>
+            <%= if current_user && current_user.id != @user.id do %>
+              <div class="mt-4 flex items-center gap-2 justify-center sm:justify-start">
+                <%= if @is_blocked do %>
+                  <button
+                    type="button"
+                    phx-click="unblock_user"
+                    class="btn btn-outline btn-success btn-sm"
+                  >
+                    <.icon name="hero-shield-check" class="w-4 h-4 mr-1" />
+                    {gettext("Unblock")}
+                  </button>
+                <% else %>
+                  <.link
+                    navigate={~p"/messages?user=#{@user.id}"}
+                    class="btn btn-primary btn-sm"
+                  >
+                    <.icon name="hero-chat-bubble-left" class="w-4 h-4 mr-1" />
+                    {gettext("Message")}
+                  </.link>
+                  <button
+                    type="button"
+                    phx-click="block_user"
+                    data-confirm={gettext("Are you sure you want to block this user? They won't be able to message you.")}
+                    class="btn btn-ghost btn-sm text-error hover:bg-error/10"
+                  >
+                    <.icon name="hero-shield-exclamation" class="w-4 h-4 mr-1" />
+                    {gettext("Block")}
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+
             <%!-- Join Date --%>
             <p class="mt-4 text-sm text-base-content/50">
               {gettext("Member since %{date}",
@@ -67,14 +100,6 @@
 
     <%!-- Stats Grid --%>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="card bg-base-100 shadow-sm border border-base-300">
-        <div class="card-body items-center text-center p-4">
-          <.icon name="hero-star" class="w-6 h-6 text-warning mb-2" />
-          <p class="text-2xl font-bold">{@stats.level}</p>
-          <p class="text-sm text-base-content/60">{gettext("Level")}</p>
-        </div>
-      </div>
-
       <div class="card bg-base-100 shadow-sm border border-base-300">
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-fire" class="w-6 h-6 text-orange-500 mb-2" />
@@ -159,11 +184,6 @@
       <div class="card-body">
         <h2 class="card-title text-lg mb-4">{gettext("Learning Stats")}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-            <span class="text-base-content/70">{gettext("Total XP")}</span>
-            <span class="font-semibold">{@stats.xp}</span>
-          </div>
-
           <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
             <span class="text-base-content/70">{gettext("Tests Completed")}</span>
             <span class="font-semibold">{@stats.total_tests_completed}</span>

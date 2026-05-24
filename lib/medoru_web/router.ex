@@ -61,6 +61,7 @@ defmodule MedoruWeb.Router do
       live "/words", WordLive.Index
       live "/words/:id", WordLive.Show
       live "/words/:id/conjugations", WordLive.Conjugations
+      live "/users", UsersLive.Index
       live "/users/:id/words", LearnedWordsLive.Index
       live "/users/:id/kanji", LearnedKanjiLive.Index
       live "/lessons", LessonLive.Index
@@ -111,6 +112,9 @@ defmodule MedoruWeb.Router do
       on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
       live "/dashboard", DashboardLive
       live "/notifications", NotificationsLive
+      live "/messages", MessagesLive.Index
+      live "/messages/new-group", MessagesLive.NewGroup
+      live "/messages/:id", MessagesLive.Show
       live "/daily-review", DailyReviewLive
     end
   end
@@ -135,6 +139,7 @@ defmodule MedoruWeb.Router do
       live "/profile", SettingsLive.Profile
       live "/language", SettingsLive.Language
       live "/data-privacy", SettingsLive.DataPrivacy
+      live "/blocks", SettingsLive.Blocks
       live "/daily-test-preferences", SettingsLive.DailyTestPreferences
     end
   end

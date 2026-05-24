@@ -1,0 +1,77 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="flex items-center gap-3 mb-8">
+      <.link
+        navigate={~p"/settings/profile"}
+        class="text-secondary hover:text-primary transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-5 h-5" />
+      </.link>
+      <h1 class="text-2xl font-bold text-base-content">
+        {gettext("Blocked Users")}
+      </h1>
+    </div>
+
+    <%!-- Description --%>
+    <p class="text-secondary mb-6">
+      {gettext("Blocked users cannot send you messages. You won't see their conversations or appear in their search results.")}
+    </p>
+
+    <%!-- Blocked Users List --%>
+    <div class="space-y-2">
+      <%= for user_block <- @blocked_users do %>
+        <div class="flex items-center gap-3 p-3 bg-base-100 border border-base-300 rounded-xl">
+          <%= if avatar = blocked_user_avatar(user_block) do %>
+            <img
+              src={avatar}
+              alt=""
+              class="w-10 h-10 rounded-full object-cover shrink-0"
+            />
+          <% else %>
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+            </div>
+          <% end %>
+
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-base-content truncate">
+              {blocked_user_name(user_block)}
+            </p>
+            <%= if user_block.reason do %>
+              <p class="text-xs text-base-content/50 truncate">
+                {user_block.reason}
+              </p>
+            <% end %>
+            <p class="text-xs text-base-content/40">
+              {gettext("Blocked on %{date}", date: Calendar.strftime(user_block.blocked_at, "%b %d, %Y"))}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            phx-click="unblock"
+            phx-value-id={user_block.blocked_id}
+            class="btn btn-sm btn-ghost text-error hover:bg-error/10 shrink-0"
+          >
+            <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
+            {gettext("Unblock")}
+          </button>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Empty State --%>
+    <%= if @blocked_users == [] do %>
+      <div class="text-center py-12">
+        <div class="text-5xl mb-4">🛡️</div>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          {gettext("No blocked users")}
+        </h3>
+        <p class="text-secondary">
+          {gettext("You haven't blocked anyone yet.")}
+        </p>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

@@ -98,6 +98,20 @@ defmodule MedoruWeb.Layouts do
               locale={@current_scope[:locale]}
               class="hidden xl:block"
             />
+            <.nav_link
+              path="/users"
+              icon="hero-users"
+              label={gettext("Users")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
+            <.nav_link
+              path="/messages"
+              icon="hero-chat-bubble-left"
+              label={gettext("Messages")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
 
             <%= if User.teacher?(@current_scope.current_user) do %>
               <.nav_link
@@ -210,6 +224,18 @@ defmodule MedoruWeb.Layouts do
                     path="/games"
                     icon="hero-puzzle-piece"
                     label={gettext("Games")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/users"
+                    icon="hero-users"
+                    label={gettext("Users")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/messages"
+                    icon="hero-chat-bubble-left"
+                    label={gettext("Messages")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
@@ -527,6 +553,14 @@ defmodule MedoruWeb.Layouts do
                     class="flex items-center gap-2"
                   >
                     <.icon name="hero-shield-check" class="w-4 h-4" /> {gettext("Data & Privacy")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    navigate={~p"/settings/blocks?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-shield-exclamation" class="w-4 h-4" /> {gettext("Blocked Users")}
                   </.link>
                 </li>
                 <li>
