@@ -14,6 +14,7 @@ defmodule Medoru.Classrooms do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms.{Classroom, ClassroomMembership, ClassroomTest}
+  alias Medoru.Chat
   alias Medoru.Games
   alias Medoru.Notifications
 
@@ -248,9 +249,17 @@ defmodule Medoru.Classrooms do
     attrs = maybe_generate_slug(attrs)
     attrs = maybe_generate_invite_code(attrs)
 
-    %Classroom{}
-    |> Classroom.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %Classroom{}
+      |> Classroom.changeset(attrs)
+      |> Repo.insert()
+
+    # Auto-create classroom chat conversation
+    with {:ok, classroom} <- result do
+      Chat.create_classroom_conversation(classroom)
+    end
+
+    result
   end
 
   # Convert all keys to atoms, handling both atom and string keys
@@ -573,18 +582,35 @@ defmodule Medoru.Classrooms do
       true ->
         auto_approve? = not classroom.should_approve_memberships
 
-        attrs = %{
-          classroom_id: classroom_id,
-          user_id: user_id,
-          status: if(auto_approve?, do: :approved, else: :pending),
-          role: :student,
-          points: 0
-        }
+        # Check for previous membership (left/removed) and reactivate if found
+        existing =
+          ClassroomMembership
+          |> where([m], m.classroom_id == ^classroom_id and m.user_id == ^user_id)
+          |> where([m], m.status in [:left, :removed])
+          |> Repo.one()
 
         result =
-          %ClassroomMembership{}
-          |> ClassroomMembership.changeset(attrs)
-          |> Repo.insert()
+          if existing do
+            reactivate_membership(existing, auto_approve?)
+          else
+            attrs = %{
+              classroom_id: classroom_id,
+              user_id: user_id,
+              status: if(auto_approve?, do: :approved, else: :pending),
+              role: :student,
+              points: 0
+            }
+
+            %ClassroomMembership{}
+            |> ClassroomMembership.changeset(attrs)
+            |> Repo.insert()
+          end
+
+        # Auto-add to classroom chat if approved
+        with {:ok, membership} <- result,
+             true <- auto_approve? do
+          sync_chat_membership(membership.classroom_id, membership.user_id, :add)
+        end
 
         # Notify teacher of new application (only when approval is required)
         with false <- auto_approve?,
@@ -604,6 +630,14 @@ defmodule Medoru.Classrooms do
     end
   end
 
+  defp reactivate_membership(membership, auto_approve?) do
+    status = if(auto_approve?, do: :approved, else: :pending)
+
+    membership
+    |> ClassroomMembership.changeset(%{status: status, points: 0})
+    |> Repo.update()
+  end
+
   @doc """
   Approves a membership application.
 
@@ -618,6 +652,11 @@ defmodule Medoru.Classrooms do
       membership
       |> ClassroomMembership.approve_changeset()
       |> Repo.update()
+
+    # Add to classroom chat
+    with {:ok, approved_membership} <- result do
+      sync_chat_membership(approved_membership.classroom_id, approved_membership.user_id, :add)
+    end
 
     # Notify student of approval
     with {:ok, _approved_membership} <- result,
@@ -674,6 +713,11 @@ defmodule Medoru.Classrooms do
       |> ClassroomMembership.remove_changeset()
       |> Repo.update()
 
+    # Remove from classroom chat
+    with {:ok, _removed_membership} <- result do
+      sync_chat_membership(membership.classroom_id, membership.user_id, :remove)
+    end
+
     # Notify student of removal
     with {:ok, _removed_membership} <- result,
          classroom = %Classroom{} <- Repo.get(Classroom, membership.classroom_id) do
@@ -696,9 +740,35 @@ defmodule Medoru.Classrooms do
 
   """
   def leave_classroom(%ClassroomMembership{} = membership) do
-    membership
-    |> ClassroomMembership.leave_changeset()
-    |> Repo.update()
+    result =
+      membership
+      |> ClassroomMembership.leave_changeset()
+      |> Repo.update()
+
+    # Remove from classroom chat
+    with {:ok, _left_membership} <- result do
+      sync_chat_membership(membership.classroom_id, membership.user_id, :remove)
+    end
+
+    result
+  end
+
+  # ============================================================================
+  # Classroom Chat Sync
+  # ============================================================================
+
+  defp sync_chat_membership(classroom_id, user_id, action) do
+    conversation = Chat.get_classroom_conversation(classroom_id)
+
+    if conversation do
+      case action do
+        :add ->
+          Chat.rejoin_participant(conversation.id, user_id)
+
+        :remove ->
+          Chat.mark_participant_left(conversation.id, user_id)
+      end
+    end
   end
 
   @doc """

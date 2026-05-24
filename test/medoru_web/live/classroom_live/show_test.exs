@@ -134,4 +134,54 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       refute html =~ "Create a new word set from"
     end
   end
+
+  describe "Classroom Show - Chat Tab" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+      teacher = user_fixture(%{email: "teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Chat Test Classroom",
+          description: "A test classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, user.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      {:ok, conn: conn, user: user, classroom: classroom, teacher: teacher}
+    end
+
+    test "renders chat tab", %{conn: conn, classroom: classroom} do
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      assert html =~ "Chat"
+      assert html =~ "Type a message"
+    end
+
+    test "sends a plaintext message in classroom chat", %{conn: conn, classroom: classroom} do
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      # Send a message via the event (simulating the JS hook)
+      view
+      |> element("#classroom-chat-input")
+      |> render_hook("send_message", %{"content" => "Hello classroom!"})
+
+      html = render(view)
+      assert html =~ "Hello classroom!"
+    end
+
+    test "shows teacher badge for teacher messages", %{conn: conn, classroom: classroom, teacher: teacher} do
+      # Teacher sends a message
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+      Medoru.Chat.store_plaintext_message(conversation.id, teacher.id, "Teacher message here")
+
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      assert html =~ "Teacher message here"
+      assert html =~ "Teacher"
+    end
+  end
 end

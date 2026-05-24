@@ -12,6 +12,7 @@ defmodule Medoru.Chat.Message do
     field :ciphertext, :binary
     field :iv, :binary
     field :encrypted_at, :utc_datetime
+    field :content, :string
 
     belongs_to :conversation, Medoru.Chat.Conversation
     belongs_to :sender, Medoru.Accounts.User
@@ -23,10 +24,30 @@ defmodule Medoru.Chat.Message do
   @doc false
   def changeset(message, attrs) do
     message
-    |> cast(attrs, [:ciphertext, :iv, :encrypted_at, :conversation_id, :sender_id, :reply_to_message_id])
-    |> validate_required([:ciphertext, :iv, :encrypted_at, :conversation_id, :sender_id])
+    |> cast(attrs, [
+      :ciphertext,
+      :iv,
+      :encrypted_at,
+      :content,
+      :conversation_id,
+      :sender_id,
+      :reply_to_message_id
+    ])
+    |> validate_required([:conversation_id, :sender_id])
+    |> validate_content_or_ciphertext()
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:sender_id)
     |> foreign_key_constraint(:reply_to_message_id)
+  end
+
+  defp validate_content_or_ciphertext(changeset) do
+    content = get_field(changeset, :content)
+    ciphertext = get_field(changeset, :ciphertext)
+
+    if is_nil(content) and is_nil(ciphertext) do
+      add_error(changeset, :content, "must provide either content or ciphertext")
+    else
+      changeset
+    end
   end
 end

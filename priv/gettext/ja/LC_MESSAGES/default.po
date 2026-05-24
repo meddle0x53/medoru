@@ -1628,7 +1628,7 @@ msgstr "前へ"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:41
 #, elixir-autogen, elixir-format
 msgid "Teacher"
-msgstr "教師"
+msgstr "先生"
 
 #: lib/medoru_web/live/classroom_live/index.ex:610
 #: lib/medoru_web/live/learn_live.ex:55
@@ -2423,7 +2423,7 @@ msgstr "推測"
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1435
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Active"
-msgstr "非アクティブ"
+msgstr "アクティブ"
 
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:572
 #, elixir-autogen, elixir-format
@@ -4200,7 +4200,7 @@ msgstr "%{date}からメンバー"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:45
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Student"
-msgstr "学生"
+msgstr "生徒"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:188
 #, elixir-autogen, elixir-format, fuzzy
@@ -11842,3 +11842,39 @@ msgstr "入力中…"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "users"
 msgstr "ユーザー"
+
+msgid "Chat"
+msgstr "チャット"
+
+msgid "Load more messages"
+msgstr "もっと読み込む"
+
+msgid "Chat Unavailable"
+msgstr "チャットは利用できません"
+
+msgid "The classroom chat could not be loaded. Please try again later."
+msgstr "クラスチャットを読み込めませんでした。後でもう一度お試しください。"
+
+msgid "Classroom Chat"
+msgstr "クラスチャット"
+
+msgid "Open Chat"
+msgstr "チャットを開く"
+
+msgid "All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom."
+msgstr "承認されたメンバーはすべてクラスチャットに参加できます。メッセージはクラスの全員に表示されます。"
+
+msgid "participants"
+msgstr "参加者"
+
+msgid "Chat Participants"
+msgstr "チャット参加者"
+
+msgid "Left"
+msgstr "退室"
+
+msgid "Chat Not Available"
+msgstr "チャットは利用できません"
+
+msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
+msgstr "クラスチャットが見つかりませんでした。クラス作成時に自動的に作成されるはずです。"

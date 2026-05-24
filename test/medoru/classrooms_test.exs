@@ -384,6 +384,85 @@ defmodule Medoru.ClassroomsTest do
     end
   end
 
+  describe "classroom chat sync" do
+    setup do
+      {:ok, teacher: user_fixture(%{type: "teacher"}), student: user_fixture(%{type: "student"})}
+    end
+
+    test "create_classroom/1 auto-creates a classroom chat conversation", %{teacher: teacher} do
+      assert {:ok, %Classroom{} = classroom} =
+               Classrooms.create_classroom(%{name: "Chat Test", teacher_id: teacher.id})
+
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+      assert conversation != nil
+      assert conversation.title == "Chat Test"
+      assert conversation.is_group == true
+      assert Enum.any?(conversation.participants, &(&1.user_id == teacher.id))
+    end
+
+    test "approve_membership/1 adds student to classroom chat", %{teacher: teacher, student: student} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: true})
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      # Before approval, student is not in chat
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      refute Enum.any?(conv.participants, &(&1.user_id == student.id))
+
+      # After approval, student is in chat
+      {:ok, _} = Classrooms.approve_membership(membership)
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      assert Enum.any?(conv.participants, &(&1.user_id == student.id))
+    end
+
+    test "remove_member/1 marks student as left in classroom chat", %{
+      teacher: teacher,
+      student: student
+    } do
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      # Student is in chat after auto-approve join
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == false
+
+      # After removal, marked as left
+      {:ok, _} = Classrooms.remove_member(membership)
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == true
+    end
+
+    test "leave_classroom/1 marks student as left in classroom chat", %{
+      teacher: teacher,
+      student: student
+    } do
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      # After leaving, marked as left
+      {:ok, _} = Classrooms.leave_classroom(membership)
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == true
+    end
+
+    test "re-joining re-adds student to classroom chat", %{teacher: teacher, student: student} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+
+      # First join
+      {:ok, membership1} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.leave_classroom(membership1)
+
+      # Re-join
+      {:ok, _membership2} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == false
+    end
+  end
+
   # Helper function
   defp classroom_fixture(attrs) do
     teacher_id = attrs[:teacher_id] || user_fixture(%{type: "teacher"}).id

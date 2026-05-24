@@ -7,9 +7,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   import MedoruWeb.Components.Helpers, only: [display_name: 3]
 
+  alias Medoru.Chat
   alias Medoru.Classrooms
   alias Medoru.Games
   alias Medoru.Learning.WordSets
+
+  @chat_message_limit 20
 
   @skill_level_colors %{
     1 => "bg-success/10 text-success border-success/20",
@@ -58,23 +61,30 @@ defmodule MedoruWeb.ClassroomLive.Show do
           published_tests = Classrooms.list_classroom_tests(id, status: :active)
           user_attempts = Classrooms.list_user_test_attempts(id, user.id)
           published_games = Games.list_classroom_games(id, status: :published)
+          conversation = Chat.get_classroom_conversation(id)
 
-          {:ok,
-           socket
-           |> assign(:page_title, classroom.name)
-           |> assign(:classroom, classroom)
-           |> assign(:membership, membership)
-           |> assign(:members, members)
-           |> assign(:published_tests, published_tests)
-           |> assign(:user_attempts, user_attempts)
-           |> assign(:published_games, published_games)
-           |> assign(:lessons_filter, :all)
-           |> assign(:lessons_page, 1)
-           |> assign(:lessons_per_page, 10)
-           |> assign(:active_tab, "overview")
-           |> assign(:copy_lesson_modal_open, false)
-           |> assign(:copy_lesson_id, nil)
-           |> assign(:copy_lesson_title, nil)}
+          socket =
+            socket
+            |> assign(:page_title, classroom.name)
+            |> assign(:classroom, classroom)
+            |> assign(:membership, membership)
+            |> assign(:members, members)
+            |> assign(:published_tests, published_tests)
+            |> assign(:user_attempts, user_attempts)
+            |> assign(:published_games, published_games)
+            |> assign(:lessons_filter, :all)
+            |> assign(:lessons_page, 1)
+            |> assign(:lessons_per_page, 10)
+            |> assign(:active_tab, "overview")
+            |> assign(:copy_lesson_modal_open, false)
+            |> assign(:copy_lesson_id, nil)
+            |> assign(:copy_lesson_title, nil)
+            |> assign(:conversation, conversation)
+            |> assign(:chat_messages, [])
+            |> assign(:chat_has_more, false)
+            |> assign(:chat_typing_users, [])
+
+          {:ok, socket}
         end
     end
   end
@@ -83,7 +93,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   def handle_params(params, _url, socket) do
     tab = params["tab"] || "overview"
 
-    # Load lessons when on lessons tab
+    # Load tab-specific data
     socket =
       cond do
         tab == "lessons" ->
@@ -91,6 +101,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
         tab == "games" ->
           load_games_data(socket)
+
+        tab == "chat" ->
+          load_chat_data(socket)
 
         true ->
           socket
@@ -136,6 +149,27 @@ defmodule MedoruWeb.ClassroomLive.Show do
     socket
     |> assign(:published_games, published_games)
     |> assign(:game_sessions, game_sessions)
+  end
+
+  defp load_chat_data(socket) do
+    conversation = socket.assigns.conversation
+
+    if conversation do
+      if connected?(socket) do
+        Chat.subscribe_to_conversation(conversation.id)
+        Chat.mark_read(socket.assigns.current_scope.current_user.id, conversation.id)
+      end
+
+      messages = Chat.list_messages(conversation.id, limit: @chat_message_limit)
+      has_more = length(messages) == @chat_message_limit
+
+      socket
+      |> assign(:chat_messages, messages)
+      |> assign(:chat_has_more, has_more)
+      |> assign(:chat_offset, 0)
+    else
+      socket
+    end
   end
 
   @impl true
@@ -250,6 +284,71 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("send_message", %{"content" => content}, socket) do
+    conversation = socket.assigns.conversation
+    user = socket.assigns.current_scope.current_user
+    trimmed = String.trim(content)
+
+    if conversation && trimmed != "" do
+      case Chat.store_plaintext_message(conversation.id, user.id, trimmed) do
+        {:ok, _message} ->
+          {:noreply, socket}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("load_more_messages", _, socket) do
+    conversation = socket.assigns.conversation
+    current_offset = socket.assigns.chat_offset
+
+    if conversation do
+      new_offset = current_offset + @chat_message_limit
+      all_messages = Chat.list_messages(conversation.id, limit: @chat_message_limit, offset: new_offset)
+      has_more = length(all_messages) == @chat_message_limit
+
+      {:noreply,
+       socket
+       |> assign(:chat_messages, socket.assigns.chat_messages ++ all_messages)
+       |> assign(:chat_has_more, has_more)
+       |> assign(:chat_offset, new_offset)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:new_message, message}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    if connected?(socket) do
+      Chat.mark_read(current_user.id, message.conversation_id)
+    end
+
+    message = Medoru.Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+
+    {:noreply,
+     socket
+     |> assign(:chat_messages, socket.assigns.chat_messages ++ [message])
+     |> push_event("scroll_to_bottom", %{})}
+  end
+
+  @impl true
+  def handle_info({:typing, _user_id, _is_typing}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:read_receipt, _user_id, _read_at}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
@@ -320,6 +419,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
             <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
             <.tab_button active={@active_tab == "games"} tab="games" label={gettext("Games")} />
+            <.tab_button active={@active_tab == "chat"} tab="chat" label={gettext("Chat")} />
           </div>
         </div>
 
@@ -360,6 +460,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 classroom={@classroom}
                 published_games={@published_games}
                 game_sessions={@game_sessions}
+                current_user={@current_scope.current_user}
+              />
+            <% "chat" -> %>
+              <.chat_tab
+                classroom={@classroom}
+                conversation={@conversation}
+                messages={@chat_messages}
+                has_more={@chat_has_more}
                 current_user={@current_scope.current_user}
               />
           <% end %>
@@ -1084,6 +1192,190 @@ defmodule MedoruWeb.ClassroomLive.Show do
       <% end %>
     </div>
     """
+  end
+
+  attr :classroom, :map, required: true
+  attr :conversation, :any, required: true
+  attr :messages, :list, required: true
+  attr :has_more, :boolean, required: true
+  attr :current_user, :map, required: true
+
+  defp chat_tab(assigns) do
+    ~H"""
+    <div class="flex flex-col h-[calc(100vh-20rem)] min-h-[400px]">
+      <%= if @conversation do %>
+        <%!-- Messages Area --%>
+        <div
+          id="classroom-chat-messages"
+          class="flex-1 overflow-y-auto px-3 py-2 space-y-1 bg-base-100 rounded-t-xl border border-b-0 border-base-300"
+          phx-hook="ClassroomChatScroll"
+        >
+          <%!-- Load More Button --%>
+          <%= if @has_more do %>
+            <div class="flex justify-center py-2">
+              <button
+                phx-click="load_more_messages"
+                class="btn btn-ghost btn-xs text-secondary"
+              >
+                <.icon name="hero-arrow-up" class="w-3 h-3 mr-1" />
+                {gettext("Load more messages")}
+              </button>
+            </div>
+          <% end %>
+
+          <%= for {message, index} <- Enum.with_index(@messages) do %>
+            <% is_me = message.sender_id == @current_user.id %>
+            <% is_teacher = message.sender_id == @classroom.teacher_id %>
+            <% show_avatar =
+              index == length(@messages) - 1 ||
+                (Enum.at(@messages, index + 1) && Enum.at(@messages, index + 1).sender_id != message.sender_id) %>
+
+            <%!-- Date Separator --%>
+            <%= if index == 0 || !same_day?(message.inserted_at, Enum.at(@messages, index - 1).inserted_at) do %>
+              <div class="flex items-center justify-center my-3">
+                <span class="text-xs text-base-content/40 bg-base-200 px-3 py-1 rounded-full">
+                  {format_message_date(message.inserted_at)}
+                </span>
+              </div>
+            <% end %>
+
+            <div class={[
+              "flex group",
+              is_me && "justify-end",
+              not is_me && "justify-start"
+            ]}>
+              <%= if not is_me do %>
+                <%= if show_avatar do %>
+                  <%= if avatar = chat_avatar(message.sender) do %>
+                    <img
+                      src={avatar}
+                      alt=""
+                      class={[
+                        "w-6 h-6 rounded-full object-cover mr-1.5 shrink-0 self-end",
+                        is_teacher && "ring-2 ring-primary"
+                      ]}
+                    />
+                  <% else %>
+                    <div class={[
+                      "w-6 h-6 rounded-full flex items-center justify-center mr-1.5 shrink-0 self-end",
+                      is_teacher && "bg-primary text-primary-content ring-2 ring-primary",
+                      not is_teacher && "bg-primary/10"
+                    ]}>
+                      <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
+                    </div>
+                  <% end %>
+                <% else %>
+                  <div class="w-6 mr-1.5 shrink-0"></div>
+                <% end %>
+              <% end %>
+
+              <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
+                <%= if not is_me do %>
+                  <span class="text-[10px] text-base-content/40 px-1 mb-0.5 flex items-center gap-1">
+                    {chat_sender_name(message.sender, @current_user.id)}
+                    <%= if is_teacher do %>
+                      <span class="badge badge-primary badge-xs">{gettext("Teacher")}</span>
+                    <% end %>
+                  </span>
+                <% end %>
+                <div class={[
+                  "px-2.5 py-1 rounded-lg relative border",
+                  is_me && "bg-primary text-primary-content rounded-br-sm border-primary",
+                  not is_me && "bg-accent/15 text-base-content rounded-bl-sm border-accent/30"
+                ]}>
+                  <p class="text-sm leading-tight whitespace-pre-wrap break-words">
+                    {message.content}
+                  </p>
+                </div>
+                <span class={[
+                  "text-[10px] text-base-content/40 mt-0.5 px-1",
+                  is_me && "text-right",
+                  not is_me && "text-left"
+                ]}>
+                  {format_message_time(message.inserted_at)}
+                </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Input Area --%>
+        <div
+          id="classroom-chat-input"
+          class="px-4 py-3 border border-base-300 bg-base-100 rounded-b-xl shrink-0"
+          phx-hook="ClassroomChatInput"
+        >
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
+            <div class="flex-1 relative">
+              <textarea
+                id="classroom-chat-textarea"
+                placeholder={gettext("Type a message...")}
+                rows="1"
+                class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
+              ></textarea>
+            </div>
+            <button
+              id="classroom-chat-send-button"
+              type="button"
+              class="btn btn-primary sm:btn-circle shrink-0"
+            >
+              <.icon name="hero-paper-airplane" class="w-5 h-5" />
+              <span class="sm:hidden">{gettext("Send")}</span>
+            </button>
+          </div>
+        </div>
+      <% else %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
+          <.icon
+            name="hero-chat-bubble-left-right"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4"
+          />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">
+            {gettext("Chat Unavailable")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
+            {gettext("The classroom chat could not be loaded. Please try again later.")}
+          </p>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp chat_avatar(sender) do
+    user = sender
+
+    if user do
+      (user.profile && user.profile.avatar) || user.avatar_url
+    end
+  end
+
+  defp chat_sender_name(sender, current_user_id) do
+    user = sender
+
+    if user do
+      name = (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+
+      if user.id == current_user_id do
+        gettext("You")
+      else
+        name
+      end
+    else
+      gettext("Unknown")
+    end
+  end
+
+  defp format_message_time(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%H:%M")
+  end
+
+  defp format_message_date(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%B %d, %Y")
+  end
+
+  defp same_day?(%DateTime{} = a, %DateTime{} = b) do
+    DateTime.to_date(a) == DateTime.to_date(b)
   end
 
   defp get_game_status(nil), do: :not_started

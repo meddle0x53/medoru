@@ -8,6 +8,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
   import MedoruWeb.Components.Helpers, only: [format_relative_time: 1, display_name: 3]
 
+  alias Medoru.Chat
   alias Medoru.Classrooms
   alias Medoru.Games
   alias Medoru.Notifications
@@ -61,6 +62,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     test_attempts = Classrooms.list_classroom_test_attempts(classroom.id, limit: 100)
     classroom_games = Games.list_classroom_games(classroom.id)
 
+    conversation = Chat.get_classroom_conversation(classroom.id)
+
     socket
     |> assign(:page_title, classroom.name)
     |> assign(:classroom, classroom)
@@ -70,6 +73,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:published_tests, published_tests)
     |> assign(:test_attempts, test_attempts)
     |> assign(:classroom_games, classroom_games)
+    |> assign(:conversation, conversation)
     |> assign(:active_tab, "overview")
     |> assign(:editing_settings, false)
     |> assign(:edit_name, classroom.name)
@@ -558,6 +562,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             <.tab_button active={@active_tab == "lessons"} tab="lessons" label={gettext("Lessons")} />
             <.tab_button active={@active_tab == "tests"} tab="tests" label={gettext("Tests")} />
             <.tab_button active={@active_tab == "games"} tab="games" label={gettext("Games")} />
+            <.tab_button active={@active_tab == "chat"} tab="chat" label={gettext("Chat")} />
             <.tab_button
               active={@active_tab == "settings"}
               tab="settings"
@@ -615,6 +620,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 edit_should_approve_memberships={@edit_should_approve_memberships}
                 edit_public={@edit_public}
                 edit_errors={@edit_errors}
+              />
+            <% "chat" -> %>
+              <.chat_tab
+                classroom={@classroom}
+                conversation={@conversation}
+                members={@members}
               />
           <% end %>
         </div>
@@ -1402,6 +1413,100 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         <p class="text-2xl font-bold text-base-content">{@value}</p>
         <p class="text-sm text-secondary">{@label}</p>
       </div>
+    </div>
+    """
+  end
+
+  attr :classroom, :map, required: true
+  attr :conversation, :any, required: true
+  attr :members, :list, required: true
+
+  defp chat_tab(assigns) do
+    ~H"""
+    <div class="space-y-6">
+      <%= if @conversation do %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm">
+          <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="card-title text-base-content">{gettext("Classroom Chat")}</h3>
+              <.link
+                navigate={~p"/classrooms/#{@classroom.id}?tab=chat"}
+                class="btn btn-primary btn-sm"
+              >
+                <.icon name="hero-chat-bubble-left-right" class="w-4 h-4 mr-1" />
+                {gettext("Open Chat")}
+              </.link>
+            </div>
+            <p class="text-secondary text-sm mb-4">
+              {gettext("All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom.")}
+            </p>
+            <div class="flex items-center gap-2 text-sm text-secondary">
+              <.icon name="hero-users" class="w-4 h-4" />
+              {length(@conversation.participants)} {gettext("participants")}
+            </div>
+          </div>
+        </div>
+
+        <div class="card bg-base-100 border border-base-300 shadow-sm">
+          <div class="card-body">
+            <h3 class="card-title text-base-content mb-4">{gettext("Chat Participants")}</h3>
+            <div class="space-y-2">
+              <%= for participant <- @conversation.participants do %>
+                <% is_teacher = participant.user_id == @classroom.teacher_id %>
+                <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-base-200/50 transition-colors">
+                  <%= if avatar = (participant.user.profile && participant.user.profile.avatar) || participant.user.avatar_url do %>
+                    <div class="avatar shrink-0">
+                      <div class={["w-10 h-10 rounded-full", is_teacher && "ring-2 ring-primary"]}>
+                        <img src={avatar} alt="" class="object-cover" />
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="avatar placeholder shrink-0">
+                      <div class={["rounded-full w-10 h-10 flex items-center justify-center", is_teacher && "bg-primary text-primary-content", not is_teacher && "bg-primary/10 text-primary"]}>
+                        <% initial =
+                          if participant.user.profile && participant.user.profile.display_name,
+                            do: String.first(participant.user.profile.display_name) |> String.upcase(),
+                            else: String.first(participant.user.name || participant.user.email) |> String.upcase() %>
+                        <span class="text-sm">{initial}</span>
+                      </div>
+                    </div>
+                  <% end %>
+                  <div class="flex-1 min-w-0">
+                    <p class="font-medium text-base-content truncate">
+                      {display_name(participant.user, @classroom.teacher_id, true)}
+                    </p>
+                    <p class="text-sm text-secondary">
+                      <%= if is_teacher do %>
+                        {gettext("Teacher")}
+                      <% else %>
+                        {gettext("Student")}
+                      <% end %>
+                    </p>
+                  </div>
+                  <%= if participant.has_left do %>
+                    <span class="badge badge-ghost badge-sm">{gettext("Left")}</span>
+                  <% else %>
+                    <span class="badge badge-success badge-sm">{gettext("Active")}</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center">
+          <.icon
+            name="hero-chat-bubble-left-right"
+            class="w-12 h-12 sm:w-16 sm:h-16 text-secondary/20 mx-auto mb-3 sm:mb-4"
+          />
+          <h3 class="text-lg sm:text-xl font-semibold text-base-content mb-2">
+            {gettext("Chat Not Available")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
+            {gettext("The classroom chat could not be found. It should be created automatically when the classroom is created.")}
+          </p>
+        </div>
+      <% end %>
     </div>
     """
   end

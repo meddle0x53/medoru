@@ -12,6 +12,8 @@ defmodule Medoru.Chat.Conversation do
     field :is_group, :boolean, default: false
     field :started_at, :utc_datetime
 
+    belongs_to :classroom, Medoru.Classrooms.Classroom, type: :binary_id
+
     has_many :participants, Medoru.Chat.ConversationParticipant
     has_many :messages, Medoru.Chat.Message
     has_many :conversation_keys, Medoru.Chat.ConversationKey
@@ -22,7 +24,7 @@ defmodule Medoru.Chat.Conversation do
   @doc false
   def changeset(conversation, attrs) do
     conversation
-    |> cast(attrs, [:title, :is_group, :started_at])
+    |> cast(attrs, [:title, :is_group, :started_at, :classroom_id])
     |> validate_required([:started_at])
   end
 end

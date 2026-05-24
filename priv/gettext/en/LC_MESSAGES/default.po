@@ -11841,3 +11841,39 @@ msgstr ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "users"
 msgstr ""
+
+msgid "Chat"
+msgstr ""
+
+msgid "Load more messages"
+msgstr ""
+
+msgid "Chat Unavailable"
+msgstr ""
+
+msgid "The classroom chat could not be loaded. Please try again later."
+msgstr ""
+
+msgid "Classroom Chat"
+msgstr ""
+
+msgid "Open Chat"
+msgstr ""
+
+msgid "All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom."
+msgstr ""
+
+msgid "participants"
+msgstr ""
+
+msgid "Chat Participants"
+msgstr ""
+
+msgid "Left"
+msgstr ""
+
+msgid "Chat Not Available"
+msgstr ""
+
+msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
+msgstr ""

@@ -3,8 +3,8 @@ defmodule Medoru.Chat do
   The Chat context.
 
   Handles conversations, messages, typing indicators, and read receipts.
-  All messages are stored as ciphertext — the server never sees plaintext.
-  Supports both 1:1 and group conversations.
+  Supports encrypted 1:1 and group conversations (ciphertext only server-side),
+  as well as plaintext classroom chats.
   """
 
   import Ecto.Query, warn: false
@@ -230,9 +230,12 @@ defmodule Medoru.Chat do
 
   @doc """
   Lists messages for a conversation, newest first.
+
+  Supports pagination via `:offset` (for loading older messages).
+  Default limit is 20 messages.
   """
   def list_messages(conversation_id, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 50)
+    limit = Keyword.get(opts, :limit, 20)
     offset = Keyword.get(opts, :offset, 0)
 
     Message
@@ -242,6 +245,7 @@ defmodule Medoru.Chat do
     |> offset(^offset)
     |> preload(sender: [:profile], reply_to_message: [sender: [:profile]])
     |> Repo.all()
+    |> Enum.reverse()
   end
 
   @doc """
@@ -279,12 +283,125 @@ defmodule Medoru.Chat do
   end
 
   @doc """
+  Stores a plaintext message (for classroom chats).
+  """
+  def store_plaintext_message(conversation_id, sender_id, content, opts \\ []) do
+    reply_to_id = Keyword.get(opts, :reply_to_message_id)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    attrs = %{
+      conversation_id: conversation_id,
+      sender_id: sender_id,
+      content: content,
+      encrypted_at: now,
+      reply_to_message_id: reply_to_id
+    }
+
+    %Message{}
+    |> Message.changeset(attrs)
+    |> Repo.insert()
+    |> case do
+      {:ok, message} ->
+        message = Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+        broadcast_message(conversation_id, message)
+        {:ok, message}
+
+      error ->
+        error
+    end
+  end
+
+  @doc """
   Gets a single message.
   """
   def get_message!(id) do
     Message
     |> Repo.get!(id)
     |> Repo.preload(sender: [:profile], reply_to_message: [sender: [:profile]])
+  end
+
+  @doc """
+  Gets the conversation linked to a classroom.
+  Returns nil if no classroom chat exists.
+  """
+  def get_classroom_conversation(classroom_id) do
+    Conversation
+    |> where([c], c.classroom_id == ^classroom_id)
+    |> preload(participants: [user: :profile])
+    |> Repo.one()
+  end
+
+  @doc """
+  Creates a classroom conversation and adds the teacher as the first participant.
+  """
+  def create_classroom_conversation(classroom) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    Repo.transaction(fn ->
+      conversation =
+        %Conversation{}
+        |> Conversation.changeset(%{
+          title: classroom.name,
+          is_group: true,
+          classroom_id: classroom.id,
+          started_at: now
+        })
+        |> Repo.insert!()
+
+      # Add teacher as first participant
+      %ConversationParticipant{}
+      |> ConversationParticipant.changeset(%{
+        conversation_id: conversation.id,
+        user_id: classroom.teacher_id,
+        joined_at: now
+      })
+      |> Repo.insert!()
+
+      conversation
+      |> Repo.preload(participants: [user: :profile])
+    end)
+  end
+
+  @doc """
+  Adds a participant to a conversation without requiring an encrypted key.
+  Used for classroom chats where encryption is not used.
+  """
+  def add_participant_plain(conversation_id, user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %ConversationParticipant{}
+    |> ConversationParticipant.changeset(%{
+      conversation_id: conversation_id,
+      user_id: user_id,
+      joined_at: now
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Marks a participant as having left a conversation.
+  """
+  def mark_participant_left(conversation_id, user_id) do
+    ConversationParticipant
+    |> where([cp], cp.conversation_id == ^conversation_id and cp.user_id == ^user_id)
+    |> Repo.update_all(set: [has_left: true])
+  end
+
+  @doc """
+  Re-adds a participant who previously left a conversation.
+  """
+  def rejoin_participant(conversation_id, user_id) do
+    case ConversationParticipant
+         |> where([cp], cp.conversation_id == ^conversation_id and cp.user_id == ^user_id)
+         |> Repo.one() do
+      nil ->
+        add_participant_plain(conversation_id, user_id)
+
+      participant ->
+        participant
+        |> ConversationParticipant.changeset(%{has_left: false})
+        |> Repo.update()
+    end
   end
 
   @doc """

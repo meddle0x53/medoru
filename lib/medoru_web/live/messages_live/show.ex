@@ -1,8 +1,9 @@
 defmodule MedoruWeb.MessagesLive.Show do
   @moduledoc """
   LiveView for an individual chat conversation.
-  Messages are encrypted end-to-end using a per-conversation symmetric key.
-  The server never sees plaintext or private keys.
+
+  Supports both encrypted conversations (1:1 and group chats) and
+  plaintext classroom chats.
   """
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
@@ -11,7 +12,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.Social
   alias Medoru.Encryption
 
-  @per_page 50
+  @per_page 20
 
   @impl true
   def mount(%{"id" => conversation_id}, session, socket) do
@@ -53,9 +54,8 @@ defmodule MedoruWeb.MessagesLive.Show do
         conversation_key = Chat.get_conversation_key(conversation_id, current_user.id)
         encrypted_key = if conversation_key, do: Base.encode64(conversation_key.encrypted_key)
 
-        messages =
-          Chat.list_messages(conversation_id, limit: @per_page)
-          |> Enum.reverse()
+        messages = Chat.list_messages(conversation_id, limit: @per_page)
+        has_more = length(messages) == @per_page
 
         page_title =
           if conversation.is_group do
@@ -73,6 +73,8 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:participant_public_keys, participant_public_keys)
          |> assign(:encrypted_key, encrypted_key)
          |> assign(:messages, messages)
+         |> assign(:has_more_messages, has_more)
+         |> assign(:message_offset, 0)
          |> assign(:reply_to, nil)
          |> assign(:page_title, page_title)
          |> assign(:typing_users, [])
@@ -179,6 +181,44 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event("send_plaintext_message", %{"content" => content}, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    trimmed = String.trim(content)
+
+    if trimmed != "" do
+      reply_to = socket.assigns.reply_to
+      opts = if reply_to, do: [reply_to_message_id: reply_to.id], else: []
+
+      case Chat.store_plaintext_message(conversation.id, current_user.id, trimmed, opts) do
+        {:ok, _message} ->
+          {:noreply, assign(socket, :reply_to, nil)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("load_more_messages", _params, socket) do
+    conversation = socket.assigns.conversation
+    current_offset = socket.assigns.message_offset
+
+    new_offset = current_offset + @per_page
+    older_messages = Chat.list_messages(conversation.id, limit: @per_page, offset: new_offset)
+    has_more = length(older_messages) == @per_page
+
+    {:noreply,
+     socket
+     |> assign(:messages, socket.assigns.messages ++ older_messages)
+     |> assign(:has_more_messages, has_more)
+     |> assign(:message_offset, new_offset)}
+  end
+
+  @impl true
   def handle_event("cancel_reply", _params, socket) do
     {:noreply, assign(socket, :reply_to, nil)}
   end
@@ -192,6 +232,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   @impl true
   def handle_info({:new_message, message}, socket) do
     current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
 
     if connected?(socket) do
       Chat.mark_read(current_user.id, message.conversation_id)
@@ -199,15 +240,24 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     message = Medoru.Repo.preload(message, [:sender, :reply_to_message])
 
-    {:noreply,
-     socket
-     |> assign(:messages, socket.assigns.messages ++ [message])
-     |> push_event("scroll_to_bottom", %{})
-     |> push_event("decrypt_message", %{
-       id: message.id,
-       ciphertext: Base.encode64(message.ciphertext),
-       iv: Base.encode64(message.iv)
-     })}
+    socket =
+      socket
+      |> assign(:messages, socket.assigns.messages ++ [message])
+      |> push_event("scroll_to_bottom", %{})
+
+    # Only decrypt if this is an encrypted message (not a classroom chat)
+    socket =
+      if is_nil(conversation.classroom_id) && message.ciphertext do
+        push_event(socket, "decrypt_message", %{
+          id: message.id,
+          ciphertext: Base.encode64(message.ciphertext),
+          iv: Base.encode64(message.iv)
+        })
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   @impl true

@@ -2424,7 +2424,7 @@ msgstr "изведено"
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1435
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Active"
-msgstr "Неактивни"
+msgstr "Активен"
 
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:572
 #, elixir-autogen, elixir-format
@@ -11847,3 +11847,39 @@ msgstr "пише..."
 #, elixir-autogen, elixir-format, fuzzy
 msgid "users"
 msgstr "Потребител"
+
+msgid "Chat"
+msgstr "Чат"
+
+msgid "Load more messages"
+msgstr "Зареди още съобщения"
+
+msgid "Chat Unavailable"
+msgstr "Чатът не е наличен"
+
+msgid "The classroom chat could not be loaded. Please try again later."
+msgstr "Чатът на класната стая не може да бъде зареден. Моля, опитайте отново по-късно."
+
+msgid "Classroom Chat"
+msgstr "Чат на класната стая"
+
+msgid "Open Chat"
+msgstr "Отвори чата"
+
+msgid "All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom."
+msgstr "Всички одобрени членове могат да участват в чата на класната стая. Съобщенията са видими за всички в класната стая."
+
+msgid "participants"
+msgstr "участници"
+
+msgid "Chat Participants"
+msgstr "Участници в чата"
+
+msgid "Left"
+msgstr "Напуснал"
+
+msgid "Chat Not Available"
+msgstr "Чатът не е наличен"
+
+msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
+msgstr "Чатът на класната стая не беше намерен. Той трябва да бъде създаден автоматично при създаване на класната стая."

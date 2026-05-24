@@ -305,6 +305,134 @@ defmodule Medoru.ChatTest do
     end
   end
 
+  describe "plaintext messages" do
+    test "store_plaintext_message/4 stores a message with content" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      assert {:ok, %Message{} = message} =
+               Chat.store_plaintext_message(conv.id, user_a.id, "Hello classroom!")
+
+      assert message.content == "Hello classroom!"
+      assert message.ciphertext == nil
+      assert message.conversation_id == conv.id
+      assert message.sender_id == user_a.id
+    end
+
+    test "list_messages/2 returns plaintext messages" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Chat.store_plaintext_message(conv.id, user_a.id, "Message 1")
+      Chat.store_plaintext_message(conv.id, user_b.id, "Message 2")
+
+      messages = Chat.list_messages(conv.id)
+      assert length(messages) == 2
+      assert Enum.any?(messages, &(&1.content == "Message 1"))
+      assert Enum.any?(messages, &(&1.content == "Message 2"))
+    end
+  end
+
+  defp classroom_fixture(attrs \\ %{}) do
+    teacher_id = attrs[:teacher_id] || user_fixture().id
+
+    {:ok, classroom} =
+      Medoru.Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher_id})
+
+    classroom
+  end
+
+  describe "classroom conversation" do
+    test "get_classroom_conversation/1 returns conversation by classroom_id" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      conv = Chat.get_classroom_conversation(classroom.id)
+      assert conv != nil
+      assert conv.classroom_id == classroom.id
+      assert conv.is_group == true
+      assert Chat.get_classroom_conversation(Ecto.UUID.generate()) == nil
+    end
+  end
+
+  describe "message pagination" do
+    test "list_messages/2 with before_id cursor loads older messages" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      # Create 25 messages
+      for i <- 1..25 do
+        Chat.store_plaintext_message(conv.id, user_a.id, "Message #{i}")
+      end
+
+      # First page: 20 latest
+      page1 = Chat.list_messages(conv.id, limit: 20)
+      assert length(page1) == 20
+
+      page2 = Chat.list_messages(conv.id, limit: 20, offset: 20)
+      assert length(page2) == 5
+    end
+  end
+
+  describe "participant management" do
+    test "add_participant_plain/2 adds participant without encrypted key" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+      student = user_fixture()
+
+      assert {:ok, %ConversationParticipant{}} =
+               Chat.add_participant_plain(conv.id, student.id)
+
+      conv = Chat.get_classroom_conversation(classroom.id)
+      assert length(conv.participants) == 2
+    end
+
+    test "mark_participant_left/2 sets has_left to true" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+      student = user_fixture()
+      {:ok, _} = Chat.add_participant_plain(conv.id, student.id)
+
+      Chat.mark_participant_left(conv.id, student.id)
+
+      conv = Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == true
+    end
+
+    test "rejoin_participant/2 re-adds a left participant" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+      student = user_fixture()
+      {:ok, _} = Chat.add_participant_plain(conv.id, student.id)
+      Chat.mark_participant_left(conv.id, student.id)
+
+      assert {:ok, _} = Chat.rejoin_participant(conv.id, student.id)
+
+      conv = Chat.get_classroom_conversation(classroom.id)
+      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      assert participant.has_left == false
+    end
+
+    test "rejoin_participant/2 adds new participant if none exists" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+      student = user_fixture()
+
+      assert {:ok, _} = Chat.rejoin_participant(conv.id, student.id)
+
+      conv = Chat.get_classroom_conversation(classroom.id)
+      assert length(conv.participants) == 2
+    end
+  end
+
   describe "pubsub" do
     test "subscribe_to_conversation/1 and unsubscribe_from_conversation/1" do
       user_a = user_fixture()
