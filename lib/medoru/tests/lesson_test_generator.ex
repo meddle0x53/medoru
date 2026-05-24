@@ -382,7 +382,8 @@ defmodule Medoru.Tests.LessonTestGenerator do
         type: :reading_text,
         word_text: word.text,
         word_meaning: word.meaning,
-        word_reading: word.reading
+        word_reading: word.reading,
+        is_kana_only: only_kana?(word.text)
       },
       # Reading text steps don't have multiple choice options
       options: []

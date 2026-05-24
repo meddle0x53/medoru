@@ -93,6 +93,7 @@ defmodule Medoru.Tests.LessonTestSession do
   def submit_reading_text_answer(session_id, step_id, meaning_answer, reading_answer, opts \\ []) do
     time_spent = Keyword.get(opts, :time_spent_seconds, 0)
     locale = Keyword.get(opts, :locale, "en")
+    skip_reading = Keyword.get(opts, :skip_reading, false)
 
     session =
       TestSession
@@ -118,7 +119,8 @@ defmodule Medoru.Tests.LessonTestSession do
             word,
             meaning_answer,
             reading_answer,
-            locale
+            locale,
+            skip_reading: skip_reading
           )
 
         {result.both_correct, result}

@@ -167,7 +167,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       question_data: %{
         word_text: word.text,
         word_reading: word.reading,
-        question_label: "reading_text"
+        question_label: "reading_text",
+        is_kana_only: only_kana?(word.text)
       }
     }
   end

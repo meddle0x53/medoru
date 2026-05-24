@@ -24,8 +24,8 @@
             <h1 class="text-3xl font-bold text-base-content">
               {(@profile && @profile.display_name) || @user.name || gettext("Anonymous")}
             </h1>
-            <% current_user = @current_scope.current_user %>
-            <%= if current_user.id == @user.id || current_user.type == "admin" do %>
+            <% current_user = @current_scope[:current_user] %>
+            <%= if current_user && (current_user.id == @user.id || current_user.type == "admin") do %>
               <p class="text-base-content/60 mt-1">{@user.email}</p>
             <% end %>
 
@@ -203,7 +203,7 @@
     </div>
 
     <%!-- Admin Actions --%>
-    <%= if @current_scope.current_user.type == "admin" do %>
+    <%= if @current_scope[:current_user] && @current_scope.current_user.type == "admin" do %>
       <div class="card bg-base-100 shadow-sm border border-error/30 mt-6">
         <div class="card-body">
           <h2 class="card-title text-lg mb-4 text-error">

@@ -153,12 +153,12 @@ defmodule MedoruWeb.WordSetLive.TestTest do
   end
 
   describe "Word Set Practice Test - reading_text" do
-    test "shows reading_text input fields", %{conn: conn} do
+    test "shows reading_text input fields for kanji words", %{conn: conn} do
       # Create a word set with only reading_text steps
       user = user_fixture()
       conn = log_in_user(conn, user)
 
-      word = word_fixture(%{text: "テスト", meaning: "test", reading: "てすと"})
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
       word_set = word_set_fixture(%{user_id: user.id, name: "Reading Text Test"})
       {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
 
@@ -184,7 +184,31 @@ defmodule MedoruWeb.WordSetLive.TestTest do
 
       view
       |> element("input[name='reading_answer']")
-      |> render_change(%{"reading_answer" => "てすと"})
+      |> render_change(%{"reading_answer" => "にほん"})
+    end
+
+    test "shows only meaning input for kana-only words", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "テスト", meaning: "test", reading: "てすと"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Kana Only Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      # Should show only meaning input for kana-only words
+      assert html =~ "Type the meaning:"
+      assert html =~ "Meaning (English)"
+      refute html =~ "Reading (Hiragana)"
     end
   end
 end

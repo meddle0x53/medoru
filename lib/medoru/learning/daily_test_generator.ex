@@ -428,7 +428,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
             word_text: word.text,
             word_meaning: word.meaning,
             word_reading: word.reading,
-            is_new_word: is_new
+            is_new_word: is_new,
+            is_kana_only: only_kana?(word.text)
           }
         })
 
@@ -689,5 +690,20 @@ defmodule Medoru.Learning.DailyTestGenerator do
   # Count new words in test items
   defp count_new(items) do
     Enum.count(items, & &1.is_new)
+  end
+
+  defp only_kana?(string) do
+    string
+    |> String.to_charlist()
+    |> Enum.all?(&kana_char?/1)
+  end
+
+  defp kana_char?(codepoint) do
+    # Hiragana only
+    # Katakana only
+    # Half-width Katakana
+    (codepoint >= 0x3040 and codepoint <= 0x309F) or
+      (codepoint >= 0x30A0 and codepoint <= 0x30FF) or
+      (codepoint >= 0xFF65 and codepoint <= 0xFF9F)
   end
 end

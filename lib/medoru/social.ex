@@ -140,7 +140,7 @@ defmodule Medoru.Social do
   def list_blocked_users(blocker_id) do
     UserBlock
     |> where([ub], ub.blocker_id == ^blocker_id)
-    |> preload(:blocked)
+    |> preload(blocked: :profile)
     |> order_by([ub], desc: ub.blocked_at)
     |> Repo.all()
   end

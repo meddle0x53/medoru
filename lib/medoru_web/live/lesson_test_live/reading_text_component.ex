@@ -40,24 +40,26 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
   attr :target, :string, default: nil
 
   def reading_text_question(assigns) do
+    is_kana_only = assigns.step.question_data["is_kana_only"] || false
+    assigns = assign(assigns, :is_kana_only, is_kana_only)
+
     ~H"""
     <div class="space-y-6" id="reading-text-question">
       <%!-- Word Display --%>
       <div class="mb-4 sm:mb-6">
         <div class="text-xs sm:text-sm text-secondary mb-3">
-          {gettext("Type the meaning and reading:")}
+          <%= if @is_kana_only do %>
+            {gettext("Type the meaning:")}
+          <% else %>
+            {gettext("Type the meaning and reading:")}
+          <% end %>
         </div>
         <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1">
           {@step.question_data["word_text"]}
         </h2>
-        <%= if @step.question_data["word_reading"] do %>
-          <p class="text-xl sm:text-2xl text-secondary/80 font-japanese text-center">
-            {@step.question_data["word_reading"]}
-          </p>
-        <% end %>
         <%= if @show_hint do %>
           <div class="text-sm text-secondary mt-2 text-center">
-            {gettext("Hint: Starts with \"%{hint}\"", hint: hint_text(@step))}
+            {gettext("Hint: Starts with \"%{hint}\"", hint: hint_text(@step, @is_kana_only))}
           </div>
         <% end %>
       </div>
@@ -74,10 +76,12 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
               <span class="text-secondary">{gettext("Meaning:")}</span>
               <span class="font-medium">{@correct_meaning}</span>
             </div>
-            <div class="text-base-content">
-              <span class="text-secondary">{gettext("Reading:")}</span>
-              <span class="font-medium">{@correct_reading}</span>
-            </div>
+            <%= if not @is_kana_only do %>
+              <div class="text-base-content">
+                <span class="text-secondary">{gettext("Reading:")}</span>
+                <span class="font-medium">{@correct_reading}</span>
+              </div>
+            <% end %>
           </div>
         </div>
       <% end %>
@@ -108,48 +112,54 @@ defmodule MedoruWeb.LessonTestLive.ReadingTextComponent do
           />
         </div>
 
-        <%!-- Reading Input --%>
-        <div>
-          <label class="block text-sm font-medium text-secondary mb-2">
-            {gettext("Reading (Hiragana):")}
-          </label>
-          <input
-            type="text"
-            id="reading_answer_input"
-            name="reading_answer"
-            value={@reading_answer}
-            phx-keyup="update_reading"
-            phx-target={@target}
-            placeholder={gettext("Type the hiragana reading...")}
-            disabled={@feedback == :incorrect}
-            class={[
-              "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
-              "focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
-              @reading_error && "border-error bg-error/5",
-              @feedback == :correct && "border-success bg-success/5",
-              is_nil(@feedback) && !@reading_error && "border-base-200 focus:border-primary"
-            ]}
-          />
-          <div class="text-xs text-secondary mt-1">
-            {gettext("Tip: Use hiragana. Long vowels can be written as おう or おお, えい or ええ")}
+        <%!-- Reading Input (hidden for kana-only words) --%>
+        <%= if not @is_kana_only do %>
+          <div>
+            <label class="block text-sm font-medium text-secondary mb-2">
+              {gettext("Reading (Hiragana):")}
+            </label>
+            <input
+              type="text"
+              id="reading_answer_input"
+              name="reading_answer"
+              value={@reading_answer}
+              phx-keyup="update_reading"
+              phx-target={@target}
+              placeholder={gettext("Type the hiragana reading...")}
+              disabled={@feedback == :incorrect}
+              class={[
+                "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
+                "focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
+                @reading_error && "border-error bg-error/5",
+                @feedback == :correct && "border-success bg-success/5",
+                is_nil(@feedback) && !@reading_error && "border-base-200 focus:border-primary"
+              ]}
+            />
+            <div class="text-xs text-secondary mt-1">
+              {gettext("Tip: Use hiragana. Long vowels can be written as おう or おお, えい or ええ")}
+            </div>
           </div>
-        </div>
+        <% end %>
       </div>
     </div>
     """
   end
 
   # Generate hint text showing first letter/kana of both answers
-  defp hint_text(step) do
+  defp hint_text(step, is_kana_only) do
     meaning = step.question_data["word_meaning"] || ""
-    reading = step.question_data["word_reading"] || ""
-
     meaning_hint = String.first(meaning) || "?"
-    reading_hint = String.first(reading) || "?"
 
-    gettext("Meaning: %{meaning_hint}... / Reading: %{reading_hint}...",
-      meaning_hint: meaning_hint,
-      reading_hint: reading_hint
-    )
+    if is_kana_only do
+      gettext("Meaning: %{meaning_hint}...", meaning_hint: meaning_hint)
+    else
+      reading = step.question_data["word_reading"] || ""
+      reading_hint = String.first(reading) || "?"
+
+      gettext("Meaning: %{meaning_hint}... / Reading: %{reading_hint}...",
+        meaning_hint: meaning_hint,
+        reading_hint: reading_hint
+      )
+    end
   end
 end

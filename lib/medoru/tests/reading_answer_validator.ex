@@ -39,9 +39,16 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
       {:ok, %{meaning_correct: true, reading_correct: true}}
 
   """
-  def validate_answer(word, meaning_answer, reading_answer, locale \\ "en") do
+  def validate_answer(word, meaning_answer, reading_answer, locale \\ "en", opts \\ []) do
+    skip_reading = Keyword.get(opts, :skip_reading, false)
     meaning_correct = validate_meaning_for_locale(word, meaning_answer, locale)
-    reading_correct = validate_reading(word.reading, reading_answer)
+
+    reading_correct =
+      if skip_reading do
+        true
+      else
+        validate_reading(word.reading, reading_answer)
+      end
 
     {:ok,
      %{

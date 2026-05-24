@@ -171,15 +171,16 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
   @impl true
   def handle_event("submit_reading_text", _params, socket) do
+    step = socket.assigns.current_step
+    is_kana_only = step.question_data["is_kana_only"] || false
     meaning = String.trim(socket.assigns.meaning_answer)
     reading = String.trim(socket.assigns.reading_answer)
 
     # Validate inputs are not empty
-    if meaning == "" or reading == "" do
+    if meaning == "" or (not is_kana_only and reading == "") do
       {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
     else
       session = socket.assigns.session
-      step = socket.assigns.current_step
 
       # Submit reading text answer with locale
       locale = socket.assigns.locale
@@ -190,7 +191,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
              meaning,
              reading,
              time_spent_seconds: 15,
-             locale: locale
+             locale: locale,
+             skip_reading: is_kana_only
            ) do
         {:correct, result} ->
           socket =
@@ -706,10 +708,11 @@ defmodule MedoruWeb.LessonTestLive.Show do
               <% end %>
 
               <%= if @current_step.question_type == :reading_text && @feedback != :incorrect do %>
+                <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
                 <button
                   type="button"
                   phx-click="submit_reading_text"
-                  disabled={@meaning_answer == "" or @reading_answer == ""}
+                  disabled={@meaning_answer == "" or (not is_kana_only and @reading_answer == "")}
                   class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}

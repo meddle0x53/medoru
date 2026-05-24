@@ -134,14 +134,15 @@ defmodule MedoruWeb.WordSetLive.Test do
 
   @impl true
   def handle_event("submit_reading_text", _params, socket) do
+    step = socket.assigns.current_step
+    is_kana_only = step.question_data["is_kana_only"] || false
     meaning = String.trim(socket.assigns.meaning_answer)
     reading = String.trim(socket.assigns.reading_answer)
 
-    if meaning == "" or reading == "" do
+    if meaning == "" or (not is_kana_only and reading == "") do
       {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
     else
       session = socket.assigns.session
-      step = socket.assigns.current_step
 
       # Get the word for validation
       word =
@@ -159,7 +160,8 @@ defmodule MedoruWeb.WordSetLive.Test do
             word,
             meaning,
             reading,
-            locale
+            locale,
+            skip_reading: is_kana_only
           )
 
         # Record the answer
