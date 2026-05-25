@@ -177,6 +177,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_for_type("daily_reminder"), do: "hero-calendar"
   defp icon_for_type("classroom_lesson"), do: "hero-book-open"
   defp icon_for_type("classroom_test"), do: "hero-clipboard-document-list"
+  defp icon_for_type("chat_message"), do: "hero-chat-bubble-left"
   defp icon_for_type(_), do: "hero-bell"
 
   defp icon_bg_class("badge_earned"), do: "bg-yellow-100 text-yellow-700"
@@ -185,6 +186,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_bg_class("daily_reminder"), do: "bg-blue-100 text-blue-700"
   defp icon_bg_class("classroom_lesson"), do: "bg-purple-100 text-purple-700"
   defp icon_bg_class("classroom_test"), do: "bg-indigo-100 text-indigo-700"
+  defp icon_bg_class("chat_message"), do: "bg-green-100 text-green-700"
   defp icon_bg_class(_), do: "bg-base-200 text-base-content"
 
   defp notification_link(%{
@@ -199,6 +201,13 @@ defmodule MedoruWeb.NotificationDropdownLive do
          data: %{"test_id" => id, "classroom_id" => cid}
        }) do
     ~p"/classrooms/#{cid}/tests/#{id}"
+  end
+
+  defp notification_link(%{
+         type: "chat_message",
+         data: %{"conversation_id" => id}
+       }) do
+    ~p"/messages/#{id}"
   end
 
   defp notification_link(_), do: nil

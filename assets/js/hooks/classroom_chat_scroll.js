@@ -5,14 +5,43 @@ const ClassroomChatScroll = {
     this.handleEvent("scroll_to_bottom", () => {
       this.scrollToBottom()
     })
+
+    // Message menu handling (event delegation)
+    this._menuHandler = (e) => {
+      const menuBtn = e.target.closest(".message-menu-btn")
+      if (menuBtn) {
+        e.stopPropagation()
+        const msgId = menuBtn.dataset.messageId
+        const dropdown = this.el.querySelector(`.message-menu-dropdown[data-message-id="${msgId}"]`)
+        if (dropdown) {
+          this.el.querySelectorAll(".message-menu-dropdown").forEach(d => {
+            if (d !== dropdown) d.classList.add("hidden")
+          })
+          dropdown.classList.toggle("hidden")
+        }
+        return
+      }
+
+      const menuDropdown = e.target.closest(".message-menu-dropdown")
+      if (!menuDropdown) {
+        this.el.querySelectorAll(".message-menu-dropdown").forEach(d => d.classList.add("hidden"))
+      }
+    }
+
+    this.el.addEventListener("click", this._menuHandler)
   },
 
   updated() {
-    // Only auto-scroll if we're already near the bottom
     const threshold = 150
     const distanceFromBottom = this.el.scrollHeight - this.el.scrollTop - this.el.clientHeight
     if (distanceFromBottom < threshold) {
       this.scrollToBottom()
+    }
+  },
+
+  destroyed() {
+    if (this._menuHandler) {
+      this.el.removeEventListener("click", this._menuHandler)
     }
   },
 

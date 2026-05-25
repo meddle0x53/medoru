@@ -324,6 +324,23 @@ const ChatCrypto = {
       }
     })
 
+    // Handle edit mode start: decrypt the message and populate textarea
+    this.handleEvent("start_edit", async ({ message_id, ciphertext, iv }) => {
+      try {
+        const text = await CryptoState.decrypt(this.convId, ciphertext, iv)
+        window.chatEditingMessage = { message_id, text }
+        const textarea = document.getElementById("chat-message-input")
+        if (textarea) {
+          textarea.value = text
+          textarea.style.height = "auto"
+          textarea.style.height = Math.min(textarea.scrollHeight, 128) + "px"
+          textarea.focus()
+        }
+      } catch (e) {
+        console.error("[ChatCrypto] Failed to decrypt message for editing:", e)
+      }
+    })
+
     // Re-decrypt on DOM updates
     this.phxUpdateHandler = () => {
       this.decryptAll()
@@ -371,10 +388,31 @@ const ChatCrypto = {
       const text = await CryptoState.decrypt(this.convId, ciphertext, iv)
       el.textContent = text
       el.removeAttribute("data-encrypted")
+      this.styleEmojiMessage(el, text)
     } catch (e) {
       console.log("[ChatCrypto] decrypt failed:", e.message)
       // Don't remove data-encrypted on failure — key may not be ready yet
     }
+  },
+
+  styleEmojiMessage(el, text) {
+    if (!text || !this.isEmojiOnly(text)) return
+    const bubble = el.closest(".message-bubble")
+    if (bubble) {
+      bubble.classList.add("emoji-only")
+      el.classList.remove("text-[15px]", "leading-snug")
+      el.classList.add("text-4xl", "leading-none", "py-1")
+      // Remove bubble background styling
+      bubble.classList.remove("bg-primary", "text-primary-content", "border-primary", "bg-accent/15", "border-accent/30")
+      bubble.classList.add("bg-transparent", "border-transparent", "text-base-content")
+    }
+  },
+
+  isEmojiOnly(str) {
+    if (!str || str.trim().length === 0) return false
+    const cleaned = str.replace(/[\s\uFE0F\u200D\u{1F3FB}-\u{1F3FF}]/gu, "")
+    const nonEmoji = cleaned.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F251}\u{238C}\u{2B50}\u{2B55}\u{2764}\u{2795}-\u{2797}\u{27A1}\u{27B0}\u{27BF}\u{2B05}-\u{2B07}\u{3030}\u{303D}\u{3297}\u{3299}\u{23F0}-\u{23F3}\u{23E9}-\u{23EF}\u{1F18E}\u{00A9}\u{00AE}]/gu, "")
+    return nonEmoji.length === 0
   }
 }
 

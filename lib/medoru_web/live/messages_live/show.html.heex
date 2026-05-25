@@ -28,6 +28,10 @@
           </h2>
           <p class="text-xs text-base-content/50">
             {length(@conversation.participants)} {gettext("members")}
+            <% online_count = Enum.count(@conversation.participants, &user_online?(&1.user_id, @online_user_ids)) %>
+            <%= if online_count > 0 do %>
+              <span class="text-success ml-1">· {online_count} {gettext("online")}</span>
+            <% end %>
           </p>
         </div>
       <% else %>
@@ -45,22 +49,57 @@
         <% end %>
 
         <div class="flex-1 min-w-0">
-          <h2 class="font-medium text-base-content truncate">
-            {participant_name(other)}
-          </h2>
+          <div class="flex items-center gap-1.5">
+            <h2 class="font-medium text-base-content truncate">
+              {participant_name(other)}
+            </h2>
+            <%= if other && user_online?(other.user_id, @online_user_ids) do %>
+              <span class="w-2 h-2 rounded-full bg-success shrink-0" title={gettext("Online")}></span>
+            <% end %>
+          </div>
           <%= if @typing_users != [] do %>
             <p class="text-xs text-primary">
               {gettext("typing...")}
             </p>
+          <% else %>
+            <%= if other && user_online?(other.user_id, @online_user_ids) do %>
+              <p class="text-xs text-success">
+                {gettext("Online")}
+              </p>
+            <% end %>
           <% end %>
         </div>
       <% end %>
+
+      <%!-- Header Actions --%>
+      <div class="shrink-0">
+        <%= if @conversation.is_group do %>
+          <button
+            type="button"
+            phx-click="leave_conversation"
+            data-confirm={gettext("Leave this group conversation?")}
+            class="p-2 text-base-content/40 hover:text-error transition-colors"
+            title={gettext("Leave group")}
+          >
+            <.icon name="hero-arrow-right-start-on-rectangle" class="w-5 h-5" />
+          </button>
+        <% end %>
+        <button
+          type="button"
+          phx-click="archive_conversation"
+          data-confirm={gettext("Delete this conversation? It will be hidden from your list.")}
+          class="p-2 text-base-content/40 hover:text-error transition-colors"
+          title={gettext("Delete conversation")}
+        >
+          <.icon name="hero-trash" class="w-5 h-5" />
+        </button>
+      </div>
     </div>
 
     <%!-- Messages Area --%>
     <div
       id="messages-container"
-      class="flex-1 overflow-y-auto px-3 py-1 space-y-0"
+      class="flex-1 overflow-y-auto px-3 py-2 space-y-1"
       phx-hook={if @conversation.classroom_id, do: "ClassroomChatScroll", else: "ChatScroll"}
     >
       <%!-- Load More Button --%>
@@ -78,6 +117,7 @@
 
       <%= for {message, index} <- Enum.with_index(@messages) do %>
         <% is_me = message.sender_id == @current_scope.current_user.id %>
+        <% is_last_message = index == length(@messages) - 1 %>
 
         <%!-- Date Separator --%>
         <%= if show_date_separator?(@messages, index) do %>
@@ -114,10 +154,10 @@
           </div>
         <% end %>
 
-        <%!-- Message Bubble --%>
+        <%!-- Message Row --%>
         <div
           class={[
-            "flex group",
+            "flex group/message",
             is_me && "justify-end",
             not is_me && "justify-start"
           ]}
@@ -132,19 +172,19 @@
                 <img
                   src={avatar}
                   alt=""
-                  class="w-6 h-6 rounded-full object-cover mr-1.5 shrink-0 self-end"
+                  class="w-7 h-7 rounded-full object-cover mr-1.5 shrink-0 self-end"
                 />
               <% else %>
-                <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 shrink-0 self-end">
-                  <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
+                <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 shrink-0 self-end">
+                  <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
                 </div>
               <% end %>
             <% else %>
-              <div class="w-6 mr-1.5 shrink-0"></div>
+              <div class="w-7 mr-1.5 shrink-0"></div>
             <% end %>
           <% end %>
 
-          <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
+          <div class="flex flex-col max-w-[85%] sm:max-w-[70%]">
             <%!-- Sender name for group chats --%>
             <%= if @conversation.is_group and not is_me do %>
               <% is_teacher = @conversation.classroom_id && message.sender_id == @conversation.classroom.teacher_id %>
@@ -155,49 +195,141 @@
                 <% end %>
               </span>
             <% end %>
-            <div class={[
-              "px-2.5 py-0.5 rounded-lg relative border",
-              is_me && "bg-primary text-primary-content rounded-br-sm border-primary",
-              not is_me && "bg-accent/15 text-base-content rounded-bl-sm border-accent/30"
-            ]}>
-              <%= if @conversation.classroom_id && message.content do %>
-                <p class="text-sm leading-tight whitespace-pre-wrap break-words">
-                  {message.content}
-                </p>
-              <% else %>
-                <p
-                  class="text-sm leading-tight whitespace-pre-wrap break-words"
-                  data-msg-id={message.id}
-                  data-encrypted="true"
-                  data-ciphertext={message_ciphertext_b64(message)}
-                  data-iv={message_iv_b64(message)}
-                >
-                  [...]
-                </p>
-              <% end %>
 
-              <%!-- Reply button --%>
-              <button
-                type="button"
-                phx-click="set_reply"
-                phx-value-id={message.id}
-                class={[
-                  "absolute -top-2 transition-opacity p-1 rounded-full",
-                  "opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
-                  is_me && "-left-6 bg-base-200 text-base-content/60 hover:text-primary",
-                  not is_me && "-right-6 bg-base-200 text-base-content/60 hover:text-primary"
-                ]}
-                title={gettext("Reply")}
-              >
-                <.icon name="hero-arrow-uturn-left" class="w-3.5 h-3.5" />
-              </button>
+            <% is_emoji_msg = @conversation.classroom_id != nil and not is_nil(message.content) and emoji_only?(message.content) %>
+
+            <div class="flex items-end gap-1">
+              <%!-- Message Bubble --%>
+              <div class={[
+                "message-bubble relative rounded-2xl",
+                is_emoji_msg && "bg-transparent border-transparent text-base-content",
+                not is_emoji_msg && is_me && "bg-primary text-primary-content rounded-br-md border border-primary",
+                not is_emoji_msg && not is_me && "bg-accent/15 text-base-content rounded-bl-md border border-accent/30",
+                if(message.is_deleted, do: "px-3 py-1.5", else: if(message.attachment_type == "voice", do: "px-3 py-2", else: "px-3 py-1.5"))
+              ]}>
+                <%= if message.is_deleted do %>
+                  <p class="text-[15px] leading-snug italic opacity-60">
+                    {gettext("This message was deleted")}
+                  </p>
+                <% else %>
+                  <%= if message.attachment_type == "voice" && message.attachment_path do %>
+                    <div id={"chat-audio-#{message.id}"} class="flex items-center gap-2" phx-hook="ChatAudioPlayer" data-src={message.attachment_path} data-duration={message.duration_seconds || 0}>
+                      <button type="button" class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0">
+                        <.icon name="hero-play" class="w-4 h-4 chat-audio-play-icon" />
+                        <.icon name="hero-pause" class="w-4 h-4 chat-audio-pause-icon hidden" />
+                      </button>
+                      <div class="flex-1 min-w-0">
+                        <div class="chat-audio-progress h-1.5 bg-base-300/50 rounded-full overflow-hidden cursor-pointer">
+                          <div class="chat-audio-progress-bar h-full bg-primary rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between mt-0.5">
+                          <span class="chat-audio-current text-[10px] opacity-70 tabular-nums">0:00</span>
+                          <span class="chat-audio-duration text-[10px] opacity-70 tabular-nums">
+                            {format_audio_duration(message.duration_seconds)}
+                          </span>
+                        </div>
+                      </div>
+                      <audio class="chat-audio-el absolute w-0 h-0 opacity-0" src={message.attachment_path} preload="auto"></audio>
+                    </div>
+                  <% else %>
+                    <%= if @conversation.classroom_id && message.content do %>
+                      <%= if is_emoji_msg do %>
+                        <p class="text-4xl leading-none py-1">{message.content}</p>
+                      <% else %>
+                        <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{message.content}</p>
+                      <% end %>
+                    <% else %>
+                      <p
+                        class="text-[15px] leading-snug whitespace-pre-wrap break-words"
+                        data-msg-id={message.id}
+                        data-encrypted="true"
+                        data-ciphertext={message_ciphertext_b64(message)}
+                        data-iv={message_iv_b64(message)}
+                      >
+                        [...]
+                      </p>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </div>
+
+              <%!-- Message Actions (3-dot menu) --%>
+              <div class="relative message-actions shrink-0 self-center">
+                <button
+                  type="button"
+                  class="message-menu-btn p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                  data-message-id={message.id}
+                >
+                  <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
+                </button>
+                <div
+                  class={[
+                    "message-menu-dropdown hidden absolute z-30 bg-base-100 border border-base-300 rounded-xl shadow-lg py-1 min-w-[120px]",
+                    is_me && "right-0",
+                    not is_me && "left-0"
+                  ]}
+                  data-message-id={message.id}
+                >
+                  <button
+                    type="button"
+                    phx-click="set_reply"
+                    phx-value-id={message.id}
+                    class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 flex items-center gap-2 transition-colors"
+                  >
+                    <.icon name="hero-arrow-uturn-left" class="w-4 h-4" />
+                    {gettext("Reply")}
+                  </button>
+                  <%= if is_me && not message.is_deleted do %>
+                    <%= if can_edit_message?(message, @current_scope.current_user.id) do %>
+                      <button
+                        type="button"
+                        phx-click="start_edit"
+                        phx-value-id={message.id}
+                        class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 flex items-center gap-2 transition-colors"
+                      >
+                        <.icon name="hero-pencil" class="w-4 h-4" />
+                        {gettext("Edit")}
+                      </button>
+                    <% end %>
+                    <%= if can_delete_message?(message, @current_scope.current_user.id) do %>
+                      <button
+                        type="button"
+                        phx-click="delete_message"
+                        phx-value-id={message.id}
+                        data-confirm={gettext("Delete this message?")}
+                        class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 text-error flex items-center gap-2 transition-colors"
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4" />
+                        {gettext("Delete")}
+                      </button>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
             </div>
+
+            <%!-- Timestamp & Status --%>
             <span class={[
-              "text-[10px] text-base-content/40 mt-0.5 sm:mt-0 px-1",
-              is_me && "text-right",
-              not is_me && "text-left"
+              "text-[10px] text-base-content/40 mt-0.5 px-1 flex items-center gap-1",
+              is_me && "justify-end",
+              not is_me && "justify-start"
             ]}>
               {format_message_time(message.inserted_at)}
+              <%= if message.edited_at do %>
+                <span class="italic opacity-70">({gettext("edited")})</span>
+              <% end %>
+              <%= if is_me && is_last_message && not message.is_deleted do %>
+                <%= if message_read_by_others?(message, @conversation, @current_scope.current_user.id) do %>
+                  <span class="text-primary" title={gettext("Read")}>
+                    <.icon name="hero-check" class="w-3 h-3" />
+                    <.icon name="hero-check" class="w-3 h-3 -ml-1.5" />
+                  </span>
+                <% else %>
+                  <span class="opacity-50" title={gettext("Sent")}>
+                    <.icon name="hero-check" class="w-3 h-3" />
+                  </span>
+                <% end %>
+              <% end %>
             </span>
           </div>
         </div>
@@ -226,6 +358,25 @@
         <button
           type="button"
           phx-click="cancel_reply"
+          class="p-1 text-base-content/40 hover:text-base-content transition-colors"
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4" />
+        </button>
+      </div>
+    <% end %>
+
+    <%!-- Edit Preview Bar --%>
+    <%= if @editing_message do %>
+      <div class="px-4 py-2 bg-info/5 border-t border-base-300 flex items-center gap-2">
+        <.icon name="hero-pencil" class="w-4 h-4 text-info shrink-0" />
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-base-content/60">
+            {gettext("Editing message")}
+          </p>
+        </div>
+        <button
+          type="button"
+          phx-click="cancel_edit"
           class="p-1 text-base-content/40 hover:text-base-content transition-colors"
         >
           <.icon name="hero-x-mark" class="w-4 h-4" />
@@ -325,9 +476,25 @@
           <% else %>
             <div
               id="chat-input-area"
-              class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0"
+              class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative"
               phx-hook="ChatInput"
             >
+              <%!-- Emoji Picker Panel --%>
+              <div
+                id="chat-emoji-panel"
+                class="hidden absolute bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-72 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3 z-20 grid grid-cols-6 gap-2"
+              >
+                <%= for emoji <- ~w(😀 😂 ❤️ 👍 🎉 🔥 😊 😭 🙏 ✨ 🥰 🤔 😅 👏 🌸 🍀 ⭐ 💯 🎊 🌟 🎌 🗾 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮) do %>
+                  <button
+                    type="button"
+                    data-emoji={emoji}
+                    class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                <% end %>
+              </div>
+
               <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
                 <div class="flex-1 relative">
                   <textarea
@@ -337,14 +504,58 @@
                     class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
                   ></textarea>
                 </div>
-                <button
-                  id="chat-send-button"
-                  type="button"
-                  class="btn btn-primary sm:btn-circle shrink-0"
-                >
-                  <.icon name="hero-paper-airplane" class="w-5 h-5" />
-                  <span class="sm:hidden">{gettext("Send")}</span>
-                </button>
+                <div class="flex items-center gap-1 shrink-0">
+                  <div id="chat-voice-recorder" phx-hook="ChatVoiceRecorder" class="relative flex items-center">
+                    <button
+                      id="chat-voice-button"
+                      type="button"
+                      class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                      title={gettext("Voice message")}
+                    >
+                      <.icon name="hero-microphone" class="w-5 h-5" />
+                    </button>
+                    <button
+                      id="chat-mic-picker-button"
+                      type="button"
+                      class="absolute -top-1 -right-1 w-4 h-4 bg-base-200 hover:bg-primary hover:text-primary-content rounded-full flex items-center justify-center text-[10px] transition-colors"
+                      title={gettext("Select microphone")}
+                    >
+                      <.icon name="hero-chevron-down" class="w-3 h-3" />
+                    </button>
+                    <span
+                      id="chat-voice-status"
+                      class="hidden absolute -top-2 -right-2 bg-error text-error-content text-xs font-bold px-1.5 py-0.5 rounded-full"
+                    >
+                      0s
+                    </span>
+
+                    <%!-- Microphone Device Picker --%>
+                    <div
+                      id="chat-mic-picker"
+                      class="hidden absolute bottom-12 right-0 w-64 bg-base-100 border border-base-300 rounded-xl shadow-lg p-2 z-20 max-h-48 overflow-y-auto"
+                    >
+                      <p class="text-xs text-base-content/60 px-2 py-1 font-medium">
+                        {gettext("Select microphone")}
+                      </p>
+                      <div id="chat-mic-picker-list" class="space-y-1"></div>
+                    </div>
+                  </div>
+                  <button
+                    id="chat-emoji-button"
+                    type="button"
+                    class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                    title={gettext("Emoji")}
+                  >
+                    <.icon name="hero-face-smile" class="w-5 h-5" />
+                  </button>
+                  <button
+                    id="chat-send-button"
+                    type="button"
+                    class="btn btn-primary btn-circle"
+                  >
+                    <.icon name="hero-paper-airplane" class="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           <% end %>

@@ -12,6 +12,8 @@ defmodule Medoru.Chat do
   alias Medoru.PubSub
 
   alias Medoru.Chat.{Conversation, ConversationParticipant, Message, ConversationKey}
+  alias Medoru.Notifications
+  alias MedoruWeb.Presence
 
   # ============================================================================
   # Conversations
@@ -26,13 +28,21 @@ defmodule Medoru.Chat do
 
     Conversation
     |> join(:inner, [c], cp in ConversationParticipant, on: cp.conversation_id == c.id)
-    |> where([c, cp], cp.user_id == ^user_id and cp.has_left == false)
-    |> preload(participants: [user: :profile])
+    |> where([c, cp], cp.user_id == ^user_id and cp.has_left == false and cp.is_archived == false)
+    |> preload([:classroom, participants: [user: :profile]])
     |> order_by([c], desc: c.inserted_at)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
     |> Enum.map(&enrich_with_last_message/1)
+    |> Enum.reject(fn conv ->
+      if conv.is_group do
+        false
+      else
+        other = get_other_participant(conv, user_id)
+        other && Medoru.Social.is_blocked?(user_id, other.user_id) == :blocked
+      end
+    end)
   end
 
   @doc """
@@ -42,7 +52,7 @@ defmodule Medoru.Chat do
     conversation =
       Conversation
       |> Repo.get(conversation_id)
-      |> Repo.preload(participants: [user: :profile])
+      |> Repo.preload([:classroom, participants: [user: :profile]])
 
     case conversation do
       nil ->
@@ -299,6 +309,7 @@ defmodule Medoru.Chat do
       {:ok, message} ->
         message = Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
         broadcast_message(conversation_id, message)
+        maybe_notify_participants(conversation_id, sender_id, message)
         {:ok, message}
 
       error ->
@@ -318,7 +329,10 @@ defmodule Medoru.Chat do
       sender_id: sender_id,
       content: content,
       encrypted_at: now,
-      reply_to_message_id: reply_to_id
+      reply_to_message_id: reply_to_id,
+      attachment_path: Keyword.get(opts, :attachment_path),
+      attachment_type: Keyword.get(opts, :attachment_type),
+      duration_seconds: Keyword.get(opts, :duration_seconds)
     }
 
     %Message{}
@@ -328,6 +342,7 @@ defmodule Medoru.Chat do
       {:ok, message} ->
         message = Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
         broadcast_message(conversation_id, message)
+        maybe_notify_participants(conversation_id, sender_id, message)
         {:ok, message}
 
       error ->
@@ -345,6 +360,105 @@ defmodule Medoru.Chat do
   end
 
   @doc """
+  Soft-deletes a message. Only the sender can delete their own message.
+  """
+  def delete_message(message_id, user_id) do
+    message = Repo.get(Message, message_id)
+
+    cond do
+      is_nil(message) ->
+        {:error, :not_found}
+
+      message.sender_id != user_id ->
+        {:error, :unauthorized}
+
+      message.is_deleted ->
+        {:ok, message}
+
+      true ->
+        message
+        |> Message.changeset(%{is_deleted: true})
+        |> Repo.update()
+        |> case do
+          {:ok, updated} ->
+            broadcast_message_deleted(message.conversation_id, message_id)
+            {:ok, updated}
+
+          error ->
+            error
+        end
+    end
+  end
+
+  @doc """
+  Edits a message. Only the sender can edit, and only within 15 minutes of sending.
+  For encrypted messages, the client must provide new ciphertext and IV.
+  For plaintext messages, the client provides new content.
+  """
+  def edit_message(message_id, user_id, attrs) do
+    message = Repo.get(Message, message_id)
+
+    cond do
+      is_nil(message) ->
+        {:error, :not_found}
+
+      message.sender_id != user_id ->
+        {:error, :unauthorized}
+
+      message.is_deleted ->
+        {:error, :deleted}
+
+      not within_edit_window?(message) ->
+        {:error, :edit_window_expired}
+
+      true ->
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        update_attrs =
+          attrs
+          |> Map.put("edited_at", now)
+          |> Map.put_new("ciphertext", message.ciphertext)
+          |> Map.put_new("iv", message.iv)
+          |> Map.put_new("content", message.content)
+
+        message
+        |> Message.changeset(update_attrs)
+        |> Repo.update()
+        |> case do
+          {:ok, updated} ->
+            updated = Repo.preload(updated, sender: [:profile], reply_to_message: [sender: [:profile]])
+            broadcast_message_edited(message.conversation_id, updated)
+            {:ok, updated}
+
+          error ->
+            error
+        end
+    end
+  end
+
+  defp within_edit_window?(%Message{inserted_at: inserted_at}) do
+    edit_window_minutes = 15
+    cutoff = DateTime.add(inserted_at, edit_window_minutes, :minute)
+    DateTime.compare(DateTime.utc_now(), cutoff) != :gt
+  end
+
+  @doc """
+  Checks if a message can be edited by the given user.
+  """
+  def can_edit_message?(%Message{sender_id: sender_id, is_deleted: is_deleted, inserted_at: inserted_at}, user_id) do
+    sender_id == user_id &&
+      not is_deleted &&
+      within_edit_window?(%Message{inserted_at: inserted_at})
+  end
+
+  @doc """
+  Checks if a message can be deleted by the given user.
+  """
+  def can_delete_message?(%Message{sender_id: sender_id, is_deleted: is_deleted}, user_id) do
+    sender_id == user_id && not is_deleted
+  end
+
+  @doc """
   Gets the conversation linked to a classroom.
   Returns nil if no classroom chat exists.
   """
@@ -353,6 +467,39 @@ defmodule Medoru.Chat do
     |> where([c], c.classroom_id == ^classroom_id)
     |> preload(participants: [user: :profile])
     |> Repo.one()
+  end
+
+  @doc """
+  Marks a participant as having left a group conversation.
+  """
+  def leave_conversation(conversation_id, user_id) do
+    ConversationParticipant
+    |> where([cp], cp.conversation_id == ^conversation_id and cp.user_id == ^user_id)
+    |> Repo.update_all(set: [has_left: true])
+
+    :ok
+  end
+
+  @doc """
+  Archives a conversation for a user (hides it from their list without deleting data).
+  """
+  def archive_conversation(conversation_id, user_id) do
+    ConversationParticipant
+    |> where([cp], cp.conversation_id == ^conversation_id and cp.user_id == ^user_id)
+    |> Repo.update_all(set: [is_archived: true])
+
+    :ok
+  end
+
+  @doc """
+  Unarchives a conversation for a user.
+  """
+  def unarchive_conversation(conversation_id, user_id) do
+    ConversationParticipant
+    |> where([cp], cp.conversation_id == ^conversation_id and cp.user_id == ^user_id)
+    |> Repo.update_all(set: [is_archived: false])
+
+    :ok
   end
 
   @doc """
@@ -553,6 +700,22 @@ defmodule Medoru.Chat do
     )
   end
 
+  defp broadcast_message_deleted(conversation_id, message_id) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:message_deleted, message_id}
+    )
+  end
+
+  defp broadcast_message_edited(conversation_id, message) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:message_edited, message}
+    )
+  end
+
   @doc """
   Subscribes to a conversation's PubSub topic.
   """
@@ -588,5 +751,45 @@ defmodule Medoru.Chat do
       "chat:#{conversation_id}",
       {:reencrypted_key, target_user_id, encrypted_key_b64}
     )
+  end
+
+  # ============================================================================
+  # Notifications
+  # ============================================================================
+
+  defp maybe_notify_participants(conversation_id, sender_id, _message) do
+    # Get active viewers
+    active_viewers =
+      Presence.list("chat_active:#{conversation_id}")
+      |> Enum.map(fn {user_id, _} -> user_id end)
+      |> MapSet.new()
+
+    # Get conversation participants
+    conversation =
+      Conversation
+      |> Repo.get(conversation_id)
+      |> Repo.preload(participants: [user: :profile])
+
+    if conversation do
+      sender =
+        conversation.participants
+        |> Enum.find(&(&1.user_id == sender_id))
+        |> case do
+          nil -> "Someone"
+          p -> (p.user.profile && p.user.profile.display_name) || p.user.name || "Someone"
+        end
+
+      for participant <- conversation.participants,
+          participant.user_id != sender_id,
+          participant.user_id not in active_viewers do
+        Notifications.notify_chat_message(
+          participant.user_id,
+          sender,
+          conversation_id,
+          conversation.is_group,
+          conversation.title
+        )
+      end
+    end
   end
 end

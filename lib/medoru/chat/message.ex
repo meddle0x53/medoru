@@ -13,6 +13,11 @@ defmodule Medoru.Chat.Message do
     field :iv, :binary
     field :encrypted_at, :utc_datetime
     field :content, :string
+    field :is_deleted, :boolean, default: false
+    field :edited_at, :utc_datetime
+    field :attachment_path, :string
+    field :attachment_type, :string
+    field :duration_seconds, :integer
 
     belongs_to :conversation, Medoru.Chat.Conversation
     belongs_to :sender, Medoru.Accounts.User
@@ -29,6 +34,11 @@ defmodule Medoru.Chat.Message do
       :iv,
       :encrypted_at,
       :content,
+      :is_deleted,
+      :edited_at,
+      :attachment_path,
+      :attachment_type,
+      :duration_seconds,
       :conversation_id,
       :sender_id,
       :reply_to_message_id

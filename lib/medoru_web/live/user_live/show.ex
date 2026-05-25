@@ -8,6 +8,7 @@ defmodule MedoruWeb.UserLive.Show do
   alias Medoru.Gamification
   alias Medoru.Learning
   alias Medoru.Social
+  alias MedoruWeb.Presence
 
   embed_templates "show/*"
 
@@ -62,6 +63,13 @@ defmodule MedoruWeb.UserLive.Show do
                 false
               end
 
+            # Check online status
+            is_online = Presence.list("user_online:#{user.id}") != %{}
+
+            if connected?(socket) do
+              Phoenix.PubSub.subscribe(Medoru.PubSub, "user_online:#{user.id}")
+            end
+
             {:ok,
              socket
              |> assign(:page_title, profile_title(user))
@@ -71,7 +79,8 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:user_badges, user_badges)
              |> assign(:featured_badge, featured_badge)
              |> assign(:daily_test_status, daily_test_status)
-             |> assign(:is_blocked, is_blocked)}
+             |> assign(:is_blocked, is_blocked)
+             |> assign(:is_online, is_online)}
         end
 
       :error ->
@@ -86,6 +95,12 @@ defmodule MedoruWeb.UserLive.Show do
     name = (user.profile && user.profile.display_name) || user.name || gettext("User")
 
     gettext("%{name}'s Profile", name: name)
+  end
+
+  @impl true
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"}, socket) do
+    is_online = Presence.list("user_online:#{socket.assigns.user.id}") != %{}
+    {:noreply, assign(socket, :is_online, is_online)}
   end
 
   @impl true

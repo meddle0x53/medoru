@@ -43,6 +43,8 @@ import GroupChatCreator from "./hooks/group_chat_creator"
 import ClassroomChatInput from "./hooks/classroom_chat_input"
 import ClassroomChatScroll from "./hooks/classroom_chat_scroll"
 import ChatKeyManager from "./hooks/chat_key_manager"
+import ChatVoiceRecorder from "./hooks/chat_voice_recorder"
+import ChatAudioPlayer from "./hooks/chat_audio_player"
 
 // Make KanjiRecognizer available globally for hooks
 import { KanjiWriter, KanjiVGParser } from "../vendor/kanji-recognizer-bundle.js"
@@ -53,7 +55,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager},
+  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer},
 })
 
 // Show progress bar on live navigation and form submits

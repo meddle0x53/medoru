@@ -19,8 +19,7 @@
       <%= for conversation <- @conversations do %>
         <% unread = unread_count(conversation, @current_scope.current_user.id) %>
 
-        <.link
-          navigate={~p"/messages/#{conversation.id}"}
+        <div
           class={[
             "group flex items-center gap-4 p-4 rounded-xl border transition-all",
             if unread > 0 do
@@ -30,52 +29,85 @@
             end
           ]}
         >
-          <%!-- Avatar --%>
-          <%= if avatar = conversation_avatar(conversation, @current_scope.current_user.id) do %>
-            <img
-              src={avatar}
-              alt=""
-              class="w-12 h-12 rounded-full object-cover ring-2 ring-base-200 shrink-0"
-            />
-          <% else %>
-            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200 shrink-0">
-              <%= if conversation.is_group do %>
-                <.icon name="hero-users" class="w-6 h-6 text-primary/50" />
-              <% else %>
-                <.icon name="hero-user" class="w-6 h-6 text-primary/50" />
-              <% end %>
-            </div>
-          <% end %>
+          <% is_classroom = not is_nil(conversation.classroom_id) %>
+          <% is_teacher = is_classroom and conversation.classroom.teacher_id == @current_scope.current_user.id %>
+          <.link
+            navigate={
+              cond do
+                is_teacher -> ~p"/teacher/classrooms/#{conversation.classroom_id}?tab=chat"
+                is_classroom -> ~p"/classrooms/#{conversation.classroom_id}?tab=chat"
+                true -> ~p"/messages/#{conversation.id}"
+              end
+            }
+            class="flex items-center gap-4 flex-1 min-w-0"
+          >
+            <%!-- Avatar --%>
+            <%= if avatar = conversation_avatar(conversation, @current_scope.current_user.id) do %>
+              <img
+                src={avatar}
+                alt=""
+                class="w-12 h-12 rounded-full object-cover ring-2 ring-base-200 shrink-0"
+              />
+            <% else %>
+              <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200 shrink-0">
+                <%= if conversation.is_group do %>
+                  <.icon name="hero-users" class="w-6 h-6 text-primary/50" />
+                <% else %>
+                  <.icon name="hero-user" class="w-6 h-6 text-primary/50" />
+                <% end %>
+              </div>
+            <% end %>
 
-          <%!-- Content --%>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <h3 class={[
-                "font-medium truncate",
-                unread > 0 && "text-base-content"
+            <%!-- Content --%>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <h3 class={[
+                  "font-medium truncate flex items-center gap-1.5",
+                  unread > 0 && "text-base-content"
+                ]}>
+                  {conversation_name(conversation, @current_scope.current_user.id)}
+                  <% other = Chat.get_other_participant(conversation, @current_scope.current_user.id) %>
+                  <%= if other && user_online?(other.user_id, @online_user_ids) do %>
+                    <span class="w-2 h-2 rounded-full bg-success shrink-0" title={gettext("Online")}></span>
+                  <% end %>
+                </h3>
+                <span class="text-xs text-base-content/50 shrink-0 ml-2">
+                  {last_message_time(conversation)}
+                </span>
+              </div>
+              <p class={[
+                "text-sm truncate mt-0.5",
+                unread > 0 && "text-base-content font-medium",
+                unread == 0 && "text-base-content/60"
               ]}>
-                {conversation_name(conversation, @current_scope.current_user.id)}
-              </h3>
-              <span class="text-xs text-base-content/50 shrink-0 ml-2">
-                {last_message_time(conversation)}
-              </span>
+                {last_message_preview(conversation)}
+              </p>
             </div>
-            <p class={[
-              "text-sm truncate mt-0.5",
-              unread > 0 && "text-base-content font-medium",
-              unread == 0 && "text-base-content/60"
-            ]}>
-              {last_message_preview(conversation)}
-            </p>
-          </div>
 
-          <%!-- Unread Badge --%>
-          <%= if unread > 0 do %>
-            <span class="badge badge-primary badge-sm shrink-0">
-              {unread}
-            </span>
+            <%!-- Unread Badge --%>
+            <%= if unread > 0 do %>
+              <span class="badge badge-primary badge-sm shrink-0">
+                {unread}
+              </span>
+            <% end %>
+          </.link>
+
+          <%!-- Actions --%>
+          <%= if not is_classroom do %>
+            <div class="shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <button
+                type="button"
+                phx-click="archive_conversation"
+                phx-value-id={conversation.id}
+                data-confirm={gettext("Delete this conversation? It will be hidden from your list.")}
+                class="p-2 text-base-content/40 hover:text-error transition-colors"
+                title={gettext("Delete conversation")}
+              >
+                <.icon name="hero-trash" class="w-4 h-4" />
+              </button>
+            </div>
           <% end %>
-        </.link>
+        </div>
       <% end %>
     </div>
 

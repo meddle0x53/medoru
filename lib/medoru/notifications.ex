@@ -153,6 +153,25 @@ defmodule Medoru.Notifications do
   end
 
   @doc """
+  Marks all unread chat message notifications for a specific conversation as read.
+
+  ## Examples
+
+      iex> mark_chat_notifications_as_read(user_id, conversation_id)
+      {:ok, count}
+
+  """
+  def mark_chat_notifications_as_read(user_id, conversation_id) do
+    {count, _} =
+      Notification
+      |> where([n], n.user_id == ^user_id and is_nil(n.read_at) and n.type == "chat_message")
+      |> where([n], fragment("?->>'conversation_id' = ?", n.data, ^conversation_id))
+      |> Repo.update_all(set: [read_at: DateTime.utc_now()])
+
+    {:ok, count}
+  end
+
+  @doc """
   Deletes a notification.
 
   ## Examples
@@ -411,6 +430,31 @@ defmodule Medoru.Notifications do
         test_id: test_id,
         test_title: test_title,
         action: "test_published"
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
+  @doc """
+  Creates a notification for a new chat message.
+  """
+  def notify_chat_message(user_id, sender_name, conversation_id, is_group, group_title) do
+    title =
+      if is_group do
+        "#{sender_name} in #{group_title || "Group Chat"}"
+      else
+        sender_name
+      end
+
+    create_notification(%{
+      user_id: user_id,
+      type: "chat_message",
+      title: title,
+      message: "You have a new message",
+      data: %{
+        conversation_id: conversation_id,
+        sender_name: sender_name,
+        is_group: is_group
       }
     })
     |> maybe_broadcast_notification(user_id)

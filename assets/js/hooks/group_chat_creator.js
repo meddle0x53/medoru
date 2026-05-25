@@ -3,7 +3,8 @@ import { CryptoState } from "./chat_crypto"
 const GroupChatCreator = {
   async mounted() {
     // Initialize user key pair if needed
-    const result = await CryptoState.init()
+    const currentUserId = this.el.dataset.currentUserId
+    const result = await CryptoState.init(currentUserId)
     if (result.newKey && result.publicKey) {
       this.pushEvent("register_public_key", { public_key: result.publicKey })
     }

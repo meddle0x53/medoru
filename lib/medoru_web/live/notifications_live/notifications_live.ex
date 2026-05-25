@@ -34,6 +34,13 @@ defmodule MedoruWeb.NotificationsLive do
     notifications = list_notifications(user.id, socket.assigns.filter)
     unread_count = Notifications.count_unread_notifications(user.id)
 
+    # Broadcast update to other LiveViews (dropdown in header)
+    Phoenix.PubSub.broadcast(
+      Medoru.PubSub,
+      "notifications:#{user.id}",
+      {:unread_count_updated, unread_count}
+    )
+
     {:noreply,
      socket
      |> assign(:notifications, notifications)
@@ -48,6 +55,13 @@ defmodule MedoruWeb.NotificationsLive do
 
     # Refresh notifications
     notifications = list_notifications(user.id, socket.assigns.filter)
+
+    # Broadcast update to other LiveViews (dropdown in header)
+    Phoenix.PubSub.broadcast(
+      Medoru.PubSub,
+      "notifications:#{user.id}",
+      {:unread_count_updated, 0}
+    )
 
     {:noreply,
      socket

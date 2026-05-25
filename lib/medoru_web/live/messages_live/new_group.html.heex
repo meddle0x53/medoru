@@ -4,6 +4,7 @@
     id="group-creator"
     phx-hook="GroupChatCreator"
     data-participant-public-keys={Jason.encode!(@participant_public_keys)}
+    data-current-user-id={@current_scope.current_user.id}
   >
     <h1 class="text-2xl font-bold text-base-content mb-6">
       {gettext("New Group Chat")}

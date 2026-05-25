@@ -123,6 +123,18 @@ defmodule MedoruWeb.UsersLiveTest do
       assert html =~ "Member since"
     end
 
+    test "shows online badge when user is online", %{conn: conn} do
+      viewer = user_with_display_name()
+
+      # viewer goes to messages page to track online presence
+      {:ok, _view, _html} = conn |> log_in_user(viewer) |> live(~p"/messages")
+
+      # viewer's own profile shows online badge
+      {:ok, _view, html} = conn |> log_in_user(viewer) |> live(~p"/users/#{viewer.id}")
+
+      assert html =~ "Online"
+    end
+
     test "shows message and block buttons for other users", %{conn: conn} do
       viewer = user_with_display_name()
       target = user_with_display_name(%{display_name: "TargetUser"})

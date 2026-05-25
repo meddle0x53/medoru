@@ -7,6 +7,7 @@ defmodule MedoruWeb.MessagesLive.Index do
 
   alias Medoru.Chat
   alias Medoru.Social
+  alias MedoruWeb.Presence
 
   @impl true
   def mount(_params, session, socket) do
@@ -14,6 +15,12 @@ defmodule MedoruWeb.MessagesLive.Index do
     current_user = socket.assigns.current_scope.current_user
 
     if current_user do
+      if connected?(socket) do
+        Presence.track(self(), "user_online:#{current_user.id}", "online", %{
+          online_at: System.system_time(:second)
+        })
+      end
+
       conversations =
         Chat.list_conversations(current_user.id, limit: 50)
         |> Enum.reject(fn conv ->
@@ -26,10 +33,13 @@ defmodule MedoruWeb.MessagesLive.Index do
           end
         end)
 
+      online_user_ids = build_online_user_ids(conversations, current_user.id)
+
       {:ok,
        socket
        |> assign(:locale, locale)
        |> assign(:conversations, conversations)
+       |> assign(:online_user_ids, online_user_ids)
        |> assign(:page_title, gettext("Messages"))}
     else
       {:ok, push_navigate(socket, to: ~p"/")}
@@ -59,6 +69,31 @@ defmodule MedoruWeb.MessagesLive.Index do
           {:noreply, put_flash(socket, :error, gettext("You cannot message this user."))}
         end
     end
+  end
+
+  @impl true
+  def handle_event("archive_conversation", %{"id" => conversation_id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    Chat.archive_conversation(conversation_id, current_user.id)
+
+    # Refresh the list
+    conversations =
+      Chat.list_conversations(current_user.id, limit: 50)
+      |> Enum.reject(fn conv ->
+        if conv.is_group do
+          false
+        else
+          other = Chat.get_other_participant(conv, current_user.id)
+          other && Social.is_blocked?(current_user.id, other.user_id) == :blocked
+        end
+      end)
+
+    online_user_ids = build_online_user_ids(conversations, current_user.id)
+
+    {:noreply,
+     socket
+     |> assign(:conversations, conversations)
+     |> assign(:online_user_ids, online_user_ids)}
   end
 
   # Helpers for template
@@ -122,5 +157,25 @@ defmodule MedoruWeb.MessagesLive.Index do
     else
       Calendar.strftime(dt, "%b %d")
     end
+  end
+
+  defp build_online_user_ids(conversations, current_user_id) do
+    conversations
+    |> Enum.flat_map(fn conv ->
+      if conv.is_group do
+        []
+      else
+        other = Chat.get_other_participant(conv, current_user_id)
+        if other, do: [other.user_id], else: []
+      end
+    end)
+    |> Enum.uniq()
+    |> Enum.filter(fn user_id ->
+      Presence.list("user_online:#{user_id}") != %{}
+    end)
+  end
+
+  def user_online?(user_id, online_user_ids) do
+    user_id in online_user_ids
   end
 end

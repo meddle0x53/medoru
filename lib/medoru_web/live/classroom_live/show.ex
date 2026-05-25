@@ -41,50 +41,87 @@ defmodule MedoruWeb.ClassroomLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
+    classroom = Classrooms.get_classroom!(id)
 
-    case Classrooms.get_user_membership(id, user.id) do
-      nil ->
-        {:ok,
-         socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
+    cond do
+      classroom.teacher_id == user.id ->
+        members = Classrooms.list_classroom_members(id)
+        published_tests = Classrooms.list_classroom_tests(id, status: :active)
+        user_attempts = Classrooms.list_user_test_attempts(id, user.id)
+        published_games = Games.list_classroom_games(id, status: :published)
+        conversation = Chat.get_classroom_conversation(id)
 
-      membership ->
-        if membership.status != :approved do
-          {:ok,
-           socket
-           |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms")}
-        else
-          classroom = Classrooms.get_classroom!(id)
-          members = Classrooms.list_classroom_members(id)
-          published_tests = Classrooms.list_classroom_tests(id, status: :active)
-          user_attempts = Classrooms.list_user_test_attempts(id, user.id)
-          published_games = Games.list_classroom_games(id, status: :published)
-          conversation = Chat.get_classroom_conversation(id)
+        socket =
+          socket
+          |> assign(:page_title, classroom.name)
+          |> assign(:classroom, classroom)
+          |> assign(:membership, nil)
+          |> assign(:members, members)
+          |> assign(:published_tests, published_tests)
+          |> assign(:user_attempts, user_attempts)
+          |> assign(:published_games, published_games)
+          |> assign(:lessons_filter, :all)
+          |> assign(:lessons_page, 1)
+          |> assign(:lessons_per_page, 10)
+          |> assign(:active_tab, "overview")
+          |> assign(:copy_lesson_modal_open, false)
+          |> assign(:copy_lesson_id, nil)
+          |> assign(:copy_lesson_title, nil)
+          |> assign(:conversation, conversation)
+          |> assign(:chat_messages, [])
+          |> assign(:chat_has_more, false)
+          |> assign(:chat_typing_users, [])
+          |> assign(:reply_to, nil)
+          |> assign(:editing_message, nil)
 
-          socket =
-            socket
-            |> assign(:page_title, classroom.name)
-            |> assign(:classroom, classroom)
-            |> assign(:membership, membership)
-            |> assign(:members, members)
-            |> assign(:published_tests, published_tests)
-            |> assign(:user_attempts, user_attempts)
-            |> assign(:published_games, published_games)
-            |> assign(:lessons_filter, :all)
-            |> assign(:lessons_page, 1)
-            |> assign(:lessons_per_page, 10)
-            |> assign(:active_tab, "overview")
-            |> assign(:copy_lesson_modal_open, false)
-            |> assign(:copy_lesson_id, nil)
-            |> assign(:copy_lesson_title, nil)
-            |> assign(:conversation, conversation)
-            |> assign(:chat_messages, [])
-            |> assign(:chat_has_more, false)
-            |> assign(:chat_typing_users, [])
+        {:ok, socket}
 
-          {:ok, socket}
+      true ->
+        case Classrooms.get_user_membership(id, user.id) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, gettext("You are not a member of this classroom."))
+             |> push_navigate(to: ~p"/classrooms")}
+
+          membership ->
+            if membership.status != :approved do
+              {:ok,
+               socket
+               |> put_flash(:error, gettext("Your membership is pending approval."))
+               |> push_navigate(to: ~p"/classrooms")}
+            else
+              members = Classrooms.list_classroom_members(id)
+              published_tests = Classrooms.list_classroom_tests(id, status: :active)
+              user_attempts = Classrooms.list_user_test_attempts(id, user.id)
+              published_games = Games.list_classroom_games(id, status: :published)
+              conversation = Chat.get_classroom_conversation(id)
+
+              socket =
+                socket
+                |> assign(:page_title, classroom.name)
+                |> assign(:classroom, classroom)
+                |> assign(:membership, membership)
+                |> assign(:members, members)
+                |> assign(:published_tests, published_tests)
+                |> assign(:user_attempts, user_attempts)
+                |> assign(:published_games, published_games)
+                |> assign(:lessons_filter, :all)
+                |> assign(:lessons_page, 1)
+                |> assign(:lessons_per_page, 10)
+                |> assign(:active_tab, "overview")
+                |> assign(:copy_lesson_modal_open, false)
+                |> assign(:copy_lesson_id, nil)
+                |> assign(:copy_lesson_title, nil)
+                |> assign(:conversation, conversation)
+                |> assign(:chat_messages, [])
+                |> assign(:chat_has_more, false)
+                |> assign(:chat_typing_users, [])
+                |> assign(:reply_to, nil)
+                |> assign(:editing_message, nil)
+
+              {:ok, socket}
+            end
         end
     end
   end
@@ -217,15 +254,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
   def handle_event("leave_classroom", _, socket) do
     membership = socket.assigns.membership
 
-    case Classrooms.leave_classroom(membership) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, gettext("You have left the classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
+    if is_nil(membership) do
+      {:noreply, socket}
+    else
+      case Classrooms.leave_classroom(membership) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("You have left the classroom."))
+           |> push_navigate(to: ~p"/classrooms")}
 
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to leave classroom."))}
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to leave classroom."))}
+      end
     end
   end
 
@@ -290,9 +331,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
     trimmed = String.trim(content)
 
     if conversation && trimmed != "" do
-      case Chat.store_plaintext_message(conversation.id, user.id, trimmed) do
+      reply_to = socket.assigns.reply_to
+      opts = if reply_to, do: [reply_to_message_id: reply_to.id], else: []
+
+      case Chat.store_plaintext_message(conversation.id, user.id, trimmed, opts) do
         {:ok, _message} ->
-          {:noreply, socket}
+          {:noreply, assign(socket, :reply_to, nil)}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
@@ -300,6 +344,121 @@ defmodule MedoruWeb.ClassroomLive.Show do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("send_voice_message", %{"audio_base64" => audio_b64, "mime_type" => mime_type, "duration" => duration}, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    reply_to = socket.assigns.reply_to
+
+    uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+    ext =
+      cond do
+        String.contains?(mime_type, "webm") -> ".webm"
+        String.contains?(mime_type, "ogg") -> ".ogg"
+        String.contains?(mime_type, "mp4") -> ".m4a"
+        true -> ".webm"
+      end
+
+    filename = "#{Ecto.UUID.generate()}#{ext}"
+    dest_dir = Path.join(uploads_dir, "voice_messages")
+    File.mkdir_p!(dest_dir)
+    dest_path = Path.join(dest_dir, filename)
+
+    try do
+      File.write!(dest_path, Base.decode64!(audio_b64))
+
+      voice_path = "/uploads/voice_messages/#{filename}"
+
+      opts = [
+        reply_to_message_id: reply_to && reply_to.id,
+        attachment_path: voice_path,
+        attachment_type: "voice",
+        duration_seconds: duration
+      ]
+
+      case Chat.store_plaintext_message(conversation.id, current_user.id, "🎤 Voice message", opts) do
+        {:ok, _message} ->
+          {:noreply, assign(socket, :reply_to, nil)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to send voice message."))}
+      end
+    rescue
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to process voice message."))}
+    end
+  end
+
+  @impl true
+  def handle_event("set_reply", %{"id" => message_id}, socket) do
+    message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
+    {:noreply, assign(socket, :reply_to, message)}
+  end
+
+  @impl true
+  def handle_event("cancel_reply", _params, socket) do
+    {:noreply, assign(socket, :reply_to, nil)}
+  end
+
+  @impl true
+  def handle_event("start_edit", %{"id" => message_id}, socket) do
+    message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
+
+    if message && message.sender_id == socket.assigns.current_scope.current_user.id do
+      {:noreply,
+       socket
+       |> assign(:editing_message, message)
+       |> push_event("start_edit_text", %{text: message.content, message_id: message.id})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply, assign(socket, :editing_message, nil)}
+  end
+
+  @impl true
+  def handle_event("edit_message", %{"content" => content, "message_id" => message_id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Chat.edit_message(message_id, current_user.id, %{"content" => String.trim(content)}) do
+      {:ok, _} ->
+        {:noreply, assign(socket, :editing_message, nil)}
+
+      {:error, :unauthorized} ->
+        {:noreply, put_flash(socket, :error, gettext("You can only edit your own messages."))}
+
+      {:error, :edit_window_expired} ->
+        {:noreply, put_flash(socket, :error, gettext("Message can only be edited within 15 minutes."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to edit message."))}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_message", %{"id" => message_id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Chat.delete_message(message_id, current_user.id) do
+      {:ok, _} -> {:noreply, socket}
+      {:error, _} -> {:noreply, put_flash(socket, :error, gettext("Failed to delete message."))}
+    end
+  end
+
+  @impl true
+  def handle_event("set_typing", %{"typing" => is_typing}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+    if conversation do
+      Chat.set_typing(current_user.id, conversation.id, is_typing)
+    end
+    {:noreply, socket}
   end
 
   @impl true
@@ -339,13 +498,73 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
-  def handle_info({:typing, _user_id, _is_typing}, socket) do
-    {:noreply, socket}
+  def handle_info({:message_deleted, message_id}, socket) do
+    messages =
+      Enum.map(socket.assigns.chat_messages, fn msg ->
+        if msg.id == message_id do
+          %{msg | is_deleted: true}
+        else
+          msg
+        end
+      end)
+
+    {:noreply, assign(socket, :chat_messages, messages)}
   end
 
   @impl true
-  def handle_info({:read_receipt, _user_id, _read_at}, socket) do
-    {:noreply, socket}
+  def handle_info({:message_edited, message}, socket) do
+    message = Medoru.Repo.preload(message, [:sender, :reply_to_message])
+
+    messages =
+      Enum.map(socket.assigns.chat_messages, fn msg ->
+        if msg.id == message.id do
+          message
+        else
+          msg
+        end
+      end)
+
+    {:noreply, assign(socket, :chat_messages, messages)}
+  end
+
+  @impl true
+  def handle_info({:typing, user_id, is_typing}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    typing_users =
+      if user_id != current_user.id do
+        if is_typing do
+          [user_id | socket.assigns.chat_typing_users] |> Enum.uniq()
+        else
+          Enum.reject(socket.assigns.chat_typing_users, &(&1 == user_id))
+        end
+      else
+        socket.assigns.chat_typing_users
+      end
+
+    {:noreply, assign(socket, :chat_typing_users, typing_users)}
+  end
+
+  @impl true
+  def handle_info({:read_receipt, user_id, read_at}, socket) do
+    conversation = socket.assigns.conversation
+
+    if conversation do
+      updated_participants =
+        Enum.map(conversation.participants, fn p ->
+          if p.user_id == user_id do
+            %{p | last_read_at: read_at}
+          else
+            p
+          end
+        end)
+
+      updated_conversation = %{conversation | participants: updated_participants}
+
+      {:noreply, assign(socket, :conversation, updated_conversation)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -372,36 +591,40 @@ defmodule MedoruWeb.ClassroomLive.Show do
               </p>
             </div>
 
-            <button
-              phx-click="leave_classroom"
-              data-confirm={gettext("Are you sure you want to leave this classroom?")}
-              class="btn btn-error btn-outline btn-sm self-start"
-            >
-              <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" /> {gettext("Leave")}
-            </button>
+            <%= if @membership do %>
+              <button
+                phx-click="leave_classroom"
+                data-confirm={gettext("Are you sure you want to leave this classroom?")}
+                class="btn btn-error btn-outline btn-sm self-start"
+              >
+                <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4 mr-1" /> {gettext("Leave")}
+              </button>
+            <% end %>
           </div>
         </div>
 
-        <%!-- My Stats Card --%>
-        <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 sm:mb-8">
-          <div class="card-body p-4 sm:p-6">
-            <div class="flex items-center gap-3 sm:gap-4">
-              <div class="w-12 h-12 sm:w-16 sm:h-16 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
-                <.icon name="hero-trophy" class="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-xs sm:text-sm text-secondary">{gettext("My Points")}</p>
-                <p class="text-2xl sm:text-3xl font-bold text-base-content">{@membership.points}</p>
-              </div>
-              <div class="ml-auto text-right">
-                <p class="text-xs sm:text-sm text-secondary">{gettext("Rank")}</p>
-                <p class="text-xl sm:text-2xl font-bold text-base-content">
-                  #{get_rank(@members, @current_scope.current_user.id)}
-                </p>
+        <%= if @membership do %>
+          <%!-- My Stats Card --%>
+          <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6 sm:mb-8">
+            <div class="card-body p-4 sm:p-6">
+              <div class="flex items-center gap-3 sm:gap-4">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
+                  <.icon name="hero-trophy" class="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                </div>
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm text-secondary">{gettext("My Points")}</p>
+                  <p class="text-2xl sm:text-3xl font-bold text-base-content">{@membership.points}</p>
+                </div>
+                <div class="ml-auto text-right">
+                  <p class="text-xs sm:text-sm text-secondary">{gettext("Rank")}</p>
+                  <p class="text-xl sm:text-2xl font-bold text-base-content">
+                    #{get_rank(@members, @current_scope.current_user.id)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        <% end %>
 
         <%!-- Tabs - Scrollable on mobile --%>
         <div class="border-b border-base-300 mb-6 overflow-x-auto">
@@ -469,6 +692,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 messages={@chat_messages}
                 has_more={@chat_has_more}
                 current_user={@current_scope.current_user}
+                reply_to={@reply_to}
+                editing_message={@editing_message}
+                typing_users={@chat_typing_users}
               />
           <% end %>
         </div>
@@ -1199,15 +1425,18 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :messages, :list, required: true
   attr :has_more, :boolean, required: true
   attr :current_user, :map, required: true
+  attr :reply_to, :any, required: true
+  attr :editing_message, :any, required: true
+  attr :typing_users, :list, required: true
 
   defp chat_tab(assigns) do
     ~H"""
-    <div class="flex flex-col h-[calc(100vh-20rem)] min-h-[400px]">
+    <div class="max-w-2xl mx-auto flex flex-col h-[calc(100vh-20rem)] min-h-[400px]">
       <%= if @conversation do %>
         <%!-- Messages Area --%>
         <div
           id="classroom-chat-messages"
-          class="flex-1 overflow-y-auto px-3 py-2 space-y-1 bg-base-100 rounded-t-xl border border-b-0 border-base-300"
+          class="flex-1 overflow-y-auto px-3 py-2 space-y-1"
           phx-hook="ClassroomChatScroll"
         >
           <%!-- Load More Button --%>
@@ -1226,6 +1455,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           <%= for {message, index} <- Enum.with_index(@messages) do %>
             <% is_me = message.sender_id == @current_user.id %>
             <% is_teacher = message.sender_id == @classroom.teacher_id %>
+            <% is_last_message = index == length(@messages) - 1 %>
             <% show_avatar =
               index == length(@messages) - 1 ||
                 (Enum.at(@messages, index + 1) && Enum.at(@messages, index + 1).sender_id != message.sender_id) %>
@@ -1239,8 +1469,33 @@ defmodule MedoruWeb.ClassroomLive.Show do
               </div>
             <% end %>
 
+            <%!-- Reply Preview --%>
+            <%= if message.reply_to_message do %>
+              <div class={[
+                "flex mb-1",
+                is_me && "justify-end",
+                not is_me && "justify-start"
+              ]}>
+                <div class={[
+                  "max-w-[80%] px-3 py-1.5 rounded-lg text-xs",
+                  "bg-base-200/70 text-base-content/60 border-l-2 border-primary/40"
+                ]}>
+                  <span class="font-medium text-primary/70">
+                    {chat_sender_name(message.reply_to_message.sender, @current_user.id)}
+                  </span>
+                  <span class="truncate block">
+                    <%= if message.reply_to_message.is_deleted do %>
+                      {gettext("This message was deleted")}
+                    <% else %>
+                      {message.reply_to_message.content}
+                    <% end %>
+                  </span>
+                </div>
+              </div>
+            <% end %>
+
             <div class={[
-              "flex group",
+              "flex group/message",
               is_me && "justify-end",
               not is_me && "justify-start"
             ]}>
@@ -1251,25 +1506,25 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       src={avatar}
                       alt=""
                       class={[
-                        "w-6 h-6 rounded-full object-cover mr-1.5 shrink-0 self-end",
+                        "w-7 h-7 rounded-full object-cover mr-1.5 shrink-0 self-end",
                         is_teacher && "ring-2 ring-primary"
                       ]}
                     />
                   <% else %>
                     <div class={[
-                      "w-6 h-6 rounded-full flex items-center justify-center mr-1.5 shrink-0 self-end",
+                      "w-7 h-7 rounded-full flex items-center justify-center mr-1.5 shrink-0 self-end",
                       is_teacher && "bg-primary text-primary-content ring-2 ring-primary",
                       not is_teacher && "bg-primary/10"
                     ]}>
-                      <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
+                      <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
                     </div>
                   <% end %>
                 <% else %>
-                  <div class="w-6 mr-1.5 shrink-0"></div>
+                  <div class="w-7 mr-1.5 shrink-0"></div>
                 <% end %>
               <% end %>
 
-              <div class="flex flex-col max-w-[85%] sm:max-w-[75%]">
+              <div class="flex flex-col max-w-[85%] sm:max-w-[70%]">
                 <%= if not is_me do %>
                   <span class="text-[10px] text-base-content/40 px-1 mb-0.5 flex items-center gap-1">
                     {chat_sender_name(message.sender, @current_user.id)}
@@ -1278,33 +1533,197 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <% end %>
                   </span>
                 <% end %>
-                <div class={[
-                  "px-2.5 py-1 rounded-lg relative border",
-                  is_me && "bg-primary text-primary-content rounded-br-sm border-primary",
-                  not is_me && "bg-accent/15 text-base-content rounded-bl-sm border-accent/30"
-                ]}>
-                  <p class="text-sm leading-tight whitespace-pre-wrap break-words">
-                    {message.content}
-                  </p>
+                <div class="flex items-end gap-1">
+                  <% is_emoji_msg = not is_nil(message.content) && emoji_only?(message.content) && is_nil(message.attachment_type) %>
+                  <div class={[
+                    "message-bubble relative rounded-2xl",
+                    is_emoji_msg && "bg-transparent border-transparent text-base-content",
+                    not is_emoji_msg && is_me && "bg-primary text-primary-content rounded-br-md border border-primary",
+                    not is_emoji_msg && not is_me && "bg-accent/15 text-base-content rounded-bl-md border border-accent/30",
+                    if(message.is_deleted, do: "px-3 py-1.5", else: if(message.attachment_type == "voice", do: "px-3 py-2", else: "px-3 py-1.5"))
+                  ]}>
+                    <%= if message.is_deleted do %>
+                      <p class="text-[15px] leading-snug italic opacity-60">
+                        {gettext("This message was deleted")}
+                      </p>
+                    <% else %>
+                      <%= if message.attachment_type == "voice" && message.attachment_path do %>
+                        <div id={"classroom-audio-#{message.id}"} class="flex items-center gap-2" phx-hook="ChatAudioPlayer" data-src={message.attachment_path} data-duration={message.duration_seconds || 0}>
+                          <button type="button" class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0">
+                            <.icon name="hero-play" class="w-4 h-4 chat-audio-play-icon" />
+                            <.icon name="hero-pause" class="w-4 h-4 chat-audio-pause-icon hidden" />
+                          </button>
+                          <div class="flex-1 min-w-0">
+                            <div class="chat-audio-progress h-1.5 bg-base-300/50 rounded-full overflow-hidden cursor-pointer">
+                              <div class="chat-audio-progress-bar h-full bg-primary rounded-full transition-all duration-100" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between mt-0.5">
+                              <span class="chat-audio-current text-[10px] opacity-70 tabular-nums">0:00</span>
+                              <span class="chat-audio-duration text-[10px] opacity-70 tabular-nums">
+                                {format_audio_duration(message.duration_seconds)}
+                              </span>
+                            </div>
+                          </div>
+                          <audio class="chat-audio-el absolute w-0 h-0 opacity-0" src={message.attachment_path} preload="auto"></audio>
+                        </div>
+                      <% else %>
+                        <%= if is_emoji_msg do %>
+                          <p class="text-4xl leading-none py-1">{message.content}</p>
+                        <% else %>
+                          <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{message.content}</p>
+                        <% end %>
+                      <% end %>
+                    <% end %>
+                  </div>
+                  <div class="relative message-actions shrink-0 self-center">
+                    <button
+                      type="button"
+                      class="message-menu-btn p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                      data-message-id={message.id}
+                    >
+                      <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
+                    </button>
+                    <div
+                      class={[
+                        "message-menu-dropdown hidden absolute z-30 bg-base-100 border border-base-300 rounded-xl shadow-lg py-1 min-w-[120px]",
+                        is_me && "right-0",
+                        not is_me && "left-0"
+                      ]}
+                      data-message-id={message.id}
+                    >
+                      <button
+                        type="button"
+                        phx-click="set_reply"
+                        phx-value-id={message.id}
+                        class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 flex items-center gap-2 transition-colors"
+                      >
+                        <.icon name="hero-arrow-uturn-left" class="w-4 h-4" />
+                        {gettext("Reply")}
+                      </button>
+                      <%= if is_me && not message.is_deleted do %>
+                        <%= if can_edit_message?(message, @current_user.id) do %>
+                          <button
+                            type="button"
+                            phx-click="start_edit"
+                            phx-value-id={message.id}
+                            class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 flex items-center gap-2 transition-colors"
+                          >
+                            <.icon name="hero-pencil" class="w-4 h-4" />
+                            {gettext("Edit")}
+                          </button>
+                        <% end %>
+                        <%= if can_delete_message?(message, @current_user.id) do %>
+                          <button
+                            type="button"
+                            phx-click="delete_message"
+                            phx-value-id={message.id}
+                            data-confirm={gettext("Delete this message?")}
+                            class="w-full px-3 py-2 text-left text-sm hover:bg-base-200 text-error flex items-center gap-2 transition-colors"
+                          >
+                            <.icon name="hero-trash" class="w-4 h-4" />
+                            {gettext("Delete")}
+                          </button>
+                        <% end %>
+                      <% end %>
+                    </div>
+                  </div>
                 </div>
                 <span class={[
-                  "text-[10px] text-base-content/40 mt-0.5 px-1",
-                  is_me && "text-right",
-                  not is_me && "text-left"
+                  "text-[10px] text-base-content/40 mt-0.5 px-1 flex items-center gap-1",
+                  is_me && "justify-end",
+                  not is_me && "justify-start"
                 ]}>
                   {format_message_time(message.inserted_at)}
+                  <%= if message.edited_at do %>
+                    <span class="italic opacity-70">({gettext("edited")})</span>
+                  <% end %>
+                  <%= if is_me && is_last_message && not message.is_deleted do %>
+                    <%= if message_read_by_others?(message, @conversation, @current_user.id) do %>
+                      <span class="text-primary" title={gettext("Read")}>
+                        <.icon name="hero-check" class="w-3 h-3" />
+                        <.icon name="hero-check" class="w-3 h-3 -ml-1.5" />
+                      </span>
+                    <% else %>
+                      <span class="opacity-50" title={gettext("Sent")}>
+                        <.icon name="hero-check" class="w-3 h-3" />
+                      </span>
+                    <% end %>
+                  <% end %>
                 </span>
               </div>
             </div>
           <% end %>
         </div>
 
+        <%!-- Reply Preview Bar --%>
+        <%= if @reply_to do %>
+          <div class="px-4 py-2 bg-base-200/50 border-t border-base-300 flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <p class="text-xs text-base-content/60">
+                {gettext("Replying to")}
+                <span class="font-medium text-base-content">
+                  {chat_sender_name(@reply_to.sender, @current_user.id)}
+                </span>
+              </p>
+              <p class="text-sm text-base-content/80 truncate">
+                <%= if @reply_to.is_deleted do %>
+                  {gettext("This message was deleted")}
+                <% else %>
+                  {@reply_to.content}
+                <% end %>
+              </p>
+            </div>
+            <button
+              type="button"
+              phx-click="cancel_reply"
+              class="p-1 text-base-content/40 hover:text-base-content transition-colors"
+            >
+              <.icon name="hero-x-mark" class="w-4 h-4" />
+            </button>
+          </div>
+        <% end %>
+
+        <%!-- Edit Preview Bar --%>
+        <%= if @editing_message do %>
+          <div class="px-4 py-2 bg-info/5 border-t border-base-300 flex items-center gap-2">
+            <.icon name="hero-pencil" class="w-4 h-4 text-info shrink-0" />
+            <div class="flex-1 min-w-0">
+              <p class="text-xs text-base-content/60">
+                {gettext("Editing message")}
+              </p>
+            </div>
+            <button
+              type="button"
+              phx-click="cancel_edit"
+              class="p-1 text-base-content/40 hover:text-base-content transition-colors"
+            >
+              <.icon name="hero-x-mark" class="w-4 h-4" />
+            </button>
+          </div>
+        <% end %>
+
         <%!-- Input Area --%>
         <div
           id="classroom-chat-input"
-          class="px-4 py-3 border border-base-300 bg-base-100 rounded-b-xl shrink-0"
+          class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative"
           phx-hook="ClassroomChatInput"
         >
+          <%!-- Emoji Picker Panel --%>
+          <div
+            id="classroom-emoji-panel"
+            class="hidden absolute bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-72 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3 z-20 grid grid-cols-6 gap-2"
+          >
+            <%= for emoji <- ~w(😀 😂 ❤️ 👍 🎉 🔥 😊 😭 🙏 ✨ 🥰 🤔 😅 👏 🌸 🍀 ⭐ 💯 🎊 🌟 🎌 🗾 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮) do %>
+              <button
+                type="button"
+                data-emoji={emoji}
+                class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors"
+              >
+                {emoji}
+              </button>
+            <% end %>
+          </div>
+
           <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
             <div class="flex-1 relative">
               <textarea
@@ -1314,14 +1733,56 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
               ></textarea>
             </div>
-            <button
-              id="classroom-chat-send-button"
-              type="button"
-              class="btn btn-primary sm:btn-circle shrink-0"
-            >
-              <.icon name="hero-paper-airplane" class="w-5 h-5" />
-              <span class="sm:hidden">{gettext("Send")}</span>
-            </button>
+            <div class="flex items-center gap-1 shrink-0">
+              <div id="classroom-voice-recorder" phx-hook="ChatVoiceRecorder" class="relative flex items-center">
+                <button
+                  id="chat-voice-button"
+                  type="button"
+                  class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                  title={gettext("Voice message")}
+                >
+                  <.icon name="hero-microphone" class="w-5 h-5" />
+                </button>
+                <button
+                  id="chat-mic-picker-button"
+                  type="button"
+                  class="absolute -top-1 -right-1 w-4 h-4 bg-base-200 hover:bg-primary hover:text-primary-content rounded-full flex items-center justify-center text-[10px] transition-colors"
+                  title={gettext("Select microphone")}
+                >
+                  <.icon name="hero-chevron-down" class="w-3 h-3" />
+                </button>
+                <span
+                  id="chat-voice-status"
+                  class="hidden absolute -top-2 -right-2 bg-error text-error-content text-xs font-bold px-1.5 py-0.5 rounded-full"
+                >
+                  0s
+                </span>
+                <div
+                  id="chat-mic-picker"
+                  class="hidden absolute bottom-12 right-0 w-64 bg-base-100 border border-base-300 rounded-xl shadow-lg p-2 z-20 max-h-48 overflow-y-auto"
+                >
+                  <p class="text-xs text-base-content/60 px-2 py-1 font-medium">
+                    {gettext("Select microphone")}
+                  </p>
+                  <div id="chat-mic-picker-list" class="space-y-1"></div>
+                </div>
+              </div>
+              <button
+                id="classroom-emoji-button"
+                type="button"
+                class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                title={gettext("Emoji")}
+              >
+                <.icon name="hero-face-smile" class="w-5 h-5" />
+              </button>
+              <button
+                id="classroom-chat-send-button"
+                type="button"
+                class="btn btn-primary btn-circle"
+              >
+                <.icon name="hero-paper-airplane" class="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       <% else %>
@@ -1376,6 +1837,36 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp same_day?(%DateTime{} = a, %DateTime{} = b) do
     DateTime.to_date(a) == DateTime.to_date(b)
+  end
+
+  defp can_edit_message?(message, current_user_id) do
+    Chat.can_edit_message?(message, current_user_id)
+  end
+
+  defp can_delete_message?(message, current_user_id) do
+    Chat.can_delete_message?(message, current_user_id)
+  end
+
+  defp message_read_by_others?(message, conversation, current_user_id) do
+    other_participants = Enum.reject(conversation.participants, &(&1.user_id == current_user_id))
+
+    Enum.any?(other_participants, fn participant ->
+      participant.last_read_at && DateTime.compare(participant.last_read_at, message.inserted_at) != :lt
+    end)
+  end
+
+  defp format_audio_duration(nil), do: "0:00"
+  defp format_audio_duration(seconds) when seconds < 60, do: "0:#{String.pad_leading("#{seconds}", 2, "0")}"
+  defp format_audio_duration(seconds) do
+    m = div(seconds, 60)
+    s = rem(seconds, 60)
+    "#{m}:#{String.pad_leading("#{s}", 2, "0")}"
+  end
+
+  defp emoji_only?(nil), do: false
+  defp emoji_only?(text) do
+    trimmed = String.trim(text)
+    trimmed != "" and String.replace(trimmed, ~r/[\s\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1F004}\x{1F0CF}\x{1F170}-\x{1F251}\x{238C}\x{2B50}\x{2B55}\x{2764}\x{2795}-\x{2797}\x{27A1}\x{27B0}\x{27BF}\x{2B05}-\x{2B07}\x{3030}\x{303D}\x{3297}\x{3299}\x{23F0}-\x{23F3}\x{23E9}-\x{23EF}\x{1F18E}\x{00A9}\x{00AE}\x{FE0F}\x{200D}\x{1F3FB}-\x{1F3FF}]/u, "") == ""
   end
 
   defp get_game_status(nil), do: :not_started

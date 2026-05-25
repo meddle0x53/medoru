@@ -433,6 +433,82 @@ defmodule Medoru.ChatTest do
     end
   end
 
+  describe "message deletion" do
+    test "delete_message/2 soft-deletes a message" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+      assert msg.is_deleted == false
+
+      assert {:ok, deleted} = Chat.delete_message(msg.id, user_a.id)
+      assert deleted.is_deleted == true
+    end
+
+    test "delete_message/2 prevents deleting others' messages" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+
+      assert {:error, :unauthorized} = Chat.delete_message(msg.id, user_b.id)
+    end
+
+    test "delete_message/2 returns error for missing message" do
+      user = user_fixture()
+
+      assert {:error, :not_found} = Chat.delete_message(Ecto.UUID.generate(), user.id)
+    end
+  end
+
+  describe "message editing" do
+    test "edit_message/3 updates a message within window" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+
+      assert {:ok, edited} = Chat.edit_message(msg.id, user_a.id, %{"content" => "Hello edited"})
+      assert edited.content == "Hello edited"
+      assert edited.edited_at != nil
+    end
+
+    test "edit_message/3 prevents editing others' messages" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+
+      assert {:error, :unauthorized} = Chat.edit_message(msg.id, user_b.id, %{"content" => "Hacked"})
+    end
+
+    test "edit_message/3 prevents editing deleted messages" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+      Chat.delete_message(msg.id, user_a.id)
+
+      assert {:error, :deleted} = Chat.edit_message(msg.id, user_a.id, %{"content" => "Nope"})
+    end
+
+    test "can_edit_message?/2 checks sender and window" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
+
+      assert Chat.can_edit_message?(msg, user_a.id) == true
+      assert Chat.can_edit_message?(msg, user_b.id) == false
+    end
+  end
+
   describe "pubsub" do
     test "subscribe_to_conversation/1 and unsubscribe_from_conversation/1" do
       user_a = user_fixture()

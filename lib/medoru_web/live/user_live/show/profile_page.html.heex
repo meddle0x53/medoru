@@ -21,9 +21,17 @@
 
           <%!-- User Info --%>
           <div class="flex-1 text-center sm:text-left">
-            <h1 class="text-3xl font-bold text-base-content">
-              {(@profile && @profile.display_name) || @user.name || gettext("Anonymous")}
-            </h1>
+            <div class="flex items-center justify-center sm:justify-start gap-2">
+              <h1 class="text-3xl font-bold text-base-content">
+                {(@profile && @profile.display_name) || @user.name || gettext("Anonymous")}
+              </h1>
+              <%= if @is_online do %>
+                <span class="badge badge-success badge-sm gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-success-content"></span>
+                  {gettext("Online")}
+                </span>
+              <% end %>
+            </div>
             <% current_user = @current_scope[:current_user] %>
             <%= if current_user && (current_user.id == @user.id || current_user.type == "admin") do %>
               <p class="text-base-content/60 mt-1">{@user.email}</p>

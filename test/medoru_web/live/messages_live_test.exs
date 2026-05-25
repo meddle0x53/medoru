@@ -51,6 +51,9 @@ defmodule MedoruWeb.MessagesLiveTest do
       # Block user_b
       Medoru.Social.block_user(user_a.id, user_b.id)
 
+      # Clear any notifications so they don't show user_b's name in the dropdown
+      Medoru.Notifications.mark_all_as_read(user_a.id)
+
       {:ok, _view, html} = conn |> log_in_user(user_a) |> live(~p"/messages")
 
       # Should not show the conversation with blocked user
@@ -94,6 +97,23 @@ defmodule MedoruWeb.MessagesLiveTest do
 
       assert html =~ user_b.profile.display_name
       assert html =~ "Type a message"
+    end
+
+    test "shows online status when other participant is present", %{conn: conn} do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Encryption.store_public_key(user_a.id, <<1>>)
+      Encryption.store_public_key(user_b.id, <<2>>)
+
+      # user_b joins the conversation first
+      {:ok, _view_b, _html_b} = conn |> log_in_user(user_b) |> live(~p"/messages/#{conv.id}")
+
+      # user_a sees user_b as online
+      {:ok, _view_a, html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+
+      assert html =~ "Online"
     end
 
     test "renders group conversation", %{conn: conn} do
