@@ -54,24 +54,10 @@ defmodule MedoruWeb.MessagesLive.Show do
         conversation_key = Chat.get_conversation_key(conversation_id, current_user.id)
         encrypted_key = if conversation_key, do: Base.encode64(conversation_key.encrypted_key)
 
-        # Detect if the user's current public key is newer than the conversation key.
-        # If so, the conversation key was likely encrypted with an older public key
-        # and the user won't be able to decrypt it.
-        key_mismatch =
-          if conversation_key && encrypted_key do
-            current_key = Encryption.get_public_key(current_user.id)
-
-            if current_key do
-              # If conversation key was last updated before current public key was created,
-              # the current key probably can't decrypt it
-              DateTime.compare(conversation_key.updated_at, current_key.inserted_at) == :lt
-            else
-              # No active public key at all — definitely can't decrypt
-              true
-            end
-          else
-            false
-          end
+        # key_mismatch is detected client-side for accuracy.
+        # The server starts with false; ChatCrypto pushes "report_key_mismatch" if
+        # it fails to decrypt the conversation key with the user's current private key.
+        key_mismatch = false
 
         # If this user has a key mismatch (new device/browser), auto-request
         # re-encryption from other online participants
@@ -146,9 +132,17 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     Encryption.store_public_key(current_user.id, public_key_spki)
 
-    # If this user didn't have a key before, they might need the conversation key
-    # re-encrypted for them. For now, we just acknowledge.
+    # After registering a new key, check if this user can decrypt the conversation key.
+    # If a conversation key exists but was encrypted before this new key, they'll need
+    # a re-encryption. We don't auto-detect here — the client will report if decryption fails.
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("report_key_mismatch", _params, socket) do
+    require Logger
+    Logger.debug("[ChatRekey] Client reported key mismatch for user #{socket.assigns.current_scope.current_user.id}")
+    {:noreply, assign(socket, :key_mismatch, true)}
   end
 
   @impl true

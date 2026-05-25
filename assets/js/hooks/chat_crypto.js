@@ -86,7 +86,8 @@ async function encryptConversationKey(aesKey, publicKeyB64) {
 async function decryptConversationKey(encryptedKeyB64, privateKey) {
   const encrypted = b642ab(encryptedKeyB64)
   const raw = await crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, encrypted)
-  return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"])
+  // Import as extractable so the key can be re-exported and re-encrypted for other users
+  return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, true, ["encrypt", "decrypt"])
 }
 
 // --- Message encryption ---
@@ -212,8 +213,11 @@ const ChatCrypto = {
 
     // Initialize user key pair
     const result = await CryptoState.init(currentUserId)
-    if ((result.newKey || result.migrated) && result.publicKey) {
-      this.pushEvent("register_public_key", { public_key: result.publicKey })
+    this._needsRegistration = (result.newKey || result.migrated) && result.publicKey ? result.publicKey : null
+
+    if (this._needsRegistration) {
+      // Try immediately; if socket isn't connected yet, updated() will retry
+      this.pushEvent("register_public_key", { public_key: this._needsRegistration })
     }
 
     // Parse participant public keys from data attribute
@@ -228,6 +232,8 @@ const ChatCrypto = {
         await this.decryptAll()
       } catch (e) {
         console.error("[ChatCrypto] Failed to decrypt conversation key:", e)
+        // Tell server to show the re-key banner since we can't decrypt
+        this.pushEvent("report_key_mismatch", {})
       }
     }
 
@@ -330,6 +336,12 @@ const ChatCrypto = {
   },
 
   async updated() {
+    // Retry registration if mounted() tried before socket was connected
+    if (this._needsRegistration) {
+      this.pushEvent("register_public_key", { public_key: this._needsRegistration })
+      this._needsRegistration = null
+    }
+
     if (CryptoState.conversationKeys.has(this.convId)) {
       await this.decryptAll()
     }
