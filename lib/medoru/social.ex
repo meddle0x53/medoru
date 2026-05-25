@@ -17,7 +17,7 @@ defmodule Medoru.Social do
 
   @doc """
   Lists users for the public directory.
-  Only users with a display_name set are shown.
+  Users with a display_name or OAuth name are shown.
   Blocked users are filtered out.
   """
   def list_users(viewer_id \\ nil, opts \\ []) do
@@ -26,8 +26,11 @@ defmodule Medoru.Social do
 
     query =
       User
-      |> join(:inner, [u], p in assoc(u, :profile))
-      |> where([u, p], not is_nil(p.display_name) and p.display_name != "")
+      |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u, p],
+        (not is_nil(p.display_name) and p.display_name != "") or
+        (not is_nil(u.name) and u.name != "")
+      )
       |> preload([:profile, :stats])
       |> order_by([u], desc: u.inserted_at)
 
@@ -40,8 +43,7 @@ defmodule Medoru.Social do
   end
 
   @doc """
-  Searches users by display name using PostgreSQL trigram similarity.
-  Only users with a display_name set are searchable.
+  Searches users by display name or OAuth name.
   Blocked users are filtered out.
   """
   def search_users(query_term, viewer_id \\ nil, opts \\ []) do
@@ -50,9 +52,15 @@ defmodule Medoru.Social do
 
     search_query =
       User
-      |> join(:inner, [u], p in assoc(u, :profile))
-      |> where([u, p], not is_nil(p.display_name) and p.display_name != "")
-      |> where([u, p], ilike(p.display_name, ^"%#{query_term}%"))
+      |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u, p],
+        (not is_nil(p.display_name) and p.display_name != "") or
+        (not is_nil(u.name) and u.name != "")
+      )
+      |> where([u, p],
+        ilike(p.display_name, ^"%#{query_term}%") or
+        ilike(u.name, ^"%#{query_term}%")
+      )
       |> preload([:profile, :stats])
       |> order_by([u, p], asc: p.display_name)
 
@@ -70,8 +78,11 @@ defmodule Medoru.Social do
   def count_users(viewer_id \\ nil) do
     query =
       User
-      |> join(:inner, [u], p in assoc(u, :profile))
-      |> where([u, p], not is_nil(p.display_name) and p.display_name != "")
+      |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u, p],
+        (not is_nil(p.display_name) and p.display_name != "") or
+        (not is_nil(u.name) and u.name != "")
+      )
 
     query = filter_blocked_users(query, viewer_id)
     Repo.aggregate(query, :count, :id)
@@ -83,9 +94,15 @@ defmodule Medoru.Social do
   def count_search_users(query_term, viewer_id \\ nil) do
     search_query =
       User
-      |> join(:inner, [u], p in assoc(u, :profile))
-      |> where([u, p], not is_nil(p.display_name) and p.display_name != "")
-      |> where([u, p], ilike(p.display_name, ^"%#{query_term}%"))
+      |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u, p],
+        (not is_nil(p.display_name) and p.display_name != "") or
+        (not is_nil(u.name) and u.name != "")
+      )
+      |> where([u, p],
+        ilike(p.display_name, ^"%#{query_term}%") or
+        ilike(u.name, ^"%#{query_term}%")
+      )
 
     search_query = filter_blocked_users(search_query, viewer_id)
     Repo.aggregate(search_query, :count, :id)

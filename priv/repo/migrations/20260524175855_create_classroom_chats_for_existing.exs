@@ -4,7 +4,7 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
   import Ecto.Query
 
   alias Medoru.Repo
-  alias Medoru.Chat.{Conversation, ConversationParticipant}
+  alias Medoru.Chat.Conversation
   alias Medoru.Classrooms.{Classroom, ClassroomMembership}
 
   def up do
@@ -33,13 +33,17 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         |> Repo.insert()
 
       # Add teacher as participant
-      %ConversationParticipant{}
-      |> Ecto.Changeset.change(%{
+      # Use raw insert_all to avoid schema defaults for columns that don't exist yet
+      Repo.insert_all("conversation_participants", [%{
+        id: Ecto.UUID.generate(),
         conversation_id: conversation.id,
         user_id: classroom.teacher_id,
-        joined_at: classroom.inserted_at || now
-      })
-      |> Repo.insert!()
+        joined_at: (classroom.inserted_at || now) |> DateTime.to_naive(),
+        has_left: false,
+        is_typing: false,
+        inserted_at: now |> DateTime.to_naive(),
+        updated_at: now |> DateTime.to_naive()
+      }])
 
       # Add all approved members as participants
       approved_members =
@@ -50,13 +54,16 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         )
 
       for member <- approved_members do
-        %ConversationParticipant{}
-        |> Ecto.Changeset.change(%{
+        Repo.insert_all("conversation_participants", [%{
+          id: Ecto.UUID.generate(),
           conversation_id: conversation.id,
           user_id: member.user_id,
-          joined_at: member.joined_at || member.inserted_at || now
-        })
-        |> Repo.insert!()
+          joined_at: (member.joined_at || member.inserted_at || now) |> DateTime.to_naive(),
+          has_left: false,
+          is_typing: false,
+          inserted_at: now |> DateTime.to_naive(),
+          updated_at: now |> DateTime.to_naive()
+        }])
       end
     end
   end

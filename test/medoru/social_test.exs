@@ -15,13 +15,14 @@ defmodule Medoru.SocialTest do
   end
 
   describe "user directory" do
-    test "list_users/2 returns users with display names" do
+    test "list_users/2 returns users with display names or OAuth names" do
       user_with_profile_fixture()
       user_with_profile_fixture()
-      user_fixture(%{name: "No Profile"})
+      user_fixture(%{name: "Named User"})
+      user_fixture(%{name: nil})
 
       users = Social.list_users()
-      assert length(users) == 2
+      assert length(users) == 3
     end
 
     test "list_users/2 excludes blocked users" do
@@ -69,9 +70,10 @@ defmodule Medoru.SocialTest do
     test "count_users/1 returns total directory count" do
       user_with_profile_fixture()
       user_with_profile_fixture()
-      user_fixture()
+      user_fixture(%{name: "Named User"})
+      user_fixture(%{name: nil})
 
-      assert Social.count_users() == 2
+      assert Social.count_users() == 3
     end
 
     test "count_search_users/2 returns search result count" do
