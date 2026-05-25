@@ -11,6 +11,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.Chat
   alias Medoru.Social
   alias Medoru.Encryption
+  alias Medoru.Notifications
   alias MedoruWeb.Presence
 
   @per_page 20
@@ -98,6 +99,16 @@ defmodule MedoruWeb.MessagesLive.Show do
           Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
         end
 
+        # If this user has no conversation key but others do, request re-encryption.
+        # This handles the case where another participant registered their key
+        # while this user was offline.
+        if connected?(socket) && is_nil(conversation_key) && missing_keys == [] do
+          other_keys = Chat.list_conversation_keys(conversation_id)
+          if other_keys != [] do
+            Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+          end
+        end
+
         messages = Chat.list_messages(conversation_id, limit: @per_page)
         has_more = length(messages) == @per_page
 
@@ -167,10 +178,25 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     Encryption.store_public_key(current_user.id, public_key_spki)
 
-    # After registering a new key, check if this user can decrypt the conversation key.
-    # If a conversation key exists but was encrypted before this new key, they'll need
-    # a re-encryption. We don't auto-detect here — the client will report if decryption fails.
-    {:noreply, socket}
+    conversation = socket.assigns.conversation
+
+    # Update missing_keys since this user now has a registered key
+    missing_keys = Enum.reject(socket.assigns.missing_keys, &(&1 == current_user.id))
+
+    # If this user was previously missing from the conversation key,
+    # ask other online participants to re-encrypt for them.
+    if connected?(socket) do
+      Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+
+      # Notify other participants that this user now has a key so they can update UI
+      Phoenix.PubSub.broadcast(
+        Medoru.PubSub,
+        "chat:#{conversation.id}",
+        {:participant_key_registered, current_user.id}
+      )
+    end
+
+    {:noreply, assign(socket, :missing_keys, missing_keys)}
   end
 
   @impl true
@@ -178,6 +204,26 @@ defmodule MedoruWeb.MessagesLive.Show do
     require Logger
     Logger.debug("[ChatRekey] Client reported key mismatch for user #{socket.assigns.current_scope.current_user.id}")
     {:noreply, assign(socket, :key_mismatch, true)}
+  end
+
+  @impl true
+  def handle_event("send_chat_invitation", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+    missing_keys = socket.assigns.missing_keys
+
+    sender_name =
+      (current_user.profile && current_user.profile.display_name) ||
+        current_user.name || gettext("Someone")
+
+    for user_id <- missing_keys do
+      Notifications.notify_chat_invitation(user_id, sender_name, conversation.id)
+    end
+
+    {:noreply,
+     socket
+     |> assign(:invitation_sent, true)
+     |> put_flash(:info, gettext("Invitation sent. You'll be able to chat once they set up encryption."))}
   end
 
   @impl true
@@ -209,28 +255,38 @@ defmodule MedoruWeb.MessagesLive.Show do
 
   @impl true
   def handle_event("ensure_conversation_key", _params, socket) do
-    if socket.assigns.missing_keys != [] do
+    conversation_id = socket.assigns.conversation.id
+    current_user_id = socket.assigns.current_scope.current_user.id
+
+    existing = Chat.get_conversation_key(conversation_id, current_user_id)
+
+    if existing do
       {:noreply,
-       push_event(socket, "encryption_error", %{
-         message: gettext("Some participants haven't set up encryption yet.")
+       push_event(socket, "conversation_key", %{
+         encrypted_key: Base.encode64(existing.encrypted_key)
        })}
     else
-      conversation_id = socket.assigns.conversation.id
-      current_user_id = socket.assigns.current_scope.current_user.id
+      other_keys = Chat.list_conversation_keys(conversation_id)
 
-      existing = Chat.get_conversation_key(conversation_id, current_user_id)
+      cond do
+        other_keys != [] ->
+          # A shared key exists for other participants but not yet for this user.
+          # Re-encryption is in progress (triggered by register_public_key or mount).
+          # The client will receive the key via the conversation_key event shortly.
+          {:noreply, socket}
 
-      if existing do
-        {:noreply,
-         push_event(socket, "conversation_key", %{
-           encrypted_key: Base.encode64(existing.encrypted_key)
-         })}
-      else
-        # Send participant public keys so client can create and encrypt the key
-        {:noreply,
-         push_event(socket, "create_conversation_key", %{
-           participant_public_keys: socket.assigns.participant_public_keys
-         })}
+        socket.assigns.missing_keys != [] ->
+          {:noreply,
+           push_event(socket, "encryption_error", %{
+             message: gettext("Some participants haven't set up encryption yet.")
+           })}
+
+        true ->
+          # No keys exist at all — this user is the first to create the shared key
+          {:noreply,
+           push_event(socket, "create_conversation_key", %{
+             participant_public_keys: socket.assigns.participant_public_keys
+           })}
       end
     end
   end
@@ -468,6 +524,12 @@ defmodule MedoruWeb.MessagesLive.Show do
         Logger.warning("[ChatRekey] Failed to store re-encrypted key: #{inspect(reason)}")
         {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
     end
+  end
+
+  @impl true
+  def handle_info({:participant_key_registered, user_id}, socket) do
+    missing_keys = Enum.reject(socket.assigns.missing_keys, &(&1 == user_id))
+    {:noreply, assign(socket, :missing_keys, missing_keys)}
   end
 
   @impl true

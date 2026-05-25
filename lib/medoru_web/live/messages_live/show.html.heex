@@ -456,8 +456,23 @@
           <div class="px-4 py-4 border-t border-base-300 bg-warning/5 text-center">
             <p class="text-sm text-warning">
               <.icon name="hero-exclamation-triangle" class="w-4 h-4 inline mr-1" />
-              {gettext("Some participants haven't set up encryption yet. Messages cannot be sent until all participants have encryption keys.")}
+              <%= if length(@missing_keys) == 1 && not @conversation.is_group do %>
+                <% missing_user = Enum.find(@conversation.participants, &(&1.user_id == hd(@missing_keys))) %>
+                {gettext("%{name} hasn't set up encryption yet.", name: participant_name(missing_user))}
+              <% else %>
+                {gettext("Some participants haven't set up encryption yet. Messages cannot be sent until all participants have encryption keys.")}
+              <% end %>
             </p>
+            <%= if not @conversation.is_group && not Map.get(assigns, :invitation_sent, false) do %>
+              <button
+                type="button"
+                phx-click="send_chat_invitation"
+                class="btn btn-sm btn-primary mt-3"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4 mr-1" />
+                {gettext("Send chat invitation")}
+              </button>
+            <% end %>
           </div>
         <% else %>
           <%= if @is_blocked do %>

@@ -460,6 +460,23 @@ defmodule Medoru.Notifications do
     |> maybe_broadcast_notification(user_id)
   end
 
+  @doc """
+  Creates a notification inviting a user to set up encryption for a chat.
+  """
+  def notify_chat_invitation(user_id, sender_name, conversation_id) do
+    create_notification(%{
+      user_id: user_id,
+      type: "chat_invite",
+      title: "💬 #{sender_name} wants to chat",
+      message: "Tap to open the conversation and set up encryption.",
+      data: %{
+        conversation_id: conversation_id,
+        sender_name: sender_name
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
   defp maybe_broadcast_notification({:ok, notification}, user_id) do
     Phoenix.PubSub.broadcast(
       Medoru.PubSub,

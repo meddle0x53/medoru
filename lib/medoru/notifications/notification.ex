@@ -28,7 +28,7 @@ defmodule Medoru.Notifications.Notification do
     |> validate_required([:user_id, :type, :title, :message])
     |> validate_inclusion(
       :type,
-      ~w(badge_earned streak_milestone lesson_complete daily_reminder classroom classroom_lesson classroom_test chat_message)
+      ~w(badge_earned streak_milestone lesson_complete daily_reminder classroom classroom_lesson classroom_test chat_message chat_invite)
     )
     |> foreign_key_constraint(:user_id)
   end
