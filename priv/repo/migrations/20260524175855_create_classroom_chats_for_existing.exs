@@ -4,7 +4,7 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
   import Ecto.Query
 
   alias Medoru.Repo
-  alias Medoru.Chat.Conversation
+  alias Medoru.Chat.{Conversation, ConversationParticipant}
   alias Medoru.Classrooms.{Classroom, ClassroomMembership}
 
   def up do
@@ -33,16 +33,17 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         |> Repo.insert()
 
       # Add teacher as participant
-      # Use raw insert_all to avoid schema defaults for columns that don't exist yet
-      Repo.insert_all("conversation_participants", [%{
+      # Use insert_all with schema module (not raw table name) so UUIDs are encoded properly,
+      # but we only pass the columns that exist at this point in time.
+      Repo.insert_all(ConversationParticipant, [%{
         id: Ecto.UUID.generate(),
         conversation_id: conversation.id,
         user_id: classroom.teacher_id,
-        joined_at: (classroom.inserted_at || now) |> DateTime.to_naive(),
+        joined_at: classroom.inserted_at || now,
         has_left: false,
         is_typing: false,
-        inserted_at: now |> DateTime.to_naive(),
-        updated_at: now |> DateTime.to_naive()
+        inserted_at: now,
+        updated_at: now
       }])
 
       # Add all approved members as participants
@@ -54,15 +55,15 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         )
 
       for member <- approved_members do
-        Repo.insert_all("conversation_participants", [%{
+        Repo.insert_all(ConversationParticipant, [%{
           id: Ecto.UUID.generate(),
           conversation_id: conversation.id,
           user_id: member.user_id,
-          joined_at: (member.joined_at || member.inserted_at || now) |> DateTime.to_naive(),
+          joined_at: member.joined_at || member.inserted_at || now,
           has_left: false,
           is_typing: false,
-          inserted_at: now |> DateTime.to_naive(),
-          updated_at: now |> DateTime.to_naive()
+          inserted_at: now,
+          updated_at: now
         }])
       end
     end
