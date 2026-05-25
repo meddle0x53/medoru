@@ -440,40 +440,40 @@ defmodule MedoruWeb.Layouts do
             </li>
 
             <%!-- Notifications Dropdown --%>
-            <li class="dropdown dropdown-end">
-              <div
-                tabindex="0"
-                role="button"
-                class="btn btn-ghost btn-sm sm:btn-md btn-circle relative touch-target"
-              >
-                <.icon name="hero-bell" class="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
-                <%= if @current_scope.unread_count > 0 do %>
-                  <span class="badge badge-xs badge-error absolute -top-1 -right-1">
-                    {@current_scope.unread_count}
-                  </span>
-                <% end %>
-              </div>
-              <div
-                tabindex="0"
-                class="dropdown-content z-[1] bg-base-100 rounded-xl w-80 mt-2 border border-base-300 shadow-lg"
-              >
-                <%= if @socket do %>
-                  {live_render(
-                    @socket,
-                    MedoruWeb.NotificationDropdownLive,
-                    id: "notification-dropdown",
-                    session: %{"user_id" => @current_scope.current_user.id}
-                  )}
-                <% else %>
-                  <%!-- Static fallback for controller contexts --%>
+            <%= if @socket do %>
+              {live_render(
+                @socket,
+                MedoruWeb.NotificationDropdownLive,
+                id: "notification-dropdown",
+                container: {:li, class: "dropdown dropdown-end dropdown-bottom"},
+                session: %{"user_id" => @current_scope.current_user.id}
+              )}
+            <% else %>
+              <li class="dropdown dropdown-end">
+                <div
+                  tabindex="0"
+                  role="button"
+                  class="btn btn-ghost btn-sm sm:btn-md btn-circle relative touch-target"
+                >
+                  <.icon name="hero-bell" class="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
+                  <%= if @current_scope.unread_count > 0 do %>
+                    <span class="badge badge-xs badge-error absolute -top-1 -right-1">
+                      {@current_scope.unread_count}
+                    </span>
+                  <% end %>
+                </div>
+                <div
+                  tabindex="0"
+                  class="dropdown-content z-[1] bg-base-100 rounded-xl w-80 mt-2 border border-base-300 shadow-lg"
+                >
                   <div class="py-4 text-center">
                     <.link navigate={~p"/notifications"} class="text-primary hover:underline">
                       {gettext("View all")} →
                     </.link>
                   </div>
-                <% end %>
-              </div>
-            </li>
+                </div>
+              </li>
+            <% end %>
 
             <%!-- User Dropdown --%>
             <li class="dropdown dropdown-end ml-2 pl-2 sm:ml-4 sm:pl-4 border-l border-base-300">

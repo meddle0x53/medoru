@@ -10,6 +10,10 @@ defmodule MedoruWeb.NotificationsLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
 
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Medoru.PubSub, "notifications:#{user.id}")
+    end
+
     notifications = Notifications.list_notifications(user.id, limit: 50)
     unread_count = Notifications.count_unread_notifications(user.id)
 
@@ -86,6 +90,30 @@ defmodule MedoruWeb.NotificationsLive do
 
   defp list_notifications(user_id, "all") do
     Notifications.list_notifications(user_id, limit: 50)
+  end
+
+  @impl true
+  def handle_info({:unread_count_updated, _count}, socket) do
+    user = socket.assigns.current_scope.current_user
+    notifications = list_notifications(user.id, socket.assigns.filter)
+    unread_count = Notifications.count_unread_notifications(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:notifications, notifications)
+     |> assign(:unread_count, unread_count)}
+  end
+
+  @impl true
+  def handle_info({:new_notification, _notification}, socket) do
+    user = socket.assigns.current_scope.current_user
+    notifications = list_notifications(user.id, socket.assigns.filter)
+    unread_count = Notifications.count_unread_notifications(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:notifications, notifications)
+     |> assign(:unread_count, unread_count)}
   end
 
   defp list_notifications(user_id, type) do

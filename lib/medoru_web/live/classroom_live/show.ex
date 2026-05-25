@@ -195,6 +195,23 @@ defmodule MedoruWeb.ClassroomLive.Show do
       if connected?(socket) do
         Chat.subscribe_to_conversation(conversation.id)
         Chat.mark_read(socket.assigns.current_scope.current_user.id, conversation.id)
+
+        # Mark chat notifications for this conversation as read
+        {:ok, _} = Medoru.Notifications.mark_chat_notifications_as_read(
+          socket.assigns.current_scope.current_user.id,
+          conversation.id
+        )
+
+        # Broadcast notification count update to dropdown
+        unread_count = Medoru.Notifications.count_unread_notifications(
+          socket.assigns.current_scope.current_user.id
+        )
+
+        Phoenix.PubSub.broadcast(
+          Medoru.PubSub,
+          "notifications:#{socket.assigns.current_scope.current_user.id}",
+          {:unread_count_updated, unread_count}
+        )
       end
 
       messages = Chat.list_messages(conversation.id, limit: @chat_message_limit)
