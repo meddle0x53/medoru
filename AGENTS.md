@@ -3,8 +3,8 @@
 ## Current State
 
 **Version**: 0.1.9 🔄 IN PROGRESS  
-**Status**: Chat, messaging, user directory, and group E2EE encryption  
-**Tests**: 782 passing  
+**Status**: Chat invitation flow, messaging polish, user directory fixes, production migration fixes  
+**Tests**: 891 passing  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.1.9) — Chat, User Directory & End-to-End Encryption
@@ -32,9 +32,18 @@
   - Messages encrypted/decrypted client-side; server stores only ciphertext + IV
   - First sender generates and distributes the conversation key
   - Missing-key detection disables messaging until all participants register RSA keys
-  - Old ECDH keys migrated to legacy status and ignored by new system
+  - **Chat Invitation Flow**: User can send notification invitation when other participant hasn't set up encryption yet; recipient clicks notification → generates keys → auto-re-encryption by online participant
+  - Auto-re-encryption on mount when user lacks conversation key but others have it
+  - `ensure_conversation_key` fixed to not push `create_conversation_key` when keys exist for other participants
 - **Mobile Reply**: Reply button always visible on mobile (`<sm`), hover-only on desktop
 - **Navigation updates**: Added "Users" and "Messages" links to desktop nav and mobile drawer
+- **User Directory Fix**: `/users` now shows users with OAuth `name` even if they haven't set a `display_name` (left join on profiles instead of inner join)
+- **Production Migration Fix**: `CreateClassroomChatsForExisting` migration rewritten to use `insert_all` with schema module, avoiding `is_archived` column that didn't exist at migration time
+- **Notification Real-time Badge**: Bell icon + unread count moved into `NotificationDropdownLive` so badge updates with dropdown via PubSub
+- **Chat Entry Clears Notifications**: Entering a chat room marks all chat notifications for that conversation as read and broadcasts updated count
+- **Classroom Chats in /messages**: Conversation list preloads classroom, routes to classroom chat tab, archive button hidden for classroom chats
+- **Teacher Classroom Chat Access**: Teachers can view classroom chat without membership (membership nil, leave button hidden)
+- **Classroom Chat Bubble Size**: Fixed HEEx whitespace causing extra line box with `whitespace-pre-wrap`
 
 ### What's Complete (v0.1.8) — Grammar Lessons + Kana Cascade Polish & Navigation
 - **"du" accepted for づ/ヅ**: `kana_romaji_list/1` returns `["zu", "du"]`; exact match and prefix check both support multiple romaji
@@ -220,25 +229,33 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 
 ## Version History
 
-### v0.1.9 - Chat & User Directory (2026-05-24)
+### v0.1.9 - Chat & User Directory (2026-05-24 → 2026-05-25)
 **Status**: 🔄 IN PROGRESS
 
 **Features:**
 - User Directory (`/users`): Searchable public directory of learners with profiles
+  - Now includes users with OAuth `name` even without `display_name` set
 - User Blocking: Block/unblock users, bidirectional enforcement
 - 1:1 Messaging (`/messages`): Direct conversations with real-time PubSub
 - Group Chat: Multi-user conversations with group names
 - End-to-End Encryption: RSA-OAEP 2048 + AES-256-GCM shared conversation keys
+  - **Chat Invitation Flow**: Send notification invitation when participant missing encryption keys
+  - Auto-re-encryption on key registration and on mount (handles offline→online transitions)
+  - `ensure_conversation_key` race condition fixed
 - Mobile reply buttons, read receipts, typing indicators, reply-to-message
+- Notifications: Real-time unread badge, chat notifications auto-cleared on entry
+- Classroom chats accessible from `/messages` with proper routing
 
 **Routes:** `/users`, `/messages`, `/messages/new-group`, `/settings/blocks`
 
 **Key Technical Changes:**
-- Migrations: `conversations` (group fields), `conversation_keys` (encrypted AES keys), `conversation_participants` (joined_at)
+- Migrations: `conversations` (group fields), `conversation_keys` (encrypted AES keys), `conversation_participants` (joined_at, is_archived)
 - New schemas: `ConversationKey`, updated `Conversation` with `is_group`/`title`
 - New JS hooks: `ChatCrypto` (RSA/AES encryption), `ChatInput`, `GroupChatCreator`
 - Contexts: `Medoru.Chat` (group support), `Medoru.Social` (blocking), `Medoru.Encryption` (RSA public keys)
 - Presence tracking via `MedoruWeb.Presence`
+- `Notifications.notify_chat_invitation/3` for invitation notifications
+- `MessagesLive.Show` handles `send_chat_invitation`, `participant_key_registered`, and auto-re-encryption
 
 ---
 
@@ -357,6 +374,14 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Reduced validation time from 2500ms+ to ~50ms per sentence
 - Cache key structure: `{:conjugation, text, word_type, allowed_forms, field_type}`
 - Lazy loading per word type
+
+### 2026-05-25 - v0.1.9 Progress
+- **Chat Invitation Flow**: Notification-based invitation for users missing encryption keys; auto-re-encryption on key registration
+- **User Directory Fix**: Show OAuth names when display_name unset; 22 production users now visible
+- **Production Migration Fix**: `CreateClassroomChatsForExisting` UUID encoding and `is_archived` column ordering fixed
+- **Classroom Chat Polish**: Bubble size, teacher access, routing from /messages
+- **Notification Badge Real-time**: Unread counter updates live via PubSub
+- **Chat Clears Notifications**: Entering chat marks related notifications read
 
 ### 2026-03-20 - v0.1.2 Complete
 - Daily test preferences
