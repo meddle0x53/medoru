@@ -120,27 +120,40 @@ defmodule MedoruWeb.NotificationDropdownLive do
 
   @impl true
   def handle_event("mark_read", %{"id" => notification_id}, socket) do
-    notification = Notifications.get_user_notification(socket.assigns.user_id, notification_id)
+    user_id = socket.assigns.user_id
+    notification = Notifications.get_user_notification(user_id, notification_id)
 
     if notification do
       Notifications.mark_as_read(notification)
     end
 
     # Refresh notifications
-    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, limit: 5)
-    unread_count = Notifications.count_unread_notifications(socket.assigns.user_id)
+    notifications = Notifications.list_unread_notifications(user_id, limit: 5)
+    unread_count = Notifications.count_unread_notifications(user_id)
 
     # Broadcast update to other LiveViews
     Phoenix.PubSub.broadcast(
       Medoru.PubSub,
-      "notifications:#{socket.assigns.user_id}",
+      "notifications:#{user_id}",
       {:unread_count_updated, unread_count}
     )
 
-    {:noreply,
-     socket
-     |> assign(:notifications, notifications)
-     |> assign(:unread_count, unread_count)}
+    socket =
+      socket
+      |> assign(:notifications, notifications)
+      |> assign(:unread_count, unread_count)
+
+    # Navigate to chat for chat notifications
+    case notification do
+      %{type: "chat_message", data: %{"conversation_id" => cid}} ->
+        {:noreply, push_navigate(socket, to: ~p"/messages/#{cid}")}
+
+      %{type: "chat_invite", data: %{"conversation_id" => cid}} ->
+        {:noreply, push_navigate(socket, to: ~p"/messages/#{cid}")}
+
+      _ ->
+        {:noreply, socket}
+    end
   end
 
   @impl true

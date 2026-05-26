@@ -161,6 +161,17 @@
                           )}
                         </.link>
                       </div>
+                    <% (notification.type == "chat_message" || notification.type == "chat_invite") && notification.data["conversation_id"] -> %>
+                      <div class="mt-3">
+                        <.link
+                          navigate={~p"/messages/#{notification.data["conversation_id"]}"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-chat-bubble-left" class="w-3 h-3 mr-1" /> {gettext(
+                            "Open Chat"
+                          )}
+                        </.link>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>

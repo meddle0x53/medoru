@@ -145,6 +145,12 @@ defmodule MedoruWeb.NotificationsLive do
   def icon_bg_class("daily_reminder"),
     do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
 
+  def icon_bg_class("chat_message"),
+    do: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+
+  def icon_bg_class("chat_invite"),
+    do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+
   def icon_bg_class(_), do: "bg-base-200 text-base-content"
 
   def format_time(datetime) do
