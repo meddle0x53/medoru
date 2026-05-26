@@ -153,6 +153,15 @@ window.addEventListener('phx:page-loading-stop', initCookieConsent)
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 
+// Register service worker for PWA
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js")
+      .then((reg) => console.log("[PWA] Service worker registered:", reg.scope))
+      .catch((err) => console.log("[PWA] Service worker registration failed:", err))
+  })
+}
+
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session

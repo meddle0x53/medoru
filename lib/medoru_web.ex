@@ -17,7 +17,7 @@ defmodule MedoruWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images uploads favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images uploads favicon.ico favicon.png robots.txt manifest.json service-worker.js)
 
   def router do
     quote do

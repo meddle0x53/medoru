@@ -2,12 +2,18 @@
 <html lang={@conn.assigns[:locale] || "en"} data-theme={@conn.assigns[:current_scope][:theme] || "system"}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Medoru" />
     <.live_title default="Medoru" suffix=" · Learn Japanese">
       {assigns[:page_title]}
     </.live_title>
-    <link rel="icon" type="image/svg+xml" href={~p"/images/medoru-icon.png"} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href={~p"/images/apple-touch-icon.png"} />
+    <link rel="manifest" href="/manifest.json" />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
