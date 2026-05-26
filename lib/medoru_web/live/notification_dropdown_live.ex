@@ -31,6 +31,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <div id="notification-sound" class="hidden" phx-hook="NotificationSound"></div>
     <div
       tabindex="0"
       role="button"
@@ -188,15 +189,22 @@ defmodule MedoruWeb.NotificationDropdownLive do
   end
 
   @impl true
-  def handle_info({:new_notification, _notification}, socket) do
+  def handle_info({:new_notification, notification}, socket) do
     # Refresh when a new notification arrives
     notifications = Notifications.list_unread_notifications(socket.assigns.user_id, limit: 5)
     unread_count = Notifications.count_unread_notifications(socket.assigns.user_id)
 
-    {:noreply,
-     socket
-     |> assign(:notifications, notifications)
-     |> assign(:unread_count, unread_count)}
+    socket =
+      socket
+      |> assign(:notifications, notifications)
+      |> assign(:unread_count, unread_count)
+
+    # Play sound for chat message notifications
+    if notification.type in ["chat_message", "chat_invite"] do
+      {:noreply, push_event(socket, "play_sound", %{})}
+    else
+      {:noreply, socket}
+    end
   end
 
   # Helper functions
