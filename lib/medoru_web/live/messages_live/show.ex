@@ -245,6 +245,13 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     for user_id <- missing_keys do
       Notifications.notify_chat_invitation(user_id, sender_name, conversation.id)
+
+      Notifications.send_push_notification(
+        user_id,
+        "💬 #{sender_name} wants to chat",
+        "Tap to open the conversation and set up encryption.",
+        %{conversation_id: conversation.id}
+      )
     end
 
     {:noreply,

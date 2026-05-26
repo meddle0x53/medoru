@@ -333,6 +333,14 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Push notification subscription API
+  scope "/api", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    post "/push-subscribe", PushSubscriptionController, :create
+    delete "/push-subscribe", PushSubscriptionController, :delete
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", MedoruWeb do
   #   pipe_through :api

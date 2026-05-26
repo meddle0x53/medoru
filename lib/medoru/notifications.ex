@@ -488,4 +488,89 @@ defmodule Medoru.Notifications do
   end
 
   defp maybe_broadcast_notification(error, _user_id), do: error
+
+  # ============================================================================
+  # Push Subscriptions
+  # ============================================================================
+
+  alias Medoru.Notifications.PushSubscription
+
+  @doc """
+  Stores or updates a push subscription for a user.
+  """
+  def create_or_update_push_subscription(user_id, %{"endpoint" => endpoint, "keys" => keys}) do
+    attrs = %{
+      user_id: user_id,
+      endpoint: endpoint,
+      p256dh: keys["p256dh"],
+      auth: keys["auth"]
+    }
+
+    case Repo.get_by(PushSubscription, user_id: user_id, endpoint: endpoint) do
+      nil ->
+        %PushSubscription{}
+        |> PushSubscription.changeset(attrs)
+        |> Repo.insert()
+
+      existing ->
+        existing
+        |> PushSubscription.changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Removes a push subscription by endpoint.
+  """
+  def delete_push_subscription(user_id, endpoint) do
+    PushSubscription
+    |> where([s], s.user_id == ^user_id and s.endpoint == ^endpoint)
+    |> Repo.delete_all()
+  end
+
+  @doc """
+  Lists all push subscriptions for a user.
+  """
+  def list_push_subscriptions(user_id) do
+    PushSubscription
+    |> where([s], s.user_id == ^user_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Sends a push notification to all subscriptions for a user.
+  """
+  def send_push_notification(user_id, title, body, data \\ %{}) do
+    subscriptions = list_push_subscriptions(user_id)
+
+    payload =
+      Jason.encode!(%{
+        title: title,
+        body: body,
+        data: data,
+        icon: "/images/pwa-icon-192.png",
+        badge: "/images/pwa-icon-192.png"
+      })
+
+    Enum.each(subscriptions, fn sub ->
+      subscription = %{
+        endpoint: sub.endpoint,
+        keys: %{
+          auth: sub.auth,
+          p256dh: sub.p256dh
+        }
+      }
+
+      Task.start(fn ->
+        case WebPushEncryption.send_web_push(payload, subscription) do
+          {:ok, %{status_code: 410}} ->
+            # Subscription expired or invalid
+            delete_push_subscription(user_id, sub.endpoint)
+
+          _ ->
+            :ok
+        end
+      end)
+    end)
+  end
 end

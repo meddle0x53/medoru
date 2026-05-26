@@ -36,7 +36,7 @@ function show_help() {
 function check_env_vars() {
     local missing=()
 
-    for var in DB_PASSWORD SECRET_KEY_BASE GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET; do
+    for var in DB_PASSWORD SECRET_KEY_BASE GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY; do
         if [ -z "${!var}" ]; then
             missing+=($var)
         fi
@@ -68,6 +68,8 @@ function run_setup() {
     echo "  SECRET_KEY_BASE=${SECRET_KEY_BASE:0:10}..."
     echo "  GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:0:20}..."
     echo "  GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:0:10}..."
+    echo "  VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:0:20}..."
+    echo "  VAPID_PRIVATE_KEY=***"
     echo ""
 
     ansible-playbook -i "$INVENTORY" "$SCRIPT_DIR/setup.yml" -K

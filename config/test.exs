@@ -39,3 +39,9 @@ config :phoenix_live_view,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+# Test VAPID keys (safe to share, only for test suite)
+config :web_push_encryption, :vapid_details,
+  subject: "mailto:admin@medoru.net",
+  public_key: "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
+  private_key: "HIGtxCi2gwAzBI2hjdZWHkPwnHHtWfv3RjKqmC6ovI0"

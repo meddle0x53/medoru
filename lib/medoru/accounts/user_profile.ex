@@ -14,6 +14,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :timezone, :string, default: "UTC"
     field :daily_goal, :integer, default: 10
     field :theme, :string, default: "light"
+    field :push_notifications_enabled, :boolean, default: false
 
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
@@ -34,6 +35,7 @@ defmodule Medoru.Accounts.UserProfile do
       :timezone,
       :daily_goal,
       :theme,
+      :push_notifications_enabled,
       :daily_test_step_types
     ])
     |> validate_length(:display_name, min: 1, max: 50)

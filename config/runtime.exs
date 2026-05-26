@@ -85,6 +85,26 @@ if config_env() == :prod do
   # Configure uploads directory - use environment variable or default to system temp
   config :medoru, :uploads_dir, System.get_env("UPLOADS_DIR") || "/var/opt/medoru/uploads"
 
+  # Web Push VAPID keys
+  vapid_public_key =
+    System.get_env("VAPID_PUBLIC_KEY") ||
+      raise """
+      environment variable VAPID_PUBLIC_KEY is missing.
+      Generate VAPID keys and set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.
+      """
+
+  vapid_private_key =
+    System.get_env("VAPID_PRIVATE_KEY") ||
+      raise """
+      environment variable VAPID_PRIVATE_KEY is missing.
+      Generate VAPID keys and set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.
+      """
+
+  config :web_push_encryption, :vapid_details,
+    subject: System.get_env("VAPID_SUBJECT", "mailto:admin@medoru.net"),
+    public_key: vapid_public_key,
+    private_key: vapid_private_key
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

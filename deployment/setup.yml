@@ -8,9 +8,12 @@
 #   SECRET_KEY_BASE     - Phoenix secret key (generate with: mix phx.gen.secret)
 #   GOOGLE_CLIENT_ID    - Google OAuth Client ID
 #   GOOGLE_CLIENT_SECRET- Google OAuth Client Secret
+#   VAPID_PUBLIC_KEY    - Web Push VAPID public key
+#   VAPID_PRIVATE_KEY   - Web Push VAPID private key
 #
 # Example:
 #   DB_PASSWORD=mypass SECRET_KEY_BASE=xxx GOOGLE_CLIENT_ID=yyy GOOGLE_CLIENT_SECRET=zzz \
+#     VAPID_PUBLIC_KEY=aaa VAPID_PRIVATE_KEY=bbb \
 #     ansible-playbook -i inventory/production setup.yml -K
 
 - name: Setup Medoru Production Server
@@ -27,6 +30,8 @@
         - SECRET_KEY_BASE
         - GOOGLE_CLIENT_ID
         - GOOGLE_CLIENT_SECRET
+        - VAPID_PUBLIC_KEY
+        - VAPID_PRIVATE_KEY
 
     - name: Set variables from environment
       ansible.builtin.set_fact:
@@ -34,6 +39,8 @@
         secret_key_base: "{{ lookup('env', 'SECRET_KEY_BASE') }}"
         google_client_id: "{{ lookup('env', 'GOOGLE_CLIENT_ID') }}"
         google_client_secret: "{{ lookup('env', 'GOOGLE_CLIENT_SECRET') }}"
+        vapid_public_key: "{{ lookup('env', 'VAPID_PUBLIC_KEY') }}"
+        vapid_private_key: "{{ lookup('env', 'VAPID_PRIVATE_KEY') }}"
 
     - name: Create medoru config directory
       ansible.builtin.file:

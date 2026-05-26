@@ -46,6 +46,8 @@ import ChatKeyManager from "./hooks/chat_key_manager"
 import ChatVoiceRecorder from "./hooks/chat_voice_recorder"
 import ChatAudioPlayer from "./hooks/chat_audio_player"
 import NotificationSound from "./hooks/notification_sound"
+import PushNotificationsHook from "./hooks/push_notifications_hook"
+import { initPushNotifications } from "./push_notifications"
 
 // Make KanjiRecognizer available globally for hooks
 import { KanjiWriter, KanjiVGParser } from "../vendor/kanji-recognizer-bundle.js"
@@ -56,7 +58,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound},
+  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook},
 })
 
 // Show progress bar on live navigation and form submits
@@ -157,7 +159,10 @@ liveSocket.connect()
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/service-worker.js")
-      .then((reg) => console.log("[PWA] Service worker registered:", reg.scope))
+      .then((reg) => {
+        console.log("[PWA] Service worker registered:", reg.scope)
+        initPushNotifications(reg)
+      })
       .catch((err) => console.log("[PWA] Service worker registration failed:", err))
   })
 }

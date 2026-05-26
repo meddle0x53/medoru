@@ -119,6 +119,8 @@
         export PORT=$(grep PORT /etc/medoru/medoru.env | cut -d= -f2-)
         export POOL_SIZE=$(grep POOL_SIZE /etc/medoru/medoru.env | cut -d= -f2-)
         export UPLOADS_DIR=$(grep UPLOADS_DIR /etc/medoru/medoru.env | cut -d= -f2-)
+        export VAPID_PUBLIC_KEY=$(grep VAPID_PUBLIC_KEY /etc/medoru/medoru.env | cut -d= -f2-)
+        export VAPID_PRIVATE_KEY=$(grep VAPID_PRIVATE_KEY /etc/medoru/medoru.env | cut -d= -f2-)
         export PHX_SERVER=true
         # Run as medoru with preserved env vars
         sudo -E -u {{ app_user }} {{ app_home }}/current/bin/medoru eval "Medoru.Release.migrate()"

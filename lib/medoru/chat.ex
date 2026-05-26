@@ -814,6 +814,21 @@ defmodule Medoru.Chat do
           conversation.is_group,
           conversation.title
         )
+
+        # Send push notification
+        title =
+          if conversation.is_group do
+            "#{sender} in #{conversation.title || "Group Chat"}"
+          else
+            sender
+          end
+
+        Notifications.send_push_notification(
+          participant.user_id,
+          title,
+          "You have a new message",
+          %{conversation_id: conversation_id}
+        )
       end
     end
   end

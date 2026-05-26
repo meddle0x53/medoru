@@ -69,3 +69,61 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// Handle push notifications
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch (_e) {
+    payload = {
+      title: "Medoru",
+      body: event.data.text(),
+    };
+  }
+
+  const title = payload.title || "Medoru";
+  const options = {
+    body: payload.body || "",
+    icon: payload.icon || "/images/pwa-icon-192.png",
+    badge: payload.badge || "/images/pwa-icon-192.png",
+    tag: payload.tag || "medoru-notification",
+    data: payload.data || {},
+    requireInteraction: false,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Handle notification clicks
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const data = event.notification.data || {};
+  let url = "/";
+
+  if (data.conversation_id) {
+    url = `/messages/${data.conversation_id}`;
+  } else if (data.url) {
+    url = data.url;
+  }
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus existing tab if open
+        for (const client of clientList) {
+          if (client.url.includes(url) && "focus" in client) {
+            return client.focus();
+          }
+        }
+        // Open new tab/window
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(url);
+        }
+      })
+  );
+});

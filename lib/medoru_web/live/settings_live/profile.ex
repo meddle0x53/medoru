@@ -247,6 +247,48 @@ defmodule MedoruWeb.SettingsLive.Profile do
     {:noreply, assign(socket, :new_token_plaintext, nil)}
   end
 
+  @impl true
+  def handle_event("toggle_push_notifications", _params, socket) do
+    profile = socket.assigns.profile
+    new_value = !profile.push_notifications_enabled
+
+    case Accounts.update_profile(profile, %{"push_notifications_enabled" => new_value}) do
+      {:ok, updated_profile} ->
+        socket =
+          socket
+          |> assign(:profile, updated_profile)
+          |> put_flash(
+            :info,
+            if(new_value,
+              do: gettext("Push notifications enabled. You'll be prompted for browser permission."),
+              else: gettext("Push notifications disabled.")
+            )
+          )
+
+        # Push client event to subscribe/unsubscribe
+        event = if new_value, do: "subscribe_push", else: "unsubscribe_push"
+        {:noreply, push_event(socket, event, %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update push notification settings."))}
+    end
+  end
+
+  @impl true
+  def handle_event("push_subscription_failed", _params, socket) do
+    profile = socket.assigns.profile
+
+    # Revert the toggle since subscription failed
+    Accounts.update_profile(profile, %{"push_notifications_enabled" => false})
+
+    refreshed_profile = %{profile | push_notifications_enabled: false}
+
+    {:noreply,
+     socket
+     |> assign(:profile, refreshed_profile)
+     |> put_flash(:error, gettext("Push notification permission was denied or not supported."))}
+  end
+
   # Helper functions
 
   defp format_bytes(bytes) when bytes < 1_000, do: "#{bytes} B"
