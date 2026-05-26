@@ -39,35 +39,6 @@
     <script>
       // Set locale for LiveViews
       window.medoruLocale = "{@conn.assigns[:locale] || "en"}";
-
-      // Format timestamps to browser-local time
-      (function() {
-        function fmt(el) {
-          var iso = el.getAttribute("data-local-time");
-          if (!iso || el.getAttribute("data-local-time-formatted")) return;
-          var d = new Date(iso);
-          if (isNaN(d)) return;
-          var opts = el.getAttribute("data-local-time-type") === "date"
-            ? { year: "numeric", month: "long", day: "numeric" }
-            : { hour: "2-digit", minute: "2-digit", hour12: false };
-          el.textContent = new Intl.DateTimeFormat(undefined, opts).format(d);
-          el.setAttribute("data-local-time-formatted", "true");
-        }
-
-        document.querySelectorAll("[data-local-time]").forEach(fmt);
-
-        var obs = new MutationObserver(function(mutations) {
-          mutations.forEach(function(m) {
-            m.addedNodes.forEach(function(n) {
-              if (n.nodeType === 1) {
-                if (n.matches && n.matches("[data-local-time]")) fmt(n);
-                if (n.querySelectorAll) n.querySelectorAll("[data-local-time]").forEach(fmt);
-              }
-            });
-          });
-        });
-        if (document.body) obs.observe(document.body, { childList: true, subtree: true });
-      })();
     </script>
   </body>
 </html>

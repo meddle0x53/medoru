@@ -1,6 +1,9 @@
+import { formatLocalTimes } from "./format_local_time"
+
 const ClassroomChatScroll = {
   mounted() {
     this.scrollToBottom()
+    formatLocalTimes(this.el)
 
     this.handleEvent("scroll_to_bottom", () => {
       this.scrollToBottom()
@@ -37,6 +40,7 @@ const ClassroomChatScroll = {
     if (distanceFromBottom < threshold) {
       this.scrollToBottom()
     }
+    formatLocalTimes(this.el)
   },
 
   destroyed() {

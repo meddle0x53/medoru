@@ -1,6 +1,9 @@
+import { formatLocalTimes } from "./format_local_time"
+
 const ChatScroll = {
   mounted() {
     this.scrollToBottom()
+    formatLocalTimes(this.el)
 
     // Observe child list changes to auto-scroll
     this.observer = new MutationObserver(() => {
@@ -38,6 +41,7 @@ const ChatScroll = {
 
   updated() {
     this.scrollToBottom()
+    formatLocalTimes(this.el)
   },
 
   destroyed() {
