@@ -670,6 +670,16 @@ body {
   margin: 1rem 0;
 }
 
+/* iOS PWA immersive mode — hides navbar so games/lessons fill the screen */
+.ios-pwa-immersive header.navbar,
+.ios-pwa-immersive #mobile-nav-drawer {
+  display: none !important;
+}
+
+.ios-pwa-immersive main {
+  padding-top: env(safe-area-inset-top);
+}
+
 /* Presentation mode styles */
 .presentation-active {
   background-color: hsl(var(--b1));

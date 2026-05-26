@@ -30,6 +30,8 @@ const KanaFallingInput = {
       }
     }
 
+    this.isIOSPWA = window.navigator.standalone === true
+
     this.handleFullscreenChange = () => {
       this.isFullscreen = !!document.fullscreenElement
     }
@@ -87,6 +89,12 @@ const KanaFallingInput = {
   },
 
   enterFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.add("ios-pwa-immersive")
+      window.scrollTo(0, 0)
+      return
+    }
+
     const el = this.el || document.documentElement
 
     if (el.requestFullscreen) {
@@ -101,6 +109,11 @@ const KanaFallingInput = {
   },
 
   exitFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.remove("ios-pwa-immersive")
+      return
+    }
+
     if (document.exitFullscreen && document.fullscreenElement) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen && document.webkitFullscreenElement) {

@@ -1,6 +1,7 @@
 const PresentationMode = {
   mounted() {
     this.isFullscreen = false
+    this.isIOSPWA = window.navigator.standalone === true
 
     this.handleFullscreenChange = () => {
       this.isFullscreen = !!document.fullscreenElement
@@ -28,6 +29,12 @@ const PresentationMode = {
   },
 
   enterFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.add("ios-pwa-immersive")
+      window.scrollTo(0, 0)
+      return
+    }
+
     const el = this.el
     if (el.requestFullscreen) {
       el.requestFullscreen().catch(() => {})
@@ -37,6 +44,11 @@ const PresentationMode = {
   },
 
   exitFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.remove("ios-pwa-immersive")
+      return
+    }
+
     if (document.exitFullscreen && document.fullscreenElement) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen && document.webkitFullscreenElement) {

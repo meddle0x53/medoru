@@ -7,6 +7,9 @@ const GameFullscreen = {
                      "ontouchstart" in window ||
                      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 
+    // Detect iOS PWA standalone mode (no fullscreen API available)
+    this.isIOSPWA = window.navigator.standalone === true
+
     this.pushEvent("device_info", { is_mobile: isMobile })
 
     // Prevent iOS zoom on game pages by locking the viewport
@@ -51,6 +54,12 @@ const GameFullscreen = {
   },
 
   enterFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.add("ios-pwa-immersive")
+      window.scrollTo(0, 0)
+      return
+    }
+
     const el = this.el || document.documentElement
 
     if (el.requestFullscreen) {
@@ -65,6 +74,11 @@ const GameFullscreen = {
   },
 
   exitFullscreen() {
+    if (this.isIOSPWA) {
+      document.body.classList.remove("ios-pwa-immersive")
+      return
+    }
+
     if (document.exitFullscreen && document.fullscreenElement) {
       document.exitFullscreen()
     } else if (document.webkitExitFullscreen && document.webkitFullscreenElement) {
