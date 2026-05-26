@@ -310,7 +310,10 @@ defmodule Medoru.Chat do
       ciphertext: ciphertext,
       iv: iv,
       encrypted_at: now,
-      reply_to_message_id: reply_to_id
+      reply_to_message_id: reply_to_id,
+      attachment_path: Keyword.get(opts, :attachment_path),
+      attachment_type: Keyword.get(opts, :attachment_type),
+      duration_seconds: Keyword.get(opts, :duration_seconds)
     }
 
     %Message{}
@@ -761,6 +764,17 @@ defmodule Medoru.Chat do
       PubSub,
       "chat:#{conversation_id}",
       {:reencrypted_key, target_user_id, encrypted_key_b64}
+    )
+  end
+
+  @doc """
+  Broadcasts that encryption has been reset so all clients clear their stale key cache.
+  """
+  def broadcast_encryption_reset(conversation_id) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:encryption_reset, conversation_id}
     )
   end
 

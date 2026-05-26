@@ -72,7 +72,7 @@
                   <% end %>
                 </h3>
                 <span class="text-xs text-base-content/50 shrink-0 ml-2">
-                  {last_message_time(conversation)}
+                  <span data-local-time={conversation.last_message && DateTime.to_iso8601(conversation.last_message.inserted_at)}>{last_message_time(conversation)}</span>
                 </span>
               </div>
               <p class={[

@@ -14,6 +14,9 @@ config :medoru,
   default_locale: "en",
   supported_locales: ["en", "bg", "ja"]
 
+# Enable timezone database for user-local time display
+config :elixir, :time_zone_database, Zoneinfo.TimeZoneDatabase
+
 # Configure the endpoint
 config :medoru, MedoruWeb.Endpoint,
   url: [host: "localhost"],

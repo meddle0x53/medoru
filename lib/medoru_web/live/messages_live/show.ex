@@ -93,13 +93,6 @@ defmodule MedoruWeb.MessagesLive.Show do
         # it fails to decrypt the conversation key with the user's current private key.
         key_mismatch = false
 
-        # Proactive re-encryption: if this user has a conversation key but has
-        # previously registered a different public key, their key may be stale.
-        # Broadcast a re-encryption request so online participants can help.
-        if connected?(socket) && conversation_key && Encryption.user_has_previous_keys?(current_user.id) do
-          Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
-        end
-
         # If this user has no conversation key but others do, request re-encryption.
         # This handles the case where another participant registered their key
         # while this user was offline.
@@ -233,6 +226,11 @@ defmodule MedoruWeb.MessagesLive.Show do
       end
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("acknowledge_conversation_key", _params, socket) do
+    {:noreply, assign(socket, :key_mismatch, false)}
   end
 
   @impl true
@@ -417,6 +415,77 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event("send_image_message", %{"image_base64" => img_b64, "mime_type" => mime_type} = params, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    reply_to = socket.assigns.reply_to
+
+    # Validate MIME type
+    valid_image_type =
+      String.starts_with?(mime_type, "image/jpeg") or
+        String.starts_with?(mime_type, "image/png") or
+        String.starts_with?(mime_type, "image/gif") or
+        String.starts_with?(mime_type, "image/webp")
+
+    if not valid_image_type do
+      {:noreply, put_flash(socket, :error, gettext("Invalid image format. Only JPEG, PNG, GIF, and WebP are supported."))}
+    else
+      uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+      ext =
+        cond do
+          String.contains?(mime_type, "png") -> ".png"
+          String.contains?(mime_type, "gif") -> ".gif"
+          String.contains?(mime_type, "webp") -> ".webp"
+          true -> ".jpg"
+        end
+
+      filename = "#{Ecto.UUID.generate()}#{ext}"
+      dest_dir = Path.join(uploads_dir, "chat_images")
+      File.mkdir_p!(dest_dir)
+      dest_path = Path.join(dest_dir, filename)
+
+      try do
+        decoded = Base.decode64!(img_b64)
+
+        # 5MB limit
+        if byte_size(decoded) > 5_000_000 do
+          {:noreply, put_flash(socket, :error, gettext("Image is too large. Maximum size is 5MB."))}
+        else
+          File.write!(dest_path, decoded)
+          image_path = "/uploads/chat_images/#{filename}"
+
+          opts = [
+            reply_to_message_id: reply_to && reply_to.id,
+            attachment_path: image_path,
+            attachment_type: "image"
+          ]
+
+          result =
+            if conversation.classroom_id do
+              Chat.store_plaintext_message(conversation.id, current_user.id, "📷 Image", opts)
+            else
+              ct = params["ciphertext"]
+              iv = params["iv"]
+              Chat.store_message(conversation.id, current_user.id, ct, iv, opts)
+            end
+
+          case result do
+            {:ok, _message} ->
+              {:noreply, assign(socket, :reply_to, nil)}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to send image."))}
+          end
+        end
+      rescue
+        _ ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to process image."))}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("load_more_messages", _params, socket) do
     conversation = socket.assigns.conversation
     current_offset = socket.assigns.message_offset
@@ -546,6 +615,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     Logger.info("[ChatRekey] User #{current_user.id} reset conversation keys for #{conversation.id}")
 
     Chat.delete_conversation_keys(conversation.id)
+    Chat.broadcast_encryption_reset(conversation.id)
 
     {:noreply,
      socket
@@ -612,13 +682,19 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     # Only the target user should process this
     if current_user.id == target_user_id do
+      # Do NOT set key_mismatch = false here — the banner would hide before
+      # the client confirms it can actually decrypt. The client sends
+      # "acknowledge_conversation_key" after successful decryption.
       {:noreply,
-       socket
-       |> assign(:key_mismatch, false)
-       |> push_event("conversation_key", %{encrypted_key: encrypted_key_b64})}
+       push_event(socket, "conversation_key", %{encrypted_key: encrypted_key_b64})}
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:encryption_reset, _conversation_id}, socket) do
+    {:noreply, push_event(socket, "encryption_reset", %{})}
   end
 
   @impl true
@@ -801,6 +877,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     end
   end
 
+  def message_ciphertext_b64(%{ciphertext: nil}), do: ""
   def message_ciphertext_b64(message) do
     Base.encode64(message.ciphertext)
   end

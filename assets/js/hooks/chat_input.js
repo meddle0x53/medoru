@@ -16,6 +16,9 @@ const ChatInput = {
     this.sendButton = this.el.querySelector("#chat-send-button")
     this.emojiBtn = this.el.querySelector("#chat-emoji-button")
     this.emojiPanel = this.el.querySelector("#chat-emoji-panel")
+    this.imageBtn = this.el.querySelector("#chat-image-button")
+    this.imageInput = this.el.querySelector("#chat-image-input")
+    this.imagePreview = this.el.querySelector("#chat-image-preview")
     this.convId = document.getElementById("chat-wrapper")?.dataset.conversationId
 
     if (!this.textarea) return
@@ -23,6 +26,7 @@ const ChatInput = {
     this.typingTimer = null
     this.typingSent = false
     this.lastTypingSent = 0
+    this.queuedImage = null
 
     this.textarea.addEventListener("keydown", (e) => {
       // Trigger typing on printable characters
@@ -83,6 +87,22 @@ const ChatInput = {
       })
     }
 
+    if (this.imageBtn && this.imageInput) {
+      this.imageBtn.addEventListener("click", () => this.imageInput.click())
+      this.imageInput.addEventListener("change", (e) => this.handleImageSelect(e))
+    }
+
+    if (this.imagePreview) {
+      // Use event delegation so the listener survives LiveView DOM patches
+      this.imagePreview.addEventListener("click", (e) => {
+        if (e.target.closest("#chat-image-cancel")) {
+          e.preventDefault()
+          e.stopPropagation()
+          this.clearImage()
+        }
+      })
+    }
+
     // Close emoji panel on outside click
     this._outsideClickHandler = (e) => {
       if (this.emojiPanel && !this.emojiPanel.contains(e.target) && e.target !== this.emojiBtn) {
@@ -101,6 +121,54 @@ const ChatInput = {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
     }
+  },
+
+  handleImageSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    // Validate type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.")
+      return
+    }
+
+    // Validate size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image is too large. Maximum size is 5MB.")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      this.queuedImage = {
+        dataUrl: ev.target.result,
+        mimeType: file.type
+      }
+      this.showImagePreview(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  },
+
+  showImagePreview(dataUrl) {
+    if (!this.imagePreview) return
+    const img = this.imagePreview.querySelector("img")
+    if (img) img.src = dataUrl
+    this.imagePreview.classList.remove("hidden")
+    this.imagePreview.classList.add("inline-block")
+  },
+
+  clearImage() {
+    this.queuedImage = null
+    if (this.imagePreview) {
+      this.imagePreview.classList.add("hidden")
+      this.imagePreview.classList.remove("inline-block")
+    }
+    if (this.imageInput) this.imageInput.value = ""
+  },
+
+  _base64FromDataUrl(dataUrl) {
+    return dataUrl.split(",")[1]
   },
 
   sendTypingIndicator() {
@@ -180,7 +248,9 @@ const ChatInput = {
 
   async submit() {
     const text = this.textarea.value.trim()
-    if (text === "") return
+    const hasImage = this.queuedImage != null
+
+    if (text === "" && !hasImage) return
 
     // Stop typing indicator on send
     if (this.typingTimer) {
@@ -223,17 +293,41 @@ const ChatInput = {
 
     // If no conversation key, request one and queue the message
     if (!CryptoState.conversationKeys.has(convId)) {
+      if (hasImage) {
+        alert("Please wait for encryption to be ready before sending images.")
+        return
+      }
       window.chatPendingMessage = text
       this.pushEvent("ensure_conversation_key", {})
       return
     }
 
-    try {
-      const { ciphertext, iv } = await CryptoState.encrypt(convId, text)
-      this.pushEvent("send_encrypted_message", { ciphertext, iv })
-    } catch (e) {
-      console.error("[ChatInput] Encryption failed:", e)
-      return
+    // Send image first, then text (both if present)
+    if (hasImage) {
+      try {
+        const { ciphertext, iv } = await CryptoState.encrypt(convId, "📷 Image")
+        const base64 = this._base64FromDataUrl(this.queuedImage.dataUrl)
+        this.pushEvent("send_image_message", {
+          image_base64: base64,
+          mime_type: this.queuedImage.mimeType,
+          ciphertext,
+          iv
+        })
+        this.clearImage()
+      } catch (e) {
+        console.error("[ChatInput] Image encryption failed:", e)
+        return
+      }
+    }
+
+    if (text) {
+      try {
+        const { ciphertext, iv } = await CryptoState.encrypt(convId, text)
+        this.pushEvent("send_encrypted_message", { ciphertext, iv })
+      } catch (e) {
+        console.error("[ChatInput] Encryption failed:", e)
+        return
+      }
     }
 
     this.textarea.value = ""

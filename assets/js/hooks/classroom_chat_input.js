@@ -10,12 +10,16 @@ const ClassroomChatInput = {
     this.sendButton = this.el.querySelector("#classroom-chat-send-button")
     this.emojiBtn = this.el.querySelector("#classroom-emoji-button")
     this.emojiPanel = this.el.querySelector("#classroom-emoji-panel")
+    this.imageBtn = this.el.querySelector("#classroom-image-button")
+    this.imageInput = this.el.querySelector("#classroom-image-input")
+    this.imagePreview = this.el.querySelector("#classroom-image-preview")
 
     if (!this.textarea) return
 
     this.typingTimer = null
     this.typingSent = false
     this.lastTypingSent = 0
+    this.queuedImage = null
 
     this.textarea.addEventListener("keydown", (e) => {
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -71,6 +75,22 @@ const ClassroomChatInput = {
       })
     }
 
+    if (this.imageBtn && this.imageInput) {
+      this.imageBtn.addEventListener("click", () => this.imageInput.click())
+      this.imageInput.addEventListener("change", (e) => this.handleImageSelect(e))
+    }
+
+    if (this.imagePreview) {
+      // Use event delegation so the listener survives LiveView DOM patches
+      this.imagePreview.addEventListener("click", (e) => {
+        if (e.target.closest("#classroom-image-cancel")) {
+          e.preventDefault()
+          e.stopPropagation()
+          this.clearImage()
+        }
+      })
+    }
+
     // Close emoji panel on outside click
     this._outsideClickHandler = (e) => {
       if (this.emojiPanel && !this.emojiPanel.contains(e.target) && e.target !== this.emojiBtn) {
@@ -100,6 +120,52 @@ const ClassroomChatInput = {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
     }
+  },
+
+  handleImageSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.")
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image is too large. Maximum size is 5MB.")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      this.queuedImage = {
+        dataUrl: ev.target.result,
+        mimeType: file.type
+      }
+      this.showImagePreview(ev.target.result)
+    }
+    reader.readAsDataURL(file)
+  },
+
+  showImagePreview(dataUrl) {
+    if (!this.imagePreview) return
+    const img = this.imagePreview.querySelector("img")
+    if (img) img.src = dataUrl
+    this.imagePreview.classList.remove("hidden")
+    this.imagePreview.classList.add("inline-block")
+  },
+
+  clearImage() {
+    this.queuedImage = null
+    if (this.imagePreview) {
+      this.imagePreview.classList.add("hidden")
+      this.imagePreview.classList.remove("inline-block")
+    }
+    if (this.imageInput) this.imageInput.value = ""
+  },
+
+  _base64FromDataUrl(dataUrl) {
+    return dataUrl.split(",")[1]
   },
 
   sendTypingIndicator() {
@@ -157,7 +223,9 @@ const ClassroomChatInput = {
 
   submit() {
     const text = this.textarea.value.trim()
-    if (text === "") return
+    const hasImage = this.queuedImage != null
+
+    if (text === "" && !hasImage) return
 
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
@@ -178,7 +246,20 @@ const ClassroomChatInput = {
       return
     }
 
-    this.pushEvent("send_message", { content: text })
+    // Send image first, then text (both if present)
+    if (hasImage) {
+      const base64 = this._base64FromDataUrl(this.queuedImage.dataUrl)
+      this.pushEvent("send_image_message", {
+        image_base64: base64,
+        mime_type: this.queuedImage.mimeType
+      })
+      this.clearImage()
+    }
+
+    if (text) {
+      this.pushEvent("send_message", { content: text })
+    }
+
     this.textarea.value = ""
     this.textarea.style.height = "auto"
     this.textarea.focus()

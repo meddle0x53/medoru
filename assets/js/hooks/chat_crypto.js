@@ -224,9 +224,31 @@ const ChatCrypto = {
     const pubKeysJson = this.el.dataset.participantPublicKeys
     this.participantPublicKeys = pubKeysJson ? JSON.parse(pubKeysJson) : {}
 
+    // Detect if our local key is stale relative to the server's active key.
+    // If the server has a different public key for us, our private key can't
+    // decrypt any conversation key re-encrypted by other participants.
+    const serverPubKey = this.participantPublicKeys[currentUserId]
+    const localPubKey = CryptoState.publicKeyB64
+    if (serverPubKey && localPubKey && serverPubKey !== localPubKey) {
+      console.log("[ChatCrypto] Local key stale (doesn't match server). Regenerating...")
+      localStorage.removeItem(getPrivKeyStorage(currentUserId))
+      localStorage.removeItem(getPubKeyStorage(currentUserId))
+      localStorage.removeItem("medoru_chat_privkey_v2")
+      localStorage.removeItem("medoru_chat_pubkey_v2")
+      CryptoState.privateKey = null
+      CryptoState.publicKeyB64 = null
+      CryptoState.ready = false
+      const freshResult = await CryptoState.init(currentUserId)
+      if (freshResult.publicKey) {
+        this.pushEvent("register_public_key", { public_key: freshResult.publicKey })
+      }
+    }
+
     // Load conversation key if provided
     const encryptedKey = this.el.dataset.encryptedKey
     if (encryptedKey) {
+      // Always discard stale cache — the server may have reset/replaced the key
+      CryptoState.conversationKeys.delete(this.convId)
       try {
         await CryptoState.getConversationKey(this.convId, encryptedKey)
         await this.decryptAll()
@@ -242,11 +264,16 @@ const ChatCrypto = {
     // Server sends the conversation key (initial load or after creation)
     this.handleEvent("conversation_key", async ({ encrypted_key }) => {
       if (!encrypted_key) return
+      // The server sent us a key — always discard cache and try the latest one.
+      // Otherwise a stale cached key silently breaks encryption/decryption.
+      CryptoState.conversationKeys.delete(this.convId)
       try {
         await CryptoState.getConversationKey(this.convId, encrypted_key)
         await this.decryptAll()
         // Stop retrying since we have a working key now
         this._stopMismatchRetry()
+        // Tell server to hide the re-key banner
+        this.pushEvent("acknowledge_conversation_key", {})
         // Process any pending message
         if (window.chatPendingMessage) {
           const text = window.chatPendingMessage
@@ -256,9 +283,9 @@ const ChatCrypto = {
         }
       } catch (e) {
         console.error("[ChatCrypto] Failed to set conversation key:", e)
-        // The server sent a key we can't decrypt (likely stale). Report mismatch
-        // again so other participants know we still need help.
-        this.pushEvent("report_key_mismatch", {})
+        // Do NOT immediately report mismatch here — that creates a tight
+        // feedback loop when a user's key is permanently mismatched.
+        // The periodic retry (8s) will request re-encryption instead.
         this._startMismatchRetry()
       }
     })
@@ -286,19 +313,22 @@ const ChatCrypto = {
         return
       }
       try {
-        let aesKey = CryptoState.conversationKeys.get(this.convId)
-
-        // Fallback: try to load from DOM if not cached
-        if (!aesKey) {
-          const encryptedKey = this.el.dataset.encryptedKey
-          if (encryptedKey) {
-            console.log("[ChatCrypto] Key not cached, attempting decrypt from DOM")
-            try {
-              aesKey = await CryptoState.getConversationKey(this.convId, encryptedKey)
-            } catch (e) {
-              console.error("[ChatCrypto] Failed to decrypt conversation key from DOM:", e)
-            }
+        // Always prefer the DOM key — it reflects the latest server state.
+        // A cached key may be stale after an encryption reset.
+        let aesKey = null
+        const domEncryptedKey = this.el.dataset.encryptedKey
+        if (domEncryptedKey) {
+          CryptoState.conversationKeys.delete(this.convId)
+          try {
+            aesKey = await CryptoState.getConversationKey(this.convId, domEncryptedKey)
+          } catch (e) {
+            console.error("[ChatCrypto] Failed to decrypt conversation key from DOM:", e)
           }
+        }
+
+        // Fallback to cached key only if DOM decrypt failed
+        if (!aesKey) {
+          aesKey = CryptoState.conversationKeys.get(this.convId)
         }
 
         if (!aesKey) {

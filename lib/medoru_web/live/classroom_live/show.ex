@@ -410,6 +410,66 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("send_image_message", %{"image_base64" => img_b64, "mime_type" => mime_type}, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    reply_to = socket.assigns.reply_to
+
+    valid_image_type =
+      String.starts_with?(mime_type, "image/jpeg") or
+        String.starts_with?(mime_type, "image/png") or
+        String.starts_with?(mime_type, "image/gif") or
+        String.starts_with?(mime_type, "image/webp")
+
+    if not valid_image_type do
+      {:noreply, put_flash(socket, :error, gettext("Invalid image format. Only JPEG, PNG, GIF, and WebP are supported."))}
+    else
+      uploads_dir = Application.get_env(:medoru, :uploads_dir)
+
+      ext =
+        cond do
+          String.contains?(mime_type, "png") -> ".png"
+          String.contains?(mime_type, "gif") -> ".gif"
+          String.contains?(mime_type, "webp") -> ".webp"
+          true -> ".jpg"
+        end
+
+      filename = "#{Ecto.UUID.generate()}#{ext}"
+      dest_dir = Path.join(uploads_dir, "chat_images")
+      File.mkdir_p!(dest_dir)
+      dest_path = Path.join(dest_dir, filename)
+
+      try do
+        decoded = Base.decode64!(img_b64)
+
+        if byte_size(decoded) > 5_000_000 do
+          {:noreply, put_flash(socket, :error, gettext("Image is too large. Maximum size is 5MB."))}
+        else
+          File.write!(dest_path, decoded)
+          image_path = "/uploads/chat_images/#{filename}"
+
+          opts = [
+            reply_to_message_id: reply_to && reply_to.id,
+            attachment_path: image_path,
+            attachment_type: "image"
+          ]
+
+          case Chat.store_plaintext_message(conversation.id, current_user.id, "📷 Image", opts) do
+            {:ok, _message} ->
+              {:noreply, assign(socket, :reply_to, nil)}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to send image."))}
+          end
+        end
+      rescue
+        _ ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to process image."))}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("set_reply", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
     {:noreply, assign(socket, :reply_to, message)}
@@ -1501,10 +1561,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     {chat_sender_name(message.reply_to_message.sender, @current_user.id)}
                   </span>
                   <span class="truncate block">
-                    <%= if message.reply_to_message.is_deleted do %>
-                      {gettext("This message was deleted")}
-                    <% else %>
-                      {message.reply_to_message.content}
+                    <%= cond do %>
+                      <% message.reply_to_message.is_deleted -> %>
+                        {gettext("This message was deleted")}
+                      <% message.reply_to_message.attachment_type == "image" -> %>
+                        {gettext("📷 Image")}
+                      <% message.reply_to_message.attachment_type == "voice" -> %>
+                        {gettext("🎤 Voice message")}
+                      <% true -> %>
+                        {message.reply_to_message.content}
                     <% end %>
                   </span>
                 </div>
@@ -1557,14 +1622,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     is_emoji_msg && "bg-transparent border-transparent text-base-content",
                     not is_emoji_msg && is_me && "bg-primary text-primary-content rounded-br-md border border-primary",
                     not is_emoji_msg && not is_me && "bg-accent/15 text-base-content rounded-bl-md border border-accent/30",
-                    if(message.is_deleted, do: "px-3 py-1.5", else: if(message.attachment_type == "voice", do: "px-3 py-2", else: "px-3 py-1.5"))
+                    if(message.is_deleted, do: "px-3 py-1.5", else: if(message.attachment_type in ["voice", "image"], do: "px-3 py-2", else: "px-3 py-1.5"))
                   ]}>
-                    <%= if message.is_deleted do %>
-                      <p class="text-[15px] leading-snug italic opacity-60">
-                        {gettext("This message was deleted")}
-                      </p>
-                    <% else %>
-                      <%= if message.attachment_type == "voice" && message.attachment_path do %>
+                    <%= cond do %>
+                      <% message.is_deleted -> %>
+                        <p class="text-[15px] leading-snug italic opacity-60">
+                          {gettext("This message was deleted")}
+                        </p>
+
+                      <% message.attachment_type == "voice" && message.attachment_path -> %>
                         <div id={"classroom-audio-#{message.id}"} class="flex items-center gap-2" phx-hook="ChatAudioPlayer" data-src={message.attachment_path} data-duration={message.duration_seconds || 0}>
                           <button type="button" class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0">
                             <.icon name="hero-play" class="w-4 h-4 chat-audio-play-icon" />
@@ -1583,13 +1649,31 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           </div>
                           <audio class="chat-audio-el absolute w-0 h-0 opacity-0" src={message.attachment_path} preload="auto"></audio>
                         </div>
-                      <% else %>
-                        <%= if is_emoji_msg do %>
-                          <p class="text-4xl leading-none py-1">{message.content}</p>
-                        <% else %>
-                          <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{message.content}</p>
-                        <% end %>
-                      <% end %>
+
+                      <% message.attachment_type == "image" && message.attachment_path -> %>
+                        <div class="relative group/image">
+                          <a href={message.attachment_path} target="_blank">
+                            <img
+                              src={message.attachment_path}
+                              class="max-w-[240px] max-h-[240px] rounded-lg object-cover"
+                              loading="lazy"
+                            />
+                          </a>
+                          <a
+                            href={message.attachment_path}
+                            download
+                            class="absolute bottom-1 right-1 p-1 rounded bg-black/50 text-white opacity-0 group-hover/image:opacity-100 transition-opacity"
+                            title={gettext("Download")}
+                          >
+                            <.icon name="hero-arrow-down-tray" class="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+
+                      <% is_emoji_msg -> %>
+                        <p class="text-4xl leading-none py-1">{message.content}</p>
+
+                      <% true -> %>
+                        <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{message.content}</p>
                     <% end %>
                   </div>
                   <div class="relative message-actions shrink-0 self-center">
@@ -1683,10 +1767,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 </span>
               </p>
               <p class="text-sm text-base-content/80 truncate">
-                <%= if @reply_to.is_deleted do %>
-                  {gettext("This message was deleted")}
-                <% else %>
-                  {@reply_to.content}
+                <%= cond do %>
+                  <% @reply_to.is_deleted -> %>
+                    {gettext("This message was deleted")}
+                  <% @reply_to.attachment_type == "image" -> %>
+                    {gettext("📷 Image")}
+                  <% @reply_to.attachment_type == "voice" -> %>
+                    {gettext("🎤 Voice message")}
+                  <% true -> %>
+                    {@reply_to.content}
                 <% end %>
               </p>
             </div>
@@ -1725,6 +1814,20 @@ defmodule MedoruWeb.ClassroomLive.Show do
           class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative"
           phx-hook="ClassroomChatInput"
         >
+          <%!-- Image Preview --%>
+          <div id="classroom-image-preview" class="hidden mb-2 relative inline-block">
+            <img src="" class="h-16 w-16 object-cover rounded-lg border border-base-300" />
+            <button
+              type="button"
+              id="classroom-image-cancel"
+              class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs"
+            >
+              <.icon name="hero-x-mark" class="w-3 h-3" />
+            </button>
+          </div>
+
+          <input type="file" id="classroom-image-input" accept="image/*" class="hidden" />
+
           <%!-- Emoji Picker Panel --%>
           <div
             id="classroom-emoji-panel"
@@ -1784,6 +1887,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   <div id="chat-mic-picker-list" class="space-y-1"></div>
                 </div>
               </div>
+              <button
+                id="classroom-image-button"
+                type="button"
+                class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                title={gettext("Send image")}
+              >
+                <.icon name="hero-photo" class="w-5 h-5" />
+              </button>
               <button
                 id="classroom-emoji-button"
                 type="button"
