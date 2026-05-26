@@ -236,6 +236,42 @@
       </div>
     </div>
 
+    <%!-- Push Debug Panel --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg">
+          <.icon name="hero-bug-ant" class="w-5 h-5 text-secondary" /> Push Debug
+        </h2>
+        <div id="push-debug-panel" phx-update="ignore" class="text-xs font-mono space-y-1 mt-2">
+          <script>
+            (function() {
+              const el = document.getElementById('push-debug-panel');
+              if (!el) return;
+              const vapid = window.medoruVapidKey || '';
+              const checks = [
+                ['VAPID key length', vapid.length],
+                ['VAPID key present', !!vapid],
+                ['serviceWorker', 'serviceWorker' in navigator],
+                ['PushManager', 'PushManager' in window],
+                ['Notification', 'Notification' in window],
+                ['Permission', 'Notification' in window ? Notification.permission : 'n/a'],
+                ['SW registered', navigator.serviceWorker ? 'checking...' : 'n/a'],
+              ];
+              el.innerHTML = checks.map(([name, val]) =>
+                `<div class="flex justify-between"><span class="text-base-content/60">${name}:</span><span class="font-bold ${val === true || val === 'granted' ? 'text-success' : val === false || val === 'denied' ? 'text-error' : 'text-base-content'}">${val}</span></div>`
+              ).join('');
+              if (navigator.serviceWorker) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                  const swEl = el.querySelector('div:last-child');
+                  if (swEl) swEl.innerHTML = swEl.innerHTML.replace('checking...', reg ? 'yes (' + (reg.scope || '?') + ')' : 'no');
+                });
+              }
+            })();
+          </script>
+        </div>
+      </div>
+    </div>
+
     <%!-- Push Notifications Toggle --%>
     <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
       <div class="card-body">

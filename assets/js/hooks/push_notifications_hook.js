@@ -21,7 +21,7 @@ const PushNotificationsHook = {
         this.pushEvent("push_subscription_failed", {
           reason: "not_supported",
           vapid_key_present: support.vapidKey,
-          vapid_key_length: VAPID_KEY ? VAPID_KEY.length : 0,
+          vapid_key_length: window.medoruVapidKey ? window.medoruVapidKey.length : 0,
           service_worker_ready: support.serviceWorker,
           push_manager_ready: support.pushManager,
           notification_ready: support.notification,

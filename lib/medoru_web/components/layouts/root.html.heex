@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <meta name="theme-color" content="#3b82f6" />
+    <meta name="vapid-public-key" content={Application.get_env(:medoru, :vapid_details, %{})[:public_key]} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Medoru" />
@@ -46,8 +47,8 @@
       // Set locale for LiveViews
       window.medoruLocale = "{@conn.assigns[:locale] || "en"}";
 
-      // VAPID public key for push notifications
-      window.medoruVapidKey = "<%= Application.get_env(:medoru, :vapid_details, %{})[:public_key] %>";
+      // VAPID public key for push notifications (read from meta tag)
+      window.medoruVapidKey = document.querySelector("meta[name='vapid-public-key']")?.getAttribute("content") || "";
     </script>
   </body>
 </html>
