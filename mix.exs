@@ -85,8 +85,8 @@ defmodule Medoru.MixProject do
       {:logger_file_backend, "~> 0.0.12"},
       {:logger_json, "~> 5.0"},
 
-      # Push notifications
-      {:web_push_encryption, "~> 0.3"}
+      # Push notifications (replaced by MedoruWeb.Push)
+      # {:web_push_encryption, "~> 0.3"}
     ]
   end
 

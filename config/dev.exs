@@ -98,7 +98,7 @@ config :phoenix_live_view,
 config :swoosh, :api_client, false
 
 # Development VAPID keys (safe to share, only for local testing)
-config :web_push_encryption, :vapid_details,
+config :medoru, :vapid_details,
   subject: "mailto:admin@medoru.net",
   public_key: "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
   private_key: "HIGtxCi2gwAzBI2hjdZWHkPwnHHtWfv3RjKqmC6ovI0"

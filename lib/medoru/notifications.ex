@@ -562,8 +562,8 @@ defmodule Medoru.Notifications do
       }
 
       Task.start(fn ->
-        case WebPushEncryption.send_web_push(payload, subscription) do
-          {:ok, %{status_code: 410}} ->
+        case MedoruWeb.Push.send_web_push(payload, subscription) do
+          {:ok, %{status: 410}} ->
             # Subscription expired or invalid
             delete_push_subscription(user_id, sub.endpoint)
 

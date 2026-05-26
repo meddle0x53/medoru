@@ -47,7 +47,7 @@
       window.medoruLocale = "{@conn.assigns[:locale] || "en"}";
 
       // VAPID public key for push notifications
-      window.medoruVapidKey = "<%= Application.get_env(:web_push_encryption, :vapid_details, %{})[:public_key] %>";
+      window.medoruVapidKey = "<%= Application.get_env(:medoru, :vapid_details, %{})[:public_key] %>";
     </script>
   </body>
 </html>
