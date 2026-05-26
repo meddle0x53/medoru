@@ -268,7 +268,11 @@
               if (metaCheck) metaCheck.textContent = metaContent ? 'present (' + metaContent.length + ' chars)' : 'EMPTY';
               window.medoruVapidKey = metaContent || "";
               const vapid = window.medoruVapidKey;
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
               const checks = [
+                ['Platform', isIOS ? 'iOS' : 'Other'],
+                ['PWA standalone', isStandalone],
                 ['VAPID key length', vapid.length],
                 ['VAPID key present', !!vapid],
                 ['serviceWorker', 'serviceWorker' in navigator],
@@ -301,6 +305,38 @@
         <p class="text-sm text-base-content/60 mb-4">
           {gettext("Get notified about new chat messages even when Medoru is closed.")}
         </p>
+
+        <%!-- Platform-specific guidance --%>
+        <div id="push-platform-help" phx-update="ignore" class="hidden mb-4 p-3 bg-info/10 border border-info/30 rounded-lg text-sm">
+          <p class="font-medium text-info mb-1" id="push-platform-title"></p>
+          <p class="text-base-content/70" id="push-platform-desc"></p>
+          <script>
+            (function() {
+              const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+              const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+              const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+              const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+              const el = document.getElementById('push-platform-help');
+              const title = document.getElementById('push-platform-title');
+              const desc = document.getElementById('push-platform-desc');
+              if (!el || !title || !desc) return;
+
+              if (isIOS && isFirefox) {
+                el.classList.remove('hidden');
+                title.textContent = 'iOS Firefox is not supported';
+                desc.textContent = 'Apple requires all iOS browsers to use Safari\'s engine, which does not allow push notifications in Firefox. Please use Safari instead.';
+              } else if (isIOS && isSafari && !isStandalone) {
+                el.classList.remove('hidden');
+                title.textContent = 'Install as app first';
+                desc.textContent = 'On iOS, tap the Share button in Safari, then "Add to Home Screen". Open Medoru from the home screen icon, then return here to enable push notifications.';
+              } else if (isIOS && isSafari && isStandalone) {
+                el.classList.remove('hidden');
+                title.textContent = 'iOS PWA mode active';
+                desc.textContent = 'You\'re running in PWA mode. If push is still not supported, make sure iOS is 16.4 or newer.';
+              }
+            })();
+          </script>
+        </div>
 
         <div class="flex items-center justify-between p-4 bg-base-200 rounded-xl border border-base-300">
           <div class="flex items-center gap-3">
