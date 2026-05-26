@@ -1815,7 +1815,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           phx-hook="ClassroomChatInput"
         >
           <%!-- Image Preview --%>
-          <div id="classroom-image-preview" class="hidden mb-2 relative inline-block">
+          <div id="classroom-image-preview" class="hidden mb-2 relative">
             <img src="" class="h-16 w-16 object-cover rounded-lg border border-base-300" />
             <button
               type="button"
