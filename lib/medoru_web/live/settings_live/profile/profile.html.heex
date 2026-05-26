@@ -242,12 +242,32 @@
         <h2 class="card-title text-lg">
           <.icon name="hero-bug-ant" class="w-5 h-5 text-secondary" /> Push Debug
         </h2>
-        <div id="push-debug-panel" phx-update="ignore" class="text-xs font-mono space-y-1 mt-2">
+        <%!-- Server-side rendered values --%>
+        <div class="text-xs font-mono space-y-1 mt-2 mb-3 p-3 bg-base-200 rounded-lg">
+          <div class="flex justify-between">
+            <span class="text-base-content/60">Server VAPID key length:</span>
+            <span class="font-bold text-base-content">{String.length(Application.get_env(:medoru, :vapid_details, %{})[:public_key] || "")}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-base-content/60">Server VAPID key present:</span>
+            <span class="font-bold text-base-content">{!!Application.get_env(:medoru, :vapid_details, %{})[:public_key]}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-base-content/60">Meta tag content:</span>
+            <span class="font-bold text-base-content" id="meta-vapid-check">checking...</span>
+          </div>
+        </div>
+        <div id="push-debug-panel" phx-update="ignore" class="text-xs font-mono space-y-1">
           <script>
             (function() {
               const el = document.getElementById('push-debug-panel');
+              const metaCheck = document.getElementById('meta-vapid-check');
               if (!el) return;
-              const vapid = window.medoruVapidKey || '';
+              const meta = document.querySelector("meta[name='vapid-public-key']");
+              const metaContent = meta ? meta.getAttribute('content') : 'NO META TAG';
+              if (metaCheck) metaCheck.textContent = metaContent ? 'present (' + metaContent.length + ' chars)' : 'EMPTY';
+              window.medoruVapidKey = metaContent || "";
+              const vapid = window.medoruVapidKey;
               const checks = [
                 ['VAPID key length', vapid.length],
                 ['VAPID key present', !!vapid],
