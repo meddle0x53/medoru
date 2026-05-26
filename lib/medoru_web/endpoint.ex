@@ -15,6 +15,9 @@ defmodule MedoruWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
+  # Prevent caching of service-worker.js so browsers always check for updates
+  plug MedoruWeb.Plugs.NoCacheServiceWorker
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),

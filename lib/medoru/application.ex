@@ -9,6 +9,8 @@ defmodule Medoru.Application do
 
   @impl true
   def start(_type, _args) do
+    check_vapid_config()
+
     children = [
       MedoruWeb.Telemetry,
       Medoru.Repo,
@@ -34,5 +36,18 @@ defmodule Medoru.Application do
   def config_change(changed, _new, removed) do
     MedoruWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp check_vapid_config do
+    case Application.get_env(:medoru, :vapid_details) do
+      nil ->
+        Logger.warning("VAPID config is missing. Push notifications will not work.")
+
+      %{public_key: key} when key in [nil, ""] ->
+        Logger.warning("VAPID public key is empty. Push notifications will not work.")
+
+      _ ->
+        :ok
+    end
   end
 end
