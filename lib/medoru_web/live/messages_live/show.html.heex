@@ -393,6 +393,9 @@
             <p class="text-sm text-warning">
               {gettext("It looks like you're using a new device or browser. You can't decrypt old messages without your original encryption key.")}
             </p>
+            <p class="text-xs text-base-content/60 mt-1">
+              {gettext("If no one is online to provide the key, you can reset encryption to start fresh. Old messages will remain unreadable.")}
+            </p>
             <div class="flex flex-wrap gap-2 mt-2">
               <button
                 phx-click="request_key_reencryption"
@@ -400,6 +403,14 @@
               >
                 <.icon name="hero-arrow-path" class="w-3 h-3 mr-1" />
                 {gettext("Request key from others")}
+              </button>
+              <button
+                phx-click="reset_conversation_keys"
+                data-confirm={gettext("Reset encryption? Old messages will remain unreadable, but you'll be able to send new messages.")}
+                class="btn btn-error btn-xs btn-outline"
+              >
+                <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                {gettext("Reset encryption")}
               </button>
               <.link
                 navigate={~p"/settings/chat-security"}

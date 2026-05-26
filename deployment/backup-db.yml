@@ -1,0 +1,59 @@
+---
+# Backup Medoru production database and download locally
+# Usage: ansible-playbook -i inventory/production backup-db.yml -K
+#
+# The dump is created in PostgreSQL custom format (-Fc), which is compressed
+# and supports selective restore. It will be downloaded to data/backups/.
+
+- name: Backup Medoru Production Database
+  hosts: medoru
+  become: yes
+  vars:
+    backup_filename: "medoru_prod_{{ ansible_date_time.iso8601_basic_short }}.dump"
+    remote_backup_path: "/tmp/{{ backup_filename }}"
+    local_backup_dir: "../data/backups"
+
+  tasks:
+    - name: Ensure local backup directory exists
+      ansible.builtin.file:
+        path: "{{ local_backup_dir }}"
+        state: directory
+      delegate_to: localhost
+      become: no
+
+    - name: Run pg_dump (custom format, compressed)
+      ansible.builtin.shell: |
+        set -a
+        source /etc/medoru/medoru.env
+        set +a
+        pg_dump -Fc --clean --if-exists -f "{{ remote_backup_path }}" "$DATABASE_URL"
+      args:
+        executable: /bin/bash
+      register: pgdump_result
+      changed_when: true
+
+    - name: Compress dump with gzip
+      ansible.builtin.command:
+        cmd: "gzip -f {{ remote_backup_path }}"
+      changed_when: true
+
+    - name: Fetch backup from server
+      ansible.builtin.fetch:
+        src: "{{ remote_backup_path }}.gz"
+        dest: "{{ local_backup_dir }}/{{ backup_filename }}.gz"
+        flat: yes
+
+    - name: Clean up remote backup file
+      ansible.builtin.file:
+        path: "{{ remote_backup_path }}.gz"
+        state: absent
+
+    - name: Display backup result
+      ansible.builtin.debug:
+        msg:
+          - "=== Backup Complete ==="
+          - "Local file: {{ local_backup_dir }}/{{ backup_filename }}.gz"
+          - "Remote temp: cleaned up"
+          - ""
+          - "To restore locally, run:"
+          - "  ./bin/restore_dev_db.sh {{ local_backup_dir }}/{{ backup_filename }}.gz"

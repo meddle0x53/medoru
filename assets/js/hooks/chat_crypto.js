@@ -234,6 +234,8 @@ const ChatCrypto = {
         console.error("[ChatCrypto] Failed to decrypt conversation key:", e)
         // Tell server to show the re-key banner since we can't decrypt
         this.pushEvent("report_key_mismatch", {})
+        // Start periodic retry in case someone comes online later
+        this._startMismatchRetry()
       }
     }
 
@@ -243,6 +245,8 @@ const ChatCrypto = {
       try {
         await CryptoState.getConversationKey(this.convId, encrypted_key)
         await this.decryptAll()
+        // Stop retrying since we have a working key now
+        this._stopMismatchRetry()
         // Process any pending message
         if (window.chatPendingMessage) {
           const text = window.chatPendingMessage
@@ -252,6 +256,10 @@ const ChatCrypto = {
         }
       } catch (e) {
         console.error("[ChatCrypto] Failed to set conversation key:", e)
+        // The server sent a key we can't decrypt (likely stale). Report mismatch
+        // again so other participants know we still need help.
+        this.pushEvent("report_key_mismatch", {})
+        this._startMismatchRetry()
       }
     })
 
@@ -316,6 +324,14 @@ const ChatCrypto = {
       window.chatPendingMessage = null
     })
 
+    // Handle encryption reset (nuclear option: old keys deleted, start fresh)
+    this.handleEvent("encryption_reset", () => {
+      console.log("[ChatCrypto] Encryption reset for conversation", this.convId)
+      CryptoState.conversationKeys.delete(this.convId)
+      this._stopMismatchRetry()
+      // The next message send will trigger ensure_conversation_key -> create_conversation_key
+    })
+
     // Decrypt new messages pushed via PubSub
     this.handleEvent("decrypt_message", async ({ id, ciphertext, iv }) => {
       const el = document.querySelector(`[data-msg-id="${id}"]`)
@@ -367,6 +383,24 @@ const ChatCrypto = {
   destroyed() {
     if (this.phxUpdateHandler) {
       window.removeEventListener("phx:update", this.phxUpdateHandler)
+    }
+    this._stopMismatchRetry()
+  },
+
+  _startMismatchRetry() {
+    if (this._mismatchRetryInterval) return
+    console.log("[ChatCrypto] Starting periodic mismatch retry")
+    this._mismatchRetryInterval = setInterval(() => {
+      console.log("[ChatCrypto] Retrying key mismatch report...")
+      this.pushEvent("report_key_mismatch", {})
+    }, 8000)
+  },
+
+  _stopMismatchRetry() {
+    if (this._mismatchRetryInterval) {
+      clearInterval(this._mismatchRetryInterval)
+      this._mismatchRetryInterval = null
+      console.log("[ChatCrypto] Stopped periodic mismatch retry")
     }
   },
 

@@ -56,6 +56,7 @@ defmodule MedoruWeb.SettingsLive.ChatSecurity do
               <div
                 id="chat-key-manager"
                 phx-hook="ChatKeyManager"
+                data-current-user-id={@current_scope.current_user.id}
                 class="mt-4 space-y-4"
               >
                 <div id="chat-key-status" class="text-sm text-warning">

@@ -1,5 +1,10 @@
+// Storage key helpers matching ChatCrypto's user-isolated format
+function getPrivKeyStorage(userId) { return `medoru_chat_privkey_v2_${userId}` }
+function getPubKeyStorage(userId) { return `medoru_chat_pubkey_v2_${userId}` }
+
 const ChatKeyManager = {
   mounted() {
+    this.userId = this.el.dataset.currentUserId || "default"
     this.exportBtn = this.el.querySelector("#chat-key-export-btn")
     this.importBtn = this.el.querySelector("#chat-key-import-btn")
     this.importArea = this.el.querySelector("#chat-key-import-area")
@@ -24,8 +29,28 @@ const ChatKeyManager = {
     this.checkKeyStatus()
   },
 
+  _getPrivateKey() {
+    // Prefer user-isolated storage (used by ChatCrypto), fallback to legacy
+    return localStorage.getItem(getPrivKeyStorage(this.userId))
+      || localStorage.getItem("medoru_chat_privkey_v2")
+  },
+
+  _getPublicKey() {
+    return localStorage.getItem(getPubKeyStorage(this.userId))
+      || localStorage.getItem("medoru_chat_pubkey_v2")
+  },
+
+  _saveKeys(privKey, pubKey) {
+    // Save to user-isolated storage (primary)
+    localStorage.setItem(getPrivKeyStorage(this.userId), privKey)
+    localStorage.setItem(getPubKeyStorage(this.userId), pubKey)
+    // Also save to legacy location for backwards compatibility
+    localStorage.setItem("medoru_chat_privkey_v2", privKey)
+    localStorage.setItem("medoru_chat_pubkey_v2", pubKey)
+  },
+
   checkKeyStatus() {
-    const privKey = localStorage.getItem("medoru_chat_privkey_v2")
+    const privKey = this._getPrivateKey()
     if (privKey) {
       this.showStatus("active", "Your encryption key is active on this device.")
       if (this.keyDisplay) {
@@ -48,7 +73,7 @@ const ChatKeyManager = {
   },
 
   exportKey() {
-    const privKey = localStorage.getItem("medoru_chat_privkey_v2")
+    const privKey = this._getPrivateKey()
     if (!privKey) {
       this.showStatus("error", "No encryption key found to export.")
       return
@@ -97,9 +122,8 @@ const ChatKeyManager = {
       const publicKey = await crypto.subtle.exportKey("spki", privateKey)
       const publicKeyB64 = this.bufferToB64(publicKey)
 
-      // Save to localStorage
-      localStorage.setItem("medoru_chat_privkey_v2", keyText)
-      localStorage.setItem("medoru_chat_pubkey_v2", publicKeyB64)
+      // Save to localStorage (both user-isolated and legacy)
+      this._saveKeys(keyText, publicKeyB64)
 
       // Register with server
       this.pushEvent("register_public_key", { public_key: publicKeyB64 })

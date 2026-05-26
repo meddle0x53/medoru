@@ -1,4 +1,8 @@
-const LOOPBACK_KEYWORDS = ["mix", "loopback", "virtual", "cable", "stereo", "what u hear", "desktop"]
+// Loopback/virtual audio devices to deprioritize in the picker.
+// "stereo" is intentionally NOT in this list — many real USB microphones
+// contain "Stereo" in their driver name (e.g. "Blue Yeti Stereo Microphone")
+// and would be wrongly hidden.
+const LOOPBACK_KEYWORDS = ["mix", "loopback", "virtual", "cable", "what u hear", "desktop"]
 
 function isLoopbackDevice(label) {
   const lower = label.toLowerCase()
@@ -60,32 +64,57 @@ const ChatVoiceRecorder = {
 
   async loadDevices() {
     try {
-      // Request temporary permission to enumerate labeled devices
+      // Request temporary permission to enumerate labeled devices.
+      // On Firefox this is required before enumerateDevices() returns labels.
       const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       tempStream.getTracks().forEach(t => t.stop())
 
+      // Give Firefox a moment to fully release the stream before enumerating.
+      // Without this, devices can appear missing or with stale data.
+      await new Promise(r => setTimeout(r, 100))
+
       const allDevices = await navigator.mediaDevices.enumerateDevices()
-      this.devices = allDevices.filter(d => d.kind === "audioinput" && d.deviceId && d.deviceId !== "default" && d.deviceId !== "communications")
 
-      // Filter out loopback devices
-      const realMics = this.devices.filter(d => !isLoopbackDevice(d.label))
+      // Log raw output for debugging
+      console.log("[VoiceRecorder] Raw devices:", allDevices
+        .filter(d => d.kind === "audioinput")
+        .map(d => ({ id: d.deviceId, label: d.label })))
 
-      if (realMics.length === 0) {
-        // No real mic found, fallback to all non-loopback
-        this.devices = this.devices.filter(d => !isLoopbackDevice(d.label))
-      } else {
-        this.devices = realMics
+      // Keep every audio input that has a deviceId (including default/communications).
+      // Filtering out default/communications can hide the only available entry
+      // for a microphone on some systems (especially Firefox + PulseAudio).
+      let inputs = allDevices.filter(d => d.kind === "audioinput" && d.deviceId)
+
+      // Sort real microphones first, then default/communications aliases, then loopback last
+      inputs.sort((a, b) => {
+        const aLoopback = isLoopbackDevice(a.label)
+        const bLoopback = isLoopbackDevice(b.label)
+        const aDefault = a.deviceId === "default" || a.deviceId === "communications"
+        const bDefault = b.deviceId === "default" || b.deviceId === "communications"
+
+        if (aLoopback && !bLoopback) return 1
+        if (!aLoopback && bLoopback) return -1
+        if (aDefault && !bDefault) return 1
+        if (!aDefault && bDefault) return -1
+        return 0
+      })
+
+      this.devices = inputs
+
+      // If the previously selected device disappeared, clear it
+      if (this.selectedDeviceId && !this.devices.find(d => d.deviceId === this.selectedDeviceId)) {
+        console.log("[VoiceRecorder] Previously selected device gone, clearing")
+        this.selectedDeviceId = null
+        localStorage.removeItem(getStorageKey())
       }
 
       // Auto-select if nothing stored
       if (!this.selectedDeviceId && this.devices.length > 0) {
-        // Prefer devices with "microphone" in the name
-        const preferred = this.devices.find(d => isMicrophoneDevice(d.label))
+        const preferred = this.devices.find(d => isMicrophoneDevice(d.label) && !isLoopbackDevice(d.label))
         this.selectedDeviceId = preferred ? preferred.deviceId : this.devices[0].deviceId
         localStorage.setItem(getStorageKey(), this.selectedDeviceId)
       }
 
-      // Always render the picker so user can see current selection
       this.renderDevicePicker()
 
       console.log("[VoiceRecorder] Available mics:", this.devices.map(d => d.label))
@@ -127,9 +156,14 @@ const ChatVoiceRecorder = {
     })
   },
 
-  togglePicker(e) {
+  async togglePicker(e) {
     e.stopPropagation()
     if (this.pickerEl) {
+      const isHidden = this.pickerEl.classList.contains("hidden")
+      if (isHidden) {
+        // Refresh the list when opening so new/changed devices appear
+        await this.loadDevices()
+      }
       this.pickerEl.classList.toggle("hidden")
     }
   },

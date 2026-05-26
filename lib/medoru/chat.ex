@@ -258,6 +258,17 @@ defmodule Medoru.Chat do
     end
   end
 
+  @doc """
+  Deletes all conversation keys for a conversation.
+  Used as a last resort when all participants have lost their private keys
+  and need to create a fresh shared encryption key.
+  """
+  def delete_conversation_keys(conversation_id) do
+    ConversationKey
+    |> where([ck], ck.conversation_id == ^conversation_id)
+    |> Repo.delete_all()
+  end
+
   # ============================================================================
   # Messages
   # ============================================================================

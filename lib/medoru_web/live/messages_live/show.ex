@@ -93,9 +93,10 @@ defmodule MedoruWeb.MessagesLive.Show do
         # it fails to decrypt the conversation key with the user's current private key.
         key_mismatch = false
 
-        # If this user has a key mismatch (new device/browser), auto-request
-        # re-encryption from other online participants
-        if connected?(socket) && key_mismatch do
+        # Proactive re-encryption: if this user has a conversation key but has
+        # previously registered a different public key, their key may be stale.
+        # Broadcast a re-encryption request so online participants can help.
+        if connected?(socket) && conversation_key && Encryption.user_has_previous_keys?(current_user.id) do
           Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
         end
 
@@ -201,9 +202,37 @@ defmodule MedoruWeb.MessagesLive.Show do
 
   @impl true
   def handle_event("report_key_mismatch", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+
     require Logger
-    Logger.debug("[ChatRekey] Client reported key mismatch for user #{socket.assigns.current_scope.current_user.id}")
-    {:noreply, assign(socket, :key_mismatch, true)}
+    Logger.debug("[ChatRekey] Client reported key mismatch for user #{current_user.id}")
+
+    # Immediately broadcast a re-encryption request to any online participants.
+    # The client will also retry periodically until someone responds.
+    if connected?(socket) do
+      Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+    end
+
+    socket = assign(socket, :key_mismatch, true)
+
+    # Check if anyone else is actually online to provide the key
+    other_online =
+      Presence.list("chat_presence:#{conversation.id}")
+      |> Enum.reject(fn {uid, _} -> uid == current_user.id end)
+
+    socket =
+      if other_online == [] do
+        put_flash(
+          socket,
+          :info,
+          gettext("No one else is online right now. We'll keep trying when someone comes online, or you can reset encryption below.")
+        )
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -509,6 +538,24 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event("reset_conversation_keys", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+
+    require Logger
+    Logger.info("[ChatRekey] User #{current_user.id} reset conversation keys for #{conversation.id}")
+
+    Chat.delete_conversation_keys(conversation.id)
+
+    {:noreply,
+     socket
+     |> assign(:key_mismatch, false)
+     |> assign(:encrypted_key, nil)
+     |> put_flash(:warning, gettext("Encryption has been reset. Old messages cannot be decrypted, but you can now send new messages."))
+     |> push_event("encryption_reset", %{})}
+  end
+
+  @impl true
   def handle_event("submit_re_encrypted_key", %{"target_user_id" => target_id, "encrypted_key" => key_b64}, socket) do
     conversation = socket.assigns.conversation
     require Logger
@@ -536,26 +583,25 @@ defmodule MedoruWeb.MessagesLive.Show do
   def handle_info({:request_key_reencryption, target_user_id}, socket) do
     current_user = socket.assigns.current_scope.current_user
 
-    # Only ask other participants (not the target user) to re-encrypt
-    if current_user.id != target_user_id do
-      # Get the target user's new public key
-      target_key = Encryption.get_public_key(target_user_id)
+    # Ask ALL online participants (including the target user's other devices)
+    # to re-encrypt. The client-side ChatCrypto hook will silently bail out
+    # if it doesn't have the conversation key cached, so this is safe.
+    # This enables same-user multi-device recovery: Device 1 can re-encrypt
+    # for Device 2 when both are online.
+    target_key = Encryption.get_public_key(target_user_id)
 
-      if target_key do
-        require Logger
-        Logger.debug("[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}")
+    if target_key do
+      require Logger
+      Logger.debug("[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}")
 
-        {:noreply,
-         push_event(socket, "re_encrypt_for_user", %{
-           target_user_id: target_user_id,
-           public_key: Base.encode64(target_key.public_key_spki)
-         })}
-      else
-        require Logger
-        Logger.warning("[ChatRekey] No active public key found for target user #{target_user_id}")
-        {:noreply, socket}
-      end
+      {:noreply,
+       push_event(socket, "re_encrypt_for_user", %{
+         target_user_id: target_user_id,
+         public_key: Base.encode64(target_key.public_key_spki)
+       })}
     else
+      require Logger
+      Logger.warning("[ChatRekey] No active public key found for target user #{target_user_id}")
       {:noreply, socket}
     end
   end
