@@ -1,6 +1,6 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
   <div id="profile-settings" phx-hook="Theme" class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div id="push-notifications-section" phx-hook="PushNotificationsHook" class="hidden"></div>
+    <%!-- Push notifications hook is on the button itself --%>
     <%!-- Header --%>
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content">{gettext("Profile Settings")}</h1>
@@ -264,7 +264,10 @@
           </div>
           <button
             type="button"
+            id="push-notifications-toggle"
             phx-click="toggle_push_notifications"
+            phx-hook="PushNotificationsHook"
+            data-enabled={@profile.push_notifications_enabled}
             class={["btn", @profile.push_notifications_enabled && "btn-error btn-outline", !@profile.push_notifications_enabled && "btn-primary"]}
           >
             {if @profile.push_notifications_enabled,

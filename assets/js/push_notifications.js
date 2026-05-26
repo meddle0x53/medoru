@@ -22,20 +22,72 @@ function getCsrfToken() {
   return meta ? meta.getAttribute("content") : ""
 }
 
+export function isPushSupported() {
+  const swReady = "serviceWorker" in navigator
+  const pushReady = "PushManager" in window
+  const notificationReady = "Notification" in window
+  const vapidReady = !!VAPID_KEY
+  return {
+    supported: swReady && pushReady && notificationReady && vapidReady,
+    serviceWorker: swReady,
+    pushManager: pushReady,
+    notification: notificationReady,
+    vapidKey: vapidReady,
+    permission: notificationReady ? Notification.permission : "unsupported",
+  }
+}
+
+export async function requestPushPermission() {
+  if (!("Notification" in window)) {
+    return { granted: false, state: "unsupported" }
+  }
+
+  // If already granted, return immediately without showing a prompt
+  if (Notification.permission === "granted") {
+    return { granted: true, state: "granted" }
+  }
+
+  // If already denied, we can't ask again
+  if (Notification.permission === "denied") {
+    return { granted: false, state: "denied" }
+  }
+
+  // Request permission (this will show the browser prompt)
+  const result = await Notification.requestPermission()
+  return { granted: result === "granted", state: result }
+}
+
+async function getSwRegistration() {
+  if (swRegistration) return swRegistration
+  if ("serviceWorker" in navigator) {
+    swRegistration = await navigator.serviceWorker.ready
+    return swRegistration
+  }
+  return null
+}
+
 async function subscribeToPush() {
-  if (!swRegistration || !VAPID_KEY) {
-    console.log("[Push] SW or VAPID key not available")
+  const support = isPushSupported()
+  if (!support.supported) {
+    console.error("[Push] Not supported:", support)
     return false
   }
 
   try {
-    const permission = await Notification.requestPermission()
-    if (permission !== "granted") {
-      console.log("[Push] Permission denied")
+    // Ensure service worker is ready
+    const reg = await getSwRegistration()
+    if (!reg) {
+      console.error("[Push] Service worker not available")
       return false
     }
 
-    const subscription = await swRegistration.pushManager.subscribe({
+    // Check permission (should already be granted if user clicked through hook)
+    if (Notification.permission !== "granted") {
+      console.error("[Push] Permission not granted:", Notification.permission)
+      return false
+    }
+
+    const subscription = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_KEY),
     })
@@ -89,10 +141,11 @@ async function subscribeToPush() {
 }
 
 async function unsubscribeFromPush() {
-  if (!swRegistration) return false
+  const reg = await getSwRegistration()
+  if (!reg) return false
 
   try {
-    const subscription = await swRegistration.pushManager.getSubscription()
+    const subscription = await reg.pushManager.getSubscription()
     if (subscription) {
       await subscription.unsubscribe()
 
@@ -117,16 +170,21 @@ async function unsubscribeFromPush() {
 export async function initPushNotifications(registration) {
   swRegistration = registration
 
-  if (!("PushManager" in window)) {
-    console.log("[Push] Push notifications not supported")
+  const support = isPushSupported()
+  if (!support.supported) {
+    console.log("[Push] Push notifications not supported:", support)
     return
   }
 
   // Check if already subscribed and sync with server
-  const subscription = await registration.pushManager.getSubscription()
-  if (subscription) {
-    console.log("[Push] Already subscribed, re-syncing...")
-    await subscribeToPush()
+  try {
+    const subscription = await registration.pushManager.getSubscription()
+    if (subscription) {
+      console.log("[Push] Already subscribed, re-syncing...")
+      await subscribeToPush()
+    }
+  } catch (err) {
+    console.error("[Push] Error checking subscription:", err)
   }
 }
 
