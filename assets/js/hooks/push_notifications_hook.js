@@ -20,6 +20,12 @@ const PushNotificationsHook = {
         console.error("[Push] Not supported:", support)
         this.pushEvent("push_subscription_failed", {
           reason: "not_supported",
+          vapid_key_present: support.vapidKey,
+          vapid_key_length: VAPID_KEY ? VAPID_KEY.length : 0,
+          service_worker_ready: support.serviceWorker,
+          push_manager_ready: support.pushManager,
+          notification_ready: support.notification,
+          permission_state: support.permission,
         })
         return
       }

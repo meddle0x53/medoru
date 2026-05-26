@@ -283,6 +283,20 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
     refreshed_profile = %{profile | push_notifications_enabled: false}
 
+    if params["reason"] == "not_supported" do
+      require Logger
+
+      Logger.warning("""
+      Push subscription failed - not supported.
+      vapid_key_present: #{params["vapid_key_present"]},
+      vapid_key_length: #{params["vapid_key_length"]},
+      service_worker: #{params["service_worker_ready"]},
+      push_manager: #{params["push_manager_ready"]},
+      notification: #{params["notification_ready"]},
+      permission: #{params["permission_state"]}
+      """)
+    end
+
     message =
       case params["reason"] do
         "permission_denied" ->
