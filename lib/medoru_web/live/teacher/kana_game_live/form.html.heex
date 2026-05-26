@@ -244,14 +244,14 @@
             </div>
           </div>
         </div>
-        <div class="flex gap-3 pt-4">
+        <div class="flex flex-col-reverse sm:flex-row gap-3 pt-4">
           <.link
             navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
-            class="btn btn-ghost"
+            class="btn btn-ghost w-full sm:w-auto"
           >
             {gettext("Cancel")}
           </.link>
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" class="btn btn-primary w-full sm:w-auto">
             <%= if @mode == :edit do %>
               {gettext("Update Game")}
             <% else %>

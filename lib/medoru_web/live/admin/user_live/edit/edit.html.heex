@@ -75,10 +75,10 @@
                 end
               ]}
             >
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="flex items-center gap-3">
                   <div class={[
-                    "w-10 h-10 rounded-full flex items-center justify-center",
+                    "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
                     case type do
                       "admin" -> "bg-error/10 text-error"
                       "teacher" -> "bg-warning/10 text-warning"
@@ -98,7 +98,7 @@
                       class="w-5 h-5"
                     />
                   </div>
-                  <div>
+                  <div class="min-w-0">
                     <div class="font-semibold text-base-content">
                       {String.capitalize(type)}
                     </div>
@@ -117,7 +117,7 @@
                   </div>
                 </div>
                 <%= if @current_type == type do %>
-                  <span class="badge badge-primary">{gettext("Current")}</span>
+                  <span class="badge badge-primary shrink-0">{gettext("Current")}</span>
                 <% end %>
               </div>
             </button>
@@ -147,16 +147,16 @@
             end
           ]}
         >
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center gap-3">
               <div class={[
-                "w-10 h-10 rounded-full flex items-center justify-center",
+                "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
                 @user.moderator && "bg-warning/10 text-warning",
                 !@user.moderator && "bg-base-200"
               ]}>
                 <.icon name="hero-check-badge" class="w-5 h-5" />
               </div>
-              <div>
+              <div class="min-w-0">
                 <div class="font-semibold text-base-content">
                   {gettext("Content Moderator")}
                 </div>
@@ -212,7 +212,7 @@
               email: @user.email
             )
           }
-          class="btn btn-error w-full"
+          class="btn btn-error w-full sm:w-auto"
         >
           <.icon name="hero-trash" class="w-5 h-5 mr-2" />
           {gettext("Reset All Progress")}

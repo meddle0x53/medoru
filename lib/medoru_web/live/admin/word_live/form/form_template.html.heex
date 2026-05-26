@@ -396,11 +396,11 @@
           </div>
 
           <%!-- Actions --%>
-          <div class="border-t border-base-300 pt-6 flex items-center justify-end gap-4">
-            <.link navigate={~p"/admin/words"} class="btn btn-ghost">
+          <div class="border-t border-base-300 pt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+            <.link navigate={~p"/admin/words"} class="btn btn-ghost w-full sm:w-auto">
               {gettext("Cancel")}
             </.link>
-            <button type="submit" class="btn btn-primary" phx-disable-with={gettext("Saving...")}>
+            <button type="submit" class="btn btn-primary w-full sm:w-auto" phx-disable-with={gettext("Saving...")}>
               <.icon name="hero-check" class="w-4 h-4 mr-2" />
               <%= if @live_action == :new do %>
                 {gettext("Create Word")}
