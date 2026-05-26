@@ -100,7 +100,7 @@ if config_env() == :prod do
       Generate VAPID keys and set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.
       """
 
-  config :web_push_encryption, :vapid_details,
+  config :medoru, :vapid_details,
     subject: System.get_env("VAPID_SUBJECT", "mailto:admin@medoru.net"),
     public_key: vapid_public_key,
     private_key: vapid_private_key
