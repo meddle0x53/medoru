@@ -231,20 +231,16 @@ const ChatCrypto = {
     const serverPubKey = this.participantPublicKeys[currentUserId]
     const localPubKey = CryptoState.publicKeyB64
     if (!result.newKey && serverPubKey && localPubKey && serverPubKey !== localPubKey) {
-      console.log("[ChatCrypto] Local key stale (doesn't match server). Regenerating...")
-      localStorage.removeItem(getPrivKeyStorage(currentUserId))
-      localStorage.removeItem(getPubKeyStorage(currentUserId))
-      localStorage.removeItem("medoru_chat_privkey_v2")
-      localStorage.removeItem("medoru_chat_pubkey_v2")
-      CryptoState.privateKey = null
-      CryptoState.publicKeyB64 = null
-      CryptoState.ready = false
-      const freshResult = await CryptoState.init(currentUserId)
-      if (freshResult.publicKey) {
-        this.pushEvent("register_public_key", { public_key: freshResult.publicKey })
-        // Update so updated() doesn't push the old stale key again
-        this._needsRegistration = null
-      }
+      console.log("[ChatCrypto] Local key doesn't match server. Re-registering local key...")
+      // Re-register our existing local key instead of generating a new one.
+      // Generating a new key causes a multi-device ping-pong where every
+      // reconnect creates a new key, breaking all other devices of the same user.
+      // By pushing our existing key, we keep it stable and only need re-encryption.
+      this.pushEvent("register_public_key", { public_key: localPubKey })
+      // Request re-encryption since the conversation key may be encrypted
+      // with a different key that another device pushed.
+      this.pushEvent("report_key_mismatch", {})
+      this._startMismatchRetry()
     }
 
     // Load conversation key if provided
