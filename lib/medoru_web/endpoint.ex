@@ -4,11 +4,13 @@ defmodule MedoruWeb.Endpoint do
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  # Session cookie lasts 60 days so PWA users stay logged in
   @session_options [
     store: :cookie,
     key: "_medoru_key",
     signing_salt: "zfg0u6c5",
-    same_site: "Lax"
+    same_site: "Lax",
+    max_age: 60 * 24 * 60 * 60
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
