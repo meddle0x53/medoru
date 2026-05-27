@@ -36,6 +36,7 @@ const ChatVoiceRecorder = {
     this.timerInterval = null
     this.selectedDeviceId = localStorage.getItem(getStorageKey()) || null
     this.devices = []
+    this.devicesLoaded = false
 
     this.button.addEventListener("click", () => this.toggleRecording())
 
@@ -51,8 +52,9 @@ const ChatVoiceRecorder = {
     }
     document.addEventListener("click", this._outsideClick)
 
-    // Load available microphones on mount (needs permission first)
-    this.loadDevices()
+    // Do NOT enumerate microphones on mount — that triggers a permission
+    // prompt on iOS before the user has clicked anything. Devices are loaded
+    // lazily on first interaction with the mic button or picker.
   },
 
   destroyed() {
@@ -161,8 +163,9 @@ const ChatVoiceRecorder = {
     if (this.pickerEl) {
       const isHidden = this.pickerEl.classList.contains("hidden")
       if (isHidden) {
-        // Refresh the list when opening so new/changed devices appear
+        // Load/refresh devices when opening (needs user gesture for permission on iOS)
         await this.loadDevices()
+        this.devicesLoaded = true
       }
       this.pickerEl.classList.toggle("hidden")
     }
@@ -177,9 +180,16 @@ const ChatVoiceRecorder = {
   async toggleRecording() {
     if (this.isRecording) {
       this.stopRecording()
-    } else {
-      await this.startRecording()
+      return
     }
+
+    // Load devices on first use (needs user gesture for permission on iOS)
+    if (!this.devicesLoaded) {
+      await this.loadDevices()
+      this.devicesLoaded = true
+    }
+
+    await this.startRecording()
   },
 
   async startRecording() {
