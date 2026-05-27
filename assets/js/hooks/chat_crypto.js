@@ -242,7 +242,7 @@ const ChatCrypto = {
       if (freshResult.publicKey) {
         this.pushEvent("register_public_key", { public_key: freshResult.publicKey })
         // Update so updated() doesn't push the old stale key again
-        this._needsRegistration = null
+        //this._needsRegistration = null
       }
     }
 
