@@ -118,15 +118,36 @@ defmodule Medoru.Chat do
         |> Repo.insert!()
       end
 
-      # Store encrypted conversation keys for each participant
-      for {user_id, encrypted_key} <- encrypted_keys do
-        %ConversationKey{}
-        |> ConversationKey.changeset(%{
-          conversation_id: conversation.id,
-          user_id: user_id,
-          encrypted_key: Base.decode64!(encrypted_key)
-        })
-        |> Repo.insert!()
+      # Store encrypted conversation keys for each participant.
+      # Supports both legacy single-key format and multi-key format.
+      for {user_id, entries} <- encrypted_keys do
+        cond do
+          is_list(entries) and entries != [] and is_map(hd(entries)) ->
+            # New multi-key format: [%{"fingerprint" => fp, "encrypted_key" => b64}, ...]
+            for %{"fingerprint" => fp, "encrypted_key" => key_b64} <- entries do
+              %ConversationKey{}
+              |> ConversationKey.changeset(%{
+                conversation_id: conversation.id,
+                user_id: user_id,
+                encrypted_key: Base.decode64!(key_b64),
+                key_fingerprint: fp
+              })
+              |> Repo.insert!()
+            end
+
+          is_binary(entries) ->
+            # Legacy single-key format: "base64_key"
+            %ConversationKey{}
+            |> ConversationKey.changeset(%{
+              conversation_id: conversation.id,
+              user_id: user_id,
+              encrypted_key: Base.decode64!(entries)
+            })
+            |> Repo.insert!()
+
+          true ->
+            :ok
+        end
       end
 
       conversation
@@ -206,8 +227,11 @@ defmodule Medoru.Chat do
   Returns nil if not found. Backward-compat: returns a single row.
   """
   def get_conversation_key(conversation_id, user_id) do
+    # Backward compat: prefer the legacy row (nil fingerprint) if one exists,
+    # otherwise return the most recently inserted row.
     ConversationKey
     |> where([ck], ck.conversation_id == ^conversation_id and ck.user_id == ^user_id)
+    |> order_by([ck], asc: ck.key_fingerprint)
     |> limit(1)
     |> Repo.one()
   end

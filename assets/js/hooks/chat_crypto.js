@@ -177,6 +177,13 @@ export const CryptoState = {
       return { ready: true, newKey: true, publicKey: pubB64 }
     }
 
+    // If we have keys but no stored fingerprint (e.g. existing user before
+    // this deployment), compute and store the fingerprint now.
+    if (!fp) {
+      fp = await keyFingerprint(pubB64)
+      localStorage.setItem(fpStore, fp)
+    }
+
     this.privateKey = await importPrivateKey(privB64)
     this.publicKeyB64 = pubB64
     this.keyFingerprint = fp
