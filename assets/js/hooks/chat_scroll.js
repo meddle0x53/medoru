@@ -5,12 +5,9 @@ const ChatScroll = {
     this.scrollToBottom()
     formatLocalTimes(this.el)
 
-    // Observe child list changes to auto-scroll
-    this.observer = new MutationObserver(() => {
+    this.handleEvent("scroll_to_bottom", () => {
       this.scrollToBottom()
     })
-
-    this.observer.observe(this.el, { childList: true, subtree: true })
 
     // Message menu handling (event delegation)
     this._menuHandler = (e) => {
@@ -40,14 +37,17 @@ const ChatScroll = {
   },
 
   updated() {
-    this.scrollToBottom()
+    // Only auto-scroll if the user is already near the bottom.
+    // This prevents jumping when the user is reading older messages.
+    const threshold = 150
+    const distanceFromBottom = this.el.scrollHeight - this.el.scrollTop - this.el.clientHeight
+    if (distanceFromBottom < threshold) {
+      this.scrollToBottom()
+    }
     formatLocalTimes(this.el)
   },
 
   destroyed() {
-    if (this.observer) {
-      this.observer.disconnect()
-    }
     if (this._menuHandler) {
       this.el.removeEventListener("click", this._menuHandler)
     }
