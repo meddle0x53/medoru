@@ -568,9 +568,12 @@ defmodule MedoruWeb.MessagesLive.Show do
     older_messages = Chat.list_messages(conversation.id, limit: @per_page, offset: new_offset)
     has_more = length(older_messages) == @per_page
 
+    # Prepend older messages so the list stays in chronological order
+    # (oldest first, newest last). list_messages returns each batch in
+    # oldest-to-newest order, so older_messages belongs before messages.
     {:noreply,
      socket
-     |> assign(:messages, socket.assigns.messages ++ older_messages)
+     |> assign(:messages, older_messages ++ socket.assigns.messages)
      |> assign(:has_more_messages, has_more)
      |> assign(:message_offset, new_offset)}
   end
