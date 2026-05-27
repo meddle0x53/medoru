@@ -227,9 +227,10 @@ const ChatCrypto = {
     // Detect if our local key is stale relative to the server's active key.
     // If the server has a different public key for us, our private key can't
     // decrypt any conversation key re-encrypted by other participants.
+    // Skip this check if we just generated a brand new key — it's new, not stale.
     const serverPubKey = this.participantPublicKeys[currentUserId]
     const localPubKey = CryptoState.publicKeyB64
-    if (serverPubKey && localPubKey && serverPubKey !== localPubKey) {
+    if (!result.newKey && serverPubKey && localPubKey && serverPubKey !== localPubKey) {
       console.log("[ChatCrypto] Local key stale (doesn't match server). Regenerating...")
       localStorage.removeItem(getPrivKeyStorage(currentUserId))
       localStorage.removeItem(getPubKeyStorage(currentUserId))
@@ -242,7 +243,7 @@ const ChatCrypto = {
       if (freshResult.publicKey) {
         this.pushEvent("register_public_key", { public_key: freshResult.publicKey })
         // Update so updated() doesn't push the old stale key again
-        //this._needsRegistration = null
+        this._needsRegistration = null
       }
     }
 
