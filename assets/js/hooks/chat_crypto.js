@@ -267,8 +267,10 @@ const ChatCrypto = {
     // Server sends the conversation key (initial load or after creation)
     this.handleEvent("conversation_key", async ({ encrypted_key }) => {
       if (!encrypted_key) return
-      // The server sent us a key — always discard cache and try the latest one.
-      // Otherwise a stale cached key silently breaks encryption/decryption.
+      // Save the existing cached key in case the new one is for a different
+      // device (same user, different key pair). We must not destroy a working
+      // cache just because a multi-device re-encryption arrived.
+      const existingKey = CryptoState.conversationKeys.get(this.convId)
       CryptoState.conversationKeys.delete(this.convId)
       try {
         await CryptoState.getConversationKey(this.convId, encrypted_key)
@@ -286,10 +288,17 @@ const ChatCrypto = {
         }
       } catch (e) {
         console.error("[ChatCrypto] Failed to set conversation key:", e)
-        // Do NOT immediately report mismatch here — that creates a tight
-        // feedback loop when a user's key is permanently mismatched.
-        // The periodic retry (8s) will request re-encryption instead.
-        this._startMismatchRetry()
+        // Restore the previously working key so this device doesn't break
+        // just because a re-encryption for another device arrived.
+        if (existingKey) {
+          CryptoState.conversationKeys.set(this.convId, existingKey)
+        }
+        // Only start the retry timer if we don't already have a working key.
+        // Otherwise a multi-device re-encryption event would falsely trigger
+        // a mismatch state on a device that was perfectly fine.
+        if (!existingKey) {
+          this._startMismatchRetry()
+        }
       }
     })
 
@@ -320,6 +329,7 @@ const ChatCrypto = {
         // A cached key may be stale after an encryption reset.
         let aesKey = null
         const domEncryptedKey = this.el.dataset.encryptedKey
+        const existingKey = CryptoState.conversationKeys.get(this.convId)
         if (domEncryptedKey) {
           CryptoState.conversationKeys.delete(this.convId)
           try {
@@ -331,7 +341,7 @@ const ChatCrypto = {
 
         // Fallback to cached key only if DOM decrypt failed
         if (!aesKey) {
-          aesKey = CryptoState.conversationKeys.get(this.convId)
+          aesKey = existingKey
         }
 
         if (!aesKey) {
