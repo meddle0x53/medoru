@@ -51,6 +51,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
         published_games = Games.list_classroom_games(id, status: :published)
         conversation = Chat.get_classroom_conversation(id)
 
+        chat_enter_sends =
+          user.profile && user.profile.chat_enter_sends != false
+
         socket =
           socket
           |> assign(:page_title, classroom.name)
@@ -73,6 +76,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:chat_typing_users, [])
           |> assign(:reply_to, nil)
           |> assign(:editing_message, nil)
+          |> assign(:chat_enter_sends, chat_enter_sends)
 
         {:ok, socket}
 
@@ -97,6 +101,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
               published_games = Games.list_classroom_games(id, status: :published)
               conversation = Chat.get_classroom_conversation(id)
 
+              chat_enter_sends =
+                user.profile && user.profile.chat_enter_sends != false
+
               socket =
                 socket
                 |> assign(:page_title, classroom.name)
@@ -119,6 +126,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:chat_typing_users, [])
                 |> assign(:reply_to, nil)
                 |> assign(:editing_message, nil)
+                |> assign(:chat_enter_sends, chat_enter_sends)
 
               {:ok, socket}
             end
@@ -772,6 +780,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 reply_to={@reply_to}
                 editing_message={@editing_message}
                 typing_users={@chat_typing_users}
+                chat_enter_sends={@chat_enter_sends}
               />
           <% end %>
         </div>
@@ -1505,6 +1514,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :reply_to, :any, required: true
   attr :editing_message, :any, required: true
   attr :typing_users, :list, required: true
+  attr :chat_enter_sends, :boolean, required: true
 
   defp chat_tab(assigns) do
     ~H"""
@@ -1813,6 +1823,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           id="classroom-chat-input"
           class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative"
           phx-hook="ClassroomChatInput"
+          data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
         >
           <%!-- Image Preview --%>
           <div id="classroom-image-preview" class="hidden mb-2 relative">

@@ -472,6 +472,7 @@
         id="chat-input-area"
         class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0"
         phx-hook="ClassroomChatInput"
+        data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
       >
         <%!-- Image Preview --%>
         <div id="classroom-image-preview" class="hidden mb-2 relative">
@@ -569,6 +570,7 @@
               id="chat-input-area"
               class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative"
               phx-hook="ChatInput"
+              data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
             >
               <%!-- Image Preview --%>
               <div id="chat-image-preview" class="hidden mb-2 relative">

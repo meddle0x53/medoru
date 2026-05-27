@@ -116,6 +116,10 @@ defmodule MedoruWeb.MessagesLive.Show do
         key_mismatch = false
         last_registered_key = nil
 
+        # Chat keyboard shortcut preference
+        chat_enter_sends =
+          current_user.profile && current_user.profile.chat_enter_sends != false
+
         # If this user has no conversation key but others do, request re-encryption.
         if connected?(socket) && conversation_keys == [] && missing_keys == [] do
           other_keys = Chat.list_conversation_keys(conversation_id)
@@ -155,6 +159,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:missing_keys, missing_keys)
          |> assign(:key_mismatch, key_mismatch)
          |> assign(:last_registered_key, last_registered_key)
+         |> assign(:chat_enter_sends, chat_enter_sends)
          |> assign(:online_user_ids, online_user_ids)
          |> push_event("scroll_to_bottom", %{})}
       else

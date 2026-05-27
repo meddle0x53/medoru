@@ -28,17 +28,29 @@ const ChatInput = {
     this.lastTypingSent = 0
     this.queuedImage = null
 
+    this.enterSends = this.el.dataset.enterSends !== "false"
+
     this.textarea.addEventListener("keydown", (e) => {
       // Trigger typing on printable characters
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         this.sendTypingIndicator()
       }
 
-      // Enter to send
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault()
-        this.submit()
-        return
+      // Enter behavior depends on user preference
+      if (this.enterSends) {
+        // Enter sends, Shift+Enter creates paragraph
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          this.submit()
+          return
+        }
+      } else {
+        // Shift+Enter sends, Enter creates paragraph
+        if (e.key === "Enter" && e.shiftKey) {
+          e.preventDefault()
+          this.submit()
+          return
+        }
       }
 
       // Escape to cancel edit/emoji

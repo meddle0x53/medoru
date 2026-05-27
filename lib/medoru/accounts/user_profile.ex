@@ -15,6 +15,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :daily_goal, :integer, default: 10
     field :theme, :string, default: "light"
     field :push_notifications_enabled, :boolean, default: false
+    field :chat_enter_sends, :boolean, default: true
 
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
@@ -36,6 +37,7 @@ defmodule Medoru.Accounts.UserProfile do
       :daily_goal,
       :theme,
       :push_notifications_enabled,
+      :chat_enter_sends,
       :daily_test_step_types
     ])
     |> validate_length(:display_name, min: 1, max: 50)

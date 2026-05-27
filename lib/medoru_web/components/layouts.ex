@@ -384,6 +384,12 @@ defmodule MedoruWeb.Layouts do
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
+                    path="/settings/chat-shortcuts"
+                    icon="hero-command-line"
+                    label={gettext("Chat Shortcuts")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
                     path="/auth/logout"
                     icon="hero-arrow-right-on-rectangle"
                     label={gettext("Sign out")}
@@ -583,6 +589,14 @@ defmodule MedoruWeb.Layouts do
                     class="flex items-center gap-2"
                   >
                     <.icon name="hero-key" class="w-4 h-4" /> {gettext("Chat Security")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    navigate={~p"/settings/chat-shortcuts?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-command-line" class="w-4 h-4" /> {gettext("Chat Shortcuts")}
                   </.link>
                 </li>
                 <li>
