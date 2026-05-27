@@ -73,30 +73,51 @@ defmodule MedoruWeb.MessagesLive.Show do
                        Social.blocked_by?(other.user_id, current_user.id))
           end
 
-        # Get participant public keys for conversation key creation
+        # Get participant public keys for conversation key creation.
+        # get_public_keys/1 now returns %{user_id => [keys]} (multi-device support).
         participant_ids = Enum.map(conversation.participants, & &1.user_id)
         public_keys = Encryption.get_public_keys(participant_ids)
 
+        # Backward-compat: single most-recent key per user (old clients)
         participant_public_keys =
-          Map.new(public_keys, fn {uid, key} ->
-            {to_string(uid), Base.encode64(key.public_key_spki)}
+          Map.new(public_keys, fn {uid, keys} ->
+            most_recent = List.first(keys)
+            {to_string(uid), Base.encode64(most_recent.public_key_spki)}
+          end)
+
+        # Multi-key format: all active keys per user (new clients)
+        participant_public_keys_v2 =
+          Map.new(public_keys, fn {uid, keys} ->
+            {to_string(uid), Enum.map(keys, &Base.encode64(&1.public_key_spki))}
           end)
 
         missing_keys = Enum.reject(participant_ids, &Map.has_key?(public_keys, &1))
 
-        # Get current user's encrypted conversation key if it exists
-        conversation_key = Chat.get_conversation_key(conversation_id, current_user.id)
-        encrypted_key = if conversation_key, do: Base.encode64(conversation_key.encrypted_key)
+        # Get current user's encrypted conversation keys (multi-device support).
+        conversation_keys = Chat.get_conversation_keys(conversation_id, current_user.id)
+
+        # Backward-compat: single string for old clients
+        encrypted_key =
+          case conversation_keys do
+            [first | _] -> Base.encode64(first.encrypted_key)
+            _ -> nil
+          end
+
+        # Multi-key format: array with fingerprints for new clients
+        encrypted_keys_v2 =
+          Enum.map(conversation_keys, fn ck ->
+            %{
+              fingerprint: ck.key_fingerprint || "legacy",
+              key: Base.encode64(ck.encrypted_key)
+            }
+          end)
 
         # key_mismatch is detected client-side for accuracy.
-        # The server starts with false; ChatCrypto pushes "report_key_mismatch" if
-        # it fails to decrypt the conversation key with the user's current private key.
         key_mismatch = false
+        last_registered_key = nil
 
         # If this user has no conversation key but others do, request re-encryption.
-        # This handles the case where another participant registered their key
-        # while this user was offline.
-        if connected?(socket) && is_nil(conversation_key) && missing_keys == [] do
+        if connected?(socket) && conversation_keys == [] && missing_keys == [] do
           other_keys = Chat.list_conversation_keys(conversation_id)
           if other_keys != [] do
             Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
@@ -120,7 +141,9 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:conversation, conversation)
          |> assign(:other_participants, other_participants)
          |> assign(:participant_public_keys, participant_public_keys)
+         |> assign(:participant_public_keys_v2, participant_public_keys_v2)
          |> assign(:encrypted_key, encrypted_key)
+         |> assign(:encrypted_keys_v2, encrypted_keys_v2)
          |> assign(:messages, messages)
          |> assign(:has_more_messages, has_more)
          |> assign(:message_offset, 0)
@@ -131,6 +154,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:is_blocked, is_blocked)
          |> assign(:missing_keys, missing_keys)
          |> assign(:key_mismatch, key_mismatch)
+         |> assign(:last_registered_key, last_registered_key)
          |> assign(:online_user_ids, online_user_ids)
          |> push_event("scroll_to_bottom", %{})}
       else
@@ -190,7 +214,10 @@ defmodule MedoruWeb.MessagesLive.Show do
       )
     end
 
-    {:noreply, assign(socket, :missing_keys, missing_keys)}
+    {:noreply,
+     socket
+     |> assign(:missing_keys, missing_keys)
+     |> assign(:last_registered_key, public_key_b64)}
   end
 
   @impl true
@@ -204,7 +231,8 @@ defmodule MedoruWeb.MessagesLive.Show do
     # Immediately broadcast a re-encryption request to any online participants.
     # The client will also retry periodically until someone responds.
     if connected?(socket) do
-      Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+      preferred_key = socket.assigns.last_registered_key
+      Chat.broadcast_key_reencryption_request(conversation.id, current_user.id, preferred_key)
     end
 
     socket = assign(socket, :key_mismatch, true)
@@ -292,12 +320,25 @@ defmodule MedoruWeb.MessagesLive.Show do
     conversation_id = socket.assigns.conversation.id
     current_user_id = socket.assigns.current_scope.current_user.id
 
-    existing = Chat.get_conversation_key(conversation_id, current_user_id)
+    existing_keys = Chat.get_conversation_keys(conversation_id, current_user_id)
 
-    if existing do
+    if existing_keys != [] do
+      # Backward-compat: send single string
+      encrypted_key = Base.encode64(hd(existing_keys).encrypted_key)
+
+      # Multi-key: send array with fingerprints
+      encrypted_keys_v2 =
+        Enum.map(existing_keys, fn ck ->
+          %{
+            fingerprint: ck.key_fingerprint || "legacy",
+            key: Base.encode64(ck.encrypted_key)
+          }
+        end)
+
       {:noreply,
        push_event(socket, "conversation_key", %{
-         encrypted_key: Base.encode64(existing.encrypted_key)
+         encrypted_key: encrypted_key,
+         encrypted_keys_v2: encrypted_keys_v2
        })}
     else
       other_keys = Chat.list_conversation_keys(conversation_id)
@@ -316,10 +357,12 @@ defmodule MedoruWeb.MessagesLive.Show do
            })}
 
         true ->
-          # No keys exist at all — this user is the first to create the shared key
+          # No keys exist at all — this user is the first to create the shared key.
+          # Send both formats so old and new clients can both create keys.
           {:noreply,
            push_event(socket, "create_conversation_key", %{
-             participant_public_keys: socket.assigns.participant_public_keys
+             participant_public_keys: socket.assigns.participant_public_keys,
+             participant_public_keys_v2: socket.assigns.participant_public_keys_v2
            })}
       end
     end
@@ -334,18 +377,42 @@ defmodule MedoruWeb.MessagesLive.Show do
     existing = Chat.list_conversation_keys(conversation_id)
 
     if existing == [] do
-      for {user_id, key_b64} <- encrypted_keys do
-        Chat.store_conversation_key(conversation_id, user_id, key_b64)
+      for {user_id, entries} <- encrypted_keys do
+        cond do
+          is_list(entries) and entries != [] and is_map(hd(entries)) ->
+            # New multi-key format: [%{"fingerprint" => fp, "encrypted_key" => b64}, ...]
+            for %{"fingerprint" => fp, "encrypted_key" => key_b64} <- entries do
+              Chat.store_conversation_key(conversation_id, user_id, key_b64, fp)
+            end
+
+          is_binary(entries) ->
+            # Legacy single-key format: "base64_key"
+            Chat.store_conversation_key(conversation_id, user_id, entries)
+
+          true ->
+            :ok
+        end
       end
     end
 
-    # Reply with current user's key
-    key = Chat.get_conversation_key(conversation_id, current_user_id)
+    # Reply with current user's key in both formats
+    keys = Chat.get_conversation_keys(conversation_id, current_user_id)
 
-    if key do
+    if keys != [] do
+      encrypted_key = Base.encode64(hd(keys).encrypted_key)
+
+      encrypted_keys_v2 =
+        Enum.map(keys, fn ck ->
+          %{
+            fingerprint: ck.key_fingerprint || "legacy",
+            key: Base.encode64(ck.encrypted_key)
+          }
+        end)
+
       {:noreply,
        push_event(socket, "conversation_key", %{
-         encrypted_key: Base.encode64(key.encrypted_key)
+         encrypted_key: encrypted_key,
+         encrypted_keys_v2: encrypted_keys_v2
        })}
     else
       {:noreply, socket}
@@ -633,31 +700,91 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_event("submit_re_encrypted_key", %{"target_user_id" => target_id, "encrypted_key" => key_b64}, socket) do
+  def handle_event("submit_re_encrypted_key", params, socket) do
     conversation = socket.assigns.conversation
+    target_id = params["target_user_id"]
     require Logger
     Logger.debug("[ChatRekey] Received submit_re_encrypted_key from user #{socket.assigns.current_scope.current_user.id} for target #{target_id}")
 
-    case Chat.upsert_conversation_key(conversation.id, target_id, key_b64) do
-      {:ok, _} ->
-        Logger.debug("[ChatRekey] Stored re-encrypted key, broadcasting to conversation #{conversation.id}")
-        Chat.broadcast_reencrypted_key(conversation.id, target_id, key_b64)
-        {:noreply, socket}
+    # Handle both legacy single-key and new multi-key formats
+    stored =
+      cond do
+        encrypted_keys = params["encrypted_keys"] ->
+          # New multi-key format: [%{"fingerprint" => fp, "encrypted_key" => b64}, ...]
+          for %{"fingerprint" => fp, "encrypted_key" => key_b64} <- encrypted_keys do
+            Chat.upsert_conversation_key(conversation.id, target_id, key_b64, fp)
+          end
 
-      {:error, reason} ->
-        Logger.warning("[ChatRekey] Failed to store re-encrypted key: #{inspect(reason)}")
-        {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
+        key_b64 = params["encrypted_key"] ->
+          # Legacy single-key format
+          [Chat.upsert_conversation_key(conversation.id, target_id, key_b64)]
+
+        true ->
+          []
+      end
+
+    if Enum.any?(stored, &match?({:ok, _}, &1)) do
+      Logger.debug("[ChatRekey] Stored re-encrypted key(s), broadcasting to conversation #{conversation.id}")
+
+      # Broadcast ALL keys for the target user so every device gets its copy
+      target_keys = Chat.get_conversation_keys(conversation.id, target_id)
+
+      encrypted_keys_v2 =
+        Enum.map(target_keys, fn ck ->
+          %{
+            fingerprint: ck.key_fingerprint || "legacy",
+            key: Base.encode64(ck.encrypted_key)
+          }
+        end)
+
+      encrypted_key =
+        case target_keys do
+          [first | _] -> Base.encode64(first.encrypted_key)
+          _ -> nil
+        end
+
+      Phoenix.PubSub.broadcast(
+        Medoru.PubSub,
+        "chat:#{conversation.id}",
+        {:reencrypted_key, target_id, encrypted_key, encrypted_keys_v2}
+      )
+
+      {:noreply, socket}
+    else
+      Logger.warning("[ChatRekey] Failed to store re-encrypted key(s)")
+      {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
     end
   end
 
   @impl true
   def handle_info({:participant_key_registered, user_id}, socket) do
     missing_keys = Enum.reject(socket.assigns.missing_keys, &(&1 == user_id))
-    {:noreply, assign(socket, :missing_keys, missing_keys)}
+
+    # Refresh public keys for this user in case they added a new device key
+    refreshed_keys = Encryption.get_public_keys_for_user(user_id)
+
+    participant_public_keys =
+      Map.update(socket.assigns.participant_public_keys, to_string(user_id), nil, fn _ ->
+        case refreshed_keys do
+          [first | _] -> Base.encode64(first.public_key_spki)
+          _ -> nil
+        end
+      end)
+
+    participant_public_keys_v2 =
+      Map.update(socket.assigns.participant_public_keys_v2, to_string(user_id), [], fn _ ->
+        Enum.map(refreshed_keys, &Base.encode64(&1.public_key_spki))
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:missing_keys, missing_keys)
+     |> assign(:participant_public_keys, participant_public_keys)
+     |> assign(:participant_public_keys_v2, participant_public_keys_v2)}
   end
 
   @impl true
-  def handle_info({:request_key_reencryption, target_user_id}, socket) do
+  def handle_info({:request_key_reencryption, target_user_id, preferred_key_b64}, socket) do
     current_user = socket.assigns.current_scope.current_user
 
     # Ask ALL online participants (including the target user's other devices)
@@ -665,16 +792,30 @@ defmodule MedoruWeb.MessagesLive.Show do
     # if it doesn't have the conversation key cached, so this is safe.
     # This enables same-user multi-device recovery: Device 1 can re-encrypt
     # for Device 2 when both are online.
-    target_key = Encryption.get_public_key(target_user_id)
+    target_keys = Encryption.get_public_keys_for_user(target_user_id)
 
-    if target_key do
+    if target_keys != [] do
       require Logger
       Logger.debug("[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}")
+
+      public_keys = Enum.map(target_keys, &Base.encode64(&1.public_key_spki))
+
+      # Backward compat: old clients only re-encrypt for one key.
+      # Use the preferred key (the one the target client just registered)
+      # instead of blindly picking the most recent key, which might belong
+      # to a different device.
+      backward_compat_key =
+        if preferred_key_b64 && preferred_key_b64 in public_keys do
+          preferred_key_b64
+        else
+          List.first(public_keys)
+        end
 
       {:noreply,
        push_event(socket, "re_encrypt_for_user", %{
          target_user_id: target_user_id,
-         public_key: Base.encode64(target_key.public_key_spki)
+         public_keys: public_keys,
+         public_key: backward_compat_key
        })}
     else
       require Logger
@@ -684,7 +825,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_info({:reencrypted_key, target_user_id, encrypted_key_b64}, socket) do
+  def handle_info({:reencrypted_key, target_user_id, encrypted_key_b64, encrypted_keys_v2}, socket) do
     current_user = socket.assigns.current_scope.current_user
 
     # Only the target user should process this
@@ -692,8 +833,14 @@ defmodule MedoruWeb.MessagesLive.Show do
       # Do NOT set key_mismatch = false here — the banner would hide before
       # the client confirms it can actually decrypt. The client sends
       # "acknowledge_conversation_key" after successful decryption.
+      #
+      # Send both formats: old clients use encrypted_key string,
+      # new clients use encrypted_keys_v2 array.
       {:noreply,
-       push_event(socket, "conversation_key", %{encrypted_key: encrypted_key_b64})}
+       push_event(socket, "conversation_key", %{
+         encrypted_key: encrypted_key_b64,
+         encrypted_keys_v2: encrypted_keys_v2
+       })}
     else
       {:noreply, socket}
     end

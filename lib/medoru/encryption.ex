@@ -34,10 +34,19 @@ defmodule Medoru.Encryption do
     |> where([k], like(k.algorithm, "RSA%"))
     |> order_by([k], desc: k.inserted_at)
     |> Repo.all()
-    |> Enum.reduce(%{}, fn key, acc ->
-      # Only keep the first (most recent) key per user
-      Map.put_new(acc, key.user_id, key)
-    end)
+    |> Enum.group_by(& &1.user_id)
+  end
+
+  @doc """
+  Gets all active public keys for a single user.
+  Returns a list of key records.
+  """
+  def get_public_keys_for_user(user_id) do
+    UserPublicKey
+    |> where([k], k.user_id == ^user_id and k.is_active == true)
+    |> where([k], like(k.algorithm, "RSA%"))
+    |> order_by([k], desc: k.inserted_at)
+    |> Repo.all()
   end
 
   @doc """
@@ -56,40 +65,30 @@ defmodule Medoru.Encryption do
       |> Repo.one()
 
     if existing do
-      # Reactivate the existing record if needed, preserving its original inserted_at
+      # Reactivate the existing record if needed, preserving its original inserted_at.
+      # In the multi-key model we do NOT deactivate other keys —
+      # multiple devices can have active keys simultaneously.
       if not existing.is_active do
-        Repo.transaction(fn ->
-          UserPublicKey
-          |> where([k], k.user_id == ^user_id and k.is_active == true)
-          |> Repo.update_all(set: [is_active: false])
-
-          existing
-          |> Ecto.Changeset.change(is_active: true)
-          |> Repo.update!()
-        end)
+        existing
+        |> Ecto.Changeset.change(is_active: true)
+        |> Repo.update!()
       end
 
       {:ok, existing}
     else
       unique_version = version <> "-" <> Integer.to_string(System.unique_integer([:positive]))
 
-      Repo.transaction(fn ->
-        # Mark old keys as inactive
-        UserPublicKey
-        |> where([k], k.user_id == ^user_id and k.is_active == true)
-        |> Repo.update_all(set: [is_active: false])
-
-        # Insert new key
-        %UserPublicKey{}
-        |> UserPublicKey.changeset(%{
-          user_id: user_id,
-          key_version: unique_version,
-          public_key_spki: spki_binary,
-          algorithm: algorithm,
-          is_active: true
-        })
-        |> Repo.insert!()
-      end)
+      # Insert new key as active without deactivating existing keys.
+      # Multi-device support: a user can have multiple active keys.
+      %UserPublicKey{}
+      |> UserPublicKey.changeset(%{
+        user_id: user_id,
+        key_version: unique_version,
+        public_key_spki: spki_binary,
+        algorithm: algorithm,
+        is_active: true
+      })
+      |> Repo.insert()
     end
   end
 

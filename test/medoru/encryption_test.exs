@@ -36,7 +36,7 @@ defmodule Medoru.EncryptionTest do
       assert key.is_active == true
     end
 
-    test "store_public_key/3 deactivates old keys" do
+    test "store_public_key/3 keeps multiple keys active" do
       user = user_fixture()
       old_spki = <<1, 2, 3>>
       new_spki = <<4, 5, 6>>
@@ -44,14 +44,13 @@ defmodule Medoru.EncryptionTest do
       {:ok, _} = Encryption.store_public_key(user.id, old_spki)
       {:ok, _} = Encryption.store_public_key(user.id, new_spki)
 
-      # Old keys are deactivated, not deleted
+      # Both keys remain in the database
       keys = Encryption.list_public_keys(user.id)
       assert length(keys) == 2
 
-      # Most recent (active) key should be the new one
+      # In multi-key mode, BOTH keys stay active
       active_keys = Enum.filter(keys, & &1.is_active)
-      assert length(active_keys) == 1
-      assert hd(active_keys).public_key_spki == new_spki
+      assert length(active_keys) == 2
     end
 
     test "get_public_key/1 returns nil when no key exists" do
@@ -77,7 +76,7 @@ defmodule Medoru.EncryptionTest do
       assert Encryption.get_public_key(user.id) == nil
     end
 
-    test "get_public_keys/1 returns keys for multiple users" do
+    test "get_public_keys/1 returns all keys for multiple users" do
       user_a = user_fixture()
       user_b = user_fixture()
       user_c = user_fixture()
@@ -88,16 +87,15 @@ defmodule Medoru.EncryptionTest do
 
       keys = Encryption.get_public_keys([user_a.id, user_b.id, user_c.id])
       assert map_size(keys) == 2
-      assert keys[user_a.id].public_key_spki == <<1>>
-      assert keys[user_b.id].public_key_spki == <<2>>
+      assert hd(keys[user_a.id]).public_key_spki == <<1>>
+      assert hd(keys[user_b.id]).public_key_spki == <<2>>
       assert not Map.has_key?(keys, user_c.id)
     end
 
-    test "get_public_keys/1 returns most recent key per user" do
+    test "get_public_keys/1 returns all active keys per user" do
       user = user_fixture()
 
-      # This test verifies that only one key is kept per user
-      # Since store_public_key deletes old keys, we insert directly
+      # Insert two active keys directly
       {:ok, _old_key} =
         %UserPublicKey{}
         |> Ecto.Changeset.change(%{
@@ -121,10 +119,12 @@ defmodule Medoru.EncryptionTest do
         |> Medoru.Repo.insert()
 
       keys = Encryption.get_public_keys([user.id])
-      # Should return only one key per user
+      # Should return all keys per user (multi-device support)
       assert map_size(keys) == 1
-      # Should be one of the valid RSA keys
-      assert keys[user.id].public_key_spki in [<<1>>, <<2>>]
+      user_keys = keys[user.id]
+      assert length(user_keys) == 2
+      assert Enum.any?(user_keys, & &1.public_key_spki == <<1>>)
+      assert Enum.any?(user_keys, & &1.public_key_spki == <<2>>)
     end
 
     test "list_public_keys/1 returns all keys for audit" do
@@ -133,12 +133,24 @@ defmodule Medoru.EncryptionTest do
       Encryption.store_public_key(user.id, <<1>>)
       Encryption.store_public_key(user.id, <<2>>)
 
-      # Both keys remain (old deactivated, new active)
+      # Both keys remain active in multi-key mode
       keys = Encryption.list_public_keys(user.id)
       assert length(keys) == 2
 
       active_keys = Enum.filter(keys, & &1.is_active)
-      assert length(active_keys) == 1
+      assert length(active_keys) == 2
+    end
+
+    test "get_public_keys_for_user/1 returns all active keys for a user" do
+      user = user_fixture()
+
+      Encryption.store_public_key(user.id, <<1>>)
+      Encryption.store_public_key(user.id, <<2>>)
+
+      keys = Encryption.get_public_keys_for_user(user.id)
+      assert length(keys) == 2
+      assert Enum.any?(keys, & &1.public_key_spki == <<1>>)
+      assert Enum.any?(keys, & &1.public_key_spki == <<2>>)
     end
   end
 end

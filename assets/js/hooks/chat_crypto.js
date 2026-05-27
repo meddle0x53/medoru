@@ -105,10 +105,23 @@ async function decryptMessage(aesKey, ciphertextB64, ivB64) {
   return new TextDecoder().decode(plain)
 }
 
+// --- Key fingerprinting ---
+export async function keyFingerprint(publicKeyB64) {
+  const spki = b642ab(publicKeyB64)
+  const hash = await crypto.subtle.digest("SHA-256", spki)
+  const hex = Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+  return hex.slice(0, 16)
+}
+
+function getFingerprintStorage(userId) { return `medoru_chat_keyfp_v2_${userId}` }
+
 // --- Global crypto state ---
 export const CryptoState = {
   privateKey: null,
   publicKeyB64: null,
+  keyFingerprint: null,
   conversationKeys: new Map(), // conversation_id -> AES key
   ready: false,
 
@@ -126,9 +139,11 @@ export const CryptoState = {
     this.userId = userId
     const privStore = getPrivKeyStorage(userId)
     const pubStore = getPubKeyStorage(userId)
+    const fpStore = getFingerprintStorage(userId)
 
     let privB64 = localStorage.getItem(privStore)
     let pubB64 = localStorage.getItem(pubStore)
+    let fp = localStorage.getItem(fpStore)
     let migrated = false
 
     // Always prefer the legacy key if it still exists — it can decrypt existing messages.
@@ -151,16 +166,20 @@ export const CryptoState = {
       const kp = await generateUserKeyPair()
       privB64 = await exportPrivateKey(kp)
       pubB64 = await exportPublicKey(kp)
+      fp = await keyFingerprint(pubB64)
       localStorage.setItem(privStore, privB64)
       localStorage.setItem(pubStore, pubB64)
+      localStorage.setItem(fpStore, fp)
       this.privateKey = kp.privateKey
       this.publicKeyB64 = pubB64
+      this.keyFingerprint = fp
       this.ready = true
       return { ready: true, newKey: true, publicKey: pubB64 }
     }
 
     this.privateKey = await importPrivateKey(privB64)
     this.publicKeyB64 = pubB64
+    this.keyFingerprint = fp
     this.ready = true
     return { ready: true, newKey: false, migrated: migrated, publicKey: pubB64 }
   },
@@ -184,8 +203,24 @@ export const CryptoState = {
     if (!this.ready) throw new Error("Crypto not initialized")
     const aesKey = await generateConversationKey()
     const encryptedKeys = {}
-    for (const [userId, pubKeyB64] of Object.entries(participantPublicKeys)) {
-      encryptedKeys[userId] = await encryptConversationKey(aesKey, pubKeyB64)
+
+    for (const [userId, pubKeys] of Object.entries(participantPublicKeys)) {
+      // Detect multi-key format: array of keys vs single string
+      const keyList = Array.isArray(pubKeys) ? pubKeys : [pubKeys]
+
+      const entries = []
+      for (const pubKeyB64 of keyList) {
+        const encrypted = await encryptConversationKey(aesKey, pubKeyB64)
+        const fingerprint = await keyFingerprint(pubKeyB64)
+        entries.push({ fingerprint, encrypted_key: encrypted })
+      }
+
+      // If only one entry and we're in legacy mode, send flat string for compat
+      if (entries.length === 1 && !Array.isArray(pubKeys)) {
+        encryptedKeys[userId] = entries[0].encrypted_key
+      } else {
+        encryptedKeys[userId] = entries
+      }
     }
     return { aesKey, encryptedKeys }
   },
@@ -220,56 +255,113 @@ const ChatCrypto = {
       this.pushEvent("register_public_key", { public_key: this._needsRegistration })
     }
 
-    // Parse participant public keys from data attribute
+    // Detect multi-key mode: server sends v2 data attributes
+    const pubKeysV2Json = this.el.dataset.participantPublicKeysV2
+    const encryptedKeysV2Json = this.el.dataset.encryptedKeysV2
+    this.multiKeyMode = !!(pubKeysV2Json && encryptedKeysV2Json)
+
+    if (this.multiKeyMode) {
+      this.participantPublicKeysV2 = JSON.parse(pubKeysV2Json)
+      this.encryptedKeysV2 = JSON.parse(encryptedKeysV2Json)
+    }
+
+    // Parse participant public keys from data attribute (legacy or v2)
     const pubKeysJson = this.el.dataset.participantPublicKeys
     this.participantPublicKeys = pubKeysJson ? JSON.parse(pubKeysJson) : {}
 
-    // Detect if our local key is stale relative to the server's active key.
-    // If the server has a different public key for us, our private key can't
-    // decrypt any conversation key re-encrypted by other participants.
-    // Skip this check if we just generated a brand new key — it's new, not stale.
-    const serverPubKey = this.participantPublicKeys[currentUserId]
-    const localPubKey = CryptoState.publicKeyB64
-    if (!result.newKey && serverPubKey && localPubKey && serverPubKey !== localPubKey) {
-      console.log("[ChatCrypto] Local key doesn't match server. Re-registering local key...")
-      // Re-register our existing local key instead of generating a new one.
-      // Generating a new key causes a multi-device ping-pong where every
-      // reconnect creates a new key, breaking all other devices of the same user.
-      // By pushing our existing key, we keep it stable and only need re-encryption.
-      this.pushEvent("register_public_key", { public_key: localPubKey })
-      // Request re-encryption since the conversation key may be encrypted
-      // with a different key that another device pushed.
-      this.pushEvent("report_key_mismatch", {})
-      this._startMismatchRetry()
-    }
+    if (this.multiKeyMode) {
+      // Multi-key mode: stale check compares against ALL server keys.
+      // Only report mismatch if our fingerprint is not in the server's list.
+      const myFp = CryptoState.keyFingerprint
+      const serverKeys = this.participantPublicKeysV2[currentUserId] || []
+      const myKeyPresent = serverKeys.some(async (k) => {
+        // Simple comparison: if our pubKeyB64 is in the list, we're good
+        return k === CryptoState.publicKeyB64
+      })
 
-    // Load conversation key if provided
-    const encryptedKey = this.el.dataset.encryptedKey
-    if (encryptedKey) {
-      // Always discard stale cache — the server may have reset/replaced the key
-      CryptoState.conversationKeys.delete(this.convId)
-      try {
-        await CryptoState.getConversationKey(this.convId, encryptedKey)
-        await this.decryptAll()
-      } catch (e) {
-        console.error("[ChatCrypto] Failed to decrypt conversation key:", e)
-        // Tell server to show the re-key banner since we can't decrypt
+      // Actually, do a direct string comparison since pubKeyB64 is base64
+      const isKeyPresent = serverKeys.includes(CryptoState.publicKeyB64)
+
+      if (!result.newKey && !isKeyPresent && serverKeys.length > 0) {
+        console.log("[ChatCrypto] Local key not in server's active key set. Re-registering...")
+        this.pushEvent("register_public_key", { public_key: CryptoState.publicKeyB64 })
         this.pushEvent("report_key_mismatch", {})
-        // Start periodic retry in case someone comes online later
         this._startMismatchRetry()
+      }
+
+      // Load conversation key by matching fingerprint
+      if (this.encryptedKeysV2 && this.encryptedKeysV2.length > 0) {
+        CryptoState.conversationKeys.delete(this.convId)
+        const myEntry = this.encryptedKeysV2.find(e => e.fingerprint === CryptoState.keyFingerprint)
+        if (myEntry) {
+          try {
+            await CryptoState.getConversationKey(this.convId, myEntry.key)
+            await this.decryptAll()
+          } catch (e) {
+            console.error("[ChatCrypto] Failed to decrypt conversation key:", e)
+            this.pushEvent("report_key_mismatch", {})
+            this._startMismatchRetry()
+          }
+        } else {
+          // No encrypted copy for our fingerprint yet — need re-encryption
+          console.log("[ChatCrypto] No encrypted key found for fingerprint", CryptoState.keyFingerprint)
+          this.pushEvent("report_key_mismatch", {})
+          this._startMismatchRetry()
+        }
+      }
+    } else {
+      // Legacy single-key mode
+      // Detect if our local key is stale relative to the server's active key.
+      const serverPubKey = this.participantPublicKeys[currentUserId]
+      const localPubKey = CryptoState.publicKeyB64
+      if (!result.newKey && serverPubKey && localPubKey && serverPubKey !== localPubKey) {
+        console.log("[ChatCrypto] Local key doesn't match server. Re-registering local key...")
+        this.pushEvent("register_public_key", { public_key: localPubKey })
+        this.pushEvent("report_key_mismatch", {})
+        this._startMismatchRetry()
+      }
+
+      // Load conversation key if provided
+      const encryptedKey = this.el.dataset.encryptedKey
+      if (encryptedKey) {
+        CryptoState.conversationKeys.delete(this.convId)
+        try {
+          await CryptoState.getConversationKey(this.convId, encryptedKey)
+          await this.decryptAll()
+        } catch (e) {
+          console.error("[ChatCrypto] Failed to decrypt conversation key:", e)
+          this.pushEvent("report_key_mismatch", {})
+          this._startMismatchRetry()
+        }
       }
     }
 
     // Server sends the conversation key (initial load or after creation)
-    this.handleEvent("conversation_key", async ({ encrypted_key }) => {
-      if (!encrypted_key) return
+    this.handleEvent("conversation_key", async ({ encrypted_key, encrypted_keys_v2 }) => {
+      let keyToTry = null
+
+      if (this.multiKeyMode && encrypted_keys_v2 && encrypted_keys_v2.length > 0) {
+        // Multi-key mode: find the entry matching our fingerprint
+        const myEntry = encrypted_keys_v2.find(e => e.fingerprint === CryptoState.keyFingerprint)
+        if (myEntry) {
+          keyToTry = myEntry.key
+        }
+      }
+
+      // Fallback to legacy single-key format
+      if (!keyToTry && encrypted_key) {
+        keyToTry = encrypted_key
+      }
+
+      if (!keyToTry) return
+
       // Save the existing cached key in case the new one is for a different
       // device (same user, different key pair). We must not destroy a working
       // cache just because a multi-device re-encryption arrived.
       const existingKey = CryptoState.conversationKeys.get(this.convId)
       CryptoState.conversationKeys.delete(this.convId)
       try {
-        await CryptoState.getConversationKey(this.convId, encrypted_key)
+        await CryptoState.getConversationKey(this.convId, keyToTry)
         await this.decryptAll()
         // Stop retrying since we have a working key now
         this._stopMismatchRetry()
@@ -290,8 +382,6 @@ const ChatCrypto = {
           CryptoState.conversationKeys.set(this.convId, existingKey)
         }
         // Only start the retry timer if we don't already have a working key.
-        // Otherwise a multi-device re-encryption event would falsely trigger
-        // a mismatch state on a device that was perfectly fine.
         if (!existingKey) {
           this._startMismatchRetry()
         }
@@ -299,13 +389,15 @@ const ChatCrypto = {
     })
 
     // Server asks client to create a conversation key
-    this.handleEvent("create_conversation_key", async ({ participant_public_keys }) => {
+    this.handleEvent("create_conversation_key", async ({ participant_public_keys, participant_public_keys_v2 }) => {
       if (!CryptoState.ready) {
         console.error("[ChatCrypto] Cannot create key: crypto not ready")
         return
       }
       try {
-        const { aesKey, encryptedKeys } = await CryptoState.createConversationKeys(participant_public_keys)
+        // Use v2 format if available (multi-device), otherwise legacy
+        const pubKeys = participant_public_keys_v2 || participant_public_keys
+        const { aesKey, encryptedKeys } = await CryptoState.createConversationKeys(pubKeys)
         await CryptoState.setConversationKey(this.convId, aesKey)
         this.pushEvent("store_conversation_keys", { encrypted_keys: encryptedKeys })
       } catch (e) {
@@ -314,7 +406,7 @@ const ChatCrypto = {
     })
 
     // Handle request to re-encrypt conversation key for another user
-    this.handleEvent("re_encrypt_for_user", async ({ target_user_id, public_key }) => {
+    this.handleEvent("re_encrypt_for_user", async ({ target_user_id, public_key, public_keys }) => {
       console.log("[ChatCrypto] Received re_encrypt_for_user for target", target_user_id)
       if (!CryptoState.ready) {
         console.error("[ChatCrypto] Cannot re-encrypt: crypto not ready")
@@ -322,11 +414,26 @@ const ChatCrypto = {
       }
       try {
         // Always prefer the DOM key — it reflects the latest server state.
-        // A cached key may be stale after an encryption reset.
         let aesKey = null
         const domEncryptedKey = this.el.dataset.encryptedKey
         const existingKey = CryptoState.conversationKeys.get(this.convId)
-        if (domEncryptedKey) {
+
+        // In multi-key mode, also try the v2 encrypted keys from DOM
+        const domEncryptedKeysV2 = this.el.dataset.encryptedKeysV2
+        if (domEncryptedKeysV2) {
+          const entries = JSON.parse(domEncryptedKeysV2)
+          const myEntry = entries.find(e => e.fingerprint === CryptoState.keyFingerprint)
+          if (myEntry) {
+            CryptoState.conversationKeys.delete(this.convId)
+            try {
+              aesKey = await CryptoState.getConversationKey(this.convId, myEntry.key)
+            } catch (e) {
+              console.error("[ChatCrypto] Failed to decrypt conversation key from DOM v2:", e)
+            }
+          }
+        }
+
+        if (!aesKey && domEncryptedKey) {
           CryptoState.conversationKeys.delete(this.convId)
           try {
             aesKey = await CryptoState.getConversationKey(this.convId, domEncryptedKey)
@@ -344,13 +451,38 @@ const ChatCrypto = {
           console.error("[ChatCrypto] Cannot re-encrypt: no conversation key available")
           return
         }
+
+        // Determine which keys to re-encrypt for
+        const targetKeys = public_keys || (public_key ? [public_key] : [])
+        if (targetKeys.length === 0) {
+          console.error("[ChatCrypto] No target public keys provided")
+          return
+        }
+
         console.log("[ChatCrypto] Re-encrypting conversation key for target", target_user_id)
-        const encryptedKey = await encryptConversationKey(aesKey, public_key)
-        this.pushEvent("submit_re_encrypted_key", {
-          target_user_id: target_user_id,
-          encrypted_key: encryptedKey
-        })
-        console.log("[ChatCrypto] Submitted re-encrypted key for target", target_user_id)
+
+        if (targetKeys.length === 1) {
+          // Legacy single-key response
+          const encryptedKey = await encryptConversationKey(aesKey, targetKeys[0])
+          this.pushEvent("submit_re_encrypted_key", {
+            target_user_id: target_user_id,
+            encrypted_key: encryptedKey
+          })
+        } else {
+          // Multi-key response: encrypt for ALL target keys
+          const encryptedEntries = []
+          for (const pubKeyB64 of targetKeys) {
+            const encrypted = await encryptConversationKey(aesKey, pubKeyB64)
+            const fingerprint = await keyFingerprint(pubKeyB64)
+            encryptedEntries.push({ fingerprint, encrypted_key: encrypted })
+          }
+          this.pushEvent("submit_re_encrypted_key", {
+            target_user_id: target_user_id,
+            encrypted_keys: encryptedEntries
+          })
+        }
+
+        console.log("[ChatCrypto] Submitted re-encrypted key(s) for target", target_user_id)
       } catch (e) {
         console.error("[ChatCrypto] Failed to re-encrypt conversation key:", e)
       }

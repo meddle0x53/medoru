@@ -203,12 +203,23 @@ defmodule Medoru.Chat do
 
   @doc """
   Gets the encrypted conversation key for a user in a conversation.
-  Returns nil if not found.
+  Returns nil if not found. Backward-compat: returns a single row.
   """
   def get_conversation_key(conversation_id, user_id) do
     ConversationKey
     |> where([ck], ck.conversation_id == ^conversation_id and ck.user_id == ^user_id)
+    |> limit(1)
     |> Repo.one()
+  end
+
+  @doc """
+  Gets all encrypted conversation keys for a user in a conversation.
+  Multi-device support: returns a list of keys (one per fingerprint).
+  """
+  def get_conversation_keys(conversation_id, user_id) do
+    ConversationKey
+    |> where([ck], ck.conversation_id == ^conversation_id and ck.user_id == ^user_id)
+    |> Repo.all()
   end
 
   @doc """
@@ -223,13 +234,15 @@ defmodule Medoru.Chat do
 
   @doc """
   Stores an encrypted conversation key for a user.
+  Accepts an optional key_fingerprint for multi-device support.
   """
-  def store_conversation_key(conversation_id, user_id, encrypted_key_b64) do
+  def store_conversation_key(conversation_id, user_id, encrypted_key_b64, key_fingerprint \\ nil) do
     %ConversationKey{}
     |> ConversationKey.changeset(%{
       conversation_id: conversation_id,
       user_id: user_id,
-      encrypted_key: Base.decode64!(encrypted_key_b64)
+      encrypted_key: Base.decode64!(encrypted_key_b64),
+      key_fingerprint: key_fingerprint
     })
     |> Repo.insert()
   end
@@ -237,24 +250,51 @@ defmodule Medoru.Chat do
   @doc """
   Updates or inserts an encrypted conversation key for a user.
   Used when a participant's public key changes and the key needs re-encryption.
+  Accepts an optional key_fingerprint for multi-device support.
   """
-  def upsert_conversation_key(conversation_id, user_id, encrypted_key_b64) do
+  def upsert_conversation_key(conversation_id, user_id, encrypted_key_b64, key_fingerprint \\ nil) do
     encrypted_key = Base.decode64!(encrypted_key_b64)
 
-    case get_conversation_key(conversation_id, user_id) do
-      nil ->
+    # Look for an existing row with the same fingerprint
+    existing =
+      ConversationKey
+      |> where([ck], ck.conversation_id == ^conversation_id and ck.user_id == ^user_id)
+      |> where([ck], ck.key_fingerprint == ^key_fingerprint)
+      |> Repo.one()
+
+    cond do
+      existing != nil ->
+        existing
+        |> ConversationKey.changeset(%{encrypted_key: encrypted_key})
+        |> Repo.update()
+
+      key_fingerprint == nil ->
+        # Backward compat: upsert the legacy row (no fingerprint)
+        case get_conversation_key(conversation_id, user_id) do
+          nil ->
+            %ConversationKey{}
+            |> ConversationKey.changeset(%{
+              conversation_id: conversation_id,
+              user_id: user_id,
+              encrypted_key: encrypted_key
+            })
+            |> Repo.insert()
+
+          legacy ->
+            legacy
+            |> ConversationKey.changeset(%{encrypted_key: encrypted_key})
+            |> Repo.update()
+        end
+
+      true ->
         %ConversationKey{}
         |> ConversationKey.changeset(%{
           conversation_id: conversation_id,
           user_id: user_id,
-          encrypted_key: encrypted_key
+          encrypted_key: encrypted_key,
+          key_fingerprint: key_fingerprint
         })
         |> Repo.insert()
-
-      existing ->
-        existing
-        |> ConversationKey.changeset(%{encrypted_key: encrypted_key})
-        |> Repo.update()
     end
   end
 
@@ -748,11 +788,11 @@ defmodule Medoru.Chat do
   Broadcasts a request for other participants to re-encrypt the conversation key
   for a user whose public key has changed.
   """
-  def broadcast_key_reencryption_request(conversation_id, target_user_id) do
+  def broadcast_key_reencryption_request(conversation_id, target_user_id, preferred_key_b64 \\ nil) do
     Phoenix.PubSub.broadcast(
       PubSub,
       "chat:#{conversation_id}",
-      {:request_key_reencryption, target_user_id}
+      {:request_key_reencryption, target_user_id, preferred_key_b64}
     )
   end
 

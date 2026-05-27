@@ -11,6 +11,7 @@ defmodule Medoru.Chat.ConversationKey do
   @foreign_key_type :binary_id
   schema "conversation_keys" do
     field :encrypted_key, :binary
+    field :key_fingerprint, :string
 
     belongs_to :conversation, Medoru.Chat.Conversation
     belongs_to :user, Medoru.Accounts.User
@@ -21,13 +22,13 @@ defmodule Medoru.Chat.ConversationKey do
   @doc false
   def changeset(conversation_key, attrs) do
     conversation_key
-    |> cast(attrs, [:encrypted_key, :conversation_id, :user_id])
+    |> cast(attrs, [:encrypted_key, :key_fingerprint, :conversation_id, :user_id])
     |> validate_required([:encrypted_key, :conversation_id, :user_id])
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:user_id)
-    |> unique_constraint([:conversation_id, :user_id],
-      name: :conversation_keys_conversation_id_user_id_index,
-      message: "key already exists for this user"
+    |> unique_constraint([:conversation_id, :user_id, :key_fingerprint],
+      name: :conversation_keys_conversation_id_user_id_key_fingerprint_index,
+      message: "key already exists for this user and fingerprint"
     )
   end
 end

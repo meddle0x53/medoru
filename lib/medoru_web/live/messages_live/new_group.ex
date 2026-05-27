@@ -35,12 +35,20 @@ defmodule MedoruWeb.MessagesLive.NewGroup do
       |> Medoru.Repo.preload(:profile)
       |> Enum.filter(&(&1.id in all_user_ids))
 
-    # Get public keys for all participants
+    # Get public keys for all participants (multi-device support)
     public_keys = Encryption.get_public_keys(all_user_ids)
 
+    # Backward-compat: single most-recent key per user
     participant_public_keys =
-      Map.new(public_keys, fn {uid, key} ->
-        {to_string(uid), Base.encode64(key.public_key_spki)}
+      Map.new(public_keys, fn {uid, keys} ->
+        most_recent = List.first(keys)
+        {to_string(uid), Base.encode64(most_recent.public_key_spki)}
+      end)
+
+    # Multi-key format: all active keys per user
+    participant_public_keys_v2 =
+      Map.new(public_keys, fn {uid, keys} ->
+        {to_string(uid), Enum.map(keys, &Base.encode64(&1.public_key_spki))}
       end)
 
     # Check if any participants are missing public keys
@@ -51,6 +59,7 @@ defmodule MedoruWeb.MessagesLive.NewGroup do
      |> assign(:users, users)
      |> assign(:user_ids, all_user_ids)
      |> assign(:participant_public_keys, participant_public_keys)
+     |> assign(:participant_public_keys_v2, participant_public_keys_v2)
      |> assign(:missing_keys, missing_keys)
      |> assign(:title, "")
      |> assign(:error, nil)}

@@ -6,7 +6,9 @@
     data-conversation-id={@conversation.id}
     data-current-user-id={@current_scope.current_user.id}
     data-encrypted-key={@encrypted_key}
+    data-encrypted-keys-v2={Jason.encode!(@encrypted_keys_v2)}
     data-participant-public-keys={Jason.encode!(@participant_public_keys)}
+    data-participant-public-keys-v2={Jason.encode!(@participant_public_keys_v2)}
   >
     <%!-- Chat Header --%>
     <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300 bg-base-100 shrink-0">

@@ -13,7 +13,9 @@ const GroupChatCreator = {
     this.titleInput = this.el.querySelector("#group-title-input")
 
     const pubKeysJson = this.el.dataset.participantPublicKeys
+    const pubKeysV2Json = this.el.dataset.participantPublicKeysV2
     this.participantPublicKeys = pubKeysJson ? JSON.parse(pubKeysJson) : {}
+    this.participantPublicKeysV2 = pubKeysV2Json ? JSON.parse(pubKeysV2Json) : null
 
     if (this.button) {
       this.button.addEventListener("click", () => this.createGroup())
@@ -43,7 +45,9 @@ const GroupChatCreator = {
     }
 
     try {
-      const { aesKey, encryptedKeys } = await CryptoState.createConversationKeys(this.participantPublicKeys)
+      // Use v2 format if available (multi-device), otherwise legacy
+      const pubKeys = this.participantPublicKeysV2 || this.participantPublicKeys
+      const { aesKey, encryptedKeys } = await CryptoState.createConversationKeys(pubKeys)
       this.pushEvent("create_group", { title, encrypted_keys: encryptedKeys })
     } catch (e) {
       console.error("[GroupChatCreator] Failed to create group:", e)
