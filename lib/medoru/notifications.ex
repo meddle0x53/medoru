@@ -438,7 +438,7 @@ defmodule Medoru.Notifications do
   @doc """
   Creates a notification for a new chat message.
   """
-  def notify_chat_message(user_id, sender_name, conversation_id, is_group, group_title) do
+  def notify_chat_message(user_id, sender_name, conversation_id, is_group, group_title, message_body \\ nil) do
     title =
       if is_group do
         "#{sender_name} in #{group_title || "Group Chat"}"
@@ -450,7 +450,7 @@ defmodule Medoru.Notifications do
       user_id: user_id,
       type: "chat_message",
       title: title,
-      message: "You have a new message",
+      message: message_body || "You have a new message",
       data: %{
         conversation_id: conversation_id,
         sender_name: sender_name,

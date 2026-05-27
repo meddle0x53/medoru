@@ -782,7 +782,7 @@ defmodule Medoru.Chat do
   # Notifications
   # ============================================================================
 
-  defp maybe_notify_participants(conversation_id, sender_id, _message) do
+  defp maybe_notify_participants(conversation_id, sender_id, message) do
     # Get active viewers
     active_viewers =
       Presence.list("chat_active:#{conversation_id}")
@@ -804,6 +804,8 @@ defmodule Medoru.Chat do
           p -> (p.user.profile && p.user.profile.display_name) || p.user.name || "Someone"
         end
 
+      body = notification_body_from_message(message)
+
       for participant <- conversation.participants,
           participant.user_id != sender_id,
           participant.user_id not in active_viewers do
@@ -812,7 +814,8 @@ defmodule Medoru.Chat do
           sender,
           conversation_id,
           conversation.is_group,
-          conversation.title
+          conversation.title,
+          body
         )
 
         # Send push notification
@@ -826,10 +829,25 @@ defmodule Medoru.Chat do
         Notifications.send_push_notification(
           participant.user_id,
           title,
-          "You have a new message",
+          body,
           %{conversation_id: conversation_id}
         )
       end
     end
   end
+
+  defp notification_body_from_message(%{attachment_type: "voice"}), do: "Sent a voice message"
+  defp notification_body_from_message(%{attachment_type: "image"}), do: "Sent an image"
+  defp notification_body_from_message(%{attachment_type: "file"}), do: "Sent a file"
+  defp notification_body_from_message(%{attachment_type: type}) when is_binary(type), do: "Sent an attachment"
+
+  defp notification_body_from_message(%{content: content}) when is_binary(content) and content != "" do
+    if String.length(content) > 120 do
+      String.slice(content, 0, 117) <> "..."
+    else
+      content
+    end
+  end
+
+  defp notification_body_from_message(_message), do: "You have a new message"
 end
