@@ -83,8 +83,9 @@ const ClassroomChatInput = {
 
     if (this.emojiPanel) {
       this.emojiPanel.addEventListener("click", (e) => {
-        if (e.target.dataset.emoji) {
-          this.insertEmoji(e.target.dataset.emoji)
+        const btn = e.target.closest("[data-emoji]")
+        if (btn) {
+          this.insertEmoji(btn.dataset.emoji)
         }
       })
     }

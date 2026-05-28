@@ -1963,7 +1963,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               id="classroom-emoji-panel"
               class="hidden absolute bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-72 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3 z-20 grid grid-cols-6 gap-2"
             >
-              <%= for emoji <- ~w(😀 😂 ❤️ 👍 🎉 🔥 😊 😭 🙏 ✨ 🥰 🤔 😅 👏 🌸 🍀 ⭐ 💯 🎊 🌟 🎌 🗾 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮) do %>
+              <%= for emoji <- ~w(😀 😂 😊 😭 😅 😇 😡 😈 👻 💀 😎 🤠 🥰 😍 🤔 🤯 🥳 🫡 ❤️ 💕 💔 👍 👎 🙏 🎉 🎊 🎵 🎮 🎲 🎯 🔥 ✨ 💯 ⭐ 🌈 🌙 🌸 🍀 🎌 🗾 🐱 🐶 🦊 🐼 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮 🗡️ 🏴‍☠️ 🇧🇬 🇯🇵) do %>
                 <button
                   type="button"
                   data-emoji={emoji}
@@ -1972,6 +1972,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   {emoji}
                 </button>
               <% end %>
+              <button
+                type="button"
+                data-emoji="🎓"
+                class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
+              >
+                <img src={~p"/favicon.png"} class="w-6 h-6 object-contain pointer-events-none" />
+              </button>
             </div>
 
             <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
