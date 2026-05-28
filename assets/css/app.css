@@ -285,6 +285,22 @@ body:has(.chat-page) {
   overflow-y: hidden;
 }
 
+/* Hide footer when classroom chat tab is active */
+body:has(.classroom-chat-tab) footer {
+  display: none;
+}
+
+/* Medoru emoji replacement image */
+.medoru-emoji {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+.emoji-only .medoru-emoji {
+  width: 1em;
+  height: 1em;
+}
+
 /* Improve tap highlight on mobile */
 @media (hover: none) {
   .btn:active,

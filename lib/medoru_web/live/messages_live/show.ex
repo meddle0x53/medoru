@@ -1080,7 +1080,39 @@ defmodule MedoruWeb.MessagesLive.Show do
         trimmed,
         ~r/[\s\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1F004}\x{1F0CF}\x{1F170}-\x{1F251}\x{238C}\x{2B50}\x{2B55}\x{2764}\x{2795}-\x{2797}\x{27A1}\x{27B0}\x{27BF}\x{2B05}-\x{2B07}\x{3030}\x{303D}\x{3297}\x{3299}\x{23F0}-\x{23F3}\x{23E9}-\x{23EF}\x{1F18E}\x{00A9}\x{00AE}\x{FE0F}\x{200D}\x{1F3FB}-\x{1F3FF}]/u,
         ""
-      ) == ""
+      )
+      |> String.replace(":medoru:", "")
+      |> String.trim() == ""
+  end
+
+  @doc """
+  Renders message content, replacing `:medoru:` with the favicon image.
+  """
+  def render_message_content(nil), do: ""
+
+  def render_message_content(text) do
+    if String.contains?(text, ":medoru:") do
+      parts = String.split(text, ":medoru:")
+      last_index = length(parts) - 1
+
+      parts
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {part, i} ->
+        escaped = Phoenix.HTML.html_escape(part)
+
+        if i < last_index do
+          [
+            escaped,
+            {:safe,
+             ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
+          ]
+        else
+          [escaped]
+        end
+      end)
+    else
+      text
+    end
   end
 
   @doc """
@@ -1227,7 +1259,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {@message.content}
+              {render_message_content(@message.content)}
             </p>
         <% end %>
       </div>

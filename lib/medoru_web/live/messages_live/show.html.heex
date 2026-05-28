@@ -170,7 +170,7 @@
                       </span>
                     <% true -> %>
                       <span class="truncate block">
-                        {message.reply_to_message.content || "..."}
+                        {render_message_content(message.reply_to_message.content) || "..."}
                       </span>
                   <% end %>
                 </div>
@@ -306,10 +306,10 @@
                         </div>
                       <% @conversation.classroom_id && message.content -> %>
                         <%= if is_emoji_msg do %>
-                          <p class="text-4xl leading-none py-1">{message.content}</p>
+                          <p class="text-4xl leading-none py-1">{render_message_content(message.content)}</p>
                         <% else %>
                           <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">
-                            {message.content}
+                            {render_message_content(message.content)}
                           </p>
                         <% end %>
                       <% message.ciphertext -> %>
@@ -577,7 +577,7 @@
               <% end %>
               <button
                 type="button"
-                data-emoji="🎓"
+                data-emoji=":medoru:"
                 class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
               >
                 <img src={~p"/favicon.png"} class="w-6 h-6 object-contain pointer-events-none" />
@@ -748,7 +748,7 @@
                   <% end %>
                   <button
                     type="button"
-                    data-emoji="🎓"
+                    data-emoji=":medoru:"
                     class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
                   >
                     <img src={~p"/favicon.png"} class="w-6 h-6 object-contain pointer-events-none" />
