@@ -1438,7 +1438,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               </.link>
             </div>
             <p class="text-secondary text-sm mb-4">
-              {gettext("All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom.")}
+              {gettext(
+                "All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom."
+              )}
             </p>
             <div class="flex items-center gap-2 text-sm text-secondary">
               <.icon name="hero-users" class="w-4 h-4" />
@@ -1462,11 +1464,18 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                     </div>
                   <% else %>
                     <div class="avatar placeholder shrink-0">
-                      <div class={["rounded-full w-10 h-10 flex items-center justify-center", is_teacher && "bg-primary text-primary-content", not is_teacher && "bg-primary/10 text-primary"]}>
+                      <div class={[
+                        "rounded-full w-10 h-10 flex items-center justify-center",
+                        is_teacher && "bg-primary text-primary-content",
+                        not is_teacher && "bg-primary/10 text-primary"
+                      ]}>
                         <% initial =
                           if participant.user.profile && participant.user.profile.display_name,
-                            do: String.first(participant.user.profile.display_name) |> String.upcase(),
-                            else: String.first(participant.user.name || participant.user.email) |> String.upcase() %>
+                            do:
+                              String.first(participant.user.profile.display_name) |> String.upcase(),
+                            else:
+                              String.first(participant.user.name || participant.user.email)
+                              |> String.upcase() %>
                         <span class="text-sm">{initial}</span>
                       </div>
                     </div>
@@ -1503,7 +1512,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             {gettext("Chat Not Available")}
           </h3>
           <p class="text-secondary max-w-md mx-auto text-sm sm:text-base">
-            {gettext("The classroom chat could not be found. It should be created automatically when the classroom is created.")}
+            {gettext(
+              "The classroom chat could not be found. It should be created automatically when the classroom is created."
+            )}
           </p>
         </div>
       <% end %>

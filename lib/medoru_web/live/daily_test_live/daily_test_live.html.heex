@@ -152,7 +152,9 @@
                   <button
                     type="button"
                     phx-click="submit_reading_text"
-                    disabled={@meaning_answer == "" or (not is_kana_only and @reading_answer == "")}
+                    disabled={
+                      @meaning_answer == "" or (not is_kana_only and @reading_answer == "")
+                    }
                     class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
                   >
                     {gettext("Submit Answer")}

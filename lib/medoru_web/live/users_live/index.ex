@@ -64,8 +64,7 @@ defmodule MedoruWeb.UsersLive.Index do
     page = parse_page(page)
     search = socket.assigns.search
 
-    {:noreply,
-     push_patch(socket, to: ~p"/users?#{[search: search, page: page]}")}
+    {:noreply, push_patch(socket, to: ~p"/users?#{[search: search, page: page]}")}
   end
 
   @impl true
@@ -92,7 +91,8 @@ defmodule MedoruWeb.UsersLive.Index do
     selected = socket.assigns.selected_users
 
     if length(selected) >= 1 do
-      {:noreply, push_navigate(socket, to: ~p"/messages/new-group?#{[users: Enum.join(selected, ",")]}")}
+      {:noreply,
+       push_navigate(socket, to: ~p"/messages/new-group?#{[users: Enum.join(selected, ",")]}")}
     else
       {:noreply, socket}
     end

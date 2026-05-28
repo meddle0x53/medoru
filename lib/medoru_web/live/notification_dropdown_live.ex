@@ -49,65 +49,65 @@ defmodule MedoruWeb.NotificationDropdownLive do
       class="dropdown-content z-[1] bg-base-100 rounded-xl w-80 mt-2 border border-base-300 shadow-lg"
     >
       <div class="py-2">
-          <div class="flex items-center justify-between px-4 py-2 border-b border-base-300">
-            <h3 class="font-semibold text-sm">Notifications</h3>
-            <%= if @unread_count > 0 do %>
-              <button
-                phx-click="mark_all_read"
-                class="text-xs text-primary hover:underline"
-              >
-                Mark all read
-              </button>
-            <% end %>
-          </div>
+        <div class="flex items-center justify-between px-4 py-2 border-b border-base-300">
+          <h3 class="font-semibold text-sm">Notifications</h3>
+          <%= if @unread_count > 0 do %>
+            <button
+              phx-click="mark_all_read"
+              class="text-xs text-primary hover:underline"
+            >
+              Mark all read
+            </button>
+          <% end %>
+        </div>
 
-          <div class="max-h-80 overflow-y-auto">
-            <%= if length(@notifications) == 0 do %>
-              <div class="p-4 text-center text-base-content/50">
-                <.icon name="hero-bell-slash" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p class="text-sm">No new notifications</p>
-              </div>
-            <% else %>
-              <%= for notification <- @notifications do %>
-                <div
-                  phx-click="mark_read"
-                  phx-value-id={notification.id}
-                  class="px-4 py-3 hover:bg-base-200 cursor-pointer border-b border-base-300 last:border-b-0 transition-colors"
-                >
-                  <div class="flex items-start gap-3">
-                    <div class={[
-                      "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-                      icon_bg_class(notification.type)
-                    ]}>
-                      <.icon name={icon_for_type(notification.type)} class="w-4 h-4" />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-base-content">
-                        {notification.title}
-                      </p>
-                      <p class="text-xs text-base-content/70 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      <p class="text-xs text-base-content/50 mt-1">
-                        {format_time(notification.inserted_at)}
-                      </p>
-                      <%= if notification_link(notification) do %>
-                        <.link
-                          navigate={notification_link(notification)}
-                          class="text-xs text-primary hover:underline mt-1 inline-block"
-                        >
-                          {gettext("View →")}
-                        </.link>
-                      <% end %>
-                    </div>
-                    <%= if is_nil(notification.read_at) do %>
-                      <div class="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1"></div>
+        <div class="max-h-80 overflow-y-auto">
+          <%= if length(@notifications) == 0 do %>
+            <div class="p-4 text-center text-base-content/50">
+              <.icon name="hero-bell-slash" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p class="text-sm">No new notifications</p>
+            </div>
+          <% else %>
+            <%= for notification <- @notifications do %>
+              <div
+                phx-click="mark_read"
+                phx-value-id={notification.id}
+                class="px-4 py-3 hover:bg-base-200 cursor-pointer border-b border-base-300 last:border-b-0 transition-colors"
+              >
+                <div class="flex items-start gap-3">
+                  <div class={[
+                    "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+                    icon_bg_class(notification.type)
+                  ]}>
+                    <.icon name={icon_for_type(notification.type)} class="w-4 h-4" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-base-content">
+                      {notification.title}
+                    </p>
+                    <p class="text-xs text-base-content/70 line-clamp-2">
+                      {notification.message}
+                    </p>
+                    <p class="text-xs text-base-content/50 mt-1">
+                      {format_time(notification.inserted_at)}
+                    </p>
+                    <%= if notification_link(notification) do %>
+                      <.link
+                        navigate={notification_link(notification)}
+                        class="text-xs text-primary hover:underline mt-1 inline-block"
+                      >
+                        {gettext("View →")}
+                      </.link>
                     <% end %>
                   </div>
+                  <%= if is_nil(notification.read_at) do %>
+                    <div class="flex-shrink-0 w-2 h-2 rounded-full bg-primary mt-1"></div>
+                  <% end %>
                 </div>
-              <% end %>
+              </div>
             <% end %>
-          </div>
+          <% end %>
+        </div>
 
         <div class="border-t border-base-300 px-4 py-2">
           <.link navigate={~p"/notifications"} class="text-sm text-primary hover:underline">

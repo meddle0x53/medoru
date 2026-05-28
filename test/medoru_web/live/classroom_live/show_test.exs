@@ -173,7 +173,11 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       assert html =~ "Hello classroom!"
     end
 
-    test "shows teacher badge for teacher messages", %{conn: conn, classroom: classroom, teacher: teacher} do
+    test "shows teacher badge for teacher messages", %{
+      conn: conn,
+      classroom: classroom,
+      teacher: teacher
+    } do
       # Teacher sends a message
       conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
       Medoru.Chat.store_plaintext_message(conversation.id, teacher.id, "Teacher message here")

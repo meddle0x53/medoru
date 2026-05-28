@@ -280,6 +280,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Lock page scroll on chat pages so only messages scroll */
+body:has(.chat-page) {
+  overflow-y: hidden;
+}
+
 /* Improve tap highlight on mobile */
 @media (hover: none) {
   .btn:active,

@@ -144,7 +144,7 @@ defmodule MedoruWeb.Push do
   def encrypt(message, subscription, padding_length \\ 0)
 
   def encrypt(message, _subscription, padding_length)
-       when byte_size(message) + padding_length > @max_payload_length do
+      when byte_size(message) + padding_length > @max_payload_length do
     raise ArgumentError,
           "Payload is too large. The current length is #{byte_size(message)} bytes plus " <>
             "#{padding_length} bytes of padding but the max length is #{@max_payload_length} bytes"

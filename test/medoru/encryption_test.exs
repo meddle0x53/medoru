@@ -123,8 +123,8 @@ defmodule Medoru.EncryptionTest do
       assert map_size(keys) == 1
       user_keys = keys[user.id]
       assert length(user_keys) == 2
-      assert Enum.any?(user_keys, & &1.public_key_spki == <<1>>)
-      assert Enum.any?(user_keys, & &1.public_key_spki == <<2>>)
+      assert Enum.any?(user_keys, &(&1.public_key_spki == <<1>>))
+      assert Enum.any?(user_keys, &(&1.public_key_spki == <<2>>))
     end
 
     test "list_public_keys/1 returns all keys for audit" do
@@ -149,8 +149,8 @@ defmodule Medoru.EncryptionTest do
 
       keys = Encryption.get_public_keys_for_user(user.id)
       assert length(keys) == 2
-      assert Enum.any?(keys, & &1.public_key_spki == <<1>>)
-      assert Enum.any?(keys, & &1.public_key_spki == <<2>>)
+      assert Enum.any?(keys, &(&1.public_key_spki == <<1>>))
+      assert Enum.any?(keys, &(&1.public_key_spki == <<2>>))
     end
   end
 end

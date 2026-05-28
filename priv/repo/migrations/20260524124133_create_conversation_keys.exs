@@ -4,7 +4,10 @@ defmodule Medoru.Repo.Migrations.CreateConversationKeys do
   def up do
     create table(:conversation_keys, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :conversation_id, references(:conversations, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :conversation_id, references(:conversations, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
       add :encrypted_key, :binary, null: false
       timestamps(type: :utc_datetime)

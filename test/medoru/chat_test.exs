@@ -27,7 +27,9 @@ defmodule Medoru.ChatTest do
       user_a = user_fixture()
       user_b = user_fixture()
 
-      assert {:ok, %Conversation{} = conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+      assert {:ok, %Conversation{} = conv} =
+               Chat.find_or_create_conversation(user_a.id, user_b.id)
+
       assert conv.is_group == false
       assert length(conv.participants) == 2
     end
@@ -86,7 +88,12 @@ defmodule Medoru.ChatTest do
       }
 
       assert {:ok, %Conversation{} = conv} =
-               Chat.create_group_conversation(creator.id, "Test Group", [user_b.id, user_c.id], encrypted_keys)
+               Chat.create_group_conversation(
+                 creator.id,
+                 "Test Group",
+                 [user_b.id, user_c.id],
+                 encrypted_keys
+               )
 
       assert conv.is_group == true
       assert conv.title == "Test Group"
@@ -117,7 +124,8 @@ defmodule Medoru.ChatTest do
       user_b = user_fixture()
       {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
 
-      {:ok, original} = Chat.store_message(conv.id, user_a.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+      {:ok, original} =
+        Chat.store_message(conv.id, user_a.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
 
       {:ok, reply} =
         Chat.store_message(conv.id, user_b.id, Base.encode64(<<3>>), Base.encode64(<<4>>),
@@ -144,7 +152,8 @@ defmodule Medoru.ChatTest do
       user_b = user_fixture()
       {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
 
-      {:ok, message} = Chat.store_message(conv.id, user_a.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+      {:ok, message} =
+        Chat.store_message(conv.id, user_a.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
 
       assert Chat.get_message!(message.id).id == message.id
     end
@@ -158,7 +167,8 @@ defmodule Medoru.ChatTest do
 
       encrypted_key = Base.encode64(<<1, 2, 3, 4, 5>>)
 
-      assert {:ok, %ConversationKey{}} = Chat.store_conversation_key(conv.id, user_a.id, encrypted_key)
+      assert {:ok, %ConversationKey{}} =
+               Chat.store_conversation_key(conv.id, user_a.id, encrypted_key)
 
       key = Chat.get_conversation_key(conv.id, user_a.id)
       assert key != nil
@@ -483,7 +493,8 @@ defmodule Medoru.ChatTest do
 
       {:ok, msg} = Chat.store_plaintext_message(conv.id, user_a.id, "Hello")
 
-      assert {:error, :unauthorized} = Chat.edit_message(msg.id, user_b.id, %{"content" => "Hacked"})
+      assert {:error, :unauthorized} =
+               Chat.edit_message(msg.id, user_b.id, %{"content" => "Hacked"})
     end
 
     test "edit_message/3 prevents editing deleted messages" do

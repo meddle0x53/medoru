@@ -196,7 +196,8 @@ defmodule Medoru.Tests.CustomLessonTestGenerator do
         @step_types
       end
 
-    selected_types = Enum.take_random(available_types, min(steps_per_word, length(available_types)))
+    selected_types =
+      Enum.take_random(available_types, min(steps_per_word, length(available_types)))
 
     Enum.map(selected_types, fn step_type ->
       build_step_data(word, step_type)

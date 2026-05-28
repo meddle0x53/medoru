@@ -19,18 +19,17 @@
       <%= for conversation <- @conversations do %>
         <% unread = unread_count(conversation, @current_scope.current_user.id) %>
 
-        <div
-          class={[
-            "group flex items-center gap-4 p-4 rounded-xl border transition-all",
-            if unread > 0 do
-              "bg-primary/5 border-primary/20 hover:bg-primary/10"
-            else
-              "bg-base-100 border-base-300 hover:border-primary/30 hover:shadow-sm"
-            end
-          ]}
-        >
+        <div class={[
+          "group flex items-center gap-4 p-4 rounded-xl border transition-all",
+          if unread > 0 do
+            "bg-primary/5 border-primary/20 hover:bg-primary/10"
+          else
+            "bg-base-100 border-base-300 hover:border-primary/30 hover:shadow-sm"
+          end
+        ]}>
           <% is_classroom = not is_nil(conversation.classroom_id) %>
-          <% is_teacher = is_classroom and conversation.classroom.teacher_id == @current_scope.current_user.id %>
+          <% is_teacher =
+            is_classroom and conversation.classroom.teacher_id == @current_scope.current_user.id %>
           <.link
             navigate={
               cond do
@@ -66,13 +65,23 @@
                   unread > 0 && "text-base-content"
                 ]}>
                   {conversation_name(conversation, @current_scope.current_user.id)}
-                  <% other = Chat.get_other_participant(conversation, @current_scope.current_user.id) %>
+                  <% other =
+                    Chat.get_other_participant(conversation, @current_scope.current_user.id) %>
                   <%= if other && user_online?(other.user_id, @online_user_ids) do %>
-                    <span class="w-2 h-2 rounded-full bg-success shrink-0" title={gettext("Online")}></span>
+                    <span
+                      class="w-2 h-2 rounded-full bg-success shrink-0"
+                      title={gettext("Online")}
+                    >
+                    </span>
                   <% end %>
                 </h3>
                 <span class="text-xs text-base-content/50 shrink-0 ml-2">
-                  <span data-local-time={conversation.last_message && DateTime.to_iso8601(conversation.last_message.inserted_at)}>{last_message_time(conversation)}</span>
+                  <span data-local-time={
+                    conversation.last_message &&
+                      DateTime.to_iso8601(conversation.last_message.inserted_at)
+                  }>
+                    {last_message_time(conversation)}
+                  </span>
                 </span>
               </div>
               <p class={[
@@ -99,7 +108,9 @@
                 type="button"
                 phx-click="archive_conversation"
                 phx-value-id={conversation.id}
-                data-confirm={gettext("Delete this conversation? It will be hidden from your list.")}
+                data-confirm={
+                  gettext("Delete this conversation? It will be hidden from your list.")
+                }
                 class="p-2 text-base-content/40 hover:text-error transition-colors"
                 title={gettext("Delete conversation")}
               >

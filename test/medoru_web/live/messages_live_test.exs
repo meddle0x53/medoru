@@ -176,7 +176,8 @@ defmodule MedoruWeb.MessagesLiveTest do
       user_b = user_with_display_name()
       {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
 
-      {:ok, _msg} = Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+      {:ok, _msg} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
 
       {:ok, _view, html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
 
@@ -189,7 +190,8 @@ defmodule MedoruWeb.MessagesLiveTest do
       user_b = user_with_display_name()
       {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
 
-      {:ok, msg} = Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+      {:ok, msg} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
 
       {:ok, view, _html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
 
@@ -200,6 +202,21 @@ defmodule MedoruWeb.MessagesLiveTest do
         |> render_click(%{"id" => msg.id})
 
       assert html =~ "Replying to"
+      assert html =~ "phx-value-id=\"#{msg.id}\""
+
+      # Click reply preview bar to open preview panel
+      html =
+        view
+        |> element("div[phx-click='preview_message']")
+        |> render_click(%{"id" => msg.id})
+
+      assert html =~ "Message</h3>"
+      assert html =~ "[...]"
+
+      # Close preview
+      html = render_click(view, "close_preview")
+
+      refute html =~ "Message</h3>"
 
       # Cancel reply
       html =
@@ -308,7 +325,10 @@ defmodule MedoruWeb.MessagesLiveTest do
 
       result =
         view
-        |> render_hook("create_group", %{"title" => "My Group", "encrypted_keys" => encrypted_keys})
+        |> render_hook("create_group", %{
+          "title" => "My Group",
+          "encrypted_keys" => encrypted_keys
+        })
 
       assert {:error, {:live_redirect, %{to: path}}} = result
       assert path =~ "/messages/"

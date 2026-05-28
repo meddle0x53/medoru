@@ -219,7 +219,11 @@
             <.link navigate={~p"/admin/lessons"} class="btn btn-ghost w-full sm:w-auto">
               {gettext("Cancel")}
             </.link>
-            <button type="submit" class="btn btn-primary w-full sm:w-auto" phx-disable-with={gettext("Saving...")}>
+            <button
+              type="submit"
+              class="btn btn-primary w-full sm:w-auto"
+              phx-disable-with={gettext("Saving...")}
+            >
               <.icon name="hero-check" class="w-4 h-4 mr-2" />
               <%= if @live_action == :new do %>
                 {gettext("Create Lesson")}

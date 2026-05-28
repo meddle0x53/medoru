@@ -3,10 +3,11 @@ defmodule Medoru.Repo.Migrations.AddKeyFingerprintToConversationKeys do
 
   def up do
     # Idempotent: only add column if it doesn't exist
-    result = repo().query!("""
-      SELECT 1 FROM information_schema.columns
-      WHERE table_name = 'conversation_keys' AND column_name = 'key_fingerprint'
-    """)
+    result =
+      repo().query!("""
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'conversation_keys' AND column_name = 'key_fingerprint'
+      """)
 
     if result.num_rows == 0 do
       alter table(:conversation_keys) do
@@ -20,22 +21,24 @@ defmodule Medoru.Repo.Migrations.AddKeyFingerprintToConversationKeys do
     # PostgreSQL treats NULLs as distinct, so one NULL-fingerprint row
     # (legacy) plus multiple fingerprinted rows (multi-device) is valid.
     drop_if_exists unique_index(:conversation_keys, [:conversation_id, :user_id],
-      name: :conversation_keys_conversation_id_user_id_index
-    )
+                     name: :conversation_keys_conversation_id_user_id_index
+                   )
 
-    create_if_not_exists unique_index(:conversation_keys, [:conversation_id, :user_id, :key_fingerprint],
-      name: :conversation_keys_conversation_id_user_id_key_fingerprint_index
-    )
+    create_if_not_exists unique_index(
+                           :conversation_keys,
+                           [:conversation_id, :user_id, :key_fingerprint],
+                           name: :conversation_keys_conversation_id_user_id_key_fingerprint_index
+                         )
   end
 
   def down do
     drop unique_index(:conversation_keys, [:conversation_id, :user_id, :key_fingerprint],
-      name: :conversation_keys_conversation_id_user_id_key_fingerprint_index
-    )
+           name: :conversation_keys_conversation_id_user_id_key_fingerprint_index
+         )
 
     create unique_index(:conversation_keys, [:conversation_id, :user_id],
-      name: :conversation_keys_conversation_id_user_id_index
-    )
+             name: :conversation_keys_conversation_id_user_id_index
+           )
 
     alter table(:conversation_keys) do
       remove :key_fingerprint

@@ -77,7 +77,10 @@ defmodule MedoruWeb.SettingsLive.ChatShortcuts do
             >
               <div class={[
                 "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-mono text-sm",
-                if(@enter_sends, do: "bg-primary text-primary-content", else: "bg-base-200 text-secondary")
+                if(@enter_sends,
+                  do: "bg-primary text-primary-content",
+                  else: "bg-base-200 text-secondary"
+                )
               ]}>
                 ↵
               </div>
@@ -108,7 +111,10 @@ defmodule MedoruWeb.SettingsLive.ChatShortcuts do
             >
               <div class={[
                 "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-mono text-sm",
-                if(!@enter_sends, do: "bg-primary text-primary-content", else: "bg-base-200 text-secondary")
+                if(!@enter_sends,
+                  do: "bg-primary text-primary-content",
+                  else: "bg-base-200 text-secondary"
+                )
               ]}>
                 ⇧↵
               </div>

@@ -19,7 +19,9 @@ defmodule MedoruWeb.LessonLive.Show do
 
     # Get localized content
     localized_title = Content.get_localized_lesson_title(lesson, locale)
-    localized_description = render_markdown(Content.get_localized_lesson_description(lesson, locale))
+
+    localized_description =
+      render_markdown(Content.get_localized_lesson_description(lesson, locale))
 
     # Fetch lesson progress if user is authenticated
     lesson_progress =

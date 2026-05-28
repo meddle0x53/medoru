@@ -79,7 +79,11 @@ defmodule MedoruWeb.MessagesLive.NewGroup do
   end
 
   @impl true
-  def handle_event("create_group", %{"title" => title, "encrypted_keys" => encrypted_keys}, socket) do
+  def handle_event(
+        "create_group",
+        %{"title" => title, "encrypted_keys" => encrypted_keys},
+        socket
+      ) do
     current_user = socket.assigns.current_scope.current_user
     user_ids = socket.assigns.user_ids
     title = String.trim(title)

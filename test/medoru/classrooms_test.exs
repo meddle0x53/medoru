@@ -400,7 +400,10 @@ defmodule Medoru.ClassroomsTest do
       assert Enum.any?(conversation.participants, &(&1.user_id == teacher.id))
     end
 
-    test "approve_membership/1 adds student to classroom chat", %{teacher: teacher, student: student} do
+    test "approve_membership/1 adds student to classroom chat", %{
+      teacher: teacher,
+      student: student
+    } do
       classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: true})
       {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
 

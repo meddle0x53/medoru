@@ -479,7 +479,11 @@ defmodule Medoru.GamesTest do
       flip_and_answer = fn sess, answer_meaning ->
         {:ok, s1} = Games.flip_card(sess.id, 0)
         {:needs_input, s2, _} = Games.flip_card(s1.id, matching_pos)
-        Games.submit_collection_answer(s2.id, %{"meaning" => answer_meaning, "pronunciation" => ""})
+
+        Games.submit_collection_answer(s2.id, %{
+          "meaning" => answer_meaning,
+          "pronunciation" => ""
+        })
       end
 
       # Single alternative works
@@ -494,7 +498,9 @@ defmodule Medoru.GamesTest do
       # Whole string works
       {:ok, _} = Games.reset_session(game.id, student.id)
       {:ok, session} = Games.get_or_create_session(game.id, student.id)
-      assert {:ok, _, :collected, _} = flip_and_answer.(session, "to eat / to consume / to devour")
+
+      assert {:ok, _, :collected, _} =
+               flip_and_answer.(session, "to eat / to consume / to devour")
 
       # Subset works
       {:ok, _} = Games.reset_session(game.id, student.id)

@@ -87,7 +87,8 @@ defmodule Medoru.NotificationsTest do
       user2 = user_fixture()
       notification = notification_fixture(user1.id)
 
-      assert {:error, :not_found} = Notifications.delete_user_notification(user2.id, notification.id)
+      assert {:error, :not_found} =
+               Notifications.delete_user_notification(user2.id, notification.id)
     end
 
     test "list_unread_notifications/1 returns only unread notifications" do

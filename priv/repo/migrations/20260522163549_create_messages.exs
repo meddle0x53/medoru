@@ -4,7 +4,10 @@ defmodule Medoru.Repo.Migrations.CreateMessages do
   def up do
     create table(:messages, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :conversation_id, references(:conversations, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :conversation_id, references(:conversations, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :sender_id, references(:users, type: :binary_id), null: false
       add :ciphertext, :binary, null: false
       add :iv, :binary, null: false

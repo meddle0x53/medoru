@@ -27,9 +27,10 @@ defmodule Medoru.Social do
     query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
-      |> where([u, p],
+      |> where(
+        [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
-        (not is_nil(u.name) and u.name != "")
+          (not is_nil(u.name) and u.name != "")
       )
       |> preload([:profile, :stats])
       |> order_by([u], desc: u.inserted_at)
@@ -53,13 +54,15 @@ defmodule Medoru.Social do
     search_query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
-      |> where([u, p],
+      |> where(
+        [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
-        (not is_nil(u.name) and u.name != "")
+          (not is_nil(u.name) and u.name != "")
       )
-      |> where([u, p],
+      |> where(
+        [u, p],
         ilike(p.display_name, ^"%#{query_term}%") or
-        ilike(u.name, ^"%#{query_term}%")
+          ilike(u.name, ^"%#{query_term}%")
       )
       |> preload([:profile, :stats])
       |> order_by([u, p], asc: p.display_name)
@@ -79,9 +82,10 @@ defmodule Medoru.Social do
     query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
-      |> where([u, p],
+      |> where(
+        [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
-        (not is_nil(u.name) and u.name != "")
+          (not is_nil(u.name) and u.name != "")
       )
 
     query = filter_blocked_users(query, viewer_id)
@@ -95,13 +99,15 @@ defmodule Medoru.Social do
     search_query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
-      |> where([u, p],
+      |> where(
+        [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
-        (not is_nil(u.name) and u.name != "")
+          (not is_nil(u.name) and u.name != "")
       )
-      |> where([u, p],
+      |> where(
+        [u, p],
         ilike(p.display_name, ^"%#{query_term}%") or
-        ilike(u.name, ^"%#{query_term}%")
+          ilike(u.name, ^"%#{query_term}%")
       )
 
     search_query = filter_blocked_users(search_query, viewer_id)

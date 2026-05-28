@@ -1122,11 +1122,19 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                              mcg.meaning_or_pronunciation_required_for_collection) %>
                     <% meaning_text = Content.get_localized_meaning(word, @current_scope.locale) %>
                     <div class="text-center px-1 w-full overflow-hidden">
-                      <p class="text-[10px] sm:text-sm lg:text-base leading-tight truncate">{word.text}</p>
-                      <p :if={show_reading?} class="text-[8px] sm:text-xs text-secondary mt-0.5 truncate hidden sm:block">
+                      <p class="text-[10px] sm:text-sm lg:text-base leading-tight truncate">
+                        {word.text}
+                      </p>
+                      <p
+                        :if={show_reading?}
+                        class="text-[8px] sm:text-xs text-secondary mt-0.5 truncate hidden sm:block"
+                      >
                         {word.reading}
                       </p>
-                      <p :if={show_meaning?} class="text-[8px] sm:text-xs text-success mt-0.5 truncate hidden sm:block">
+                      <p
+                        :if={show_meaning?}
+                        class="text-[8px] sm:text-xs text-success mt-0.5 truncate hidden sm:block"
+                      >
                         {meaning_text}
                       </p>
                     </div>

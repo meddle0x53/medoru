@@ -385,7 +385,9 @@ defmodule Medoru.Chat do
     |> Repo.insert()
     |> case do
       {:ok, message} ->
-        message = Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+        message =
+          Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+
         broadcast_message(conversation_id, message)
         maybe_notify_participants(conversation_id, sender_id, message)
         {:ok, message}
@@ -418,7 +420,9 @@ defmodule Medoru.Chat do
     |> Repo.insert()
     |> case do
       {:ok, message} ->
-        message = Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+        message =
+          Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
+
         broadcast_message(conversation_id, message)
         maybe_notify_participants(conversation_id, sender_id, message)
         {:ok, message}
@@ -504,7 +508,9 @@ defmodule Medoru.Chat do
         |> Repo.update()
         |> case do
           {:ok, updated} ->
-            updated = Repo.preload(updated, sender: [:profile], reply_to_message: [sender: [:profile]])
+            updated =
+              Repo.preload(updated, sender: [:profile], reply_to_message: [sender: [:profile]])
+
             broadcast_message_edited(message.conversation_id, updated)
             {:ok, updated}
 
@@ -523,7 +529,10 @@ defmodule Medoru.Chat do
   @doc """
   Checks if a message can be edited by the given user.
   """
-  def can_edit_message?(%Message{sender_id: sender_id, is_deleted: is_deleted, inserted_at: inserted_at}, user_id) do
+  def can_edit_message?(
+        %Message{sender_id: sender_id, is_deleted: is_deleted, inserted_at: inserted_at},
+        user_id
+      ) do
     sender_id == user_id &&
       not is_deleted &&
       within_edit_window?(%Message{inserted_at: inserted_at})
@@ -812,7 +821,11 @@ defmodule Medoru.Chat do
   Broadcasts a request for other participants to re-encrypt the conversation key
   for a user whose public key has changed.
   """
-  def broadcast_key_reencryption_request(conversation_id, target_user_id, preferred_key_b64 \\ nil) do
+  def broadcast_key_reencryption_request(
+        conversation_id,
+        target_user_id,
+        preferred_key_b64 \\ nil
+      ) do
     Phoenix.PubSub.broadcast(
       PubSub,
       "chat:#{conversation_id}",
@@ -904,9 +917,12 @@ defmodule Medoru.Chat do
   defp notification_body_from_message(%{attachment_type: "voice"}), do: "Sent a voice message"
   defp notification_body_from_message(%{attachment_type: "image"}), do: "Sent an image"
   defp notification_body_from_message(%{attachment_type: "file"}), do: "Sent a file"
-  defp notification_body_from_message(%{attachment_type: type}) when is_binary(type), do: "Sent an attachment"
 
-  defp notification_body_from_message(%{content: content}) when is_binary(content) and content != "" do
+  defp notification_body_from_message(%{attachment_type: type}) when is_binary(type),
+    do: "Sent an attachment"
+
+  defp notification_body_from_message(%{content: content})
+       when is_binary(content) and content != "" do
     if String.length(content) > 120 do
       String.slice(content, 0, 117) <> "..."
     else

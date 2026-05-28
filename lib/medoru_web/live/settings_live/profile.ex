@@ -260,7 +260,8 @@ defmodule MedoruWeb.SettingsLive.Profile do
           |> put_flash(
             :info,
             if(new_value,
-              do: gettext("Push notifications enabled. You'll be prompted for browser permission."),
+              do:
+                gettext("Push notifications enabled. You'll be prompted for browser permission."),
               else: gettext("Push notifications disabled.")
             )
           )
@@ -270,7 +271,8 @@ defmodule MedoruWeb.SettingsLive.Profile do
         {:noreply, push_event(socket, event, %{})}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, gettext("Failed to update push notification settings."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to update push notification settings."))}
     end
   end
 
@@ -300,7 +302,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
     message =
       case params["reason"] do
         "permission_denied" ->
-          gettext("Push notification permission was denied. Please enable it in your browser/app settings.")
+          gettext(
+            "Push notification permission was denied. Please enable it in your browser/app settings."
+          )
 
         "not_supported" ->
           gettext("Push notifications are not supported on this device or browser.")

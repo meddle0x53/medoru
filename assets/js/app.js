@@ -46,6 +46,7 @@ import ChatKeyManager from "./hooks/chat_key_manager"
 import ChatVoiceRecorder from "./hooks/chat_voice_recorder"
 import ChatAudioPlayer from "./hooks/chat_audio_player"
 import NotificationSound from "./hooks/notification_sound"
+import PreviewOverlay from "./hooks/preview_overlay"
 import PushNotificationsHook from "./hooks/push_notifications_hook"
 import { initPushNotifications } from "./push_notifications"
 
@@ -58,7 +59,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook},
+  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay},
 })
 
 // Show progress bar on live navigation and form submits

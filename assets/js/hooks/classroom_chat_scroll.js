@@ -2,7 +2,8 @@ import { formatLocalTimes } from "./format_local_time"
 
 const ClassroomChatScroll = {
   mounted() {
-    this.scrollToBottom()
+    // Delay slightly to ensure flex layout is resolved before scrolling
+    requestAnimationFrame(() => this.scrollToBottom())
     formatLocalTimes(this.el)
 
     this.handleEvent("scroll_to_bottom", () => {

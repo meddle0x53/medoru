@@ -124,6 +124,11 @@ const ChatInput = {
     document.addEventListener("click", this._outsideClickHandler)
 
     this.textarea.focus()
+
+    this.handleEvent("focus_chat_input", () => {
+      this.textarea.scrollIntoView({ behavior: "smooth", block: "end" })
+      setTimeout(() => this.textarea.focus(), 50)
+    })
   },
 
   destroyed() {

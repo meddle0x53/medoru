@@ -30,13 +30,15 @@ defmodule MedoruWeb.MessagesLive.Show do
           Chat.mark_read(current_user.id, conversation_id)
 
           # Mark chat notifications for this conversation as read
-          {:ok, _} = Medoru.Notifications.mark_chat_notifications_as_read(
-            current_user.id,
-            conversation_id
-          )
+          {:ok, _} =
+            Medoru.Notifications.mark_chat_notifications_as_read(
+              current_user.id,
+              conversation_id
+            )
 
           # Broadcast notification count update to dropdown
           unread_count = Medoru.Notifications.count_unread_notifications(current_user.id)
+
           Phoenix.PubSub.broadcast(
             Medoru.PubSub,
             "notifications:#{current_user.id}",
@@ -69,8 +71,10 @@ defmodule MedoruWeb.MessagesLive.Show do
             false
           else
             other = List.first(other_participants)
-            other && (Social.blocked_by?(current_user.id, other.user_id) ||
-                       Social.blocked_by?(other.user_id, current_user.id))
+
+            other &&
+              (Social.blocked_by?(current_user.id, other.user_id) ||
+                 Social.blocked_by?(other.user_id, current_user.id))
           end
 
         # Get participant public keys for conversation key creation.
@@ -123,6 +127,7 @@ defmodule MedoruWeb.MessagesLive.Show do
         # If this user has no conversation key but others do, request re-encryption.
         if connected?(socket) && conversation_keys == [] && missing_keys == [] do
           other_keys = Chat.list_conversation_keys(conversation_id)
+
           if other_keys != [] do
             Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
           end
@@ -152,6 +157,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:has_more_messages, has_more)
          |> assign(:message_offset, 0)
          |> assign(:reply_to, nil)
+         |> assign(:preview_message, nil)
          |> assign(:editing_message, nil)
          |> assign(:page_title, page_title)
          |> assign(:typing_users, [])
@@ -186,7 +192,8 @@ defmodule MedoruWeb.MessagesLive.Show do
         {:ok, _message} ->
           {:noreply,
            socket
-           |> assign(:reply_to, nil)}
+           |> assign(:reply_to, nil)
+           |> assign(:preview_message, nil)}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
@@ -252,7 +259,9 @@ defmodule MedoruWeb.MessagesLive.Show do
         put_flash(
           socket,
           :info,
-          gettext("No one else is online right now. We'll keep trying when someone comes online, or you can reset encryption below.")
+          gettext(
+            "No one else is online right now. We'll keep trying when someone comes online, or you can reset encryption below."
+          )
         )
       else
         socket
@@ -290,7 +299,10 @@ defmodule MedoruWeb.MessagesLive.Show do
     {:noreply,
      socket
      |> assign(:invitation_sent, true)
-     |> put_flash(:info, gettext("Invitation sent. You'll be able to chat once they set up encryption."))}
+     |> put_flash(
+       :info,
+       gettext("Invitation sent. You'll be able to chat once they set up encryption.")
+     )}
   end
 
   @impl true
@@ -310,7 +322,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     if conversation && trimmed != "" do
       case Chat.store_plaintext_message(conversation.id, current_user.id, trimmed) do
         {:ok, _message} ->
-          {:noreply, socket}
+          {:noreply, assign(socket, :preview_message, nil)}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
@@ -436,7 +448,10 @@ defmodule MedoruWeb.MessagesLive.Show do
 
       case Chat.store_plaintext_message(conversation.id, current_user.id, trimmed, opts) do
         {:ok, _message} ->
-          {:noreply, assign(socket, :reply_to, nil)}
+          {:noreply,
+           socket
+           |> assign(:reply_to, nil)
+           |> assign(:preview_message, nil)}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
@@ -447,7 +462,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_event("send_voice_message", %{"audio_base64" => audio_b64, "mime_type" => mime_type, "duration" => duration}, socket) do
+  def handle_event(
+        "send_voice_message",
+        %{"audio_base64" => audio_b64, "mime_type" => mime_type, "duration" => duration},
+        socket
+      ) do
     conversation = socket.assigns.conversation
     current_user = socket.assigns.current_scope.current_user
     reply_to = socket.assigns.reply_to
@@ -482,7 +501,10 @@ defmodule MedoruWeb.MessagesLive.Show do
 
       case Chat.store_plaintext_message(conversation.id, current_user.id, "🎤 Voice message", opts) do
         {:ok, _message} ->
-          {:noreply, assign(socket, :reply_to, nil)}
+          {:noreply,
+           socket
+           |> assign(:reply_to, nil)
+           |> assign(:preview_message, nil)}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to send voice message."))}
@@ -494,7 +516,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_event("send_image_message", %{"image_base64" => img_b64, "mime_type" => mime_type} = params, socket) do
+  def handle_event(
+        "send_image_message",
+        %{"image_base64" => img_b64, "mime_type" => mime_type} = params,
+        socket
+      ) do
     conversation = socket.assigns.conversation
     current_user = socket.assigns.current_scope.current_user
     reply_to = socket.assigns.reply_to
@@ -507,7 +533,12 @@ defmodule MedoruWeb.MessagesLive.Show do
         String.starts_with?(mime_type, "image/webp")
 
     if not valid_image_type do
-      {:noreply, put_flash(socket, :error, gettext("Invalid image format. Only JPEG, PNG, GIF, and WebP are supported."))}
+      {:noreply,
+       put_flash(
+         socket,
+         :error,
+         gettext("Invalid image format. Only JPEG, PNG, GIF, and WebP are supported.")
+       )}
     else
       uploads_dir = Application.get_env(:medoru, :uploads_dir)
 
@@ -529,7 +560,8 @@ defmodule MedoruWeb.MessagesLive.Show do
 
         # 5MB limit
         if byte_size(decoded) > 5_000_000 do
-          {:noreply, put_flash(socket, :error, gettext("Image is too large. Maximum size is 5MB."))}
+          {:noreply,
+           put_flash(socket, :error, gettext("Image is too large. Maximum size is 5MB."))}
         else
           File.write!(dest_path, decoded)
           image_path = "/uploads/chat_images/#{filename}"
@@ -551,7 +583,10 @@ defmodule MedoruWeb.MessagesLive.Show do
 
           case result do
             {:ok, _message} ->
-              {:noreply, assign(socket, :reply_to, nil)}
+              {:noreply,
+               socket
+               |> assign(:reply_to, nil)
+               |> assign(:preview_message, nil)}
 
             {:error, _} ->
               {:noreply, put_flash(socket, :error, gettext("Failed to send image."))}
@@ -592,6 +627,17 @@ defmodule MedoruWeb.MessagesLive.Show do
   def handle_event("set_reply", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.messages, &(&1.id == message_id))
     {:noreply, assign(socket, :reply_to, message)}
+  end
+
+  @impl true
+  def handle_event("preview_message", %{"id" => message_id}, socket) do
+    message = Enum.find(socket.assigns.messages, &(&1.id == message_id))
+    {:noreply, assign(socket, :preview_message, message)}
+  end
+
+  @impl true
+  def handle_event("close_preview", _params, socket) do
+    {:noreply, assign(socket, :preview_message, nil)}
   end
 
   @impl true
@@ -657,7 +703,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_event("edit_message", %{"ciphertext" => ct, "iv" => iv, "message_id" => message_id}, socket) do
+  def handle_event(
+        "edit_message",
+        %{"ciphertext" => ct, "iv" => iv, "message_id" => message_id},
+        socket
+      ) do
     current_user = socket.assigns.current_scope.current_user
 
     case Chat.edit_message(message_id, current_user.id, %{
@@ -671,7 +721,8 @@ defmodule MedoruWeb.MessagesLive.Show do
         {:noreply, put_flash(socket, :error, gettext("You can only edit your own messages."))}
 
       {:error, :edit_window_expired} ->
-        {:noreply, put_flash(socket, :error, gettext("Message can only be edited within 15 minutes."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Message can only be edited within 15 minutes."))}
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to edit message."))}
@@ -694,7 +745,10 @@ defmodule MedoruWeb.MessagesLive.Show do
     conversation = socket.assigns.conversation
 
     require Logger
-    Logger.info("[ChatRekey] User #{current_user.id} reset conversation keys for #{conversation.id}")
+
+    Logger.info(
+      "[ChatRekey] User #{current_user.id} reset conversation keys for #{conversation.id}"
+    )
 
     Chat.delete_conversation_keys(conversation.id)
     Chat.broadcast_encryption_reset(conversation.id)
@@ -703,7 +757,12 @@ defmodule MedoruWeb.MessagesLive.Show do
      socket
      |> assign(:key_mismatch, false)
      |> assign(:encrypted_key, nil)
-     |> put_flash(:warning, gettext("Encryption has been reset. Old messages cannot be decrypted, but you can now send new messages."))
+     |> put_flash(
+       :warning,
+       gettext(
+         "Encryption has been reset. Old messages cannot be decrypted, but you can now send new messages."
+       )
+     )
      |> push_event("encryption_reset", %{})}
   end
 
@@ -712,7 +771,10 @@ defmodule MedoruWeb.MessagesLive.Show do
     conversation = socket.assigns.conversation
     target_id = params["target_user_id"]
     require Logger
-    Logger.debug("[ChatRekey] Received submit_re_encrypted_key from user #{socket.assigns.current_scope.current_user.id} for target #{target_id}")
+
+    Logger.debug(
+      "[ChatRekey] Received submit_re_encrypted_key from user #{socket.assigns.current_scope.current_user.id} for target #{target_id}"
+    )
 
     # Handle both legacy single-key and new multi-key formats
     stored =
@@ -732,7 +794,9 @@ defmodule MedoruWeb.MessagesLive.Show do
       end
 
     if Enum.any?(stored, &match?({:ok, _}, &1)) do
-      Logger.debug("[ChatRekey] Stored re-encrypted key(s), broadcasting to conversation #{conversation.id}")
+      Logger.debug(
+        "[ChatRekey] Stored re-encrypted key(s), broadcasting to conversation #{conversation.id}"
+      )
 
       # Broadcast ALL keys for the target user so every device gets its copy
       target_keys = Chat.get_conversation_keys(conversation.id, target_id)
@@ -804,7 +868,10 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     if target_keys != [] do
       require Logger
-      Logger.debug("[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}")
+
+      Logger.debug(
+        "[ChatRekey] Pushing re_encrypt_for_user to user #{current_user.id} for target #{target_user_id}"
+      )
 
       public_keys = Enum.map(target_keys, &Base.encode64(&1.public_key_spki))
 
@@ -833,7 +900,10 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_info({:reencrypted_key, target_user_id, encrypted_key_b64, encrypted_keys_v2}, socket) do
+  def handle_info(
+        {:reencrypted_key, target_user_id, encrypted_key_b64, encrypted_keys_v2},
+        socket
+      ) do
     current_user = socket.assigns.current_scope.current_user
 
     # Only the target user should process this
@@ -869,10 +939,11 @@ defmodule MedoruWeb.MessagesLive.Show do
 
       # Safety net: clear any chat notifications that may have been created
       # due to a race condition while the user is actively in the chat.
-      {:ok, _} = Notifications.mark_chat_notifications_as_read(
-        current_user.id,
-        message.conversation_id
-      )
+      {:ok, _} =
+        Notifications.mark_chat_notifications_as_read(
+          current_user.id,
+          message.conversation_id
+        )
     end
 
     message = Medoru.Repo.preload(message, [:sender, :reply_to_message])
@@ -1000,16 +1071,26 @@ defmodule MedoruWeb.MessagesLive.Show do
   Checks if a message consists only of emojis (for large rendering without bubble).
   """
   def emoji_only?(nil), do: false
+
   def emoji_only?(text) do
     trimmed = String.trim(text)
-    trimmed != "" and String.replace(trimmed, ~r/[\s\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1F004}\x{1F0CF}\x{1F170}-\x{1F251}\x{238C}\x{2B50}\x{2B55}\x{2764}\x{2795}-\x{2797}\x{27A1}\x{27B0}\x{27BF}\x{2B05}-\x{2B07}\x{3030}\x{303D}\x{3297}\x{3299}\x{23F0}-\x{23F3}\x{23E9}-\x{23EF}\x{1F18E}\x{00A9}\x{00AE}\x{FE0F}\x{200D}\x{1F3FB}-\x{1F3FF}]/u, "") == ""
+
+    trimmed != "" and
+      String.replace(
+        trimmed,
+        ~r/[\s\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1F004}\x{1F0CF}\x{1F170}-\x{1F251}\x{238C}\x{2B50}\x{2B55}\x{2764}\x{2795}-\x{2797}\x{27A1}\x{27B0}\x{27BF}\x{2B05}-\x{2B07}\x{3030}\x{303D}\x{3297}\x{3299}\x{23F0}-\x{23F3}\x{23E9}-\x{23EF}\x{1F18E}\x{00A9}\x{00AE}\x{FE0F}\x{200D}\x{1F3FB}-\x{1F3FF}]/u,
+        ""
+      ) == ""
   end
 
   @doc """
   Formats audio duration as M:SS.
   """
   def format_audio_duration(nil), do: "0:00"
-  def format_audio_duration(seconds) when seconds < 60, do: "0:#{String.pad_leading("#{seconds}", 2, "0")}"
+
+  def format_audio_duration(seconds) when seconds < 60,
+    do: "0:#{String.pad_leading("#{seconds}", 2, "0")}"
+
   def format_audio_duration(seconds) do
     m = div(seconds, 60)
     s = rem(seconds, 60)
@@ -1023,7 +1104,8 @@ defmodule MedoruWeb.MessagesLive.Show do
     other_participants = Enum.reject(conversation.participants, &(&1.user_id == current_user_id))
 
     Enum.any?(other_participants, fn participant ->
-      participant.last_read_at && DateTime.compare(participant.last_read_at, message.inserted_at) != :lt
+      participant.last_read_at &&
+        DateTime.compare(participant.last_read_at, message.inserted_at) != :lt
     end)
   end
 
@@ -1047,6 +1129,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   def message_ciphertext_b64(%{ciphertext: nil}), do: ""
+
   def message_ciphertext_b64(message) do
     Base.encode64(message.ciphertext)
   end
@@ -1075,6 +1158,81 @@ defmodule MedoruWeb.MessagesLive.Show do
 
       current && prev && not same_day?(current.inserted_at, prev.inserted_at)
     end
+  end
+
+  attr :message, :map, required: true
+  attr :current_user_id, :string, required: true
+  attr :conversation, :map, required: true
+
+  def message_preview_panel(assigns) do
+    ~H"""
+    <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
+      <h3 class="font-medium text-sm text-base-content">{gettext("Message")}</h3>
+      <button
+        type="button"
+        phx-click="close_preview"
+        class="p-1 text-base-content/40 hover:text-base-content transition-colors"
+      >
+        <.icon name="hero-x-mark" class="w-5 h-5" />
+      </button>
+    </div>
+    <div class="preview-body flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+      <div class="flex items-start gap-3">
+        <% sender_avatar =
+          (@message.sender.profile && @message.sender.profile.avatar) || @message.sender.avatar_url %>
+        <%= if sender_avatar do %>
+          <img
+            src={sender_avatar}
+            alt=""
+            class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200 shrink-0"
+          />
+        <% else %>
+          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200 shrink-0">
+            <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+          </div>
+        <% end %>
+        <div class="min-w-0">
+          <p class="font-medium text-sm text-base-content">
+            {sender_name(@message, @current_user_id)}
+          </p>
+          <p class="text-xs text-base-content/50">
+            {format_message_time(@message.inserted_at)}
+          </p>
+        </div>
+      </div>
+      <div class="bg-base-200/50 rounded-2xl p-4">
+        <%= cond do %>
+          <% @message.is_deleted -> %>
+            <p class="text-sm italic text-base-content/60">{gettext("This message was deleted")}</p>
+          <% @message.attachment_type == "image" && @message.attachment_path -> %>
+            <img
+              src={@message.attachment_path}
+              alt={gettext("Image")}
+              class="max-w-full rounded-lg"
+              loading="lazy"
+            />
+          <% @message.attachment_type == "voice" && @message.attachment_path -> %>
+            <audio controls class="w-full">
+              <source src={@message.attachment_path} />
+            </audio>
+          <% @message.ciphertext -> %>
+            <p
+              class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content"
+              data-msg-id={@message.id}
+              data-encrypted="true"
+              data-ciphertext={message_ciphertext_b64(@message)}
+              data-iv={message_iv_b64(@message)}
+            >
+              [...]
+            </p>
+          <% true -> %>
+            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
+              {@message.content}
+            </p>
+        <% end %>
+      </div>
+    </div>
+    """
   end
 
   def sender_name(message, current_user_id) do

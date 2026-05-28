@@ -21,7 +21,12 @@ defmodule MedoruWeb.UserAuth do
 
     conn
     |> assign(:current_user, user)
-    |> assign(:current_scope, %{current_user: user, unread_count: unread_count, locale: locale, theme: theme})
+    |> assign(:current_scope, %{
+      current_user: user,
+      unread_count: unread_count,
+      locale: locale,
+      theme: theme
+    })
   end
 
   @doc """
@@ -105,7 +110,12 @@ defmodule MedoruWeb.UserAuth do
         theme = if user && user.profile, do: user.profile.theme, else: "system"
 
         Phoenix.Component.assign(socket,
-          current_scope: %{current_user: user, unread_count: unread_count, locale: locale, theme: theme}
+          current_scope: %{
+            current_user: user,
+            unread_count: unread_count,
+            locale: locale,
+            theme: theme
+          }
         )
 
       %{} ->

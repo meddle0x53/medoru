@@ -143,7 +143,9 @@ defmodule MedoruWeb.NotificationsLive do
   end
 
   defp load_notifications(socket, user_id, "unread", page) do
-    notifications = Notifications.list_unread_notifications(user_id, page: page, per_page: @per_page)
+    notifications =
+      Notifications.list_unread_notifications(user_id, page: page, per_page: @per_page)
+
     total_count = Notifications.count_unread_notifications(user_id)
     total_pages = max(1, ceil(total_count / @per_page))
 
@@ -165,7 +167,9 @@ defmodule MedoruWeb.NotificationsLive do
   end
 
   defp load_notifications(socket, user_id, type, page) do
-    notifications = Notifications.list_notifications_by_type(user_id, type, page: page, per_page: @per_page)
+    notifications =
+      Notifications.list_notifications_by_type(user_id, type, page: page, per_page: @per_page)
+
     total_count = Notifications.count_notifications_by_type(user_id, type)
     total_pages = max(1, ceil(total_count / @per_page))
 

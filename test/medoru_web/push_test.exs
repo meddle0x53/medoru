@@ -8,7 +8,8 @@ defmodule MedoruWeb.PushTest do
       subscription = %{
         endpoint: "https://fcm.googleapis.com/fcm/send/test-123",
         keys: %{
-          p256dh: "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
+          p256dh:
+            "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
           auth: "Ryo7uSXQmMpf43JfB-bxRA"
         }
       }
@@ -45,7 +46,8 @@ defmodule MedoruWeb.PushTest do
       subscription = %{
         endpoint: "https://example.com",
         keys: %{
-          p256dh: "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
+          p256dh:
+            "BLxuja-129dN_6pVsAeAABXiRkPtOogAmAuM2pomg7RquL_sflksWO4rDUnngBF6xG26ZEiTMFkBc-p7h68MwOs",
           auth: "Ryo7uSXQmMpf43JfB-bxRA"
         }
       }

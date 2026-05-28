@@ -23,7 +23,15 @@ defmodule Medoru.Chat.ConversationParticipant do
   @doc false
   def changeset(participant, attrs) do
     participant
-    |> cast(attrs, [:last_read_at, :is_typing, :has_left, :is_archived, :joined_at, :conversation_id, :user_id])
+    |> cast(attrs, [
+      :last_read_at,
+      :is_typing,
+      :has_left,
+      :is_archived,
+      :joined_at,
+      :conversation_id,
+      :user_id
+    ])
     |> validate_required([:conversation_id, :user_id])
     |> foreign_key_constraint(:conversation_id)
     |> foreign_key_constraint(:user_id)

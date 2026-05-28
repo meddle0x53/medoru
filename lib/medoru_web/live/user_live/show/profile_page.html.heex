@@ -85,7 +85,11 @@
                   <button
                     type="button"
                     phx-click="block_user"
-                    data-confirm={gettext("Are you sure you want to block this user? They won't be able to message you.")}
+                    data-confirm={
+                      gettext(
+                        "Are you sure you want to block this user? They won't be able to message you."
+                      )
+                    }
                     class="btn btn-ghost btn-sm text-error hover:bg-error/10"
                   >
                     <.icon name="hero-shield-exclamation" class="w-4 h-4 mr-1" />
@@ -116,7 +120,10 @@
         </div>
       </div>
 
-      <.link navigate={~p"/users/#{@user.id}/kanji"} class="card bg-base-100 shadow-sm border border-base-300 hover:border-blue-300 hover:shadow-md transition-all">
+      <.link
+        navigate={~p"/users/#{@user.id}/kanji"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-blue-300 hover:shadow-md transition-all"
+      >
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-book-open" class="w-6 h-6 text-blue-500 mb-2" />
           <p class="text-2xl font-bold">{@stats.total_kanji_learned}</p>
@@ -124,7 +131,10 @@
         </div>
       </.link>
 
-      <.link navigate={~p"/users/#{@user.id}/words"} class="card bg-base-100 shadow-sm border border-base-300 hover:border-green-300 hover:shadow-md transition-all">
+      <.link
+        navigate={~p"/users/#{@user.id}/words"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-green-300 hover:shadow-md transition-all"
+      >
         <div class="card-body items-center text-center p-4">
           <.icon name="hero-document-text" class="w-6 h-6 text-green-500 mb-2" />
           <p class="text-2xl font-bold">{@stats.total_words_learned}</p>

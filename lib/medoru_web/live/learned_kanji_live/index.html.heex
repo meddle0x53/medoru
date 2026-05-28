@@ -38,7 +38,11 @@
               type="button"
               phx-click="unlearn_kanji"
               phx-value-id={k.id}
-              data-confirm={gettext("Are you sure? This will remove '%{kanji}' from your learned kanji.", kanji: k.character)}
+              data-confirm={
+                gettext("Are you sure? This will remove '%{kanji}' from your learned kanji.",
+                  kanji: k.character
+                )
+              }
               class="absolute top-2 right-2 p-1.5 rounded-lg text-base-content/30 hover:text-error hover:bg-error/10 transition-colors opacity-0 group-hover:opacity-100"
               title={gettext("Remove from learned")}
             >

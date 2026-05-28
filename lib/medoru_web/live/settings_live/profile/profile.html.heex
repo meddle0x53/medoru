@@ -246,11 +246,15 @@
         <div class="text-xs font-mono space-y-1 mt-2 mb-3 p-3 bg-base-200 rounded-lg">
           <div class="flex justify-between">
             <span class="text-base-content/60">Server VAPID key length:</span>
-            <span class="font-bold text-base-content">{String.length(Application.get_env(:medoru, :vapid_details, %{})[:public_key] || "")}</span>
+            <span class="font-bold text-base-content">
+              {String.length(Application.get_env(:medoru, :vapid_details, %{})[:public_key] || "")}
+            </span>
           </div>
           <div class="flex justify-between">
             <span class="text-base-content/60">Server VAPID key present:</span>
-            <span class="font-bold text-base-content">{!!Application.get_env(:medoru, :vapid_details, %{})[:public_key]}</span>
+            <span class="font-bold text-base-content">
+              {!!Application.get_env(:medoru, :vapid_details, %{})[:public_key]}
+            </span>
           </div>
           <div class="flex justify-between">
             <span class="text-base-content/60">Meta tag content:</span>
@@ -307,7 +311,11 @@
         </p>
 
         <%!-- Platform-specific guidance --%>
-        <div id="push-platform-help" phx-update="ignore" class="hidden mb-4 p-3 bg-info/10 border border-info/30 rounded-lg text-sm">
+        <div
+          id="push-platform-help"
+          phx-update="ignore"
+          class="hidden mb-4 p-3 bg-info/10 border border-info/30 rounded-lg text-sm"
+        >
           <p class="font-medium text-info mb-1" id="push-platform-title"></p>
           <p class="text-base-content/70" id="push-platform-desc"></p>
           <script>
@@ -340,12 +348,23 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-base-200 rounded-xl border border-base-300 gap-3">
           <div class="flex items-center gap-3">
-            <div class={["p-2 rounded-lg shrink-0", @profile.push_notifications_enabled && "bg-primary/10 text-primary", !@profile.push_notifications_enabled && "bg-base-300 text-base-content/50"]}>
-              <.icon name={if @profile.push_notifications_enabled, do: "hero-bell", else: "hero-bell-slash"} class="w-5 h-5" />
+            <div class={[
+              "p-2 rounded-lg shrink-0",
+              @profile.push_notifications_enabled && "bg-primary/10 text-primary",
+              !@profile.push_notifications_enabled && "bg-base-300 text-base-content/50"
+            ]}>
+              <.icon
+                name={
+                  if @profile.push_notifications_enabled, do: "hero-bell", else: "hero-bell-slash"
+                }
+                class="w-5 h-5"
+              />
             </div>
             <div class="min-w-0">
               <p class="font-medium text-base-content">
-                {if @profile.push_notifications_enabled, do: gettext("Enabled"), else: gettext("Disabled")}
+                {if @profile.push_notifications_enabled,
+                  do: gettext("Enabled"),
+                  else: gettext("Disabled")}
               </p>
               <p class="text-xs text-base-content/50">
                 {if @profile.push_notifications_enabled,
@@ -360,7 +379,11 @@
             phx-click="toggle_push_notifications"
             phx-hook="PushNotificationsHook"
             data-enabled={@profile.push_notifications_enabled}
-            class={["btn w-full sm:w-auto", @profile.push_notifications_enabled && "btn-error btn-outline", !@profile.push_notifications_enabled && "btn-primary"]}
+            class={[
+              "btn w-full sm:w-auto",
+              @profile.push_notifications_enabled && "btn-error btn-outline",
+              !@profile.push_notifications_enabled && "btn-primary"
+            ]}
           >
             {if @profile.push_notifications_enabled,
               do: gettext("Disable"),
@@ -386,7 +409,10 @@
             <div class="mb-4 p-4 bg-gradient-to-r from-warning/10 to-transparent rounded-xl border border-warning/20">
               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div class="flex items-center gap-3">
-                  <div class={["p-3 rounded-xl shrink-0", badge_color_class(@featured_badge.badge.color)]}>
+                  <div class={[
+                    "p-3 rounded-xl shrink-0",
+                    badge_color_class(@featured_badge.badge.color)
+                  ]}>
                     <.icon name={"hero-#{@featured_badge.badge.icon}"} class="w-6 h-6" />
                   </div>
                   <div class="min-w-0">
