@@ -1884,12 +1884,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
               ></textarea>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
+            <div class="flex items-center gap-1 shrink-0 flex-wrap">
               <div id="classroom-voice-recorder" phx-hook="ChatVoiceRecorder" class="relative flex items-center">
                 <button
                   id="chat-voice-button"
                   type="button"
-                  class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                  class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
                   title={gettext("Voice message")}
                 >
                   <.icon name="hero-microphone" class="w-5 h-5" />
@@ -1921,7 +1921,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               <button
                 id="classroom-image-button"
                 type="button"
-                class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
                 title={gettext("Send image")}
               >
                 <.icon name="hero-photo" class="w-5 h-5" />
@@ -1929,7 +1929,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               <button
                 id="classroom-emoji-button"
                 type="button"
-                class="btn btn-ghost btn-circle text-base-content/60 hover:text-primary"
+                class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
                 title={gettext("Emoji")}
               >
                 <.icon name="hero-face-smile" class="w-5 h-5" />
@@ -1937,7 +1937,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               <button
                 id="classroom-chat-send-button"
                 type="button"
-                class="btn btn-primary btn-circle"
+                class="btn btn-primary btn-circle w-10 h-10"
               >
                 <.icon name="hero-paper-airplane" class="w-5 h-5" />
               </button>
