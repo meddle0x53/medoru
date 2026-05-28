@@ -36,15 +36,58 @@ defmodule Medoru.NotificationsTest do
       assert ids == Enum.sort([n1.id, n2.id])
     end
 
-    test "list_notifications/2 respects limit option" do
+    test "list_notifications/2 respects per_page option" do
       user = user_fixture()
 
       for i <- 1..5 do
         notification_fixture(user.id, %{title: "Notification #{i}"})
       end
 
-      notifications = Notifications.list_notifications(user.id, limit: 3)
+      notifications = Notifications.list_notifications(user.id, per_page: 3)
       assert length(notifications) == 3
+    end
+
+    test "count_notifications/1 returns total count" do
+      user = user_fixture()
+      notification_fixture(user.id)
+      notification_fixture(user.id)
+
+      assert Notifications.count_notifications(user.id) == 2
+    end
+
+    test "list_notifications_by_type/3 filters by type" do
+      user = user_fixture()
+      n1 = notification_fixture(user.id, %{type: "badge_earned", title: "Badge"})
+      _n2 = notification_fixture(user.id, %{type: "streak_milestone", title: "Streak"})
+
+      notifications = Notifications.list_notifications_by_type(user.id, "badge_earned")
+      assert length(notifications) == 1
+      assert hd(notifications).id == n1.id
+    end
+
+    test "count_notifications_by_type/2 returns count for type" do
+      user = user_fixture()
+      notification_fixture(user.id, %{type: "badge_earned"})
+      notification_fixture(user.id, %{type: "badge_earned"})
+      notification_fixture(user.id, %{type: "streak_milestone"})
+
+      assert Notifications.count_notifications_by_type(user.id, "badge_earned") == 2
+    end
+
+    test "delete_user_notification/2 deletes notification scoped to user" do
+      user = user_fixture()
+      notification = notification_fixture(user.id)
+
+      assert {:ok, _} = Notifications.delete_user_notification(user.id, notification.id)
+      assert_raise Ecto.NoResultsError, fn -> Notifications.get_notification!(notification.id) end
+    end
+
+    test "delete_user_notification/2 returns not_found for wrong user" do
+      user1 = user_fixture()
+      user2 = user_fixture()
+      notification = notification_fixture(user1.id)
+
+      assert {:error, :not_found} = Notifications.delete_user_notification(user2.id, notification.id)
     end
 
     test "list_unread_notifications/1 returns only unread notifications" do
@@ -140,6 +183,17 @@ defmodule Medoru.NotificationsTest do
 
       assert {:ok, _} = Notifications.delete_notification(notification)
       assert_raise Ecto.NoResultsError, fn -> Notifications.get_notification!(notification.id) end
+    end
+
+    test "list_unread_notifications/2 respects per_page option" do
+      user = user_fixture()
+
+      for i <- 1..5 do
+        notification_fixture(user.id, %{title: "Notification #{i}"})
+      end
+
+      notifications = Notifications.list_unread_notifications(user.id, per_page: 3)
+      assert length(notifications) == 3
     end
   end
 

@@ -847,7 +847,7 @@ defmodule Medoru.Chat do
   # ============================================================================
 
   defp maybe_notify_participants(conversation_id, sender_id, message) do
-    # Get active viewers
+    # Get active viewers (users currently looking at this chat on any device)
     active_viewers =
       Presence.list("chat_active:#{conversation_id}")
       |> Enum.map(fn {user_id, _} -> user_id end)
@@ -872,6 +872,7 @@ defmodule Medoru.Chat do
 
       for participant <- conversation.participants,
           participant.user_id != sender_id,
+          not participant.has_left,
           participant.user_id not in active_viewers do
         Notifications.notify_chat_message(
           participant.user_id,

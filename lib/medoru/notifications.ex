@@ -27,13 +27,60 @@ defmodule Medoru.Notifications do
 
   """
   def list_notifications(user_id, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 50)
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 10)
 
     Notification
     |> where([n], n.user_id == ^user_id)
     |> order_by([n], desc: n.inserted_at)
-    |> limit(^limit)
+    |> limit(^per_page)
+    |> offset(^((page - 1) * per_page))
     |> Repo.all()
+  end
+
+  @doc """
+  Counts total notifications for a user.
+
+  ## Examples
+
+      iex> count_notifications(user_id)
+      42
+
+  """
+  def count_notifications(user_id) do
+    Notification
+    |> where([n], n.user_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Returns paginated notifications of a specific type for a user.
+
+  ## Examples
+
+      iex> list_notifications_by_type(user_id, "badge_earned", page: 1, per_page: 10)
+      [%Notification{}, ...]
+
+  """
+  def list_notifications_by_type(user_id, type, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 10)
+
+    Notification
+    |> where([n], n.user_id == ^user_id and n.type == ^type)
+    |> order_by([n], desc: n.inserted_at)
+    |> limit(^per_page)
+    |> offset(^((page - 1) * per_page))
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts notifications of a specific type for a user.
+  """
+  def count_notifications_by_type(user_id, type) do
+    Notification
+    |> where([n], n.user_id == ^user_id and n.type == ^type)
+    |> Repo.aggregate(:count, :id)
   end
 
   @doc """
@@ -46,23 +93,19 @@ defmodule Medoru.Notifications do
 
   """
   def list_unread_notifications(user_id, opts \\ []) do
-    limit = Keyword.get(opts, :limit, 20)
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 10)
 
     Notification
     |> where([n], n.user_id == ^user_id and is_nil(n.read_at))
     |> order_by([n], desc: n.inserted_at)
-    |> limit(^limit)
+    |> limit(^per_page)
+    |> offset(^((page - 1) * per_page))
     |> Repo.all()
   end
 
   @doc """
   Counts unread notifications for a user.
-
-  ## Examples
-
-      iex> count_unread_notifications(user_id)
-      5
-
   """
   def count_unread_notifications(user_id) do
     Notification
@@ -182,6 +225,28 @@ defmodule Medoru.Notifications do
   """
   def delete_notification(%Notification{} = notification) do
     Repo.delete(notification)
+  end
+
+  @doc """
+  Deletes a notification scoped to a specific user.
+
+  Returns `{:ok, %Notification{}}` on success, `{:error, :not_found}` if the
+  notification does not exist or does not belong to the user.
+
+  ## Examples
+
+      iex> delete_user_notification(user_id, notification_id)
+      {:ok, %Notification{}}
+
+      iex> delete_user_notification(wrong_user_id, notification_id)
+      {:error, :not_found}
+
+  """
+  def delete_user_notification(user_id, notification_id) do
+    case get_user_notification(user_id, notification_id) do
+      nil -> {:error, :not_found}
+      notification -> Repo.delete(notification)
+    end
   end
 
   # ============================================================================

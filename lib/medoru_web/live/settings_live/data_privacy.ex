@@ -152,7 +152,7 @@ defmodule MedoruWeb.SettingsLive.DataPrivacy do
 
   defp list_notifications(user_id) do
     # Last 100 notifications
-    Medoru.Notifications.list_notifications(user_id: user_id, limit: 100)
+    Medoru.Notifications.list_notifications(user_id, per_page: 100)
     |> Enum.map(fn n ->
       %{
         type: n.type,

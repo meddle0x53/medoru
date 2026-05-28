@@ -18,7 +18,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
       Phoenix.PubSub.subscribe(Medoru.PubSub, "notifications:#{user_id}")
     end
 
-    notifications = Notifications.list_unread_notifications(user_id, limit: 5)
+    notifications = Notifications.list_unread_notifications(user_id, per_page: 5)
     unread_count = Notifications.count_unread_notifications(user_id)
 
     {:ok,
@@ -129,7 +129,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
     end
 
     # Refresh notifications
-    notifications = Notifications.list_unread_notifications(user_id, limit: 5)
+    notifications = Notifications.list_unread_notifications(user_id, per_page: 5)
     unread_count = Notifications.count_unread_notifications(user_id)
 
     # Broadcast update to other LiveViews
@@ -162,7 +162,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
     Notifications.mark_all_as_read(socket.assigns.user_id)
 
     # Refresh notifications
-    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, limit: 5)
+    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, per_page: 5)
 
     # Broadcast update
     Phoenix.PubSub.broadcast(
@@ -180,7 +180,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   @impl true
   def handle_info({:unread_count_updated, count}, socket) do
     # Update when another LiveView updates the count
-    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, limit: 5)
+    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, per_page: 5)
 
     {:noreply,
      socket
@@ -191,7 +191,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   @impl true
   def handle_info({:new_notification, notification}, socket) do
     # Refresh when a new notification arrives
-    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, limit: 5)
+    notifications = Notifications.list_unread_notifications(socket.assigns.user_id, per_page: 5)
     unread_count = Notifications.count_unread_notifications(socket.assigns.user_id)
 
     socket =

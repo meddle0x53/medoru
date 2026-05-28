@@ -866,6 +866,13 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     if connected?(socket) do
       Chat.mark_read(current_user.id, message.conversation_id)
+
+      # Safety net: clear any chat notifications that may have been created
+      # due to a race condition while the user is actively in the chat.
+      {:ok, _} = Notifications.mark_chat_notifications_as_read(
+        current_user.id,
+        message.conversation_id
+      )
     end
 
     message = Medoru.Repo.preload(message, [:sender, :reply_to_message])

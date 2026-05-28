@@ -11,6 +11,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias Medoru.Classrooms
   alias Medoru.Games
   alias Medoru.Learning.WordSets
+  alias Medoru.Notifications
+  alias MedoruWeb.Presence
 
   @chat_message_limit 20
 
@@ -136,7 +138,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   @impl true
   def handle_params(params, _url, socket) do
+    old_tab = socket.assigns[:active_tab] || "overview"
     tab = params["tab"] || "overview"
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+
+    # Untrack chat_active when leaving the chat tab
+    if old_tab == "chat" && tab != "chat" && conversation && connected?(socket) do
+      Presence.untrack(self(), "chat_active:#{conversation.id}", current_user.id)
+    end
 
     # Load tab-specific data
     socket =
@@ -198,28 +208,32 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp load_chat_data(socket) do
     conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
 
     if conversation do
       if connected?(socket) do
         Chat.subscribe_to_conversation(conversation.id)
-        Chat.mark_read(socket.assigns.current_scope.current_user.id, conversation.id)
+        Chat.mark_read(current_user.id, conversation.id)
 
         # Mark chat notifications for this conversation as read
-        {:ok, _} = Medoru.Notifications.mark_chat_notifications_as_read(
-          socket.assigns.current_scope.current_user.id,
+        {:ok, _} = Notifications.mark_chat_notifications_as_read(
+          current_user.id,
           conversation.id
         )
 
         # Broadcast notification count update to dropdown
-        unread_count = Medoru.Notifications.count_unread_notifications(
-          socket.assigns.current_scope.current_user.id
-        )
+        unread_count = Notifications.count_unread_notifications(current_user.id)
 
         Phoenix.PubSub.broadcast(
           Medoru.PubSub,
-          "notifications:#{socket.assigns.current_scope.current_user.id}",
+          "notifications:#{current_user.id}",
           {:unread_count_updated, unread_count}
         )
+
+        # Track active viewing for notification suppression
+        Presence.track(self(), "chat_active:#{conversation.id}", current_user.id, %{
+          joined_at: System.system_time(:second)
+        })
       end
 
       messages = Chat.list_messages(conversation.id, limit: @chat_message_limit)
@@ -572,6 +586,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
     if connected?(socket) do
       Chat.mark_read(current_user.id, message.conversation_id)
+
+      # Clear any chat notifications that may have slipped through
+      {:ok, _} = Notifications.mark_chat_notifications_as_read(
+        current_user.id,
+        message.conversation_id
+      )
     end
 
     message = Medoru.Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
