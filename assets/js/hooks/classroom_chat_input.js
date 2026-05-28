@@ -65,7 +65,8 @@ const ClassroomChatInput = {
 
     this.textarea.addEventListener("input", () => {
       this.textarea.style.height = "auto"
-      this.textarea.style.height = Math.min(this.textarea.scrollHeight, 128) + "px"
+      const maxHeight = parseInt(getComputedStyle(this.textarea).maxHeight, 10) || 128
+      this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
       this.sendTypingIndicator()
     })
 
@@ -118,7 +119,8 @@ const ClassroomChatInput = {
       if (this.textarea) {
         this.textarea.value = text
         this.textarea.style.height = "auto"
-        this.textarea.style.height = Math.min(this.textarea.scrollHeight, 128) + "px"
+        const maxHeight = parseInt(getComputedStyle(this.textarea).maxHeight, 10) || 128
+        this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
         this.textarea.focus()
       }
     })

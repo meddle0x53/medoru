@@ -1980,7 +1980,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   id="classroom-chat-textarea"
                   placeholder={gettext("Type a message...")}
                   rows="1"
-                  class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32"
+                  class="w-full px-4 py-3 bg-base-200 border-0 rounded-2xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none max-h-32 sm:max-h-96"
                 ></textarea>
               </div>
               <div class="flex items-center gap-1 shrink-0 flex-wrap">
