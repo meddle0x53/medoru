@@ -1620,7 +1620,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 <%!-- Date Separator --%>
                 <%= if index == 0 || !same_day?(message.inserted_at, Enum.at(@messages, index - 1).inserted_at) do %>
                   <div class="flex items-center justify-center my-3">
-                    <span class="text-xs text-base-content/40 bg-base-200 px-3 py-1 rounded-full">
+                    <span
+                      class="text-xs text-base-content/40 bg-base-200 px-3 py-1 rounded-full"
+                      data-local-time={DateTime.to_iso8601(message.inserted_at)}
+                      data-local-time-type="date"
+                    >
                       {format_message_date(message.inserted_at)}
                     </span>
                   </div>
@@ -1841,7 +1845,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       is_me && "justify-end",
                       not is_me && "justify-start"
                     ]}>
-                      {format_message_time(message.inserted_at)}
+                      <span data-local-time={DateTime.to_iso8601(message.inserted_at)}>
+                        {format_message_time(message.inserted_at)}
+                      </span>
                       <%= if message.edited_at do %>
                         <span class="italic opacity-70">({gettext("edited")})</span>
                       <% end %>
