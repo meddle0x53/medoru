@@ -1111,7 +1111,7 @@ defmodule MedoruWeb.MessagesLive.Show do
           segment ->
             if Regex.match?(url_regex, segment) do
               {:safe, escaped} = Phoenix.HTML.html_escape(segment)
-              {:safe, ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all">#{escaped}</a>|}
+              {:safe, ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
             else
               Phoenix.HTML.html_escape(segment)
             end

@@ -636,7 +636,7 @@ const ChatCrypto = {
             a.href = urls[i]
             a.target = "_blank"
             a.rel = "noopener noreferrer"
-            a.className = "underline break-all"
+            a.className = "underline break-all text-blue-300 hover:text-blue-200"
             a.textContent = urls[i]
             el.appendChild(a)
           }
