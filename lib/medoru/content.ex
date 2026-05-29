@@ -868,6 +868,36 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Gets a single word by its Japanese text, falling back to a case-insensitive
+  meaning search. Returns the first match or `nil`.
+
+  ## Examples
+
+      iex> get_word_by_text_or_meaning("日本")
+      %Word{}
+
+      iex> get_word_by_text_or_meaning("Japan")
+      %Word{text: "日本", meaning: "Japan"}
+
+      iex> get_word_by_text_or_meaning("invalid")
+      nil
+
+  """
+  def get_word_by_text_or_meaning(text) do
+    case Repo.get_by(Word, text: text) do
+      nil ->
+        search = "%#{text}%"
+        Word
+        |> where([w], ilike(w.meaning, ^search))
+        |> limit(1)
+        |> Repo.one()
+
+      word ->
+        word
+    end
+  end
+
+  @doc """
   Creates a word.
 
   ## Examples

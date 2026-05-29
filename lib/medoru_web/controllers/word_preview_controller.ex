@@ -4,7 +4,7 @@ defmodule MedoruWeb.WordPreviewController do
   alias Medoru.Content
 
   def show(conn, %{"text" => text}) do
-    case Content.get_word_by_text(text) do
+    case Content.get_word_by_text_or_meaning(text) do
       nil ->
         send_resp(conn, 404, "")
 
