@@ -93,6 +93,24 @@ const ChatInput = {
     }
 
     if (this.emojiPanel) {
+      this.currentEmojiPage = 0
+      this.totalEmojiPages = this.emojiPanel.querySelectorAll(".emoji-page").length
+      this.emojiPrevBtn = this.emojiPanel.querySelector(".emoji-page-prev")
+      this.emojiNextBtn = this.emojiPanel.querySelector(".emoji-page-next")
+
+      if (this.emojiPrevBtn) {
+        this.emojiPrevBtn.addEventListener("click", (e) => {
+          e.stopPropagation()
+          this.changeEmojiPage(-1)
+        })
+      }
+      if (this.emojiNextBtn) {
+        this.emojiNextBtn.addEventListener("click", (e) => {
+          e.stopPropagation()
+          this.changeEmojiPage(1)
+        })
+      }
+
       this.emojiPanel.addEventListener("click", (e) => {
         const btn = e.target.closest("[data-emoji]")
         if (btn) {
@@ -244,6 +262,7 @@ const ChatInput = {
     if (!this.emojiPanel) return
     if (this.emojiPanel.classList.contains("hidden")) {
       this.emojiPanel.classList.remove("hidden")
+      this.resetEmojiPage()
     } else {
       this.emojiPanel.classList.add("hidden")
     }
@@ -253,6 +272,33 @@ const ChatInput = {
     if (this.emojiPanel) {
       this.emojiPanel.classList.add("hidden")
     }
+  },
+
+  resetEmojiPage() {
+    this.currentEmojiPage = 0
+    this.emojiPanel.querySelectorAll(".emoji-page").forEach((page, i) => {
+      page.classList.toggle("hidden", i !== 0)
+    })
+    const info = this.emojiPanel.querySelector(".emoji-page-info")
+    if (info) info.textContent = `1 / ${this.totalEmojiPages}`
+    if (this.emojiPrevBtn) this.emojiPrevBtn.disabled = true
+    if (this.emojiNextBtn) this.emojiNextBtn.disabled = this.totalEmojiPages <= 1
+  },
+
+  changeEmojiPage(delta) {
+    const newPage = this.currentEmojiPage + delta
+    if (newPage < 0 || newPage >= this.totalEmojiPages) return
+
+    this.emojiPanel.querySelectorAll(".emoji-page").forEach((page, i) => {
+      page.classList.toggle("hidden", i !== newPage)
+    })
+
+    this.currentEmojiPage = newPage
+
+    const info = this.emojiPanel.querySelector(".emoji-page-info")
+    if (info) info.textContent = `${newPage + 1} / ${this.totalEmojiPages}`
+    if (this.emojiPrevBtn) this.emojiPrevBtn.disabled = newPage === 0
+    if (this.emojiNextBtn) this.emojiNextBtn.disabled = newPage === this.totalEmojiPages - 1
   },
 
   insertEmoji(emoji) {
