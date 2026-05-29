@@ -397,10 +397,23 @@ defmodule Medoru.Maintenance.Conjugations do
             # Generate alternative forms for certain grammar forms
             alt_forms = generate_alternative_forms(conjugated, form.name)
 
+            # Compute kana reading from the word's reading field using the same
+            # conjugation rules. This allows looking up conjugated forms by kana
+            # (e.g., /w わかった -> 分かる).
+            reading =
+              if word.reading && word.reading != "" do
+                case conjugate_verb_full(word.reading, verb_type, form.name) do
+                  nil -> nil
+                  forms when is_list(forms) -> List.last(forms)
+                  kana when is_binary(kana) -> kana
+                end
+              end
+
             attrs = %{
               word_id: word.id,
               grammar_form_id: form.id,
               conjugated_form: conjugated,
+              reading: reading,
               alternative_forms: alt_forms,
               is_regular: verb_type in [:ichidan, :godan]
             }

@@ -10,6 +10,7 @@ defmodule Medoru.Content do
     KanjiReading,
     Word,
     WordKanji,
+    WordConjugation,
     Lesson,
     LessonWord,
     KanjiReadingExtractor,
@@ -889,6 +890,45 @@ defmodule Medoru.Content do
         search = "%#{text}%"
         Word
         |> where([w], ilike(w.meaning, ^search))
+        |> limit(1)
+        |> Repo.one()
+
+      word ->
+        word
+    end
+  end
+
+  @doc """
+  Gets a single word by its Japanese text, meaning, or conjugated form.
+  Falls back through: exact text → meaning ILIKE → conjugated form / alternative forms.
+  Returns the first match or `nil`.
+
+  ## Examples
+
+      iex> get_word_by_text_or_meaning_or_conjugation("日本")
+      %Word{}
+
+      iex> get_word_by_text_or_meaning_or_conjugation("Japan")
+      %Word{text: "日本", meaning: "Japan"}
+
+      iex> get_word_by_text_or_meaning_or_conjugation("わかった")
+      %Word{text: "わかる"}
+
+      iex> get_word_by_text_or_meaning_or_conjugation("invalid")
+      nil
+
+  """
+  def get_word_by_text_or_meaning_or_conjugation(text) do
+    case get_word_by_text_or_meaning(text) do
+      nil ->
+        WordConjugation
+        |> where(
+          [wc],
+          wc.conjugated_form == ^text or wc.reading == ^text or
+            fragment("? = ANY(?)", ^text, wc.alternative_forms)
+        )
+        |> join(:inner, [wc], w in assoc(wc, :word))
+        |> select([wc, w], w)
         |> limit(1)
         |> Repo.one()
 
@@ -2783,8 +2823,6 @@ defmodule Medoru.Content do
   # ============================================================================
   # Word Conjugations Functions
   # ============================================================================
-
-  alias Medoru.Content.WordConjugation
 
   @doc """
   Returns the list of word conjugations for a word.

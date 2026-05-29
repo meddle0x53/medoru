@@ -331,7 +331,7 @@ defmodule MedoruWeb.MessagesLive.Show do
           :error ->
             case parse_word_command(trimmed) do
               {:ok, word_text} ->
-                Content.get_word_by_text_or_meaning(word_text) != nil
+                Content.get_word_by_text_or_meaning_or_conjugation(word_text) != nil
 
               :error ->
                 true
@@ -1124,7 +1124,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     # Check for /word command first
     case parse_word_command(text) do
       {:ok, word_text} ->
-        case Content.get_word_by_text_or_meaning(word_text) do
+        case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
           nil ->
             render_message_body(text)
 
