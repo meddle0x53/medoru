@@ -609,7 +609,10 @@ const ChatCrypto = {
   },
 
   renderMessageContent(el, text) {
-    const parts = text.split(/(:medoru:|:ouroboros:)/)
+    const emojiRegex = /(:medoru:|:ouroboros:)/
+    const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
+    const parts = text.split(emojiRegex)
+
     parts.forEach((part) => {
       if (part === ":medoru:") {
         const img = document.createElement("img")
@@ -624,7 +627,20 @@ const ChatCrypto = {
         img.className = "medoru-emoji inline align-text-bottom"
         el.appendChild(img)
       } else if (part) {
-        el.appendChild(document.createTextNode(part))
+        const segments = part.split(urlRegex)
+        const urls = part.match(urlRegex) || []
+        segments.forEach((segment, i) => {
+          if (segment) el.appendChild(document.createTextNode(segment))
+          if (i < urls.length) {
+            const a = document.createElement("a")
+            a.href = urls[i]
+            a.target = "_blank"
+            a.rel = "noopener noreferrer"
+            a.className = "underline break-all"
+            a.textContent = urls[i]
+            el.appendChild(a)
+          }
+        })
       }
     })
   },

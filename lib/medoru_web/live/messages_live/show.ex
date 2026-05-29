@@ -1092,16 +1092,30 @@ defmodule MedoruWeb.MessagesLive.Show do
   def render_message_content(nil), do: ""
 
   def render_message_content(text) do
+    url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
+
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
-    |> Enum.map(fn
+    |> Enum.flat_map(fn
       ":medoru:" ->
-        {:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
+        [{:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}]
 
       ":ouroboros:" ->
-        {:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}
+        [{:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}]
 
       part ->
-        Phoenix.HTML.html_escape(part)
+        Regex.split(url_regex, part, include_captures: true, trim: true)
+        |> Enum.map(fn
+          "" ->
+            ""
+
+          segment ->
+            if Regex.match?(url_regex, segment) do
+              {:safe, escaped} = Phoenix.HTML.html_escape(segment)
+              {:safe, ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all">#{escaped}</a>|}
+            else
+              Phoenix.HTML.html_escape(segment)
+            end
+        end)
     end)
   end
 
