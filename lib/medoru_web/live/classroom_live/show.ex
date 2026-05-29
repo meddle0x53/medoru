@@ -9,9 +9,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   alias Medoru.Chat
   alias Medoru.Classrooms
+  alias Medoru.Content
   alias Medoru.Games
   alias Medoru.Learning.WordSets
   alias Medoru.Notifications
+  alias MedoruWeb.KanjiChatPreview
   alias MedoruWeb.Presence
 
   @chat_message_limit 20
@@ -373,18 +375,40 @@ defmodule MedoruWeb.ClassroomLive.Show do
     trimmed = String.trim(content)
 
     if conversation && trimmed != "" do
-      reply_to = socket.assigns.reply_to
-      opts = if reply_to, do: [reply_to_message_id: reply_to.id], else: []
+      # Validate /kanji command
+      with rest <- parse_kanji_command(trimmed),
+           {:ok, _} <- rest do
+        reply_to = socket.assigns.reply_to
+        opts = if reply_to, do: [reply_to_message_id: reply_to.id], else: []
 
-      case Chat.store_plaintext_message(conversation.id, user.id, trimmed, opts) do
-        {:ok, _message} ->
-          {:noreply,
-           socket
-           |> assign(:reply_to, nil)
-           |> assign(:preview_message, nil)}
+        case Chat.store_plaintext_message(conversation.id, user.id, trimmed, opts) do
+          {:ok, _message} ->
+            {:noreply,
+             socket
+             |> assign(:reply_to, nil)
+             |> assign(:preview_message, nil)}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
+        end
+      else
+        :error ->
+          {:noreply, put_flash(socket, :error, gettext("Invalid /kanji command. Usage: /kanji <single kanji> or /k <single kanji>"))}
+
+        _ ->
+          reply_to = socket.assigns.reply_to
+          opts = if reply_to, do: [reply_to_message_id: reply_to.id], else: []
+
+          case Chat.store_plaintext_message(conversation.id, user.id, trimmed, opts) do
+            {:ok, _message} ->
+              {:noreply,
+               socket
+               |> assign(:reply_to, nil)
+               |> assign(:preview_message, nil)}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
+          end
       end
     else
       {:noreply, socket}
@@ -2190,6 +2214,25 @@ defmodule MedoruWeb.ClassroomLive.Show do
   defp render_message_content(nil), do: ""
 
   defp render_message_content(text) do
+    # Check for /kanji command
+    case parse_kanji_command(text) do
+      {:ok, character} ->
+        case Content.get_kanji_by_character(character) do
+          nil ->
+            render_message_body(text)
+
+          kanji ->
+            locale = Gettext.get_locale(MedoruWeb.Gettext)
+            assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
+            KanjiChatPreview.render_html(assigns)
+        end
+
+      :error ->
+        render_message_body(text)
+    end
+  end
+
+  defp render_message_body(text) do
     url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
 
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
@@ -2216,6 +2259,23 @@ defmodule MedoruWeb.ClassroomLive.Show do
         end)
     end)
   end
+
+  defp parse_kanji_command(text) do
+    case text do
+      "/kanji " <> rest ->
+        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
+
+      "/k " <> rest ->
+        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
+
+      _ ->
+        :error
+    end
+  end
+
+  defp valid_kanji_command?(<<char::utf8>>) when char in 0x4E00..0x9FFF, do: true
+  defp valid_kanji_command?(<<char::utf8>>) when char in 0x3400..0x4DBF, do: true
+  defp valid_kanji_command?(_), do: false
 
   defp get_game_status(nil), do: :not_started
   defp get_game_status(%{status: :in_progress}), do: :in_progress

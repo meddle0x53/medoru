@@ -291,6 +291,15 @@ const ClassroomChatInput = {
 
     if (text === "" && !hasImage) return
 
+    // Validate /kanji command
+    if (text.startsWith("/kanji ") || text.startsWith("/k ")) {
+      const char = text.startsWith("/k ") ? text.slice(3).trim() : text.slice(7).trim()
+      if (!isSingleKanji(char)) {
+        alert("Invalid /kanji command. Usage: /kanji <single kanji> or /k <single kanji>")
+        return
+      }
+    }
+
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
       this.typingTimer = null
@@ -328,6 +337,12 @@ const ClassroomChatInput = {
     this.textarea.style.height = "auto"
     this.textarea.focus()
   }
+}
+
+function isSingleKanji(str) {
+  if (str.length !== 1) return false
+  const code = str.codePointAt(0)
+  return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF)
 }
 
 export default ClassroomChatInput

@@ -609,6 +609,16 @@ const ChatCrypto = {
   },
 
   renderMessageContent(el, text) {
+    // Check for /kanji command
+    const kanjiMatch = text.match(/^\/(?:kanji|k)\s+(.+)$/)
+    if (kanjiMatch) {
+      const char = kanjiMatch[1].trim()
+      if (isSingleKanji(char)) {
+        this.renderKanjiPreview(el, char)
+        return
+      }
+    }
+
     const emojiRegex = /(:medoru:|:ouroboros:)/
     const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
     const parts = text.split(emojiRegex)
@@ -645,6 +655,54 @@ const ChatCrypto = {
     })
   },
 
+  renderKanjiPreview(el, character) {
+    const container = document.createElement("div")
+    container.className = "kanji-chat-preview-placeholder"
+    container.innerHTML = `<div class="text-sm text-base-content/50">Loading kanji...</div>`
+    el.appendChild(container)
+
+    fetchKanjiPreview(character).then((data) => {
+      if (!data) {
+        container.innerHTML = `<div class="text-sm text-error">Kanji not found</div>`
+        return
+      }
+
+      const strokes = data.stroke_data?.strokes || []
+      const bounds = data.stroke_data?.bounds || { viewBox: "0 0 100 100" }
+      const total = strokes.length
+
+      const meaningsHtml = (data.meanings || [])
+        .slice(0, 3)
+        .map((m, i) => `${i > 0 ? '<span class="text-base-content/30">, </span>' : ""}<span>${escapeHtml(m)}</span>`)
+        .join("")
+
+      const onHtml = data.on_reading
+        ? `<span class="font-medium text-primary">${escapeHtml(data.on_reading)}</span>`
+        : ""
+      const kunHtml = data.kun_reading
+        ? `<span class="font-medium text-accent">${escapeHtml(data.kun_reading)}</span>`
+        : ""
+
+      const strokePaths = strokes
+        .map((stroke, idx) => {
+          const order = stroke.order || idx + 1
+          const delay = (order - 1) * 400
+          const duration = Math.max(600, Math.trunc((800 / total) * 4))
+          return `<path d="${stroke.path}" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-primary" style="stroke-dasharray: 1000; stroke-dashoffset: 1000; animation-name: draw; animation-duration: ${duration}ms; animation-timing-function: ease-in-out; animation-fill-mode: forwards; animation-delay: ${delay}ms;" />`
+        })
+        .join("")
+
+      // Compact HTML with no whitespace to avoid issues with whitespace-pre-wrap
+      container.outerHTML =
+        `<a href="${data.path}" target="_blank" rel="noopener noreferrer" class="block max-w-[180px] kanji-chat-preview -mt-1 -mb-1">` +
+        `<div class="bg-base-100 border border-base-300 rounded-xl p-2 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">` +
+        `<div class="text-xs text-center text-secondary mb-1 truncate px-1">${meaningsHtml}</div>` +
+        `<div class="bg-base-100 border border-base-300 rounded-lg p-1.5 mx-auto w-fit"><svg viewBox="${bounds.viewBox}" class="w-20 h-20">${strokePaths}</svg></div>` +
+        `<div class="text-xs text-center mt-1 flex justify-center gap-2">${onHtml}${kunHtml}</div>` +
+        `</div></a>`
+    })
+  },
+
   styleEmojiMessage(el, text) {
     if (!text || !this.isEmojiOnly(text)) return
     const bubble = el.closest(".message-bubble")
@@ -664,6 +722,34 @@ const ChatCrypto = {
     const nonEmoji = cleaned.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F251}\u{238C}\u{2B50}\u{2B55}\u{2764}\u{2795}-\u{2797}\u{27A1}\u{27B0}\u{27BF}\u{2B05}-\u{2B07}\u{3030}\u{303D}\u{3297}\u{3299}\u{23F0}-\u{23F3}\u{23E9}-\u{23EF}\u{1F18E}\u{00A9}\u{00AE}]/gu, "")
     return nonEmoji.length === 0
   }
+}
+
+const kanjiCache = new Map()
+
+async function fetchKanjiPreview(character) {
+  if (kanjiCache.has(character)) return kanjiCache.get(character)
+  try {
+    const resp = await fetch(`/api/kanji-preview/${encodeURIComponent(character)}`)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    kanjiCache.set(character, data)
+    return data
+  } catch (e) {
+    console.error("[ChatCrypto] Failed to fetch kanji preview:", e)
+    return null
+  }
+}
+
+function isSingleKanji(str) {
+  if (str.length !== 1) return false
+  const code = str.codePointAt(0)
+  return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF)
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div")
+  div.textContent = text
+  return div.innerHTML
 }
 
 export default ChatCrypto
