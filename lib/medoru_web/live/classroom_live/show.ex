@@ -1961,27 +1961,36 @@ defmodule MedoruWeb.ClassroomLive.Show do
               id="classroom-emoji-panel"
               class="hidden absolute bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-72 bg-base-100 border border-base-300 rounded-xl shadow-lg p-3 z-20"
             >
-              <% all_emojis = ~w(😀 😂 😊 😭 😅 😇 😡 😈 👻 💀 😎 🤠 🥰 😍 🤔 🤯 🥳 🫡 ❤️ 💕 💔 👍 👎 🙏 🎉 🎊 🎵 🎮 🎲 🎯 🔥 ✨ 💯 ⭐ 🌈 🌙 🌸 🍀 🎌 🗾 🐱 🐶 🦊 🐼 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮 🗡️ 🏴‍☠️ 🇧🇬 🇯🇵) ++ [":medoru:"] %>
-              <% pages = Enum.chunk_every(all_emojis, 25) %>
+              <% all_emojis = ~w[
+                😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔 🤨 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁 😖
+                😞 😟 😤 😢 😭 😦 😧 😨 😩 🤯 😬 😰 😱 😳 🤪 😵 😡 😠 🤬 😷 🤒 🤕 🤢 🤮 🤧 😇 🤠 🤡 🤥 🤫 🤭 🧐 🤓 😈 👿 👹 👺 💀 👻 👽 🤖 💩 😺 😸 😹 😻 😼 😽 🙀 😿 😾 🥰
+                🥳 🫡 ❤️ 💕 💔 👍 👎 🙏 🎉 🎊 🎵 🎮 🎲 🎯 🔥 ✨ 💯 ⭐ 🌈 🌙 🌸 🍀 🎌 🗾 🐱 🐶 🦊 🐼 🍜 🍱 🍡 🍣 🍙 🍥 🍘 🍮 🗡️ 🏴‍☠️ 🇧🇬 🇯🇵 🐭 🐹 🐰 🐻 🐨 🐯 🦁 🐮
+                🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🐣 🐥 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐚 🐞 🐜 🦗 🕷 🕸 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆
+                🦓 🦍 🐘 🦏 🐪 🐫 🦒 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐩 🐈 🐓 🦃 🕊 🐇 🐁 🐀 🐿 🦔 🐾 🐉 🐲 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍃 🍂 🍁 🍄 🌾 💐 🌷 🌹 🥀 🌺 🌼 🌻 🌞
+                🌝 🌛 🌜 🌚 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 🌎 🌍 🌏 💫 ⭐️ 🌟 ⚡️ ☄️ 💥 🌪 ☀️ 🌤 ⛅️ 🌥 ☁️ 🌦 🌧 ⛈ 🌩 🌨 ❄️ ☃️ ⛄️ 🌬 💨 💧 💦 ☔️ ☂️ 🌊 🌫 🍏 🍎 🍐
+                🍊 🍋 🍌 🍉 🍇 🍓 🍈 🍒 🍑 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥒 🌶 🌽 🥕 🥔 🍠 🥐 🍞 🥖 🥨 🧀 🥚 🍳 🥞 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🌮 🌯 🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠
+                🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢
+              ] ++ [":ouroboros:", ":medoru:"] %>
+              <% pages = Enum.chunk_every(all_emojis, 48) %>
               <div class="emoji-pages">
                 <%= for {page_emojis, page_idx} <- Enum.with_index(pages) do %>
-                  <div class={["emoji-page grid grid-cols-5 gap-2", page_idx != 0 && "hidden"]} data-page={page_idx}>
+                  <div class={["emoji-page grid grid-cols-8 gap-2", page_idx != 0 && "hidden"]} data-page={page_idx}>
                     <%= for emoji <- page_emojis do %>
-                      <%= if emoji == ":medoru:" do %>
+                      <%= if emoji in [":medoru:", ":ouroboros:"] do %>
                         <button
                           type="button"
-                          data-emoji=":medoru:"
+                          data-emoji={emoji}
                           class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
                         >
-                          <img src={~p"/favicon.png"} class="w-6 h-6 object-contain pointer-events-none" />
+                          <img src={if emoji == ":medoru:", do: "/favicon.png", else: "/images/ouroboros.png"} class="w-6 h-6 object-contain pointer-events-none" />
                         </button>
-                      <% else %>
+                        <% else %>
                         <button
                           type="button"
                           data-emoji={emoji}
                           class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors"
                         >
-                          {emoji}
+                        {emoji}
                         </button>
                       <% end %>
                     <% end %>
@@ -2168,34 +2177,24 @@ defmodule MedoruWeb.ClassroomLive.Show do
         ""
       )
       |> String.replace(":medoru:", "")
+      |> String.replace(":ouroboros:", "")
       |> String.trim() == ""
   end
 
   defp render_message_content(nil), do: ""
 
   defp render_message_content(text) do
-    if String.contains?(text, ":medoru:") do
-      parts = String.split(text, ":medoru:")
-      last_index = length(parts) - 1
+    Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
+    |> Enum.map(fn
+      ":medoru:" ->
+        {:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
 
-      parts
-      |> Enum.with_index()
-      |> Enum.flat_map(fn {part, i} ->
-        escaped = Phoenix.HTML.html_escape(part)
+      ":ouroboros:" ->
+        {:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}
 
-        if i < last_index do
-          [
-            escaped,
-            {:safe,
-             ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
-          ]
-        else
-          [escaped]
-        end
-      end)
-    else
-      text
-    end
+      part ->
+        Phoenix.HTML.html_escape(part)
+    end)
   end
 
   defp get_game_status(nil), do: :not_started

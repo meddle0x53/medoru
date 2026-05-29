@@ -1082,6 +1082,7 @@ defmodule MedoruWeb.MessagesLive.Show do
         ""
       )
       |> String.replace(":medoru:", "")
+      |> String.replace(":ouroboros:", "")
       |> String.trim() == ""
   end
 
@@ -1091,28 +1092,17 @@ defmodule MedoruWeb.MessagesLive.Show do
   def render_message_content(nil), do: ""
 
   def render_message_content(text) do
-    if String.contains?(text, ":medoru:") do
-      parts = String.split(text, ":medoru:")
-      last_index = length(parts) - 1
+    Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
+    |> Enum.map(fn
+      ":medoru:" ->
+        {:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
 
-      parts
-      |> Enum.with_index()
-      |> Enum.flat_map(fn {part, i} ->
-        escaped = Phoenix.HTML.html_escape(part)
+      ":ouroboros:" ->
+        {:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}
 
-        if i < last_index do
-          [
-            escaped,
-            {:safe,
-             ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
-          ]
-        else
-          [escaped]
-        end
-      end)
-    else
-      text
-    end
+      part ->
+        Phoenix.HTML.html_escape(part)
+    end)
   end
 
   @doc """
