@@ -291,11 +291,18 @@ const ClassroomChatInput = {
 
     if (text === "" && !hasImage) return
 
-    // Validate /kanji command
+    // Validate /kanji and /word commands
     if (text.startsWith("/kanji ") || text.startsWith("/k ")) {
       const char = text.startsWith("/k ") ? text.slice(3).trim() : text.slice(7).trim()
       if (!isSingleKanji(char)) {
         alert("Invalid /kanji command. Usage: /kanji <single kanji> or /k <single kanji>")
+        return
+      }
+    }
+    if (text.startsWith("/word ") || text.startsWith("/w ")) {
+      const word = text.startsWith("/w ") ? text.slice(3).trim() : text.slice(6).trim()
+      if (!word) {
+        alert("Invalid /word command. Usage: /word <japanese word> or /w <japanese word>")
         return
       }
     }

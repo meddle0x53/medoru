@@ -342,6 +342,7 @@ defmodule MedoruWeb.Router do
     post "/push-subscribe", PushSubscriptionController, :create
     delete "/push-subscribe", PushSubscriptionController, :delete
     get "/kanji-preview/:character", KanjiPreviewController, :show
+    get "/word-preview/:text", WordPreviewController, :show
   end
 
   # Other scopes may use custom stacks.

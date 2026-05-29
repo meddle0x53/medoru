@@ -14,6 +14,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.Encryption
   alias Medoru.Notifications
   alias MedoruWeb.KanjiChatPreview
+  alias MedoruWeb.WordChatPreview
   alias MedoruWeb.Presence
 
   @per_page 20
@@ -322,9 +323,22 @@ defmodule MedoruWeb.MessagesLive.Show do
     trimmed = String.trim(content)
 
     if conversation && trimmed != "" do
-      # Validate /kanji command
-      with rest <- parse_kanji_command(trimmed),
-           {:ok, _} <- rest do
+      valid? =
+        case parse_kanji_command(trimmed) do
+          {:ok, _char} ->
+            true
+
+          :error ->
+            case parse_word_command(trimmed) do
+              {:ok, word_text} ->
+                Content.get_word_by_text(word_text) != nil
+
+              :error ->
+                true
+            end
+        end
+
+      if valid? do
         case Chat.store_plaintext_message(conversation.id, current_user.id, trimmed) do
           {:ok, _message} ->
             {:noreply, assign(socket, :preview_message, nil)}
@@ -333,17 +347,14 @@ defmodule MedoruWeb.MessagesLive.Show do
             {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
         end
       else
-        :error ->
-          {:noreply, put_flash(socket, :error, gettext("Invalid /kanji command. Usage: /kanji <single kanji> or /k <single kanji>"))}
-
-        _ ->
-          case Chat.store_plaintext_message(conversation.id, current_user.id, trimmed) do
-            {:ok, _message} ->
-              {:noreply, assign(socket, :preview_message, nil)}
-
-            {:error, _} ->
-              {:noreply, put_flash(socket, :error, gettext("Failed to send message."))}
-          end
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext(
+             "Invalid command or not found. Usage: /kanji <single kanji>, /k <single kanji>, /word <word>, or /w <word>"
+           )
+         )}
       end
     else
       {:noreply, socket}
@@ -1110,20 +1121,34 @@ defmodule MedoruWeb.MessagesLive.Show do
   def render_message_content(nil), do: ""
 
   def render_message_content(text) do
-    case parse_kanji_command(text) do
-      {:ok, character} ->
-        case Content.get_kanji_by_character(character) do
+    # Check for /word command first
+    case parse_word_command(text) do
+      {:ok, word_text} ->
+        case Content.get_word_by_text(word_text) do
           nil ->
             render_message_body(text)
 
-          kanji ->
-            locale = Gettext.get_locale(MedoruWeb.Gettext)
-            assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
-            KanjiChatPreview.render_html(assigns)
+          word ->
+            WordChatPreview.render_html(%{word: word})
         end
 
       :error ->
-        render_message_body(text)
+        # Check for /kanji command
+        case parse_kanji_command(text) do
+          {:ok, character} ->
+            case Content.get_kanji_by_character(character) do
+              nil ->
+                render_message_body(text)
+
+              kanji ->
+                locale = Gettext.get_locale(MedoruWeb.Gettext)
+                assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
+                KanjiChatPreview.render_html(assigns)
+            end
+
+          :error ->
+            render_message_body(text)
+        end
     end
   end
 
@@ -1171,6 +1196,19 @@ defmodule MedoruWeb.MessagesLive.Show do
   defp valid_kanji_command?(<<char::utf8>>) when char in 0x4E00..0x9FFF, do: true
   defp valid_kanji_command?(<<char::utf8>>) when char in 0x3400..0x4DBF, do: true
   defp valid_kanji_command?(_), do: false
+
+  defp parse_word_command(text) do
+    case text do
+      "/word " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "/w " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      _ ->
+        :error
+    end
+  end
 
   @doc """
   Formats audio duration as M:SS.

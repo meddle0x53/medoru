@@ -609,6 +609,16 @@ const ChatCrypto = {
   },
 
   renderMessageContent(el, text) {
+    // Check for /word command
+    const wordMatch = text.match(/^\/(?:word|w)\s+(.+)$/)
+    if (wordMatch) {
+      const wordText = wordMatch[1].trim()
+      if (wordText) {
+        this.renderWordPreview(el, wordText)
+        return
+      }
+    }
+
     // Check for /kanji command
     const kanjiMatch = text.match(/^\/(?:kanji|k)\s+(.+)$/)
     if (kanjiMatch) {
@@ -703,6 +713,41 @@ const ChatCrypto = {
     })
   },
 
+  renderWordPreview(el, wordText) {
+    const container = document.createElement("div")
+    container.className = "word-chat-preview-placeholder"
+    container.innerHTML = `<div class="text-sm text-base-content/50">Loading word...</div>`
+    el.appendChild(container)
+
+    fetchWordPreview(wordText).then((data) => {
+      if (!data) {
+        container.innerHTML = `<div class="text-sm text-error">Word not found</div>`
+        return
+      }
+
+      const imageHtml = data.image_path
+        ? `<div class="mb-1.5"><img src="${data.image_path}" alt="${escapeHtml(data.text)}" class="w-full max-h-24 object-cover rounded-lg border border-base-300" loading="lazy" /></div>`
+        : ""
+
+      const audioHtml = data.pronunciation_path
+        ? `<div class="mb-1.5"><audio controls class="w-full h-7"><source src="${data.pronunciation_path}" /></audio></div>`
+        : ""
+
+      const typeClass = wordTypeClasses(data.word_type)
+
+      container.outerHTML =
+        `<a href="${data.path}" target="_blank" rel="noopener noreferrer" class="block max-w-[200px] word-chat-preview -mt-1 -mb-1">` +
+        `<div class="bg-base-100 border border-base-300 rounded-xl p-2 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">` +
+        imageHtml +
+        audioHtml +
+        `<div class="text-center">` +
+        `<div class="text-2xl font-medium text-base-content leading-tight">${escapeHtml(data.text)}</div>` +
+        `<div class="text-sm text-secondary mt-0.5">${escapeHtml(data.reading)}</div>` +
+        `<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${typeClass}">${data.word_type}</span></div>` +
+        `</div></div></a>`
+    })
+  },
+
   styleEmojiMessage(el, text) {
     if (!text || !this.isEmojiOnly(text)) return
     const bubble = el.closest(".message-bubble")
@@ -725,6 +770,7 @@ const ChatCrypto = {
 }
 
 const kanjiCache = new Map()
+const wordCache = new Map()
 
 async function fetchKanjiPreview(character) {
   if (kanjiCache.has(character)) return kanjiCache.get(character)
@@ -740,10 +786,38 @@ async function fetchKanjiPreview(character) {
   }
 }
 
+async function fetchWordPreview(text) {
+  if (wordCache.has(text)) return wordCache.get(text)
+  try {
+    const resp = await fetch(`/api/word-preview/${encodeURIComponent(text)}`)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    wordCache.set(text, data)
+    return data
+  } catch (e) {
+    console.error("[ChatCrypto] Failed to fetch word preview:", e)
+    return null
+  }
+}
+
 function isSingleKanji(str) {
   if (str.length !== 1) return false
   const code = str.codePointAt(0)
   return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF)
+}
+
+function wordTypeClasses(type) {
+  const map = {
+    noun: "bg-blue-100/80 text-blue-700",
+    verb: "bg-red-100/80 text-red-700",
+    adjective: "bg-green-100/80 text-green-700",
+    adverb: "bg-purple-100/80 text-purple-700",
+    particle: "bg-orange-100/80 text-orange-700",
+    pronoun: "bg-pink-100/80 text-pink-700",
+    counter: "bg-teal-100/80 text-teal-700",
+    expression: "bg-indigo-100/80 text-indigo-700"
+  }
+  return map[type] || "bg-gray-100/80 text-gray-700"
 }
 
 function escapeHtml(text) {
