@@ -291,18 +291,18 @@ const ClassroomChatInput = {
 
     if (text === "" && !hasImage) return
 
-    // Validate /kanji and /word commands
-    if (text.startsWith("/kanji ") || text.startsWith("/k ")) {
-      const char = text.startsWith("/k ") ? text.slice(3).trim() : text.slice(7).trim()
+    // Validate /kanji, /word, \kanji, and \word commands
+    if (text.startsWith("/kanji ") || text.startsWith("/k ") || text.startsWith("\\kanji ") || text.startsWith("\\k ")) {
+      const char = text.startsWith("/k ") || text.startsWith("\\k ") ? text.slice(3).trim() : text.slice(7).trim()
       if (!isSingleKanji(char)) {
-        alert("Invalid /kanji command. Usage: /kanji <single kanji> or /k <single kanji>")
+        alert("Invalid /kanji command. Usage: /kanji <single kanji>, /k <single kanji>, \\kanji <single kanji>, or \\k <single kanji>")
         return
       }
     }
-    if (text.startsWith("/word ") || text.startsWith("/w ")) {
-      const word = text.startsWith("/w ") ? text.slice(3).trim() : text.slice(6).trim()
+    if (text.startsWith("/word ") || text.startsWith("/w ") || text.startsWith("\\word ") || text.startsWith("\\w ")) {
+      const word = text.startsWith("/w ") || text.startsWith("\\w ") ? text.slice(3).trim() : text.slice(6).trim()
       if (!word) {
-        alert("Invalid /word command. Usage: /word <japanese word> or /w <japanese word>")
+        alert("Invalid /word command. Usage: /word <word>, /w <word>, \\word <word>, or \\w <word>")
         return
       }
     }

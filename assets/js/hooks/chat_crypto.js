@@ -617,8 +617,8 @@ const ChatCrypto = {
   },
 
   renderMessageContent(el, text) {
-    // Check for /word command
-    const wordMatch = text.match(/^\/(?:word|w)\s+(.+)$/)
+    // Check for /word or \word command
+    const wordMatch = text.match(/^[\\/](?:word|w)\s+(.+)$/)
     if (wordMatch) {
       const wordText = wordMatch[1].trim()
       if (wordText) {
@@ -627,8 +627,8 @@ const ChatCrypto = {
       }
     }
 
-    // Check for /kanji command
-    const kanjiMatch = text.match(/^\/(?:kanji|k)\s+(.+)$/)
+    // Check for /kanji or \kanji command
+    const kanjiMatch = text.match(/^[\\/](?:kanji|k)\s+(.+)$/)
     if (kanjiMatch) {
       const char = kanjiMatch[1].trim()
       if (isSingleKanji(char)) {

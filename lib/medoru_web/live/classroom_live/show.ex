@@ -411,7 +411,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
            socket,
            :error,
            gettext(
-             "Invalid command or not found. Usage: /kanji <single kanji>, /k <single kanji>, /word <word>, or /w <word>"
+             "Invalid command or not found. Usage: /kanji <single kanji>, /k <single kanji>, \\kanji <single kanji>, \\k <single kanji>, /word <word>, /w <word>, \\word <word>, or \\w <word>"
            )
          )}
       end
@@ -2299,6 +2299,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
       "/k " <> rest ->
         if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
 
+      "\\kanji " <> rest ->
+        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
+
+      "\\k " <> rest ->
+        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
+
       _ ->
         :error
     end
@@ -2314,6 +2320,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
         if rest != "", do: {:ok, rest}, else: :error
 
       "/w " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "\\word " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "\\w " <> rest ->
         if rest != "", do: {:ok, rest}, else: :error
 
       _ ->
