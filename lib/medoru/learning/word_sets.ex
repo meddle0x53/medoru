@@ -130,6 +130,17 @@ defmodule Medoru.Learning.WordSets do
   end
 
   @doc """
+  Returns the IDs of word sets owned by the given user that contain the given word.
+  """
+  def list_word_set_ids_for_word(user_id, word_id) do
+    WordSetWord
+    |> join(:inner, [wsw], ws in assoc(wsw, :word_set))
+    |> where([wsw, ws], wsw.word_id == ^word_id and ws.user_id == ^user_id)
+    |> select([wsw, _ws], wsw.word_set_id)
+    |> Repo.all()
+  end
+
+  @doc """
   Creates a new word set.
   """
   def create_word_set(attrs) do
