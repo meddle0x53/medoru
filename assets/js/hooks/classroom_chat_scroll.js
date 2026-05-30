@@ -10,6 +10,16 @@ const ClassroomChatScroll = {
       this.scrollToBottom()
     })
 
+    // Scroll when async content (e.g. word/kanji previews) finishes loading
+    this._contentLoadedHandler = () => {
+      const threshold = 150
+      const distanceFromBottom = this.el.scrollHeight - this.el.scrollTop - this.el.clientHeight
+      if (distanceFromBottom < threshold) {
+        this.scrollToBottom()
+      }
+    }
+    this.el.addEventListener("chat:content-loaded", this._contentLoadedHandler)
+
     // Message menu handling (event delegation)
     this._menuHandler = (e) => {
       const menuBtn = e.target.closest(".message-menu-btn")
@@ -47,6 +57,9 @@ const ClassroomChatScroll = {
   destroyed() {
     if (this._menuHandler) {
       this.el.removeEventListener("click", this._menuHandler)
+    }
+    if (this._contentLoadedHandler) {
+      this.el.removeEventListener("chat:content-loaded", this._contentLoadedHandler)
     }
   },
 

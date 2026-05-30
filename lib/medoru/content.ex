@@ -887,11 +887,40 @@ defmodule Medoru.Content do
   def get_word_by_text_or_meaning(text) do
     case Repo.get_by(Word, text: text) do
       nil ->
-        search = "%#{text}%"
-        Word
-        |> where([w], ilike(w.meaning, ^search))
-        |> limit(1)
-        |> Repo.one()
+        # 1. Exact meaning match
+        case Word |> where([w], w.meaning == ^text) |> limit(1) |> Repo.one() do
+          nil ->
+            search = "%#{text}%"
+
+            # 2. Fetch candidates for exact split match
+            candidates =
+              Word
+              |> where([w], ilike(w.meaning, ^search))
+              |> limit(50)
+              |> Repo.all()
+
+            exact_split_match =
+              Enum.find(candidates, fn word ->
+                word.meaning
+                |> String.split(["/", ","])
+                |> Enum.map(&String.trim/1)
+                |> Enum.any?(& &1 == text)
+              end)
+
+            if exact_split_match do
+              exact_split_match
+            else
+              # 3. Shortest meaning containing the word
+              Word
+              |> where([w], ilike(w.meaning, ^search))
+              |> order_by([w], fragment("LENGTH(?)", w.meaning))
+              |> limit(1)
+              |> Repo.one()
+            end
+
+          word ->
+            word
+        end
 
       word ->
         word

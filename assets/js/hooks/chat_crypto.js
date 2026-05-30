@@ -718,6 +718,11 @@ const ChatCrypto = {
         `<div class="bg-base-100 border border-base-300 rounded-lg p-1.5 mx-auto w-fit"><svg viewBox="${bounds.viewBox}" class="w-20 h-20">${strokePaths}</svg></div>` +
         `<div class="text-xs text-center mt-1 flex justify-center gap-2">${onHtml}${kunHtml}</div>` +
         `</div></a>`
+
+      const scrollContainer = document.getElementById("messages-container")
+      if (scrollContainer) {
+        scrollContainer.dispatchEvent(new CustomEvent("chat:content-loaded", { bubbles: false }))
+      }
     })
   },
 
@@ -753,6 +758,11 @@ const ChatCrypto = {
         `<div class="text-sm text-secondary mt-0.5">${escapeHtml(data.reading)}</div>` +
         `<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${typeClass}">${data.word_type}</span></div>` +
         `</div></div></a>`
+
+      const scrollContainer = document.getElementById("messages-container")
+      if (scrollContainer) {
+        scrollContainer.dispatchEvent(new CustomEvent("chat:content-loaded", { bubbles: false }))
+      }
     })
   },
 
