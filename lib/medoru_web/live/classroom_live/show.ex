@@ -2264,6 +2264,54 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   defp render_message_body(text) do
+    pipe_regex = ~r/\|([^|]+)\|/
+    matches = Regex.scan(pipe_regex, text, return: :index)
+
+    if matches == [] do
+      render_text_segment(text)
+    else
+      segments = build_pipe_segments(text, matches, 0, [])
+
+      Enum.flat_map(segments, fn
+        {:text, segment_text} ->
+          render_text_segment(segment_text)
+
+        {:word, word_text} ->
+          case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
+            nil ->
+              [Phoenix.HTML.html_escape(word_text)]
+
+            word ->
+              word_path = ~p"/words/#{word.id}"
+              {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+
+              [
+                {:safe,
+                 ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+              ]
+          end
+      end)
+    end
+  end
+
+  defp build_pipe_segments(text, [], pos, acc) do
+    remaining = String.slice(text, pos..-1//1)
+    acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
+    Enum.reverse(acc)
+  end
+
+  defp build_pipe_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
+    before_len = match_start - pos
+    before_text = if before_len > 0, do: String.slice(text, pos, before_len), else: ""
+    word_text = String.slice(text, cap_start, cap_len)
+
+    acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
+    acc = [{:word, word_text} | acc]
+
+    build_pipe_segments(text, rest, match_start + match_len, acc)
+  end
+
+  defp render_text_segment(text) do
     url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
 
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)

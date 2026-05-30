@@ -637,6 +637,18 @@ const ChatCrypto = {
       }
     }
 
+    // Check for inline word links |word|
+    const pipeRegex = /\|([^|]+)\|/g
+    const matches = Array.from(text.matchAll(pipeRegex))
+    if (matches.length > 0) {
+      this.renderTextWithWordLinks(el, text, matches)
+      return
+    }
+
+    this.renderTextSegment(el, text)
+  },
+
+  renderTextSegment(el, text) {
     const emojiRegex = /(:medoru:|:ouroboros:)/
     const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
     const parts = text.split(emojiRegex)
@@ -669,6 +681,60 @@ const ChatCrypto = {
             el.appendChild(a)
           }
         })
+      }
+    })
+  },
+
+  renderTextWithWordLinks(el, text, matches) {
+    let pos = 0
+    for (const match of matches) {
+      const matchStart = match.index
+      const matchLen = match[0].length
+      const wordText = match[1]
+
+      // Render text before this match
+      const beforeText = text.slice(pos, matchStart)
+      if (beforeText) {
+        this.renderTextSegment(el, beforeText)
+      }
+
+      // Render word link (async)
+      this.renderWordLink(el, wordText)
+
+      pos = matchStart + matchLen
+    }
+
+    // Render remaining text after last match
+    const afterText = text.slice(pos)
+    if (afterText) {
+      this.renderTextSegment(el, afterText)
+    }
+  },
+
+  renderWordLink(el, wordText) {
+    const placeholder = document.createElement("span")
+    placeholder.className = "word-link-pending"
+    placeholder.textContent = wordText
+    el.appendChild(placeholder)
+
+    fetchWordPreview(wordText).then((data) => {
+      if (data && data.id) {
+        const a = document.createElement("a")
+        a.href = data.path
+        a.target = "_blank"
+        a.rel = "noopener noreferrer"
+        a.className = "underline decoration-2 underline-offset-2 hover:opacity-80"
+        a.textContent = wordText
+        placeholder.replaceWith(a)
+      } else {
+        const span = document.createElement("span")
+        span.textContent = wordText
+        placeholder.replaceWith(span)
+      }
+
+      const scrollContainer = document.getElementById("messages-container")
+      if (scrollContainer) {
+        scrollContainer.dispatchEvent(new CustomEvent("chat:content-loaded", { bubbles: false }))
       }
     })
   },
