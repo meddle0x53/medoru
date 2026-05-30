@@ -980,7 +980,13 @@ defmodule MedoruWeb.MessagesLive.Show do
     socket =
       socket
       |> assign(:messages, socket.assigns.messages ++ [message])
-      |> push_event("scroll_to_bottom", %{})
+      |> then(fn s ->
+        if message.sender_id == current_user.id do
+          push_event(s, "scroll_to_bottom", %{})
+        else
+          s
+        end
+      end)
 
     # Only decrypt if this is an encrypted message (not a classroom chat)
     socket =

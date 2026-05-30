@@ -673,10 +673,20 @@ defmodule MedoruWeb.ClassroomLive.Show do
     message =
       Medoru.Repo.preload(message, sender: [:profile], reply_to_message: [sender: [:profile]])
 
-    {:noreply,
-     socket
-     |> assign(:chat_messages, socket.assigns.chat_messages ++ [message])
-     |> push_event("scroll_to_bottom", %{})}
+    is_sender = message.sender_id == current_user.id
+
+    socket =
+      socket
+      |> assign(:chat_messages, socket.assigns.chat_messages ++ [message])
+
+    socket =
+      if is_sender do
+        push_event(socket, "scroll_to_bottom", %{})
+      else
+        socket
+      end
+
+    {:noreply, socket}
   end
 
   @impl true
