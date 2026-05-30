@@ -248,6 +248,7 @@ export const CryptoState = {
 // --- Hook: ChatCrypto ---
 const ChatCrypto = {
   async mounted() {
+    this._decryptedCache = new Map() // msgId -> { ciphertext, text }
     this.convId = this.el.dataset.conversationId
 
     // Get current user ID from data attribute for key isolation
@@ -514,6 +515,8 @@ const ChatCrypto = {
     this.handleEvent("decrypt_message", async ({ id, ciphertext, iv }) => {
       const el = document.querySelector(`[data-msg-id="${id}"]`)
       if (el) {
+        // Clear cache for this message in case it was edited (new ciphertext)
+        this._decryptedCache.delete(id)
         await this.decryptElement(el, ciphertext, iv)
       }
     })
@@ -535,12 +538,6 @@ const ChatCrypto = {
       }
     })
 
-    // Re-decrypt on DOM updates
-    this.phxUpdateHandler = () => {
-      this.decryptAll()
-    }
-    window.addEventListener("phx:update", this.phxUpdateHandler)
-
     if (CryptoState.conversationKeys.has(this.convId)) {
       await this.decryptAll()
     }
@@ -559,9 +556,6 @@ const ChatCrypto = {
   },
 
   destroyed() {
-    if (this.phxUpdateHandler) {
-      window.removeEventListener("phx:update", this.phxUpdateHandler)
-    }
     this._stopMismatchRetry()
   },
 
@@ -587,11 +581,22 @@ const ChatCrypto = {
     if (!container) return
     const els = container.querySelectorAll('[data-encrypted="true"]')
     for (const el of els) {
+      const msgId = el.dataset.msgId
       const ct = el.dataset.ciphertext
       const iv = el.dataset.iv
-      if (ct && iv) {
-        await this.decryptElement(el, ct, iv)
+      if (!ct || !iv) continue
+
+      // If already decrypted with the same ciphertext, restore instantly from cache
+      const cached = msgId && this._decryptedCache.get(msgId)
+      if (cached && cached.ciphertext === ct) {
+        el.textContent = ""
+        this.renderMessageContent(el, cached.text)
+        el.removeAttribute("data-encrypted")
+        this.styleEmojiMessage(el, cached.text)
+        continue
       }
+
+      await this.decryptElement(el, ct, iv)
     }
   },
 
@@ -602,6 +607,9 @@ const ChatCrypto = {
       this.renderMessageContent(el, text)
       el.removeAttribute("data-encrypted")
       this.styleEmojiMessage(el, text)
+      if (el.dataset.msgId) {
+        this._decryptedCache.set(el.dataset.msgId, { ciphertext, text })
+      }
     } catch (e) {
       console.log("[ChatCrypto] decrypt failed:", e.message)
       // Don't remove data-encrypted on failure — key may not be ready yet
