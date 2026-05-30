@@ -747,6 +747,9 @@ const ChatCrypto = {
         : ""
 
       const typeClass = wordTypeClasses(data.word_type)
+      const meaningHtml = data.meaning
+        ? `<div class="text-xs text-base-content/70 mt-1 truncate px-1">${escapeHtml(data.meaning)}</div>`
+        : ""
 
       container.outerHTML =
         `<a href="${data.path}" target="_blank" rel="noopener noreferrer" class="block max-w-[200px] word-chat-preview -mt-1 -mb-1">` +
@@ -756,6 +759,7 @@ const ChatCrypto = {
         `<div class="text-center">` +
         `<div class="text-2xl font-medium text-base-content leading-tight">${escapeHtml(data.text)}</div>` +
         `<div class="text-sm text-secondary mt-0.5">${escapeHtml(data.reading)}</div>` +
+        meaningHtml +
         `<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize ${typeClass}">${data.word_type}</span></div>` +
         `</div></div></a>`
 

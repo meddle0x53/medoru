@@ -6,6 +6,9 @@ defmodule MedoruWeb.WordChatPreview do
   use MedoruWeb, :html
 
   def word_chat_preview(assigns) do
+    meaning = Medoru.Content.get_localized_meaning(assigns.word, Gettext.get_locale(MedoruWeb.Gettext))
+    assigns = assign(assigns, :meaning, meaning)
+
     ~H"""
     <a
       href={~p"/words/#{@word.id}"}
@@ -43,6 +46,9 @@ defmodule MedoruWeb.WordChatPreview do
           <div class="text-sm text-secondary mt-0.5">
             <%= @word.reading %>
           </div>
+          <div class="text-xs text-base-content/70 mt-1 truncate px-1">
+            <%= @meaning %>
+          </div>
           <div class="mt-1">
             <span class={[
               "inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize",
@@ -61,6 +67,9 @@ defmodule MedoruWeb.WordChatPreview do
   Renders the word preview as a safe HTML string for use outside of HEEx templates.
   """
   def render_html(%{word: word}) do
+    locale = Gettext.get_locale(MedoruWeb.Gettext)
+    meaning = Medoru.Content.get_localized_meaning(word, locale)
+
     image_html =
       if word.image_path do
         ~s|<div class="mb-1.5"><img src="#{word.image_path}" alt="#{escape(word.text)}" class="w-full max-h-24 object-cover rounded-lg border border-base-300" loading="lazy" /></div>|
@@ -77,6 +86,7 @@ defmodule MedoruWeb.WordChatPreview do
 
     type_class = word_type_classes(word.word_type)
     word_path = ~p"/words/#{word.id}"
+    meaning_html = if meaning, do: ~s|<div class="text-xs text-base-content/70 mt-1 truncate px-1">#{escape(meaning)}</div>|, else: ""
 
     html =
       ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="block max-w-[200px] word-chat-preview -mt-1 -mb-1">| <>
@@ -86,6 +96,7 @@ defmodule MedoruWeb.WordChatPreview do
       ~s|<div class="text-center">| <>
       ~s|<div class="text-2xl font-medium text-base-content leading-tight">#{escape(word.text)}</div>| <>
       ~s|<div class="text-sm text-secondary mt-0.5">#{escape(word.reading)}</div>| <>
+      meaning_html <>
       ~s|<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium capitalize #{type_class}">#{word.word_type}</span></div>| <>
       ~s|</div></div></a>|
 
