@@ -332,6 +332,10 @@ defmodule MedoruWeb.Router do
       live "/word-classes/new", WordClassLive.Form, :new
       live "/word-classes/:id", WordClassLive.Show
       live "/word-classes/:id/edit", WordClassLive.Form, :edit
+
+      live "/tags", TagLive.Index
+      live "/tags/new", TagLive.Form, :new
+      live "/tags/:id/edit", TagLive.Form, :edit
     end
   end
 

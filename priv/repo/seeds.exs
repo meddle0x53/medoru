@@ -283,4 +283,34 @@ if File.exists?(badges_path) do
   IO.puts("Total badges: #{Enum.count(Gamification.list_badges())}")
 end
 
+# ========== SEED TAGS ==========
+alias Medoru.Social
+tags_path = Path.join(__DIR__, "seeds/tags.json")
+
+if File.exists?(tags_path) do
+  data = File.read!(tags_path) |> Jason.decode!()
+  tags = if is_list(data), do: data, else: data["tags"] || []
+
+  IO.puts("\nSeeding #{length(tags)} tags...")
+
+  Enum.each(tags, fn t ->
+    attrs = %{
+      name: t["name"],
+      slug: t["slug"],
+      category: t["category"],
+      color: t["color"],
+      description: t["description"],
+      order_index: t["order_index"],
+      is_official: true
+    }
+
+    case Social.create_tag(attrs) do
+      {:ok, _} -> :ok
+      {:error, _} -> IO.puts("  ⚠ #{t["name"]} (exists)")
+    end
+  end)
+
+  IO.puts("Total tags: #{Enum.count(Social.list_tags())}")
+end
+
 IO.puts("\n✅ All seeding complete!")

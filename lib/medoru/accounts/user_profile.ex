@@ -20,11 +20,17 @@ defmodule Medoru.Accounts.UserProfile do
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
 
+    field :age, :integer
+    field :gender, :integer
+    field :location, :string
+
     belongs_to :user, Medoru.Accounts.User
     belongs_to :featured_badge, Medoru.Gamification.Badge
 
     timestamps(type: :utc_datetime)
   end
+
+  @gender_values [0, 1, 2]
 
   @doc false
   def changeset(profile, attrs) do
@@ -38,7 +44,10 @@ defmodule Medoru.Accounts.UserProfile do
       :theme,
       :push_notifications_enabled,
       :chat_enter_sends,
-      :daily_test_step_types
+      :daily_test_step_types,
+      :age,
+      :gender,
+      :location
     ])
     |> validate_length(:display_name, min: 1, max: 50)
     |> validate_format(:display_name, ~r/^[a-zA-Z0-9_\-\s]+$/,
@@ -47,6 +56,9 @@ defmodule Medoru.Accounts.UserProfile do
     |> validate_length(:bio, max: 500)
     |> validate_inclusion(:theme, ["light", "dark", "system"])
     |> validate_number(:daily_goal, greater_than: 0, less_than_or_equal_to: 100)
+    |> validate_number(:age, greater_than_or_equal_to: 1, less_than_or_equal_to: 120)
+    |> validate_inclusion(:gender, @gender_values)
+    |> validate_length(:location, max: 100)
     |> validate_daily_test_step_types()
     |> unique_constraint(:display_name,
       name: :user_profiles_display_name_index,

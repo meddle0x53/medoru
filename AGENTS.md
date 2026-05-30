@@ -3,12 +3,36 @@
 ## Current State
 
 **Version**: 0.1.9 ✅ COMPLETE  
-**Status**: Chat, User Directory, E2E Encryption, Messaging Polish, Word Set Integration  
+**Status**: v0.2.0 Phase 1 — Database & Admin infrastructure complete. Next: user-facing tag/follow UI + XP wiring.  
 **Tests**: 909 passing  
 **URL**: https://medoru.net
 
-### What's In Progress (v0.2.0)
-- See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+### What's In Progress (v0.2.0) — Tags, Following, XP System, Badge Fixes
+**Phase 1: Database & Admin Infrastructure ✅ COMPLETE**
+- **Migrations**: `tags`, `user_tags`, `follows`, `xp_transactions`, `add_profile_fields_to_user_profiles`
+- **Schemas**: `Tag`, `UserTag`, `Follow`, `XpTransaction` with validations
+- **Tags Seeds**: 50+ official tags across 8 categories (level, music, movies, literature, gaming, lifestyle, sport, goal) with colors
+- **UserProfile Extended**: `age` (13-120), `gender` (0=male, 1=female, 2=not-specified), `location` (max 100 chars)
+- **Social Context**: Full follow/tag API — `follow_user/2`, `unfollow_user/2`, `following?/2`, `count_followers/1`, `count_following/1`, `list_followers/2`, `list_following/2`, `list_user_tags/1`, `set_user_tags/2`, `list_user_tag_ids/1`, `list_tags_paginated/1`, `list_tag_categories/0`, `create_tag/1`, `update_tag/2`, `delete_tag/1`, `change_tag/1`
+- **Admin Tag Management**: `/admin/tags` with full CRUD (list, search, category filter, create, edit, delete)
+  - Tailwind color safelist in `assets/css/app.css` ensures all 26 tag colors render correctly
+  - `tag_color_classes/1` helper maps color names to `bg-* text-*` classes (explicit patterns for JIT)
+  - Checkbox uses `.input` component with hidden field (no self-updating bug)
+  - Admin dashboard card links to tag management
+
+**Phase 2: User-Facing UI (TODO)**
+- User profile tag selection (max 15 tags)
+- Follow/unfollow buttons on user directory and profile pages
+- Display follower/following counts on profiles
+- Filter directory by tags
+
+**Phase 3: XP & Badge Wiring (TODO)**
+- Wire `Accounts.add_xp/2` into learning hooks (lesson complete, kanji learned, word learned, streak)
+- `XpTransaction` audit logging
+- Badge display on profile cards and chat
+- Fix any badge auto-award edge cases
+
+See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 
 ### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption
 - **User Directory**: Public `/users` page with searchable, paginated list of learners
@@ -389,6 +413,18 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Cache key structure: `{:conjugation, text, word_type, allowed_forms, field_type}`
 - Lazy loading per word type
 
+### 2026-05-30 - v0.2.0 Phase 1 Complete
+- **Tag System Infrastructure**: Migrations, schemas, seeds for curated official tags
+  - 50+ tags across 8 categories with colors stored in `priv/repo/seeds/tags.json`
+  - `UserProfile` extended with `age`, `gender`, `location` fields
+  - `Social` context: full follow/tag CRUD, max 15 tags per user
+- **Admin Tag Management**: `/admin/tags` with create, edit, delete, search, category filter
+  - Tailwind color safelist ensures all tag badge colors render correctly
+  - Fixed checkbox self-updating bug by using `.input` component with hidden field
+  - Fixed newly created tags not showing in admin list (removed `is_official` filter)
+- **Follow System**: One-way follows with `follow_user/2`, `unfollow_user/2`, `following?/2`, counts, and paginated lists
+- **XP Transaction Schema**: Audit log table for tracking XP gains with source attribution
+
 ### 2026-05-30 - v0.1.9 Complete
 - **Word Chat Preview Localization**: Word preview cards show localized meaning based on user's locale
 - **Inline Word Links in Chat**: `|word|` syntax in normal messages replaces words with links to `/words/:id`
@@ -553,6 +589,24 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - Pattern validation with word type matching
 - Alternative forms support (contracted Japanese)
 - ETS caching for performance (50x improvement)
+
+### 8. Social Context (`lib/medoru/social/`)
+**Responsibility:** User directory, search, blocking, following, tags
+
+**Key Schemas:**
+- `UserBlock` - Blocker/blocked relationship with reason and timestamp
+- `Tag` - Curated official tags with category, color, slug
+- `UserTag` - Join table linking users to tags (max 15 per user)
+- `Follow` - One-way follow relationship (Twitter-style)
+
+**Key Functions:**
+- `list_users/2`, `search_users/3`, `count_users/1` - Directory with blocking filter
+- `follow_user/2`, `unfollow_user/2`, `following?/2` - Follow management
+- `count_followers/1`, `count_following/1`, `list_followers/2`, `list_following/2` - Follow stats
+- `list_tags/0`, `list_tags_paginated/1`, `create_tag/1`, `update_tag/2`, `delete_tag/1` - Tag CRUD
+- `set_user_tags/2`, `list_user_tags/1`, `list_user_tag_ids/1` - User tag selection
+- `block_user/3`, `unblock_user/2`, `is_blocked?/2`, `blocked_by?/2` - Blocking
+- `can_message?/2` - Messaging permission check
 
 ---
 

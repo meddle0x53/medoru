@@ -6,6 +6,18 @@
 @source "../js";
 @source "../../lib/medoru_web";
 
+/* Tag color safelist — ensures all tag badge colors are included in the build.
+   Tailwind v4 scans CSS comments for class names. */
+/*
+  bg-red-500 bg-orange-500 bg-amber-500 bg-yellow-400 bg-lime-500 bg-green-500
+  bg-emerald-500 bg-teal-500 bg-cyan-500 bg-sky-500 bg-blue-500 bg-indigo-500
+  bg-violet-500 bg-purple-500 bg-fuchsia-500 bg-pink-500 bg-rose-500 bg-slate-500
+  bg-stone-500 bg-primary bg-secondary bg-accent bg-info bg-success bg-warning
+  bg-error text-white text-black text-primary-content text-secondary-content
+  text-accent-content text-info-content text-success-content text-warning-content
+  text-error-content
+*/
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";

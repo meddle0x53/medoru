@@ -9,6 +9,9 @@ defmodule Medoru.Social do
   alias Medoru.Repo
 
   alias Medoru.Social.UserBlock
+  alias Medoru.Social.Tag
+  alias Medoru.Social.UserTag
+  alias Medoru.Social.Follow
   alias Medoru.Accounts.User
 
   # ============================================================================
@@ -124,6 +127,269 @@ defmodule Medoru.Social do
 
     query
     |> where([u], u.id not in subquery(blocked_subquery))
+  end
+
+  # ============================================================================
+  # Tags
+  # ============================================================================
+
+  @doc """
+  Creates a new tag.
+  """
+  def create_tag(attrs \\ %{}) do
+    %Tag{}
+    |> Tag.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a tag.
+  """
+  def update_tag(%Tag{} = tag, attrs) do
+    tag
+    |> Tag.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a tag and its associated user_tags.
+  """
+  def delete_tag(%Tag{} = tag) do
+    Repo.delete(tag)
+  end
+
+  @doc """
+  Gets a single tag.
+  Raises `Ecto.NoResultsError` if the tag does not exist.
+  """
+  def get_tag!(id), do: Repo.get!(Tag, id)
+
+  @doc """
+  Lists all official tags ordered by category and order_index.
+  """
+  def list_tags do
+    Tag
+    |> where([t], t.is_official == true)
+    |> order_by([t], asc: t.category, asc: t.order_index)
+    |> Repo.all()
+  end
+
+  @doc """
+  Lists tags with pagination and filtering.
+  Shows all tags (including non-official) for admin use.
+  """
+  def list_tags_paginated(opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 30)
+    search = Keyword.get(opts, :search)
+    category = Keyword.get(opts, :category)
+
+    query =
+      Tag
+      |> order_by([t], asc: t.category, asc: t.order_index)
+
+    query =
+      if category && category != "" do
+        where(query, [t], t.category == ^category)
+      else
+        query
+      end
+
+    query =
+      if search && search != "" do
+        where(query, [t], ilike(t.name, ^"%#{search}%"))
+      else
+        query
+      end
+
+    total_count = Repo.aggregate(query, :count, :id)
+    total_pages = max(1, ceil(total_count / per_page))
+
+    tags =
+      query
+      |> limit(^per_page)
+      |> offset((^page - 1) * ^per_page)
+      |> Repo.all()
+
+    %{
+      tags: tags,
+      current_page: page,
+      total_pages: total_pages,
+      total_count: total_count
+    }
+  end
+
+  @doc """
+  Returns all distinct tag categories.
+  """
+  def list_tag_categories do
+    Tag
+    |> where([t], t.is_official == true)
+    |> distinct(true)
+    |> select([t], t.category)
+    |> order_by([t], asc: t.category)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking tag changes.
+  """
+  def change_tag(%Tag{} = tag, attrs \\ %{}) do
+    Tag.changeset(tag, attrs)
+  end
+
+  @doc """
+  Gets a tag by its slug.
+  """
+  def get_tag_by_slug!(slug), do: Repo.get_by!(Tag, slug: slug)
+
+  @doc """
+  Lists tags for a specific user.
+  """
+  def list_user_tags(user_id) do
+    Tag
+    |> join(:inner, [t], ut in UserTag, on: ut.tag_id == t.id)
+    |> where([t, ut], ut.user_id == ^user_id)
+    |> order_by([t, ut], asc: t.category, asc: t.order_index)
+    |> Repo.all()
+  end
+
+  @doc """
+  Sets a user's tags, replacing any existing selection.
+  Enforces a maximum of 15 tags.
+  """
+  def set_user_tags(user_id, tag_ids) when is_list(tag_ids) do
+    tag_ids = tag_ids |> Enum.take(15) |> Enum.uniq()
+
+    Repo.transaction(fn ->
+      # Delete existing tags
+      UserTag
+      |> where([ut], ut.user_id == ^user_id)
+      |> Repo.delete_all()
+
+      # Insert new tags
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      entries =
+        Enum.map(tag_ids, fn tag_id ->
+          %{
+            id: Ecto.UUID.generate(),
+            user_id: user_id,
+            tag_id: tag_id,
+            inserted_at: now,
+            updated_at: now
+          }
+        end)
+
+      if entries != [] do
+        Repo.insert_all(UserTag, entries)
+      end
+
+      :ok
+    end)
+  end
+
+  @doc """
+  Returns the IDs of tags selected by a user.
+  """
+  def list_user_tag_ids(user_id) do
+    UserTag
+    |> where([ut], ut.user_id == ^user_id)
+    |> select([ut], ut.tag_id)
+    |> Repo.all()
+  end
+
+  # ============================================================================
+  # Following
+  # ============================================================================
+
+  @doc """
+  Follows a user.
+  """
+  def follow_user(follower_id, following_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    %Follow{}
+    |> Follow.changeset(%{
+      follower_id: follower_id,
+      following_id: following_id,
+      followed_at: now
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Unfollows a user.
+  """
+  def unfollow_user(follower_id, following_id) do
+    Follow
+    |> where([f], f.follower_id == ^follower_id and f.following_id == ^following_id)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  @doc """
+  Checks if user_a follows user_b.
+  """
+  def following?(follower_id, following_id) do
+    Follow
+    |> where([f], f.follower_id == ^follower_id and f.following_id == ^following_id)
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Counts followers for a user.
+  """
+  def count_followers(user_id) do
+    Follow
+    |> where([f], f.following_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Counts how many users a user is following.
+  """
+  def count_following(user_id) do
+    Follow
+    |> where([f], f.follower_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Lists followers of a user with their profiles.
+  """
+  def list_followers(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 24)
+
+    Follow
+    |> where([f], f.following_id == ^user_id)
+    |> join(:inner, [f], u in assoc(f, :follower))
+    |> preload([f, u], follower: [:profile, :stats])
+    |> order_by([f], desc: f.followed_at)
+    |> limit(^per_page)
+    |> offset((^page - 1) * ^per_page)
+    |> Repo.all()
+    |> Enum.map(& &1.follower)
+  end
+
+  @doc """
+  Lists users that a user is following with their profiles.
+  """
+  def list_following(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 24)
+
+    Follow
+    |> where([f], f.follower_id == ^user_id)
+    |> join(:inner, [f], u in assoc(f, :following))
+    |> preload([f, u], following: [:profile, :stats])
+    |> order_by([f], desc: f.followed_at)
+    |> limit(^per_page)
+    |> offset((^page - 1) * ^per_page)
+    |> Repo.all()
+    |> Enum.map(& &1.following)
   end
 
   # ============================================================================

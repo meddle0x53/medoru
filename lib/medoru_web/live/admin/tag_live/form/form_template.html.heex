@@ -1,0 +1,82 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-2">
+        <.link navigate={~p"/admin/tags"} class="btn btn-sm btn-ghost">
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+      </div>
+    </div>
+
+    <%!-- Form --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <.form
+          for={@form}
+          id="tag-form"
+          phx-change="validate"
+          phx-submit="save"
+          class="space-y-6"
+        >
+          <%!-- Basic Info --%>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <.input field={@form[:name]} type="text" label={gettext("Name")} placeholder={gettext("e.g., Rock")} />
+            <.input field={@form[:slug]} type="text" label={gettext("Slug")} placeholder={gettext("e.g., rock")} />
+          </div>
+          <p class="text-xs text-base-content/50 -mt-4">
+            {gettext("Slug: lowercase letters, numbers, and hyphens only")}
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <.input field={@form[:category]} type="select" label={gettext("Category")} options={@categories} />
+            <.input field={@form[:color]} type="select" label={gettext("Color")} options={@colors} />
+          </div>
+          <div class="flex flex-wrap gap-1 -mt-4">
+            <%= for color <- @colors do %>
+              <span class={["badge badge-xs", tag_color_classes(color)]}>{color}</span>
+            <% end %>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <.input field={@form[:order_index]} type="number" label={gettext("Order Index")} placeholder={gettext("e.g., 10")} />
+            <.input field={@form[:is_official]} type="checkbox" label={gettext("Official Tag")} />
+          </div>
+
+          <div>
+            <label class="label" for={@form[:description].id}>
+              <span class="label-text">{gettext("Description")}</span>
+            </label>
+            <textarea
+              id={@form[:description].id}
+              name={@form[:description].name}
+              rows="2"
+              class="textarea textarea-bordered w-full"
+              placeholder={gettext("e.g., Rock music enthusiasts")}
+            >{@form[:description].value}</textarea>
+          </div>
+
+          <%!-- Actions --%>
+          <div class="border-t border-base-300 pt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+            <.link navigate={~p"/admin/tags"} class="btn btn-ghost w-full sm:w-auto">
+              {gettext("Cancel")}
+            </.link>
+            <button
+              type="submit"
+              class="btn btn-primary w-full sm:w-auto"
+              phx-disable-with={gettext("Saving...")}
+            >
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              <%= if @live_action == :new do %>
+                {gettext("Create Tag")}
+              <% else %>
+                {gettext("Update Tag")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
+      </div>
+    </div>
+  </div>
+</Layouts.app>
