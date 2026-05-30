@@ -2,12 +2,15 @@
 
 ## Current State
 
-**Version**: 0.1.9 🔄 IN PROGRESS  
-**Status**: Chat invitation flow, messaging polish, user directory fixes, production migration fixes  
-**Tests**: 891 passing  
+**Version**: 0.1.9 ✅ COMPLETE  
+**Status**: Chat, User Directory, E2E Encryption, Messaging Polish, Word Set Integration  
+**Tests**: 909 passing  
 **URL**: https://medoru.net
 
-### What's In Progress (v0.1.9) — Chat, User Directory & End-to-End Encryption
+### What's In Progress (v0.2.0)
+- See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+
+### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption
 - **User Directory**: Public `/users` page with searchable, paginated list of learners
   - Filtered by users with display names set
   - PostgreSQL trigram similarity search by display name
@@ -44,6 +47,10 @@
 - **Classroom Chats in /messages**: Conversation list preloads classroom, routes to classroom chat tab, archive button hidden for classroom chats
 - **Teacher Classroom Chat Access**: Teachers can view classroom chat without membership (membership nil, leave button hidden)
 - **Classroom Chat Bubble Size**: Fixed HEEx whitespace causing extra line box with `whitespace-pre-wrap`
+- **Word Chat Preview Localization**: Word preview cards in chat now show localized meaning based on user's locale (falls back to English)
+- **Inline Word Links in Chat**: Normal text messages support `|word|` syntax — words wrapped in pipes are looked up and rendered as links to their `/words/:id` page (works for Japanese text, kana readings, meanings, and conjugations)
+- **Kana Reading Support for `/word` Commands**: `/word えいご` now finds "英語" via exact reading match
+- **"Add to Word Set" on Word Pages**: Word show page (`/words/:id`) has an "Add to Word Set" button that opens a modal with a paginated list of the user's word sets; clicking "Add" adds the word to the selected set (with "Already added" disabled state and full/error handling)
 
 ### What's Complete (v0.1.8) — Grammar Lessons + Kana Cascade Polish & Navigation
 - **"du" accepted for づ/ヅ**: `kana_romaji_list/1` returns `["zu", "du"]`; exact match and prefix check both support multiple romaji
@@ -229,8 +236,8 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 
 ## Version History
 
-### v0.1.9 - Chat & User Directory (2026-05-24 → 2026-05-25)
-**Status**: 🔄 IN PROGRESS
+### v0.1.9 - Chat, User Directory & Word Set Integration (2026-05-24 → 2026-05-30)
+**Status**: ✅ COMPLETE
 
 **Features:**
 - User Directory (`/users`): Searchable public directory of learners with profiles
@@ -245,8 +252,12 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Mobile reply buttons, read receipts, typing indicators, reply-to-message
 - Notifications: Real-time unread badge, chat notifications auto-cleared on entry
 - Classroom chats accessible from `/messages` with proper routing
+- **Word Chat Preview Localization**: Word preview cards in chat show localized meaning
+- **Inline Word Links in Chat**: `|word|` syntax in normal messages renders as links to `/words/:id`
+- **Kana Reading Support for `/word`**: `/word えいご` finds "英語" via reading match
+- **"Add to Word Set" on Word Pages**: Modal with paginated word set list on `/words/:id`
 
-**Routes:** `/users`, `/messages`, `/messages/new-group`, `/settings/blocks`
+**Routes:** `/users`, `/messages`, `/messages/new-group`, `/settings/blocks`, `/words/:id`
 
 **Key Technical Changes:**
 - Migrations: `conversations` (group fields), `conversation_keys` (encrypted AES keys), `conversation_participants` (joined_at, is_archived)
@@ -256,6 +267,9 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Presence tracking via `MedoruWeb.Presence`
 - `Notifications.notify_chat_invitation/3` for invitation notifications
 - `MessagesLive.Show` handles `send_chat_invitation`, `participant_key_registered`, and auto-re-encryption
+- `Content.get_word_by_text_or_meaning/1` now checks `reading` field for kana matches
+- `WordSets.list_word_set_ids_for_word/2` for pre-checking word set membership
+- `WordLive.Show` modal state + `WordSets.add_word_to_set/2` integration
 
 ---
 
@@ -374,6 +388,12 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Reduced validation time from 2500ms+ to ~50ms per sentence
 - Cache key structure: `{:conjugation, text, word_type, allowed_forms, field_type}`
 - Lazy loading per word type
+
+### 2026-05-30 - v0.1.9 Complete
+- **Word Chat Preview Localization**: Word preview cards show localized meaning based on user's locale
+- **Inline Word Links in Chat**: `|word|` syntax in normal messages replaces words with links to `/words/:id`
+- **Kana Reading `/word` Support**: `/word えいご` finds "英語" via exact reading match
+- **"Add to Word Set" on Word Pages**: Modal with paginated word set list on `/words/:id`
 
 ### 2026-05-25 - v0.1.9 Progress
 - **Chat Invitation Flow**: Notification-based invitation for users missing encryption keys; auto-re-encryption on key registration
