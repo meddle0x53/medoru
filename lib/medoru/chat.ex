@@ -893,7 +893,8 @@ defmodule Medoru.Chat do
           conversation_id,
           conversation.is_group,
           conversation.title,
-          body
+          body,
+          conversation.classroom_id
         )
 
         # Send push notification

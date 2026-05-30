@@ -509,7 +509,8 @@ defmodule Medoru.Notifications do
         conversation_id,
         is_group,
         group_title,
-        message_body \\ nil
+        message_body \\ nil,
+        classroom_id \\ nil
       ) do
     title =
       if is_group do
@@ -518,16 +519,22 @@ defmodule Medoru.Notifications do
         sender_name
       end
 
+    data =
+      %{
+        conversation_id: conversation_id,
+        sender_name: sender_name,
+        is_group: is_group
+      }
+      |> then(fn d ->
+        if classroom_id, do: Map.put(d, :classroom_id, classroom_id), else: d
+      end)
+
     create_notification(%{
       user_id: user_id,
       type: "chat_message",
       title: title,
       message: message_body || "You have a new message",
-      data: %{
-        conversation_id: conversation_id,
-        sender_name: sender_name,
-        is_group: is_group
-      }
+      data: data
     })
     |> maybe_broadcast_notification(user_id)
   end

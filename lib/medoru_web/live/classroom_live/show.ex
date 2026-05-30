@@ -637,14 +637,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
     if conversation do
       new_offset = current_offset + @chat_message_limit
 
-      all_messages =
+      older_messages =
         Chat.list_messages(conversation.id, limit: @chat_message_limit, offset: new_offset)
 
-      has_more = length(all_messages) == @chat_message_limit
+      has_more = length(older_messages) == @chat_message_limit
 
+      # Prepend older messages so the list stays in chronological order
+      # (oldest first, newest last). list_messages returns each batch in
+      # oldest-to-newest order, so older_messages belongs before existing messages.
       {:noreply,
        socket
-       |> assign(:chat_messages, socket.assigns.chat_messages ++ all_messages)
+       |> assign(:chat_messages, older_messages ++ socket.assigns.chat_messages)
        |> assign(:chat_has_more, has_more)
        |> assign(:chat_offset, new_offset)}
     else

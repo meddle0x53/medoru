@@ -170,6 +170,17 @@
                           )}
                         </.link>
                       </div>
+                    <% notification.type == "chat_message" && notification.data["classroom_id"] -> %>
+                      <div class="mt-3">
+                        <.link
+                          navigate={~p"/classrooms/#{notification.data["classroom_id"]}?tab=chat"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-chat-bubble-left" class="w-3 h-3 mr-1" /> {gettext(
+                            "Open Chat"
+                          )}
+                        </.link>
+                      </div>
                     <% (notification.type == "chat_message" || notification.type == "chat_invite") && notification.data["conversation_id"] -> %>
                       <div class="mt-3">
                         <.link

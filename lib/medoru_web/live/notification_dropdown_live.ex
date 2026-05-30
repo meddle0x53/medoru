@@ -146,6 +146,9 @@ defmodule MedoruWeb.NotificationDropdownLive do
 
     # Navigate to chat for chat notifications
     case notification do
+      %{type: "chat_message", data: %{"classroom_id" => cid}} ->
+        {:noreply, push_navigate(socket, to: ~p"/classrooms/#{cid}?tab=chat")}
+
       %{type: "chat_message", data: %{"conversation_id" => cid}} ->
         {:noreply, push_navigate(socket, to: ~p"/messages/#{cid}")}
 
@@ -241,6 +244,13 @@ defmodule MedoruWeb.NotificationDropdownLive do
          data: %{"test_id" => id, "classroom_id" => cid}
        }) do
     ~p"/classrooms/#{cid}/tests/#{id}"
+  end
+
+  defp notification_link(%{
+         type: "chat_message",
+         data: %{"classroom_id" => id}
+       }) do
+    ~p"/classrooms/#{id}?tab=chat"
   end
 
   defp notification_link(%{
