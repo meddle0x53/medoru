@@ -131,6 +131,83 @@
             </label>
           </div>
 
+          <%!-- Age --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Age")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Optional")}</span>
+            </label>
+            <input
+              type="number"
+              name={@form[:age].name}
+              value={@form[:age].value}
+              placeholder={gettext("Your age")}
+              class={[
+                "input input-bordered w-full min-h-[44px] text-base",
+                @form[:age].errors != [] && "input-error"
+              ]}
+              min="1"
+              max="120"
+            />
+            <label class="label">
+              <span class="label-text-alt text-error">
+                {Enum.map(@form[:age].errors || [], &elem(&1, 0))}
+              </span>
+            </label>
+          </div>
+
+          <%!-- Gender --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Gender")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Optional")}</span>
+            </label>
+            <select
+              name={@form[:gender].name}
+              class={[
+                "select select-bordered w-full min-h-[44px] text-base",
+                @form[:gender].errors != [] && "select-error"
+              ]}
+            >
+              <option value="">{gettext("Not specified")}</option>
+              <option value="0" selected={@form[:gender].value == 0}>{gettext("Male")}</option>
+              <option value="1" selected={@form[:gender].value == 1}>{gettext("Female")}</option>
+              <option value="2" selected={@form[:gender].value == 2}>{gettext("Other")}</option>
+            </select>
+            <label class="label">
+              <span class="label-text-alt text-error">
+                {Enum.map(@form[:gender].errors || [], &elem(&1, 0))}
+              </span>
+            </label>
+          </div>
+
+          <%!-- Location --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Location")}</span>
+              <span class="label-text-alt text-base-content/50">{gettext("Optional")}</span>
+            </label>
+            <input
+              type="text"
+              name={@form[:location].name}
+              value={@form[:location].value}
+              placeholder={gettext("City, Country")}
+              class={[
+                "input input-bordered w-full min-h-[44px] text-base",
+                @form[:location].errors != [] && "input-error"
+              ]}
+              maxlength="100"
+            />
+            <label class="label">
+              <span class="label-text-alt text-base-content/50">
+                {gettext("Where you're based. Max 100 characters.")}
+              </span>
+              <span class="label-text-alt text-error">
+                {Enum.map(@form[:location].errors || [], &elem(&1, 0))}
+              </span>
+            </label>
+          </div>
+
           <%!-- Avatar Upload --%>
           <div class="form-control">
             <label class="label">
@@ -217,6 +294,44 @@
             <%= for err <- upload_errors(@uploads.avatar) do %>
               <p class="text-error text-sm mt-2">{error_to_string(err)}</p>
             <% end %>
+          </div>
+
+          <%!-- Tags --%>
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Tags")}</span>
+              <span class="label-text-alt text-base-content/50">
+                {gettext("%{count}/15 selected", count: length(@selected_tag_ids))}
+              </span>
+            </label>
+            <p class="text-sm text-base-content/60 mb-3">
+              {gettext("Select tags that describe your interests. These will appear on your public profile.")}
+            </p>
+            <div class="space-y-4">
+              <%= for {category, tags} <- @tags_by_category do %>
+                <div>
+                  <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">
+                    {category}
+                  </h4>
+                  <div class="flex flex-wrap gap-2">
+                    <%= for tag <- tags do %>
+                      <button
+                        type="button"
+                        phx-click="toggle_tag"
+                        phx-value-tag_id={tag.id}
+                        class={[
+                          "badge badge-lg cursor-pointer transition-all",
+                          tag.id in @selected_tag_ids && tag_color_classes(tag.color),
+                          tag.id not in @selected_tag_ids && "badge-outline hover:bg-base-200"
+                        ]}
+                      >
+                        {tag.name}
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
           </div>
 
           <%!-- Submit Button --%>

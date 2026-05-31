@@ -5,6 +5,8 @@
 @source "../css";
 @source "../js";
 @source "../../lib/medoru_web";
+@source "../../lib/medoru_web/**/*.heex";
+@source "../../lib/**/*.ex";
 
 /* Tag color safelist — ensures all tag badge colors are included in the build.
    Tailwind v4 scans CSS comments for class names. */

@@ -10,31 +10,42 @@
       </p>
     </div>
 
-    <%!-- Search --%>
+    <%!-- Search & Filter --%>
     <div class="mb-6">
-      <form phx-change="search" phx-submit="search" class="relative">
-        <.icon
-          name="hero-magnifying-glass"
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
-        />
-        <input
-          type="text"
-          name="search"
-          value={@search}
-          placeholder={gettext("Search by name or nickname...")}
-          class="w-full pl-10 pr-4 py-3 bg-base-100 border border-base-300 rounded-xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-          phx-debounce="300"
-        />
-        <%= if @search != "" do %>
-          <button
-            type="button"
-            phx-click="search"
-            phx-value-search=""
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
-          >
-            <.icon name="hero-x-mark" class="w-5 h-5" />
-          </button>
-        <% end %>
+      <form phx-change="search" phx-submit="search" class="flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
+          />
+          <input
+            type="text"
+            name="search"
+            value={@search}
+            placeholder={gettext("Search by name or nickname...")}
+            class="w-full pl-10 pr-4 py-3 bg-base-100 border border-base-300 rounded-xl text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+            phx-debounce="300"
+          />
+          <%= if @search != "" do %>
+            <button
+              type="button"
+              phx-click="search"
+              phx-value-search=""
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content"
+            >
+              <.icon name="hero-x-mark" class="w-5 h-5" />
+            </button>
+          <% end %>
+        </div>
+        <select
+          name="tag_id"
+          class="select select-bordered rounded-xl sm:w-48 bg-base-100"
+        >
+          <option value="">{gettext("All tags")}</option>
+          <%= for tag <- @all_tags do %>
+            <option value={tag.id} selected={@tag_id == tag.id}>{tag.name}</option>
+          <% end %>
+        </select>
       </form>
     </div>
 
@@ -113,12 +124,33 @@
             </h3>
           </.link>
 
-          <%!-- Message Button --%>
+          <%!-- Action Buttons --%>
           <%= if @current_scope.current_user && @current_scope.current_user.id != user.id do %>
-            <div class="mt-4">
+            <div class="mt-4 flex gap-2">
+              <%= if user.id in @following_ids do %>
+                <button
+                  type="button"
+                  phx-click="unfollow_user"
+                  phx-value-user_id={user.id}
+                  class="btn btn-sm btn-outline flex-1"
+                >
+                  <.icon name="hero-user-minus" class="w-4 h-4 mr-1" />
+                  {gettext("Unfollow")}
+                </button>
+              <% else %>
+                <button
+                  type="button"
+                  phx-click="follow_user"
+                  phx-value-user_id={user.id}
+                  class="btn btn-sm btn-primary flex-1"
+                >
+                  <.icon name="hero-user-plus" class="w-4 h-4 mr-1" />
+                  {gettext("Follow")}
+                </button>
+              <% end %>
               <.link
                 navigate={~p"/messages?user=#{user.id}"}
-                class="btn btn-sm btn-outline btn-primary w-full"
+                class="btn btn-sm btn-outline btn-primary flex-1"
               >
                 <.icon name="hero-chat-bubble-left" class="w-4 h-4 mr-1" />
                 {gettext("Message")}

@@ -26,6 +26,7 @@ defmodule Medoru.Social do
   def list_users(viewer_id \\ nil, opts \\ []) do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 24)
+    tag_id = Keyword.get(opts, :tag_id)
 
     query =
       User
@@ -39,6 +40,7 @@ defmodule Medoru.Social do
       |> order_by([u], desc: u.inserted_at)
 
     query = filter_blocked_users(query, viewer_id)
+    query = filter_by_tag(query, tag_id)
 
     query
     |> limit(^per_page)
@@ -53,6 +55,7 @@ defmodule Medoru.Social do
   def search_users(query_term, viewer_id \\ nil, opts \\ []) do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 24)
+    tag_id = Keyword.get(opts, :tag_id)
 
     search_query =
       User
@@ -71,6 +74,7 @@ defmodule Medoru.Social do
       |> order_by([u, p], asc: p.display_name)
 
     search_query = filter_blocked_users(search_query, viewer_id)
+    search_query = filter_by_tag(search_query, tag_id)
 
     search_query
     |> limit(^per_page)
@@ -81,7 +85,9 @@ defmodule Medoru.Social do
   @doc """
   Counts total users in the directory (for pagination).
   """
-  def count_users(viewer_id \\ nil) do
+  def count_users(viewer_id \\ nil, opts \\ []) do
+    tag_id = Keyword.get(opts, :tag_id)
+
     query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
@@ -92,13 +98,16 @@ defmodule Medoru.Social do
       )
 
     query = filter_blocked_users(query, viewer_id)
+    query = filter_by_tag(query, tag_id)
     Repo.aggregate(query, :count, :id)
   end
 
   @doc """
   Counts search results (for pagination).
   """
-  def count_search_users(query_term, viewer_id \\ nil) do
+  def count_search_users(query_term, viewer_id \\ nil, opts \\ []) do
+    tag_id = Keyword.get(opts, :tag_id)
+
     search_query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
@@ -114,6 +123,7 @@ defmodule Medoru.Social do
       )
 
     search_query = filter_blocked_users(search_query, viewer_id)
+    search_query = filter_by_tag(search_query, tag_id)
     Repo.aggregate(search_query, :count, :id)
   end
 
@@ -127,6 +137,15 @@ defmodule Medoru.Social do
 
     query
     |> where([u], u.id not in subquery(blocked_subquery))
+  end
+
+  defp filter_by_tag(query, nil), do: query
+  defp filter_by_tag(query, ""), do: query
+
+  defp filter_by_tag(query, tag_id) do
+    query
+    |> join(:inner, [u], ut in UserTag, on: ut.user_id == u.id)
+    |> where([u, p, ut], ut.tag_id == ^tag_id)
   end
 
   # ============================================================================
@@ -390,6 +409,16 @@ defmodule Medoru.Social do
     |> offset((^page - 1) * ^per_page)
     |> Repo.all()
     |> Enum.map(& &1.following)
+  end
+
+  @doc """
+  Returns the list of user IDs that a user is following.
+  """
+  def list_following_ids(follower_id) do
+    Follow
+    |> where([f], f.follower_id == ^follower_id)
+    |> select([f], f.following_id)
+    |> Repo.all()
   end
 
   # ============================================================================

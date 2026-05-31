@@ -63,6 +63,20 @@ defmodule MedoruWeb.UserLive.Show do
                 false
               end
 
+            # Check follow status and counts
+            current_user = socket.assigns.current_scope && socket.assigns.current_scope.current_user
+
+            is_following =
+              if current_user && current_user.id != user.id do
+                Social.following?(current_user.id, user.id)
+              else
+                false
+              end
+
+            follower_count = Social.count_followers(user.id)
+            following_count = Social.count_following(user.id)
+            user_tags = Social.list_user_tags(user.id)
+
             # Check online status
             is_online = Presence.list("user_online:#{user.id}") != %{}
 
@@ -80,6 +94,10 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:featured_badge, featured_badge)
              |> assign(:daily_test_status, daily_test_status)
              |> assign(:is_blocked, is_blocked)
+             |> assign(:is_following, is_following)
+             |> assign(:follower_count, follower_count)
+             |> assign(:following_count, following_count)
+             |> assign(:user_tags, user_tags)
              |> assign(:is_online, is_online)}
         end
 
@@ -178,6 +196,49 @@ defmodule MedoruWeb.UserLive.Show do
     end
   end
 
+  @impl true
+  def handle_event("follow_user", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    user = socket.assigns.user
+
+    if current_user && current_user.id != user.id do
+      case Social.follow_user(current_user.id, user.id) do
+        {:ok, _} ->
+          follower_count = Social.count_followers(user.id)
+
+          {:noreply,
+           socket
+           |> assign(:is_following, true)
+           |> assign(:follower_count, follower_count)
+           |> put_flash(:info, gettext("Now following user."))}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not follow user."))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("unfollow_user", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    user = socket.assigns.user
+
+    if current_user && current_user.id != user.id do
+      Social.unfollow_user(current_user.id, user.id)
+      follower_count = Social.count_followers(user.id)
+
+      {:noreply,
+       socket
+       |> assign(:is_following, false)
+       |> assign(:follower_count, follower_count)
+       |> put_flash(:info, gettext("Unfollowed user."))}
+    else
+      {:noreply, socket}
+    end
+  end
+
   # Badge color mapping for Tailwind classes
   defp badge_color_class("blue"),
     do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
@@ -208,4 +269,32 @@ defmodule MedoruWeb.UserLive.Show do
 
   defp badge_color_class(_),
     do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+
+  defp tag_color_classes("red"), do: "bg-red-500 text-white"
+  defp tag_color_classes("orange"), do: "bg-orange-500 text-white"
+  defp tag_color_classes("amber"), do: "bg-amber-500 text-white"
+  defp tag_color_classes("yellow"), do: "bg-yellow-400 text-black"
+  defp tag_color_classes("lime"), do: "bg-lime-500 text-white"
+  defp tag_color_classes("green"), do: "bg-green-500 text-white"
+  defp tag_color_classes("emerald"), do: "bg-emerald-500 text-white"
+  defp tag_color_classes("teal"), do: "bg-teal-500 text-white"
+  defp tag_color_classes("cyan"), do: "bg-cyan-500 text-white"
+  defp tag_color_classes("sky"), do: "bg-sky-500 text-white"
+  defp tag_color_classes("blue"), do: "bg-blue-500 text-white"
+  defp tag_color_classes("indigo"), do: "bg-indigo-500 text-white"
+  defp tag_color_classes("violet"), do: "bg-violet-500 text-white"
+  defp tag_color_classes("purple"), do: "bg-purple-500 text-white"
+  defp tag_color_classes("fuchsia"), do: "bg-fuchsia-500 text-white"
+  defp tag_color_classes("pink"), do: "bg-pink-500 text-white"
+  defp tag_color_classes("rose"), do: "bg-rose-500 text-white"
+  defp tag_color_classes("slate"), do: "bg-slate-500 text-white"
+  defp tag_color_classes("stone"), do: "bg-stone-500 text-white"
+  defp tag_color_classes("primary"), do: "bg-primary text-primary-content"
+  defp tag_color_classes("secondary"), do: "bg-secondary text-secondary-content"
+  defp tag_color_classes("accent"), do: "bg-accent text-accent-content"
+  defp tag_color_classes("info"), do: "bg-info text-info-content"
+  defp tag_color_classes("success"), do: "bg-success text-success-content"
+  defp tag_color_classes("warning"), do: "bg-warning text-warning-content"
+  defp tag_color_classes("error"), do: "bg-error text-error-content"
+  defp tag_color_classes(_), do: "bg-base-300 text-base-content"
 end

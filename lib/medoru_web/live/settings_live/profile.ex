@@ -6,6 +6,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   alias Medoru.Accounts
   alias Medoru.Gamification
+  alias Medoru.Social
   alias Phoenix.LiveView.JS
 
   embed_templates "profile/*"
@@ -42,6 +43,11 @@ defmodule MedoruWeb.SettingsLive.Profile do
     api_tokens = Accounts.list_user_api_tokens(user.id)
     api_token_count = length(api_tokens)
 
+    # Load tags
+    all_tags = Social.list_tags()
+    tags_by_category = Enum.group_by(all_tags, & &1.category)
+    selected_tag_ids = Social.list_user_tag_ids(user.id)
+
     {:ok,
      socket
      |> assign(:page_title, gettext("Profile Settings"))
@@ -52,6 +58,8 @@ defmodule MedoruWeb.SettingsLive.Profile do
      |> assign(:featured_badge, featured_badge)
      |> assign(:api_tokens, api_tokens)
      |> assign(:api_token_count, api_token_count)
+     |> assign(:tags_by_category, tags_by_category)
+     |> assign(:selected_tag_ids, selected_tag_ids)
      |> assign(:new_token_plaintext, nil)
      |> assign(:new_token_form, to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token))
      |> allow_upload(:avatar,
@@ -125,6 +133,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
     case Accounts.update_profile(profile, profile_params) do
       {:ok, updated_profile} ->
+        # Save tags
+        _ = Social.set_user_tags(socket.assigns.current_scope.current_user.id, socket.assigns.selected_tag_ids)
+
         # Refresh the current user to update avatar in header
         user = socket.assigns.current_scope.current_user
         refreshed_user = Accounts.get_user_with_profile(user.id)
@@ -321,6 +332,24 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   # Helper functions
 
+  @impl true
+  def handle_event("toggle_tag", %{"tag_id" => tag_id}, socket) do
+    selected = socket.assigns.selected_tag_ids
+
+    new_selected =
+      if tag_id in selected do
+        List.delete(selected, tag_id)
+      else
+        if length(selected) < 15 do
+          [tag_id | selected]
+        else
+          selected
+        end
+      end
+
+    {:noreply, assign(socket, :selected_tag_ids, new_selected)}
+  end
+
   defp format_bytes(bytes) when bytes < 1_000, do: "#{bytes} B"
   defp format_bytes(bytes) when bytes < 1_000_000, do: "#{div(bytes, 1_000)} KB"
   defp format_bytes(bytes), do: "#{Float.round(bytes / 1_000_000, 1)} MB"
@@ -334,6 +363,34 @@ defmodule MedoruWeb.SettingsLive.Profile do
   defp error_to_string(err), do: to_string(err)
 
   # Badge color helper
+  defp tag_color_classes("red"), do: "bg-red-500 text-white"
+  defp tag_color_classes("orange"), do: "bg-orange-500 text-white"
+  defp tag_color_classes("amber"), do: "bg-amber-500 text-white"
+  defp tag_color_classes("yellow"), do: "bg-yellow-400 text-black"
+  defp tag_color_classes("lime"), do: "bg-lime-500 text-white"
+  defp tag_color_classes("green"), do: "bg-green-500 text-white"
+  defp tag_color_classes("emerald"), do: "bg-emerald-500 text-white"
+  defp tag_color_classes("teal"), do: "bg-teal-500 text-white"
+  defp tag_color_classes("cyan"), do: "bg-cyan-500 text-white"
+  defp tag_color_classes("sky"), do: "bg-sky-500 text-white"
+  defp tag_color_classes("blue"), do: "bg-blue-500 text-white"
+  defp tag_color_classes("indigo"), do: "bg-indigo-500 text-white"
+  defp tag_color_classes("violet"), do: "bg-violet-500 text-white"
+  defp tag_color_classes("purple"), do: "bg-purple-500 text-white"
+  defp tag_color_classes("fuchsia"), do: "bg-fuchsia-500 text-white"
+  defp tag_color_classes("pink"), do: "bg-pink-500 text-white"
+  defp tag_color_classes("rose"), do: "bg-rose-500 text-white"
+  defp tag_color_classes("slate"), do: "bg-slate-500 text-white"
+  defp tag_color_classes("stone"), do: "bg-stone-500 text-white"
+  defp tag_color_classes("primary"), do: "bg-primary text-primary-content"
+  defp tag_color_classes("secondary"), do: "bg-secondary text-secondary-content"
+  defp tag_color_classes("accent"), do: "bg-accent text-accent-content"
+  defp tag_color_classes("info"), do: "bg-info text-info-content"
+  defp tag_color_classes("success"), do: "bg-success text-success-content"
+  defp tag_color_classes("warning"), do: "bg-warning text-warning-content"
+  defp tag_color_classes("error"), do: "bg-error text-error-content"
+  defp tag_color_classes(_), do: "bg-base-300 text-base-content"
+
   defp badge_color_class("blue"),
     do: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
 
