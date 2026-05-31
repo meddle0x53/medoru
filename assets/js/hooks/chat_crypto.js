@@ -543,15 +543,20 @@ const ChatCrypto = {
     }
   },
 
-  async updated() {
+  updated() {
     // Retry registration if mounted() tried before socket was connected
     if (this._needsRegistration) {
       this.pushEvent("register_public_key", { public_key: this._needsRegistration })
       this._needsRegistration = null
     }
 
+    // Only decrypt if there are actually encrypted messages in the DOM.
+    // This avoids re-rendering already-decrypted messages on every update.
     if (CryptoState.conversationKeys.has(this.convId)) {
-      await this.decryptAll()
+      const container = document.getElementById("chat-wrapper") || document
+      if (container && container.querySelector('[data-encrypted="true"]')) {
+        this.decryptAll().catch((e) => console.error("[ChatCrypto] decryptAll failed:", e))
+      }
     }
   },
 
@@ -586,11 +591,15 @@ const ChatCrypto = {
       const iv = el.dataset.iv
       if (!ct || !iv) continue
 
-      // If already decrypted with the same ciphertext, restore instantly from cache
+      // If already decrypted with the same ciphertext, restore from cache.
+      // Only clear and re-render if the element was actually reset to [...].
       const cached = msgId && this._decryptedCache.get(msgId)
       if (cached && cached.ciphertext === ct) {
-        el.textContent = ""
-        this.renderMessageContent(el, cached.text)
+        const isReset = el.textContent.trim() === "[...]" || el.textContent.trim() === ""
+        if (isReset) {
+          el.textContent = ""
+          this.renderMessageContent(el, cached.text)
+        }
         el.removeAttribute("data-encrypted")
         this.styleEmojiMessage(el, cached.text)
         continue

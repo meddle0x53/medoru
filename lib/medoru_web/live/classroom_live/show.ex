@@ -2064,11 +2064,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
                         <%!-- Reaction Picker --%>
                         <%= if @reaction_picker_message_id == message.id do %>
-                          <div class={[
-                            "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
-                            is_me && "right-0",
-                            not is_me && "left-0"
-                          ]}>
+                          <div
+                            id={"reaction-picker-#{message.id}"}
+                            class={[
+                              "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
+                              is_me && "right-0",
+                              not is_me && "left-0"
+                            ]}
+                          >
                             <div class="flex flex-wrap gap-1 justify-center">
                               <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
                               <%= for emoji <- reaction_emojis do %>
@@ -2135,11 +2138,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <%!-- Reactions --%>
                     <% msg_reactions = Map.get(@message_reactions, message.id, %{}) %>
                     <%= if map_size(msg_reactions) > 0 do %>
-                      <div class={[
-                        "flex flex-wrap gap-1 mt-1 px-1",
-                        is_me && "justify-end",
-                        not is_me && "justify-start"
-                      ]}>
+                      <div
+                        id={"reactions-#{message.id}"}
+                        class={[
+                          "flex flex-wrap gap-1 mt-1 px-1",
+                          is_me && "justify-end",
+                          not is_me && "justify-start"
+                        ]}
+                      >
                         <%= for {emoji, r} <- msg_reactions do %>
                           <button
                             type="button"

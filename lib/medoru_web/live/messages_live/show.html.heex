@@ -182,7 +182,9 @@
                       <span class="truncate block">{gettext("📎 File")}</span>
                     <% message.reply_to_message.ciphertext -> %>
                       <span
+                        id={"reply-preview-content-#{message.reply_to_message.id}"}
                         class="truncate block"
+                        phx-update="ignore"
                         data-encrypted="true"
                         data-ciphertext={message_ciphertext_b64(message.reply_to_message)}
                         data-iv={message_iv_b64(message.reply_to_message)}
@@ -376,7 +378,9 @@
                           />
                           <%= if message.ciphertext do %>
                             <span
+                              id={"doc-preview-content-#{message.id}"}
                               class="text-sm truncate"
+                              phx-update="ignore"
                               data-encrypted="true"
                               data-ciphertext={message_ciphertext_b64(message)}
                               data-iv={message_iv_b64(message)}
@@ -403,7 +407,9 @@
                         <% end %>
                       <% message.ciphertext -> %>
                         <p
+                          id={"msg-content-#{message.id}"}
                           class="text-[15px] leading-snug whitespace-pre-wrap break-words"
+                          phx-update="ignore"
                           data-msg-id={message.id}
                           data-encrypted="true"
                           data-ciphertext={message_ciphertext_b64(message)}
@@ -436,11 +442,14 @@
 
                     <%!-- Reaction Picker --%>
                     <%= if @reaction_picker_message_id == message.id do %>
-                      <div class={[
-                        "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
-                        is_me && "right-0",
-                        not is_me && "left-0"
-                      ]}>
+                      <div
+                        id={"reaction-picker-#{message.id}"}
+                        class={[
+                          "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
+                          is_me && "right-0",
+                          not is_me && "left-0"
+                        ]}
+                      >
                         <div class="flex flex-wrap gap-1 justify-center">
                           <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
                           <%= for emoji <- reaction_emojis do %>
@@ -507,11 +516,14 @@
                 <%!-- Reactions --%>
                 <% msg_reactions = Map.get(@message_reactions, message.id, %{}) %>
                 <%= if map_size(msg_reactions) > 0 do %>
-                  <div class={[
-                    "flex flex-wrap gap-1 mt-1 px-1",
-                    is_me && "justify-end",
-                    not is_me && "justify-start"
-                  ]}>
+                  <div
+                    id={"reactions-#{message.id}"}
+                    class={[
+                      "flex flex-wrap gap-1 mt-1 px-1",
+                      is_me && "justify-end",
+                      not is_me && "justify-start"
+                    ]}
+                  >
                     <%= for {emoji, r} <- msg_reactions do %>
                       <button
                         type="button"
@@ -603,7 +615,9 @@
                 <p class="text-sm text-base-content/80 truncate">{gettext("📎 File")}</p>
               <% @reply_to.ciphertext -> %>
                 <p
+                  id={"reply-bar-content-#{@reply_to.id}"}
                   class="text-sm text-base-content/80 truncate"
+                  phx-update="ignore"
                   data-encrypted="true"
                   data-ciphertext={message_ciphertext_b64(@reply_to)}
                   data-iv={message_iv_b64(@reply_to)}

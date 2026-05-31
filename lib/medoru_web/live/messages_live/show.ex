@@ -1554,7 +1554,9 @@ defmodule MedoruWeb.MessagesLive.Show do
             </audio>
           <% @message.ciphertext -> %>
             <p
+              id={"preview-content-#{@message.id}"}
               class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content"
+              phx-update="ignore"
               data-msg-id={@message.id}
               data-encrypted="true"
               data-ciphertext={message_ciphertext_b64(@message)}
