@@ -637,9 +637,14 @@ const ChatCrypto = {
       }
     }
 
-    // Check for inline word links |word|
+    // Check for inline word links |word|, [[word]], and 「word」
     const pipeRegex = /\|([^|]+)\|/g
-    const matches = Array.from(text.matchAll(pipeRegex))
+    const bracketRegex = /\[\[([^\]]+)\]\]/g
+    const cornerRegex = /\u300c([^\u300d]+)\u300d/g
+    const pipeMatches = Array.from(text.matchAll(pipeRegex))
+    const bracketMatches = Array.from(text.matchAll(bracketRegex))
+    const cornerMatches = Array.from(text.matchAll(cornerRegex))
+    const matches = pipeMatches.concat(bracketMatches, cornerMatches).sort((a, b) => a.index - b.index)
     if (matches.length > 0) {
       this.renderTextWithWordLinks(el, text, matches)
       return

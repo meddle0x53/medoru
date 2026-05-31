@@ -1159,13 +1159,18 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   defp render_message_body(text) do
-    pipe_regex = ~r/\|([^|]+)\|/
-    matches = Regex.scan(pipe_regex, text, return: :index)
+    pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
+    bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
+    corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
+
+    matches =
+      (pipe_matches ++ bracket_matches ++ corner_matches)
+      |> Enum.sort_by(fn [{match_start, _}, _] -> match_start end)
 
     if matches == [] do
       render_text_segment(text)
     else
-      segments = build_pipe_segments(text, matches, 0, [])
+      segments = build_word_segments(text, matches, 0, [])
 
       Enum.flat_map(segments, fn
         {:text, segment_text} ->
@@ -1189,13 +1194,13 @@ defmodule MedoruWeb.MessagesLive.Show do
     end
   end
 
-  defp build_pipe_segments(text, [], pos, acc) do
+  defp build_word_segments(text, [], pos, acc) do
     remaining = String.slice(text, pos..-1//1)
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_pipe_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
+  defp build_word_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
     before_len = match_start - pos
     before_text = if before_len > 0, do: String.slice(text, pos, before_len), else: ""
     word_text = String.slice(text, cap_start, cap_len)
@@ -1203,7 +1208,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
     acc = [{:word, word_text} | acc]
 
-    build_pipe_segments(text, rest, match_start + match_len, acc)
+    build_word_segments(text, rest, match_start + match_len, acc)
   end
 
   defp render_text_segment(text) do
