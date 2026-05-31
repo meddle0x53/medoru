@@ -12,6 +12,7 @@ defmodule Medoru.Gamification do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
+  alias Medoru.Accounts
   alias Medoru.Gamification.{Badge, UserBadge}
   alias Medoru.Notifications
 
@@ -265,6 +266,11 @@ defmodule Medoru.Gamification do
               # Don't re-raise - badge is still awarded
           end
 
+          # Award XP for earning the badge
+          _ = Accounts.add_xp(user_id, 100,
+                source_type: "badge_earned",
+                description: "Earned badge: #{badge.name}")
+
           user_badge
         end)
     end
@@ -421,6 +427,10 @@ defmodule Medoru.Gamification do
   """
   def check_daily_reviews_badges(user_id, reviews_count) do
     check_and_award_badges(user_id, :daily_reviews, reviews_count)
+  end
+
+  def check_level_badges(user_id, level) do
+    check_and_award_badges(user_id, :level, level)
   end
 
   # ============================================================================

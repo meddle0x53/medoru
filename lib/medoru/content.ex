@@ -887,8 +887,13 @@ defmodule Medoru.Content do
   def get_word_by_text_or_meaning(text) do
     case Repo.get_by(Word, text: text) do
       nil ->
-        # 1. Exact meaning match
-        case Word |> where([w], w.meaning == ^text) |> limit(1) |> Repo.one() do
+        # 1. Exact meaning match — pick best by frequency / length
+        exact_meaning_matches =
+          Word
+          |> where([w], w.meaning == ^text)
+          |> Repo.all()
+
+        case pick_best_word(exact_meaning_matches) do
           nil ->
             search = "%#{text}%"
 
@@ -899,23 +904,21 @@ defmodule Medoru.Content do
               |> limit(50)
               |> Repo.all()
 
-            exact_split_match =
-              Enum.find(candidates, fn word ->
+            split_matches =
+              Enum.filter(candidates, fn word ->
                 word.meaning
                 |> String.split(["/", ","])
                 |> Enum.map(&String.trim/1)
                 |> Enum.any?(& &1 == text)
               end)
 
-            if exact_split_match do
-              exact_split_match
-            else
-              # 3. Shortest meaning containing the word
-              Word
-              |> where([w], ilike(w.meaning, ^search))
-              |> order_by([w], fragment("LENGTH(?)", w.meaning))
-              |> limit(1)
-              |> Repo.one()
+            case pick_best_word(split_matches) do
+              nil ->
+                # 3. Pick best from all meaning-containing candidates
+                pick_best_word(candidates)
+
+              word ->
+                word
             end
 
           word ->
@@ -950,20 +953,37 @@ defmodule Medoru.Content do
   def get_word_by_text_or_meaning_or_conjugation(text) do
     case get_word_by_text_or_meaning(text) do
       nil ->
-        WordConjugation
-        |> where(
-          [wc],
-          wc.conjugated_form == ^text or wc.reading == ^text or
-            fragment("? = ANY(?)", ^text, wc.alternative_forms)
-        )
-        |> join(:inner, [wc], w in assoc(wc, :word))
-        |> select([wc, w], w)
-        |> limit(1)
-        |> Repo.one()
+        conjugation_matches =
+          WordConjugation
+          |> where(
+            [wc],
+            wc.conjugated_form == ^text or wc.reading == ^text or
+              fragment("? = ANY(?)", ^text, wc.alternative_forms)
+          )
+          |> join(:inner, [wc], w in assoc(wc, :word))
+          |> select([wc, w], w)
+          |> Repo.all()
+
+        pick_best_word(conjugation_matches)
 
       word ->
         word
     end
+  end
+
+  # Tie-breaking for word lookup when multiple candidates match:
+  # 1. Lowest usage_frequency (least common first)
+  # 2. Shortest combined text + reading length
+  # 3. First by insertion order (id)
+  defp pick_best_word([]), do: nil
+  defp pick_best_word(words) when is_list(words) do
+    words
+    |> Enum.sort_by(fn word ->
+      text_len = String.length(word.text || "")
+      reading_len = String.length(word.reading || "")
+      {word.usage_frequency || 999_999, text_len + reading_len, word.id}
+    end)
+    |> List.first()
   end
 
   @doc """

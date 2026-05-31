@@ -22,7 +22,8 @@ defmodule MedoruWeb.DashboardLive do
     daily_stats = Learning.get_daily_review_stats(user.id)
 
     # Merge learning stats with user stats (level, xp from gamification)
-    _user_stats = user.stats || %Accounts.UserStats{}
+    user_stats = Accounts.get_or_create_user_stats(user.id)
+    xp_progress = Accounts.xp_progress(user_stats)
 
     stats = %{
       total_kanji_learned: learning_stats.total_kanji_learned,
@@ -37,7 +38,9 @@ defmodule MedoruWeb.DashboardLive do
      |> assign(:user, user)
      |> assign(:stats, stats)
      |> assign(:profile, user.profile)
-     |> assign(:daily_stats, daily_stats)}
+     |> assign(:daily_stats, daily_stats)
+     |> assign(:xp_progress, xp_progress)
+     |> assign(:user_stats, user_stats)}
   end
 
   # Components

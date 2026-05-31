@@ -3,6 +3,10 @@
 ## Overview
 Major release introducing social features, real-time classroom games, user following system, and enhanced gamification.
 
+**Status**: ✅ COMPLETE (2026-05-31)  
+**Tests**: 911 passing  
+**Next**: See [PLAN-v0.2.1.md](PLAN-v0.2.1.md) for activity stream
+
 **Estimated Duration**: 3-4 weeks  
 **Depends On**: v0.1.2 completion  
 **Theme**: Social Learning & Competition
@@ -597,72 +601,75 @@ Results show:
 
 ## Epic 6: User Level System
 
-### 6.1 Level Schema
+### 6.1 Schema (Already Implemented)
 
-```elixir
-# user_levels table
-create table(:user_levels, primary_key: false) do
-  add :id, :binary_id, primary_key: true
-  add :user_id, references(:users, type: :binary_id), null: false, unique: true
-  add :current_level, :integer, default: 1
-  add :total_xp, :integer, default: 0
-  add :xp_to_next_level, :integer, default: 100
-  add :lifetime_stats, :map, default: %{
-    daily_tests_completed: 0,
-    words_learned: 0,
-    kanji_learned: 0,
-    lessons_completed: 0,
-    classroom_tests_completed: 0,
-    games_participated: 0,
-    games_won: 0,
-    chat_messages_sent: 0
-  }
-  timestamps(type: :utc_datetime)
-end
+Uses existing `user_stats` table (`xp`, `level` fields) and `xp_transactions` audit log.
 
-# xp_transactions table (audit log)
-create table(:xp_transactions, primary_key: false) do
-  add :id, :binary_id, primary_key: true
-  add :user_id, references(:users, type: :binary_id), null: false
-  add :amount, :integer, null: false
-  add :source_type, :string, null: false
-  add :source_id, :string
-  add :description, :string
-  add :awarded_at, :utc_datetime, null: false
-end
-```
+### 6.2 Level Progression Formula
 
-### 6.2 XP Sources
+`total_XP_for_level(n) = 100n² + 900n`
 
-| Activity | XP Awarded |
-|----------|-----------|
-| Complete daily test | 50 XP |
-| Learn a new word | 10 XP |
-| Learn a new kanji | 20 XP |
-| Complete lesson | 100 XP |
-| Complete classroom test | 75 XP |
-| Win a game | 200 XP |
-| Participate in game | 50 XP |
-| Earn a badge | 150-500 XP |
-| 7-day streak | 100 XP bonus |
-| 30-day streak | 500 XP bonus |
+| Level | Total XP Needed | Feel |
+|-------|----------------|------|
+| 1 | 1,000 | First week |
+| 2 | 2,200 | ~3 days later |
+| 3 | 3,600 | |
+| 4 | 5,200 | |
+| 10 | 19,000 | Dedicated month |
+| 25 | 85,000 | ~3-4 months |
+| 50 | 295,000 | 8-12 months (very hard) |
+| 60 | 414,000 | Long-term goal |
 
-### 6.3 Level Thresholds
+### 6.3 XP Sources (Hardcoded Values)
 
-Formula: `xp_to_next = min(5000, 100 + (level - 1) * 50)`
+| Activity | XP |
+|----------|-----|
+| Vocabulary lesson step completed | 50 |
+| Grammar lesson step completed | 150 |
+| Test correct — reading/meaning multichoice | 20 |
+| Test correct — picture step | 20 |
+| Test correct — kanji writing | 50 |
+| Test correct — typing meaning/reading | 70 |
+| Test correct — listening | 100 |
+| Wrong answer | 0 |
+| Daily test streak bonus | 10 × current streak |
+| Cascade game played | 10 |
+| Card game played | 20 |
+| Earn a badge (default) | 100 |
+| Earn a badge (rare) | >100 (configurable per badge) |
+| Follow a user | 10 |
+| Learn word / kanji (click) | 0 |
+| Create lesson/test/game (teacher) | 0 |
 
-| Level | XP Required | Cumulative XP |
-|-------|-------------|---------------|
-| 1 | 0 | 0 |
-| 2 | 100 | 100 |
-| 5 | 250 | 700 |
-| 10 | 500 | 2,250 |
-| 20 | 1,000 | 9,750 |
-| 50 | 5,000 | 100,000+ |
+### 6.4 Implementation Chunks
 
-### 6.4 Level UI
+**Chunk A — XP Core**
+- [x] `Accounts.add_xp/3` with `XpTransaction` audit logging
+- [x] `calculate_level/1` using `100n² + 900n` formula
+- [x] `xp_for_level/1` and `xp_to_next_level/2` helpers
+- [ ] Level badge + XP progress bar on public profile (`/users/:id`)
+- [ ] Level shown on user directory cards
 
-- [ ] Level badge on profile
+**Chunk B — Lesson & Test XP**
+- [ ] Vocabulary lesson complete: 50 XP per step
+- [ ] Grammar lesson complete: 150 XP per step
+- [ ] Test finished: XP per correct answer by step type
+
+**Chunk C — Daily, Games, Social, Badge XP**
+- [ ] Daily test: step XP + streak bonus (10 × streak)
+- [ ] Cascade game: 10 XP
+- [ ] Card game: 20 XP
+- [ ] Follow user: 10 XP
+- [ ] Badge earned: 100 XP (default) or badge-specific value
+
+**Chunk D — Level Badges & Polish**
+- [ ] Auto-award level milestone badges (Lv 5, 10, 20, 30, 40, 50)
+- [ ] XP breakdown/history page (future)
+- [ ] Level-up notification/animation (future)
+
+### 6.5 Level UI
+
+- [x] Level badge on profile
 - [ ] XP progress bar
 - [ ] Level-up animation
 - [ ] XP breakdown (sources)

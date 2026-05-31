@@ -61,6 +61,26 @@
               <span><span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}</span>
             </div>
 
+            <%!-- Level & XP --%>
+            <div class="mt-3 flex items-center gap-3 justify-center sm:justify-start">
+              <span class="badge badge-primary badge-lg gap-1">
+                <.icon name="hero-sparkles" class="w-4 h-4" />
+                {gettext("Lv. %{level}", level: @xp_progress.current_level)}
+              </span>
+              <span class="text-sm text-base-content/60">
+                {@xp_progress.xp_into_level} / {@xp_progress.xp_needed_for_next} {gettext("XP")}
+              </span>
+            </div>
+            <div class="mt-2 w-full max-w-xs mx-auto sm:mx-0">
+              <progress
+                value={@xp_progress.progress_percent}
+                max="100"
+                class="progress progress-primary w-full h-2"
+              >
+                {@xp_progress.progress_percent}%
+              </progress>
+            </div>
+
             <%!-- Bio --%>
             <%= if @profile && @profile.bio do %>
               <p class="mt-4 text-base-content/80 max-w-xl">

@@ -2,37 +2,40 @@
 
 ## Current State
 
-**Version**: 0.1.9 ✅ COMPLETE  
-**Status**: v0.2.0 Phase 1 — Database & Admin infrastructure complete. Next: user-facing tag/follow UI + XP wiring.  
-**Tests**: 909 passing  
+**Version**: 0.2.0 ✅ COMPLETE  
+**Status**: v0.2.0 complete. v0.2.1 planning in progress.  
+**Tests**: 911 passing  
 **URL**: https://medoru.net
 
-### What's In Progress (v0.2.0) — Tags, Following, XP System, Badge Fixes
+### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**
 - **Migrations**: `tags`, `user_tags`, `follows`, `xp_transactions`, `add_profile_fields_to_user_profiles`
 - **Schemas**: `Tag`, `UserTag`, `Follow`, `XpTransaction` with validations
-- **Tags Seeds**: 50+ official tags across 8 categories (level, music, movies, literature, gaming, lifestyle, sport, goal) with colors
-- **UserProfile Extended**: `age` (13-120), `gender` (0=male, 1=female, 2=not-specified), `location` (max 100 chars)
-- **Social Context**: Full follow/tag API — `follow_user/2`, `unfollow_user/2`, `following?/2`, `count_followers/1`, `count_following/1`, `list_followers/2`, `list_following/2`, `list_user_tags/1`, `set_user_tags/2`, `list_user_tag_ids/1`, `list_tags_paginated/1`, `list_tag_categories/0`, `create_tag/1`, `update_tag/2`, `delete_tag/1`, `change_tag/1`
-- **Admin Tag Management**: `/admin/tags` with full CRUD (list, search, category filter, create, edit, delete)
-  - Tailwind color safelist in `assets/css/app.css` ensures all 26 tag colors render correctly
-  - `tag_color_classes/1` helper maps color names to `bg-* text-*` classes (explicit patterns for JIT)
-  - Checkbox uses `.input` component with hidden field (no self-updating bug)
-  - Admin dashboard card links to tag management
+- **Tags Seeds**: 50+ official tags across 8 categories with colors
+- **UserProfile Extended**: `age`, `gender`, `location`
+- **Social Context**: Full follow/tag API
+- **Admin Tag Management**: `/admin/tags` with full CRUD
 
-**Phase 2: User-Facing UI (TODO)**
-- User profile tag selection (max 15 tags)
-- Follow/unfollow buttons on user directory and profile pages
-- Display follower/following counts on profiles
-- Filter directory by tags
+**Phase 2: User-Facing UI ✅ COMPLETE**
+- **Profile Settings**: `age`, `gender`, `location` fields
+- **Tag Selection**: Interactive picker, max 15 tags
+- **Public Profile**: Tags, follower counts, Follow/Unfollow button
+- **User Directory**: Follow buttons, tag filter, pagination
+- **Tailwind v4 Fix** + **Service Worker Cache Bust**
 
-**Phase 3: XP & Badge Wiring (TODO)**
-- Wire `Accounts.add_xp/2` into learning hooks (lesson complete, kanji learned, word learned, streak)
-- `XpTransaction` audit logging
-- Badge display on profile cards and chat
-- Fix any badge auto-award edge cases
+**Phase 3: XP & Badge Wiring ✅ COMPLETE**
+- ✅ `Accounts.add_xp/3` with `XpTransaction` audit logging, level formula `100n² + 900n`, level 0 start
+- ✅ Level + XP display on profile, directory, and dashboard
+- ✅ **Chunk B**: Lesson XP (50×words, 150×grammar steps), Test XP (per-step-type)
+- ✅ **Chunk C**: Daily streak bonus, cascade/card game XP, follow XP, badge XP
+- ✅ **Chunk D**: Level badge auto-award (Lv 1/5/10/20/30/50), level-up notifications, backfill migration
+- ✅ **Bug fixes**: `daily_reviews` badges wired, `user_stats` counters now increment (kanji, words, tests)
 
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+
+### What's Next (v0.2.1)
+- **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
+- See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 
 ### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption
 - **User Directory**: Public `/users` page with searchable, paginated list of learners

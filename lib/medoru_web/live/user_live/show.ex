@@ -52,6 +52,9 @@ defmodule MedoruWeb.UserLive.Show do
             user_badges = Gamification.list_user_badges(user.id)
             featured_badge = Gamification.get_featured_badge(user.id)
 
+            # XP progress
+            xp_progress = Accounts.xp_progress(cached_stats)
+
             # Get daily test status for admin reset feature
             daily_test_status = Learning.get_daily_test_status(user.id)
 
@@ -92,6 +95,7 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:stats, real_stats)
              |> assign(:user_badges, user_badges)
              |> assign(:featured_badge, featured_badge)
+             |> assign(:xp_progress, xp_progress)
              |> assign(:daily_test_status, daily_test_status)
              |> assign(:is_blocked, is_blocked)
              |> assign(:is_following, is_following)

@@ -12,6 +12,8 @@ defmodule MedoruWeb.DailyTestLive do
 
   use MedoruWeb, :live_view
 
+  alias Medoru.Accounts
+  alias Medoru.Gamification
   alias Medoru.Learning
   alias Medoru.Tests
 
@@ -524,6 +526,19 @@ defmodule MedoruWeb.DailyTestLive do
 
     # Update streak
     Learning.update_streak(user.id)
+
+    # Award daily streak bonus XP
+    streak = Learning.get_daily_streak(user.id)
+    if streak do
+      bonus_xp = streak.current_streak * 10
+      _ = Accounts.add_xp(user.id, bonus_xp,
+            source_type: "daily_streak",
+            description: "Daily test streak bonus (#{streak.current_streak} days)")
+    end
+
+    # Check daily reviews badges
+    daily_count = Tests.count_completed_daily_tests(user.id)
+    _ = Gamification.check_daily_reviews_badges(user.id, daily_count)
 
     # Track learned words from the test
     track_test_words(user.id, test.id)

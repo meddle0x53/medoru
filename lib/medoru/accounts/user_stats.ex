@@ -16,7 +16,7 @@ defmodule Medoru.Accounts.UserStats do
     field :total_duels_played, :integer, default: 0
     field :total_duels_won, :integer, default: 0
     field :xp, :integer, default: 0
-    field :level, :integer, default: 1
+    field :level, :integer, default: 0
 
     belongs_to :user, Medoru.Accounts.User
 
@@ -45,6 +45,6 @@ defmodule Medoru.Accounts.UserStats do
     |> validate_number(:total_duels_played, greater_than_or_equal_to: 0)
     |> validate_number(:total_duels_won, greater_than_or_equal_to: 0)
     |> validate_number(:xp, greater_than_or_equal_to: 0)
-    |> validate_number(:level, greater_than_or_equal_to: 1)
+    |> validate_number(:level, greater_than_or_equal_to: 0)
   end
 end

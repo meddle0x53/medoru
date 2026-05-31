@@ -12,6 +12,7 @@ defmodule Medoru.Social do
   alias Medoru.Social.Tag
   alias Medoru.Social.UserTag
   alias Medoru.Social.Follow
+  alias Medoru.Accounts
   alias Medoru.Accounts.User
 
   # ============================================================================
@@ -328,13 +329,21 @@ defmodule Medoru.Social do
   def follow_user(follower_id, following_id) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    %Follow{}
-    |> Follow.changeset(%{
-      follower_id: follower_id,
-      following_id: following_id,
-      followed_at: now
-    })
-    |> Repo.insert()
+    result =
+      %Follow{}
+      |> Follow.changeset(%{
+        follower_id: follower_id,
+        following_id: following_id,
+        followed_at: now
+      })
+      |> Repo.insert()
+
+    with {:ok, _} <- result do
+      _ = Accounts.add_xp(follower_id, 10,
+            source_type: "follow_user", description: "Followed a user")
+    end
+
+    result
   end
 
   @doc """

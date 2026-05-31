@@ -13,6 +13,7 @@ defmodule Medoru.Classrooms do
 
   use Gettext, backend: MedoruWeb.Gettext
 
+  alias Medoru.Accounts
   alias Medoru.Classrooms.{Classroom, ClassroomMembership, ClassroomTest}
   alias Medoru.Chat
   alias Medoru.Games
@@ -1785,9 +1786,10 @@ defmodule Medoru.Classrooms do
       |> ClassroomLessonProgress.complete_changeset(attrs)
       |> Repo.update()
 
-    # Add points to member
+    # Add points to member and award XP
     with {:ok, completed_progress} <- result,
          {:ok, _} <- add_points_to_member(classroom_id, user_id, points_earned) do
+      _ = award_custom_lesson_xp(user_id, custom_lesson)
       {:ok, completed_progress}
     else
       error -> error
@@ -2261,5 +2263,29 @@ defmodule Medoru.Classrooms do
   """
   def reset_user_game_session(game_id, user_id) do
     Games.reset_session(game_id, user_id)
+  end
+
+  # ============================================================================
+  # XP Awards
+  # ============================================================================
+
+  defp award_custom_lesson_xp(user_id, custom_lesson) do
+    xp =
+      if custom_lesson.lesson_subtype == "grammar" do
+        length(custom_lesson.grammar_lesson_steps || []) * 150
+      else
+        length(custom_lesson.custom_lesson_words) * 50
+      end
+
+    if xp > 0 do
+      user = Accounts.get_user!(user_id)
+
+      Accounts.add_xp(user, xp,
+        source_type: "custom_lesson",
+        description: "Custom lesson completed (#{custom_lesson.lesson_subtype})"
+      )
+    else
+      {:ok, nil}
+    end
   end
 end

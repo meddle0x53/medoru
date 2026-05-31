@@ -115,5 +115,59 @@
     "criteria_type": "daily_reviews",
     "criteria_value": 50,
     "order_index": 13
+  },
+  {
+    "name": "Beginner Learner",
+    "description": "Reach level 1",
+    "icon": "sparkles",
+    "color": "green",
+    "criteria_type": "level",
+    "criteria_value": 1,
+    "order_index": 14
+  },
+  {
+    "name": "Dedicated Student",
+    "description": "Reach level 5",
+    "icon": "star",
+    "color": "blue",
+    "criteria_type": "level",
+    "criteria_value": 5,
+    "order_index": 15
+  },
+  {
+    "name": "Intermediate Scholar",
+    "description": "Reach level 10",
+    "icon": "academic-cap",
+    "color": "indigo",
+    "criteria_type": "level",
+    "criteria_value": 10,
+    "order_index": 16
+  },
+  {
+    "name": "Advanced Master",
+    "description": "Reach level 20",
+    "icon": "trophy",
+    "color": "purple",
+    "criteria_type": "level",
+    "criteria_value": 20,
+    "order_index": 17
+  },
+  {
+    "name": "Expert Practitioner",
+    "description": "Reach level 30",
+    "icon": "crown",
+    "color": "orange",
+    "criteria_type": "level",
+    "criteria_value": 30,
+    "order_index": 18
+  },
+  {
+    "name": "Grandmaster",
+    "description": "Reach level 50",
+    "icon": "fire",
+    "color": "red",
+    "criteria_type": "level",
+    "criteria_value": 50,
+    "order_index": 19
   }
 ]

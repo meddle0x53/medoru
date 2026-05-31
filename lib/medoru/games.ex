@@ -8,6 +8,7 @@ defmodule Medoru.Games do
   import Ecto.Query, warn: false
   alias Medoru.Repo
 
+  alias Medoru.Accounts
   alias Medoru.Classrooms
 
   alias Medoru.Games.{
@@ -1221,6 +1222,10 @@ defmodule Medoru.Games do
       game = Repo.get!(Game, session.game_id)
       Classrooms.add_points_to_member(game.classroom_id, session.user_id, score)
 
+      # Award XP for completing a card game
+      _ = Accounts.add_xp(session.user_id, 20,
+            source_type: "card_game", description: "Completed memory card game")
+
       {:ok, completed_session}
     end
   end
@@ -1411,9 +1416,18 @@ defmodule Medoru.Games do
   Creates a completed kana falling session after game over.
   """
   def create_kana_falling_session(attrs) do
-    %KanaFallingSession{}
-    |> KanaFallingSession.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %KanaFallingSession{}
+      |> KanaFallingSession.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, _} <- result,
+         user_id when not is_nil(user_id) <- attrs[:user_id] do
+      _ = Accounts.add_xp(user_id, 10,
+            source_type: "cascade_game", description: "Completed Kana Cascade game")
+    end
+
+    result
   end
 
   @doc """
@@ -1880,9 +1894,18 @@ defmodule Medoru.Games do
   Creates a completed words falling session after game over.
   """
   def create_words_falling_session(attrs) do
-    %WordsFallingSession{}
-    |> WordsFallingSession.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %WordsFallingSession{}
+      |> WordsFallingSession.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, _} <- result,
+         user_id when not is_nil(user_id) <- attrs[:user_id] do
+      _ = Accounts.add_xp(user_id, 10,
+            source_type: "cascade_game", description: "Completed Words Cascade game")
+    end
+
+    result
   end
 
   @doc """
@@ -1917,9 +1940,18 @@ defmodule Medoru.Games do
   Creates a completed kanji falling session after game over.
   """
   def create_kanji_falling_session(attrs) do
-    %KanjiFallingSession{}
-    |> KanjiFallingSession.changeset(attrs)
-    |> Repo.insert()
+    result =
+      %KanjiFallingSession{}
+      |> KanjiFallingSession.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, _} <- result,
+         user_id when not is_nil(user_id) <- attrs[:user_id] do
+      _ = Accounts.add_xp(user_id, 10,
+            source_type: "cascade_game", description: "Completed Kanji Cascade game")
+    end
+
+    result
   end
 
   @doc """

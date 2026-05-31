@@ -5,7 +5,9 @@ defmodule Medoru.Accounts do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Accounts.{ApiToken, User, UserProfile, UserStats}
+  alias Medoru.Accounts.{ApiToken, User, UserProfile, UserStats, XpTransaction}
+  alias Medoru.Gamification
+  alias Medoru.Notifications
 
   @doc """
   Returns the list of users.
@@ -290,7 +292,7 @@ defmodule Medoru.Accounts do
       Repo.update_all(
         from(us in UserStats,
           where: us.user_id == ^user_id,
-          update: [set: [xp: 0, level: 1, streak: 0, longest_streak: 0]]
+          update: [set: [xp: 0, level: 0, streak: 0, longest_streak: 0]]
         ),
         []
       )
@@ -438,33 +440,116 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
-  Adds XP to a user and potentially levels them up.
+  Adds XP to a user, creates an audit transaction, and levels them up if needed.
+
+  Returns `{:ok, %{stats: UserStats, transaction: XpTransaction, leveled_up: boolean}}`.
+
+  ## Examples
+
+      iex> add_xp(user, 50, source_type: "test_step", description: "Correct answer")
+      {:ok, %{stats: %UserStats{}, transaction: %XpTransaction{}, leveled_up: false}}
+
   """
-  def add_xp(%User{} = user, amount) when is_integer(amount) and amount > 0 do
-    stats = get_stats_by_user!(user.id)
+  def add_xp(user_or_id, amount, opts \\ [])
+
+  def add_xp(%User{} = user, amount, opts) when is_integer(amount) and amount > 0 do
+    stats = get_or_create_user_stats(user.id)
+    old_level = stats.level
     new_xp = stats.xp + amount
     new_level = calculate_level(new_xp)
+    leveled_up = new_level > old_level
 
-    update_stats(stats, %{
-      xp: new_xp,
-      level: new_level
-    })
+    # Build transaction
+    source_type = Keyword.get(opts, :source_type, "unknown")
+    source_id = Keyword.get(opts, :source_id)
+    description = Keyword.get(opts, :description)
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    transaction_attrs = %{
+      user_id: user.id,
+      amount: amount,
+      source_type: source_type,
+      source_id: source_id,
+      description: description,
+      awarded_at: now
+    }
+
+    result =
+      Repo.transaction(fn ->
+        # Update stats
+        {:ok, updated_stats} =
+          stats
+          |> UserStats.changeset(%{xp: new_xp, level: new_level})
+          |> Repo.update()
+
+        # Create audit log
+        transaction =
+          %XpTransaction{}
+          |> XpTransaction.changeset(transaction_attrs)
+          |> Repo.insert!()
+
+        %{stats: updated_stats, transaction: transaction, leveled_up: leveled_up}
+      end)
+
+    # Check for level-up badges and notify (skip if triggered by badge XP to avoid recursion)
+    with {:ok, %{leveled_up: true, stats: updated_stats}} <- result,
+         true <- source_type != "badge_earned" do
+      Gamification.check_level_badges(user.id, updated_stats.level)
+      _ = Notifications.notify_level_up(user.id, updated_stats.level)
+    end
+
+    result
   end
 
-  defp calculate_level(xp) do
-    # Simple level formula: level = floor(sqrt(xp / 100)) + 1
-    # Level 1: 0 XP
-    # Level 2: 100 XP
-    # Level 3: 400 XP
-    # Level 4: 900 XP
-    trunc(:math.sqrt(xp / 100)) + 1
+  def add_xp(user_id, amount, opts) when is_binary(user_id) and is_integer(amount) and amount > 0 do
+    user = get_user!(user_id)
+    add_xp(user, amount, opts)
+  end
+
+  @doc """
+  Calculates the level for a given total XP amount.
+
+  Formula: level is the largest n where 100n² + 900n <= total_xp.
+  """
+  def calculate_level(total_xp) when is_integer(total_xp) and total_xp >= 0 do
+    # Solve 100n² + 900n - xp = 0 using quadratic formula
+    # n = (-900 + sqrt(900² + 400*xp)) / 200
+    discriminant = 900 * 900 + 400 * total_xp
+    n = (-900 + :math.sqrt(discriminant)) / 200
+    trunc(n)
+  end
+
+  @doc """
+  Returns the total XP required to reach a given level.
+  """
+  def xp_for_level(level) when is_integer(level) and level >= 0 do
+    100 * level * level + 900 * level
+  end
+
+  @doc """
+  Returns XP progress info: current XP, XP needed for current level,
+  XP needed for next level, and progress percentage.
+  """
+  def xp_progress(%UserStats{xp: xp, level: level}) do
+    current_level_xp = xp_for_level(level)
+    next_level_xp = xp_for_level(level + 1)
+    xp_into_level = xp - current_level_xp
+    xp_needed = next_level_xp - current_level_xp
+    progress = if xp_needed > 0, do: trunc(xp_into_level / xp_needed * 100), else: 100
+
+    %{
+      current_xp: xp,
+      current_level: level,
+      xp_into_level: xp_into_level,
+      xp_needed_for_next: next_level_xp,
+      xp_to_level_up: xp_needed - xp_into_level,
+      progress_percent: progress
+    }
   end
 
   # ============================================================================
   # Badge Functions
   # ============================================================================
-
-  alias Medoru.Gamification
 
   @doc """
   Gets all badges earned by a user.

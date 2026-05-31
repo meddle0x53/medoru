@@ -34,6 +34,7 @@ defmodule Medoru.Tests do
   import Ecto.Query, warn: false
   require Logger
 
+  alias Medoru.Accounts
   alias Medoru.Repo
   alias Medoru.Tests.{Test, TestStep, TestSession, TestStepAnswer}
   alias Medoru.Learning
@@ -937,11 +938,37 @@ defmodule Medoru.Tests do
       |> TestSession.complete_changeset(score, total_possible, time_spent_seconds)
       |> Repo.update()
 
-    # Update streak if completed successfully
+    # Update streak and award XP if completed successfully
     with {:ok, completed_session} <- result do
       Learning.update_streak(session.user_id)
+      _ = award_test_xp(session.id, session.user_id)
+      _ = increment_tests_completed(session.user_id)
       {:ok, completed_session}
     end
+  end
+
+  @doc """
+  Counts the number of completed daily tests for a user.
+
+  ## Examples
+
+      iex> count_completed_daily_tests(user_id)
+      5
+
+  """
+  def count_completed_daily_tests(user_id) do
+    from(ts in TestSession,
+      join: t in Test, on: ts.test_id == t.id,
+      where: ts.user_id == ^user_id and t.type == :daily and ts.status == :completed,
+      select: count(ts.id)
+    )
+    |> Repo.one()
+  end
+
+  defp increment_tests_completed(user_id) do
+    stats = Accounts.get_or_create_user_stats(user_id)
+    current = stats.total_tests_completed || 0
+    Accounts.update_stats(stats, %{total_tests_completed: current + 1})
   end
 
   @doc """
@@ -1417,5 +1444,39 @@ defmodule Medoru.Tests do
       :test_step_answers, q -> preload(q, :test_step_answers)
       _, q -> q
     end)
+  end
+
+  # ============================================================================
+  # XP Awards
+  # ============================================================================
+
+  # XP awarded per correct answer by question type
+  defp xp_for_question_type(:multichoice), do: 20
+  defp xp_for_question_type(:writing), do: 50
+  defp xp_for_question_type(:reading_text), do: 70
+  defp xp_for_question_type(:listening), do: 100
+  defp xp_for_question_type(_), do: 0
+
+  defp award_test_xp(session_id, user_id) do
+    correct_types =
+      from(tsa in TestStepAnswer,
+        join: ts in TestStep, on: tsa.test_step_id == ts.id,
+        where: tsa.test_session_id == ^session_id and tsa.is_correct == true,
+        select: ts.question_type
+      )
+      |> Repo.all()
+
+    total_xp = Enum.reduce(correct_types, 0, &(&2 + xp_for_question_type(&1)))
+
+    if total_xp > 0 do
+      user = Accounts.get_user!(user_id)
+
+      Accounts.add_xp(user, total_xp,
+        source_type: "test",
+        description: "Test completion (#{length(correct_types)} correct)"
+      )
+    else
+      {:ok, nil}
+    end
   end
 end

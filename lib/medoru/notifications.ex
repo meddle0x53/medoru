@@ -299,6 +299,27 @@ defmodule Medoru.Notifications do
   end
 
   @doc """
+  Creates a level up notification.
+
+  ## Examples
+
+      iex> notify_level_up(user_id, 5)
+      {:ok, %Notification{}}
+
+  """
+  def notify_level_up(user_id, new_level) do
+    create_notification(%{
+      user_id: user_id,
+      type: "level_up",
+      title: "🆙 Level Up!",
+      message: "Congratulations! You've reached level #{new_level}!",
+      data: %{
+        level: new_level
+      }
+    })
+  end
+
+  @doc """
   Creates a lesson completion notification.
 
   ## Examples

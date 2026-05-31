@@ -2,7 +2,7 @@ defmodule Medoru.AccountsTest do
   use Medoru.DataCase
 
   alias Medoru.Accounts
-  alias Medoru.Accounts.{User, UserProfile, UserStats}
+  alias Medoru.Accounts.{User, UserProfile, UserStats, XpTransaction}
 
   describe "users" do
     import Medoru.AccountsFixtures
@@ -131,7 +131,7 @@ defmodule Medoru.AccountsTest do
       stats = Accounts.get_stats_by_user!(user.id)
       assert stats.user_id == user.id
       assert stats.xp == 0
-      assert stats.level == 1
+      assert stats.level == 0
       assert stats.current_streak == 0
     end
 
@@ -220,7 +220,7 @@ defmodule Medoru.AccountsTest do
       stats = Accounts.get_stats_by_user!(user.id)
       assert stats.user_id == user.id
       assert stats.xp == 0
-      assert stats.level == 1
+      assert stats.level == 0
     end
 
     test "update_stats/2 updates user stats" do
@@ -239,29 +239,43 @@ defmodule Medoru.AccountsTest do
       assert stats.current_streak == 3
     end
 
-    test "add_xp/2 adds XP to user" do
+    test "add_xp/2 adds XP to user and creates transaction" do
       user = user_fixture_with_stats()
       stats = Accounts.get_stats_by_user!(user.id)
       assert stats.xp == 0
+      assert stats.level == 0
 
-      assert {:ok, %UserStats{} = stats} = Accounts.add_xp(user, 50)
+      assert {:ok, %{stats: %UserStats{} = stats, transaction: %XpTransaction{} = tx, leveled_up: false}} =
+               Accounts.add_xp(user, 50, source_type: "test", description: "Test XP")
+
       assert stats.xp == 50
-
-      # Level should stay at 1 with 50 XP (needs 100 for level 2)
-      assert stats.level == 1
+      assert stats.level == 0
+      assert tx.amount == 50
+      assert tx.source_type == "test"
+      assert tx.description == "Test XP"
     end
 
     test "add_xp/2 levels up user when threshold reached" do
       user = user_fixture_with_stats()
 
-      # Add 100 XP to reach level 2
-      assert {:ok, %UserStats{} = stats} = Accounts.add_xp(user, 100)
-      assert stats.xp == 100
+      # Level 0: 0-999 XP
+      # Level 1 threshold: 1000 XP
+      # Level 2 threshold: 2200 XP
+      # Level 3 threshold: 3600 XP
+
+      # Add 1000 XP to reach level 1
+      assert {:ok, %{stats: %UserStats{} = stats, leveled_up: true}} = Accounts.add_xp(user, 1000)
+      assert stats.xp == 1000
+      assert stats.level == 1
+
+      # Add 1200 more XP to reach level 2 (2200 total)
+      assert {:ok, %{stats: %UserStats{} = stats, leveled_up: true}} = Accounts.add_xp(user, 1200)
+      assert stats.xp == 2200
       assert stats.level == 2
 
-      # Add more XP for level 3 (needs 400 total)
-      assert {:ok, %UserStats{} = stats} = Accounts.add_xp(user, 300)
-      assert stats.xp == 400
+      # Add 1400 more XP to reach level 3 (3600 total)
+      assert {:ok, %{stats: %UserStats{} = stats, leveled_up: true}} = Accounts.add_xp(user, 1400)
+      assert stats.xp == 3600
       assert stats.level == 3
     end
   end

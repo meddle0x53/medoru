@@ -261,6 +261,16 @@ defmodule Medoru.GamificationTest do
           order_index: 5
         })
 
+      {:ok, level_badge} =
+        Gamification.create_badge(%{
+          name: "Level 5",
+          description: "Reach level 5",
+          icon: "star",
+          criteria_type: :level,
+          criteria_value: 5,
+          order_index: 6
+        })
+
       {:ok,
        user: user,
        badges: %{
@@ -268,7 +278,8 @@ defmodule Medoru.GamificationTest do
          streak_7: streak_badge_7,
          kanji: kanji_badge,
          words: words_badge,
-         lesson: lesson_badge
+         lesson: lesson_badge,
+         level: level_badge
        }}
     end
 
@@ -318,6 +329,30 @@ defmodule Medoru.GamificationTest do
       awarded = Gamification.check_lesson_badges(user.id, 1)
       assert length(awarded) == 1
       assert hd(awarded).badge_id == badges.lesson.id
+    end
+
+    test "check_level_badges/2 awards appropriate level badges", %{user: user, badges: badges} do
+      awarded = Gamification.check_level_badges(user.id, 5)
+      assert length(awarded) == 1
+      assert hd(awarded).badge_id == badges.level.id
+    end
+
+    test "check_level_badges/2 awards multiple badges if applicable", %{user: user, badges: badges} do
+      {:ok, level_1_badge} =
+        Gamification.create_badge(%{
+          name: "Level 1",
+          description: "Reach level 1",
+          icon: "sparkles",
+          criteria_type: :level,
+          criteria_value: 1,
+          order_index: 7
+        })
+
+      awarded = Gamification.check_level_badges(user.id, 5)
+      assert length(awarded) == 2
+      badge_ids = Enum.map(awarded, & &1.badge_id)
+      assert badges.level.id in badge_ids
+      assert level_1_badge.id in badge_ids
     end
   end
 end

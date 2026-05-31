@@ -12,6 +12,7 @@ defmodule Medoru.Learning do
   import Ecto.Query, warn: false
   alias Medoru.Repo
 
+  alias Medoru.Accounts
   alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule}
   alias Medoru.Content.{Kanji, Lesson, Word, WordKanji}
   alias Medoru.Gamification
@@ -164,7 +165,7 @@ defmodule Medoru.Learning do
 
       progress ->
         # Track all lesson words as learned before marking lesson complete
-        track_lesson_words_learned(user_id, lesson_id)
+        word_ids = track_lesson_words_learned(user_id, lesson_id)
 
         # Also update user stats for completed lesson
         result =
@@ -172,10 +173,11 @@ defmodule Medoru.Learning do
           |> LessonProgress.complete_changeset()
           |> Repo.update()
 
-        # Update user stats and check badges
+        # Award XP and update user stats
         with {:ok, _completed_progress} <- result do
           update_user_stats_on_lesson_complete(user_id)
           check_and_award_lesson_badges(user_id)
+          _ = award_lesson_xp(user_id, length(word_ids))
         end
 
         result
@@ -196,6 +198,8 @@ defmodule Medoru.Learning do
     Enum.each(word_ids, fn word_id ->
       track_word_learned(user_id, word_id)
     end)
+
+    word_ids
   end
 
   # ============================================================================
@@ -346,6 +350,7 @@ defmodule Medoru.Learning do
         # Check kanji badges after tracking new kanji
         with {:ok, _} <- result do
           check_and_award_kanji_badges(user_id)
+          _ = increment_kanji_learned(user_id)
         end
 
         result
@@ -385,6 +390,7 @@ defmodule Medoru.Learning do
         # Check word badges after tracking new word
         with {:ok, _} <- result do
           check_and_award_words_badges(user_id)
+          _ = increment_words_learned(user_id)
         end
 
         result
@@ -916,6 +922,18 @@ defmodule Medoru.Learning do
     # This will be expanded in a future iteration when we integrate
     # with the gamification context
     :ok
+  end
+
+  defp increment_kanji_learned(user_id) do
+    stats = Accounts.get_or_create_user_stats(user_id)
+    current = stats.total_kanji_learned || 0
+    Accounts.update_stats(stats, %{total_kanji_learned: current + 1})
+  end
+
+  defp increment_words_learned(user_id) do
+    stats = Accounts.get_or_create_user_stats(user_id)
+    current = stats.total_words_learned || 0
+    Accounts.update_stats(stats, %{total_words_learned: current + 1})
   end
 
   # ============================================================================
@@ -1528,5 +1546,24 @@ defmodule Medoru.Learning do
   """
   def delete_user_daily_test(user_id) do
     Medoru.Learning.DailyTestGenerator.delete_todays_daily_test(user_id)
+  end
+
+  # ============================================================================
+  # XP Awards
+  # ============================================================================
+
+  defp award_lesson_xp(user_id, word_count) do
+    xp = word_count * 50
+
+    if xp > 0 do
+      user = Accounts.get_user!(user_id)
+
+      Accounts.add_xp(user, xp,
+        source_type: "lesson",
+        description: "Lesson completed (#{word_count} words)"
+      )
+    else
+      {:ok, nil}
+    end
   end
 end
