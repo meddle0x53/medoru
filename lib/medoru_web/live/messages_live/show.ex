@@ -139,6 +139,9 @@ defmodule MedoruWeb.MessagesLive.Show do
         messages = Chat.list_messages(conversation_id, limit: @per_page)
         has_more = length(messages) == @per_page
 
+        message_ids = Enum.map(messages, & &1.id)
+        message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
+
         page_title =
           if conversation.is_group do
             conversation.title || gettext("Group Chat")
@@ -159,9 +162,11 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:messages, messages)
          |> assign(:has_more_messages, has_more)
          |> assign(:message_offset, 0)
+         |> assign(:message_reactions, message_reactions)
          |> assign(:reply_to, nil)
          |> assign(:preview_message, nil)
          |> assign(:editing_message, nil)
+         |> assign(:reaction_picker_message_id, nil)
          |> assign(:page_title, page_title)
          |> assign(:typing_users, [])
          |> assign(:is_blocked, is_blocked)
@@ -677,10 +682,14 @@ defmodule MedoruWeb.MessagesLive.Show do
   def handle_event("load_more_messages", _params, socket) do
     conversation = socket.assigns.conversation
     current_offset = socket.assigns.message_offset
+    current_user = socket.assigns.current_scope.current_user
 
     new_offset = current_offset + @per_page
     older_messages = Chat.list_messages(conversation.id, limit: @per_page, offset: new_offset)
     has_more = length(older_messages) == @per_page
+
+    older_ids = Enum.map(older_messages, & &1.id)
+    older_reactions = Chat.list_reactions_for_messages(older_ids, current_user.id)
 
     # Prepend older messages so the list stays in chronological order
     # (oldest first, newest last). list_messages returns each batch in
@@ -689,12 +698,13 @@ defmodule MedoruWeb.MessagesLive.Show do
      socket
      |> assign(:messages, older_messages ++ socket.assigns.messages)
      |> assign(:has_more_messages, has_more)
-     |> assign(:message_offset, new_offset)}
+     |> assign(:message_offset, new_offset)
+     |> assign(:message_reactions, Map.merge(socket.assigns.message_reactions, older_reactions))}
   end
 
   @impl true
   def handle_event("cancel_reply", _params, socket) do
-    {:noreply, assign(socket, :reply_to, nil)}
+    {:noreply, socket |> assign(:reply_to, nil) |> assign(:reaction_picker_message_id, nil)}
   end
 
   @impl true
@@ -706,6 +716,63 @@ defmodule MedoruWeb.MessagesLive.Show do
   @impl true
   def handle_event("jump_to_message", %{"id" => message_id}, socket) do
     {:noreply, push_event(socket, "jump_to_message", %{message_id: message_id})}
+  end
+
+  @impl true
+  def handle_event("toggle_reaction", %{"message_id" => message_id, "emoji" => emoji}, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+
+    case Chat.toggle_reaction(message_id, current_user.id, emoji) do
+      {:ok, added, removed} ->
+        # Broadcast removal first (if replacing) — exclude self to avoid double-count
+        if removed do
+          Chat.broadcast_reaction_from(
+            self(),
+            conversation.id,
+            message_id,
+            current_user.id,
+            removed.emoji,
+            false
+          )
+        end
+
+        # Broadcast addition (if adding) — exclude self to avoid double-count
+        if added do
+          Chat.broadcast_reaction_from(
+            self(),
+            conversation.id,
+            message_id,
+            current_user.id,
+            added.emoji,
+            true
+          )
+        end
+
+        # Optimistic local update
+        updated_reactions =
+          socket.assigns.message_reactions
+          |> update_reaction_map(message_id, removed, false)
+          |> update_reaction_map(message_id, added, true)
+
+        {:noreply,
+         socket
+         |> assign(:reaction_picker_message_id, nil)
+         |> assign(:message_reactions, updated_reactions)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to toggle reaction."))}
+    end
+  end
+
+  @impl true
+  def handle_event("open_reaction_picker", %{"id" => message_id}, socket) do
+    {:noreply, assign(socket, :reaction_picker_message_id, message_id)}
+  end
+
+  @impl true
+  def handle_event("close_reaction_picker", _params, socket) do
+    {:noreply, assign(socket, :reaction_picker_message_id, nil)}
   end
 
   @impl true
@@ -1090,6 +1157,28 @@ defmodule MedoruWeb.MessagesLive.Show do
       })
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:reaction, message_id, user_id, emoji, added?}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    msg_reactions = Map.get(socket.assigns.message_reactions, message_id, %{})
+
+    r = Map.get(msg_reactions, emoji, %{count: 0, me?: false})
+    count = if added?, do: r.count + 1, else: max(r.count - 1, 0)
+    me? = if user_id == current_user.id, do: added?, else: r.me?
+
+    updated_msg_reactions =
+      if count == 0 do
+        Map.delete(msg_reactions, emoji)
+      else
+        Map.put(msg_reactions, emoji, %{count: count, me?: me?})
+      end
+
+    reactions = Map.put(socket.assigns.message_reactions, message_id, updated_msg_reactions)
+
+    {:noreply, assign(socket, :message_reactions, reactions)}
   end
 
   @impl true
@@ -1489,5 +1578,26 @@ defmodule MedoruWeb.MessagesLive.Show do
     else
       participant_name(%{user: message.sender})
     end
+  end
+
+  defp update_reaction_map(reactions, _message_id, nil, _added?) do
+    reactions
+  end
+
+  defp update_reaction_map(reactions, message_id, reaction, added?) do
+    msg_reactions = Map.get(reactions, message_id, %{})
+
+    r = Map.get(msg_reactions, reaction.emoji, %{count: 0, me?: false})
+    count = if added?, do: r.count + 1, else: max(r.count - 1, 0)
+    me? = if added?, do: true, else: false
+
+    updated_msg_reactions =
+      if count == 0 do
+        Map.delete(msg_reactions, reaction.emoji)
+      else
+        Map.put(msg_reactions, reaction.emoji, %{count: count, me?: me?})
+      end
+
+    Map.put(reactions, message_id, updated_msg_reactions)
   end
 end

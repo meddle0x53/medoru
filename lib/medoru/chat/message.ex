@@ -23,6 +23,8 @@ defmodule Medoru.Chat.Message do
     belongs_to :sender, Medoru.Accounts.User
     belongs_to :reply_to_message, Medoru.Chat.Message
 
+    has_many :reactions, Medoru.Chat.MessageReaction
+
     timestamps(type: :utc_datetime)
   end
 

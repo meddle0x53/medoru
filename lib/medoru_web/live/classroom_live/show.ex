@@ -83,6 +83,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:preview_message, nil)
           |> assign(:editing_message, nil)
           |> assign(:chat_enter_sends, chat_enter_sends)
+          |> assign(:message_reactions, %{})
+          |> assign(:reaction_picker_message_id, nil)
 
         {:ok, socket}
 
@@ -134,6 +136,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:preview_message, nil)
                 |> assign(:editing_message, nil)
                 |> assign(:chat_enter_sends, chat_enter_sends)
+                |> assign(:message_reactions, %{})
+                |> assign(:reaction_picker_message_id, nil)
 
               {:ok, socket}
             end
@@ -245,10 +249,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
       messages = Chat.list_messages(conversation.id, limit: @chat_message_limit)
       has_more = length(messages) == @chat_message_limit
 
+      message_ids = Enum.map(messages, & &1.id)
+      message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
+
       socket
       |> assign(:chat_messages, messages)
       |> assign(:chat_has_more, has_more)
       |> assign(:chat_offset, 0)
+      |> assign(:message_reactions, message_reactions)
     else
       socket
     end
@@ -588,6 +596,60 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_reaction", %{"message_id" => message_id, "emoji" => emoji}, socket) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+
+    case Chat.toggle_reaction(message_id, current_user.id, emoji) do
+      {:ok, added, removed} ->
+        if removed do
+          Chat.broadcast_reaction_from(
+            self(),
+            conversation.id,
+            message_id,
+            current_user.id,
+            removed.emoji,
+            false
+          )
+        end
+
+        if added do
+          Chat.broadcast_reaction_from(
+            self(),
+            conversation.id,
+            message_id,
+            current_user.id,
+            added.emoji,
+            true
+          )
+        end
+
+        updated_reactions =
+          socket.assigns.message_reactions
+          |> update_reaction_map(message_id, removed, false)
+          |> update_reaction_map(message_id, added, true)
+
+        {:noreply,
+         socket
+         |> assign(:reaction_picker_message_id, nil)
+         |> assign(:message_reactions, updated_reactions)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to toggle reaction."))}
+    end
+  end
+
+  @impl true
+  def handle_event("open_reaction_picker", %{"id" => message_id}, socket) do
+    {:noreply, assign(socket, :reaction_picker_message_id, message_id)}
+  end
+
+  @impl true
+  def handle_event("close_reaction_picker", _params, socket) do
+    {:noreply, assign(socket, :reaction_picker_message_id, nil)}
+  end
+
+  @impl true
   def handle_event("set_reply", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
     {:noreply, assign(socket, :reply_to, message)}
@@ -683,6 +745,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
       has_more = length(older_messages) == @chat_message_limit
 
+      current_user = socket.assigns.current_scope.current_user
+      older_ids = Enum.map(older_messages, & &1.id)
+      older_reactions = Chat.list_reactions_for_messages(older_ids, current_user.id)
+
       # Prepend older messages so the list stays in chronological order
       # (oldest first, newest last). list_messages returns each batch in
       # oldest-to-newest order, so older_messages belongs before existing messages.
@@ -690,7 +756,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
        socket
        |> assign(:chat_messages, older_messages ++ socket.assigns.chat_messages)
        |> assign(:chat_has_more, has_more)
-       |> assign(:chat_offset, new_offset)}
+       |> assign(:chat_offset, new_offset)
+       |> assign(:message_reactions, Map.merge(socket.assigns.message_reactions, older_reactions))}
     else
       {:noreply, socket}
     end
@@ -758,6 +825,28 @@ defmodule MedoruWeb.ClassroomLive.Show do
       end)
 
     {:noreply, assign(socket, :chat_messages, messages)}
+  end
+
+  @impl true
+  def handle_info({:reaction, message_id, user_id, emoji, added?}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    msg_reactions = Map.get(socket.assigns.message_reactions, message_id, %{})
+
+    r = Map.get(msg_reactions, emoji, %{count: 0, me?: false})
+    count = if added?, do: r.count + 1, else: max(r.count - 1, 0)
+    me? = if user_id == current_user.id, do: added?, else: r.me?
+
+    updated_msg_reactions =
+      if count == 0 do
+        Map.delete(msg_reactions, emoji)
+      else
+        Map.put(msg_reactions, emoji, %{count: count, me?: me?})
+      end
+
+    reactions = Map.put(socket.assigns.message_reactions, message_id, updated_msg_reactions)
+
+    {:noreply, assign(socket, :message_reactions, reactions)}
   end
 
   @impl true
@@ -930,6 +1019,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 editing_message={@editing_message}
                 typing_users={@chat_typing_users}
                 chat_enter_sends={@chat_enter_sends}
+                message_reactions={@message_reactions}
+                reaction_picker_message_id={@reaction_picker_message_id}
               />
           <% end %>
         </div>
@@ -1665,6 +1756,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :editing_message, :any, required: true
   attr :typing_users, :list, required: true
   attr :chat_enter_sends, :boolean, required: true
+  attr :message_reactions, :map, required: true
+  attr :reaction_picker_message_id, :any, required: true
 
   defp chat_tab(assigns) do
     ~H"""
@@ -1951,7 +2044,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{render_message_content(message.content)}</p>
                         <% end %>
                       </div>
-                      <div class="relative message-actions shrink-0 self-center">
+                      <div class="relative message-actions shrink-0 self-center flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          phx-click={if @reaction_picker_message_id == message.id, do: "close_reaction_picker", else: "open_reaction_picker"}
+                          phx-value-id={message.id}
+                          class="p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                          title={gettext("React")}
+                        >
+                          <.icon name="hero-face-smile" class="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           class="message-menu-btn p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
@@ -1959,6 +2061,31 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         >
                           <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
                         </button>
+
+                        <%!-- Reaction Picker --%>
+                        <%= if @reaction_picker_message_id == message.id do %>
+                          <div class={[
+                            "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
+                            is_me && "right-0",
+                            not is_me && "left-0"
+                          ]}>
+                            <div class="flex flex-wrap gap-1 justify-center">
+                              <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
+                              <%= for emoji <- reaction_emojis do %>
+                                <button
+                                  type="button"
+                                  phx-click="toggle_reaction"
+                                  phx-value-message_id={message.id}
+                                  phx-value-emoji={emoji}
+                                  class="text-xl hover:bg-base-200 rounded-lg transition-colors w-9 h-9 flex items-center justify-center"
+                                >
+                                  {emoji}
+                                </button>
+                              <% end %>
+                            </div>
+                          </div>
+                        <% end %>
+
                         <div
                           class={[
                             "message-menu-dropdown hidden absolute z-30 bg-base-100 border border-base-300 rounded-xl shadow-lg py-1 min-w-[120px]",
@@ -2004,6 +2131,34 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         </div>
                       </div>
                     </div>
+
+                    <%!-- Reactions --%>
+                    <% msg_reactions = Map.get(@message_reactions, message.id, %{}) %>
+                    <%= if map_size(msg_reactions) > 0 do %>
+                      <div class={[
+                        "flex flex-wrap gap-1 mt-1 px-1",
+                        is_me && "justify-end",
+                        not is_me && "justify-start"
+                      ]}>
+                        <%= for {emoji, r} <- msg_reactions do %>
+                          <button
+                            type="button"
+                            phx-click="toggle_reaction"
+                            phx-value-message_id={message.id}
+                            phx-value-emoji={emoji}
+                            class={[
+                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
+                              r.me? && "bg-primary/15 border-primary/30 text-primary",
+                              not r.me? && "bg-base-200/70 border-base-300 text-base-content/70 hover:bg-base-200"
+                            ]}
+                          >
+                            <span>{emoji}</span>
+                            <span class="text-[10px] font-medium">{r.count}</span>
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+
                     <span class={[
                       "text-[10px] text-base-content/40 mt-0.5 px-1 flex items-center gap-1",
                       is_me && "justify-end",
@@ -2679,5 +2834,26 @@ defmodule MedoruWeb.ClassroomLive.Show do
       </div>
     </div>
     """
+  end
+
+  defp update_reaction_map(reactions, _message_id, nil, _added?) do
+    reactions
+  end
+
+  defp update_reaction_map(reactions, message_id, reaction, added?) do
+    msg_reactions = Map.get(reactions, message_id, %{})
+
+    r = Map.get(msg_reactions, reaction.emoji, %{count: 0, me?: false})
+    count = if added?, do: r.count + 1, else: max(r.count - 1, 0)
+    me? = if added?, do: true, else: false
+
+    updated_msg_reactions =
+      if count == 0 do
+        Map.delete(msg_reactions, reaction.emoji)
+      else
+        Map.put(msg_reactions, reaction.emoji, %{count: count, me?: me?})
+      end
+
+    Map.put(reactions, message_id, updated_msg_reactions)
   end
 end

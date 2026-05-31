@@ -856,6 +856,130 @@ defmodule Medoru.Chat do
   end
 
   # ============================================================================
+  # Message Reactions
+  # ============================================================================
+
+  alias Medoru.Chat.MessageReaction
+
+  @doc """
+  Toggles a reaction on a message.
+  Each user can have at most one reaction per message.
+  - No existing reaction → adds the new one
+  - Same emoji clicked → removes it
+  - Different emoji clicked → replaces old with new
+  Returns {:ok, added_reaction, removed_reaction} where either may be nil.
+  """
+  def toggle_reaction(message_id, user_id, emoji) do
+    existing =
+      Repo.one(
+        from r in MessageReaction,
+          where: r.message_id == ^message_id and r.user_id == ^user_id
+      )
+
+    cond do
+      is_nil(existing) ->
+        %MessageReaction{}
+        |> MessageReaction.changeset(%{
+          message_id: message_id,
+          user_id: user_id,
+          emoji: emoji
+        })
+        |> Repo.insert()
+        |> case do
+          {:ok, reaction} -> {:ok, reaction, nil}
+          error -> error
+        end
+
+      existing.emoji == emoji ->
+        Repo.delete(existing)
+        {:ok, nil, existing}
+
+      true ->
+        Repo.transaction(fn ->
+          Repo.delete!(existing)
+
+          %MessageReaction{}
+          |> MessageReaction.changeset(%{
+            message_id: message_id,
+            user_id: user_id,
+            emoji: emoji
+          })
+          |> Repo.insert!()
+        end)
+        |> case do
+          {:ok, reaction} -> {:ok, reaction, existing}
+          error -> error
+        end
+    end
+  end
+
+  @doc """
+  Lists all reactions for a given message, grouped by emoji with user_ids.
+  Returns a map: %{emoji => %{count: int, user_ids: [id], me?: bool}}
+  """
+  def list_reactions_for_message(message_id, current_user_id) do
+    MessageReaction
+    |> where([r], r.message_id == ^message_id)
+    |> select([r], {r.emoji, r.user_id})
+    |> Repo.all()
+    |> Enum.group_by(fn {emoji, _user_id} -> emoji end, fn {_emoji, user_id} -> user_id end)
+    |> Enum.map(fn {emoji, user_ids} ->
+      {emoji,
+       %{
+         count: length(user_ids),
+         user_ids: user_ids,
+         me?: current_user_id in user_ids
+       }}
+    end)
+    |> Enum.into(%{})
+  end
+
+  @doc """
+  Gets reactions for multiple messages at once.
+  Returns a map: %{message_id => %{emoji => %{count: int, me?: bool}}}
+  """
+  def list_reactions_for_messages(message_ids, current_user_id) do
+    MessageReaction
+    |> where([r], r.message_id in ^message_ids)
+    |> select([r], {r.message_id, r.emoji, r.user_id})
+    |> Repo.all()
+    |> Enum.group_by(fn {msg_id, _emoji, _user_id} -> msg_id end)
+    |> Enum.map(fn {msg_id, rows} ->
+      grouped =
+        rows
+        |> Enum.group_by(fn {_msg_id, emoji, _user_id} -> emoji end, fn {_msg_id, _emoji, user_id} -> user_id end)
+        |> Enum.map(fn {emoji, user_ids} ->
+          {emoji,
+           %{
+             count: length(user_ids),
+             me?: current_user_id in user_ids
+           }}
+        end)
+        |> Enum.into(%{})
+
+      {msg_id, grouped}
+    end)
+    |> Enum.into(%{})
+  end
+
+  def broadcast_reaction(conversation_id, message_id, user_id, emoji, added?) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation_id}",
+      {:reaction, message_id, user_id, emoji, added?}
+    )
+  end
+
+  def broadcast_reaction_from(pid, conversation_id, message_id, user_id, emoji, added?) do
+    Phoenix.PubSub.broadcast_from(
+      PubSub,
+      pid,
+      "chat:#{conversation_id}",
+      {:reaction, message_id, user_id, emoji, added?}
+    )
+  end
+
+  # ============================================================================
   # Notifications
   # ============================================================================
 

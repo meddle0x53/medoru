@@ -185,6 +185,61 @@ defmodule MedoruWeb.MessagesLiveTest do
       assert html =~ "[...]"
     end
 
+    test "adds reaction to message via picker", %{conn: conn} do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+
+      {:ok, view, _html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+
+      # Open reaction picker
+      html =
+        view
+        |> element("button[phx-click='open_reaction_picker']")
+        |> render_click(%{"id" => msg.id})
+
+      assert html =~ "👍"
+
+      # Click emoji to add reaction
+      html =
+        view
+        |> element("button[phx-value-emoji='👍']")
+        |> render_click(%{"message_id" => msg.id, "emoji" => "👍"})
+
+      # Reaction pill should appear
+      assert html =~ "👍"
+      assert html =~ "bg-primary/15"
+    end
+
+    test "removes existing reaction by clicking pill", %{conn: conn} do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, msg} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+
+      # Pre-add a reaction
+      {:ok, _reaction, nil} = Chat.toggle_reaction(msg.id, user_a.id, "👍")
+
+      {:ok, view, _html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+
+      # Reaction pill should be visible
+      assert render(view) =~ "👍"
+
+      # Click reaction pill to remove
+      html =
+        view
+        |> element("button[phx-click='toggle_reaction']")
+        |> render_click(%{"message_id" => msg.id, "emoji" => "👍"})
+
+      # Reaction should be removed
+      refute html =~ "bg-primary/15"
+    end
+
     test "handles reply selection and cancellation", %{conn: conn} do
       user_a = user_with_display_name()
       user_b = user_with_display_name()

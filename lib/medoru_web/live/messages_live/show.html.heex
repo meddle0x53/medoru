@@ -415,8 +415,17 @@
                     <% end %>
                   </div>
 
-                  <%!-- Message Actions (3-dot menu) --%>
-                  <div class="relative message-actions shrink-0 self-center">
+                  <%!-- Message Actions (3-dot menu + reactions) --%>
+                  <div class="relative message-actions shrink-0 self-center flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      phx-click={if @reaction_picker_message_id == message.id, do: "close_reaction_picker", else: "open_reaction_picker"}
+                      phx-value-id={message.id}
+                      class="p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                      title={gettext("React")}
+                    >
+                      <.icon name="hero-face-smile" class="w-4 h-4" />
+                    </button>
                     <button
                       type="button"
                       class="message-menu-btn p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
@@ -424,6 +433,31 @@
                     >
                       <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
                     </button>
+
+                    <%!-- Reaction Picker --%>
+                    <%= if @reaction_picker_message_id == message.id do %>
+                      <div class={[
+                        "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
+                        is_me && "right-0",
+                        not is_me && "left-0"
+                      ]}>
+                        <div class="flex flex-wrap gap-1 justify-center">
+                          <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
+                          <%= for emoji <- reaction_emojis do %>
+                            <button
+                              type="button"
+                              phx-click="toggle_reaction"
+                              phx-value-message_id={message.id}
+                              phx-value-emoji={emoji}
+                              class="text-xl hover:bg-base-200 rounded-lg transition-colors w-9 h-9 flex items-center justify-center"
+                            >
+                              {emoji}
+                            </button>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
                     <div
                       class={[
                         "message-menu-dropdown hidden absolute z-30 bg-base-100 border border-base-300 rounded-xl shadow-lg py-1 min-w-[120px]",
@@ -469,6 +503,33 @@
                     </div>
                   </div>
                 </div>
+
+                <%!-- Reactions --%>
+                <% msg_reactions = Map.get(@message_reactions, message.id, %{}) %>
+                <%= if map_size(msg_reactions) > 0 do %>
+                  <div class={[
+                    "flex flex-wrap gap-1 mt-1 px-1",
+                    is_me && "justify-end",
+                    not is_me && "justify-start"
+                  ]}>
+                    <%= for {emoji, r} <- msg_reactions do %>
+                      <button
+                        type="button"
+                        phx-click="toggle_reaction"
+                        phx-value-message_id={message.id}
+                        phx-value-emoji={emoji}
+                        class={[
+                          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
+                          r.me? && "bg-primary/15 border-primary/30 text-primary",
+                          not r.me? && "bg-base-200/70 border-base-300 text-base-content/70 hover:bg-base-200"
+                        ]}
+                      >
+                        <span>{emoji}</span>
+                        <span class="text-[10px] font-medium">{r.count}</span>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
 
                 <%!-- Timestamp & Status --%>
                 <span class={[
