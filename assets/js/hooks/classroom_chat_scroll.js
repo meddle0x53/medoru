@@ -10,6 +10,15 @@ const ClassroomChatScroll = {
       this.scrollToBottom()
     })
 
+    this.handleEvent("jump_to_message", ({ message_id }) => {
+      const el = document.getElementById("msg-" + message_id)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        el.classList.add("highlight-message")
+        setTimeout(() => el.classList.remove("highlight-message"), 2000)
+      }
+    })
+
     // Scroll when async content (e.g. word/kanji previews) finishes loading
     this._contentLoadedHandler = () => {
       const threshold = 150

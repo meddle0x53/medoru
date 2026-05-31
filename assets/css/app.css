@@ -406,6 +406,22 @@ body:has(.classroom-chat-tab) footer {
 
 
 
+/* Message jump-to highlight */
+@keyframes message-highlight {
+  0% {
+    background-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.highlight-message {
+  animation: message-highlight 2s ease-out;
+}
+
 /* Kana explosion effect */
 @keyframes kana-explode {
   0% {

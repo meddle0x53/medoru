@@ -147,10 +147,16 @@
                 is_me && "justify-end",
                 not is_me && "justify-start"
               ]}>
-                <div class={[
-                  "max-w-[80%] px-3 py-1.5 rounded-lg text-xs",
-                  "bg-base-200/70 text-base-content/60 border-l-2 border-primary/40"
-                ]}>
+                <button
+                  type="button"
+                  phx-click="jump_to_message"
+                  phx-value-id={message.reply_to_message.id}
+                  class={[
+                    "max-w-[80%] px-3 py-1.5 rounded-lg text-xs text-left cursor-pointer",
+                    "bg-base-200/70 text-base-content/60 border-l-2 border-primary/40",
+                    "hover:bg-base-200 hover:border-primary/60 transition-colors"
+                  ]}
+                >
                   <span class="font-medium text-primary/70">
                     {sender_name(message.reply_to_message, @current_scope.current_user.id)}
                   </span>
@@ -173,12 +179,12 @@
                         {render_message_content(message.reply_to_message.content) || "..."}
                       </span>
                   <% end %>
-                </div>
+                </button>
               </div>
             <% end %>
 
             <%!-- Message Row --%>
-            <div class={[
+            <div id={"msg-#{message.id}"} class={[
               "flex group/message",
               is_me && "justify-end",
               not is_me && "justify-start"

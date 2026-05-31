@@ -659,6 +659,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event("jump_to_message", %{"id" => message_id}, socket) do
+    {:noreply, push_event(socket, "jump_to_message", %{message_id: message_id})}
+  end
+
+  @impl true
   def handle_event("preview_message", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.messages, &(&1.id == message_id))
     {:noreply, assign(socket, :preview_message, message)}
