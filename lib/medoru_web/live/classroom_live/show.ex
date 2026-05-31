@@ -1867,24 +1867,26 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 >
                   <%= if not is_me do %>
                     <%= if show_avatar do %>
-                      <%= if avatar = chat_avatar(message.sender) do %>
-                        <img
-                          src={avatar}
-                          alt=""
-                          class={[
-                            "w-7 h-7 rounded-full object-cover mr-1.5 shrink-0 self-end",
-                            is_teacher && "ring-2 ring-primary"
-                          ]}
-                        />
-                      <% else %>
-                        <div class={[
-                          "w-7 h-7 rounded-full flex items-center justify-center mr-1.5 shrink-0 self-end",
-                          is_teacher && "bg-primary text-primary-content ring-2 ring-primary",
-                          not is_teacher && "bg-primary/10"
-                        ]}>
-                          <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
-                        </div>
-                      <% end %>
+                      <a href={~p"/users/#{message.sender_id}"} target="_blank" rel="noopener noreferrer" class="shrink-0 self-end">
+                        <%= if avatar = chat_avatar(message.sender) do %>
+                          <img
+                            src={avatar}
+                            alt=""
+                            class={[
+                              "w-7 h-7 rounded-full object-cover mr-1.5",
+                              is_teacher && "ring-2 ring-primary"
+                            ]}
+                          />
+                        <% else %>
+                          <div class={[
+                            "w-7 h-7 rounded-full flex items-center justify-center mr-1.5",
+                            is_teacher && "bg-primary text-primary-content ring-2 ring-primary",
+                            not is_teacher && "bg-primary/10"
+                          ]}>
+                            <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
+                          </div>
+                        <% end %>
+                      </a>
                     <% else %>
                       <div class="w-7 mr-1.5 shrink-0"></div>
                     <% end %>
@@ -2798,17 +2800,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
     </div>
     <div class="preview-body flex-1 overflow-y-auto p-4 flex flex-col gap-4">
       <div class="flex items-start gap-3">
-        <%= if avatar = chat_avatar(@message.sender) do %>
-          <img
-            src={avatar}
-            alt=""
-            class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200 shrink-0"
-          />
-        <% else %>
-          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200 shrink-0">
-            <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
-          </div>
-        <% end %>
+        <a href={~p"/users/#{@message.sender.id}"} target="_blank" rel="noopener noreferrer" class="shrink-0">
+          <%= if avatar = chat_avatar(@message.sender) do %>
+            <img
+              src={avatar}
+              alt=""
+              class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200"
+            />
+          <% else %>
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+              <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+            </div>
+          <% end %>
+        </a>
         <div class="min-w-0">
           <p class="font-medium text-sm text-base-content">
             {chat_sender_name(@message.sender, @current_user.id)}

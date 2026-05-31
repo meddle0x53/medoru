@@ -42,16 +42,32 @@
           </div>
         <% else %>
           <% other = List.first(@other_participants) %>
-          <%= if avatar = participant_avatar(other) do %>
-            <img
-              src={avatar}
-              alt=""
-              class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200"
-            />
+          <%= if other do %>
+            <a href={~p"/users/#{other.user_id}"} target="_blank" rel="noopener noreferrer">
+              <%= if avatar = participant_avatar(other) do %>
+                <img
+                  src={avatar}
+                  alt=""
+                  class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200"
+                />
+              <% else %>
+                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+                  <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+                </div>
+              <% end %>
+            </a>
           <% else %>
-            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
-              <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
-            </div>
+            <%= if avatar = participant_avatar(other) do %>
+              <img
+                src={avatar}
+                alt=""
+                class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200"
+              />
+            <% else %>
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+                <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+              </div>
+            <% end %>
           <% end %>
 
           <div class="flex-1 min-w-0">
@@ -213,17 +229,19 @@
                     (Enum.at(@messages, index + 1) &&
                        Enum.at(@messages, index + 1).sender_id != message.sender_id) %>
                 <%= if show_avatar do %>
-                  <%= if avatar = participant_avatar(%{user: message.sender}) do %>
-                    <img
-                      src={avatar}
-                      alt=""
-                      class="w-7 h-7 rounded-full object-cover mr-1.5 shrink-0 self-end"
-                    />
-                  <% else %>
-                    <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-1.5 shrink-0 self-end">
-                      <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
-                    </div>
-                  <% end %>
+                  <a href={~p"/users/#{message.sender_id}"} target="_blank" rel="noopener noreferrer" class="shrink-0 self-end">
+                    <%= if avatar = participant_avatar(%{user: message.sender}) do %>
+                      <img
+                        src={avatar}
+                        alt=""
+                        class="w-7 h-7 rounded-full object-cover mr-1.5"
+                      />
+                    <% else %>
+                      <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center mr-1.5">
+                        <.icon name="hero-user" class="w-3.5 h-3.5 text-primary/50" />
+                      </div>
+                    <% end %>
+                  </a>
                 <% else %>
                   <div class="w-7 mr-1.5 shrink-0"></div>
                 <% end %>

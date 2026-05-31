@@ -31,6 +31,16 @@
 - ✅ **Chunk D**: Level badge auto-award (Lv 1/5/10/20/30/50), level-up notifications, backfill migration
 - ✅ **Bug fixes**: `daily_reviews` badges wired, `user_stats` counters now increment (kanji, words, tests)
 
+**Chat & Messaging Polish ✅ COMPLETE**
+- **Message Reactions**: Emoji picker (15 common emoji), reaction pills with count, one reaction per user per message (add/remove/replace logic)
+- **Chat File Uploads**: Multipart HTTP endpoint (`POST /api/chat/uploads`) supporting images/audio/documents up to 50MB in both encrypted and classroom chats via drag-drop, click-to-select, and clipboard paste
+- **Encrypted Chat Flickering Fix**: `phx-update="ignore"` on all encrypted content elements prevents `morphdom` from resetting decrypted text to `[...]`; `ChatCrypto` hook `updated()` now skips `decryptAll()` when no encrypted elements remain
+- **UTF-8 Word Link Fix**: `binary_part` replaces `String.slice` for `|word|`, `[[word]]`, `「word」` syntax since regex returns byte indices
+- **Chat Avatar Links**: All user avatars in 1:1, group, and classroom chat link to `/users/:id` with `target="_blank" rel="noopener noreferrer"`
+- **Mobile-Friendly Reactions**: 40px mobile / 44px desktop emoji buttons, enlarged reaction pills (`px-2 py-1`), responsive picker (`w-40 sm:w-48 max-w-[90vw]`), `phx-click-away` tap-outside-to-close
+- **Reaction Optimistic Update Fix**: Nested `Map.update/4` bug replaced with explicit `Map.get` + `Map.put`/`Map.delete` pattern in both `MessagesLive.Show` and `ClassroomLive.Show`
+- **Service Worker**: Cache bumped to `medoru-v7` to invalidate stale assets
+
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 
 ### What's Next (v0.2.1)
@@ -263,6 +273,31 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 
 ## Version History
 
+### v0.2.0 - Social, XP System, Level Badges & Chat Polish (2026-05-24 → 2026-05-31)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- **Tags & Following System**: 50+ curated tags across 8 categories, user profile tag selection (max 15), follow/unfollow with counts
+- **User Directory v2**: Tag filters, follow buttons, level display, XP progress
+- **XP & Level System**: `Accounts.add_xp/3` with `XpTransaction` audit logging, level formula `100n² + 900n`, level 0 start
+- **Level Badges**: Auto-award at Lv 1/5/10/20/30/50 with level-up notifications
+- **XP Wiring**: Lesson completion (50×words, 150×grammar), test steps, daily streak bonus, games, follows, badges
+- **Message Reactions**: Emoji picker, reaction pills, one per user per message
+- **Chat File Uploads**: Images, audio, documents up to 50MB in encrypted and classroom chats
+- **Chat Polish**: Encrypted content flickering fix, UTF-8 word links, avatar links, mobile-friendly reactions
+
+**Routes:** `/users`, `/settings/profile`, `/admin/tags`, `/messages/*`
+
+**Key Technical Changes:**
+- Migrations: `tags`, `user_tags`, `follows`, `xp_transactions`, `add_profile_fields_to_user_profiles`, `message_reactions`
+- New schemas: `Tag`, `UserTag`, `Follow`, `XpTransaction`, `MessageReaction`
+- Contexts: `Medoru.Social` (tags/following), `Medoru.Accounts` (XP/levels), `Medoru.Chat` (reactions)
+- `ChatCrypto` hook: `updated()` optimization, `phx-update="ignore"` on decrypted content
+- `MessageReactions` unique composite index: `[:message_id, :user_id, :emoji]`
+- Service worker cache: `medoru-v7`
+
+---
+
 ### v0.1.9 - Chat, User Directory & Word Set Integration (2026-05-24 → 2026-05-30)
 **Status**: ✅ COMPLETE
 
@@ -427,6 +462,18 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
   - Fixed newly created tags not showing in admin list (removed `is_official` filter)
 - **Follow System**: One-way follows with `follow_user/2`, `unfollow_user/2`, `following?/2`, counts, and paginated lists
 - **XP Transaction Schema**: Audit log table for tracking XP gains with source attribution
+
+### 2026-05-31 - v0.2.0 Chat Polish & Reactions Complete
+- **Message Reactions**: `message_reactions` table, `MessageReaction` schema, `Chat.toggle_reaction/3` (add/remove/replace)
+- **Reaction UI**: Emoji picker (15 emoji), reaction pills with count, current user highlighted in primary color
+- **Reaction Optimistic Update Fix**: Nested `Map.update/4` bug in `MessagesLive.Show` and `ClassroomLive.Show`
+- **Chat File Uploads**: `POST /api/chat/uploads` multipart endpoint, 50MB limit, drag-drop/click/clipboard in encrypted + classroom chats
+- **Classroom Chat Parity**: File uploads, audio player, document downloads, reply-to jump with highlight, inline word links
+- **Encrypted Chat Flickering Fix**: `phx-update="ignore"` on decrypted content + `ChatCrypto` hook `updated()` optimization
+- **UTF-8 Word Link Fix**: `binary_part` replaces `String.slice` for regex byte indices in Japanese text
+- **Chat Avatar Links**: All avatars link to `/users/:id` with `target="_blank" rel="noopener noreferrer"`
+- **Mobile-Friendly Reactions**: 40px mobile / 44px desktop emoji buttons, enlarged pills, responsive picker, `phx-click-away`
+- **Service Worker**: Cache bumped to `medoru-v7`
 
 ### 2026-05-30 - v0.1.9 Complete
 - **Word Chat Preview Localization**: Word preview cards show localized meaning based on user's locale
@@ -610,6 +657,23 @@ Word (id, text, meaning, difficulty, usage_frequency)
 - `set_user_tags/2`, `list_user_tags/1`, `list_user_tag_ids/1` - User tag selection
 - `block_user/3`, `unblock_user/2`, `is_blocked?/2`, `blocked_by?/2` - Blocking
 - `can_message?/2` - Messaging permission check
+
+### 9. Chat Context (`lib/medoru/chat/`)
+**Responsibility:** Conversations, messages, file uploads, reactions, typing indicators, read receipts, end-to-end encryption
+
+**Key Schemas:**
+- `Conversation` - 1:1 or group chat with `is_group`/`title`
+- `ConversationParticipant` - User's participation with `joined_at`, `is_archived`
+- `ConversationKey` - E2E encrypted AES key per participant (RSA-OAEP 2048 wrapped)
+- `Message` - Chat message with `message_type`, `file_data`, `reply_to_id`
+- `MessageReaction` - Emoji reaction (one per user per message, add/remove/replace)
+
+**Key Functions:**
+- `send_message/3`, `list_messages/2` - Message CRUD
+- `toggle_reaction/3` - Add/remove/replace emoji reaction
+- `list_reactions_for_messages/2` - Batch load reactions as `%{message_id => %{emoji => %{count, me?}}}`
+- `broadcast_reaction/5` - PubSub broadcast excluding sender
+- `ensure_conversation_key/2` - E2E key generation and distribution
 
 ---
 

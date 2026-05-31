@@ -1517,17 +1517,19 @@ defmodule MedoruWeb.MessagesLive.Show do
       <div class="flex items-start gap-3">
         <% sender_avatar =
           (@message.sender.profile && @message.sender.profile.avatar) || @message.sender.avatar_url %>
-        <%= if sender_avatar do %>
-          <img
-            src={sender_avatar}
-            alt=""
-            class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200 shrink-0"
-          />
-        <% else %>
-          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200 shrink-0">
-            <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
-          </div>
-        <% end %>
+        <a href={~p"/users/#{@message.sender.id}"} target="_blank" rel="noopener noreferrer" class="shrink-0">
+          <%= if sender_avatar do %>
+            <img
+              src={sender_avatar}
+              alt=""
+              class="w-10 h-10 rounded-full object-cover ring-2 ring-base-200"
+            />
+          <% else %>
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-base-200">
+              <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+            </div>
+          <% end %>
+        </a>
         <div class="min-w-0">
           <p class="font-medium text-sm text-base-content">
             {sender_name(@message, @current_user_id)}
