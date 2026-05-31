@@ -2045,49 +2045,54 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         <% end %>
                       </div>
                       <div class="relative message-actions shrink-0 self-center flex items-center gap-0.5">
-                        <button
-                          type="button"
-                          phx-click={if @reaction_picker_message_id == message.id, do: "close_reaction_picker", else: "open_reaction_picker"}
-                          phx-value-id={message.id}
-                          class="p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
-                          title={gettext("React")}
+                        <div
+                          class="relative"
+                          phx-click-away={if @reaction_picker_message_id == message.id, do: "close_reaction_picker"}
                         >
-                          <.icon name="hero-face-smile" class="w-4 h-4" />
-                        </button>
+                          <button
+                            type="button"
+                            phx-click={if @reaction_picker_message_id == message.id, do: "close_reaction_picker", else: "open_reaction_picker"}
+                            phx-value-id={message.id}
+                            class="p-1.5 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                            title={gettext("React")}
+                          >
+                            <.icon name="hero-face-smile" class="w-4 h-4" />
+                          </button>
+
+                          <%!-- Reaction Picker --%>
+                          <%= if @reaction_picker_message_id == message.id do %>
+                            <div
+                              id={"reaction-picker-#{message.id}"}
+                              class={[
+                                "absolute bottom-10 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-40 sm:w-48 max-w-[90vw]",
+                                is_me && "right-0",
+                                not is_me && "left-0"
+                              ]}
+                            >
+                              <div class="flex flex-wrap gap-1 justify-center">
+                                <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
+                                <%= for emoji <- reaction_emojis do %>
+                                  <button
+                                    type="button"
+                                    phx-click="toggle_reaction"
+                                    phx-value-message_id={message.id}
+                                    phx-value-emoji={emoji}
+                                    class="text-xl hover:bg-base-200 rounded-lg transition-colors w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center"
+                                  >
+                                    {emoji}
+                                  </button>
+                                <% end %>
+                              </div>
+                            </div>
+                          <% end %>
+                        </div>
                         <button
                           type="button"
-                          class="message-menu-btn p-1 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
+                          class="message-menu-btn p-1.5 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
                           data-message-id={message.id}
                         >
                           <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
                         </button>
-
-                        <%!-- Reaction Picker --%>
-                        <%= if @reaction_picker_message_id == message.id do %>
-                          <div
-                            id={"reaction-picker-#{message.id}"}
-                            class={[
-                              "absolute bottom-9 z-50 bg-base-100 border border-base-300 rounded-xl shadow-xl p-2 w-48",
-                              is_me && "right-0",
-                              not is_me && "left-0"
-                            ]}
-                          >
-                            <div class="flex flex-wrap gap-1 justify-center">
-                              <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
-                              <%= for emoji <- reaction_emojis do %>
-                                <button
-                                  type="button"
-                                  phx-click="toggle_reaction"
-                                  phx-value-message_id={message.id}
-                                  phx-value-emoji={emoji}
-                                  class="text-xl hover:bg-base-200 rounded-lg transition-colors w-9 h-9 flex items-center justify-center"
-                                >
-                                  {emoji}
-                                </button>
-                              <% end %>
-                            </div>
-                          </div>
-                        <% end %>
 
                         <div
                           class={[
@@ -2153,7 +2158,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             phx-value-message_id={message.id}
                             phx-value-emoji={emoji}
                             class={[
-                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors",
+                              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-colors",
                               r.me? && "bg-primary/15 border-primary/30 text-primary",
                               not r.me? && "bg-base-200/70 border-base-300 text-base-content/70 hover:bg-base-200"
                             ]}
