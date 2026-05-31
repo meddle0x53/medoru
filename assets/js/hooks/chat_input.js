@@ -6,9 +6,17 @@ const EMOJIS = [
   "🎌", "🗾", "🍜", "🍱", "🍡", "🍣", "🍙", "🍥", "🍘", "🍮"
 ]
 
-// Typing indicator debounce
-const TYPING_DELAY = 3000
-const TYPING_SEND_DEBOUNCE = 300
+const ALLOWED_TYPES = [
+  "image/jpeg", "image/png", "image/gif", "image/webp",
+  "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav",
+  "application/pdf", "text/plain", "text/csv",
+  "application/json", "text/markdown", "text/x-markdown",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/epub+zip"
+]
+
+const MAX_SIZE = 50 * 1024 * 1024
 
 const ChatInput = {
   mounted() {
@@ -16,36 +24,36 @@ const ChatInput = {
     this.sendButton = this.el.querySelector("#chat-send-button")
     this.emojiBtn = this.el.querySelector("#chat-emoji-button")
     this.emojiPanel = this.el.querySelector("#chat-emoji-panel")
-    this.imageBtn = this.el.querySelector("#chat-image-button")
-    this.imageInput = this.el.querySelector("#chat-image-input")
-    this.imagePreview = this.el.querySelector("#chat-image-preview")
+    this.attachmentBtn = this.el.querySelector("#chat-attachment-button")
+    this.fileInput = this.el.querySelector("#chat-file-input")
+    this.filePreview = this.el.querySelector("#chat-file-preview")
+    this.filePreviewName = this.el.querySelector("#chat-file-preview-name")
     this.convId = document.getElementById("chat-wrapper")?.dataset.conversationId
+    this.messagesContainer = document.getElementById("messages-container")
+    this.dragOverlay = document.getElementById("chat-drag-overlay")
 
     if (!this.textarea) return
 
     this.typingTimer = null
     this.typingSent = false
     this.lastTypingSent = 0
-    this.queuedImage = null
+    this.queuedFile = null
+    this.isUploading = false
 
     this.enterSends = this.el.dataset.enterSends !== "false"
 
     this.textarea.addEventListener("keydown", (e) => {
-      // Trigger typing on printable characters
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         this.sendTypingIndicator()
       }
 
-      // Enter behavior depends on user preference
       if (this.enterSends) {
-        // Enter sends, Shift+Enter creates paragraph
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault()
           this.submit()
           return
         }
       } else {
-        // Shift+Enter sends, Enter creates paragraph
         if (e.key === "Enter" && e.shiftKey) {
           e.preventDefault()
           this.submit()
@@ -53,7 +61,6 @@ const ChatInput = {
         }
       }
 
-      // Escape to cancel edit/emoji
       if (e.key === "Escape") {
         this.hideEmojiPanel()
         if (window.chatEditingMessage) {
@@ -65,7 +72,6 @@ const ChatInput = {
         return
       }
 
-      // Up arrow to edit last message (when textarea is empty and not in edit mode)
       if (e.key === "ArrowUp" && this.textarea.value.trim() === "" && !window.chatEditingMessage) {
         e.preventDefault()
         this.editLastMessage()
@@ -73,12 +79,22 @@ const ChatInput = {
       }
     })
 
-    // Typing detection on input (for paste, delete, mobile input)
     this.textarea.addEventListener("input", () => {
       this.textarea.style.height = "auto"
       const maxHeight = parseInt(getComputedStyle(this.textarea).maxHeight, 10) || 128
       this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
       this.sendTypingIndicator()
+    })
+
+    this.textarea.addEventListener("paste", (e) => {
+      const files = e.clipboardData?.files
+      if (!files || files.length === 0) return
+
+      const imageFile = Array.from(files).find(f => f.type.startsWith("image/"))
+      if (!imageFile) return
+
+      e.preventDefault()
+      this.processFile(imageFile)
     })
 
     if (this.sendButton) {
@@ -119,23 +135,59 @@ const ChatInput = {
       })
     }
 
-    if (this.imageBtn && this.imageInput) {
-      this.imageBtn.addEventListener("click", () => this.imageInput.click())
-      this.imageInput.addEventListener("change", (e) => this.handleImageSelect(e))
+    if (this.attachmentBtn && this.fileInput) {
+      this.attachmentBtn.addEventListener("click", () => this.fileInput.click())
+      this.fileInput.addEventListener("change", (e) => this.handleFileSelect(e))
     }
 
-    if (this.imagePreview) {
-      // Use event delegation so the listener survives LiveView DOM patches
-      this.imagePreview.addEventListener("click", (e) => {
-        if (e.target.closest("#chat-image-cancel")) {
+    if (this.filePreview) {
+      this.filePreview.addEventListener("click", (e) => {
+        if (e.target.closest("#chat-file-cancel")) {
           e.preventDefault()
           e.stopPropagation()
-          this.clearImage()
+          this.clearFile()
         }
       })
     }
 
-    // Close emoji panel on outside click
+    // Drag & Drop
+    if (this.messagesContainer && this.dragOverlay) {
+      this._dragCounter = 0
+
+      this._dragEnterHandler = (e) => {
+        e.preventDefault()
+        this._dragCounter++
+        if (e.dataTransfer.types.includes("Files")) {
+          this.dragOverlay.classList.remove("hidden")
+        }
+      }
+      this._dragLeaveHandler = (e) => {
+        e.preventDefault()
+        this._dragCounter--
+        if (this._dragCounter <= 0) {
+          this.dragOverlay.classList.add("hidden")
+          this._dragCounter = 0
+        }
+      }
+      this._dragOverHandler = (e) => {
+        e.preventDefault()
+      }
+      this._dropHandler = (e) => {
+        e.preventDefault()
+        this._dragCounter = 0
+        this.dragOverlay.classList.add("hidden")
+        const files = e.dataTransfer.files
+        if (files.length > 0) {
+          this.processFile(files[0])
+        }
+      }
+
+      this.messagesContainer.addEventListener("dragenter", this._dragEnterHandler)
+      this.messagesContainer.addEventListener("dragleave", this._dragLeaveHandler)
+      this.messagesContainer.addEventListener("dragover", this._dragOverHandler)
+      this.messagesContainer.addEventListener("drop", this._dropHandler)
+    }
+
     this._outsideClickHandler = (e) => {
       if (this.emojiPanel && !this.emojiPanel.contains(e.target) && e.target !== this.emojiBtn) {
         this.hideEmojiPanel()
@@ -158,120 +210,120 @@ const ChatInput = {
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
     }
+    if (this.messagesContainer) {
+      if (this._dragEnterHandler) this.messagesContainer.removeEventListener("dragenter", this._dragEnterHandler)
+      if (this._dragLeaveHandler) this.messagesContainer.removeEventListener("dragleave", this._dragLeaveHandler)
+      if (this._dragOverHandler) this.messagesContainer.removeEventListener("dragover", this._dragOverHandler)
+      if (this._dropHandler) this.messagesContainer.removeEventListener("drop", this._dropHandler)
+    }
   },
 
-  handleImageSelect(e) {
+  handleFileSelect(e) {
     const file = e.target.files[0]
     if (!file) return
+    this.processFile(file)
+  },
 
-    // Validate type
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file.")
+  processFile(file) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert("File type not allowed.")
       return
     }
-
-    // Validate size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image is too large. Maximum size is 5MB.")
+    if (file.size > MAX_SIZE) {
+      alert("File too large. Maximum size is 50MB.")
       return
     }
+    this.queuedFile = file
+    this.showFilePreview(file.name)
+  },
 
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      this.queuedImage = {
-        dataUrl: ev.target.result,
-        mimeType: file.type
+  showFilePreview(name) {
+    if (!this.filePreview || !this.filePreviewName) return
+    this.filePreviewName.textContent = name
+    this.filePreview.classList.remove("hidden")
+  },
+
+  clearFile() {
+    this.queuedFile = null
+    if (this.filePreview) this.filePreview.classList.add("hidden")
+    if (this.fileInput) this.fileInput.value = ""
+  },
+
+  async uploadFile(file) {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const resp = await fetch("/api/chat/uploads", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "x-csrf-token": document.querySelector("meta[name='csrf-token']")?.content || ""
+        }
+      })
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}))
+        alert(err.error || "Upload failed")
+        return null
       }
-      this.showImagePreview(ev.target.result)
+
+      return await resp.json()
+    } catch (e) {
+      console.error("[ChatInput] Upload failed:", e)
+      alert("Upload failed")
+      return null
     }
-    reader.readAsDataURL(file)
-  },
-
-  showImagePreview(dataUrl) {
-    if (!this.imagePreview) return
-    const img = this.imagePreview.querySelector("img")
-    if (img) img.src = dataUrl
-    this.imagePreview.classList.remove("hidden")
-    this.imagePreview.classList.add("inline-block")
-  },
-
-  clearImage() {
-    this.queuedImage = null
-    if (this.imagePreview) {
-      this.imagePreview.classList.add("hidden")
-      this.imagePreview.classList.remove("inline-block")
-    }
-    if (this.imageInput) this.imageInput.value = ""
-  },
-
-  _base64FromDataUrl(dataUrl) {
-    return dataUrl.split(",")[1]
   },
 
   sendTypingIndicator() {
     const now = Date.now()
-    // Debounce: don't send more than once per TYPING_SEND_DEBOUNCE ms
-    if (now - this.lastTypingSent < TYPING_SEND_DEBOUNCE) return
+    if (now - this.lastTypingSent < 300) return
 
     if (!this.typingSent) {
-      console.log("[ChatInput] Sending typing: true")
       this.pushEvent("set_typing", { typing: true })
       this.typingSent = true
     }
     this.lastTypingSent = now
 
-    // Clear previous timer
     if (this.typingTimer) clearTimeout(this.typingTimer)
-
-    // Stop typing after delay
     this.typingTimer = setTimeout(() => {
-      console.log("[ChatInput] Sending typing: false")
       this.pushEvent("set_typing", { typing: false })
       this.typingSent = false
-    }, TYPING_DELAY)
+    }, 3000)
   },
 
   editLastMessage() {
-    // Find the last message from current user that is editable
     const currentUserId = document.getElementById("chat-wrapper")?.dataset.currentUserId
     const messages = document.querySelectorAll("[data-msg-id]")
 
-    // Iterate in reverse to find the last editable message
     for (let i = messages.length - 1; i >= 0; i--) {
-      const msgEl = messages[i]
-      const bubble = msgEl.closest(".message-bubble")
-
-      // Skip deleted messages, voice messages, and messages from others
-      if (bubble && bubble.textContent.includes("This message was deleted")) continue
-      if (msgEl.closest("[data-encrypted='true']")) {
-        // Check if this is a voice message (look for audio in the bubble)
-        if (bubble && bubble.querySelector(".chat-audio-el")) continue
-      }
-
-      // Find the edit button for this message
-      const msgId = msgEl.dataset.msgId
-      const editBtn = document.querySelector(`button[phx-click='start_edit'][phx-value-id='${msgId}']`)
-      if (editBtn) {
-        editBtn.click()
-        return
+      const msg = messages[i]
+      const senderId = msg.dataset.senderId
+      if (senderId === currentUserId) {
+        const menuBtn = msg.querySelector(".message-menu-btn")
+        if (menuBtn) {
+          menuBtn.click()
+          setTimeout(() => {
+            const editBtn = msg.querySelector("[data-action='edit']")
+            if (editBtn) editBtn.click()
+          }, 10)
+        }
+        break
       }
     }
   },
 
   toggleEmojiPanel() {
     if (!this.emojiPanel) return
-    if (this.emojiPanel.classList.contains("hidden")) {
-      this.emojiPanel.classList.remove("hidden")
+    this.emojiPanel.classList.toggle("hidden")
+    if (!this.emojiPanel.classList.contains("hidden")) {
       this.resetEmojiPage()
-    } else {
-      this.emojiPanel.classList.add("hidden")
     }
   },
 
   hideEmojiPanel() {
-    if (this.emojiPanel) {
-      this.emojiPanel.classList.add("hidden")
-    }
+    if (this.emojiPanel) this.emojiPanel.classList.add("hidden")
   },
 
   resetEmojiPage() {
@@ -313,11 +365,10 @@ const ChatInput = {
 
   async submit() {
     const text = this.textarea.value.trim()
-    const hasImage = this.queuedImage != null
+    const hasFile = this.queuedFile != null
 
-    if (text === "" && !hasImage) return
+    if (text === "" && !hasFile) return
 
-    // Validate /kanji, /word, \kanji, and \word commands
     if (text.startsWith("/kanji ") || text.startsWith("/k ") || text.startsWith("\\kanji ") || text.startsWith("\\k ")) {
       const char = text.startsWith("/k ") || text.startsWith("\\k ") ? text.slice(3).trim() : text.slice(7).trim()
       if (!isSingleKanji(char)) {
@@ -333,13 +384,11 @@ const ChatInput = {
       }
     }
 
-    // Stop typing indicator on send
     if (this.typingTimer) {
       clearTimeout(this.typingTimer)
       this.typingTimer = null
     }
     if (this.typingSent) {
-      console.log("[ChatInput] Sending typing: false (message sent)")
       this.pushEvent("set_typing", { typing: false })
       this.typingSent = false
     }
@@ -355,7 +404,6 @@ const ChatInput = {
       return
     }
 
-    // Check if we're in edit mode
     if (window.chatEditingMessage) {
       const edit = window.chatEditingMessage
       window.chatEditingMessage = null
@@ -372,10 +420,9 @@ const ChatInput = {
       return
     }
 
-    // If no conversation key, request one and queue the message
     if (!CryptoState.conversationKeys.has(convId)) {
-      if (hasImage) {
-        alert("Please wait for encryption to be ready before sending images.")
+      if (hasFile) {
+        alert("Please wait for encryption to be ready before sending files.")
         return
       }
       window.chatPendingMessage = text
@@ -383,20 +430,31 @@ const ChatInput = {
       return
     }
 
-    // Send image first, then text (both if present)
-    if (hasImage) {
+    // Upload file first, then send message
+    if (hasFile) {
+      this.isUploading = true
+      const result = await this.uploadFile(this.queuedFile)
+      this.isUploading = false
+      this.clearFile()
+
+      if (!result) return
+
       try {
-        const { ciphertext, iv } = await CryptoState.encrypt(convId, "📷 Image")
-        const base64 = this._base64FromDataUrl(this.queuedImage.dataUrl)
-        this.pushEvent("send_image_message", {
-          image_base64: base64,
-          mime_type: this.queuedImage.mimeType,
+        const content =
+          result.type === "image" ? "📷 Image" :
+          result.type === "audio" ? "🔊 Audio" :
+          `📎 ${result.name}`
+        const { ciphertext, iv } = await CryptoState.encrypt(convId, content)
+        this.pushEvent("send_file_message", {
+          path: result.path,
+          type: result.type,
+          name: result.name,
+          size: result.size,
           ciphertext,
           iv
         })
-        this.clearImage()
       } catch (e) {
-        console.error("[ChatInput] Image encryption failed:", e)
+        console.error("[ChatInput] File encryption failed:", e)
         return
       }
     }

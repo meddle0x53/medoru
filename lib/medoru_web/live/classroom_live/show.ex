@@ -547,6 +547,47 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event(
+        "send_file_message",
+        %{"path" => path, "type" => type, "name" => name, "size" => _size} = params,
+        socket
+      ) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    reply_to = socket.assigns.reply_to
+
+    {content, attachment_type} =
+      case type do
+        "image" -> {"📷 Image", "image"}
+        "audio" -> {"🔊 Audio", "audio"}
+        _ -> {"📎 #{name}", "document"}
+      end
+
+    opts = [
+      reply_to_message_id: reply_to && reply_to.id,
+      attachment_path: path,
+      attachment_type: attachment_type,
+      duration_seconds: params["duration_seconds"]
+    ]
+
+    case Chat.store_plaintext_message(conversation.id, current_user.id, content, opts) do
+      {:ok, _message} ->
+        {:noreply,
+         socket
+         |> assign(:reply_to, nil)
+         |> assign(:preview_message, nil)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to send file."))}
+    end
+  end
+
+  @impl true
+  def handle_event("jump_to_message", %{"id" => message_id}, socket) do
+    {:noreply, push_event(socket, "jump_to_message", %{message_id: message_id})}
+  end
+
+  @impl true
   def handle_event("set_reply", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
     {:noreply, assign(socket, :reply_to, message)}
@@ -1637,6 +1678,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
               class="absolute inset-0 overflow-y-auto px-3 py-2 space-y-1"
               phx-hook="ClassroomChatScroll"
             >
+              <%!-- Drag & Drop Overlay --%>
+              <div
+                id="classroom-chat-drag-overlay"
+                class="hidden absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none"
+              >
+                <div class="text-center">
+                  <.icon name="hero-arrow-up-tray" class="w-12 h-12 text-primary mx-auto mb-2" />
+                  <p class="text-lg font-medium text-primary">{gettext("Drop files here")}</p>
+                </div>
+              </div>
+
               <%!-- Load More Button --%>
               <%= if @has_more do %>
                 <div class="flex justify-center py-2">
@@ -1679,10 +1731,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     is_me && "justify-end",
                     not is_me && "justify-start"
                   ]}>
-                    <div class={[
-                      "max-w-[80%] px-3 py-1.5 rounded-lg text-xs",
-                      "bg-base-200/70 text-base-content/60 border-l-2 border-primary/40"
-                    ]}>
+                    <button
+                      type="button"
+                      phx-click="jump_to_message"
+                      phx-value-id={message.reply_to_message.id}
+                      class={[
+                        "max-w-[80%] px-3 py-1.5 rounded-lg text-xs text-left cursor-pointer",
+                        "bg-base-200/70 text-base-content/60 border-l-2 border-primary/40",
+                        "hover:bg-base-200 hover:border-primary/60 transition-colors"
+                      ]}
+                    >
                       <span class="font-medium text-primary/70">
                         {chat_sender_name(message.reply_to_message.sender, @current_user.id)}
                       </span>
@@ -1694,11 +1752,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             {gettext("📷 Image")}
                           <% message.reply_to_message.attachment_type == "voice" -> %>
                             {gettext("🎤 Voice message")}
+                          <% message.reply_to_message.attachment_type == "audio" -> %>
+                            {gettext("🔊 Audio")}
+                          <% message.reply_to_message.attachment_type == "document" -> %>
+                            {gettext("📎 File")}
                           <% true -> %>
                             {render_message_content(message.reply_to_message.content)}
                         <% end %>
                       </span>
-                    </div>
+                    </button>
                   </div>
                 <% end %>
 
@@ -1755,7 +1817,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         if(message.is_deleted,
                           do: "px-3 py-1.5",
                           else:
-                            if(message.attachment_type in ["voice", "image"],
+                            if(message.attachment_type in ["voice", "image", "audio", "document"],
                               do: "px-3 py-2",
                               else: "px-3 py-1.5"
                             )
@@ -1823,6 +1885,63 @@ defmodule MedoruWeb.ClassroomLive.Show do
                                 <.icon name="hero-arrow-down-tray" class="w-3.5 h-3.5" />
                               </a>
                             </div>
+                          <% message.attachment_type == "audio" && message.attachment_path -> %>
+                            <div
+                              id={"classroom-audio-#{message.id}"}
+                              class="flex items-center gap-2"
+                              phx-hook="ChatAudioPlayer"
+                              data-src={message.attachment_path}
+                              data-duration={message.duration_seconds || 0}
+                            >
+                              <button
+                                type="button"
+                                class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0"
+                              >
+                                <.icon name="hero-play" class="w-4 h-4 chat-audio-play-icon" />
+                                <.icon name="hero-pause" class="w-4 h-4 chat-audio-pause-icon hidden" />
+                              </button>
+                              <div class="flex-1 min-w-0">
+                                <div class="chat-audio-progress h-1.5 bg-base-300/50 rounded-full overflow-hidden cursor-pointer">
+                                  <div
+                                    class="chat-audio-progress-bar h-full bg-primary rounded-full transition-all duration-100"
+                                    style="width: 0%"
+                                  >
+                                  </div>
+                                </div>
+                                <div class="flex justify-between mt-0.5">
+                                  <span class="chat-audio-current text-[10px] opacity-70 tabular-nums">
+                                    0:00
+                                  </span>
+                                  <span class="chat-audio-duration text-[10px] opacity-70 tabular-nums">
+                                    {format_audio_duration(message.duration_seconds)}
+                                  </span>
+                                </div>
+                              </div>
+                              <audio
+                                class="chat-audio-el absolute w-0 h-0 opacity-0"
+                                src={message.attachment_path}
+                                preload="auto"
+                              >
+                              </audio>
+                            </div>
+                          <% message.attachment_type == "document" && message.attachment_path -> %>
+                            <a
+                              href={message.attachment_path}
+                              download
+                              class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/70 hover:bg-base-200 transition-colors group/doc"
+                            >
+                              <.icon
+                                name="hero-document"
+                                class="w-5 h-5 text-primary/70 group-hover/doc:text-primary transition-colors shrink-0"
+                              />
+                              <span class="text-sm truncate">
+                                {message.content || gettext("File")}
+                              </span>
+                              <.icon
+                                name="hero-arrow-down-tray"
+                                class="w-4 h-4 text-base-content/40 group-hover/doc:text-primary transition-colors shrink-0"
+                              />
+                            </a>
                           <% is_emoji_msg -> %>
                             <p class="text-4xl leading-none py-1">{render_message_content(message.content)}</p>
                           <% true -> %>
@@ -1949,6 +2068,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       {gettext("📷 Image")}
                     <% @reply_to.attachment_type == "voice" -> %>
                       {gettext("🎤 Voice message")}
+                    <% @reply_to.attachment_type == "audio" -> %>
+                      {gettext("🔊 Audio")}
+                    <% @reply_to.attachment_type == "document" -> %>
+                      {gettext("📎 File")}
                     <% true -> %>
                       {@reply_to.content}
                   <% end %>
@@ -1990,19 +2113,27 @@ defmodule MedoruWeb.ClassroomLive.Show do
             phx-hook="ClassroomChatInput"
             data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
           >
-            <%!-- Image Preview --%>
-            <div id="classroom-image-preview" class="hidden mb-2 relative">
-              <img src="" class="h-16 w-16 object-cover rounded-lg border border-base-300" />
-              <button
-                type="button"
-                id="classroom-image-cancel"
-                class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs"
-              >
-                <.icon name="hero-x-mark" class="w-3 h-3" />
-              </button>
+            <%!-- File Preview --%>
+            <div id="classroom-file-preview" class="hidden mb-2 relative">
+              <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/70 border border-base-300 max-w-fit">
+                <.icon name="hero-document" class="w-5 h-5 text-primary/70" />
+                <span id="classroom-file-preview-name" class="text-sm truncate max-w-[200px]"></span>
+                <button
+                  type="button"
+                  id="classroom-file-cancel"
+                  class="w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs shrink-0"
+                >
+                  <.icon name="hero-x-mark" class="w-3 h-3" />
+                </button>
+              </div>
             </div>
 
-            <input type="file" id="classroom-image-input" accept="image/*" class="hidden" />
+            <input
+              type="file"
+              id="classroom-file-input"
+              accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+              class="hidden"
+            />
 
             <%!-- Emoji Picker Panel --%>
             <div
@@ -2104,12 +2235,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   </div>
                 </div>
                 <button
-                  id="classroom-image-button"
+                  id="classroom-attachment-button"
                   type="button"
                   class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
-                  title={gettext("Send image")}
+                  title={gettext("Send file")}
                 >
-                  <.icon name="hero-photo" class="w-5 h-5" />
+                  <.icon name="hero-paper-clip" class="w-5 h-5" />
                 </button>
                 <button
                   id="classroom-emoji-button"
@@ -2264,13 +2395,18 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   defp render_message_body(text) do
-    pipe_regex = ~r/\|([^|]+)\|/
-    matches = Regex.scan(pipe_regex, text, return: :index)
+    pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
+    bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
+    corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
+
+    matches =
+      (pipe_matches ++ bracket_matches ++ corner_matches)
+      |> Enum.sort_by(fn [{match_start, _}, _] -> match_start end)
 
     if matches == [] do
       render_text_segment(text)
     else
-      segments = build_pipe_segments(text, matches, 0, [])
+      segments = build_word_segments(text, matches, 0, [])
 
       Enum.flat_map(segments, fn
         {:text, segment_text} ->
@@ -2294,21 +2430,21 @@ defmodule MedoruWeb.ClassroomLive.Show do
     end
   end
 
-  defp build_pipe_segments(text, [], pos, acc) do
-    remaining = String.slice(text, pos..-1//1)
+  defp build_word_segments(text, [], pos, acc) do
+    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_pipe_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
+  defp build_word_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
     before_len = match_start - pos
-    before_text = if before_len > 0, do: String.slice(text, pos, before_len), else: ""
-    word_text = String.slice(text, cap_start, cap_len)
+    before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
+    word_text = binary_part(text, cap_start, cap_len)
 
     acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
     acc = [{:word, word_text} | acc]
 
-    build_pipe_segments(text, rest, match_start + match_len, acc)
+    build_word_segments(text, rest, match_start + match_len, acc)
   end
 
   defp render_text_segment(text) do

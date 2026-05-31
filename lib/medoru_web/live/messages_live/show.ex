@@ -629,6 +629,51 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event(
+        "send_file_message",
+        %{"path" => path, "type" => type, "name" => name, "size" => _size} = params,
+        socket
+      ) do
+    conversation = socket.assigns.conversation
+    current_user = socket.assigns.current_scope.current_user
+    reply_to = socket.assigns.reply_to
+
+    {content, attachment_type} =
+      case type do
+        "image" -> {"📷 Image", "image"}
+        "audio" -> {"🔊 Audio", "audio"}
+        _ -> {"📎 #{name}", "document"}
+      end
+
+    opts = [
+      reply_to_message_id: reply_to && reply_to.id,
+      attachment_path: path,
+      attachment_type: attachment_type,
+      duration_seconds: params["duration_seconds"]
+    ]
+
+    result =
+      if conversation.classroom_id do
+        Chat.store_plaintext_message(conversation.id, current_user.id, content, opts)
+      else
+        ct = params["ciphertext"]
+        iv = params["iv"]
+        Chat.store_message(conversation.id, current_user.id, ct, iv, opts)
+      end
+
+    case result do
+      {:ok, _message} ->
+        {:noreply,
+         socket
+         |> assign(:reply_to, nil)
+         |> assign(:preview_message, nil)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to send file."))}
+    end
+  end
+
+  @impl true
   def handle_event("load_more_messages", _params, socket) do
     conversation = socket.assigns.conversation
     current_offset = socket.assigns.message_offset
@@ -1200,15 +1245,15 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   defp build_word_segments(text, [], pos, acc) do
-    remaining = String.slice(text, pos..-1//1)
+    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
   defp build_word_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
     before_len = match_start - pos
-    before_text = if before_len > 0, do: String.slice(text, pos, before_len), else: ""
-    word_text = String.slice(text, cap_start, cap_len)
+    before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
+    word_text = binary_part(text, cap_start, cap_len)
 
     acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
     acc = [{:word, word_text} | acc]

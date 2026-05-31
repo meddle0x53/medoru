@@ -107,9 +107,20 @@
       <div class="flex-1 relative overflow-hidden">
         <div
           id="messages-container"
-          class="h-full overflow-y-auto px-3 py-2 space-y-1"
+          class="h-full overflow-y-auto px-3 py-2 space-y-1 relative"
           phx-hook={if @conversation.classroom_id, do: "ClassroomChatScroll", else: "ChatScroll"}
         >
+          <%!-- Drag & Drop Overlay --%>
+          <div
+            id="chat-drag-overlay"
+            class="hidden absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-lg flex items-center justify-center pointer-events-none"
+          >
+            <div class="text-center">
+              <.icon name="hero-arrow-up-tray" class="w-12 h-12 text-primary mx-auto mb-2" />
+              <p class="text-lg font-medium text-primary">{gettext("Drop files here")}</p>
+            </div>
+          </div>
+
           <%!-- Load More Button --%>
           <%= if @has_more_messages do %>
             <div class="flex justify-center py-2">
@@ -165,6 +176,10 @@
                       <span class="truncate block">{gettext("📷 Image")}</span>
                     <% message.reply_to_message.attachment_type == "voice" -> %>
                       <span class="truncate block">{gettext("🎤 Voice message")}</span>
+                    <% message.reply_to_message.attachment_type == "audio" -> %>
+                      <span class="truncate block">{gettext("🔊 Audio")}</span>
+                    <% message.reply_to_message.attachment_type == "document" -> %>
+                      <span class="truncate block">{gettext("📎 File")}</span>
                     <% message.reply_to_message.ciphertext -> %>
                       <span
                         class="truncate block"
@@ -310,6 +325,74 @@
                             <.icon name="hero-arrow-down-tray" class="w-3.5 h-3.5" />
                           </a>
                         </div>
+                      <% message.attachment_type == "audio" && message.attachment_path -> %>
+                        <div
+                          id={"chat-audio-#{message.id}"}
+                          class="flex items-center gap-2"
+                          phx-hook="ChatAudioPlayer"
+                          data-src={message.attachment_path}
+                          data-duration={message.duration_seconds || 0}
+                        >
+                          <button
+                            type="button"
+                            class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0"
+                          >
+                            <.icon name="hero-play" class="w-4 h-4 chat-audio-play-icon" />
+                            <.icon name="hero-pause" class="w-4 h-4 chat-audio-pause-icon hidden" />
+                          </button>
+                          <div class="flex-1 min-w-0">
+                            <div class="chat-audio-progress h-1.5 bg-base-300/50 rounded-full overflow-hidden cursor-pointer">
+                              <div
+                                class="chat-audio-progress-bar h-full bg-primary rounded-full transition-all duration-100"
+                                style="width: 0%"
+                              >
+                              </div>
+                            </div>
+                            <div class="flex justify-between mt-0.5">
+                              <span class="chat-audio-current text-[10px] opacity-70 tabular-nums">
+                                0:00
+                              </span>
+                              <span class="chat-audio-duration text-[10px] opacity-70 tabular-nums">
+                                {format_audio_duration(message.duration_seconds)}
+                              </span>
+                            </div>
+                          </div>
+                          <audio
+                            class="chat-audio-el absolute w-0 h-0 opacity-0"
+                            src={message.attachment_path}
+                            preload="auto"
+                          >
+                          </audio>
+                        </div>
+                      <% message.attachment_type == "document" && message.attachment_path -> %>
+                        <a
+                          href={message.attachment_path}
+                          download
+                          class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/70 hover:bg-base-200 transition-colors group/doc"
+                        >
+                          <.icon
+                            name="hero-document"
+                            class="w-5 h-5 text-primary/70 group-hover/doc:text-primary transition-colors shrink-0"
+                          />
+                          <%= if message.ciphertext do %>
+                            <span
+                              class="text-sm truncate"
+                              data-encrypted="true"
+                              data-ciphertext={message_ciphertext_b64(message)}
+                              data-iv={message_iv_b64(message)}
+                            >
+                              [...]
+                            </span>
+                          <% else %>
+                            <span class="text-sm truncate">
+                              {message.content || gettext("File")}
+                            </span>
+                          <% end %>
+                          <.icon
+                            name="hero-arrow-down-tray"
+                            class="w-4 h-4 text-base-content/40 group-hover/doc:text-primary transition-colors shrink-0"
+                          />
+                        </a>
                       <% @conversation.classroom_id && message.content -> %>
                         <%= if is_emoji_msg do %>
                           <p class="text-4xl leading-none py-1">{render_message_content(message.content)}</p>
@@ -453,6 +536,10 @@
                 <p class="text-sm text-base-content/80 truncate">{gettext("📷 Image")}</p>
               <% @reply_to.attachment_type == "voice" -> %>
                 <p class="text-sm text-base-content/80 truncate">{gettext("🎤 Voice message")}</p>
+              <% @reply_to.attachment_type == "audio" -> %>
+                <p class="text-sm text-base-content/80 truncate">{gettext("🔊 Audio")}</p>
+              <% @reply_to.attachment_type == "document" -> %>
+                <p class="text-sm text-base-content/80 truncate">{gettext("📎 File")}</p>
               <% @reply_to.ciphertext -> %>
                 <p
                   class="text-sm text-base-content/80 truncate"
@@ -552,19 +639,27 @@
           phx-hook="ClassroomChatInput"
           data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
         >
-          <%!-- Image Preview --%>
-          <div id="classroom-image-preview" class="hidden mb-2 relative">
-            <img src="" class="h-16 w-16 object-cover rounded-lg border border-base-300" />
-            <button
-              type="button"
-              id="classroom-image-cancel"
-              class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs"
-            >
-              <.icon name="hero-x-mark" class="w-3 h-3" />
-            </button>
+          <%!-- File Preview --%>
+          <div id="classroom-file-preview" class="hidden mb-2 relative">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/70 border border-base-300 max-w-fit">
+              <.icon name="hero-document" class="w-5 h-5 text-primary/70" />
+              <span id="classroom-file-preview-name" class="text-sm truncate max-w-[200px]"></span>
+              <button
+                type="button"
+                id="classroom-file-cancel"
+                class="w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs shrink-0"
+              >
+                <.icon name="hero-x-mark" class="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
-          <input type="file" id="classroom-image-input" accept="image/*" class="hidden" />
+          <input
+            type="file"
+            id="classroom-file-input"
+            accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+            class="hidden"
+          />
 
           <div class="relative">
             <%!-- Emoji Panel --%>
@@ -665,12 +760,12 @@
                   </div>
                 </div>
                 <button
-                  id="classroom-image-button"
+                  id="classroom-attachment-button"
                   type="button"
                   class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
-                  title={gettext("Send image")}
+                  title={gettext("Send file")}
                 >
-                  <.icon name="hero-photo" class="w-5 h-5" />
+                  <.icon name="hero-paper-clip" class="w-5 h-5" />
                 </button>
                 <button
                   id="classroom-emoji-button"
@@ -751,19 +846,27 @@
                 phx-hook="ChatInput"
                 data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
               >
-                <%!-- Image Preview --%>
-                <div id="chat-image-preview" class="hidden mb-2 relative">
-                  <img src="" class="h-16 w-16 object-cover rounded-lg border border-base-300" />
-                  <button
-                    type="button"
-                    id="chat-image-cancel"
-                    class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs"
-                  >
-                    <.icon name="hero-x-mark" class="w-3 h-3" />
-                  </button>
+                <%!-- File Preview --%>
+                <div id="chat-file-preview" class="hidden mb-2 relative">
+                  <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-base-200/70 border border-base-300 max-w-fit">
+                    <.icon name="hero-document" class="w-5 h-5 text-primary/70" />
+                    <span id="chat-file-preview-name" class="text-sm truncate max-w-[200px]"></span>
+                    <button
+                      type="button"
+                      id="chat-file-cancel"
+                      class="w-5 h-5 bg-error text-error-content rounded-full flex items-center justify-center text-xs shrink-0"
+                    >
+                      <.icon name="hero-x-mark" class="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
 
-                <input type="file" id="chat-image-input" accept="image/*" class="hidden" />
+                <input
+                  type="file"
+                  id="chat-file-input"
+                  accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+                  class="hidden"
+                />
 
                 <%!-- Emoji Picker Panel --%>
                 <div
@@ -865,12 +968,12 @@
                       </div>
                     </div>
                     <button
-                      id="chat-image-button"
+                      id="chat-attachment-button"
                       type="button"
                       class="btn btn-ghost btn-circle w-10 h-10 text-base-content/60 hover:text-primary"
-                      title={gettext("Send image")}
+                      title={gettext("Send file")}
                     >
-                      <.icon name="hero-photo" class="w-5 h-5" />
+                      <.icon name="hero-paper-clip" class="w-5 h-5" />
                     </button>
                     <button
                       id="chat-emoji-button"
