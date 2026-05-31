@@ -1764,11 +1764,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   </div>
                 <% end %>
 
-                <div class={[
-                  "flex group/message",
-                  is_me && "justify-end",
-                  not is_me && "justify-start"
-                ]}>
+                <div
+                  id={"msg-#{message.id}"}
+                  class={[
+                    "flex group/message",
+                    is_me && "justify-end",
+                    not is_me && "justify-start"
+                  ]}
+                >
                   <%= if not is_me do %>
                     <%= if show_avatar do %>
                       <%= if avatar = chat_avatar(message.sender) do %>
