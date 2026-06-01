@@ -165,6 +165,19 @@ defmodule Medoru.Tests do
   end
 
   @doc """
+  Returns all tests for admin, optionally filtered by status or type.
+  Preloads creator for display.
+  """
+  def list_all_tests(opts \\ []) do
+    Test
+    |> maybe_filter_by_type(opts[:type])
+    |> maybe_filter_by_status(opts[:status])
+    |> preload([:creator])
+    |> order_by([t], desc: t.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
   Publishes a test, making it available for users to take.
 
   ## Examples

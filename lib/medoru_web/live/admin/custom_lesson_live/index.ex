@@ -1,0 +1,320 @@
+defmodule MedoruWeb.Admin.CustomLessonLive.Index do
+  @moduledoc """
+  Admin interface for listing and managing all custom lessons.
+  """
+  use MedoruWeb, :live_view
+
+  alias Medoru.Content
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <%!-- Header --%>
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Custom Lesson Management")}</h1>
+          <p class="mt-2 text-secondary">
+            {gettext("Manage all custom lessons across the platform. Total: %{count}", count: length(@lessons))}
+          </p>
+        </div>
+
+        <%!-- Filters --%>
+        <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+          <div class="card-body">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span class="text-sm font-medium text-base-content/70 shrink-0">
+                {gettext("Filter by status:")}
+              </span>
+              <div class="join join-horizontal flex-wrap">
+                <button
+                  phx-click="filter_status"
+                  phx-value-status=""
+                  class={[
+                    "join-item btn btn-sm min-w-[40px]",
+                    if(is_nil(@status_filter), do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  {gettext("All")}
+                </button>
+                <button
+                  phx-click="filter_status"
+                  phx-value-status="draft"
+                  class={[
+                    "join-item btn btn-sm min-w-[40px]",
+                    if(@status_filter == "draft", do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  {gettext("Draft")}
+                </button>
+                <button
+                  phx-click="filter_status"
+                  phx-value-status="published"
+                  class={[
+                    "join-item btn btn-sm min-w-[40px]",
+                    if(@status_filter == "published", do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  {gettext("Published")}
+                </button>
+                <button
+                  phx-click="filter_status"
+                  phx-value-status="archived"
+                  class={[
+                    "join-item btn btn-sm min-w-[40px]",
+                    if(@status_filter == "archived", do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  {gettext("Archived")}
+                </button>
+              </div>
+              <%= if @status_filter do %>
+                <button type="button" phx-click="clear_filters" class="btn btn-sm btn-ghost">
+                  {gettext("Clear")}
+                </button>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Lessons Table --%>
+        <div class="card bg-base-100 shadow-sm border border-base-300">
+          <div class="hidden md:block table-responsive">
+            <table class="table table-zebra w-full">
+              <thead>
+                <tr class="bg-base-200/50">
+                  <th class="text-base-content/70">{gettext("Title")}</th>
+                  <th class="text-base-content/70">{gettext("Type")}</th>
+                  <th class="text-base-content/70">{gettext("Status")}</th>
+                  <th class="text-base-content/70">{gettext("Creator")}</th>
+                  <th class="text-base-content/70">{gettext("Words")}</th>
+                  <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <%= for lesson <- @lessons do %>
+                  <tr class="hover:bg-base-200/50">
+                    <td>
+                      <div class="font-medium text-base-content">{lesson.title}</div>
+                      <div class="text-sm text-base-content/60">{lesson.description}</div>
+                    </td>
+                    <td>
+                      <span class="text-sm text-base-content/60">
+                        {String.capitalize(lesson.lesson_subtype)}
+                      </span>
+                    </td>
+                    <td>
+                      <span class={["badge badge-sm", status_badge_color(lesson.status)]}>
+                        {String.capitalize(lesson.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <%= if lesson.creator do %>
+                        <span class="text-sm">
+                          {lesson.creator.name || lesson.creator.email}
+                        </span>
+                      <% else %>
+                        <span class="text-sm text-base-content/50">{gettext("Unknown")}</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <span class="text-sm">{lesson.word_count}</span>
+                    </td>
+                    <td class="text-right">
+                      <%= if lesson.status != "archived" do %>
+                        <button
+                          phx-click="archive"
+                          phx-value-id={lesson.id}
+                          data-confirm={gettext("Archive this lesson?")}
+                          class="btn btn-sm btn-ghost"
+                        >
+                          <.icon name="hero-archive-box" class="w-4 h-4" /> {gettext("Archive")}
+                        </button>
+                      <% else %>
+                        <button
+                          phx-click="unarchive"
+                          phx-value-id={lesson.id}
+                          class="btn btn-sm btn-ghost"
+                        >
+                          <.icon name="hero-arrow-uturn-left" class="w-4 h-4" /> {gettext("Restore")}
+                        </button>
+                      <% end %>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={lesson.id}
+                        data-confirm={gettext("Permanently delete this lesson? This cannot be undone.")}
+                        class="btn btn-sm btn-ghost text-error"
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <%!-- Mobile Cards --%>
+          <div class="md:hidden divide-y divide-base-200">
+            <%= for lesson <- @lessons do %>
+              <div class="p-4 hover:bg-base-200/50">
+                <div class="flex items-start gap-3">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="font-medium text-base-content">{lesson.title}</span>
+                      <span class={["badge badge-sm", status_badge_color(lesson.status)]}>
+                        {String.capitalize(lesson.status)}
+                      </span>
+                    </div>
+                    <div class="text-sm text-base-content/60">
+                      {String.capitalize(lesson.lesson_subtype)}
+                      <%= if lesson.creator do %>
+                        • {lesson.creator.name || lesson.creator.email}
+                      <% end %>
+                    </div>
+                    <div class="text-xs text-secondary mt-1">
+                      {lesson.word_count} {gettext("words")}
+                    </div>
+                  </div>
+                  <div class="flex-shrink-0 flex flex-col gap-1">
+                    <%= if lesson.status != "archived" do %>
+                      <button
+                        phx-click="archive"
+                        phx-value-id={lesson.id}
+                        data-confirm={gettext("Archive?")}
+                        class="btn btn-ghost btn-xs"
+                        title={gettext("Archive")}
+                      >
+                        <.icon name="hero-archive-box" class="w-4 h-4" />
+                      </button>
+                    <% else %>
+                      <button
+                        phx-click="unarchive"
+                        phx-value-id={lesson.id}
+                        class="btn btn-ghost btn-xs"
+                        title={gettext("Restore")}
+                      >
+                        <.icon name="hero-arrow-uturn-left" class="w-4 h-4" />
+                      </button>
+                    <% end %>
+                    <button
+                      phx-click="delete"
+                      phx-value-id={lesson.id}
+                      data-confirm={gettext("Delete?")}
+                      class="btn btn-ghost btn-xs text-error"
+                      title={gettext("Delete")}
+                    >
+                      <.icon name="hero-trash" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+
+          <%= if @lessons == [] do %>
+            <div class="p-12 text-center">
+              <.icon name="hero-book-open" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
+              <p class="text-base-content/50">{gettext("No custom lessons found matching your criteria.")}</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </Layouts.app>
+    """
+  end
+
+  @impl true
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    status_filter = params["status"]
+
+    opts =
+      []
+      |> then(&if status_filter, do: [{:status, status_filter} | &1], else: &1)
+
+    lessons = Content.list_all_custom_lessons(opts)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, gettext("Admin - Custom Lessons"))
+     |> assign(:lessons, lessons)
+     |> assign(:status_filter, status_filter)}
+  end
+
+  @impl true
+  def handle_event("filter_status", %{"status" => status}, socket) do
+    status_param = if status in ["draft", "published", "archived"], do: status, else: nil
+
+    {:noreply,
+     socket
+     |> push_patch(to: ~p"/admin/custom-lessons?#{%{status: status_param}}")}
+  end
+
+  @impl true
+  def handle_event("clear_filters", _, socket) do
+    {:noreply,
+     socket
+     |> push_patch(to: ~p"/admin/custom-lessons")}
+  end
+
+  @impl true
+  def handle_event("archive", %{"id" => id}, socket) do
+    lesson = Content.get_custom_lesson!(id)
+    {:ok, _} = Content.archive_custom_lesson(lesson)
+
+    opts =
+      []
+      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+
+    lessons = Content.list_all_custom_lessons(opts)
+
+    {:noreply,
+     socket
+     |> assign(:lessons, lessons)
+     |> put_flash(:info, gettext("Custom lesson archived."))}
+  end
+
+  @impl true
+  def handle_event("unarchive", %{"id" => id}, socket) do
+    lesson = Content.get_custom_lesson!(id)
+    {:ok, _} = Content.unarchive_custom_lesson(lesson)
+
+    opts =
+      []
+      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+
+    lessons = Content.list_all_custom_lessons(opts)
+
+    {:noreply,
+     socket
+     |> assign(:lessons, lessons)
+     |> put_flash(:info, gettext("Custom lesson restored to published."))}
+  end
+
+  @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    lesson = Content.get_custom_lesson!(id)
+    {:ok, _} = Content.delete_custom_lesson(lesson)
+
+    opts =
+      []
+      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+
+    lessons = Content.list_all_custom_lessons(opts)
+
+    {:noreply,
+     socket
+     |> assign(:lessons, lessons)
+     |> put_flash(:info, gettext("Custom lesson deleted permanently."))}
+  end
+
+  def status_badge_color("draft"), do: "badge-ghost"
+  def status_badge_color("published"), do: "badge-success"
+  def status_badge_color("archived"), do: "badge-neutral"
+  def status_badge_color(_), do: "badge-ghost"
+end

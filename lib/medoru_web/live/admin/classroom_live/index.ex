@@ -156,6 +156,26 @@ defmodule MedoruWeb.Admin.ClassroomLive.Index do
                       >
                         <.icon name="hero-eye" class="w-4 h-4" /> {gettext("View")}
                       </.link>
+                      <%= if classroom.status == :active do %>
+                        <button
+                          phx-click="close_classroom"
+                          phx-value-id={classroom.id}
+                          data-confirm={gettext("Close this classroom? Students will no longer be able to join.")}
+                          class="btn btn-sm btn-ghost text-warning"
+                        >
+                          <.icon name="hero-lock-closed" class="w-4 h-4" /> {gettext("Close")}
+                        </button>
+                      <% end %>
+                      <%= if classroom.status in [:active, :closed] do %>
+                        <button
+                          phx-click="archive_classroom"
+                          phx-value-id={classroom.id}
+                          data-confirm={gettext("Archive this classroom?")}
+                          class="btn btn-sm btn-ghost"
+                        >
+                          <.icon name="hero-archive-box" class="w-4 h-4" /> {gettext("Archive")}
+                        </button>
+                      <% end %>
                       <%= if classroom.status == :archived do %>
                         <button
                           phx-click="delete_classroom"
@@ -213,11 +233,33 @@ defmodule MedoruWeb.Admin.ClassroomLive.Index do
                     >
                       <.icon name="hero-eye" class="w-4 h-4" />
                     </.link>
+                    <%= if classroom.status == :active do %>
+                      <button
+                        phx-click="close_classroom"
+                        phx-value-id={classroom.id}
+                        data-confirm={gettext("Close?")}
+                        class="btn btn-ghost btn-xs text-warning"
+                        title={gettext("Close")}
+                      >
+                        <.icon name="hero-lock-closed" class="w-4 h-4" />
+                      </button>
+                    <% end %>
+                    <%= if classroom.status in [:active, :closed] do %>
+                      <button
+                        phx-click="archive_classroom"
+                        phx-value-id={classroom.id}
+                        data-confirm={gettext("Archive?")}
+                        class="btn btn-ghost btn-xs"
+                        title={gettext("Archive")}
+                      >
+                        <.icon name="hero-archive-box" class="w-4 h-4" />
+                      </button>
+                    <% end %>
                     <%= if classroom.status == :archived do %>
                       <button
                         phx-click="delete_classroom"
                         phx-value-id={classroom.id}
-                        data-confirm={gettext("Permanently delete?")}
+                        data-confirm={gettext("Delete?")}
                         class="btn btn-ghost btn-xs text-error"
                         title={gettext("Delete")}
                       >
@@ -283,6 +325,58 @@ defmodule MedoruWeb.Admin.ClassroomLive.Index do
     {:noreply,
      socket
      |> push_patch(to: ~p"/admin/classrooms")}
+  end
+
+  @impl true
+  def handle_event("close_classroom", %{"id" => id}, socket) do
+    classroom = Classrooms.get_classroom!(id)
+
+    case Classrooms.close_classroom(classroom) do
+      {:ok, _} ->
+        opts =
+          []
+          |> then(
+            &if socket.assigns.status_filter,
+              do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+              else: &1
+          )
+
+        classrooms = Classrooms.list_all_classrooms(opts)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Classroom closed."))
+         |> assign(:classrooms, classrooms)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to close classroom."))}
+    end
+  end
+
+  @impl true
+  def handle_event("archive_classroom", %{"id" => id}, socket) do
+    classroom = Classrooms.get_classroom!(id)
+
+    case Classrooms.archive_classroom(classroom) do
+      {:ok, _} ->
+        opts =
+          []
+          |> then(
+            &if socket.assigns.status_filter,
+              do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+              else: &1
+          )
+
+        classrooms = Classrooms.list_all_classrooms(opts)
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Classroom archived."))
+         |> assign(:classrooms, classrooms)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to archive classroom."))}
+    end
   end
 
   @impl true

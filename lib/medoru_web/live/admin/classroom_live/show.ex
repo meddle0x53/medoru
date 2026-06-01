@@ -34,6 +34,24 @@ defmodule MedoruWeb.Admin.ClassroomLive.Show do
               </p>
             </div>
 
+            <%= if @classroom.status == :active do %>
+              <button
+                phx-click="close_classroom"
+                data-confirm={gettext("Close this classroom? Students will no longer be able to join.")}
+                class="btn btn-warning"
+              >
+                <.icon name="hero-lock-closed" class="w-4 h-4 mr-2" /> {gettext("Close Classroom")}
+              </button>
+            <% end %>
+            <%= if @classroom.status in [:active, :closed] do %>
+              <button
+                phx-click="archive_classroom"
+                data-confirm={gettext("Archive this classroom?")}
+                class="btn btn-ghost"
+              >
+                <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> {gettext("Archive")}
+              </button>
+            <% end %>
             <%= if @classroom.status == :archived do %>
               <button
                 phx-click="delete_classroom"
@@ -383,6 +401,38 @@ defmodule MedoruWeb.Admin.ClassroomLive.Show do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, gettext("Failed to remove student."))}
+    end
+  end
+
+  @impl true
+  def handle_event("close_classroom", _, socket) do
+    classroom = socket.assigns.classroom
+
+    case Classrooms.close_classroom(classroom) do
+      {:ok, updated} ->
+        {:noreply,
+         socket
+         |> assign(:classroom, updated)
+         |> put_flash(:info, gettext("Classroom closed."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to close classroom."))}
+    end
+  end
+
+  @impl true
+  def handle_event("archive_classroom", _, socket) do
+    classroom = socket.assigns.classroom
+
+    case Classrooms.archive_classroom(classroom) do
+      {:ok, updated} ->
+        {:noreply,
+         socket
+         |> assign(:classroom, updated)
+         |> put_flash(:info, gettext("Classroom archived."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to archive classroom."))}
     end
   end
 

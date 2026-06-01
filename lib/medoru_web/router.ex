@@ -325,6 +325,10 @@ defmodule MedoruWeb.Router do
       live "/classrooms", ClassroomLive.Index
       live "/classrooms/:id", ClassroomLive.Show
 
+      live "/tests", TestLive.Index
+      live "/games", GameLive.Index
+      live "/custom-lessons", CustomLessonLive.Index
+
       live "/grammar-forms", GrammarFormLive.Index
       live "/grammar-forms/new", GrammarFormLive.Form, :new
       live "/grammar-forms/:id/edit", GrammarFormLive.Form, :edit

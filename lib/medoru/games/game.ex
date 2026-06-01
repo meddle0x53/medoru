@@ -11,7 +11,7 @@ defmodule Medoru.Games.Game do
   alias Medoru.Classrooms.Classroom
 
   @types ["memory_cards", "kana_memory_cards", "kana_falling", "kanji_falling", "words_falling"]
-  @statuses [:draft, :published]
+  @statuses [:draft, :published, :archived]
   @skill_levels 1..5
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -61,5 +61,19 @@ defmodule Medoru.Games.Game do
   """
   def unpublish_changeset(game) do
     changeset(game, %{status: :draft})
+  end
+
+  @doc """
+  Changeset for archiving a game.
+  """
+  def archive_changeset(game) do
+    changeset(game, %{status: :archived})
+  end
+
+  @doc """
+  Changeset for unarchiving a game (restores to published).
+  """
+  def unarchive_changeset(game) do
+    changeset(game, %{status: :published})
   end
 end

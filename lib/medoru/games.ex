@@ -499,6 +499,50 @@ defmodule Medoru.Games do
   end
 
   # ============================================================================
+  # Admin Game Management
+  # ============================================================================
+
+  @doc """
+  Returns all games across all classrooms for admin.
+  """
+  def list_all_games(opts \\ []) do
+    status = Keyword.get(opts, :status)
+    type = Keyword.get(opts, :type)
+
+    Game
+    |> then(fn q -> if status, do: where(q, [g], g.status == ^status), else: q end)
+    |> then(fn q -> if type, do: where(q, [g], g.type == ^type), else: q end)
+    |> preload([:classroom])
+    |> order_by([g], desc: g.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Archives a game (admin only).
+  """
+  def archive_game(%Game{} = game) do
+    game
+    |> Game.archive_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Unarchives a game (admin only).
+  """
+  def unarchive_game(%Game{} = game) do
+    game
+    |> Game.unarchive_changeset()
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a game without authorization checks (admin only).
+  """
+  def admin_delete_game(%Game{} = game) do
+    Repo.delete(game)
+  end
+
+  # ============================================================================
   # Session Management
   # ============================================================================
 

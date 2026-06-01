@@ -1769,6 +1769,26 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns all custom lessons across all teachers for admin.
+  Optionally filtered by status.
+  """
+  def list_all_custom_lessons(opts \\ []) do
+    status = Keyword.get(opts, :status)
+
+    CustomLesson
+    |> then(fn query ->
+      if status do
+        where(query, [cl], cl.status == ^status)
+      else
+        query
+      end
+    end)
+    |> preload([:creator])
+    |> order_by([cl], desc: cl.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single custom lesson.
 
   Raises `Ecto.NoResultsError` if the CustomLesson does not exist.
