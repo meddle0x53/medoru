@@ -959,7 +959,7 @@ defmodule Medoru.Tests do
   def count_completed_daily_tests(user_id) do
     from(ts in TestSession,
       join: t in Test, on: ts.test_id == t.id,
-      where: ts.user_id == ^user_id and t.type == :daily and ts.status == :completed,
+      where: ts.user_id == ^user_id and t.test_type == :daily and ts.status == :completed,
       select: count(ts.id)
     )
     |> Repo.one()
