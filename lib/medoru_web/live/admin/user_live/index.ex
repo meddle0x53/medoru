@@ -28,13 +28,15 @@ defmodule MedoruWeb.Admin.UserLive.Index do
     page = String.to_integer(params["page"] || "1")
     type_filter = params["type"]
     search = params["search"]
+    show_deleted = params["show_deleted"] == "true"
 
     {users, total_count} =
       Accounts.list_users_for_admin(
         page: page,
         per_page: @per_page,
         type: type_filter,
-        search: search
+        search: search,
+        show_deleted: show_deleted
       )
 
     total_pages = safe_ceil(total_count)
@@ -48,6 +50,7 @@ defmodule MedoruWeb.Admin.UserLive.Index do
      |> assign(:total_count, total_count)
      |> assign(:type_filter, type_filter)
      |> assign(:search, search)
+     |> assign(:show_deleted, show_deleted)
      |> assign(:user_types, User.types())}
   end
 
@@ -76,6 +79,17 @@ defmodule MedoruWeb.Admin.UserLive.Index do
     {:noreply,
      socket
      |> push_patch(to: ~p"/admin/users")}
+  end
+
+  def handle_event("toggle_deleted", _, socket) do
+    new_value = !socket.assigns.show_deleted
+
+    {:noreply,
+     socket
+     |> push_patch(
+       to:
+         ~p"/admin/users?#{%{type: socket.assigns.type_filter, search: socket.assigns.search, show_deleted: if(new_value, do: "true", else: nil)}}"
+     )}
   end
 
   def type_badge_color("admin"), do: "badge-error"

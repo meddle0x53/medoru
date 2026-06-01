@@ -50,6 +50,7 @@ defmodule MedoruWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/not-available", PageController, :unavailable
 
     live_session :public,
       on_mount: [{MedoruWeb.UserAuth, :default}] do

@@ -32,6 +32,7 @@ defmodule Medoru.Social do
     query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u], u.is_deleted == false)
       |> where(
         [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
@@ -61,6 +62,7 @@ defmodule Medoru.Social do
     search_query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u], u.is_deleted == false)
       |> where(
         [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
@@ -92,6 +94,7 @@ defmodule Medoru.Social do
     query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u], u.is_deleted == false)
       |> where(
         [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or
@@ -112,6 +115,7 @@ defmodule Medoru.Social do
     search_query =
       User
       |> join(:left, [u], p in assoc(u, :profile))
+      |> where([u], u.is_deleted == false)
       |> where(
         [u, p],
         (not is_nil(p.display_name) and p.display_name != "") or

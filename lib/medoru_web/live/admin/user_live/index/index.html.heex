@@ -61,6 +61,21 @@
                 {gettext("Admins")}
               </button>
             </div>
+            <button
+              phx-click="toggle_deleted"
+              class={[
+                "btn btn-sm",
+                if(@show_deleted, do: "btn-error", else: "btn-ghost")
+              ]}
+            >
+              <%= if @show_deleted do %>
+                <.icon name="hero-eye-slash" class="w-4 h-4 mr-1" />
+                {gettext("Hide Deleted")}
+              <% else %>
+                <.icon name="hero-trash" class="w-4 h-4 mr-1" />
+                {gettext("Show Deleted")}
+              <% end %>
+            </button>
           </div>
 
           <%!-- Search --%>
@@ -81,7 +96,7 @@
                 <.icon name="hero-magnifying-glass" class="w-4 h-4" />
               </button>
             </div>
-            <%= if @search || @type_filter do %>
+            <%= if @search || @type_filter || @show_deleted do %>
               <button
                 type="button"
                 phx-click="clear_filters"
@@ -145,9 +160,14 @@
                   </div>
                 </td>
                 <td>
-                  <span class={["badge", type_badge_color(user.type)]}>
-                    {String.capitalize(user.type)}
-                  </span>
+                  <div class="flex flex-wrap gap-1">
+                    <span class={["badge", type_badge_color(user.type)]}>
+                      {String.capitalize(user.type)}
+                    </span>
+                    <%= if user.is_deleted do %>
+                      <span class="badge badge-error">{gettext("Deleted")}</span>
+                    <% end %>
+                  </div>
                 </td>
                 <td>
                   <span class="font-medium">
@@ -213,6 +233,9 @@
                   <span class={["badge badge-sm", type_badge_color(user.type)]}>
                     {String.capitalize(user.type)}
                   </span>
+                  <%= if user.is_deleted do %>
+                    <span class="badge badge-sm badge-error">{gettext("Deleted")}</span>
+                  <% end %>
                 </div>
                 <div class="text-sm text-base-content/60 truncate">{user.email}</div>
                 <div class="flex items-center gap-3 mt-2 text-sm text-secondary">
@@ -264,7 +287,7 @@
           <.link
             navigate={
               if @page > 1,
-                do: ~p"/admin/users?#{%{page: @page - 1, type: @type_filter, search: @search}}",
+                do: ~p"/admin/users?#{%{page: @page - 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
                 else: "#"
             }
             class={["join-item btn btn-sm min-w-[40px]", if(@page <= 1, do: "btn-disabled")]}
@@ -275,7 +298,7 @@
             <%= if abs(page_num - @page) <= 2 or page_num == 1 or page_num == @total_pages do %>
               <.link
                 navigate={
-                  ~p"/admin/users?#{%{page: page_num, type: @type_filter, search: @search}}"
+                  ~p"/admin/users?#{%{page: page_num, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}"
                 }
                 class={[
                   "join-item btn btn-sm w-10 h-10 min-w-[40px] max-w-[40px] p-0",
@@ -289,7 +312,7 @@
           <.link
             navigate={
               if @page < @total_pages,
-                do: ~p"/admin/users?#{%{page: @page + 1, type: @type_filter, search: @search}}",
+                do: ~p"/admin/users?#{%{page: @page + 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
                 else: "#"
             }
             class={[

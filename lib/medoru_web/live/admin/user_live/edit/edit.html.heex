@@ -212,11 +212,61 @@
               email: @user.email
             )
           }
-          class="btn btn-error w-full sm:w-auto"
+          class="btn btn-error w-full sm:w-auto mb-4"
         >
           <.icon name="hero-trash" class="w-5 h-5 mr-2" />
           {gettext("Reset All Progress")}
         </button>
+      </div>
+    </div>
+
+    <%!-- Soft Delete / Restore Card --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg mb-4 text-error">
+          <.icon name="hero-shield-exclamation" class="w-5 h-5" />
+          {gettext("Account Status")}
+        </h2>
+
+        <%= if @user.is_deleted do %>
+          <div class="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-6">
+            <p class="text-sm text-base-content/70">
+              {gettext("This user is currently soft-deleted. They cannot log in until restored.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            phx-click="restore_user"
+            data-confirm={
+              gettext("Are you sure you want to restore %{email}?",
+                email: @user.email
+              )
+            }
+            class="btn btn-success w-full sm:w-auto"
+          >
+            <.icon name="hero-arrow-uturn-left" class="w-5 h-5 mr-2" />
+            {gettext("Restore User")}
+          </button>
+        <% else %>
+          <div class="bg-error/5 border border-error/20 rounded-lg p-4 mb-6">
+            <p class="text-sm text-base-content/70">
+              {gettext("Soft-deleting this user will prevent them from logging in. Their data will be preserved.")}
+            </p>
+          </div>
+          <button
+            type="button"
+            phx-click="soft_delete"
+            data-confirm={
+              gettext("Are you sure you want to soft-delete %{email}? They will not be able to log in.",
+                email: @user.email
+              )
+            }
+            class="btn btn-error w-full sm:w-auto"
+          >
+            <.icon name="hero-trash" class="w-5 h-5 mr-2" />
+            {gettext("Soft Delete User")}
+          </button>
+        <% end %>
       </div>
     </div>
   </div>

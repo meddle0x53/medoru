@@ -15,18 +15,41 @@ defmodule MedoruWeb.UserAuth do
   def fetch_current_user(conn, _opts) do
     user_id = get_session(conn, :user_id)
     user = user_id && Accounts.get_user_with_profile(user_id)
-    unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
-    locale = conn.assigns[:locale] || "en"
-    theme = if user && user.profile, do: user.profile.theme, else: "system"
 
-    conn
-    |> assign(:current_user, user)
-    |> assign(:current_scope, %{
-      current_user: user,
-      unread_count: unread_count,
-      locale: locale,
-      theme: theme
-    })
+    if user_id && is_nil(user) do
+      # User ID in session but no active user found - check if deleted
+      if Accounts.get_user_with_profile_including_deleted(user_id) do
+        conn
+        |> configure_session(drop: true)
+        |> put_flash(:error, gettext("Your account has been suspended."))
+        |> redirect(to: ~p"/not-available")
+        |> halt()
+      else
+        # User ID no longer exists in DB (e.g., cleaned), clear session
+        conn
+        |> delete_session(:user_id)
+        |> assign(:current_user, nil)
+        |> assign(:current_scope, %{
+          current_user: nil,
+          unread_count: 0,
+          locale: conn.assigns[:locale] || "en",
+          theme: "system"
+        })
+      end
+    else
+      unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
+      locale = conn.assigns[:locale] || "en"
+      theme = if user && user.profile, do: user.profile.theme, else: "system"
+
+      conn
+      |> assign(:current_user, user)
+      |> assign(:current_scope, %{
+        current_user: user,
+        unread_count: unread_count,
+        locale: locale,
+        theme: theme
+      })
+    end
   end
 
   @doc """
@@ -47,39 +70,49 @@ defmodule MedoruWeb.UserAuth do
   Authenticates the user in LiveView sockets.
   """
   def on_mount(:default, params, session, socket) do
-    socket = mount_current_user(session, socket)
+    {action, socket} = mount_current_user(session, socket)
     socket = set_locale(socket, params, session)
-    {:cont, socket}
+    {action, socket}
   end
 
   def on_mount(:require_authenticated_user, params, session, socket) do
-    socket = mount_current_user(session, socket)
+    {action, socket} = mount_current_user(session, socket)
     socket = set_locale(socket, params, session)
 
-    if socket.assigns.current_scope.current_user do
-      {:cont, socket}
-    else
-      socket =
-        socket
-        |> Phoenix.LiveView.put_flash(:error, gettext("You must log in to access this page."))
-        |> Phoenix.LiveView.redirect(to: ~p"/")
+    cond do
+      action == :halt ->
+        {:halt, socket}
 
-      {:halt, socket}
+      socket.assigns.current_scope.current_user ->
+        {:cont, socket}
+
+      true ->
+        socket =
+          socket
+          |> Phoenix.LiveView.put_flash(:error, gettext("You must log in to access this page."))
+          |> Phoenix.LiveView.redirect(to: ~p"/")
+
+        {:halt, socket}
     end
   end
 
   def on_mount(:redirect_if_user_is_authenticated, params, session, socket) do
-    socket = mount_current_user(session, socket)
+    {action, socket} = mount_current_user(session, socket)
     socket = set_locale(socket, params, session)
 
-    if socket.assigns.current_scope.current_user do
-      socket =
-        socket
-        |> Phoenix.LiveView.redirect(to: ~p"/dashboard")
+    cond do
+      action == :halt ->
+        {:halt, socket}
 
-      {:halt, socket}
-    else
-      {:cont, socket}
+      socket.assigns.current_scope.current_user ->
+        socket =
+          socket
+          |> Phoenix.LiveView.redirect(to: ~p"/dashboard")
+
+        {:halt, socket}
+
+      true ->
+        {:cont, socket}
     end
   end
 
@@ -103,25 +136,47 @@ defmodule MedoruWeb.UserAuth do
 
     case session do
       %{"user_id" => user_id} ->
-        # Use get_user_with_profile to load display name and avatar
-        # Returns nil if user no longer exists (e.g., database cleaned)
-        user = Accounts.get_user_with_profile(user_id)
-        unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
-        theme = if user && user.profile, do: user.profile.theme, else: "system"
+        case maybe_get_active_user(user_id) do
+          {:deleted, _} ->
+            {:halt,
+             socket
+             |> Phoenix.LiveView.put_flash(:error, gettext("Your account has been suspended."))
+             |> Phoenix.LiveView.redirect(to: ~p"/not-available")}
 
-        Phoenix.Component.assign(socket,
-          current_scope: %{
-            current_user: user,
-            unread_count: unread_count,
-            locale: locale,
-            theme: theme
-          }
-        )
+          {:ok, user} ->
+            unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
+            theme = if user && user.profile, do: user.profile.theme, else: "system"
+
+            {:cont,
+             Phoenix.Component.assign(socket,
+               current_scope: %{
+                 current_user: user,
+                 unread_count: unread_count,
+                 locale: locale,
+                 theme: theme
+               }
+             )}
+        end
 
       %{} ->
-        Phoenix.Component.assign(socket,
-          current_scope: %{current_user: nil, unread_count: 0, locale: locale, theme: "system"}
-        )
+        {:cont,
+         Phoenix.Component.assign(socket,
+           current_scope: %{current_user: nil, unread_count: 0, locale: locale, theme: "system"}
+         )}
+    end
+  end
+
+  defp maybe_get_active_user(user_id) do
+    case Accounts.get_user_with_profile(user_id) do
+      nil ->
+        if Accounts.get_user_with_profile_including_deleted(user_id) do
+          {:deleted, nil}
+        else
+          {:ok, nil}
+        end
+
+      user ->
+        {:ok, user}
     end
   end
 

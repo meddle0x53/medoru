@@ -30,7 +30,7 @@ defmodule MedoruWeb.AuthController do
         avatar_url: auth.info.image
       }
 
-      case Accounts.get_user_by_provider_uid("google", auth.uid) do
+      case Accounts.get_user_by_provider_uid_including_deleted("google", auth.uid) do
         nil ->
           # New user - register them
           case Accounts.register_user_with_oauth(user_params) do
@@ -48,12 +48,18 @@ defmodule MedoruWeb.AuthController do
           end
 
         %User{} = user ->
-          # Existing user - log them in
-          conn
-          |> put_flash(:info, "Welcome back, #{user.name || user.email}!")
-          |> put_session(:user_id, user.id)
-          |> configure_session(renew: true)
-          |> redirect(to: ~p"/dashboard")
+          if User.deleted?(user) do
+            conn
+            |> put_flash(:error, "Your account has been suspended.")
+            |> redirect(to: ~p"/not-available")
+          else
+            # Existing user - log them in
+            conn
+            |> put_flash(:info, "Welcome back, #{user.name || user.email}!")
+            |> put_session(:user_id, user.id)
+            |> configure_session(renew: true)
+            |> redirect(to: ~p"/dashboard")
+          end
       end
     end
   end

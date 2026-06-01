@@ -96,4 +96,46 @@ defmodule MedoruWeb.Admin.UserLive.Edit do
        )
      )}
   end
+
+  @impl true
+  def handle_event("soft_delete", _, socket) do
+    user = socket.assigns.user
+
+    if User.admin?(user) do
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Cannot delete admin users."))}
+    else
+      case Accounts.delete_user(user) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:user, updated_user)
+           |> put_flash(:info, gettext("User has been soft-deleted."))}
+
+        {:error, _changeset} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, gettext("Failed to delete user."))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("restore_user", _, socket) do
+    user = socket.assigns.user
+
+    case Accounts.restore_user(user) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:user, updated_user)
+         |> put_flash(:info, gettext("User has been restored."))}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to restore user."))}
+    end
+  end
 end

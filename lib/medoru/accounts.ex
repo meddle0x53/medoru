@@ -13,7 +13,9 @@ defmodule Medoru.Accounts do
   Returns the list of users.
   """
   def list_users do
-    Repo.all(User)
+    User
+    |> where([u], u.is_deleted == false)
+    |> Repo.all()
   end
 
   @doc """
@@ -21,14 +23,22 @@ defmodule Medoru.Accounts do
 
   Raises `Ecto.NoResultsError` if the User does not exist.
   """
-  def get_user!(id), do: Repo.get!(User, id)
+  def get_user!(id) do
+    User
+    |> where([u], u.is_deleted == false)
+    |> Repo.get!(id)
+  end
 
   @doc """
   Gets a single user by id.
 
   Returns nil if the User does not exist.
   """
-  def get_user(id), do: Repo.get(User, id)
+  def get_user(id) do
+    User
+    |> where([u], u.is_deleted == false)
+    |> Repo.get(id)
+  end
 
   @doc """
   Gets a single user with preloaded profile.
@@ -37,6 +47,7 @@ defmodule Medoru.Accounts do
   def get_user_with_profile(id) do
     User
     |> where(id: ^id)
+    |> where([u], u.is_deleted == false)
     |> preload([:profile])
     |> Repo.one()
   end
@@ -47,6 +58,7 @@ defmodule Medoru.Accounts do
   def get_user_with_profile_and_stats!(id) do
     User
     |> where(id: ^id)
+    |> where([u], u.is_deleted == false)
     |> preload([:profile, :stats])
     |> Repo.one!()
   end
@@ -55,14 +67,30 @@ defmodule Medoru.Accounts do
   Gets a user by email.
   """
   def get_user_by_email(email) when is_binary(email) do
-    Repo.get_by(User, email: email)
+    User
+    |> where(email: ^email)
+    |> where([u], u.is_deleted == false)
+    |> Repo.one()
   end
 
   @doc """
   Gets a user by provider and provider_uid.
   """
   def get_user_by_provider_uid(provider, provider_uid) do
-    Repo.get_by(User, provider: provider, provider_uid: provider_uid)
+    User
+    |> where(provider: ^provider, provider_uid: ^provider_uid)
+    |> where([u], u.is_deleted == false)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a user by provider and provider_uid, including deleted users.
+  Used during OAuth callback to detect suspended accounts.
+  """
+  def get_user_by_provider_uid_including_deleted(provider, provider_uid) do
+    User
+    |> where(provider: ^provider, provider_uid: ^provider_uid)
+    |> Repo.one()
   end
 
   @doc """
@@ -127,10 +155,22 @@ defmodule Medoru.Accounts do
   end
 
   @doc """
-  Deletes a user and all associated data.
+  Soft-deletes a user. The user will not be able to log in,
+  but their data is preserved.
   """
   def delete_user(%User{} = user) do
-    Repo.delete(user)
+    user
+    |> User.soft_delete_changeset(%{is_deleted: true})
+    |> Repo.update()
+  end
+
+  @doc """
+  Restores a soft-deleted user.
+  """
+  def restore_user(%User{} = user) do
+    user
+    |> User.soft_delete_changeset(%{is_deleted: false})
+    |> Repo.update()
   end
 
   @doc """
@@ -152,11 +192,13 @@ defmodule Medoru.Accounts do
     per_page = Keyword.get(opts, :per_page, 20)
     type_filter = Keyword.get(opts, :type)
     search = Keyword.get(opts, :search)
+    show_deleted = Keyword.get(opts, :show_deleted, false)
 
     offset = (page - 1) * per_page
 
     query =
       User
+      |> maybe_filter_deleted(show_deleted)
       |> maybe_filter_by_type(type_filter)
       |> maybe_search_users(search)
 
@@ -172,6 +214,9 @@ defmodule Medoru.Accounts do
 
     {users, total_count}
   end
+
+  defp maybe_filter_deleted(query, true), do: where(query, [u], u.is_deleted == true)
+  defp maybe_filter_deleted(query, _), do: where(query, [u], u.is_deleted == false)
 
   defp maybe_filter_by_type(query, nil), do: query
 
@@ -221,6 +266,17 @@ defmodule Medoru.Accounts do
     |> where(id: ^id)
     |> preload([:profile, :stats])
     |> Repo.one!()
+  end
+
+  @doc """
+  Gets a single user with profile and stats, including deleted users.
+  Returns nil if the User does not exist.
+  """
+  def get_user_with_profile_including_deleted(id) do
+    User
+    |> where(id: ^id)
+    |> preload([:profile])
+    |> Repo.one()
   end
 
   @doc """
@@ -340,6 +396,7 @@ defmodule Medoru.Accounts do
   def get_user_by_display_name(display_name) when is_binary(display_name) do
     User
     |> join(:inner, [u], p in assoc(u, :profile))
+    |> where([u], u.is_deleted == false)
     |> where([u, p], p.display_name == ^display_name)
     |> preload([:profile, :stats])
     |> Repo.one()
@@ -351,6 +408,7 @@ defmodule Medoru.Accounts do
   def get_user_with_profile!(id) do
     User
     |> where(id: ^id)
+    |> where([u], u.is_deleted == false)
     |> preload([:profile, :stats])
     |> Repo.one!()
   end
@@ -728,10 +786,14 @@ defmodule Medoru.Accounts do
   Returns system statistics for admin dashboard.
   """
   def get_admin_stats do
-    total_users = Repo.aggregate(User, :count, :id)
+    total_users =
+      User
+      |> where([u], u.is_deleted == false)
+      |> Repo.aggregate(:count, :id)
 
     users_by_type =
       User
+      |> where([u], u.is_deleted == false)
       |> group_by([u], u.type)
       |> select([u], {u.type, count(u.id)})
       |> Repo.all()
@@ -739,11 +801,13 @@ defmodule Medoru.Accounts do
 
     new_users_today =
       User
+      |> where([u], u.is_deleted == false)
       |> where([u], fragment("?::date", u.inserted_at) == fragment("CURRENT_DATE"))
       |> Repo.aggregate(:count, :id)
 
     new_users_this_week =
       User
+      |> where([u], u.is_deleted == false)
       |> where(
         [u],
         fragment("?::date", u.inserted_at) >= fragment("CURRENT_DATE - INTERVAL '7 days'")

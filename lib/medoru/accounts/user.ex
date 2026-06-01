@@ -17,6 +17,7 @@ defmodule Medoru.Accounts.User do
     field :avatar_url, :string
     field :type, :string, default: "student"
     field :moderator, :boolean, default: false
+    field :is_deleted, :boolean, default: false
 
     has_one :profile, Medoru.Accounts.UserProfile
     has_one :stats, Medoru.Accounts.UserStats
@@ -27,7 +28,7 @@ defmodule Medoru.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :provider, :provider_uid, :name, :avatar_url, :type, :moderator])
+    |> cast(attrs, [:email, :provider, :provider_uid, :name, :avatar_url, :type, :moderator, :is_deleted])
     |> validate_required([:email, :provider, :provider_uid, :moderator])
     |> validate_required([:email, :provider, :provider_uid])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
@@ -58,6 +59,21 @@ defmodule Medoru.Accounts.User do
     |> cast(attrs, [:moderator])
     |> validate_required([:moderator])
   end
+
+  @doc """
+  Changeset for soft-deleting or restoring a user.
+  """
+  def soft_delete_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:is_deleted])
+    |> validate_required([:is_deleted])
+  end
+
+  @doc """
+  Returns true if user is soft-deleted.
+  """
+  def deleted?(%__MODULE__{is_deleted: true}), do: true
+  def deleted?(%__MODULE__{}), do: false
 
   @doc """
   Returns true if user is an admin.
