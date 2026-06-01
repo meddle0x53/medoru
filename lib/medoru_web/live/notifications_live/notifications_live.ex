@@ -110,6 +110,25 @@ defmodule MedoruWeb.NotificationsLive do
   end
 
   @impl true
+  def handle_event("delete_all", _params, socket) do
+    user = socket.assigns.current_scope.current_user
+    {:ok, count} = Notifications.delete_all_notifications(user.id)
+
+    socket = load_notifications(socket, user.id, socket.assigns.filter, 1)
+
+    Phoenix.PubSub.broadcast(
+      Medoru.PubSub,
+      "notifications:#{user.id}",
+      {:unread_count_updated, 0}
+    )
+
+    {:noreply,
+     socket
+     |> assign(:unread_count, 0)
+     |> put_flash(:info, gettext("Deleted %{count} notifications.", count: count))}
+  end
+
+  @impl true
   def handle_event("filter", %{"type" => filter}, socket) do
     {:noreply, push_patch(socket, to: ~p"/notifications?#{[filter: filter, page: 1]}")}
   end

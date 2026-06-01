@@ -12,14 +12,25 @@
           <% end %>
         </p>
       </div>
-      <%= if @unread_count > 0 do %>
-        <button
-          phx-click="mark_all_read"
-          class="btn btn-ghost btn-sm"
-        >
-          <.icon name="hero-check-all" class="w-4 h-4 mr-1" /> Mark all read
-        </button>
-      <% end %>
+      <div class="flex items-center gap-2">
+        <%= if @unread_count > 0 do %>
+          <button
+            phx-click="mark_all_read"
+            class="btn btn-ghost btn-sm"
+          >
+            <.icon name="hero-check-all" class="w-4 h-4 mr-1" /> Mark all read
+          </button>
+        <% end %>
+        <%= if @total_count > 0 do %>
+          <button
+            phx-click="delete_all"
+            class="btn btn-ghost btn-sm text-error"
+            data-confirm={gettext("Are you sure you want to delete all %{count} notifications? This cannot be undone.", count: @total_count)}
+          >
+            <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Delete all")}
+          </button>
+        <% end %>
+      </div>
     </div>
 
     <%!-- Filter Tabs --%>

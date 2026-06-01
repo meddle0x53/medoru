@@ -249,6 +249,24 @@ defmodule Medoru.Notifications do
     end
   end
 
+  @doc """
+  Deletes all notifications for a user.
+
+  ## Examples
+
+      iex> delete_all_notifications(user_id)
+      {:ok, count}
+
+  """
+  def delete_all_notifications(user_id) do
+    {count, _} =
+      Notification
+      |> where([n], n.user_id == ^user_id)
+      |> Repo.delete_all()
+
+    {:ok, count}
+  end
+
   # ============================================================================
   # Notification Creators
   # ============================================================================
