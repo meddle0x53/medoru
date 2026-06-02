@@ -55,8 +55,8 @@ defmodule MedoruWeb.UserLive.Show do
             # XP progress
             xp_progress = Accounts.xp_progress(cached_stats)
 
-            # Get daily test status for admin reset feature
-            daily_test_status = Learning.get_daily_test_status(user.id)
+            # Get daily challenges status for admin reset feature
+            daily_challenges_status = get_daily_challenges_status(user.id)
 
             # Check block status if viewing another user
             is_blocked =
@@ -96,7 +96,7 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:user_badges, user_badges)
              |> assign(:featured_badge, featured_badge)
              |> assign(:xp_progress, xp_progress)
-             |> assign(:daily_test_status, daily_test_status)
+             |> assign(:daily_challenges_status, daily_challenges_status)
              |> assign(:is_blocked, is_blocked)
              |> assign(:is_following, is_following)
              |> assign(:follower_count, follower_count)
@@ -164,39 +164,26 @@ defmodule MedoruWeb.UserLive.Show do
   end
 
   @impl true
-  def handle_event("reset_daily_test", _params, socket) do
+  def handle_event("reset_daily_challenges", _params, socket) do
     user = socket.assigns.user
     current_user = socket.assigns.current_scope.current_user
 
-    # Only admins can reset daily tests
+    # Only admins can reset daily challenges
     if current_user.type == "admin" do
-      case Learning.delete_user_daily_test(user.id) do
-        {:ok, :deleted} ->
-          # Refresh daily test status
-          daily_test_status = Learning.get_daily_test_status(user.id)
+      {:ok, count} = Learning.reset_daily_challenges(user.id)
+      daily_challenges_status = get_daily_challenges_status(user.id)
 
-          {:noreply,
-           socket
-           |> assign(:daily_test_status, daily_test_status)
-           |> put_flash(
-             :info,
-             gettext("Daily test reset successfully. User can now generate a new test.")
-           )}
-
-        {:ok, :no_test_found} ->
-          {:noreply,
-           socket
-           |> put_flash(:warning, gettext("No daily test found for this user today."))}
-
-        {:error, _} ->
-          {:noreply,
-           socket
-           |> put_flash(:error, gettext("Failed to reset daily test."))}
-      end
+      {:noreply,
+       socket
+       |> assign(:daily_challenges_status, daily_challenges_status)
+       |> put_flash(
+         :info,
+         gettext("Daily challenges reset successfully. Deleted %{count} records.", count: count)
+       )}
     else
       {:noreply,
        socket
-       |> put_flash(:error, gettext("Only admins can reset daily tests."))}
+       |> put_flash(:error, gettext("Only admins can reset daily challenges."))}
     end
   end
 
@@ -301,4 +288,15 @@ defmodule MedoruWeb.UserLive.Show do
   defp tag_color_classes("warning"), do: "bg-warning text-warning-content"
   defp tag_color_classes("error"), do: "bg-error text-error-content"
   defp tag_color_classes(_), do: "bg-base-300 text-base-content"
+
+  defp get_daily_challenges_status(user_id) do
+    challenges = Learning.get_todays_challenges(user_id)
+    has_any = map_size(challenges) > 0
+
+    %{
+      has_challenges: has_any,
+      completed_count: map_size(challenges),
+      challenge_types: Map.keys(challenges)
+    }
+  end
 end

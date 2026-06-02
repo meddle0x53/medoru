@@ -13,7 +13,7 @@ defmodule Medoru.Learning do
   alias Medoru.Repo
 
   alias Medoru.Accounts
-  alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule}
+  alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule, UserDailyChallenge}
   alias Medoru.Content.{Kanji, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
@@ -559,6 +559,31 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Gets learned kanji with stroke data for daily kanji test.
+  Returns up to 20 kanji, prioritizing recently learned ones.
+  Filters out kanji without stroke data.
+  """
+  def list_learned_kanji_for_daily_test(user_id) do
+    # Get recently learned kanji progresses
+    progresses =
+      UserProgress
+      |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+      |> order_by(desc: :inserted_at)
+      |> limit(20)
+      |> Repo.all()
+
+    kanji_ids = Enum.map(progresses, & &1.kanji_id)
+
+    # Load kanji with stroke data and readings
+    Kanji
+    |> where([k], k.id in ^kanji_ids)
+    |> where([k], not is_nil(k.stroke_data))
+    |> preload(:kanji_readings)
+    |> Repo.all()
+    |> Enum.reject(fn k -> is_nil(k.stroke_data) or k.stroke_data == %{} end)
+  end
+
+  @doc """
   Updates the mastery level for a kanji.
 
   ## Examples
@@ -1076,6 +1101,142 @@ defmodule Medoru.Learning do
       nil -> false
       streak -> streak.last_study_date == Date.utc_today()
     end
+  end
+
+  # ============================================================================
+  # Daily Challenges
+  # ============================================================================
+
+  @doc """
+  Completes a daily challenge for a user, awarding XP and updating streak.
+  Idempotent - if already completed today, returns {:ok, :already_completed}.
+  """
+  def complete_daily_challenge(user_id, challenge_type, xp_awarded, opts \\ []) do
+    today = Date.utc_today()
+
+    case get_todays_challenge(user_id, challenge_type) do
+      nil ->
+        # Not yet completed today - record it
+        metadata = Keyword.get(opts, :metadata, %{})
+        score = Keyword.get(opts, :score)
+
+        now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+        {:ok, _record} =
+          %UserDailyChallenge{}
+          |> UserDailyChallenge.changeset(%{
+            user_id: user_id,
+            challenge_type: challenge_type,
+            date: today,
+            completed_at: now,
+            xp_awarded: xp_awarded,
+            score: score,
+            metadata: metadata
+          })
+          |> Repo.insert()
+
+        # Update streak (idempotent - no-op if already studied today)
+        streak_before = get_daily_streak(user_id)
+        was_studied_today = streak_before && streak_before.last_study_date == today
+
+        {:ok, updated_streak} = update_streak(user_id)
+
+        # Award challenge XP
+        Accounts.add_xp(user_id, xp_awarded,
+          source_type: "daily_challenge",
+          source_id: challenge_type,
+          description: "Completed #{challenge_type} daily challenge"
+        )
+
+        # Award streak bonus XP only on first challenge of the day
+        if not was_studied_today do
+          bonus_xp = updated_streak.current_streak * 10
+
+          Accounts.add_xp(user_id, bonus_xp,
+            source_type: "daily_streak",
+            description: "Daily streak bonus (#{updated_streak.current_streak} days)"
+          )
+        end
+
+        {:ok, :completed}
+
+      _challenge ->
+        {:ok, :already_completed}
+    end
+  end
+
+  @doc """
+  Gets a specific daily challenge record for today.
+  Returns nil if not completed.
+  """
+  def get_todays_challenge(user_id, challenge_type) do
+    today = Date.utc_today()
+
+    UserDailyChallenge
+    |> where([c], c.user_id == ^user_id and c.challenge_type == ^challenge_type and c.date == ^today)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets all daily challenge records for a user today.
+  Returns a map with challenge types as keys.
+  """
+  def get_todays_challenges(user_id) do
+    today = Date.utc_today()
+
+    challenges =
+      UserDailyChallenge
+      |> where([c], c.user_id == ^user_id and c.date == ^today)
+      |> Repo.all()
+
+    Map.new(challenges, fn c -> {c.challenge_type, c} end)
+  end
+
+  @doc """
+  Checks if a specific daily challenge was completed today.
+  """
+  def daily_challenge_completed?(user_id, challenge_type) do
+    get_todays_challenge(user_id, challenge_type) != nil
+  end
+
+  @doc """
+  Resets all daily challenges for a user today.
+  Deletes today's challenge records.
+  """
+  def reset_daily_challenges(user_id) do
+    today = Date.utc_today()
+
+    {count, _} =
+      UserDailyChallenge
+      |> where([c], c.user_id == ^user_id and c.date == ^today)
+      |> Repo.delete_all()
+
+    {:ok, count}
+  end
+
+  @doc """
+  Returns daily challenge stats for a user.
+  """
+  def get_daily_challenge_stats(user_id) do
+    streak = get_daily_streak(user_id)
+    challenges = get_todays_challenges(user_id)
+
+    studied_today = streak && streak.last_study_date == Date.utc_today()
+
+    challenge_types = UserDailyChallenge.challenge_types()
+    completed_count = Map.keys(challenges) |> length()
+
+    %{
+      studied_today: studied_today,
+      current_streak: if(streak, do: streak.current_streak, else: 0),
+      longest_streak: if(streak, do: streak.longest_streak, else: 0),
+      challenges: challenges,
+      completed_count: completed_count,
+      total_challenges: length(challenge_types),
+      daily_test_completed: Map.has_key?(challenges, "daily_test"),
+      daily_kanji_completed: Map.has_key?(challenges, "daily_kanji"),
+      daily_cards_completed: Map.has_key?(challenges, "daily_cards")
+    }
   end
 
   # ============================================================================

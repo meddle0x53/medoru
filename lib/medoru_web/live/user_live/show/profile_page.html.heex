@@ -286,29 +286,30 @@
           </h2>
 
           <div class="space-y-4">
-            <%!-- Daily Test Reset --%>
+            <%!-- Daily Challenges Reset --%>
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-error/5 rounded-lg border border-error/10">
               <div>
-                <p class="font-medium text-base-content">{gettext("Reset Daily Test")}</p>
+                <p class="font-medium text-base-content">{gettext("Reset Daily Challenges")}</p>
                 <p class="text-sm text-secondary">
-                  <%= if @daily_test_status.has_test do %>
+                  <%= if @daily_challenges_status.has_challenges do %>
                     {gettext(
-                      "User has a daily test today with %{count} items. Reset to allow retaking.",
-                      count: @daily_test_status.total_items
+                      "User has completed %{count} challenge(s) today: %{types}. Reset to allow retaking.",
+                      count: @daily_challenges_status.completed_count,
+                      types: Enum.join(@daily_challenges_status.challenge_types, ", ")
                     )}
                   <% else %>
-                    {gettext("No daily test found for today.")}
+                    {gettext("No daily challenges completed today.")}
                   <% end %>
                 </p>
               </div>
               <button
                 type="button"
-                phx-click="reset_daily_test"
-                disabled={not @daily_test_status.has_test}
+                phx-click="reset_daily_challenges"
+                disabled={not @daily_challenges_status.has_challenges}
                 class="btn btn-error btn-sm"
               >
                 <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" />
-                {gettext("Reset Test")}
+                {gettext("Reset Challenges")}
               </button>
             </div>
           </div>

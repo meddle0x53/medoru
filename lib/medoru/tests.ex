@@ -111,7 +111,7 @@ defmodule Medoru.Tests do
   """
   def get_test!(id) do
     Test
-    |> preload(test_steps: [:kanji, :word])
+    |> preload(test_steps: [kanji: :kanji_readings, word: []])
     |> Repo.get!(id)
   end
 
@@ -408,7 +408,7 @@ defmodule Medoru.Tests do
     TestStep
     |> where([ts], ts.test_id == ^test_id)
     |> order_by([ts], asc: ts.order_index)
-    |> preload([:kanji])
+    |> preload(kanji: :kanji_readings)
     |> Repo.all()
   end
 

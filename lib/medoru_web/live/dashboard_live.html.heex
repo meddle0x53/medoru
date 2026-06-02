@@ -15,51 +15,47 @@
       <div class="card-body">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div class="flex items-center gap-4">
-            <%!-- Default values when daily_stats is nil --%>
-            <% studied_today = @daily_stats && @daily_stats.studied_today %>
-            <% due_count = (@daily_stats && @daily_stats.due_count) || 0 %>
-            <% new_available = (@daily_stats && @daily_stats.new_available) || 0 %>
+            <% completed = (@challenge_stats && @challenge_stats.completed_count) || 0 %>
+            <% total = (@challenge_stats && @challenge_stats.total_challenges) || 3 %>
+            <% all_completed = completed >= total %>
             <div class={[
               "w-16 h-16 rounded-full flex items-center justify-center",
-              if(studied_today, do: "bg-success/20", else: "bg-warning/20")
+              if(all_completed, do: "bg-success/20", else: "bg-warning/20")
             ]}>
               <.icon
-                name={if studied_today, do: "hero-check-circle", else: "hero-fire"}
+                name={if all_completed, do: "hero-check-circle", else: "hero-fire"}
                 class={[
                   "w-8 h-8",
-                  if(studied_today, do: "text-success", else: "text-warning")
+                  if(all_completed, do: "text-success", else: "text-warning")
                 ]}
               />
             </div>
             <div>
               <h2 class="text-xl font-bold text-base-content">
-                <%= if studied_today do %>
+                <%= if all_completed do %>
                   {gettext("Daily Goal Completed!")} 🎉
                 <% else %>
                   {gettext("Keep Your Streak Going!")}
                 <% end %>
               </h2>
               <p class="text-base-content/70">
-                {due_count} {gettext("words due for review")}
-                <%= if new_available > 0 do %>
-                  · {new_available} {gettext("new words available")}
-                <% end %>
+                {gettext("Complete any challenge to keep your streak going!")}
               </p>
             </div>
           </div>
 
           <.link
-            navigate={~p"/daily-test"}
+            navigate={~p"/daily-challenges"}
             class={[
               "btn btn-lg h-auto py-3 px-6 min-w-fit whitespace-normal text-center leading-tight w-full sm:w-auto",
-              if(studied_today, do: "btn-outline btn-success", else: "btn-primary")
+              if(all_completed, do: "btn-outline btn-success", else: "btn-primary")
             ]}
           >
-            <%= if studied_today do %>
-              <.icon name="hero-check" class="w-5 h-5 mr-2 flex-shrink-0" /> {gettext("Completed")}
+            <%= if completed > 0 do %>
+              <.icon name="hero-check" class="w-5 h-5 mr-2 flex-shrink-0" /> {completed} / {total} {gettext("Completed")}
             <% else %>
               <.icon name="hero-play" class="w-5 h-5 mr-2 flex-shrink-0" /> {gettext(
-                "Start Daily Review"
+                "Daily Challenges"
               )}
             <% end %>
           </.link>

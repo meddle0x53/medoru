@@ -176,18 +176,30 @@ defmodule MedoruWeb.QA.BypassController do
       |> put_status(:unauthorized)
       |> json(%{error: "Not authenticated"})
     else
-      case Medoru.Learning.delete_user_daily_test(user_id) do
-        {:ok, :deleted} ->
-          json(conn, %{success: true, message: "Daily test deleted"})
+      {:ok, count} = Medoru.Learning.reset_daily_challenges(user_id)
+      json(conn, %{success: true, message: "Daily challenges reset", deleted: count})
+    end
+  end
 
-        {:ok, :no_test_found} ->
-          json(conn, %{success: true, message: "No daily test found to delete"})
+  @doc """
+  Resets all daily challenges for the current user.
 
-        {:error, reason} ->
-          conn
-          |> put_status(:internal_server_error)
-          |> json(%{error: "Failed to delete daily test", reason: inspect(reason)})
-      end
+  DELETE /qa/api/daily-challenges
+  """
+  def reset_daily_challenges(conn, _params) do
+    unless qa_mode?() do
+      return_not_found(conn)
+    end
+
+    user_id = get_session(conn, :user_id)
+
+    if is_nil(user_id) do
+      conn
+      |> put_status(:unauthorized)
+      |> json(%{error: "Not authenticated"})
+    else
+      {:ok, count} = Medoru.Learning.reset_daily_challenges(user_id)
+      json(conn, %{success: true, message: "Daily challenges reset", deleted: count})
     end
   end
 

@@ -22,6 +22,7 @@ export const PATHS = {
   dashboard: '/dashboard',
   dailyTest: '/daily-test',
   dailyReview: '/daily-review',
+  dailyChallenges: '/daily-challenges',
   notifications: '/notifications',
 
   // Settings

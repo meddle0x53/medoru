@@ -188,7 +188,7 @@ defmodule MedoruWeb.UsersLiveTest do
       {:ok, _view, html} = conn |> log_in_user(admin) |> live(~p"/users/#{target.id}")
 
       assert html =~ "Admin Actions"
-      assert html =~ "Reset Daily Test"
+      assert html =~ "Reset Daily Challenges"
     end
   end
 end

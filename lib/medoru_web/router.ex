@@ -130,6 +130,13 @@ defmodule MedoruWeb.Router do
       live "/daily-test", DailyTestLive
       live "/daily-test/complete", DailyTestLive.Complete
     end
+
+    live_session :daily_challenges,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/daily-challenges", DailyChallengesLive
+      live "/daily-challenges/kanji", DailyKanjiTestLive
+      live "/daily-challenges/cards", DailyCardGameLive
+    end
   end
 
   # Settings routes
@@ -393,6 +400,7 @@ defmodule MedoruWeb.Router do
       get "/bypass/api/users", BypassController, :list_users
       get "/health", BypassController, :health
       delete "/api/daily-test", BypassController, :delete_daily_test
+      delete "/api/daily-challenges", BypassController, :reset_daily_challenges
     end
   end
 end

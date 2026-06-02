@@ -47,7 +47,8 @@ const KanjiWriting = {
       ctx: null,
       canvas: null,
       showingHint: false,
-      showingGrid: false
+      showingGrid: false,
+      wrongStrokes: 0
     }
 
     // Parse SVG path - handles KanjiVG format with bezier curves
@@ -530,10 +531,17 @@ const KanjiWriting = {
           redrawStrokes()
 
           if (this._state.currentStroke >= this._state.validExpectedCount) {
-            setTimeout(() => this.pushEvent('kanji_complete', {}), 300)
+            setTimeout(() => this.pushEvent('kanji_complete', {wrong_strokes: this._state.wrongStrokes}), 300)
           }
         } else {
           // WRONG STROKE - show hint
+          this._state.wrongStrokes++
+          // Update the counter in the DOM directly for instant feedback
+          const counterEl = document.getElementById('kanji-wrong-stroke-count')
+          if (counterEl) {
+            counterEl.textContent = this._state.wrongStrokes
+          }
+          this.pushEvent('wrong_stroke', {count: this._state.wrongStrokes})
           this._state.showingHint = true
           
           // Show wrong stroke in red temporarily
@@ -575,7 +583,8 @@ const KanjiWriting = {
     this._submitBtn = this.el.querySelector('[data-action="submit"]')
     this._handlers.submit = () => {
       this.pushEvent('submit_writing', {
-        completed: this._state.currentStroke >= this._state.validExpectedCount
+        completed: this._state.currentStroke >= this._state.validExpectedCount,
+        wrong_strokes: this._state.wrongStrokes
       })
     }
     if (this._submitBtn) {

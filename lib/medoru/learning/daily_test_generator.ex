@@ -106,18 +106,13 @@ defmodule Medoru.Learning.DailyTestGenerator do
       true
 
   """
-  alias Medoru.Tests.TestSession
+  alias Medoru.Learning.UserDailyChallenge
 
   def daily_test_completed_today?(user_id) do
     today = Date.utc_today()
-    beginning_of_day = DateTime.new!(today, ~T[00:00:00])
-    end_of_day = DateTime.new!(today, ~T[23:59:59])
 
-    TestSession
-    |> join(:inner, [ts], t in assoc(ts, :test))
-    |> where([ts, t], ts.user_id == ^user_id and t.test_type == :daily)
-    |> where([ts], ts.status == :completed)
-    |> where([ts], ts.completed_at >= ^beginning_of_day and ts.completed_at <= ^end_of_day)
+    UserDailyChallenge
+    |> where([c], c.user_id == ^user_id and c.challenge_type == "daily_test" and c.date == ^today)
     |> Repo.exists?()
   end
 
@@ -194,6 +189,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
     today = Date.utc_today()
     beginning_of_day = DateTime.new!(today, ~T[00:00:00])
     end_of_day = DateTime.new!(today, ~T[23:59:59])
+
+    # Also reset all daily challenges for today
+    Learning.reset_daily_challenges(user_id)
 
     # Find today's daily test
     test =
@@ -381,7 +379,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
     }
 
     # Use user preferences or default selection
-    question_types = select_question_types(is_new, user_step_types)
+    question_types =
+      select_question_types(is_new, user_step_types)
+      |> Enum.reject(fn
+        "word_to_reading" -> only_kana?(word.text)
+        _ -> false
+      end)
 
     Enum.map(question_types, fn
       "word_to_meaning" ->

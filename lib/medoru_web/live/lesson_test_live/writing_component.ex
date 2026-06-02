@@ -39,6 +39,12 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
             {@step.question_data["stroke_count"]} {gettext("strokes")}
           <% end %>
         </p>
+        <%= if @step.kanji && @step.kanji.kanji_readings != [] do %>
+          <p class="text-sm text-secondary mt-1">
+            <span class="font-medium">{gettext("On")}:</span> {first_reading(@step.kanji, :on)} •
+            <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@step.kanji, :kun)}
+          </p>
+        <% end %>
       </div>
 
       <%!-- Writing Canvas Container --%>
@@ -112,8 +118,12 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       />
 
       <div class="mt-4 text-center">
+        <p class="text-sm text-secondary mb-2">
+          <strong>{gettext("Meanings")}:</strong> {get_localized_meanings(@kanji, @locale)}
+        </p>
         <p class="text-sm text-secondary mb-4">
-          <strong>{gettext("Meanings")}:</strong> {get_localized_meanings(@kanji, @locale)} •
+          <strong>{gettext("On")}:</strong> {first_reading(@kanji, :on)} •
+          <strong>{gettext("Kun")}:</strong> {first_reading(@kanji, :kun)} •
           <strong>{gettext("Strokes")}:</strong> {@kanji.stroke_count}
         </p>
         <button
@@ -155,13 +165,13 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
 
   defp translate_question(question, _locale) when is_binary(question), do: question
 
-  # Get localized meanings for display
+  # Get localized meanings for display (first 1-2 only)
   defp get_localized_meanings(kanji, locale) do
     localized = Medoru.Content.get_localized_kanji_meanings(kanji, locale)
-    Enum.join(localized, ", ")
+    localized |> Enum.take(2) |> Enum.join(", ")
   end
 
-  # Get localized meanings for the step question
+  # Get localized meanings for the step question (first 1-2 only)
   defp get_localized_meanings_for_step(step, locale) do
     # Try to get kanji from step
     kanji =
@@ -174,12 +184,12 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
     if kanji do
       get_localized_meanings(kanji, locale)
     else
-      # Fallback to stored meanings in question_data
+      # Fallback to stored meanings in question_data (first 1-2 only)
       qd = step.question_data || %{}
       stored = qd["meanings"] || qd[:meanings] || []
 
       if stored != [] do
-        Enum.join(stored, ", ")
+        stored |> Enum.take(2) |> Enum.join(", ")
       else
         # Last resort: extract from question string
         case String.split(step.question || "", "|") do
@@ -187,6 +197,16 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
           _ -> ""
         end
       end
+    end
+  end
+
+  # Get the first reading of a given type (:on or :kun)
+  defp first_reading(%{kanji_readings: %Ecto.Association.NotLoaded{}}, _type), do: "—"
+
+  defp first_reading(kanji, type) do
+    case Enum.find(kanji.kanji_readings || [], fn r -> r.reading_type == type end) do
+      nil -> "—"
+      reading -> reading.reading
     end
   end
 end

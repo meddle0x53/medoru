@@ -92,6 +92,9 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       # Complete session
       Tests.complete_session(session, length(test.test_steps), length(test.test_steps), 60)
 
+      # Record daily challenge completion (normally done by DailyTestLive)
+      Learning.complete_daily_challenge(user.id, "daily_test", length(test.test_steps))
+
       assert DailyTestGenerator.daily_test_completed_today?(user.id)
     end
   end
