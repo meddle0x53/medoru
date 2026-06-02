@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.2.0 ✅ COMPLETE  
-**Status**: v0.2.0 complete. v0.3.0 (User White Board) in progress.  
-**Tests**: 912 passing  
+**Version**: 0.3.0 ✅ COMPLETE  
+**Status**: v0.3.0 complete. Planning v0.3.1.  
+**Tests**: 970 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -57,19 +57,38 @@
 - **Display name kanji/kana support**: Removed `~r/^[a-zA-Z0-9_\-\s]+$/` regex validation from `UserProfile` changeset
 - **Age/gender/location display**: Compact info row with icons (`hero-cake`, `hero-user` with gender color, `hero-map-pin`) shown only when set
 
-**User White Board (v0.3.0) ✅ COMPLETE**
-- **Migrations**: `board_posts`, `board_comments`, `board_reactions` tables
-- **Schemas**: `BoardPost` (title, content, visibility public/followers, post_type text/canvas, canvas_data), `BoardComment` (nested replies via parent_id), `BoardReaction` (one per user per post)
-- **Context**: `Medoru.WhiteBoard` with `list_posts/3` (paginated, visibility-filtered, blocked-filtered), `create_post/1`, `update_post/2`, `delete_post/1`, `create_comment/1`, `delete_comment/1`, `toggle_reaction/3`, `list_reactions_for_posts/2`
-- **LiveView**: `UserWhiteBoardLive` at `/users/:id/white-board` — post list (5 per page, load more), create text post form, canvas drawing modal, edit/delete own posts, reactions with optimistic updates, comments with nested replies
-- **JS Hooks**: `FreeDraw` (pencil, eraser, 8 colors, line width, undo, clear, stroke JSON storage), `CanvasPlayer` (read-only stroke replay)
-- **Post content rendering**: Markdown via Earmark, URL autolinking, follows chat content patterns
-- **Profile link**: Prominent "White Board" button on user profile page
-- **PubSub**: Real-time updates for post creation, edits, deletions, reactions, and comments
-
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 
-### What's Next (v0.2.1)
+### What's Complete (v0.3.0) — User White Board
+**Status**: ✅ COMPLETE
+
+**Features:**
+- **Canvas Drawing**: Interactive drawing board with pencil/eraser, 8 colors, line width, undo, clear. Square grid options (20px/40px/80px). White canvas background for dark-theme visibility.
+- **Background Images**: Users can upload background images (stretched to canvas) for drawings. Stored in `canvas_data["background"]` and replayed by `CanvasPlayer`.
+- **Post Types**: Text posts (markdown + autolinking) and canvas posts (stroke replay)
+- **Visibility**: `public` or `followers` per post. `can_view_post?/2` checks owner/public/follower status with blocked-user filtering
+- **Reactions**: One reaction per user per post (add/remove/replace). Optimistic updates with `broadcast_from` to exclude sender
+- **Comments & Nested Replies**: Top-level and reply comments. `parent_comment` preloaded for reply UI showing "Replying to [name]" with text preview
+- **Bug Fixes**: Double-comment bug fixed via `broadcast_from` pattern; replies vanishing fixed by removing `is_nil(parent_id)` filter in `load_comments_for_posts/1`
+- **Mobile-Friendly**: Canvas toolbar uses `flex-nowrap overflow-x-auto` on mobile; post form stacks vertically; emoji picker constrained to `max-w-[90vw]`; comment input uses `flex-wrap`
+- **Profile Integration**: Whiteboard image button on profile card linking to `/users/:id/white-board`
+- **PubSub**: Real-time updates for posts, edits, deletions, reactions, and comments
+- **i18n**: Full Bulgarian localization in polite form (Вие)
+- **Tests**: 58 new tests (36 context + 22 LiveView)
+- **Service Worker**: Cache bumped to `medoru-v8` to invalidate stale assets
+
+**Routes:** `/users/:id/white-board`
+
+**Key Technical Changes:**
+- Migrations: `board_posts`, `board_comments`, `board_reactions`
+- New schemas: `BoardPost`, `BoardComment`, `BoardReaction`
+- Context: `Medoru.WhiteBoard`
+- LiveView: `MedoruWeb.UserWhiteBoardLive`
+- JS Hooks: `FreeDraw`, `CanvasPlayer`
+- `can_view_post?/2` rewritten with `cond do` for correct early-return logic
+- Service worker cache: `medoru-v8`
+
+### What's Next (v0.3.1)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
 - See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 
@@ -298,6 +317,36 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 ---
 
 ## Version History
+
+### v0.3.0 - User White Board (2026-06-01)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- **Canvas Drawing**: Interactive drawing board with pencil/eraser, 8 colors, line width, undo, clear. Square grid options (20px/40px/80px). White canvas background for dark-theme visibility.
+- **Background Images**: Users can upload background images (stretched to canvas) for drawings. Stored in `canvas_data["background"]` and replayed by `CanvasPlayer`.
+- **Post Types**: Text posts (markdown + autolinking) and canvas posts (stroke replay)
+- **Visibility**: `public` or `followers` per post. `can_view_post?/2` checks owner/public/follower status with blocked-user filtering
+- **Reactions**: One reaction per user per post (add/remove/replace). Optimistic updates with `broadcast_from` to exclude sender
+- **Comments & Nested Replies**: Top-level and reply comments. `parent_comment` preloaded for reply UI showing "Replying to [name]" with text preview
+- **Double-Comment Bug Fix**: `broadcast_comment` uses `broadcast_from` to exclude sender (same pattern as reactions)
+- **Replies Vanishing Fix**: `load_comments_for_posts/1` removed `is_nil(c.parent_id)` filter, preloads `parent_comment: [user: [:profile]]`
+- **Mobile-Friendly**: Canvas toolbar uses `flex-nowrap overflow-x-auto` on mobile; post form stacks vertically; emoji picker constrained to `max-w-[90vw]`; comment input uses `flex-wrap`
+- **Profile Integration**: Whiteboard image button on profile card linking to `/users/:id/white-board`
+- **PubSub**: Real-time updates for posts, edits, deletions, reactions, and comments
+- **i18n**: Full Bulgarian localization in polite form (Вие)
+- **Tests**: 58 new tests (36 context + 22 LiveView)
+
+**Routes:** `/users/:id/white-board`
+
+**Key Technical Changes:**
+- Migrations: `board_posts`, `board_comments`, `board_reactions`
+- New schemas: `BoardPost`, `BoardComment`, `BoardReaction`
+- Context: `Medoru.WhiteBoard`
+- LiveView: `MedoruWeb.UserWhiteBoardLive`
+- JS Hooks: `FreeDraw`, `CanvasPlayer`
+- `can_view_post?/2` rewritten with `cond do` for correct early-return logic
+
+---
 
 ### v0.2.0 - Social, XP System, Level Badges & Chat Polish (2026-05-24 → 2026-05-31)
 **Status**: ✅ COMPLETE
