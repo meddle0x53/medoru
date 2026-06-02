@@ -6765,9 +6765,10 @@ msgid "Picture Multiple Choice"
 msgstr ""
 
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:163
+#: lib/medoru_web/live/user_white_board_live.ex
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Profile"
-msgstr "Моят профил"
+msgstr "Профил"
 
 #: lib/medoru_web/live/settings_live/daily_test_preferences.ex:127
 #: lib/medoru_web/live/word_set_live/test_config.ex:167
@@ -10404,9 +10405,10 @@ msgstr "Произношение (четене)"
 #: lib/medoru_web/live/classroom_live/index.ex:257
 #: lib/medoru_web/live/classroom_live/index.ex:538
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1324
+#: lib/medoru_web/live/user_white_board_live.ex
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Public"
-msgstr "Публикувайте"
+msgstr "Публично"
 
 #: lib/medoru_web/live/teacher/kana_game_live/show.ex:187
 #, elixir-autogen, elixir-format, fuzzy
@@ -11530,6 +11532,7 @@ msgid "Remove from learned"
 msgstr ""
 
 #: lib/medoru_web/live/messages_live/show.html.heex:166
+#: lib/medoru_web/live/user_white_board_live.ex
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "Отговор"
@@ -11940,3 +11943,178 @@ msgstr "Поискай ключ от другите"
 
 msgid "Failed to store re-encrypted key."
 msgstr "Неуспешно съхраняване на повторно криптирания ключ."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Attach file"
+msgstr "Прикачете файл"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Background image"
+msgstr "Фоново изображение"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Clear background"
+msgstr "Премахнете фона"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not add comment."
+msgstr "Неуспешно добавяне на коментар."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not create post."
+msgstr "Неуспешно създаване на публикация."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not post drawing."
+msgstr "Неуспешно публикуване на рисунката."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not update post."
+msgstr "Неуспешно обновяване на публикацията."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Could not update visibility."
+msgstr "Неуспешно обновяване на видимостта."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this comment?"
+msgstr "Изтрийте този коментар?"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Delete this post?"
+msgstr "Изтрийте тази публикация?"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Description..."
+msgstr "Описание..."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Draw"
+msgstr "Рисувайте"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Drawing posted!"
+msgstr "Рисунката е публикувана!"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Emoji"
+msgstr "Емоджи"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Followers only"
+msgstr "Само последователи"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Keep grid in final image"
+msgstr "Запазете мрежата в крайното изображение"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Large grid"
+msgstr "Голяма мрежа"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Load more"
+msgstr "Заредете още"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Medium grid"
+msgstr "Средна мрежа"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "%{name}'s White Board"
+msgstr "Бялата дъска на %{name}"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "No grid"
+msgstr "Без мрежа"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "No posts yet"
+msgstr "Все още няма публикации"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Post"
+msgstr "Публикувайте"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Post created!"
+msgstr "Публикацията е създадена!"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Post deleted."
+msgstr "Публикацията е изтрита."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "posts"
+msgstr "публикации"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Replying to %{name}"
+msgstr "Отговор на %{name}"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Small grid"
+msgstr "Малка мрежа"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "This user hasn't posted anything yet."
+msgstr "Този потребител все още не е публикувал нищо."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Title (optional)..."
+msgstr "Заглавие (по желание)..."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Voice message"
+msgstr "Гласово съобщение"
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Write a comment..."
+msgstr "Напишете коментар..."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Write a reply..."
+msgstr "Напишете отговор..."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Write something on your board..."
+msgstr "Напишете нещо на дъската си..."
+
+#: lib/medoru_web/live/user_white_board_live.ex
+#, elixir-autogen, elixir-format
+msgid "Write something on your board or draw!"
+msgstr "Напишете нещо на дъската си или нарисувайте!"

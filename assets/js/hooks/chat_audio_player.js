@@ -96,17 +96,40 @@ const ChatAudioPlayer = {
     }
 
     // Try to load duration immediately if already cached
-    if (this.audio.readyState >= 1 && this.audio.duration && !isNaN(this.audio.duration)) {
+    if (this.audio.readyState >= 1 && this.audio.duration && !isNaN(this.audio.duration) && this.audio.duration !== Infinity) {
       this.duration = Math.floor(this.audio.duration)
       this.hasLoaded = true
       if (this.durationEl) {
         this.durationEl.textContent = this.formatTime(this.duration)
       }
     }
+
+    // Start loading metadata so duration is available before user clicks play
+    if (this.audio.src && this.audio.readyState === 0) {
+      this.audio.load()
+    }
+
+    // Poll for duration until it's available (needed for MediaRecorder webm files)
+    this._durationPoll = setInterval(() => {
+      const d = this.audio?.duration
+      if (d && !isNaN(d) && d !== Infinity && d > 0) {
+        this.duration = Math.floor(d)
+        this.hasLoaded = true
+        if (this.durationEl) {
+          this.durationEl.textContent = this.formatTime(this.duration)
+        }
+        clearInterval(this._durationPoll)
+        this._durationPoll = null
+      }
+    }, 300)
   },
 
   destroyed() {
     this.stopPolling()
+    if (this._durationPoll) {
+      clearInterval(this._durationPoll)
+      this._durationPoll = null
+    }
     if (this.audio) {
       this.audio.pause()
       this.audio.src = ""
@@ -133,13 +156,18 @@ const ChatAudioPlayer = {
   },
 
   seek(e) {
-    if (!this.audio || !this.audio.duration || this.audio.duration === Infinity || !this.hasLoaded) {
-      // If not loaded yet, try to seek anyway
-      if (!this.audio || !this.audio.duration) return
+    const audioDuration = this.audio?.duration
+    const duration =
+      (audioDuration && !isNaN(audioDuration) && audioDuration !== Infinity)
+        ? audioDuration
+        : (this.duration || 0)
+
+    if (!this.audio || !duration || !this.hasLoaded) {
+      return
     }
     const rect = this.progressContainer.getBoundingClientRect()
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-    this.audio.currentTime = pct * this.audio.duration
+    this.audio.currentTime = pct * duration
     this.updateProgress()
   },
 
@@ -160,14 +188,22 @@ const ChatAudioPlayer = {
   updateProgress() {
     if (!this.audio) return
     const current = this.audio.currentTime || 0
-    const duration = this.audio.duration || 0
+    // Use cached duration from data-duration if audio.duration isn't available yet
+    const audioDuration = this.audio.duration
+    const duration =
+      (audioDuration && !isNaN(audioDuration) && audioDuration !== Infinity)
+        ? audioDuration
+        : (this.duration || 0)
 
-    if (duration && !isNaN(duration) && this.progressBar) {
+    if (duration && !isNaN(duration) && duration !== Infinity && this.progressBar) {
       const pct = Math.min(100, (current / duration) * 100)
       this.progressBar.style.width = pct + "%"
     }
     if (this.currentTimeEl) {
       this.currentTimeEl.textContent = this.formatTime(Math.floor(current))
+    }
+    if (this.durationEl && duration && !isNaN(duration) && duration !== Infinity) {
+      this.durationEl.textContent = this.formatTime(Math.floor(duration))
     }
   },
 
@@ -183,7 +219,7 @@ const ChatAudioPlayer = {
   },
 
   formatTime(seconds) {
-    if (!seconds || seconds < 0) return "0:00"
+    if (!seconds || seconds < 0 || seconds === Infinity || isNaN(seconds)) return "0:00"
     const m = Math.floor(seconds / 60)
     const s = Math.floor(seconds % 60)
     return `${m}:${String(s).padStart(2, "0")}`

@@ -17,6 +17,8 @@ defmodule MedoruWeb.ChatUploadController do
     "audio/wav" => %{type: "audio", ext: ".wav"},
     "audio/wave" => %{type: "audio", ext: ".wav"},
     "audio/x-wav" => %{type: "audio", ext: ".wav"},
+    "audio/webm" => %{type: "audio", ext: ".webm"},
+    "audio/ogg" => %{type: "audio", ext: ".ogg"},
     "application/pdf" => %{type: "document", ext: ".pdf"},
     "text/plain" => %{type: "document", ext: ".txt"},
     "text/csv" => %{type: "document", ext: ".csv"},

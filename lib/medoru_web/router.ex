@@ -66,6 +66,7 @@ defmodule MedoruWeb.Router do
       live "/users", UsersLive.Index
       live "/users/:id/words", LearnedWordsLive.Index
       live "/users/:id/kanji", LearnedKanjiLive.Index
+      live "/users/:id/white-board", UserWhiteBoardLive
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
       live "/games", GamesLive.Index
@@ -162,6 +163,7 @@ defmodule MedoruWeb.Router do
     live_session :public_profiles,
       on_mount: [{MedoruWeb.UserAuth, :default}] do
       live "/:id", UserLive.Show
+      live "/:id/white-board", UserWhiteBoardLive
     end
   end
 

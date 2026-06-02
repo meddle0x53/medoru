@@ -25,6 +25,9 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/medoru"
 import topbar from "../vendor/topbar"
 import KanjiWriting from "./hooks/kanji_writing"
+import FreeDraw from "./hooks/free_draw"
+import CanvasPlayer from "./hooks/canvas_player"
+import BoardInput from "./hooks/board_input"
 import StepSorter from "./hooks/step_sorter"
 import OptionInput from "./hooks/option_input"
 import Timer from "./hooks/timer"
@@ -59,7 +62,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay},
+  hooks: {...colocatedHooks, KanjiWriting, FreeDraw, CanvasPlayer, BoardInput, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay},
 })
 
 // Show progress bar on live navigation and form submits

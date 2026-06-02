@@ -3,8 +3,8 @@
 ## Current State
 
 **Version**: 0.2.0 ✅ COMPLETE  
-**Status**: v0.2.0 complete. v0.2.1 planning in progress.  
-**Tests**: 913 passing  
+**Status**: v0.2.0 complete. v0.3.0 (User White Board) in progress.  
+**Tests**: 912 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -51,6 +51,21 @@
 - **Dashboard**: Links to `/daily-challenges`, shows `{completed}/{total} Completed` on daily goal card (e.g., "1/3 Completed")
 - **Admin Reset**: User profile "Reset Daily Challenges" button (admin-only) calls `reset_daily_challenges/1` — deletes today's challenge records but preserves streak state
 - **WritingComponent**: Updated to show first 1-2 meanings + On/Kun readings for all kanji writing steps (daily, custom lessons, word sets)
+
+**Profile Improvements ✅ COMPLETE**
+- **Bio markdown rendering**: `render_markdown/1` with `Earmark.as_html/2`, wrapped in `prose prose-sm dark:prose-invert`
+- **Display name kanji/kana support**: Removed `~r/^[a-zA-Z0-9_\-\s]+$/` regex validation from `UserProfile` changeset
+- **Age/gender/location display**: Compact info row with icons (`hero-cake`, `hero-user` with gender color, `hero-map-pin`) shown only when set
+
+**User White Board (v0.3.0) ✅ COMPLETE**
+- **Migrations**: `board_posts`, `board_comments`, `board_reactions` tables
+- **Schemas**: `BoardPost` (title, content, visibility public/followers, post_type text/canvas, canvas_data), `BoardComment` (nested replies via parent_id), `BoardReaction` (one per user per post)
+- **Context**: `Medoru.WhiteBoard` with `list_posts/3` (paginated, visibility-filtered, blocked-filtered), `create_post/1`, `update_post/2`, `delete_post/1`, `create_comment/1`, `delete_comment/1`, `toggle_reaction/3`, `list_reactions_for_posts/2`
+- **LiveView**: `UserWhiteBoardLive` at `/users/:id/white-board` — post list (5 per page, load more), create text post form, canvas drawing modal, edit/delete own posts, reactions with optimistic updates, comments with nested replies
+- **JS Hooks**: `FreeDraw` (pencil, eraser, 8 colors, line width, undo, clear, stroke JSON storage), `CanvasPlayer` (read-only stroke replay)
+- **Post content rendering**: Markdown via Earmark, URL autolinking, follows chat content patterns
+- **Profile link**: Prominent "White Board" button on user profile page
+- **PubSub**: Real-time updates for post creation, edits, deletions, reactions, and comments
 
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 

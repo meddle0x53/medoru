@@ -186,6 +186,21 @@
               )}
             </p>
           </div>
+
+          <%!-- White Board Image --%>
+          <div class="flex-shrink-0">
+            <.link
+              navigate={~p"/users/#{@user.id}/white-board"}
+              class="block hover:scale-105 transition-transform"
+              title={gettext("White Board")}
+            >
+              <img
+                src="/images/whiteboard.png"
+                alt={gettext("White Board")}
+                class="w-48 h-auto rounded-lg shadow-md"
+              />
+            </.link>
+          </div>
         </div>
       </div>
     </div>
