@@ -4,7 +4,7 @@
 
 **Version**: 0.2.0 ✅ COMPLETE  
 **Status**: v0.2.0 complete. v0.2.1 planning in progress.  
-**Tests**: 911 passing  
+**Tests**: 913 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -40,6 +40,17 @@
 - **Mobile-Friendly Reactions**: 40px mobile / 44px desktop emoji buttons, enlarged reaction pills (`px-2 py-1`), responsive picker (`w-40 sm:w-48 max-w-[90vw]`), `phx-click-away` tap-outside-to-close
 - **Reaction Optimistic Update Fix**: Nested `Map.update/4` bug replaced with explicit `Map.get` + `Map.put`/`Map.delete` pattern in both `MessagesLive.Show` and `ClassroomLive.Show`
 - **Service Worker**: Cache bumped to `medoru-v7` to invalidate stale assets
+
+**Daily Challenges System ✅ COMPLETE**
+- **`user_daily_challenges` table**: Tracks completion per challenge type per day with `challenge_type`, `date`, `completed_at`, `xp_awarded`, `score`, `metadata`
+- **`Learning.complete_daily_challenge/4`**: Idempotent completion — records challenge, updates streak only on first challenge of day, awards streak bonus (`10 × current_streak`) only once per day
+- **`Learning.get_daily_challenge_stats/1`**: Returns `completed_count`, `total_challenges`, per-challenge completion booleans, streak info
+- **Daily Test refactor**: Fixed kana-only bug, now uses `complete_daily_challenge("daily_test", ...)`
+- **Daily Card Game** (`/daily-challenges/cards`): Standalone LiveView with in-memory state (no DB game records). 10 learned words in 5×4 grid. Meaning input modal on each match — correct meaning collects cards, wrong consumes attempt. 300 XP win, 100 XP loss. Back button during gameplay.
+- **Daily Kanji Test** (`/daily-challenges/kanji`): 10 learned kanji with stroke data. Shows first 1-2 meanings + On/Kun readings. Per-kanji XP scoring: ≤3 wrong strokes = 30 XP, 4+ = 0 XP. Hook reinitialization between kanji steps via unique element IDs. Back button during gameplay.
+- **Dashboard**: Links to `/daily-challenges`, shows `{completed}/{total} Completed` on daily goal card (e.g., "1/3 Completed")
+- **Admin Reset**: User profile "Reset Daily Challenges" button (admin-only) calls `reset_daily_challenges/1` — deletes today's challenge records but preserves streak state
+- **WritingComponent**: Updated to show first 1-2 meanings + On/Kun readings for all kanji writing steps (daily, custom lessons, word sets)
 
 See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 
@@ -285,16 +296,20 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - **Message Reactions**: Emoji picker, reaction pills, one per user per message
 - **Chat File Uploads**: Images, audio, documents up to 50MB in encrypted and classroom chats
 - **Chat Polish**: Encrypted content flickering fix, UTF-8 word links, avatar links, mobile-friendly reactions
+- **Daily Challenges System**: `user_daily_challenges` table with per-type daily tracking. Daily Test, Daily Card Game (`/daily-challenges/cards`), Daily Kanji Test (`/daily-challenges/kanji`). Streak bonus awarded only on first challenge of day. Dashboard shows `X/Y Completed` progress.
 
-**Routes:** `/users`, `/settings/profile`, `/admin/tags`, `/messages/*`
+**Routes:** `/users`, `/settings/profile`, `/admin/tags`, `/messages/*`, `/daily-challenges`, `/daily-challenges/cards`, `/daily-challenges/kanji`
 
 **Key Technical Changes:**
-- Migrations: `tags`, `user_tags`, `follows`, `xp_transactions`, `add_profile_fields_to_user_profiles`, `message_reactions`
-- New schemas: `Tag`, `UserTag`, `Follow`, `XpTransaction`, `MessageReaction`
-- Contexts: `Medoru.Social` (tags/following), `Medoru.Accounts` (XP/levels), `Medoru.Chat` (reactions)
+- Migrations: `tags`, `user_tags`, `follows`, `xp_transactions`, `add_profile_fields_to_user_profiles`, `message_reactions`, `user_daily_challenges`
+- New schemas: `Tag`, `UserTag`, `Follow`, `XpTransaction`, `MessageReaction`, `UserDailyChallenge`
+- Contexts: `Medoru.Social` (tags/following), `Medoru.Accounts` (XP/levels), `Medoru.Chat` (reactions), `Medoru.Learning` (daily challenges)
 - `ChatCrypto` hook: `updated()` optimization, `phx-update="ignore"` on decrypted content
 - `MessageReactions` unique composite index: `[:message_id, :user_id, :emoji]`
 - Service worker cache: `medoru-v7`
+- Daily Card Game: In-memory session state (no DB game records), meaning input modal on match
+- Daily Kanji Test: Per-kanji XP scoring (≤3 wrong strokes = 30 XP, 4+ = 0 XP), hook reinitialization via unique element IDs per kanji
+- `WritingComponent`: Shows first 1-2 meanings + On/Kun readings for all kanji writing steps
 
 ---
 
