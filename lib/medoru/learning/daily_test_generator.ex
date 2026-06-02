@@ -481,21 +481,39 @@ defmodule Medoru.Learning.DailyTestGenerator do
             Map.merge(base_attrs, step_attrs)
 
           {:error, :no_kanji} ->
-            # Fallback to word_to_reading if no kanji
-            Map.merge(base_attrs, %{
-              question_type: :multichoice,
-              question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
-              correct_answer: word.reading,
-              points: 1,
-              options: fetch_reading_options(word, user_id),
-              question_data: %{
-                word_text: word.text,
-                word_meaning: word.meaning,
-                type: :word_to_reading,
-                is_new_word: is_new,
-                fallback_from_writing: true
-              }
-            })
+            # Fallback based on word type: kana-only words get meaning question,
+            # words with kanji get reading question
+            if only_kana?(word.text) do
+              Map.merge(base_attrs, %{
+                question_type: :multichoice,
+                question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
+                correct_answer: word.meaning,
+                points: 1,
+                options: fetch_meaning_options(word, user_id),
+                question_data: %{
+                  word_text: word.text,
+                  word_reading: word.reading,
+                  type: :word_to_meaning,
+                  is_new_word: is_new,
+                  fallback_from_writing: true
+                }
+              })
+            else
+              Map.merge(base_attrs, %{
+                question_type: :multichoice,
+                question: "__MSG_HOW_DO_YOU_READ__|#{word.text}",
+                correct_answer: word.reading,
+                points: 1,
+                options: fetch_reading_options(word, user_id),
+                question_data: %{
+                  word_text: word.text,
+                  word_meaning: word.meaning,
+                  type: :word_to_reading,
+                  is_new_word: is_new,
+                  fallback_from_writing: true
+                }
+              })
+            end
         end
     end)
   end
