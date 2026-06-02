@@ -50,9 +50,6 @@ defmodule Medoru.Accounts.UserProfile do
       :location
     ])
     |> validate_length(:display_name, min: 1, max: 50)
-    |> validate_format(:display_name, ~r/^[a-zA-Z0-9_\-\s]+$/,
-      message: "can only contain letters, numbers, spaces, underscores, and hyphens"
-    )
     |> validate_length(:bio, max: 500)
     |> validate_inclusion(:theme, ["light", "dark", "system"])
     |> validate_number(:daily_goal, greater_than: 0, less_than_or_equal_to: 100)

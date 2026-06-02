@@ -289,6 +289,23 @@ defmodule MedoruWeb.UserLive.Show do
   defp tag_color_classes("error"), do: "bg-error text-error-content"
   defp tag_color_classes(_), do: "bg-base-300 text-base-content"
 
+  defp render_markdown(text) when is_binary(text) do
+    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
+    html
+  end
+
+  defp render_markdown(nil), do: ""
+
+  defp gender_label(0), do: gettext("Male")
+  defp gender_label(1), do: gettext("Female")
+  defp gender_label(2), do: gettext("Other")
+  defp gender_label(_), do: nil
+
+  defp gender_icon_class(0), do: "text-blue-500"
+  defp gender_icon_class(1), do: "text-pink-500"
+  defp gender_icon_class(2), do: "text-purple-500"
+  defp gender_icon_class(_), do: "text-base-content/50"
+
   defp get_daily_challenges_status(user_id) do
     challenges = Learning.get_todays_challenges(user_id)
     has_any = map_size(challenges) > 0

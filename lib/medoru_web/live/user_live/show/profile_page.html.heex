@@ -81,11 +81,35 @@
               </progress>
             </div>
 
+            <%!-- Age / Gender / Location --%>
+            <%= if @profile && (@profile.age || @profile.gender || @profile.location) do %>
+              <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-base-content/60 justify-center sm:justify-start">
+                <%= if @profile.age do %>
+                  <span class="flex items-center gap-1">
+                    <.icon name="hero-cake" class="w-4 h-4" />
+                    {@profile.age}
+                  </span>
+                <% end %>
+                <%= if @profile.gender do %>
+                  <span class="flex items-center gap-1">
+                    <.icon name="hero-user" class={["w-4 h-4", gender_icon_class(@profile.gender)]} />
+                    {gender_label(@profile.gender)}
+                  </span>
+                <% end %>
+                <%= if @profile.location do %>
+                  <span class="flex items-center gap-1">
+                    <.icon name="hero-map-pin" class="w-4 h-4" />
+                    {@profile.location}
+                  </span>
+                <% end %>
+              </div>
+            <% end %>
+
             <%!-- Bio --%>
             <%= if @profile && @profile.bio do %>
-              <p class="mt-4 text-base-content/80 max-w-xl">
-                {@profile.bio}
-              </p>
+              <div class="mt-4 text-base-content/80 max-w-xl prose prose-sm dark:prose-invert">
+                {raw(render_markdown(@profile.bio))}
+              </div>
             <% end %>
 
             <%!-- Tags --%>

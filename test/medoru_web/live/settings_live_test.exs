@@ -55,17 +55,6 @@ defmodule MedoruWeb.SettingsLiveTest do
       assert html =~ "is already taken"
     end
 
-    test "validates display name format", %{conn: conn, user: user} do
-      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
-
-      html =
-        view
-        |> form("#profile-form", user_profile: %{display_name: "Invalid@Name#"})
-        |> render_change()
-
-      assert html =~ "can only contain letters"
-    end
-
     test "creates API token", %{conn: conn, user: user} do
       {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
 
