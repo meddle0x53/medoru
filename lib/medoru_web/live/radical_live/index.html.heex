@@ -1,0 +1,140 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">
+        {gettext("Kanji Radicals")}
+      </h1>
+      <p class="text-secondary">
+        {gettext(
+          "Browse the 214 traditional Kangxi radicals sorted by how many kanji contain them"
+        )}
+      </p>
+    </div>
+
+    <%!-- Stats --%>
+    <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
+      <span class="bg-base-200 px-3 py-1.5 rounded-full">
+        {@total_count} {gettext("radicals")}
+      </span>
+      <%= if @total_pages > 1 do %>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </span>
+      <% end %>
+    </div>
+
+    <%!-- Radicals List --%>
+    <div class="space-y-4">
+      <%= for {radical, index} <- Enum.with_index(@radicals) do %>
+        <.link
+          navigate={~p"/radicals/#{radical.character}"}
+          class="group block"
+        >
+          <div class="bg-base-100 border border-base-300 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
+            <div class="flex items-center gap-5">
+              <%!-- Radical Character --%>
+              <div class="flex-shrink-0">
+                <div class="w-16 h-16 bg-base-200/70 rounded-xl flex items-center justify-center border border-base-300">
+                  <span class="text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
+                    {radical.character}
+                  </span>
+                </div>
+              </div>
+
+              <%!-- Info --%>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <h2 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
+                    {radical.meaning || gettext("Unknown")}
+                  </h2>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-secondary">
+                  <span class="bg-base-200 px-2 py-0.5 rounded-md">
+                    {radical.frequency} {gettext("kanji")}
+                  </span>
+                  <span class="bg-base-200 px-2 py-0.5 rounded-md">
+                    {radical.stroke_count} {gettext("strokes")}
+                  </span>
+                  <span class="bg-base-200 px-2 py-0.5 rounded-md">
+                    {KanjiRadicals.category_name(radical.category)}
+                  </span>
+                </div>
+              </div>
+
+              <%!-- Rank --%>
+              <div class="flex-shrink-0">
+                <span class="text-2xl font-bold text-base-content/10 group-hover:text-primary/20 transition-colors">
+                  #{(@page - 1) * 10 + index + 1}
+                </span>
+              </div>
+            </div>
+          </div>
+        </.link>
+      <% end %>
+    </div>
+
+    <%!-- Empty State --%>
+    <%= if @radicals == [] do %>
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">📖</div>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          {gettext("No radicals found")}
+        </h3>
+      </div>
+    <% end %>
+
+    <%!-- Pagination --%>
+    <%= if @total_pages > 1 do %>
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          <%= if @page > 1 do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page - 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              ← {gettext("Prev")}
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              ← {gettext("Prev")}
+            </span>
+          <% end %>
+
+          <div class="flex items-center gap-1">
+            <%= for p <- max(1, @page - 2)..min(@total_pages, @page + 2) do %>
+              <%= if p == @page do %>
+                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                  {p}
+                </span>
+              <% else %>
+                <button
+                  phx-click="change_page"
+                  phx-value-page={p}
+                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                >
+                  {p}
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%= if @page < @total_pages do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page + 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              {gettext("Next")} →
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              {gettext("Next")} →
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

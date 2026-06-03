@@ -41,7 +41,7 @@ defmodule Medoru.Content.Kanji do
       :frequency,
       :translations
     ])
-    |> validate_required([:character, :meanings, :stroke_count, :jlpt_level])
+    |> validate_required([:character, :meanings, :stroke_count])
     |> validate_length(:character, is: 1)
     |> validate_kanji_character()
     |> validate_number(:stroke_count, greater_than: 0)

@@ -6,9 +6,12 @@ defmodule MedoruWeb.DailyKanjiTestLive do
   use MedoruWeb, :live_view
 
   alias Medoru.Learning
+  alias Medoru.Repo
+  alias Medoru.Learning.UserProgress
+  import Ecto.Query
   # alias Medoru.Content  # unused, kept for reference
 
-  @kanji_count 10
+  @kanji_count 15
   @xp_per_kanji 30
   @max_wrong_strokes 3
 
@@ -21,7 +24,7 @@ defmodule MedoruWeb.DailyKanjiTestLive do
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-base-content">{gettext("Daily Kanji Challenge")}</h1>
           <p class="text-secondary mt-1">
-            {gettext("Practice writing %{count} kanji. Each kanji is worth 30 XP if you keep wrong strokes under 4.", count: @kanji_count)}
+            {gettext("Practice writing %{count} kanji. 10 are your least-known, 5 are random. Each kanji is worth 30 XP if you keep wrong strokes under 4.", count: @kanji_count)}
           </p>
         </div>
 
@@ -51,15 +54,15 @@ defmodule MedoruWeb.DailyKanjiTestLive do
                     <span class="text-secondary">{gettext("Base XP")}</span>
                     <span class="font-medium">{@base_xp}</span>
                   </div>
-                  <%= if @too_many_wrong_strokes do %>
+                  <%= if @penalty_xp > 0 do %>
                     <div class="flex justify-between text-sm text-error mb-2">
-                      <span>{gettext("Too many wrong strokes")}</span>
-                      <span>-{@base_xp}</span>
+                      <span>{gettext("Penalties")}</span>
+                      <span>-{@penalty_xp}</span>
                     </div>
                   <% end %>
                   <div class="border-t border-base-300 pt-2 flex justify-between font-bold">
                     <span>{gettext("Total XP")}</span>
-                    <span class={if(@too_many_wrong_strokes, do: "text-error", else: "text-success")}>
+                    <span class={if(@penalty_xp > 0, do: "text-error", else: "text-success")}>
                       {@total_xp}
                     </span>
                   </div>
@@ -189,6 +192,7 @@ defmodule MedoruWeb.DailyKanjiTestLive do
        |> assign(:kanji_count, @kanji_count)
        |> assign(:correct_count, 0)
        |> assign(:base_xp, 0)
+       |> assign(:penalty_xp, 0)
        |> assign(:total_xp, 0)
        |> assign(:too_many_wrong_strokes, false)}
     else
@@ -198,12 +202,13 @@ defmodule MedoruWeb.DailyKanjiTestLive do
         {:ok,
          socket
          |> assign(:page_title, gettext("Daily Kanji Challenge"))
-         |> put_flash(:error, gettext("Not enough learned kanji with stroke data. Learn more kanji first!"))
+         |> put_flash(:error, gettext("Not enough learned kanji with stroke data. Learn at least %{count} kanji first!", count: @kanji_count))
          |> assign(:finished, true)
          |> assign(:already_completed, false)
          |> assign(:kanji_count, @kanji_count)
          |> assign(:correct_count, 0)
          |> assign(:base_xp, 0)
+         |> assign(:penalty_xp, 0)
          |> assign(:total_xp, 0)
          |> assign(:too_many_wrong_strokes, false)
          |> assign(:current_index, 1)
@@ -270,18 +275,27 @@ defmodule MedoruWeb.DailyKanjiTestLive do
   defp proceed_to_next_kanji(socket, completed, wrong_strokes) do
     current_kanji = socket.assigns.current_kanji
     current_index = socket.assigns.current_index
+    user = socket.assigns.current_scope.current_user
+
+    # Update known_score for this kanji based on performance
+    update_known_score(user.id, current_kanji.id, completed)
+
     results = [{current_kanji.id, completed, wrong_strokes} | socket.assigns.results]
 
     correct_count = if completed, do: socket.assigns.correct_count + 1, else: socket.assigns.correct_count
 
     if current_index >= @kanji_count do
       # Finished - calculate XP per kanji (<4 wrong strokes = 30 XP, 4+ = 0 XP)
+      max_possible_xp = @kanji_count * @xp_per_kanji
+
       total_xp =
         results
         |> Enum.filter(fn {_, completed, _} -> completed end)
         |> Enum.reduce(0, fn {_, _, ws}, acc ->
           if ws <= @max_wrong_strokes, do: acc + @xp_per_kanji, else: acc
         end)
+
+      penalty_xp = max_possible_xp - total_xp
 
       user = socket.assigns.current_scope.current_user
 
@@ -297,14 +311,15 @@ defmodule MedoruWeb.DailyKanjiTestLive do
           metadata: %{"results" => metadata_results}
         )
 
-      too_many_wrong = Enum.any?(results, fn {_, _, ws} -> ws > @max_wrong_strokes end)
+      too_many_wrong = penalty_xp > 0
 
       {:noreply,
        socket
        |> assign(:finished, true)
        |> assign(:results, results)
        |> assign(:correct_count, correct_count)
-       |> assign(:base_xp, total_xp)
+       |> assign(:base_xp, max_possible_xp)
+       |> assign(:penalty_xp, penalty_xp)
        |> assign(:total_xp, total_xp)
        |> assign(:too_many_wrong_strokes, too_many_wrong)}
     else
@@ -317,6 +332,26 @@ defmodule MedoruWeb.DailyKanjiTestLive do
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, results)
        |> assign(:correct_count, correct_count)}
+    end
+  end
+
+  defp update_known_score(user_id, kanji_id, completed) do
+    progress =
+      UserProgress
+      |> where([up], up.user_id == ^user_id and up.kanji_id == ^kanji_id)
+      |> Repo.one()
+
+    if progress do
+      new_score =
+        if completed do
+          progress.known_score + 1
+        else
+          max(progress.known_score - 1, 1)
+        end
+
+      progress
+      |> Ecto.Changeset.change(known_score: new_score)
+      |> Repo.update()
     end
   end
 

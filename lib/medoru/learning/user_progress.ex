@@ -11,6 +11,7 @@ defmodule Medoru.Learning.UserProgress do
   schema "user_progress" do
     field :mastery_level, :integer, default: 0
     field :times_reviewed, :integer, default: 0
+    field :known_score, :integer, default: 0
     field :last_reviewed_at, :utc_datetime
     field :next_review_at, :utc_datetime
 
@@ -28,6 +29,7 @@ defmodule Medoru.Learning.UserProgress do
     |> cast(attrs, [
       :mastery_level,
       :times_reviewed,
+      :known_score,
       :last_reviewed_at,
       :next_review_at,
       :user_id,
@@ -38,6 +40,7 @@ defmodule Medoru.Learning.UserProgress do
     |> validate_exactly_one_content()
     |> validate_number(:mastery_level, greater_than_or_equal_to: 0, less_than_or_equal_to: 5)
     |> validate_number(:times_reviewed, greater_than_or_equal_to: 0)
+    |> validate_number(:known_score, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:kanji_id)
     |> foreign_key_constraint(:word_id)

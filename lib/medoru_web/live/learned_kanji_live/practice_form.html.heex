@@ -1,0 +1,136 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-2">
+        <.link
+          navigate={~p"/users/#{@user.id}/kanji"}
+          class="text-secondary hover:text-primary transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="w-5 h-5" />
+        </.link>
+        <h1 class="text-3xl font-bold text-base-content">
+          {gettext("Practice Kanji")}
+        </h1>
+      </div>
+      <p class="text-secondary">
+        {gettext("Select up to %{max} kanji to practice writing. Your known score will be updated.", max: @max_selection)}
+      </p>
+    </div>
+
+    <%!-- Options & Start Bar --%>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="bg-base-200 px-3 py-1.5 rounded-full text-sm text-secondary">
+          {length(@selected_ids)} / {@max_selection} {gettext("selected")}
+        </span>
+        <%= if length(@selected_ids) == @max_selection do %>
+          <span class="text-sm text-warning">
+            {gettext("Maximum reached")}
+          </span>
+        <% end %>
+
+        <%!-- Snap toggle --%>
+        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            phx-click="toggle_snap"
+            checked={@snap_correct}
+            class="checkbox checkbox-sm checkbox-primary"
+          />
+          <span class="text-sm text-secondary">
+            {gettext("Snap to correct stroke")}
+          </span>
+        </label>
+      </div>
+      <button
+        type="button"
+        phx-click="start_practice"
+        disabled={@selected_ids == []}
+        class={[
+          "btn btn-primary",
+          @selected_ids == [] && "btn-disabled"
+        ]}
+      >
+        <.icon name="hero-pencil" class="w-4 h-4 mr-2" />
+        {gettext("Start Practice")}
+      </button>
+    </div>
+
+    <%!-- Kanji Grid with Checkboxes --%>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <%= for k <- @kanji do %>
+        <div
+          phx-click="toggle_select"
+          phx-value-id={"select-kanji-#{k.id}"}
+          class={[
+            "group relative bg-base-100 border rounded-xl p-5 shadow-sm cursor-pointer transition-all duration-200",
+            if(k.id in @selected_ids,
+              do: "border-primary bg-primary/5 shadow-md",
+              else: "border-base-300 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5"
+            )
+          ]}
+        >
+          <%!-- Checkbox indicator --%>
+          <div class={[
+            "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors",
+            if(k.id in @selected_ids,
+              do: "bg-primary border-primary text-primary-content",
+              else: "border-base-300 bg-base-100"
+            )
+          ]}>
+            <%= if k.id in @selected_ids do %>
+              <.icon name="hero-check" class="w-4 h-4" />
+            <% end %>
+          </div>
+
+          <div class="block text-center">
+            <%!-- Kanji Character --%>
+            <div class="text-4xl font-medium text-base-content group-hover:text-primary transition-colors mb-3">
+              {k.character}
+            </div>
+
+            <%!-- Meanings --%>
+            <p class="text-sm text-secondary line-clamp-2 mb-3">
+              {Enum.join(k.meanings, ", ")}
+            </p>
+
+            <%!-- Badges --%>
+            <span class={[
+              "inline-block px-2 py-0.5 rounded text-xs font-medium",
+              case k.jlpt_level do
+                5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+                3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+                2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+                1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+              end
+            ]}>
+              N{k.jlpt_level}
+            </span>
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-info/10 text-info ml-1">
+              {gettext("Known")}: {k.known_score}
+            </span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%= if @kanji == [] do %>
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">🈳</div>
+        <h3 class="text-lg font-medium text-base-content mb-2">
+          {gettext("No kanji learned yet")}
+        </h3>
+        <.link
+          navigate={~p"/lessons"}
+          class="inline-flex items-center px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+        >
+          <.icon name="hero-book-open" class="w-5 h-5 mr-2" />
+          {gettext("Start Learning")}
+        </.link>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

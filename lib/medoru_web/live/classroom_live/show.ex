@@ -1682,6 +1682,32 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           {game.kanji_falling_game.reading_type}
                         </span>
                       </div>
+                    <% game.words_falling_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                          {gettext("Speed")} {game.words_falling_game.initial_speed}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                          {game.words_falling_game.lives} {gettext("lives")}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-book-open" class="w-3 h-3 mr-1" />
+                          {length(game.words_falling_game.selected_words)} {gettext("words")}
+                        </span>
+                      </div>
+                    <% game.radical_hunt_game -> %>
+                      <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-magnifying-glass" class="w-3 h-3 mr-1" />
+                          {gettext("Radical")} {game.radical_hunt_game.radical}
+                        </span>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-clock" class="w-3 h-3 mr-1" />
+                          {game.radical_hunt_game.timeout_seconds}s
+                        </span>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>
@@ -1695,6 +1721,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
                         game.type == "kanji_falling" ->
                           ~p"/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
+
+                        game.type == "words_falling" ->
+                          ~p"/classrooms/#{@classroom.id}/words-falling-games/#{game.id}"
+
+                        game.type == "radical_hunt" ->
+                          ~p"/classrooms/#{@classroom.id}/radical-hunt-games/#{game.id}"
 
                         true ->
                           ~p"/classrooms/#{@classroom.id}/games/#{game.id}"
@@ -1725,7 +1757,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Play Again")}
                         </.link>
                     <% end %>
-                    <%= if game.type in ["kana_falling", "kanji_falling"] do %>
+                    <%= if game.type in ["kana_falling", "kanji_falling", "words_falling", "radical_hunt"] do %>
                       <%!-- No rankings link for falling games (shown on game over instead) --%>
                     <% else %>
                       <.link

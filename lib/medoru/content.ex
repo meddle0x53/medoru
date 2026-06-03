@@ -62,6 +62,16 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns kanji that contain the given radical.
+  """
+  def list_kanji_by_radical(radical) when is_binary(radical) do
+    Kanji
+    |> where([k], ^radical in k.radicals)
+    |> order_by([k], asc: k.frequency)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single kanji by ID.
 
   Raises `Ecto.NoResultsError` if the Kanji does not exist.

@@ -1013,6 +1013,32 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                             {game.kanji_falling_game.reading_type}
                           </span>
                         </div>
+                      <% game.words_falling_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-bolt" class="w-3 h-3 mr-1" />
+                            {gettext("Speed")} {game.words_falling_game.initial_speed}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-heart" class="w-3 h-3 mr-1" />
+                            {game.words_falling_game.lives} {gettext("lives")}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-book-open" class="w-3 h-3 mr-1" />
+                            {length(game.words_falling_game.selected_words)} {gettext("words")}
+                          </span>
+                        </div>
+                      <% game.radical_hunt_game -> %>
+                        <div class="flex flex-wrap gap-2 text-xs sm:text-sm text-secondary">
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-magnifying-glass" class="w-3 h-3 mr-1" />
+                            {gettext("Radical")} {game.radical_hunt_game.radical}
+                          </span>
+                          <span class="badge badge-outline badge-sm">
+                            <.icon name="hero-clock" class="w-3 h-3 mr-1" />
+                            {game.radical_hunt_game.timeout_seconds}s
+                          </span>
+                        </div>
                       <% true -> %>
                     <% end %>
                   </div>
@@ -1048,6 +1074,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
                           "words_falling" ->
                             ~p"/teacher/classrooms/#{@classroom.id}/words-falling-games/#{game.id}"
+
+                          "radical_hunt" ->
+                            ~p"/teacher/classrooms/#{@classroom.id}/radical-hunt-games/#{game.id}"
 
                           _ ->
                             ~p"/teacher/classrooms/#{@classroom.id}/games/#{game.id}"

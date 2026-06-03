@@ -10,7 +10,7 @@ defmodule Medoru.Games.Game do
 
   alias Medoru.Classrooms.Classroom
 
-  @types ["memory_cards", "kana_memory_cards", "kana_falling", "kanji_falling", "words_falling"]
+  @types ["memory_cards", "kana_memory_cards", "kana_falling", "kanji_falling", "words_falling", "radical_hunt"]
   @statuses [:draft, :published, :archived]
   @skill_levels 1..5
 
@@ -30,10 +30,12 @@ defmodule Medoru.Games.Game do
     has_one :kana_falling_game, Medoru.Games.KanaFallingGame
     has_one :kanji_falling_game, Medoru.Games.KanjiFallingGame
     has_one :words_falling_game, Medoru.Games.WordsFallingGame
+    has_one :radical_hunt_game, Medoru.Games.RadicalHuntGame
     has_many :memory_card_sessions, Medoru.Games.MemoryCardSession
     has_many :kana_falling_sessions, Medoru.Games.KanaFallingSession
     has_many :kanji_falling_sessions, Medoru.Games.KanjiFallingSession
     has_many :words_falling_sessions, Medoru.Games.WordsFallingSession
+    has_many :radical_hunt_sessions, Medoru.Games.RadicalHuntSession
 
     timestamps(type: :utc_datetime)
   end

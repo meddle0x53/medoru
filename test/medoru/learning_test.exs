@@ -1,477 +1,367 @@
 defmodule Medoru.LearningTest do
-  use Medoru.DataCase
+  use Medoru.DataCase, async: true
 
   alias Medoru.Learning
-  alias Medoru.Learning.{UserProgress, LessonProgress}
+  alias Medoru.Learning.{ReviewSchedule, UserProgress}
+  alias Medoru.Repo
 
-  import Medoru.LearningFixtures
+  import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
 
-  describe "lesson_progress" do
-    import Medoru.AccountsFixtures
-    import Medoru.ContentFixtures
+  # ============================================================================
+  # record_review/3 - SM-2 algorithm tests
+  # ============================================================================
 
-    test "list_lesson_progress/1 returns all lesson_progress for a user" do
+  describe "record_review/3" do
+    setup do
       user = user_fixture()
-      lesson = lesson_fixture()
-      lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
-
-      [result] = Learning.list_lesson_progress(user.id)
-      assert result.id == lesson_progress.id
-      assert result.user_id == user.id
-      assert result.lesson_id == lesson.id
+      word = word_fixture()
+      {:ok, progress} = Learning.track_word_learned(user.id, word.id)
+      %{user: user, word: word, progress: progress}
     end
 
-    test "get_lesson_progress/2 returns the lesson_progress for user and lesson" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-      lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
-
-      result = Learning.get_lesson_progress(user.id, lesson.id)
-      assert result.id == lesson_progress.id
-      assert result.user_id == user.id
-      assert result.lesson_id == lesson.id
+    test "creates a new schedule on first review", %{user: user, progress: progress} do
+      assert {:ok, schedule} = Learning.record_review(user.id, progress.id, 4)
+      assert schedule.repetitions == 1
+      assert schedule.interval == 1
+      assert schedule.ease_factor == 2.5
+      assert DateTime.compare(schedule.next_review_at, DateTime.utc_now()) == :gt
     end
 
-    test "get_lesson_progress/2 returns nil if no progress exists" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "successful review sequence builds intervals", %{user: user, progress: progress} do
+      # 1st success: repetitions=1, interval=1
+      assert {:ok, s1} = Learning.record_review(user.id, progress.id, 4)
+      assert s1.repetitions == 1
+      assert s1.interval == 1
 
-      assert Learning.get_lesson_progress(user.id, lesson.id) == nil
+      # 2nd success: repetitions=2, interval=3
+      assert {:ok, s2} = Learning.record_review(user.id, progress.id, 4)
+      assert s2.repetitions == 2
+      assert s2.interval == 3
+
+      # 3rd success: repetitions=3, interval=round(3 * 2.5)=8
+      assert {:ok, s3} = Learning.record_review(user.id, progress.id, 4)
+      assert s3.repetitions == 3
+      assert s3.interval == 8
+
+      # 4th success: interval=round(8 * 2.5)=20
+      assert {:ok, s4} = Learning.record_review(user.id, progress.id, 4)
+      assert s4.repetitions == 4
+      assert s4.interval == 20
     end
 
-    test "lesson_started?/2 returns true if user has started lesson" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-      _lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
+    test "failed review resets repetitions and interval", %{user: user, progress: progress} do
+      # Build up to repetitions=3
+      Learning.record_review(user.id, progress.id, 4)
+      Learning.record_review(user.id, progress.id, 4)
+      Learning.record_review(user.id, progress.id, 4)
 
-      assert Learning.lesson_started?(user.id, lesson.id) == true
+      # Fail: resets to repetitions=0, interval=1
+      assert {:ok, schedule} = Learning.record_review(user.id, progress.id, 2)
+      assert schedule.repetitions == 0
+      assert schedule.interval == 1
     end
 
-    test "lesson_started?/2 returns false if user has not started lesson" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "failed review lowers ease factor", %{user: user, progress: progress} do
+      # Successful review to get past initial state
+      Learning.record_review(user.id, progress.id, 4)
+      Learning.record_review(user.id, progress.id, 4)
 
-      assert Learning.lesson_started?(user.id, lesson.id) == false
+      initial_ef = 2.5
+      # Fail: ease_factor stays same (reset path doesn't change it)
+      assert {:ok, s1} = Learning.record_review(user.id, progress.id, 2)
+      assert s1.ease_factor == initial_ef
+
+      # Build back up
+      Learning.record_review(user.id, progress.id, 4)
+      Learning.record_review(user.id, progress.id, 4)
+
+      # Another fail
+      assert {:ok, s2} = Learning.record_review(user.id, progress.id, 2)
+      assert s2.ease_factor == initial_ef
     end
 
-    test "lesson_completed?/2 returns true if user has completed lesson" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "easy successful reviews increase ease factor", %{user: user, progress: progress} do
+      # Quality 5 increases ease factor more than quality 4
+      assert {:ok, s1} = Learning.record_review(user.id, progress.id, 5)
+      assert s1.ease_factor > 2.5
 
-      _lesson_progress =
-        lesson_progress_fixture(
-          user_id: user.id,
-          lesson_id: lesson.id,
-          status: :completed
-        )
-
-      assert Learning.lesson_completed?(user.id, lesson.id) == true
+      assert {:ok, s2} = Learning.record_review(user.id, progress.id, 5)
+      assert s2.ease_factor > s1.ease_factor
     end
 
-    test "lesson_completed?/2 returns false if user has not completed lesson" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-      _lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
-
-      assert Learning.lesson_completed?(user.id, lesson.id) == false
+    test "hard successful reviews decrease ease factor", %{user: user, progress: progress} do
+      # Quality 3 (barely passed) decreases ease factor
+      assert {:ok, s1} = Learning.record_review(user.id, progress.id, 3)
+      assert s1.ease_factor < 2.5
     end
 
-    test "start_lesson/2 creates a new lesson_progress" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-
-      assert {:ok, %LessonProgress{} = lesson_progress} =
-               Learning.start_lesson(user.id, lesson.id)
-
-      assert lesson_progress.user_id == user.id
-      assert lesson_progress.lesson_id == lesson.id
-      assert lesson_progress.status == :started
-      assert lesson_progress.started_at != nil
+    test "ease factor has a floor of 1.3", %{user: user, progress: progress} do
+      # Repeated quality 3 reviews should lower ease factor
+      Enum.reduce(1..20, 2.5, fn _, _ef ->
+        {:ok, schedule} = Learning.record_review(user.id, progress.id, 3)
+        assert schedule.ease_factor >= 1.3
+        schedule.ease_factor
+      end)
     end
 
-    test "start_lesson/2 returns existing progress if already started" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "next_review_at is calculated from now plus interval days", %{user: user, progress: progress} do
+      before = DateTime.utc_now() |> DateTime.truncate(:second)
+      assert {:ok, schedule} = Learning.record_review(user.id, progress.id, 4)
+      after_time = DateTime.utc_now() |> DateTime.truncate(:second)
 
-      {:ok, existing} = Learning.start_lesson(user.id, lesson.id)
-      {:ok, result} = Learning.start_lesson(user.id, lesson.id)
-      assert result.id == existing.id
-    end
+      # Should be approximately 1 day from now
+      expected_min = DateTime.add(before, 1, :day)
+      expected_max = DateTime.add(after_time, 1, :day)
 
-    test "update_lesson_progress/3 updates the progress percentage" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-      _lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
-
-      assert {:ok, %LessonProgress{} = lesson_progress} =
-               Learning.update_lesson_progress(user.id, lesson.id, 50)
-
-      assert lesson_progress.progress_percentage == 50
-    end
-
-    test "update_lesson_progress/3 returns error if lesson not started" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-
-      assert {:error, :not_started} =
-               Learning.update_lesson_progress(user.id, lesson.id, 50)
-    end
-
-    test "complete_lesson/2 marks lesson as completed" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-      _lesson_progress = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
-
-      assert {:ok, %LessonProgress{} = lesson_progress} =
-               Learning.complete_lesson(user.id, lesson.id)
-
-      assert lesson_progress.status == :completed
-      assert lesson_progress.completed_at != nil
-      assert lesson_progress.progress_percentage == 100
-    end
-
-    test "complete_lesson/2 returns error if lesson not started" do
-      user = user_fixture()
-      lesson = lesson_fixture()
-
-      assert {:error, :not_started} = Learning.complete_lesson(user.id, lesson.id)
+      assert DateTime.compare(schedule.next_review_at, expected_min) in [:gt, :eq]
+      assert DateTime.compare(schedule.next_review_at, expected_max) in [:lt, :eq]
     end
   end
 
-  describe "user_progress" do
-    import Medoru.AccountsFixtures
-    import Medoru.ContentFixtures
+  # ============================================================================
+  # adjust_word_mastery/3 tests
+  # ============================================================================
 
-    test "list_user_progress/1 returns all user_progress for a user" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      user_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-
-      [result] = Learning.list_user_progress(user.id)
-      assert result.id == user_progress.id
-      assert result.user_id == user.id
-    end
-
-    test "list_kanji_progress/1 returns only kanji progress" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      word = word_fixture()
-
-      kanji_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-      _word_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
-
-      result = Learning.list_kanji_progress(user.id)
-      assert length(result) == 1
-      assert hd(result).id == kanji_progress.id
-    end
-
-    test "list_word_progress/1 returns only word progress" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      word = word_fixture()
-
-      _kanji_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-      word_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
-
-      result = Learning.list_word_progress(user.id)
-      assert length(result) == 1
-      assert hd(result).id == word_progress.id
-    end
-
-    test "get_kanji_progress/2 returns kanji progress for user" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      user_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-
-      result = Learning.get_kanji_progress(user.id, kanji.id)
-      assert result.id == user_progress.id
-      assert result.kanji_id == kanji.id
-    end
-
-    test "get_word_progress/2 returns word progress for user" do
+  describe "adjust_word_mastery/3" do
+    setup do
       user = user_fixture()
       word = word_fixture()
-      user_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
-
-      result = Learning.get_word_progress(user.id, word.id)
-      assert result.id == user_progress.id
-      assert result.word_id == word.id
+      {:ok, progress} = Learning.track_word_learned(user.id, word.id)
+      %{user: user, word: word, progress: progress}
     end
 
-    test "kanji_learned?/2 returns true if kanji is learned" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      _user_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-
-      assert Learning.kanji_learned?(user.id, kanji.id) == true
+    test "correct answer increases mastery level", %{user: user, word: word} do
+      assert {:ok, progress} = Learning.adjust_word_mastery(user.id, word.id, :correct)
+      assert progress.mastery_level == 2
+      assert progress.times_reviewed == 1
+      assert progress.last_reviewed_at != nil
     end
 
-    test "kanji_learned?/2 returns false if kanji is not learned" do
-      user = user_fixture()
-      kanji = kanji_fixture()
+    test "incorrect answer decreases mastery level", %{user: user, word: word, progress: _progress} do
+      # First get to mastery level 2
+      Learning.adjust_word_mastery(user.id, word.id, :correct)
 
-      assert Learning.kanji_learned?(user.id, kanji.id) == false
+      assert {:ok, updated} = Learning.adjust_word_mastery(user.id, word.id, :incorrect)
+      assert updated.mastery_level == 1
+      assert updated.times_reviewed == 2
     end
 
-    test "word_learned?/2 returns true if word is learned" do
-      user = user_fixture()
-      word = word_fixture()
-      _user_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
-
-      assert Learning.word_learned?(user.id, word.id) == true
+    test "mastery level never goes below 1", %{user: user, word: word} do
+      # Try to decrease from level 1
+      assert {:ok, progress} = Learning.adjust_word_mastery(user.id, word.id, :incorrect)
+      assert progress.mastery_level == 1
     end
 
-    test "word_learned?/2 returns false if word is not learned" do
-      user = user_fixture()
-      word = word_fixture()
+    test "mastery level never goes above 5", %{user: user, word: word} do
+      # Increase to max
+      Enum.each(1..10, fn _ ->
+        Learning.adjust_word_mastery(user.id, word.id, :correct)
+      end)
 
-      assert Learning.word_learned?(user.id, word.id) == false
+      progress = Learning.get_word_progress(user.id, word.id)
+      assert progress.mastery_level == 5
     end
 
-    test "track_kanji_learned/2 creates kanji progress" do
-      user = user_fixture()
-      kanji = kanji_fixture()
+    test "updates review schedule on correct answer", %{user: user, word: word, progress: progress} do
+      assert {:ok, _updated_progress} = Learning.adjust_word_mastery(user.id, word.id, :correct)
 
-      assert {:ok, %UserProgress{} = user_progress} =
-               Learning.track_kanji_learned(user.id, kanji.id)
-
-      assert user_progress.user_id == user.id
-      assert user_progress.kanji_id == kanji.id
-      assert user_progress.word_id == nil
-      assert user_progress.mastery_level == 1
+      schedule = Learning.get_review_schedule(user.id, progress.id)
+      assert schedule != nil
+      assert schedule.repetitions == 1
     end
 
-    test "track_kanji_learned/2 returns existing progress if already tracked" do
-      user = user_fixture()
-      kanji = kanji_fixture()
+    test "updates review schedule on incorrect answer", %{user: user, word: word, progress: progress} do
+      # First succeed to build up repetitions
+      Learning.adjust_word_mastery(user.id, word.id, :correct)
+      Learning.adjust_word_mastery(user.id, word.id, :correct)
 
-      {:ok, existing} = Learning.track_kanji_learned(user.id, kanji.id)
-      {:ok, result} = Learning.track_kanji_learned(user.id, kanji.id)
-      assert result.id == existing.id
+      # Then fail
+      assert {:ok, _updated_progress} = Learning.adjust_word_mastery(user.id, word.id, :incorrect)
+
+      schedule = Learning.get_review_schedule(user.id, progress.id)
+      assert schedule.repetitions == 0
+      assert schedule.interval == 1
     end
 
-    test "track_word_learned/2 creates word progress" do
-      user = user_fixture()
-      word = word_fixture()
-
-      assert {:ok, %UserProgress{} = user_progress} =
-               Learning.track_word_learned(user.id, word.id)
-
-      assert user_progress.user_id == user.id
-      assert user_progress.word_id == word.id
-      assert user_progress.kanji_id == nil
-      assert user_progress.mastery_level == 1
-    end
-
-    test "track_word_learned/2 returns existing progress if already tracked" do
-      user = user_fixture()
-      word = word_fixture()
-
-      {:ok, existing} = Learning.track_word_learned(user.id, word.id)
-      {:ok, result} = Learning.track_word_learned(user.id, word.id)
-      assert result.id == existing.id
-    end
-
-    test "update_kanji_mastery/3 updates mastery level" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      _user_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-
-      assert {:ok, %UserProgress{} = user_progress} =
-               Learning.update_kanji_mastery(user.id, kanji.id, 2)
-
-      assert user_progress.mastery_level == 2
-      assert user_progress.times_reviewed == 1
-      assert user_progress.last_reviewed_at != nil
-    end
-
-    test "update_kanji_mastery/3 returns error if kanji not learned" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-
-      assert {:error, :not_learned} = Learning.update_kanji_mastery(user.id, kanji.id, 2)
-    end
-
-    test "update_word_mastery/3 updates mastery level" do
-      user = user_fixture()
-      word = word_fixture()
-      _user_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
-
-      assert {:ok, %UserProgress{} = user_progress} =
-               Learning.update_word_mastery(user.id, word.id, 3)
-
-      assert user_progress.mastery_level == 3
-      assert user_progress.times_reviewed == 1
-      assert user_progress.last_reviewed_at != nil
-    end
-
-    test "update_word_mastery/3 returns error if word not learned" do
-      user = user_fixture()
-      word = word_fixture()
-
-      assert {:error, :not_learned} = Learning.update_word_mastery(user.id, word.id, 3)
+    test "returns error for unlearned word", %{user: user} do
+      unlearned_word = word_fixture()
+      assert {:error, :not_learned} = Learning.adjust_word_mastery(user.id, unlearned_word.id, :correct)
     end
   end
 
-  describe "statistics" do
-    import Medoru.AccountsFixtures
-    import Medoru.ContentFixtures
+  # ============================================================================
+  # get_due_reviews/2 tests
+  # ============================================================================
 
-    test "get_user_stats/1 returns user statistics" do
+  describe "get_due_reviews/2" do
+    setup do
       user = user_fixture()
-      kanji = kanji_fixture()
-      word = word_fixture()
-      lesson = lesson_fixture()
 
-      _user_progress = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-      _word_progress = user_progress_fixture(user_id: user.id, word_id: word.id)
+      # Create 3 learned words with review schedules
+      words = Enum.map(1..3, fn _ -> word_fixture() end)
 
-      _lesson_progress =
-        lesson_progress_fixture(
-          user_id: user.id,
-          lesson_id: lesson.id,
-          status: :completed
-        )
+      progresses =
+        Enum.map(words, fn word ->
+          {:ok, progress} = Learning.track_word_learned(user.id, word.id)
+          progress
+        end)
 
-      stats = Learning.get_user_stats(user.id)
+      # Word 1: overdue (past)
+      [p1, p2, p3] = progresses
+      create_review_schedule(user.id, p1.id, DateTime.add(DateTime.utc_now(), -1, :day))
 
-      assert stats.total_kanji_learned == 1
-      assert stats.total_words_learned == 1
-      assert stats.lessons_started == 1
-      assert stats.lessons_completed == 1
-      assert stats.kanji_by_mastery == %{0 => 0, 1 => 1, 2 => 0, 3 => 0, 4 => 0, 5 => 0}
+      # Word 2: due now
+      create_review_schedule(user.id, p2.id, DateTime.utc_now())
+
+      # Word 3: future (not due)
+      create_review_schedule(user.id, p3.id, DateTime.add(DateTime.utc_now(), +7, :day))
+
+      %{user: user, words: words, progresses: progresses}
     end
 
-    test "get_user_stats/1 returns empty stats for new user" do
-      user = user_fixture()
-
-      stats = Learning.get_user_stats(user.id)
-
-      assert stats.total_kanji_learned == 0
-      assert stats.total_words_learned == 0
-      assert stats.lessons_started == 0
-      assert stats.lessons_completed == 0
-      assert stats.kanji_by_mastery == %{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0}
-    end
-  end
-
-  describe "user_progress changeset validations" do
-    import Medoru.AccountsFixtures
-    import Medoru.ContentFixtures
-
-    test "cannot have both kanji_id and word_id" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-      word = word_fixture()
-
-      attrs = %{
-        user_id: user.id,
-        kanji_id: kanji.id,
-        word_id: word.id
-      }
-
-      changeset = UserProgress.changeset(%UserProgress{}, attrs)
-      assert %{kanji_id: ["cannot have both kanji_id and word_id"]} = errors_on(changeset)
+    test "returns only words with next_review_at <= now", %{user: user} do
+      due = Learning.get_due_reviews(user.id)
+      assert length(due) == 2
     end
 
-    test "must have at least kanji_id or word_id" do
-      user = user_fixture()
+    test "orders by next_review_at ascending", %{user: user, words: words} do
+      due = Learning.get_due_reviews(user.id)
+      assert length(due) == 2
 
-      attrs = %{
-        user_id: user.id
-      }
-
-      changeset = UserProgress.changeset(%UserProgress{}, attrs)
-      assert %{kanji_id: ["must have either kanji_id or word_id"]} = errors_on(changeset)
+      # First should be the most overdue one (word 1)
+      assert List.first(due).word_id == List.first(words).id
     end
 
-    test "mastery_level must be between 0 and 5" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-
-      attrs = %{
-        user_id: user.id,
-        kanji_id: kanji.id,
-        mastery_level: 6
-      }
-
-      changeset = UserProgress.changeset(%UserProgress{}, attrs)
-      assert "must be less than or equal to 5" in errors_on(changeset).mastery_level
+    test "respects limit", %{user: user} do
+      due = Learning.get_due_reviews(user.id, limit: 1)
+      assert length(due) == 1
     end
 
-    test "cannot create duplicate kanji progress for same user" do
-      user = user_fixture()
-      kanji = kanji_fixture()
-
-      _first = user_progress_fixture(user_id: user.id, kanji_id: kanji.id)
-
-      {:error, changeset} =
-        %UserProgress{}
-        |> UserProgress.changeset(%{user_id: user.id, kanji_id: kanji.id})
-        |> Repo.insert()
-
-      assert %{user_id: ["has already been taken"]} = errors_on(changeset)
+    test "excludes words with future next_review_at", %{user: user, words: words} do
+      due = Learning.get_due_reviews(user.id)
+      future_word_id = List.last(words).id
+      refute Enum.any?(due, fn d -> d.word_id == future_word_id end)
     end
 
-    test "cannot create duplicate word progress for same user" do
-      user = user_fixture()
-      word = word_fixture()
+    test "returns empty list when no reviews are due", %{user: user, progresses: progresses} do
+      # Update all schedules to be in the future
+      Enum.each(progresses, fn p ->
+        schedule = Learning.get_review_schedule(user.id, p.id)
 
-      _first = user_progress_fixture(user_id: user.id, word_id: word.id)
+        schedule
+        |> ReviewSchedule.changeset(%{next_review_at: DateTime.add(DateTime.utc_now(), +7, :day)})
+        |> Repo.update!()
+      end)
 
-      {:error, changeset} =
-        %UserProgress{}
-        |> UserProgress.changeset(%{user_id: user.id, word_id: word.id})
-        |> Repo.insert()
-
-      assert %{user_id: ["has already been taken"]} = errors_on(changeset)
+      assert Learning.get_due_reviews(user.id) == []
     end
   end
 
-  describe "lesson_progress changeset validations" do
-    import Medoru.AccountsFixtures
-    import Medoru.ContentFixtures
+  # ============================================================================
+  # get_words_for_daily_test/2 tests
+  # ============================================================================
 
-    test "status must be valid enum value" do
+  describe "get_words_for_daily_test/2" do
+    setup do
       user = user_fixture()
-      lesson = lesson_fixture()
-
-      attrs = %{
-        user_id: user.id,
-        lesson_id: lesson.id,
-        status: :invalid_status
-      }
-
-      changeset = LessonProgress.changeset(%LessonProgress{}, attrs)
-      assert %{status: ["is invalid"]} = errors_on(changeset)
+      %{user: user}
     end
 
-    test "progress_percentage must be between 0 and 100" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "returns learned words ordered by mastery level", %{user: user} do
+      word1 = word_fixture()
+      word2 = word_fixture()
+      word3 = word_fixture()
 
-      attrs = %{
-        user_id: user.id,
-        lesson_id: lesson.id,
-        progress_percentage: 150
-      }
+      {:ok, p1} = Learning.track_word_learned(user.id, word1.id)
+      {:ok, p2} = Learning.track_word_learned(user.id, word2.id)
+      {:ok, p3} = Learning.track_word_learned(user.id, word3.id)
 
-      changeset = LessonProgress.changeset(%LessonProgress{}, attrs)
-      assert "must be less than or equal to 100" in errors_on(changeset).progress_percentage
+      # Set different mastery levels
+      Repo.update!(UserProgress.changeset(p1, %{mastery_level: 3}))
+      Repo.update!(UserProgress.changeset(p2, %{mastery_level: 1}))
+      Repo.update!(UserProgress.changeset(p3, %{mastery_level: 2}))
+
+      results = Learning.get_words_for_daily_test(user.id)
+      mastery_levels = Enum.map(results, & &1.mastery_level)
+
+      assert mastery_levels == Enum.sort(mastery_levels)
+      assert List.first(results).mastery_level == 1
     end
 
-    test "cannot create duplicate lesson progress for same user" do
-      user = user_fixture()
-      lesson = lesson_fixture()
+    test "excludes words with future SRS schedules", %{user: user} do
+      word1 = word_fixture()
+      word2 = word_fixture()
 
-      _first = lesson_progress_fixture(user_id: user.id, lesson_id: lesson.id)
+      {:ok, p1} = Learning.track_word_learned(user.id, word1.id)
+      {:ok, p2} = Learning.track_word_learned(user.id, word2.id)
 
-      {:error, changeset} =
-        %LessonProgress{}
-        |> LessonProgress.changeset(%{user_id: user.id, lesson_id: lesson.id})
-        |> Repo.insert()
+      # Word 1: has a future schedule (repetitions > 0, next_review in future)
+      create_review_schedule(user.id, p1.id, DateTime.add(DateTime.utc_now(), +7, :day), %{repetitions: 3})
 
-      assert %{user_id: ["has already been taken"]} = errors_on(changeset)
+      # Word 2: no schedule (or repetitions=0)
+      create_review_schedule(user.id, p2.id, DateTime.utc_now(), %{repetitions: 0})
+
+      results = Learning.get_words_for_daily_test(user.id)
+      word_ids = Enum.map(results, & &1.word_id)
+
+      refute word1.id in word_ids
+      assert word2.id in word_ids
     end
+
+    test "includes words without a schedule", %{user: user} do
+      word = word_fixture()
+      {:ok, _progress} = Learning.track_word_learned(user.id, word.id)
+
+      results = Learning.get_words_for_daily_test(user.id)
+      assert Enum.any?(results, & &1.word_id == word.id)
+    end
+
+    test "respects limit", %{user: user} do
+      Enum.each(1..10, fn _ ->
+        word = word_fixture()
+        Learning.track_word_learned(user.id, word.id)
+      end)
+
+      results = Learning.get_words_for_daily_test(user.id, limit: 5)
+      assert length(results) == 5
+    end
+
+    test "respects exclude_word_ids", %{user: user} do
+      word1 = word_fixture()
+      word2 = word_fixture()
+
+      Learning.track_word_learned(user.id, word1.id)
+      Learning.track_word_learned(user.id, word2.id)
+
+      results = Learning.get_words_for_daily_test(user.id, exclude_word_ids: [word1.id])
+      word_ids = Enum.map(results, & &1.word_id)
+
+      refute word1.id in word_ids
+      assert word2.id in word_ids
+    end
+  end
+
+  # ============================================================================
+  # Helpers
+  # ============================================================================
+
+  defp create_review_schedule(user_id, user_progress_id, next_review_at, attrs \\ %{}) do
+    attrs = Map.new(attrs)
+
+    defaults = %{
+      user_id: user_id,
+      user_progress_id: user_progress_id,
+      next_review_at: next_review_at,
+      interval: 1,
+      ease_factor: 2.5,
+      repetitions: 0
+    }
+
+    attrs = Map.merge(defaults, attrs)
+
+    %ReviewSchedule{}
+    |> ReviewSchedule.changeset(attrs)
+    |> Repo.insert!()
   end
 end

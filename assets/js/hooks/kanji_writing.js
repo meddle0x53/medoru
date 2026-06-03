@@ -48,7 +48,8 @@ const KanjiWriting = {
       canvas: null,
       showingHint: false,
       showingGrid: false,
-      wrongStrokes: 0
+      wrongStrokes: 0,
+      snapCorrect: this.el.dataset.snapCorrect !== 'false'
     }
 
     // Parse SVG path - handles KanjiVG format with bezier curves
@@ -517,16 +518,20 @@ const KanjiWriting = {
         }
 
         if (validation.valid) {
-          // CORRECT STROKE - snap to expected and save
+          // CORRECT STROKE
           this._state.showingHint = false
-          
-          // Get expected stroke for snapping
-          const expected = this._state.analyzedExpected[this._state.currentStroke]
-          // Store the SVG path for curved rendering instead of snapped points
-          this._state.drawnStrokes.push({
-            type: 'curved',
-            path: expected.originalPath
-          })
+
+          if (this._state.snapCorrect) {
+            // Snap to expected stroke path
+            const expected = this._state.analyzedExpected[this._state.currentStroke]
+            this._state.drawnStrokes.push({
+              type: 'curved',
+              path: expected.originalPath
+            })
+          } else {
+            // Keep user's original drawn stroke
+            this._state.drawnStrokes.push(this._state.points)
+          }
           this._state.currentStroke++
           redrawStrokes()
 

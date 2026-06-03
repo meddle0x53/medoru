@@ -339,7 +339,8 @@ defmodule Medoru.Learning do
           user_id: user_id,
           kanji_id: kanji_id,
           mastery_level: 1,
-          times_reviewed: 0
+          times_reviewed: 0,
+          known_score: 1
         }
 
         result =
@@ -538,7 +539,15 @@ defmodule Medoru.Learning do
     |> order_by([up, k], desc: up.inserted_at)
     |> limit(^limit)
     |> offset(^offset)
-    |> select([up, k], k)
+    |> select([up, k], %{
+      id: k.id,
+      character: k.character,
+      meanings: k.meanings,
+      jlpt_level: k.jlpt_level,
+      stroke_count: k.stroke_count,
+      known_score: up.known_score,
+      inserted_at: up.inserted_at
+    })
     |> Repo.all()
   end
 
@@ -564,23 +573,47 @@ defmodule Medoru.Learning do
   Filters out kanji without stroke data.
   """
   def list_learned_kanji_for_daily_test(user_id) do
-    # Get recently learned kanji progresses
+    # Get all learned kanji progresses with known_score for this user
     progresses =
       UserProgress
       |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
-      |> order_by(desc: :inserted_at)
-      |> limit(20)
       |> Repo.all()
 
     kanji_ids = Enum.map(progresses, & &1.kanji_id)
 
     # Load kanji with stroke data and readings
-    Kanji
-    |> where([k], k.id in ^kanji_ids)
-    |> where([k], not is_nil(k.stroke_data))
-    |> preload(:kanji_readings)
-    |> Repo.all()
-    |> Enum.reject(fn k -> is_nil(k.stroke_data) or k.stroke_data == %{} end)
+    kanji_list =
+      Kanji
+      |> where([k], k.id in ^kanji_ids)
+      |> where([k], not is_nil(k.stroke_data))
+      |> preload(:kanji_readings)
+      |> Repo.all()
+      |> Enum.reject(fn k -> is_nil(k.stroke_data) or k.stroke_data == %{} end)
+
+    # Build a map of kanji_id => known_score for ordering
+    known_score_map = Map.new(progresses, fn p -> {p.kanji_id, p.known_score} end)
+
+    # Sort by known_score ascending (least known first), then shuffle within same score
+    sorted_by_score =
+      kanji_list
+      |> Enum.sort_by(fn k -> {Map.get(known_score_map, k.id, 0), :rand.uniform()} end)
+
+    # Take 10 with lowest known_score
+    lowest_score = Enum.take(sorted_by_score, 10)
+
+    # Take 5 completely random from the remaining
+    remaining = kanji_list -- lowest_score
+
+    random_five =
+      if length(remaining) >= 5 do
+        Enum.take_random(remaining, 5)
+      else
+        # If not enough remaining, take random from full pool
+        Enum.take_random(kanji_list, 5)
+      end
+
+    # Shuffle the combined 15 so they're not grouped by selection method
+    (lowest_score ++ random_five) |> Enum.shuffle()
   end
 
   @doc """
@@ -1137,7 +1170,7 @@ defmodule Medoru.Learning do
 
         # Update streak (idempotent - no-op if already studied today)
         streak_before = get_daily_streak(user_id)
-        was_studied_today = streak_before && streak_before.last_study_date == today
+        was_studied_today = streak_before != nil and streak_before.last_study_date == today
 
         {:ok, updated_streak} = update_streak(user_id)
 

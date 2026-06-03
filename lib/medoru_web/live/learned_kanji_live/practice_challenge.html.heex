@@ -1,0 +1,182 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-6">
+      <div class="flex items-center gap-3 mb-2">
+        <.link
+          navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji/practice"}
+          class="text-secondary hover:text-primary transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="w-5 h-5" />
+        </.link>
+        <h1 class="text-2xl font-bold text-base-content">{gettext("Kanji Practice")}</h1>
+      </div>
+      <p class="text-secondary mt-1">
+        {gettext("Practice writing %{count} kanji. Keep wrong strokes under 4 to count as correct.", count: @kanji_count)}
+      </p>
+    </div>
+
+    <%= if @finished do %>
+      <%!-- Results --%>
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body text-center py-12">
+          <.icon name="hero-trophy" class="w-16 h-16 text-warning mx-auto mb-4" />
+          <h2 class="text-2xl font-bold text-base-content mb-2">
+            {gettext("Practice Complete!")}
+          </h2>
+          <p class="text-secondary mb-6">
+            {@correct_count} / {@kanji_count} {gettext("kanji written correctly")}
+          </p>
+
+          <div class="bg-base-200 rounded-xl p-4 mb-6 max-w-sm mx-auto">
+            <div class="flex justify-between font-bold text-lg">
+              <span>{gettext("XP Earned")}</span>
+              <span class="text-success">+{@total_xp}</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row justify-center gap-3">
+            <.link navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji"} class="btn btn-primary">
+              <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> {gettext("Back to Learned Kanji")}
+            </.link>
+            <.link
+              navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji/practice"}
+              class="btn btn-outline"
+            >
+              <.icon name="hero-arrow-path" class="w-4 h-4 mr-2" /> {gettext("Practice Again")}
+            </.link>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <%!-- Progress --%>
+      <div class="flex items-center gap-2 mb-4">
+        <%= for i <- 1..@kanji_count do %>
+          <div class={[
+            "h-2 flex-1 rounded-full",
+            cond do
+              i < @current_index -> "bg-success"
+              i == @current_index -> "bg-primary"
+              true -> "bg-base-300"
+            end
+          ]}>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-sm text-secondary">
+          {gettext("Kanji %{current} of %{total}", current: @current_index, total: @kanji_count)}
+        </span>
+        <.link
+          navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji/practice"}
+          class="btn btn-ghost btn-sm"
+        >
+          <.icon name="hero-x-mark" class="w-4 h-4 mr-1" /> {gettext("Quit")}
+        </.link>
+      </div>
+
+      <%= if @current_kanji do %>
+        <%!-- Kanji Card --%>
+        <div class="card bg-base-100 border border-base-300 mb-6">
+          <div class="card-body">
+            <div class="flex flex-col md:flex-row gap-6">
+              <%!-- Kanji Info --%>
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                  <h2 class="text-4xl font-bold text-base-content">{@current_kanji.character}</h2>
+                  <div>
+                    <h3 class="text-lg font-semibold text-base-content">
+                      {@current_kanji.meanings |> Enum.take(2) |> Enum.join(", ")}
+                    </h3>
+                    <p class="text-sm text-secondary mt-1">
+                      <span class="font-medium">{gettext("On")}:</span> {first_reading(@current_kanji, :on)} •
+                      <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@current_kanji, :kun)} •
+                      {@current_kanji.stroke_count} {gettext("strokes")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <%!-- Writing Area --%>
+            <div
+              id={"practice-kanji-writing-#{@current_kanji.id}"}
+              phx-hook="KanjiWriting"
+              data-snap-correct={to_string(@snap_correct)}
+            >
+              <div data-stroke-data={Jason.encode!((@current_kanji.stroke_data || %{})["strokes"] || [])} class="hidden"></div>
+
+              <div class="flex justify-center mb-4">
+                <div
+                  id={"practice-writing-canvas-#{@current_kanji.id}"}
+                  class="bg-base-100 border-2 border-base-300 rounded-xl overflow-hidden writing-canvas-container relative"
+                  style="width: min(300px, 80vw); height: min(300px, 80vw); max-width: 300px; max-height: 300px;"
+                  phx-update="ignore"
+                >
+                  <canvas
+                    id="writing-canvas"
+                    class="w-full h-full"
+                    data-kanji-id={@current_kanji.id}
+                  ></canvas>
+                </div>
+              </div>
+
+              <%!-- Controls --%>
+              <div class="flex flex-wrap items-center justify-center gap-2 mb-4">
+                <button
+                  type="button"
+                  data-action="clear"
+                  class="btn btn-sm btn-outline"
+                >
+                  <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Clear")}
+                </button>
+                <button
+                  type="button"
+                  data-action="hint"
+                  class="btn btn-sm btn-outline btn-info"
+                >
+                  <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> {gettext("Hint")}
+                </button>
+              </div>
+
+              <%!-- Wrong stroke counter --%>
+              <div class="text-center mb-4">
+                <span class="text-sm text-secondary">
+                  {gettext("Wrong strokes")}:
+                </span>
+                <span id="kanji-wrong-stroke-count" class="font-bold text-base-content">
+                  {@current_wrong_strokes}
+                </span>
+                <span class="text-sm text-secondary">
+                  / {@max_wrong_strokes + 1}
+                </span>
+              </div>
+
+              <%!-- Action Buttons --%>
+              <div class="flex justify-center gap-3">
+                <button
+                  type="button"
+                  data-action="submit"
+                  class="btn btn-primary"
+                >
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Check")}
+                </button>
+                <button
+                  type="button"
+                  id="skip-kanji-btn"
+                  class="btn btn-ghost"
+                  phx-click="submit_writing"
+                  phx-value-completed="false"
+                  phx-value-wrong_strokes="999"
+                >
+                  {gettext("Skip")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</Layouts.app>

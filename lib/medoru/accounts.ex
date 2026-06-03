@@ -593,14 +593,21 @@ defmodule Medoru.Accounts do
     next_level_xp = xp_for_level(level + 1)
     xp_into_level = xp - current_level_xp
     xp_needed = next_level_xp - current_level_xp
-    progress = if xp_needed > 0, do: trunc(xp_into_level / xp_needed * 100), else: 100
+
+    progress =
+      cond do
+        xp_needed <= 0 -> 100
+        xp_into_level >= xp_needed -> 100
+        xp_into_level <= 0 -> 0
+        true -> trunc(xp_into_level / xp_needed * 100)
+      end
 
     %{
       current_xp: xp,
       current_level: level,
-      xp_into_level: xp_into_level,
-      xp_needed_for_next: next_level_xp,
-      xp_to_level_up: xp_needed - xp_into_level,
+      xp_into_level: max(xp_into_level, 0),
+      xp_needed_for_next: xp_needed,
+      xp_to_level_up: max(xp_needed - xp_into_level, 0),
       progress_percent: progress
     }
   end

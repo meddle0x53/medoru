@@ -12,7 +12,8 @@ defmodule MedoruWeb.GamesLive.Index do
     "kana_memory_cards" => gettext("Kana Memory"),
     "kana_falling" => gettext("Kana Cascade"),
     "kanji_falling" => gettext("Kanji Cascade"),
-    "words_falling" => gettext("Words Cascade")
+    "words_falling" => gettext("Words Cascade"),
+    "radical_hunt" => gettext("Radical Hunt")
   }
 
   @game_type_icons %{
@@ -20,7 +21,8 @@ defmodule MedoruWeb.GamesLive.Index do
     "kana_memory_cards" => "hero-squares-2x2",
     "kana_falling" => "hero-bolt",
     "kanji_falling" => "hero-bolt",
-    "words_falling" => "hero-book-open"
+    "words_falling" => "hero-book-open",
+    "radical_hunt" => "hero-magnifying-glass"
   }
 
   @skill_level_colors %{
@@ -169,6 +171,7 @@ defmodule MedoruWeb.GamesLive.Index do
       "kana_falling" -> ~p"/classrooms/#{classroom_id}/kana-falling-games/#{game.id}"
       "kanji_falling" -> ~p"/classrooms/#{classroom_id}/kanji-falling-games/#{game.id}"
       "words_falling" -> ~p"/classrooms/#{classroom_id}/words-falling-games/#{game.id}"
+      "radical_hunt" -> ~p"/classrooms/#{classroom_id}/radical-hunt-games/#{game.id}"
       _ -> ~p"/classrooms/#{classroom_id}/games/#{game.id}"
     end
   end

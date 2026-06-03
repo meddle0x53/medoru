@@ -21,7 +21,9 @@ defmodule Medoru.Games do
     KanjiFallingGame,
     KanjiFallingSession,
     WordsFallingGame,
-    WordsFallingSession
+    WordsFallingSession,
+    RadicalHuntGame,
+    RadicalHuntSession
   }
 
   # ============================================================================
@@ -65,7 +67,8 @@ defmodule Medoru.Games do
       :kana_memory_card_game,
       :kana_falling_game,
       :kanji_falling_game,
-      :words_falling_game
+      :words_falling_game,
+      :radical_hunt_game
     ])
     |> order_by([g], asc: g.skill_level, desc: g.inserted_at)
     |> Repo.all()
@@ -135,7 +138,8 @@ defmodule Medoru.Games do
       kana_memory_card_game: [],
       kana_falling_game: [],
       kanji_falling_game: [],
-      words_falling_game: []
+      words_falling_game: [],
+      radical_hunt_game: []
     )
   end
 
@@ -150,7 +154,8 @@ defmodule Medoru.Games do
       kana_memory_card_game: [],
       kana_falling_game: [],
       kanji_falling_game: [],
-      words_falling_game: []
+      words_falling_game: [],
+      radical_hunt_game: []
     )
   end
 
@@ -1975,6 +1980,139 @@ defmodule Medoru.Games do
   """
   def get_words_falling_high_score(game_id, user_id) do
     WordsFallingSession
+    |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
+    |> select([s], max(s.score))
+    |> Repo.one() || 0
+  end
+
+  # ============================================================================
+  # Radical Hunt Game Creation & Updates
+  # ============================================================================
+
+  @doc """
+  Creates a radical hunt game.
+  """
+  def create_radical_hunt_game(classroom_id, teacher_id, attrs, radical) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name],
+          type: "radical_hunt",
+          status: :draft,
+          max_players: 1,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || 1,
+          classroom_id: classroom_id
+        }
+
+        game =
+          %Game{}
+          |> Game.changeset(game_attrs)
+          |> Repo.insert!()
+
+        rhg_attrs = %{
+          game_id: game.id,
+          radical: radical,
+          timeout_seconds:
+            parse_int(
+              get_in(attrs, ["radical_hunt_game", "timeout_seconds"]) ||
+                get_in(attrs, [:radical_hunt_game, :timeout_seconds]),
+              120
+            )
+        }
+
+        %RadicalHuntGame{}
+        |> RadicalHuntGame.changeset(rhg_attrs)
+        |> Repo.insert!()
+
+        get_game!(game.id)
+      end)
+    end
+  end
+
+  @doc """
+  Updates a radical hunt game.
+  """
+  def update_radical_hunt_game(%Game{} = game, teacher_id, attrs, radical) do
+    if game.classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        game_attrs = %{
+          name: attrs["name"] || attrs[:name] || game.name,
+          skill_level: attrs["skill_level"] || attrs[:skill_level] || game.skill_level
+        }
+
+        game =
+          game
+          |> Game.changeset(game_attrs)
+          |> Repo.update!()
+
+        rhg = Repo.get_by!(RadicalHuntGame, game_id: game.id)
+
+        rhg_attrs = %{
+          radical: radical,
+          timeout_seconds:
+            parse_int(
+              get_in(attrs, ["radical_hunt_game", "timeout_seconds"]) ||
+                get_in(attrs, [:radical_hunt_game, :timeout_seconds]),
+              rhg.timeout_seconds
+            )
+        }
+
+        rhg
+        |> RadicalHuntGame.changeset(rhg_attrs)
+        |> Repo.update!()
+
+        get_game!(game.id)
+      end)
+    end
+  end
+
+  @doc """
+  Creates a completed radical hunt session after game over.
+  """
+  def create_radical_hunt_session(attrs) do
+    result =
+      %RadicalHuntSession{}
+      |> RadicalHuntSession.changeset(attrs)
+      |> Repo.insert()
+
+    with {:ok, _} <- result,
+         user_id when not is_nil(user_id) <- attrs[:user_id] do
+      _ = Accounts.add_xp(user_id, 10,
+            source_type: "radical_hunt_game", description: "Completed Radical Hunt game")
+    end
+
+    result
+  end
+
+  @doc """
+  Lists radical hunt sessions for rankings (best score per user).
+  """
+  def list_radical_hunt_sessions(game_id) do
+    best_session_ids =
+      RadicalHuntSession
+      |> where([s], s.game_id == ^game_id)
+      |> distinct([s], asc: s.user_id)
+      |> order_by([s], asc: s.user_id, desc: s.score, asc: s.completed_at)
+      |> select([s], s.id)
+
+    RadicalHuntSession
+    |> where([s], s.id in subquery(best_session_ids))
+    |> order_by([s], desc: s.score, asc: s.completed_at)
+    |> preload(user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the user's high score for a radical hunt game.
+  """
+  def get_radical_hunt_high_score(game_id, user_id) do
+    RadicalHuntSession
     |> where([s], s.game_id == ^game_id and s.user_id == ^user_id)
     |> select([s], max(s.score))
     |> Repo.one() || 0

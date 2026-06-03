@@ -110,6 +110,24 @@
           </p>
         </div>
       </.link>
+
+      <%!-- Radical Hunt --%>
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}/radical-hunt-games/new"}
+        class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-warning transition-all group"
+      >
+        <div class="card-body items-center text-center">
+          <div class="w-14 h-14 rounded-xl bg-warning/10 flex items-center justify-center mb-3 group-hover:bg-warning/20 transition-colors">
+            <.icon name="hero-magnifying-glass" class="w-7 h-7 text-warning" />
+          </div>
+          <h3 class="card-title text-base-content text-lg">
+            {gettext("Radical Hunt")}
+          </h3>
+          <p class="text-secondary text-sm">
+            {gettext("Find kanji containing a radical before time runs out. Kanji composition practice.")}
+          </p>
+        </div>
+      </.link>
     </div>
   </div>
 </Layouts.app>

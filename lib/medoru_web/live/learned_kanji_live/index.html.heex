@@ -18,14 +18,25 @@
       </p>
     </div>
 
-    <%!-- Stats --%>
-    <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
-      <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        {@total_count} {gettext("kanji learned")}
-      </span>
-      <span class="bg-base-200 px-3 py-1.5 rounded-full">
-        {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
-      </span>
+    <%!-- Stats + Actions --%>
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3 text-sm text-secondary">
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          {@total_count} {gettext("kanji learned")}
+        </span>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </span>
+      </div>
+      <%= if @current_scope.current_user && @current_scope.current_user.id == @user.id do %>
+        <.link
+          navigate={~p"/users/#{@user.id}/kanji/practice"}
+          class="btn btn-primary btn-sm"
+        >
+          <.icon name="hero-pencil" class="w-4 h-4 mr-1" />
+          {gettext("Practice Kanji")}
+        </.link>
+      <% end %>
     </div>
 
     <%!-- Kanji Grid --%>
@@ -90,6 +101,11 @@
             <%!-- Stroke count --%>
             <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-base-200 text-base-content/70 ml-1">
               {k.stroke_count} {gettext("strokes")}
+            </span>
+
+            <%!-- Known score --%>
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-info/10 text-info ml-1" title={gettext("Known score from daily challenges")}>
+              {gettext("Known")}: {k.known_score}
             </span>
           </.link>
         </div>

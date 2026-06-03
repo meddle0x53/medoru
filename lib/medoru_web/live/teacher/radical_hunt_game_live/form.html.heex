@@ -1,0 +1,145 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <.link
+        navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Classroom")}
+      </.link>
+      <h1 class="text-2xl sm:text-3xl font-bold text-base-content">
+        {@page_title}
+      </h1>
+      <p class="text-secondary mt-1">
+        {gettext("Students will type kanji that contain the selected radical.")}
+      </p>
+    </div>
+
+    <%!-- Form --%>
+    <form phx-submit="save" phx-change="update_field" class="card bg-base-100 border border-base-300">
+      <div class="card-body">
+        <%!-- Name --%>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-base-content mb-1">
+            {gettext("Game Name")}
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={@name}
+            placeholder={gettext("e.g., Water Radical Challenge")}
+            class={[
+              "input input-bordered w-full",
+              @form_errors[:name] && "input-error"
+            ]}
+          />
+          <%= if @form_errors[:name] do %>
+            <p class="text-error text-sm mt-1">{@form_errors[:name]}</p>
+          <% end %>
+        </div>
+
+        <%!-- Skill Level & Timeout --%>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-base-content mb-1">
+              {gettext("Skill Level")}
+            </label>
+            <select
+              name="skill_level"
+              class="select select-bordered w-full"
+            >
+              <%= for {label, value} <- skill_level_options() do %>
+                <option value={value} selected={@skill_level == value}>{label}</option>
+              <% end %>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-base-content mb-1">
+              {gettext("Timeout")}
+            </label>
+            <select
+              name="timeout_seconds"
+              class="select select-bordered w-full"
+            >
+              <%= for {label, value} <- timeout_options() do %>
+                <option value={value} selected={@timeout_seconds == value}>{label}</option>
+              <% end %>
+            </select>
+          </div>
+        </div>
+
+        <%!-- Selected Radical Preview --%>
+        <%= if @selected_radical do %>
+          <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
+            <div class="flex items-center gap-4">
+              <div class="text-5xl font-bold text-primary">{@selected_radical}</div>
+              <div>
+                <p class="font-medium text-base-content">
+                  {KanjiRadicals.meaning(@selected_radical)}
+                </p>
+                <p class="text-sm text-secondary">
+                  {KanjiRadicals.frequency(@selected_radical)} {gettext("kanji contain this radical")}
+                  • {KanjiRadicals.get(@selected_radical).stroke_count} {gettext("strokes")}
+                </p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%= if @form_errors[:selected_radical] do %>
+          <p class="text-error text-sm mb-4">{@form_errors[:selected_radical]}</p>
+        <% end %>
+
+        <%!-- Radical Grid --%>
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold text-base-content mb-3">
+            {gettext("Select a Radical")}
+          </h3>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-h-96 overflow-y-auto p-2 border border-base-300 rounded-xl">
+            <%= for r <- @radicals do %>
+              <button
+                type="button"
+                phx-click="select_radical"
+                phx-value-character={r.character}
+                class={[
+                  "relative flex flex-col items-center justify-center p-2 rounded-lg transition-all",
+                  if(@selected_radical == r.character,
+                    do: "bg-primary text-primary-content ring-2 ring-primary",
+                    else: "bg-base-200 hover:bg-base-300 text-base-content"
+                  )
+                ]}
+                title={r.meaning}
+              >
+                <span class="text-xl font-medium">{r.character}</span>
+                <span class="text-xs opacity-70">{r.frequency}</span>
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- Actions --%>
+        <div class="flex justify-end gap-3">
+          <.link
+            navigate={~p"/teacher/classrooms/#{@classroom.id}?tab=games"}
+            class="btn btn-ghost"
+          >
+            {gettext("Cancel")}
+          </.link>
+          <button
+            type="submit"
+            class="btn btn-primary"
+          >
+            <%= if @mode == :edit do %>
+              <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Update Game")}
+            <% else %>
+              <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Game")}
+            <% end %>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</Layouts.app>
