@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.3.0 ✅ COMPLETE  
-**Status**: v0.3.0 complete. Planning v0.3.1.  
-**Tests**: 970 passing  
+**Version**: 0.3.1 ✅ COMPLETE  
+**Status**: v0.3.1 complete.  
+**Tests**: 965 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -88,7 +88,36 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `can_view_post?/2` rewritten with `cond do` for correct early-return logic
 - Service worker cache: `medoru-v8`
 
-### What's Next (v0.3.1)
+### What's Complete (v0.3.1) — Kanji Data Overhaul
+**Status**: ✅ COMPLETE
+
+**Features:**
+- **Kanji Missing Seeder (`KanjiMissingSeeder`)**: Imports 2,798 missing kanji from `missing_kanji_full.json` — idempotent, packaged with release. Covers kanji not in original makemeahanzi dataset.
+- **Nullable `jlpt_level`**: Migration `20260603172623_make_kanji_jlpt_level_nullable.exs` allows non-JLPT kanji. Schema updated.
+- **KanjiRadicalFixes**: 251 hardcoded classical radical corrections from kanjidic2. Applied to all kanji (old + newly seeded).
+- **KanjiDecompositionRadicals**: Restored hardcoded `@fixes` map (1,190 kanji with multi-radical assignments from IDS decomposition). Added dynamic `apply_all!/0` fallback for kanji not in hardcoded map.
+- **KanjiRadicals `@frequency_and_kanji`**: Regenerated from full 5,012-kanji DB — 223 radicals with `{char, id, freq}` tuples.
+- **KanjiStrokeFixer (`KanjiStrokeFixer`)**: Imports KanjiVG-derived stroke data from `kanjivg_stroke_fixes.json` for 426 kanji missing makemeahanzi stroke data. Parsed from local KanjiVG SVG files (109×109 viewBox, compatible with StrokeAnimator).
+- **Production runbook**: `KanjiMissingSeeder.run()` → `KanjiRadicalFixes.apply!()` → `KanjiDecompositionRadicals.apply_all!()` → `KanjiStrokeFixer.apply!()`
+
+**Data coverage post-seed:**
+- 5,012 total kanji (was 2,217)
+- 2,267 with makemeahanzi stroke data
+- 426 with KanjiVG stroke data
+- 105 without any stroke data (not in either dataset)
+- 2,267 with decomposition
+- 2,253 with radical data
+
+**Key files:**
+- `lib/medoru/content/kanji_missing_seeder.ex`
+- `lib/medoru/content/kanji_radical_fixes.ex`
+- `lib/medoru/content/kanji_decomposition_radicals.ex`
+- `lib/medoru/content/kanji_radicals.ex`
+- `lib/medoru/content/kanji_stroke_fixer.ex`
+- `priv/repo/seeds/missing_kanji_full.json`
+- `priv/repo/seeds/kanjivg_stroke_fixes.json`
+
+### What's Next (v0.3.2)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
 - See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 
@@ -317,6 +346,42 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 ---
 
 ## Version History
+
+### v0.3.1 - Kanji Data Overhaul (2026-06-03)
+**Status**: ✅ COMPLETE
+
+**Features:**
+- **Missing Kanji Seeder**: `KanjiMissingSeeder.run()` imports 2,798 kanji from `missing_kanji_full.json` — idempotent, packaged with release
+- **Nullable JLPT**: Migration makes `jlpt_level` nullable for non-JLPT kanji (2,796 unclassified)
+- **Classical Radical Fixes**: `KanjiRadicalFixes.apply!/0` — 251 kanjidic2-based corrections
+- **Decomposition Multi-Radicals**: Hardcoded `@fixes` map with 1,190 kanji; dynamic `apply_all!/0` fallback
+- **Frequency Map Regeneration**: `@frequency_and_kanji` updated for full 5,012-kanji dataset (223 radicals)
+- **KanjiVG Stroke Fixer**: `KanjiStrokeFixer.apply!/0` imports stroke data for 426 kanji missing makemeahanzi data
+
+**Production runbook:**
+1. `Medoru.Release.migrate()`
+2. `KanjiMissingSeeder.run()` (~2,798 new kanji)
+3. `KanjiRadicalFixes.apply!()` (251 fixes)
+4. `KanjiDecompositionRadicals.apply_all!()` (multi-radical assignments)
+5. `KanjiStrokeFixer.apply!()` (426 stroke data fixes)
+6. Optional: classify unclassified kanji to N1 via `Repo.update_all(where: is_nil(jlpt_level), set: [jlpt_level: 1])`
+
+**Data coverage:**
+- 5,012 total kanji (was 2,217)
+- 4,693 with stroke data (2,267 makemeahanzi + 426 KanjiVG)
+- 105 without stroke data
+- 4,265 with decomposition data
+
+**Key files:**
+- `lib/medoru/content/kanji_missing_seeder.ex`
+- `lib/medoru/content/kanji_radical_fixes.ex`
+- `lib/medoru/content/kanji_decomposition_radicals.ex`
+- `lib/medoru/content/kanji_radicals.ex`
+- `lib/medoru/content/kanji_stroke_fixer.ex`
+- `priv/repo/seeds/missing_kanji_full.json`
+- `priv/repo/seeds/kanjivg_stroke_fixes.json`
+
+---
 
 ### v0.3.0 - User White Board (2026-06-01)
 **Status**: ✅ COMPLETE
