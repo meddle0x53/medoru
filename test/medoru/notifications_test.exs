@@ -243,5 +243,88 @@ defmodule Medoru.NotificationsTest do
       assert notification.type == "daily_reminder"
       assert notification.message =~ "Start a new lesson"
     end
+
+    test "notify_white_board_post/4 creates white board post notification", %{user: user} do
+      assert {:ok, notification} = Notifications.notify_white_board_post(user.id, "Alice", "user-id-456", "post-id-123")
+      assert notification.type == "white_board_post"
+      assert notification.title == "📝 New Post from Alice"
+      assert notification.data[:post_id] == "post-id-123"
+      assert notification.data[:poster_id] == "user-id-456"
+    end
+
+    test "notify_white_board_comment/5 creates white board comment notification", %{user: user} do
+      assert {:ok, notification} =
+               Notifications.notify_white_board_comment(user.id, "Bob", "post-id-123", "owner-id-789", "Alice")
+
+      assert notification.type == "white_board_comment"
+      assert notification.title == "💬 New Comment on Alice's Post"
+      assert notification.data[:commenter_name] == "Bob"
+      assert notification.data[:post_owner_id] == "owner-id-789"
+    end
+  end
+
+  describe "notification preferences" do
+    test "does not create messaging notification when disabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_messaging: false})
+
+      assert {:ok, nil} =
+               Notifications.notify_chat_message(user.id, "Alice", "conv-id", false, nil)
+    end
+
+    test "creates messaging notification when enabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_messaging: true})
+
+      assert {:ok, %Notification{}} =
+               Notifications.notify_chat_message(user.id, "Alice", "conv-id", false, nil)
+    end
+
+    test "does not create white board notification when disabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_white_board: false})
+
+      assert {:ok, nil} =
+               Notifications.notify_white_board_post(user.id, "Alice", "user-id", "post-id")
+    end
+
+    test "creates white board notification when enabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_white_board: true})
+
+      assert {:ok, %Notification{}} =
+               Notifications.notify_white_board_post(user.id, "Alice", "user-id", "post-id")
+    end
+
+    test "does not create achievement notification when disabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_achievements: false})
+
+      badge = %{id: "badge-123", name: "Test", icon: "x", color: "red"}
+      assert {:ok, nil} = Notifications.notify_badge_earned(user.id, badge)
+    end
+
+    test "creates achievement notification when enabled" do
+      user = user_fixture_with_registration()
+      Medoru.Accounts.update_profile(user.profile, %{notify_achievements: true})
+
+      badge = %{id: "badge-123", name: "Test", icon: "x", color: "red"}
+      assert {:ok, %Notification{}} = Notifications.notify_badge_earned(user.id, badge)
+    end
+
+    test "other notification types are not affected by preferences" do
+      user = user_fixture_with_registration()
+
+      # Disable all preferences
+      Medoru.Accounts.update_profile(user.profile, %{
+        notify_messaging: false,
+        notify_white_board: false,
+        notify_achievements: false
+      })
+
+      # Classroom notification should still be created
+      assert {:ok, %Notification{}} =
+               Notifications.notify_application_approved(user.id, "Classroom A", "classroom-id")
+    end
   end
 end

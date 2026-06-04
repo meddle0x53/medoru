@@ -11,6 +11,7 @@ defmodule Medoru.Notifications do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
+  alias Medoru.Accounts
   alias Medoru.Notifications.Notification
 
   # ============================================================================
@@ -158,9 +159,38 @@ defmodule Medoru.Notifications do
 
   """
   def create_notification(attrs \\ %{}) do
-    %Notification{}
-    |> Notification.changeset(attrs)
-    |> Repo.insert()
+    user_id = attrs[:user_id]
+    type = attrs[:type]
+
+    if user_id && type && notification_disabled?(user_id, type) do
+      {:ok, nil}
+    else
+      %Notification{}
+      |> Notification.changeset(attrs)
+      |> Repo.insert()
+    end
+  end
+
+  defp notification_disabled?(user_id, type) do
+    profile = Accounts.get_user_profile(user_id)
+
+    if profile do
+      case type do
+        t when t in ["chat_message", "chat_invite"] ->
+          not profile.notify_messaging
+
+        t when t in ["white_board_post", "white_board_comment"] ->
+          not profile.notify_white_board
+
+        t when t in ["badge_earned", "level_up", "streak_milestone", "lesson_complete"] ->
+          not profile.notify_achievements
+
+        _ ->
+          false
+      end
+    else
+      false
+    end
   end
 
   @doc """
@@ -590,6 +620,43 @@ defmodule Medoru.Notifications do
       data: %{
         conversation_id: conversation_id,
         sender_name: sender_name
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
+  @doc """
+  Notifies followers that a user posted on their white board.
+  """
+  def notify_white_board_post(user_id, poster_name, poster_id, post_id) do
+    create_notification(%{
+      user_id: user_id,
+      type: "white_board_post",
+      title: "📝 New Post from #{poster_name}",
+      message: "#{poster_name} posted on their white board.",
+      data: %{
+        post_id: post_id,
+        poster_id: poster_id,
+        poster_name: poster_name
+      }
+    })
+    |> maybe_broadcast_notification(user_id)
+  end
+
+  @doc """
+  Notifies users that a new comment was added to a white board post.
+  """
+  def notify_white_board_comment(user_id, commenter_name, post_id, post_owner_id, post_owner_name) do
+    create_notification(%{
+      user_id: user_id,
+      type: "white_board_comment",
+      title: "💬 New Comment on #{post_owner_name}'s Post",
+      message: "#{commenter_name} commented on a post.",
+      data: %{
+        post_id: post_id,
+        post_owner_id: post_owner_id,
+        commenter_name: commenter_name,
+        post_owner_name: post_owner_name
       }
     })
     |> maybe_broadcast_notification(user_id)

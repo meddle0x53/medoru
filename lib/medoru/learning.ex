@@ -452,6 +452,71 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Marks all kanji and all words as learned for a user.
+
+  Uses raw batch inserts — no badge checks, no stat increments, no notifications.
+  Idempotent — skips items already learned via `on_conflict: :nothing`.
+  Returns `{ok, %{kanji_count: n, word_count: n}}`.
+
+  ## Examples
+
+      iex> mark_all_as_learned(user_id)
+      {:ok, %{kanji_count: 5012, word_count: 145831}}
+  """
+  # PostgreSQL max parameters per query is 65535.
+  # Each UserProgress entry has 8 fields, so chunk at 5000 to stay well under the limit.
+  @insert_all_chunk_size 5000
+
+  def mark_all_as_learned(user_id) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    kanji_ids = Kanji |> select([k], k.id) |> Repo.all()
+    word_ids = Word |> select([w], w.id) |> Repo.all()
+
+    kanji_entries =
+      Enum.map(kanji_ids, fn id ->
+        %{
+          user_id: user_id,
+          kanji_id: id,
+          word_id: nil,
+          mastery_level: 1,
+          times_reviewed: 0,
+          known_score: 1,
+          inserted_at: now,
+          updated_at: now
+        }
+      end)
+
+    word_entries =
+      Enum.map(word_ids, fn id ->
+        %{
+          user_id: user_id,
+          kanji_id: nil,
+          word_id: id,
+          mastery_level: 1,
+          times_reviewed: 0,
+          known_score: 0,
+          inserted_at: now,
+          updated_at: now
+        }
+      end)
+
+    kanji_count = chunked_insert_all(UserProgress, kanji_entries)
+    word_count = chunked_insert_all(UserProgress, word_entries)
+
+    {:ok, %{kanji_count: kanji_count, word_count: word_count}}
+  end
+
+  defp chunked_insert_all(schema, entries) do
+    entries
+    |> Enum.chunk_every(@insert_all_chunk_size)
+    |> Enum.reduce(0, fn chunk, acc ->
+      {count, _} = Repo.insert_all(schema, chunk, on_conflict: :nothing)
+      acc + count
+    end)
+  end
+
+  @doc """
   Gets the list of already learned word IDs for a user.
 
   ## Examples
@@ -901,25 +966,36 @@ defmodule Medoru.Learning do
 
   """
   def get_user_stats(user_id) do
-    kanji_progress = list_kanji_progress(user_id)
-    word_progress = list_word_progress(user_id)
-    lesson_progress = list_lesson_progress(user_id)
+    total_kanji_learned = count_learned_kanji(user_id)
+    total_words_learned = count_learned_words(user_id)
 
     kanji_by_mastery =
-      kanji_progress
-      |> Enum.group_by(& &1.mastery_level)
-      |> Map.new(fn {level, items} -> {level, length(items)} end)
+      UserProgress
+      |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+      |> group_by([up], up.mastery_level)
+      |> select([up], {up.mastery_level, count(up.id)})
+      |> Repo.all()
+      |> Map.new()
       |> then(fn map ->
-        # Ensure all levels 0-5 are present
         Map.merge(%{0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0}, map)
       end)
 
+    lessons_started =
+      LessonProgress
+      |> where([lp], lp.user_id == ^user_id)
+      |> Repo.aggregate(:count, :id)
+
+    lessons_completed =
+      LessonProgress
+      |> where([lp], lp.user_id == ^user_id and lp.status == :completed)
+      |> Repo.aggregate(:count, :id)
+
     %{
-      total_kanji_learned: length(kanji_progress),
-      total_words_learned: length(word_progress),
+      total_kanji_learned: total_kanji_learned,
+      total_words_learned: total_words_learned,
       kanji_by_mastery: kanji_by_mastery,
-      lessons_started: length(lesson_progress),
-      lessons_completed: lesson_progress |> Enum.filter(&(&1.status == :completed)) |> length()
+      lessons_started: lessons_started,
+      lessons_completed: lessons_completed
     }
   end
 

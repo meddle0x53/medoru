@@ -97,5 +97,59 @@ defmodule MedoruWeb.SettingsLiveTest do
       refute has_element?(view, "#api-token-form")
       assert has_element?(view, "p", "Token limit reached")
     end
+
+    test "shows Fluent In Japanese button for teachers", %{conn: conn, user: user} do
+      Medoru.Repo.update!(Ecto.Changeset.change(user, type: "teacher"))
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "button", "Fluent In Japanese")
+    end
+
+    test "hides Fluent In Japanese button for regular users", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      refute has_element?(view, "button", "Fluent In Japanese")
+    end
+
+    test "marks all as learned after confirmation", %{conn: conn, user: user} do
+      Medoru.Repo.update!(Ecto.Changeset.change(user, type: "teacher"))
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      # Click the fluent button to show confirmation
+      view
+      |> element("button", "Fluent In Japanese")
+      |> render_click()
+
+      assert has_element?(view, "button", "Yes, Mark Everything")
+
+      # Click confirm
+      html =
+        view
+        |> element("button", "Yes, Mark Everything")
+        |> render_click()
+
+      assert html =~ "Marked"
+      assert html =~ "kanji and"
+      assert html =~ "words as learned!"
+    end
+
+    test "toggles profile visibility", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "input[name=\"user_profile[is_public]\"]")
+
+      # Submit with is_public unchecked
+      result =
+        view
+        |> form("#profile-form", user_profile: %{display_name: user.profile.display_name, is_public: false})
+        |> render_submit()
+
+      assert {:error, {:live_redirect, %{to: "/settings/profile"}}} = result
+
+      profile = Medoru.Accounts.get_profile_by_user!(user.id)
+      assert profile.is_public == false
+    end
   end
 end

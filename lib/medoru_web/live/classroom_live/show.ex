@@ -1084,35 +1084,37 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     ]}>
                       {index}
                     </span>
-                    <% avatar_src =
-                      (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
-                    <%= if avatar_src do %>
-                      <div class="avatar shrink-0">
-                        <div class="w-8 h-8 rounded-full">
-                          <img src={avatar_src} alt="" class="object-cover" />
+                    <.link navigate={~p"/users/#{member.user.id}"} class="flex items-center gap-3 min-w-0">
+                      <% avatar_src =
+                        (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                      <%= if avatar_src do %>
+                        <div class="avatar shrink-0">
+                          <div class="w-8 h-8 rounded-full">
+                            <img src={avatar_src} alt="" class="object-cover" />
+                          </div>
                         </div>
-                      </div>
-                    <% else %>
-                      <div class="avatar placeholder shrink-0">
-                        <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
-                          <% initial =
-                            if member.user.profile && member.user.profile.display_name,
-                              do: String.first(member.user.profile.display_name) |> String.upcase(),
-                              else:
-                                String.first(member.user.name || member.user.email) |> String.upcase() %>
-                          <span class="text-xs">{initial}</span>
+                      <% else %>
+                        <div class="avatar placeholder shrink-0">
+                          <div class="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center">
+                            <% initial =
+                              if member.user.profile && member.user.profile.display_name,
+                                do: String.first(member.user.profile.display_name) |> String.upcase(),
+                                else:
+                                  String.first(member.user.name || member.user.email) |> String.upcase() %>
+                            <span class="text-xs">{initial}</span>
+                          </div>
                         </div>
-                      </div>
-                    <% end %>
-                    <span class={[
-                      "truncate",
-                      member.user_id == @current_user.id && "font-medium text-base-content"
-                    ]}>
-                      {display_name(member.user, @current_user.id, @current_user.type == "admin")}
-                      <%= if member.user_id == @current_user.id do %>
-                        <span class="badge badge-primary badge-sm ml-2">You</span>
                       <% end %>
-                    </span>
+                      <span class={[
+                        "truncate",
+                        member.user_id == @current_user.id && "font-medium text-base-content"
+                      ]}>
+                        {display_name(member.user, @current_user.id, @current_user.type == "admin")}
+                        <%= if member.user_id == @current_user.id do %>
+                          <span class="badge badge-primary badge-sm ml-2">You</span>
+                        <% end %>
+                      </span>
+                    </.link>
                   </div>
                   <span class="font-semibold text-base-content shrink-0">{member.points} pts</span>
                 </div>
@@ -1159,34 +1161,35 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   ]}>
                     {index}
                   </span>
-                  <% avatar_src =
-                    (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
-                  <%= if avatar_src do %>
-                    <div class="avatar shrink-0">
-                      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
-                        <img src={avatar_src} alt="" class="object-cover" />
+                  <.link navigate={~p"/users/#{member.user.id}"} class="flex items-center gap-3 min-w-0">
+                    <% avatar_src =
+                      (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
+                    <%= if avatar_src do %>
+                      <div class="avatar shrink-0">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
+                          <img src={avatar_src} alt="" class="object-cover" />
+                        </div>
                       </div>
-                    </div>
-                  <% else %>
-                    <div class="avatar placeholder shrink-0">
-                      <div class="bg-primary text-primary-content rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
-                        <% initial =
-                          if member.user.profile && member.user.profile.display_name,
-                            do: String.first(member.user.profile.display_name) |> String.upcase(),
-                            else:
-                              String.first(member.user.name || member.user.email) |> String.upcase() %>
-                        <span class="text-xs sm:text-sm">{initial}</span>
+                    <% else %>
+                      <div class="avatar placeholder shrink-0">
+                        <div class="bg-primary text-primary-content rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                          <% initial =
+                            if member.user.profile && member.user.profile.display_name,
+                              do: String.first(member.user.profile.display_name) |> String.upcase(),
+                              else:
+                                String.first(member.user.name || member.user.email) |> String.upcase() %>
+                          <span class="text-xs sm:text-sm">{initial}</span>
+                        </div>
                       </div>
-                    </div>
-                  <% end %>
-                  <div class="min-w-0">
-                    <p class={[
-                      "text-sm sm:text-base truncate",
-                      member.user_id == @current_user.id && "font-medium text-base-content"
-                    ]}>
-                      {display_name(member.user, @current_user.id, @current_user.type == "admin")}
-                      <%= if member.user_id == @current_user.id do %>
-                        <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">
+                    <% end %>
+                    <div class="min-w-0">
+                      <p class={[
+                        "text-sm sm:text-base truncate",
+                        member.user_id == @current_user.id && "font-medium text-base-content"
+                      ]}>
+                        {display_name(member.user, @current_user.id, @current_user.type == "admin")}
+                        <%= if member.user_id == @current_user.id do %>
+                          <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">
                           {gettext("You")}
                         </span>
                       <% end %>
@@ -1198,6 +1201,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       )}
                     </p>
                   </div>
+                </.link>
                 </div>
                 <span class="font-bold text-base sm:text-lg text-base-content ml-2 shrink-0">
                   {member.points} {gettext("pts")}

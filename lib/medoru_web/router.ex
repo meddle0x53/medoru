@@ -71,6 +71,7 @@ defmodule MedoruWeb.Router do
       live "/users/:id/kanji/practice", LearnedKanjiLive.PracticeForm
       live "/users/:id/kanji/practice/challenge", LearnedKanjiLive.PracticeChallenge
       live "/users/:id/white-board", UserWhiteBoardLive
+      live "/users/:user_id/white-board/posts/:post_id", UserWhiteBoardPostLive
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
       live "/games", GamesLive.Index

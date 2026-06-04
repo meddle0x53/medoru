@@ -3,6 +3,8 @@ defmodule MedoruWeb.Components.Helpers do
   Shared helper functions for LiveView components.
   """
 
+  use Gettext, backend: MedoruWeb.Gettext
+
   @doc """
   Formats a datetime as a relative time string (e.g., "2h ago", "just now").
 
@@ -29,6 +31,55 @@ defmodule MedoruWeb.Components.Helpers do
   end
 
   def format_relative_time(nil), do: ""
+
+  @doc """
+  Formats a datetime as a localized date string.
+  Uses month names wrapped in gettext for localization.
+  """
+  def format_localized_date(datetime) when is_struct(datetime, DateTime) do
+    month = gettext_month(datetime.month)
+    "#{month} #{datetime.day}, #{datetime.year}"
+  end
+
+  def format_localized_date(nil), do: ""
+
+  @doc """
+  Formats a datetime as a localized short date + time string.
+  """
+  def format_localized_datetime(datetime) when is_struct(datetime, DateTime) do
+    month = gettext_short_month(datetime.month)
+    hour = String.pad_leading("#{datetime.hour}", 2, "0")
+    minute = String.pad_leading("#{datetime.minute}", 2, "0")
+    "#{month} #{datetime.day}, #{hour}:#{minute}"
+  end
+
+  def format_localized_datetime(nil), do: ""
+
+  defp gettext_month(1), do: gettext("January")
+  defp gettext_month(2), do: gettext("February")
+  defp gettext_month(3), do: gettext("March")
+  defp gettext_month(4), do: gettext("April")
+  defp gettext_month(5), do: gettext("May")
+  defp gettext_month(6), do: gettext("June")
+  defp gettext_month(7), do: gettext("July")
+  defp gettext_month(8), do: gettext("August")
+  defp gettext_month(9), do: gettext("September")
+  defp gettext_month(10), do: gettext("October")
+  defp gettext_month(11), do: gettext("November")
+  defp gettext_month(12), do: gettext("December")
+
+  defp gettext_short_month(1), do: gettext("Jan")
+  defp gettext_short_month(2), do: gettext("Feb")
+  defp gettext_short_month(3), do: gettext("Mar")
+  defp gettext_short_month(4), do: gettext("Apr")
+  defp gettext_short_month(5), do: gettext("May")
+  defp gettext_short_month(6), do: gettext("Jun")
+  defp gettext_short_month(7), do: gettext("Jul")
+  defp gettext_short_month(8), do: gettext("Aug")
+  defp gettext_short_month(9), do: gettext("Sep")
+  defp gettext_short_month(10), do: gettext("Oct")
+  defp gettext_short_month(11), do: gettext("Nov")
+  defp gettext_short_month(12), do: gettext("Dec")
 
   @doc """
   Returns a display name for a user, respecting privacy.

@@ -126,7 +126,7 @@ defmodule Medoru.Accounts do
       }
 
       with {:ok, user} <- create_user(user_attrs),
-           {:ok, _profile} <- create_user_profile(user),
+           {:ok, _profile} <- create_user_profile(user, %{avatar: user_attrs[:avatar_url]}),
            {:ok, _stats} <- create_user_stats(user) do
         user |> Repo.preload([:profile, :stats])
       else

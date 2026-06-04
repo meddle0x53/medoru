@@ -343,6 +343,42 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
+  # mark_all_as_learned/1
+  # ============================================================================
+
+  describe "mark_all_as_learned/1" do
+    setup do
+      user = user_fixture()
+      kanji = kanji_fixture()
+      word = word_fixture()
+      %{user: user, kanji: kanji, word: word}
+    end
+
+    test "marks all kanji and words as learned", %{user: user, kanji: kanji, word: word} do
+      {:ok, %{kanji_count: kanji_count, word_count: word_count}} =
+        Learning.mark_all_as_learned(user.id)
+
+      assert kanji_count >= 1
+      assert word_count >= 1
+      assert Learning.kanji_learned?(user.id, kanji.id)
+      assert Learning.word_learned?(user.id, word.id)
+    end
+
+    test "is idempotent — succeeds on second call", %{user: user, kanji: kanji, word: word} do
+      # First call
+      {:ok, %{kanji_count: _count1, word_count: _wcount1}} =
+        Learning.mark_all_as_learned(user.id)
+
+      # Second call also succeeds
+      {:ok, %{kanji_count: _count2, word_count: _wcount2}} =
+        Learning.mark_all_as_learned(user.id)
+
+      assert Learning.kanji_learned?(user.id, kanji.id)
+      assert Learning.word_learned?(user.id, word.id)
+    end
+  end
+
+  # ============================================================================
   # Helpers
   # ============================================================================
 

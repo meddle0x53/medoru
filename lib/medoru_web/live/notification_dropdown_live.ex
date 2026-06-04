@@ -144,7 +144,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
       |> assign(:notifications, notifications)
       |> assign(:unread_count, unread_count)
 
-    # Navigate to chat for chat notifications
+    # Navigate to relevant page for actionable notifications
     case notification do
       %{type: "chat_message", data: %{"classroom_id" => cid}} ->
         {:noreply, push_navigate(socket, to: ~p"/classrooms/#{cid}?tab=chat")}
@@ -154,6 +154,10 @@ defmodule MedoruWeb.NotificationDropdownLive do
 
       %{type: "chat_invite", data: %{"conversation_id" => cid}} ->
         {:noreply, push_navigate(socket, to: ~p"/messages/#{cid}")}
+
+      %{type: type, data: %{"poster_id" => poster_id, "post_id" => post_id}}
+      when type in ["white_board_post", "white_board_comment"] ->
+        {:noreply, push_navigate(socket, to: ~p"/users/#{poster_id}/white-board/posts/#{post_id}")}
 
       _ ->
         {:noreply, socket}
@@ -220,6 +224,8 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_for_type("classroom_test"), do: "hero-clipboard-document-list"
   defp icon_for_type("chat_message"), do: "hero-chat-bubble-left"
   defp icon_for_type("chat_invite"), do: "hero-chat-bubble-left-right"
+  defp icon_for_type("white_board_post"), do: "hero-document-text"
+  defp icon_for_type("white_board_comment"), do: "hero-chat-bubble-oval-left"
   defp icon_for_type(_), do: "hero-bell"
 
   defp icon_bg_class("badge_earned"), do: "bg-yellow-100 text-yellow-700"
@@ -230,6 +236,8 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_bg_class("classroom_test"), do: "bg-indigo-100 text-indigo-700"
   defp icon_bg_class("chat_message"), do: "bg-green-100 text-green-700"
   defp icon_bg_class("chat_invite"), do: "bg-emerald-100 text-emerald-700"
+  defp icon_bg_class("white_board_post"), do: "bg-pink-100 text-pink-700"
+  defp icon_bg_class("white_board_comment"), do: "bg-rose-100 text-rose-700"
   defp icon_bg_class(_), do: "bg-base-200 text-base-content"
 
   defp notification_link(%{
@@ -265,6 +273,14 @@ defmodule MedoruWeb.NotificationDropdownLive do
          data: %{"conversation_id" => id}
        }) do
     ~p"/messages/#{id}"
+  end
+
+  defp notification_link(%{
+         type: type,
+         data: %{"poster_id" => poster_id, "post_id" => post_id}
+       })
+       when type in ["white_board_post", "white_board_comment"] do
+    ~p"/users/#{poster_id}/white-board/posts/#{post_id}"
   end
 
   defp notification_link(_), do: nil

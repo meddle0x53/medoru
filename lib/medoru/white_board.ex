@@ -16,6 +16,40 @@ defmodule Medoru.WhiteBoard do
   # ============================================================================
 
   @doc """
+  Lists posts from users the viewer follows plus their own posts.
+  Sorted newest first with pagination.
+  """
+  def list_following_posts(viewer_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    offset = (page - 1) * @posts_per_page
+
+    following_ids = Social.list_following_ids(viewer_id)
+    author_ids = [viewer_id | following_ids]
+
+    BoardPost
+    |> where([p], p.user_id in ^author_ids)
+    |> apply_following_stream_blocked_filter(viewer_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(^@posts_per_page)
+    |> offset(^offset)
+    |> preload(user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Counts total posts from followed users + self visible to the viewer.
+  """
+  def count_following_posts(viewer_id) do
+    following_ids = Social.list_following_ids(viewer_id)
+    author_ids = [viewer_id | following_ids]
+
+    BoardPost
+    |> where([p], p.user_id in ^author_ids)
+    |> apply_following_stream_blocked_filter(viewer_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
   Lists posts for a user's white board with pagination.
   Filters by visibility based on viewer relationship.
   """
@@ -95,6 +129,9 @@ defmodule Medoru.WhiteBoard do
   """
   def can_view_post?(%BoardPost{} = post, viewer_id) do
     cond do
+      # Blocked in either direction: not visible
+      viewer_id && Social.is_blocked?(post.user_id, viewer_id) == :blocked ->
+        false
       # Owner can always see
       viewer_id && post.user_id == viewer_id -> true
       # Public posts visible to all
@@ -113,12 +150,53 @@ defmodule Medoru.WhiteBoard do
 
   @doc """
   Lists comments for a post, including nested replies.
+  Filters out comments from users blocked by the viewer.
   """
-  def list_comments_for_post(post_id) do
+  def list_comments_for_post(post_id, viewer_id \\ nil) do
+    comments =
+      BoardComment
+      |> where([c], c.post_id == ^post_id and is_nil(c.parent_id))
+      |> order_by(asc: :inserted_at)
+      |> preload([user: [:profile], replies: [user: [:profile]]])
+      |> Repo.all()
+
+    if viewer_id do
+      blocked_ids =
+        UserBlock
+        |> where([ub], ub.blocker_id == ^viewer_id)
+        |> select([ub], ub.blocked_id)
+        |> Repo.all()
+
+      blocked_by_ids =
+        UserBlock
+        |> where([ub], ub.blocked_id == ^viewer_id)
+        |> select([ub], ub.blocker_id)
+        |> Repo.all()
+
+      excluded_ids = Enum.uniq(blocked_ids ++ blocked_by_ids)
+
+      if excluded_ids == [] do
+        comments
+      else
+        comments
+        |> Enum.reject(fn comment -> comment.user_id in excluded_ids end)
+        |> Enum.map(fn comment ->
+          %{comment | replies: Enum.reject(comment.replies, &(&1.user_id in excluded_ids))}
+        end)
+      end
+    else
+      comments
+    end
+  end
+
+  @doc """
+  Returns unique user IDs who have commented on a post.
+  """
+  def list_commenter_ids_for_post(post_id) do
     BoardComment
-    |> where([c], c.post_id == ^post_id and is_nil(c.parent_id))
-    |> order_by(asc: :inserted_at)
-    |> preload([:user, replies: [:user]])
+    |> where([c], c.post_id == ^post_id)
+    |> select([c], c.user_id)
+    |> distinct(true)
     |> Repo.all()
   end
 
@@ -330,6 +408,7 @@ defmodule Medoru.WhiteBoard do
     end
   end
 
+  # Bidirectional block filter for white board queries.
   defp apply_blocked_filter(query, nil), do: query
 
   defp apply_blocked_filter(query, viewer_id) do
@@ -339,10 +418,44 @@ defmodule Medoru.WhiteBoard do
       |> select([ub], ub.blocked_id)
       |> Repo.all()
 
-    if blocked_ids == [] do
+    blocked_by_ids =
+      UserBlock
+      |> where([ub], ub.blocked_id == ^viewer_id)
+      |> select([ub], ub.blocker_id)
+      |> Repo.all()
+
+    excluded_ids = Enum.uniq(blocked_ids ++ blocked_by_ids)
+
+    if excluded_ids == [] do
       query
     else
-      where(query, [p], p.user_id not in ^blocked_ids)
+      where(query, [p], p.user_id not in ^excluded_ids)
+    end
+  end
+
+  # For the following stream, we need bidirectional block filtering:
+  # exclude posts from users the viewer blocked AND users who blocked the viewer.
+  defp apply_following_stream_blocked_filter(query, nil), do: query
+
+  defp apply_following_stream_blocked_filter(query, viewer_id) do
+    blocked_ids =
+      UserBlock
+      |> where([ub], ub.blocker_id == ^viewer_id)
+      |> select([ub], ub.blocked_id)
+      |> Repo.all()
+
+    blocked_by_ids =
+      UserBlock
+      |> where([ub], ub.blocked_id == ^viewer_id)
+      |> select([ub], ub.blocker_id)
+      |> Repo.all()
+
+    excluded_ids = Enum.uniq(blocked_ids ++ blocked_by_ids)
+
+    if excluded_ids == [] do
+      query
+    else
+      where(query, [p], p.user_id not in ^excluded_ids)
     end
   end
 end

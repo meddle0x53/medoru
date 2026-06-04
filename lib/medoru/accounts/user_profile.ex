@@ -16,6 +16,10 @@ defmodule Medoru.Accounts.UserProfile do
     field :theme, :string, default: "light"
     field :push_notifications_enabled, :boolean, default: false
     field :chat_enter_sends, :boolean, default: true
+    field :notify_messaging, :boolean, default: true
+    field :notify_white_board, :boolean, default: true
+    field :notify_achievements, :boolean, default: true
+    field :is_public, :boolean, default: true
 
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
@@ -47,7 +51,11 @@ defmodule Medoru.Accounts.UserProfile do
       :daily_test_step_types,
       :age,
       :gender,
-      :location
+      :location,
+      :notify_messaging,
+      :notify_white_board,
+      :notify_achievements,
+      :is_public
     ])
     |> validate_length(:display_name, min: 1, max: 50)
     |> validate_length(:bio, max: 500)

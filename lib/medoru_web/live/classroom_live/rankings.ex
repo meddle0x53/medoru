@@ -335,7 +335,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
       </div>
 
       <%!-- User Info --%>
-      <div class="flex-1 flex items-center gap-3">
+      <.link navigate={~p"/users/#{@user.id}"} class="flex-1 flex items-center gap-3">
         <div class="w-10 h-10 bg-base-200 rounded-full flex items-center justify-center">
           <.icon name="hero-user" class="w-5 h-5 text-secondary" />
         </div>
@@ -347,7 +347,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
             <% end %>
           </p>
         </div>
-      </div>
+      </.link>
 
       <%!-- Points --%>
       <div class="text-right">
@@ -380,7 +380,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
       </div>
 
       <%!-- User Info --%>
-      <div class="flex-1">
+      <.link navigate={~p"/users/#{@entry.user.id}"} class="flex-1">
         <p class="font-medium text-base-content">
           {@entry.user.name || "Anonymous"}
           <%= if @is_me do %>
@@ -390,7 +390,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
         <%= if @entry.auto_submitted do %>
           <p class="text-xs text-warning">Time ran out</p>
         <% end %>
-      </div>
+      </.link>
 
       <%!-- Score Details --%>
       <div class="text-right">

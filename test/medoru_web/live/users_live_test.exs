@@ -32,8 +32,8 @@ defmodule MedoruWeb.UsersLiveTest do
 
       html =
         view
-        |> form("form[phx-change='search']", %{search: "Alice"})
-        |> render_change()
+        |> form("form", %{search: "Alice"})
+        |> render_submit()
 
       assert html =~ "AliceWonder"
       refute html =~ "BobBuilder"
@@ -57,9 +57,56 @@ defmodule MedoruWeb.UsersLiveTest do
       assert html =~ "Message"
     end
 
+    test "blocker can still find blocked user via search", %{conn: conn} do
+      blocker = user_with_display_name(%{display_name: "BlockerX"})
+      blocked = user_with_display_name(%{display_name: "BlockedUserX"})
+
+      Medoru.Social.block_user(blocker.id, blocked.id)
+
+      {:ok, view, _html} = conn |> log_in_user(blocker) |> live(~p"/users")
+
+      html =
+        view
+        |> form("form", %{search: "BlockedUserX"})
+        |> render_submit()
+
+      assert html =~ "BlockedUserX"
+    end
+
+    test "blocked user cannot find blocker via search", %{conn: conn} do
+      blocker = user_with_display_name(%{display_name: "BlockerX"})
+      blocked = user_with_display_name(%{display_name: "BlockedUserX"})
+
+      Medoru.Social.block_user(blocker.id, blocked.id)
+
+      {:ok, view, _html} = conn |> log_in_user(blocked) |> live(~p"/users")
+
+      html =
+        view
+        |> form("form", %{search: "BlockerX"})
+        |> render_submit()
+
+      assert html =~ "No users found"
+    end
+
+    test "hides users with private profiles from directory", %{conn: conn} do
+      _public_user = user_with_display_name(%{display_name: "PublicUser"})
+      private_user = user_with_display_name(%{display_name: "PrivateUser"})
+
+      Medoru.Accounts.update_profile(private_user.profile, %{is_public: false})
+
+      {:ok, _view, html} = live(conn, ~p"/users")
+
+      assert html =~ "PublicUser"
+      refute html =~ "PrivateUser"
+    end
+
     test "supports user selection for group chat", %{conn: conn} do
       viewer = user_with_display_name()
       target = user_with_display_name(%{display_name: "TargetUser"})
+
+      # Viewer must follow target to see them in the directory
+      Medoru.Social.follow_user(viewer.id, target.id)
 
       {:ok, view, _html} = conn |> log_in_user(viewer) |> live(~p"/users")
 
@@ -84,6 +131,9 @@ defmodule MedoruWeb.UsersLiveTest do
     test "navigates to group creation", %{conn: conn} do
       viewer = user_with_display_name()
       target = user_with_display_name(%{display_name: "TargetUser"})
+
+      # Viewer must follow target to see them in the directory
+      Medoru.Social.follow_user(viewer.id, target.id)
 
       {:ok, view, _html} = conn |> log_in_user(viewer) |> live(~p"/users")
 

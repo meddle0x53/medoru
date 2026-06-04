@@ -22,12 +22,13 @@ defmodule Medoru.Social do
   @doc """
   Lists users for the public directory.
   Users with a display_name or OAuth name are shown.
-  Blocked users are filtered out.
+  Users who have blocked the viewer are filtered out.
   """
   def list_users(viewer_id \\ nil, opts \\ []) do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 24)
     tag_id = Keyword.get(opts, :tag_id)
+    only_following = Keyword.get(opts, :only_following, false)
 
     query =
       User
@@ -41,7 +42,9 @@ defmodule Medoru.Social do
       |> preload([:profile, :stats])
       |> order_by([u], desc: u.inserted_at)
 
-    query = filter_blocked_users(query, viewer_id)
+    query = filter_public_profiles(query)
+    query = filter_blocked_by_users(query, viewer_id)
+    query = filter_following_only(query, viewer_id, only_following)
     query = filter_by_tag(query, tag_id)
 
     query
@@ -52,7 +55,7 @@ defmodule Medoru.Social do
 
   @doc """
   Searches users by display name or OAuth name.
-  Blocked users are filtered out.
+  Users who have blocked the viewer are filtered out.
   """
   def search_users(query_term, viewer_id \\ nil, opts \\ []) do
     page = Keyword.get(opts, :page, 1)
@@ -76,7 +79,8 @@ defmodule Medoru.Social do
       |> preload([:profile, :stats])
       |> order_by([u, p], asc: p.display_name)
 
-    search_query = filter_blocked_users(search_query, viewer_id)
+    search_query = filter_public_profiles(search_query)
+    search_query = filter_blocked_by_users(search_query, viewer_id)
     search_query = filter_by_tag(search_query, tag_id)
 
     search_query
@@ -90,6 +94,7 @@ defmodule Medoru.Social do
   """
   def count_users(viewer_id \\ nil, opts \\ []) do
     tag_id = Keyword.get(opts, :tag_id)
+    only_following = Keyword.get(opts, :only_following, false)
 
     query =
       User
@@ -101,7 +106,9 @@ defmodule Medoru.Social do
           (not is_nil(u.name) and u.name != "")
       )
 
-    query = filter_blocked_users(query, viewer_id)
+    query = filter_public_profiles(query)
+    query = filter_blocked_by_users(query, viewer_id)
+    query = filter_following_only(query, viewer_id, only_following)
     query = filter_by_tag(query, tag_id)
     Repo.aggregate(query, :count, :id)
   end
@@ -127,21 +134,45 @@ defmodule Medoru.Social do
           ilike(u.name, ^"%#{query_term}%")
       )
 
-    search_query = filter_blocked_users(search_query, viewer_id)
+    search_query = filter_public_profiles(search_query)
+    search_query = filter_blocked_by_users(search_query, viewer_id)
     search_query = filter_by_tag(search_query, tag_id)
     Repo.aggregate(search_query, :count, :id)
   end
 
-  defp filter_blocked_users(query, nil), do: query
+  # Only show users who have made their profile public.
+  # Users without a profile (e.g. OAuth-only) are treated as public.
+  defp filter_public_profiles(query) do
+    query
+    |> where([u, p], is_nil(p.id) or p.is_public == true)
+  end
 
-  defp filter_blocked_users(query, viewer_id) do
-    blocked_subquery =
+  # Always filter out users who have blocked the viewer (privacy).
+  defp filter_blocked_by_users(query, nil), do: query
+
+  defp filter_blocked_by_users(query, viewer_id) do
+    blocked_by_subquery =
       UserBlock
-      |> where([ub], ub.blocker_id == ^viewer_id)
-      |> select([ub], ub.blocked_id)
+      |> where([ub], ub.blocked_id == ^viewer_id)
+      |> select([ub], ub.blocker_id)
 
     query
-    |> where([u], u.id not in subquery(blocked_subquery))
+    |> where([u], u.id not in subquery(blocked_by_subquery))
+  end
+
+  # When only_following is true (student/teacher browsing without search),
+  # restrict to users the viewer follows.
+  defp filter_following_only(query, _viewer_id, false), do: query
+  defp filter_following_only(query, nil, _only_following), do: query
+
+  defp filter_following_only(query, viewer_id, true) do
+    following_subquery =
+      Follow
+      |> where([f], f.follower_id == ^viewer_id)
+      |> select([f], f.following_id)
+
+    query
+    |> where([u], u.id in subquery(following_subquery))
   end
 
   defp filter_by_tag(query, nil), do: query
@@ -434,6 +465,16 @@ defmodule Medoru.Social do
     |> Repo.all()
   end
 
+  @doc """
+  Returns the list of user IDs that follow the given user.
+  """
+  def list_follower_ids(user_id) do
+    Follow
+    |> where([f], f.following_id == ^user_id)
+    |> select([f], f.follower_id)
+    |> Repo.all()
+  end
+
   # ============================================================================
   # Blocking
   # ============================================================================
@@ -444,14 +485,21 @@ defmodule Medoru.Social do
   def block_user(blocker_id, blocked_id, reason \\ nil) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    %UserBlock{}
-    |> UserBlock.changeset(%{
-      blocker_id: blocker_id,
-      blocked_id: blocked_id,
-      reason: reason,
-      blocked_at: now
-    })
-    |> Repo.insert()
+    result =
+      %UserBlock{}
+      |> UserBlock.changeset(%{
+        blocker_id: blocker_id,
+        blocked_id: blocked_id,
+        reason: reason,
+        blocked_at: now
+      })
+      |> Repo.insert()
+
+    # Silently unfollow in both directions
+    unfollow_user(blocker_id, blocked_id)
+    unfollow_user(blocked_id, blocker_id)
+
+    result
   end
 
   @doc """

@@ -6,9 +6,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
   import Ecto.Query, warn: false
 
-  alias Medoru.{Accounts, Content, Repo, WhiteBoard}
+  alias Medoru.{Accounts, Notifications, Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.BoardComment
-  alias MedoruWeb.{KanjiChatPreview, WordChatPreview}
+  alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
+
+  import Helpers, only: [format_localized_date: 1]
 
   defp all_emojis do
     ~w(😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔 🤨 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁 😖 😞 😟 😤 😢 😭 😦 😧
@@ -168,9 +170,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                       rows="3"
                       placeholder={gettext("Write something on your board...")}
                     ></textarea>
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <div class="flex flex-col gap-2">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <label class="flex items-center gap-1.5 text-sm cursor-pointer shrink-0">
                           <input
                             type="checkbox"
                             name="public"
@@ -183,14 +185,14 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           <button
                             type="button"
                             data-board-voice-btn
-                            class="btn btn-ghost btn-xs text-base-content/60"
+                            class="btn btn-ghost btn-xs btn-circle"
                             title={gettext("Voice message")}
                           >
                             <.icon name="hero-microphone" class="w-4 h-4" />
                           </button>
                           <span
                             data-board-voice-status
-                            class="hidden absolute -top-2 -right-2 bg-error text-error-content text-xs font-bold px-1.5 py-0.5 rounded-full"
+                            class="hidden absolute -top-1 -right-1 bg-error text-error-content text-[10px] font-bold px-1 py-0.5 rounded-full"
                           >
                             0s
                           </span>
@@ -200,7 +202,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           <button
                             type="button"
                             data-board-emoji-btn
-                            class="btn btn-ghost btn-xs"
+                            class="btn btn-ghost btn-xs btn-circle"
                             title={gettext("Emoji")}
                           >
                             <.icon name="hero-face-smile" class="w-4 h-4" />
@@ -219,7 +221,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                                       <button
                                         type="button"
                                         data-emoji={emoji}
-                                        class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
+                                        class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center min-w-[36px] min-h-[36px]"
                                       >
                                         <img src={if emoji == ":medoru:", do: "/favicon.png", else: "/images/ouroboros.png"} class="w-6 h-6 object-contain pointer-events-none" />
                                       </button>
@@ -227,7 +229,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                                       <button
                                         type="button"
                                         data-emoji={emoji}
-                                        class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors"
+                                        class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors min-w-[36px] min-h-[36px]"
                                       >
                                         {emoji}
                                       </button>
@@ -251,7 +253,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         <button
                           type="button"
                           data-board-attachment-btn
-                          class="btn btn-ghost btn-xs"
+                          class="btn btn-ghost btn-xs btn-circle"
                           title={gettext("Attach file")}
                         >
                           <.icon name="hero-paper-clip" class="w-4 h-4" />
@@ -264,10 +266,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         />
                       </div>
                       <div class="flex gap-2">
-                        <button type="button" phx-click="open_canvas" class="btn btn-secondary btn-sm">
+                        <button type="button" phx-click="open_canvas" class="btn btn-secondary btn-sm flex-1">
                           <.icon name="hero-paint-brush" class="w-4 h-4 mr-1" /> {gettext("Draw")}
                         </button>
-                        <button type="submit" class="btn btn-primary btn-sm">
+                        <button type="submit" class="btn btn-primary btn-sm flex-1">
                           <.icon name="hero-paper-airplane" class="w-4 h-4 mr-1" /> {gettext("Post")}
                         </button>
                       </div>
@@ -287,27 +289,40 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                 <%!-- Post Header --%>
                 <div class="flex items-start justify-between">
                   <div class="flex items-center gap-3 min-w-0">
-                    <%= if post.user.profile && post.user.profile.avatar do %>
-                      <img src={post.user.profile.avatar} class="w-10 h-10 rounded-full object-cover shrink-0" />
-                    <% else %>
-                      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
-                      </div>
-                    <% end %>
+                    <.link navigate={~p"/users/#{post.user_id}"}>
+                      <% avatar_src = (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
+                      <%= if avatar_src do %>
+                        <img src={avatar_src} class="w-10 h-10 rounded-full object-cover shrink-0" />
+                      <% else %>
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+                        </div>
+                      <% end %>
+                    </.link>
                     <div class="min-w-0">
                       <p class="font-semibold text-base-content truncate">
                         {(post.user.profile && post.user.profile.display_name) || post.user.name}
                       </p>
                       <p class="text-xs text-base-content/50 truncate">
-                        {Calendar.strftime(post.inserted_at, "%B %d, %Y")}
+                        {format_localized_date(post.inserted_at)}
                         <%= if post.visibility == "followers" do %>
                           <span class="badge badge-xs badge-ghost ml-1">{gettext("Followers")}</span>
                         <% end %>
                       </p>
                     </div>
                   </div>
-                  <%= if @is_owner do %>
-                    <div class="flex items-center gap-1 shrink-0">
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      id={"share-btn-#{post.id}"}
+                      phx-hook="CopyToClipboard"
+                      data-text={url(~p"/users/#{post.user_id}/white-board/posts/#{post.id}")}
+                      class="btn btn-ghost btn-xs"
+                      title={gettext("Copy link to post")}
+                    >
+                      <.icon name="hero-share" class="w-4 h-4" />
+                    </button>
+                    <%= if @is_owner do %>
                       <button
                         type="button"
                         phx-click="toggle_visibility"
@@ -325,26 +340,26 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         <button tabindex="0" class="btn btn-ghost btn-xs">
                           <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
                         </button>
-                      <ul tabindex="0" class="dropdown-content menu menu-sm bg-base-100 rounded-box z-[1] w-32 p-2 shadow border border-base-300">
-                        <li>
-                          <button phx-click="edit_post" phx-value-id={post.id}>
-                            <.icon name="hero-pencil" class="w-4 h-4" /> {gettext("Edit")}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            phx-click="delete_post"
-                            phx-value-id={post.id}
-                            data-confirm={gettext("Delete this post?")}
-                            class="text-error"
-                          >
-                            <.icon name="hero-trash" class="w-4 h-4" /> {gettext("Delete")}
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                    </div>
-                  <% end %>
+                        <ul tabindex="0" class="dropdown-content menu menu-sm bg-base-100 rounded-box z-[1] w-32 p-2 shadow border border-base-300">
+                          <li>
+                            <button phx-click="edit_post" phx-value-id={post.id}>
+                              <.icon name="hero-pencil" class="w-4 h-4" /> {gettext("Edit")}
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              phx-click="delete_post"
+                              phx-value-id={post.id}
+                              data-confirm={gettext("Delete this post?")}
+                              class="text-error"
+                            >
+                              <.icon name="hero-trash" class="w-4 h-4" /> {gettext("Delete")}
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    <% end %>
+                  </div>
                 </div>
 
                 <%!-- Post Content --%>
@@ -391,23 +406,23 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                   <% end %>
 
                   <%= if post.content do %>
-                    <%= if emoji_only?(post.content) do %>
+                    <%= if WhiteBoardPostRenderer.emoji_only?(post.content) do %>
                       <div class="mt-2 text-center text-5xl leading-none py-2">
-                        {raw(render_post_content(post.content, post.id))}
+                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
                       </div>
                     <% else %>
-                      <%= if command_only?(post.content) do %>
+                      <%= if WhiteBoardPostRenderer.command_only?(post.content) do %>
                         <div class="mt-2 flex justify-center">
-                          {raw(render_post_content(post.content, post.id))}
+                          {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
                         </div>
                       <% else %>
-                        <%= if photo_only?(post.content) do %>
+                        <%= if WhiteBoardPostRenderer.photo_only?(post.content) do %>
                           <div class="mt-2">
-                            {raw(render_post_content(post.content, post.id))}
+                            {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
                           </div>
                         <% else %>
                           <div class="mt-2 prose prose-sm dark:prose-invert max-w-none">
-                            {raw(render_post_content(post.content, post.id))}
+                            {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
                           </div>
                         <% end %>
                       <% end %>
@@ -450,7 +465,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             phx-click="toggle_reaction"
                             phx-value-post-id={post.id}
                             phx-value-emoji={emoji}
-                            class="btn btn-ghost btn-xs text-lg"
+                            class="btn btn-ghost btn-xs sm:btn-sm text-lg min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0"
                           >
                             {emoji}
                           </button>
@@ -468,13 +483,16 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                     <div class="space-y-3 mb-3">
                       <%= for comment <- comments do %>
                         <div class="flex gap-2">
-                          <%= if comment.user.profile && comment.user.profile.avatar do %>
-                            <img src={comment.user.profile.avatar} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                          <% else %>
-                            <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                              <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
-                            </div>
-                          <% end %>
+                          <.link navigate={~p"/users/#{comment.user_id}"}>
+                            <% avatar_src = (comment.user.profile && comment.user.profile.avatar) || comment.user.avatar_url %>
+                            <%= if avatar_src do %>
+                              <img src={avatar_src} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                            <% else %>
+                              <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
+                              </div>
+                            <% end %>
+                          </.link>
                           <div class="flex-1 min-w-0">
                             <%= if comment.parent_comment do %>
                               <div class="mb-1 pl-2 border-l-2 border-base-300">
@@ -600,7 +618,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
         post_ids = Enum.map(posts, & &1.id)
         reactions = WhiteBoard.list_reactions_for_posts(post_ids, viewer_id)
-        comments = load_comments_for_posts(posts)
+        comments = load_comments_for_posts(posts, viewer_id)
 
         if connected?(socket) do
           WhiteBoard.subscribe_to_board(user.id)
@@ -654,6 +672,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
         post = Repo.preload(post, user: [:profile])
         WhiteBoard.broadcast_post_created(socket.assigns.user.id, post)
 
+        # Notify followers
+        notify_followers_of_post(user, post)
+
         {:noreply,
          socket
          |> assign(:post_form, %{title: nil, content: nil})
@@ -688,6 +709,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
       {:ok, post} ->
         post = Repo.preload(post, user: [:profile])
         WhiteBoard.broadcast_post_created(socket.assigns.user.id, post)
+
+        # Notify followers
+        notify_followers_of_post(user, post)
 
         {:noreply,
          socket
@@ -855,6 +879,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
           comment = Repo.preload(comment, [user: [:profile], parent_comment: [user: [:profile]]])
           WhiteBoard.broadcast_comment(socket.assigns.user.id, comment, self())
 
+          # Notify post author and other commenters
+          notify_comment_participants(comment, user_id)
+
           comments =
             Map.update(socket.assigns.comments, post_id, [comment], fn existing ->
               existing ++ [comment]
@@ -918,7 +945,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
     post_ids = Enum.map(new_posts, & &1.id)
     new_reactions = WhiteBoard.list_reactions_for_posts(post_ids, viewer_id)
-    new_comments = load_comments_for_posts(new_posts)
+    new_comments = load_comments_for_posts(new_posts, viewer_id)
 
     reactions = Map.merge(socket.assigns.reactions, new_reactions)
     comments = Map.merge(socket.assigns.comments, new_comments)
@@ -983,30 +1010,63 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
   @impl true
   def handle_info({:comment, comment}, socket) do
-    comments =
-      Map.update(socket.assigns.comments, comment.post_id, [comment], fn existing ->
-        existing ++ [comment]
-      end)
+    current_user = socket.assigns.current_scope[:current_user]
 
-    {:noreply, assign(socket, :comments, comments)}
+    # Skip comments from users that the current user has blocked
+    blocked? =
+      current_user && Social.blocked_by?(current_user.id, comment.user_id)
+
+    if blocked? do
+      {:noreply, socket}
+    else
+      comments =
+        Map.update(socket.assigns.comments, comment.post_id, [comment], fn existing ->
+          existing ++ [comment]
+        end)
+
+      {:noreply, assign(socket, :comments, comments)}
+    end
   end
 
   # ============================================================================
   # Helpers
   # ============================================================================
 
-  defp load_comments_for_posts(posts) do
+  defp load_comments_for_posts(posts, viewer_id) do
     post_ids = Enum.map(posts, & &1.id)
 
     if post_ids == [] do
       %{}
     else
-      BoardComment
-      |> where([c], c.post_id in ^post_ids)
-      |> order_by(asc: :inserted_at)
-      |> preload([user: [:profile], parent_comment: [user: [:profile]]])
-      |> Repo.all()
-      |> Enum.group_by(& &1.post_id)
+      comments =
+        BoardComment
+        |> where([c], c.post_id in ^post_ids)
+        |> order_by(asc: :inserted_at)
+        |> preload([user: [:profile], parent_comment: [user: [:profile]]])
+        |> Repo.all()
+
+      comments =
+        if viewer_id do
+          blocked_ids =
+            Social.UserBlock
+            |> where([ub], ub.blocker_id == ^viewer_id)
+            |> select([ub], ub.blocked_id)
+            |> Repo.all()
+
+          if blocked_ids == [] do
+            comments
+          else
+            comments
+            |> Enum.reject(fn c -> c.user_id in blocked_ids end)
+            |> Enum.map(fn c ->
+              %{c | replies: Enum.reject(c.replies, &(&1.user_id in blocked_ids))}
+            end)
+          end
+        else
+          comments
+        end
+
+      Enum.group_by(comments, & &1.post_id)
     end
   end
 
@@ -1107,278 +1167,49 @@ defmodule MedoruWeb.UserWhiteBoardLive do
     if str == "", do: nil, else: str
   end
 
-  defp render_post_content(text, post_id) when is_binary(text) do
-    lines = String.split(text, "\n")
 
-    {segments, last_group} =
-      Enum.reduce(lines, {[], []}, fn line, {segments, group} ->
-        trimmed = String.trim(line)
+  # ============================================================================
+  # Notification Helpers
+  # ============================================================================
 
-        cond do
-          trimmed == "" ->
-            {segments, group ++ [line]}
+  defp notify_followers_of_post(poster, post) do
+    follower_ids = Social.list_follower_ids(poster.id)
 
-          match_word_command?(trimmed) or match_kanji_command?(trimmed) ->
-            segments = if group != [], do: [{:text, Enum.join(group, "\n")} | segments], else: segments
-            segments = [{:command, trimmed} | segments]
-            {segments, []}
-
-          true ->
-            {segments, group ++ [line]}
-        end
-      end)
-
-    segments = if last_group != [], do: [{:text, Enum.join(last_group, "\n")} | segments], else: segments
-
-    segments
-    |> Enum.reverse()
-    |> Enum.map(fn
-      {:text, txt} -> render_post_body(txt, post_id)
-      {:command, cmd} -> render_command(cmd)
-    end)
-    |> Enum.join("\n")
-  end
-
-  defp render_post_content(nil, _post_id), do: ""
-
-  defp render_post_body(text, post_id) do
-    text
-    |> render_inline_word_links()
-    |> autolink_urls()
-    |> render_markdown()
-    |> unwrap_photo_only_html()
-    |> render_audio_players(post_id)
-    |> render_images(post_id)
-  end
-
-  defp match_word_command?(text) do
-    String.starts_with?(text, "/word ") or
-      String.starts_with?(text, "/w ") or
-      String.starts_with?(text, "\\word ") or
-      String.starts_with?(text, "\\w ")
-  end
-
-  defp match_kanji_command?(text) do
-    String.starts_with?(text, "/kanji ") or
-      String.starts_with?(text, "/k ") or
-      String.starts_with?(text, "\\kanji ") or
-      String.starts_with?(text, "\\k ")
-  end
-
-  defp render_command(text) do
-    case parse_word_command(text) do
-      {:ok, word_text} ->
-        case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-          nil -> text
-          word -> WordChatPreview.render_html(%{word: word}) |> elem(1)
-        end
-
-      :error ->
-        case parse_kanji_command(text) do
-          {:ok, character} ->
-            case Content.get_kanji_by_character(character) do
-              nil -> text
-              kanji ->
-                locale = Gettext.get_locale(MedoruWeb.Gettext)
-                assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
-                KanjiChatPreview.render_html(assigns) |> elem(1)
-            end
-
-          :error ->
-            text
-        end
-    end
-  end
-
-  defp render_inline_word_links(text) do
-    pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
-    bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
-    corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
-
-    matches =
-      (pipe_matches ++ bracket_matches ++ corner_matches)
-      |> Enum.sort_by(fn [{match_start, _}, _] -> match_start end)
-
-    if matches == [] do
-      text
-    else
-      segments = build_word_link_segments(text, matches, 0, [])
-
-      segments
-      |> Enum.map(fn
-        {:text, segment_text} ->
-          segment_text
-
-        {:word, word_text} ->
-          case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-            nil -> word_text
-            word -> "[#{word_text}](/words/#{word.id})"
-          end
-      end)
-      |> Enum.join("")
-    end
-  end
-
-  defp build_word_link_segments(text, [], pos, acc) do
-    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
-    acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
-    Enum.reverse(acc)
-  end
-
-  defp build_word_link_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
-    before_len = match_start - pos
-    before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
-    word_text = binary_part(text, cap_start, cap_len)
-
-    acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
-    acc = [{:word, word_text} | acc]
-
-    build_word_link_segments(text, rest, match_start + match_len, acc)
-  end
-
-  defp parse_word_command(text) do
-    case text do
-      "/word " <> rest -> if rest != "", do: {:ok, rest}, else: :error
-      "/w " <> rest -> if rest != "", do: {:ok, rest}, else: :error
-      "\\word " <> rest -> if rest != "", do: {:ok, rest}, else: :error
-      "\\w " <> rest -> if rest != "", do: {:ok, rest}, else: :error
-      _ -> :error
-    end
-  end
-
-  defp parse_kanji_command(text) do
-    case text do
-      "/kanji " <> rest -> if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-      "/k " <> rest -> if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-      "\\kanji " <> rest -> if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-      "\\k " <> rest -> if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-      _ -> :error
-    end
-  end
-
-  defp valid_kanji_command?(<<char::utf8>>) when char in 0x4E00..0x9FFF, do: true
-  defp valid_kanji_command?(<<char::utf8>>) when char in 0x3400..0x4DBF, do: true
-  defp valid_kanji_command?(_), do: false
-
-  defp autolink_urls(text) do
-    url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
-
-    Regex.split(url_regex, text, include_captures: true)
-    |> Enum.map(fn segment ->
-      if Regex.match?(url_regex, segment) do
-        "<a href=\"#{segment}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{segment}</a>"
-      else
-        segment
+    Task.async_stream(follower_ids, fn follower_id ->
+      # Don't notify users who have blocked the poster
+      unless Social.blocked_by?(follower_id, poster.id) do
+        Notifications.notify_white_board_post(follower_id, poster.name, poster.id, post.id)
       end
-    end)
-    |> Enum.join("")
+    end, timeout: :infinity)
+    |> Stream.run()
   end
 
-  defp render_markdown(text) when is_binary(text) do
-    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
-    html
-  end
+  defp notify_comment_participants(comment, commenter_id) do
+    post = WhiteBoard.get_post!(comment.post_id)
+    post_owner = Accounts.get_user!(post.user_id)
+    commenter = Accounts.get_user!(commenter_id)
 
-  defp render_audio_players(html, post_id) when is_binary(html) do
-    # Find markdown links to audio files and replace with chat-style audio player
-    # Supports duration in URL fragment: #duration=42
-    regex = ~r/<a href="([^"]+\.(?:webm|ogg|mp3|wav|m4a|oga)[^"]*)"[^>]*>([^<]*)<\/a>/
+    # Get all unique users who commented on this post
+    commenter_ids = WhiteBoard.list_commenter_ids_for_post(comment.post_id)
 
-    Regex.replace(regex, html, fn _full_match, href, _text ->
-      audio_id = "board-audio-#{post_id}-#{:erlang.phash2(href)}"
+    # Combine post owner + commenters, remove the commenter themselves
+    recipient_ids =
+      [post.user_id | commenter_ids]
+      |> Enum.uniq()
+      |> List.delete(commenter_id)
 
-      # Extract duration from fragment
-      {clean_href, duration} =
-        case Regex.run(~r/#duration=(\d+)/, href) do
-          [_, d] -> {String.replace(href, ~r/#duration=\d+/, ""), String.to_integer(d)}
-          _ -> {href, 0}
-        end
-
-      """
-      <div
-        id="#{audio_id}"
-        class="flex items-center gap-2 mt-2"
-        phx-hook="ChatAudioPlayer"
-        data-src="#{clean_href}"
-        data-duration="#{duration}"
-      >
-        <button
-          type="button"
-          class="chat-audio-play w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors shrink-0"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 chat-audio-play-icon"><path d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" /></svg>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 chat-audio-pause-icon hidden"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>
-        </button>
-        <div class="flex-1 min-w-0">
-          <div class="chat-audio-progress h-1.5 bg-base-300/50 rounded-full overflow-hidden cursor-pointer">
-            <div
-              class="chat-audio-progress-bar h-full bg-primary rounded-full transition-all duration-100"
-              style="width: 0%"
-            >
-            </div>
-          </div>
-          <div class="flex justify-between mt-0.5">
-            <span class="chat-audio-current text-[10px] opacity-70 tabular-nums">0:00</span>
-            <span class="chat-audio-duration text-[10px] opacity-70 tabular-nums">0:00</span>
-          </div>
-        </div>
-        <audio
-          class="chat-audio-el absolute w-0 h-0 opacity-0"
-          src="#{href}"
-          preload="auto"
-        >
-        </audio>
-      </div>
-      """
-    end)
-  end
-
-  defp photo_only?(nil), do: false
-
-  defp photo_only?(text) do
-    trimmed = String.trim(text)
-    trimmed != "" and Regex.match?(~r/^\s*!\[[^\]]*\]\([^\)]+\)\s*$/, trimmed)
-  end
-
-  defp unwrap_photo_only_html(html) when is_binary(html) do
-    # If the entire content is <p><img ... /></p>, unwrap to just the img
-    Regex.replace(~r/^<p>\s*(<img[^>]*>)\s*<\/p>$/i, html, "\\1")
-  end
-
-  defp render_images(html, _post_id) when is_binary(html) do
-    Regex.replace(
-      ~r/<img\b([^>]*)>/i,
-      html,
-      fn _full, attrs ->
-        if String.contains?(attrs, "class=") do
-          ~s|<img#{attrs} />|
-        else
-          ~s|<img#{attrs} class="max-w-full h-auto rounded-lg mx-auto block" loading="lazy" />|
-        end
+    Task.async_stream(recipient_ids, fn recipient_id ->
+      # Don't notify users who have blocked the commenter
+      unless Social.blocked_by?(recipient_id, commenter_id) do
+        Notifications.notify_white_board_comment(
+          recipient_id,
+          commenter.name,
+          comment.post_id,
+          post_owner.id,
+          post_owner.name
+        )
       end
-    )
-  end
-
-  defp command_only?(nil), do: false
-
-  defp command_only?(text) do
-    trimmed = String.trim(text)
-    match_word_command?(trimmed) or match_kanji_command?(trimmed)
-  end
-
-  defp emoji_only?(nil), do: false
-
-  defp emoji_only?(text) do
-    trimmed = String.trim(text)
-
-    trimmed != "" and
-      String.replace(
-        trimmed,
-        ~r/[\s\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F1E0}-\x{1F1FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F900}-\x{1F9FF}\x{1F004}\x{1F0CF}\x{1F170}-\x{1F251}\x{238C}\x{2B50}\x{2B55}\x{2764}\x{2795}-\x{2797}\x{27A1}\x{27B0}\x{27BF}\x{2B05}-\x{2B07}\x{3030}\x{303D}\x{3297}\x{3299}\x{23F0}-\x{23F3}\x{23E9}-\x{23EF}\x{1F18E}\x{00A9}\x{00AE}\x{FE0F}\x{200D}\x{1F3FB}-\x{1F3FF}]/u,
-        ""
-      )
-      |> String.replace(":medoru:", "")
-      |> String.replace(":ouroboros:", "")
-      |> String.trim() == ""
+    end, timeout: :infinity)
+    |> Stream.run()
   end
 end

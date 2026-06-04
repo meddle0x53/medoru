@@ -25,7 +25,7 @@ defmodule Medoru.SocialTest do
       assert length(users) == 3
     end
 
-    test "list_users/2 excludes blocked users" do
+    test "list_users/2 includes users the viewer has blocked" do
       viewer = user_with_profile_fixture()
       blocked = user_with_profile_fixture()
       visible = user_with_profile_fixture()
@@ -35,8 +35,67 @@ defmodule Medoru.SocialTest do
       users = Social.list_users(viewer.id)
       user_ids = Enum.map(users, & &1.id)
 
-      assert blocked.id not in user_ids
+      # Viewer can still see blocked users to manage/unblock them
+      assert blocked.id in user_ids
       assert visible.id in user_ids
+    end
+
+    test "list_users/2 excludes users who blocked the viewer" do
+      viewer = user_with_profile_fixture()
+      blocker = user_with_profile_fixture()
+      visible = user_with_profile_fixture()
+
+      Social.block_user(blocker.id, viewer.id)
+
+      users = Social.list_users(viewer.id)
+      user_ids = Enum.map(users, & &1.id)
+
+      assert blocker.id not in user_ids
+      assert visible.id in user_ids
+    end
+
+    test "block_user/3 auto-unfollows in both directions" do
+      user_a = user_with_profile_fixture()
+      user_b = user_with_profile_fixture()
+
+      Social.follow_user(user_a.id, user_b.id)
+      Social.follow_user(user_b.id, user_a.id)
+
+      assert Social.following?(user_a.id, user_b.id)
+      assert Social.following?(user_b.id, user_a.id)
+
+      Social.block_user(user_a.id, user_b.id)
+
+      refute Social.following?(user_a.id, user_b.id)
+      refute Social.following?(user_b.id, user_a.id)
+    end
+
+    test "list_users/2 excludes users with private profiles" do
+      viewer = user_with_profile_fixture()
+      public_user = user_with_profile_fixture(%{display_name: "PublicUser"})
+      private_user = user_with_profile_fixture(%{display_name: "PrivateUser"})
+
+      Accounts.update_profile(private_user.profile, %{is_public: false})
+
+      users = Social.list_users(viewer.id)
+      user_ids = Enum.map(users, & &1.id)
+
+      assert public_user.id in user_ids
+      assert private_user.id not in user_ids
+    end
+
+    test "search_users/3 excludes users with private profiles" do
+      viewer = user_with_profile_fixture()
+      public_user = user_with_profile_fixture(%{display_name: "PublicSearch"})
+      private_user = user_with_profile_fixture(%{display_name: "PrivateSearch"})
+
+      Accounts.update_profile(private_user.profile, %{is_public: false})
+
+      results = Social.search_users("Search", viewer.id)
+      result_ids = Enum.map(results, & &1.id)
+
+      assert public_user.id in result_ids
+      assert private_user.id not in result_ids
     end
 
     test "list_users/2 supports pagination" do
@@ -82,6 +141,53 @@ defmodule Medoru.SocialTest do
       user_with_profile_fixture(%{display_name: "Bob"})
 
       assert Social.count_search_users("Alice") == 2
+    end
+
+    test "list_users/2 with only_following shows only followed users" do
+      viewer = user_with_profile_fixture()
+      followed = user_with_profile_fixture(%{display_name: "Followed"})
+      not_followed = user_with_profile_fixture(%{display_name: "NotFollowed"})
+
+      Social.follow_user(viewer.id, followed.id)
+
+      users = Social.list_users(viewer.id, only_following: true)
+      user_ids = Enum.map(users, & &1.id)
+
+      assert followed.id in user_ids
+      assert not_followed.id not in user_ids
+    end
+
+    test "list_users/2 with only_following excludes users who blocked the viewer" do
+      viewer = user_with_profile_fixture()
+      followed = user_with_profile_fixture(%{display_name: "Followed"})
+
+      Social.follow_user(viewer.id, followed.id)
+      Social.block_user(followed.id, viewer.id)
+
+      users = Social.list_users(viewer.id, only_following: true)
+      user_ids = Enum.map(users, & &1.id)
+
+      assert followed.id not in user_ids
+    end
+
+    test "search_users/3 with only_following bypasses follow filter" do
+      viewer = user_with_profile_fixture()
+      not_followed = user_with_profile_fixture(%{display_name: "Searchable"})
+
+      # Don't follow them
+      results = Social.search_users("Searchable", viewer.id, only_following: true)
+      assert length(results) == 1
+      assert hd(results).id == not_followed.id
+    end
+
+    test "search_users/3 with only_following still excludes users who blocked the viewer" do
+      viewer = user_with_profile_fixture()
+      blocked = user_with_profile_fixture(%{display_name: "BlockedUser"})
+
+      Social.block_user(blocked.id, viewer.id)
+
+      results = Social.search_users("BlockedUser", viewer.id, only_following: true)
+      assert results == []
     end
   end
 

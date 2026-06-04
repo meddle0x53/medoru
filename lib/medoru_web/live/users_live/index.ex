@@ -6,7 +6,7 @@ defmodule MedoruWeb.UsersLive.Index do
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
 
-  alias Medoru.Social
+  alias Medoru.{Accounts, Social}
 
   @per_page 24
 
@@ -23,12 +23,11 @@ defmodule MedoruWeb.UsersLive.Index do
     search = params["search"] || ""
     tag_id = params["tag_id"] || ""
 
-    viewer_id =
-      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-        socket.assigns.current_scope.current_user.id
-      else
-        nil
-      end
+    current_user = socket.assigns.current_scope[:current_user]
+    viewer_id = current_user && current_user.id
+
+    is_staff = current_user && (Accounts.User.admin?(current_user) || Accounts.User.moderator?(current_user))
+    only_following = current_user && !is_staff && search == ""
 
     following_ids =
       if viewer_id do
@@ -39,16 +38,16 @@ defmodule MedoruWeb.UsersLive.Index do
 
     users =
       if search != "" do
-        Social.search_users(search, viewer_id, page: page, per_page: @per_page, tag_id: tag_id)
+        Social.search_users(search, viewer_id, page: page, per_page: @per_page, tag_id: tag_id, only_following: only_following)
       else
-        Social.list_users(viewer_id, page: page, per_page: @per_page, tag_id: tag_id)
+        Social.list_users(viewer_id, page: page, per_page: @per_page, tag_id: tag_id, only_following: only_following)
       end
 
     total_count =
       if search != "" do
-        Social.count_search_users(search, viewer_id, tag_id: tag_id)
+        Social.count_search_users(search, viewer_id, tag_id: tag_id, only_following: only_following)
       else
-        Social.count_users(viewer_id, tag_id: tag_id)
+        Social.count_users(viewer_id, tag_id: tag_id, only_following: only_following)
       end
 
     total_pages = max(1, ceil(total_count / @per_page))

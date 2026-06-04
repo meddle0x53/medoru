@@ -11,34 +11,34 @@
     </div>
 
     <%!-- Daily Goal Card --%>
-    <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-8">
-      <div class="card-body">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div class="flex items-center gap-4">
+    <div class="card bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20 mb-6">
+      <div class="card-body p-4 sm:p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex items-center gap-3">
             <% completed = (@challenge_stats && @challenge_stats.completed_count) || 0 %>
             <% total = (@challenge_stats && @challenge_stats.total_challenges) || 3 %>
             <% all_completed = completed >= total %>
             <div class={[
-              "w-16 h-16 rounded-full flex items-center justify-center",
+              "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
               if(all_completed, do: "bg-success/20", else: "bg-warning/20")
             ]}>
               <.icon
                 name={if all_completed, do: "hero-check-circle", else: "hero-fire"}
                 class={[
-                  "w-8 h-8",
+                  "w-5 h-5",
                   if(all_completed, do: "text-success", else: "text-warning")
                 ]}
               />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-base-content">
+              <h2 class="text-base font-bold text-base-content">
                 <%= if all_completed do %>
                   {gettext("Daily Goal Completed!")} 🎉
                 <% else %>
                   {gettext("Keep Your Streak Going!")}
                 <% end %>
               </h2>
-              <p class="text-base-content/70">
+              <p class="text-sm text-base-content/70">
                 {gettext("Complete any challenge to keep your streak going!")}
               </p>
             </div>
@@ -47,14 +47,14 @@
           <.link
             navigate={~p"/daily-challenges"}
             class={[
-              "btn btn-lg h-auto py-3 px-6 min-w-fit whitespace-normal text-center leading-tight w-full sm:w-auto",
+              "btn btn-sm h-auto py-2 px-4 min-w-fit whitespace-normal text-center leading-tight w-full sm:w-auto",
               if(all_completed, do: "btn-outline btn-success", else: "btn-primary")
             ]}
           >
             <%= if completed > 0 do %>
-              <.icon name="hero-check" class="w-5 h-5 mr-2 flex-shrink-0" /> {completed} / {total} {gettext("Completed")}
+              <.icon name="hero-check" class="w-4 h-4 mr-1.5 flex-shrink-0" /> {completed} / {total} {gettext("Completed")}
             <% else %>
-              <.icon name="hero-play" class="w-5 h-5 mr-2 flex-shrink-0" /> {gettext(
+              <.icon name="hero-play" class="w-4 h-4 mr-1.5 flex-shrink-0" /> {gettext(
                 "Daily Challenges"
               )}
             <% end %>
@@ -64,7 +64,7 @@
     </div>
 
     <%!-- Stats Grid --%>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <.stat_card
         label={gettext("Level")}
         value={@xp_progress.current_level}
@@ -102,8 +102,8 @@
     </div>
 
     <%!-- XP Progress Bar --%>
-    <div class="card bg-base-100 border border-base-300 mb-8">
-      <div class="card-body py-4">
+    <div class="card bg-base-100 border border-base-300 mb-6">
+      <div class="card-body py-3 px-4">
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm font-medium text-base-content">
             {gettext("Level %{level} Progress", level: @xp_progress.current_level)}
@@ -123,18 +123,18 @@
     </div>
 
     <%!-- Classrooms Section --%>
-    <div class="card bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 mb-8">
-      <div class="card-body">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0">
-              <.icon name="hero-users" class="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+    <div class="card bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 mb-6">
+      <div class="card-body p-4 sm:p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
+              <.icon name="hero-users" class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-base-content">
+              <h2 class="text-base font-bold text-base-content">
                 {gettext("Your Classrooms")}
               </h2>
-              <p class="text-base-content/70">
+              <p class="text-sm text-base-content/70">
                 {gettext(
                   "Join or create classrooms to learn with others and compete on leaderboards."
                 )}
@@ -144,9 +144,9 @@
 
           <.link
             navigate={~p"/classrooms"}
-            class="btn btn-primary h-auto py-3 px-6 min-h-[48px] whitespace-nowrap"
+            class="btn btn-primary btn-sm h-auto py-2 px-4 whitespace-nowrap"
           >
-            <.icon name="hero-arrow-right" class="w-5 h-5 mr-2" />
+            <.icon name="hero-arrow-right" class="w-4 h-4 mr-1.5" />
             {gettext("Go to Classrooms")}
           </.link>
         </div>
@@ -154,7 +154,7 @@
     </div>
 
     <%!-- Quick Actions --%>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mb-6">
       <.action_card
         title={gettext("Continue Learning")}
         description={gettext("Pick up where you left off with your lessons.")}
@@ -176,6 +176,295 @@
         button_link={~p"/words"}
         icon="document-text"
       />
+    </div>
+
+    <%!-- Board Stream --%>
+    <div class="max-w-3xl mx-auto">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-xl font-bold text-base-content">{gettext("Board Stream")}</h2>
+        <span class="text-sm text-base-content/50">{@stream_count} {gettext("posts")}</span>
+      </div>
+
+      <%!-- Write Something CTA --%>
+      <.link navigate={~p"/users/#{@user.id}/white-board"} class="block mb-6">
+        <div class="card bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 hover:border-primary/40 hover:shadow-md transition-all duration-200 group">
+          <div class="card-body p-4 sm:p-6">
+            <div class="flex items-center gap-4">
+              <img src="/images/whiteboard.png" alt="White board" class="w-14 h-14 object-contain shrink-0 group-hover:scale-105 transition-transform" />
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
+                  {gettext("Write something on your white board")}
+                </h3>
+                <p class="text-sm text-secondary">
+                  {gettext("Share your thoughts, drawings, or achievements with your followers.")}
+                </p>
+              </div>
+              <.icon name="hero-arrow-right" class="w-5 h-5 text-primary shrink-0 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <%!-- Posts Feed --%>
+      <div class="space-y-6">
+        <%= for post <- @stream_posts do %>
+          <div class="card bg-base-100 border border-base-300" id={"stream-post-#{post.id}"}>
+            <div class="card-body p-4 sm:p-6">
+              <%!-- Post Header --%>
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <.link navigate={~p"/users/#{post.user_id}"}>
+                    <% avatar_src = (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
+                    <%= if avatar_src do %>
+                      <img src={avatar_src} class="w-10 h-10 rounded-full object-cover shrink-0" />
+                    <% else %>
+                      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <.icon name="hero-user" class="w-5 h-5 text-primary/50" />
+                      </div>
+                    <% end %>
+                  </.link>
+                  <div class="min-w-0">
+                    <.link
+                      navigate={~p"/users/#{post.user_id}/white-board"}
+                      class="font-semibold text-base-content truncate hover:text-primary transition-colors"
+                    >
+                      {(post.user.profile && post.user.profile.display_name) || post.user.name}
+                    </.link>
+                    <p class="text-xs text-base-content/50 truncate">
+                      {format_localized_date(post.inserted_at)}
+                      <%= if post.visibility == "followers" do %>
+                        <span class="badge badge-xs badge-ghost ml-1">{gettext("Followers")}</span>
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    id={"stream-share-btn-#{post.id}"}
+                    phx-hook="CopyToClipboard"
+                    data-text={url(~p"/users/#{post.user_id}/white-board/posts/#{post.id}")}
+                    class="btn btn-ghost btn-xs"
+                    title={gettext("Copy link to post")}
+                  >
+                    <.icon name="hero-share" class="w-4 h-4" />
+                  </button>
+                  <.link
+                    navigate={~p"/users/#{post.user_id}/white-board/posts/#{post.id}"}
+                    class="btn btn-ghost btn-xs"
+                    title={gettext("View post")}
+                  >
+                    <.icon name="hero-arrow-top-right-on-square" class="w-4 h-4" />
+                  </.link>
+                </div>
+              </div>
+
+              <%!-- Post Content --%>
+              <%= if post.title do %>
+                <h3 class="text-lg font-bold text-base-content mt-2">{post.title}</h3>
+              <% end %>
+
+              <%= if post.post_type == "canvas" && post.canvas_data do %>
+                <div
+                  id={"stream-canvas-wrapper-#{post.id}"}
+                  class="mt-3 rounded-xl border border-base-300 overflow-hidden"
+                  style="width: 100%; height: min(400px, 60vw); max-height: 400px;"
+                  phx-hook="CanvasPlayer"
+                  data-strokes={Jason.encode!(post.canvas_data["strokes"] || [])}
+                  data-grid={Jason.encode!(post.canvas_data["grid"] || %{})}
+                  data-background={post.canvas_data["background"]}
+                >
+                  <div id={"stream-canvas-player-#{post.id}"} class="canvas-player-container w-full h-full" phx-update="ignore"></div>
+                </div>
+              <% end %>
+
+              <%= if post.content do %>
+                <%= if WhiteBoardPostRenderer.emoji_only?(post.content) do %>
+                  <div class="mt-2 text-center text-5xl leading-none py-2">
+                    {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                  </div>
+                <% else %>
+                  <%= if WhiteBoardPostRenderer.command_only?(post.content) do %>
+                    <div class="mt-2 flex justify-center">
+                      {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                    </div>
+                  <% else %>
+                    <%= if WhiteBoardPostRenderer.photo_only?(post.content) do %>
+                      <div class="mt-2">
+                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                      </div>
+                    <% else %>
+                      <div class="mt-2 prose prose-sm dark:prose-invert max-w-none">
+                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              <% end %>
+
+              <%!-- Reactions --%>
+              <div class="mt-4 flex items-center gap-2 flex-wrap">
+                <% reactions = Map.get(@stream_reactions, post.id, %{}) %>
+                <%= for {emoji, data} <- reactions do %>
+                  <button
+                    phx-click="stream_toggle_reaction"
+                    phx-value-post-id={post.id}
+                    phx-value-emoji={emoji}
+                    class={[
+                      "badge badge-sm gap-1 cursor-pointer transition-all",
+                      data.me? && "badge-primary" || "badge-ghost"
+                    ]}
+                  >
+                    <span>{emoji}</span>
+                    <span class={data.me? && "text-primary-content" || "text-base-content/60"}>
+                      {data.count}
+                    </span>
+                  </button>
+                <% end %>
+
+                <%!-- Emoji Picker --%>
+                <div class="dropdown dropdown-top">
+                  <button tabindex="0" class="btn btn-ghost btn-xs">
+                    <.icon name="hero-face-smile" class="w-4 h-4" />
+                  </button>
+                  <div
+                    tabindex="0"
+                    class="dropdown-content bg-base-100 rounded-xl shadow-lg border border-base-300 p-2 z-[1] max-w-[90vw]"
+                  >
+                    <div class="grid grid-cols-5 gap-1 w-48 max-w-full max-h-60 overflow-y-auto">
+                      <%= for emoji <- Enum.take(all_emojis(), 30) do %>
+                        <button
+                          phx-click="stream_toggle_reaction"
+                          phx-value-post-id={post.id}
+                          phx-value-emoji={emoji}
+                          class="btn btn-ghost btn-xs sm:btn-sm text-lg min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0"
+                        >
+                          {emoji}
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Comments Section --%>
+              <% comments = Map.get(@stream_comments, post.id, []) %>
+              <%= if length(comments) > 0 || @current_scope.current_user do %>
+                <div class="mt-4 pt-4 border-t border-base-300">
+                  <%!-- Comments List --%>
+                  <div class="space-y-3 mb-3">
+                    <%= for comment <- comments do %>
+                      <div class="flex gap-2">
+                        <.link navigate={~p"/users/#{comment.user_id}"}>
+                          <% avatar_src = (comment.user.profile && comment.user.profile.avatar) || comment.user.avatar_url %>
+                          <%= if avatar_src do %>
+                            <img src={avatar_src} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                          <% else %>
+                            <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
+                            </div>
+                          <% end %>
+                        </.link>
+                        <div class="flex-1 min-w-0">
+                          <%= if comment.parent_comment do %>
+                            <div class="mb-1 pl-2 border-l-2 border-base-300">
+                              <p class="text-[10px] text-base-content/40">
+                                {gettext("Replying to %{name}", name: (comment.parent_comment.user.profile && comment.parent_comment.user.profile.display_name) || comment.parent_comment.user.name)}
+                              </p>
+                              <p class="text-xs text-base-content/50 truncate">
+                                {comment.parent_comment.content}
+                              </p>
+                            </div>
+                          <% end %>
+                          <div class="bg-base-200 rounded-lg px-3 py-2">
+                            <p class="text-xs font-semibold text-base-content">
+                              {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
+                            </p>
+                            <p class="text-sm text-base-content/80">{comment.content}</p>
+                          </div>
+                          <div class="flex items-center gap-3 mt-1 ml-1">
+                            <button
+                              phx-click="stream_reply_to_comment"
+                              phx-value-post-id={post.id}
+                              phx-value-comment-id={comment.id}
+                              class="text-xs text-base-content/50 hover:text-primary"
+                            >
+                              {gettext("Reply")}
+                            </button>
+                            <%= if comment.user_id == @current_scope.current_user.id do %>
+                              <button
+                                phx-click="stream_delete_comment"
+                                phx-value-id={comment.id}
+                                data-confirm={gettext("Delete this comment?")}
+                                class="text-xs text-error/70 hover:text-error"
+                              >
+                                {gettext("Delete")}
+                              </button>
+                            <% end %>
+                          </div>
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%!-- Comment Input --%>
+                  <%= if @current_scope.current_user do %>
+                    <% reply_target = Map.get(@stream_replying_to, post.id) %>
+                    <form phx-submit="stream_add_comment" class="flex gap-2 flex-wrap sm:flex-nowrap">
+                      <input type="hidden" name="post_id" value={post.id} />
+                      <%= if reply_target do %>
+                        <input type="hidden" name="parent_id" value={reply_target} />
+                      <% end %>
+                      <input
+                        type="text"
+                        name="content"
+                        class="input input-bordered input-sm flex-1"
+                        placeholder={
+                          if reply_target,
+                            do: gettext("Write a reply..."),
+                            else: gettext("Write a comment...")
+                        }
+                        required
+                      />
+                      <%= if reply_target do %>
+                        <button type="button" phx-click="stream_cancel_reply" phx-value-post-id={post.id} class="btn btn-ghost btn-sm">
+                          {gettext("Cancel")}
+                        </button>
+                      <% end %>
+                      <button type="submit" class="btn btn-primary btn-sm shrink-0">
+                        <.icon name="hero-paper-airplane" class="w-4 h-4" />
+                      </button>
+                    </form>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <%!-- Load More --%>
+      <%= if @stream_has_more do %>
+        <div class="mt-6 text-center">
+          <button phx-click="stream_load_more" class="btn btn-outline btn-wide">
+            {gettext("Load more")}
+          </button>
+        </div>
+      <% end %>
+
+      <%= if @stream_posts == [] do %>
+        <div class="card bg-base-100 border border-base-300">
+          <div class="card-body text-center py-12">
+            <.icon name="hero-document-text" class="w-16 h-16 text-base-content/20 mx-auto mb-4" />
+            <h2 class="text-xl font-bold text-base-content">
+              {gettext("No posts yet")}
+            </h2>
+            <p class="text-secondary">
+              {gettext("Follow more users or write something on your white board to see posts here.")}
+            </p>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </Layouts.app>

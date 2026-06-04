@@ -80,6 +80,13 @@ defmodule MedoruWeb.MessagesLive.Show do
                  Social.blocked_by?(other.user_id, current_user.id))
           end
 
+        # For 1:1 conversations, redirect if blocked in either direction
+        if is_blocked do
+          {:ok,
+           socket
+           |> put_flash(:error, gettext("Conversation not found."))
+           |> push_navigate(to: ~p"/messages")}
+        else
         # Get participant public keys for conversation key creation.
         # get_public_keys/1 now returns %{user_id => [keys]} (multi-device support).
         participant_ids = Enum.map(conversation.participants, & &1.user_id)
@@ -176,6 +183,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:chat_enter_sends, chat_enter_sends)
          |> assign(:online_user_ids, online_user_ids)
          |> push_event("scroll_to_bottom", %{})}
+        end
       else
         {:ok, push_navigate(socket, to: ~p"/messages")}
       end

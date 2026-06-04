@@ -184,7 +184,7 @@
             </div>
           <% else %>
             <%!-- Writing practice area with hook --%>
-            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4">
+            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4" data-snap-correct={to_string(@snap_correct)}>
               <%!-- Hidden stroke data for JS --%>
               <div
                 data-stroke-data={Jason.encode!(@kanji.stroke_data["strokes"] || [])}
@@ -194,6 +194,18 @@
 
               <%!-- Writing canvas --%>
               <div class="flex flex-col items-center gap-4">
+                <div class="flex items-center justify-center gap-4">
+                  <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      phx-click="toggle_snap"
+                      checked={@snap_correct}
+                      class="checkbox checkbox-sm checkbox-primary"
+                    />
+                    <span class="text-sm text-secondary">{gettext("Snap to correct stroke")}</span>
+                  </label>
+                </div>
+
                 <div class="text-center text-secondary text-sm">
                   {gettext(
                     "Draw the kanji stroke by stroke. Yellow hint shows after wrong strokes."

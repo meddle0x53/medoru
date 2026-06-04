@@ -99,6 +99,29 @@ defmodule Medoru.ChatTest do
       assert conv.title == "Test Group"
       assert length(conv.participants) == 3
     end
+
+    test "create_group_conversation/4 fails when participants have blocked each other" do
+      creator = user_fixture()
+      user_b = user_fixture()
+      user_c = user_fixture()
+
+      Medoru.Social.block_user(user_b.id, user_c.id)
+
+      encrypted_keys = %{
+        creator.id => Base.encode64(<<1>>),
+        user_b.id => Base.encode64(<<2>>),
+        user_c.id => Base.encode64(<<3>>)
+      }
+
+      assert_raise Ecto.InvalidChangesetError, fn ->
+        Chat.create_group_conversation(
+          creator.id,
+          "Blocked Group",
+          [user_b.id, user_c.id],
+          encrypted_keys
+        )
+      end
+    end
   end
 
   describe "messages" do

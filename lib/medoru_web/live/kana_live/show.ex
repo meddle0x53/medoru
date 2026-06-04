@@ -14,7 +14,8 @@ defmodule MedoruWeb.KanaLive.Show do
      socket
      |> assign(:locale, locale)
      |> assign(:show_writing_practice, false)
-     |> assign(:writing_completed, false)}
+     |> assign(:writing_completed, false)
+     |> assign(:snap_correct, true)}
   end
 
   @impl true
@@ -98,6 +99,17 @@ defmodule MedoruWeb.KanaLive.Show do
        :info,
        gettext("Great job! You wrote %{kana} correctly!", kana: socket.assigns.kana.character)
      )}
+  end
+
+  @impl true
+  def handle_event("wrong_stroke", _params, socket) do
+    # Wrong stroke drawn - hook shows hint locally, no server action needed
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_snap", _params, socket) do
+    {:noreply, assign(socket, :snap_correct, !socket.assigns.snap_correct)}
   end
 
   defp type_label(:hiragana), do: gettext("Hiragana")

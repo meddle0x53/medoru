@@ -59,15 +59,30 @@ defmodule MedoruWeb.UserLive.Show do
             daily_challenges_status = get_daily_challenges_status(user.id)
 
             # Check block status if viewing another user
+            current_user = socket.assigns.current_scope && socket.assigns.current_scope.current_user
+
             is_blocked =
-              if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-                Social.blocked_by?(socket.assigns.current_scope.current_user.id, user.id)
+              if current_user do
+                Social.blocked_by?(current_user.id, user.id)
               else
                 false
               end
 
+            # If the profile owner has blocked the viewer, treat as not found
+            is_blocked_by_them =
+              if current_user do
+                Social.blocked_by?(user.id, current_user.id)
+              else
+                false
+              end
+
+            if is_blocked_by_them do
+              {:ok,
+               socket
+               |> put_flash(:error, gettext("User not found."))
+               |> push_navigate(to: ~p"/")}
+            else
             # Check follow status and counts
-            current_user = socket.assigns.current_scope && socket.assigns.current_scope.current_user
 
             is_following =
               if current_user && current_user.id != user.id do
@@ -103,6 +118,7 @@ defmodule MedoruWeb.UserLive.Show do
              |> assign(:following_count, following_count)
              |> assign(:user_tags, user_tags)
              |> assign(:is_online, is_online)}
+            end
         end
 
       :error ->

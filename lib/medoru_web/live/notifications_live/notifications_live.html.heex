@@ -203,6 +203,17 @@
                           )}
                         </.link>
                       </div>
+                    <% notification.type in ["white_board_post", "white_board_comment"] && notification.data["poster_id"] && notification.data["post_id"] -> %>
+                      <div class="mt-3">
+                        <.link
+                          navigate={~p"/users/#{notification.data["poster_id"]}/white-board/posts/#{notification.data["post_id"]}"}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-document-text" class="w-3 h-3 mr-1" /> {gettext(
+                            "View Post"
+                          )}
+                        </.link>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>

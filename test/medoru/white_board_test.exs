@@ -189,6 +189,41 @@ defmodule Medoru.WhiteBoardTest do
       assert posts == []
     end
 
+    test "list_posts/3 excludes posts from users who blocked the viewer" do
+      blocker = owner_fixture()
+      viewer = owner_fixture()
+
+      Social.block_user(blocker.id, viewer.id)
+      post_fixture(%{user: blocker, visibility: "public", content: "Hidden post"})
+
+      posts = WhiteBoard.list_posts(blocker.id, viewer.id)
+      assert posts == []
+    end
+
+    test "get_post!/2 raises when viewer is blocked by post owner" do
+      owner = owner_fixture()
+      viewer = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      Social.block_user(owner.id, viewer.id)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        WhiteBoard.get_post!(post.id, viewer.id)
+      end
+    end
+
+    test "get_post!/2 raises when post owner is blocked by viewer" do
+      owner = owner_fixture()
+      viewer = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      Social.block_user(viewer.id, owner.id)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        WhiteBoard.get_post!(post.id, viewer.id)
+      end
+    end
+
     test "list_posts/3 supports pagination" do
       owner = owner_fixture()
       for i <- 1..7 do
@@ -211,6 +246,103 @@ defmodule Medoru.WhiteBoardTest do
       assert WhiteBoard.count_posts(owner.id, nil) == 1
       assert WhiteBoard.count_posts(owner.id, stranger.id) == 1
       assert WhiteBoard.count_posts(owner.id, owner.id) == 2
+    end
+
+    test "list_following_posts/2 returns own posts and followed users' posts" do
+      viewer = owner_fixture()
+      followed = owner_fixture()
+      stranger = owner_fixture()
+
+      Social.follow_user(viewer.id, followed.id)
+
+      _own_post = post_fixture(%{user: viewer, content: "My post"})
+      _followed_post = post_fixture(%{user: followed, content: "Followed post"})
+      _stranger_post = post_fixture(%{user: stranger, content: "Stranger post"})
+
+      posts = WhiteBoard.list_following_posts(viewer.id)
+      contents = Enum.map(posts, & &1.content)
+
+      assert "My post" in contents
+      assert "Followed post" in contents
+      refute "Stranger post" in contents
+    end
+
+    test "list_following_posts/2 includes followers-only posts from followed users" do
+      viewer = owner_fixture()
+      followed = owner_fixture()
+
+      Social.follow_user(viewer.id, followed.id)
+
+      post_fixture(%{user: followed, visibility: "public", content: "Public"})
+      post_fixture(%{user: followed, visibility: "followers", content: "Followers"})
+
+      posts = WhiteBoard.list_following_posts(viewer.id)
+      contents = Enum.map(posts, & &1.content)
+
+      assert "Public" in contents
+      assert "Followers" in contents
+    end
+
+    test "list_following_posts/2 excludes posts from blocked users" do
+      viewer = owner_fixture()
+      blocked = owner_fixture()
+
+      Social.follow_user(viewer.id, blocked.id)
+      Social.block_user(viewer.id, blocked.id)
+
+      post_fixture(%{user: blocked, visibility: "public", content: "Blocked post"})
+
+      posts = WhiteBoard.list_following_posts(viewer.id)
+      contents = Enum.map(posts, & &1.content)
+
+      refute "Blocked post" in contents
+    end
+
+    test "list_following_posts/2 excludes posts from users who blocked the viewer" do
+      viewer = owner_fixture()
+      blocker = owner_fixture()
+
+      Social.follow_user(viewer.id, blocker.id)
+      Social.block_user(blocker.id, viewer.id)
+
+      post_fixture(%{user: blocker, visibility: "public", content: "Blocker post"})
+
+      posts = WhiteBoard.list_following_posts(viewer.id)
+      contents = Enum.map(posts, & &1.content)
+
+      refute "Blocker post" in contents
+    end
+
+    test "list_following_posts/2 supports pagination" do
+      viewer = owner_fixture()
+      followed = owner_fixture()
+
+      Social.follow_user(viewer.id, followed.id)
+
+      for i <- 1..7 do
+        post_fixture(%{user: followed, content: "Post #{i}"})
+        Process.sleep(10)
+      end
+
+      page1 = WhiteBoard.list_following_posts(viewer.id, page: 1)
+      assert length(page1) == 5
+
+      page2 = WhiteBoard.list_following_posts(viewer.id, page: 2)
+      assert length(page2) == 2
+    end
+
+    test "count_following_posts/1 returns correct count" do
+      viewer = owner_fixture()
+      followed = owner_fixture()
+      stranger = owner_fixture()
+
+      Social.follow_user(viewer.id, followed.id)
+
+      post_fixture(%{user: viewer, content: "Own"})
+      post_fixture(%{user: followed, content: "Followed"})
+      _stranger_post = post_fixture(%{user: stranger, content: "Stranger"})
+
+      assert WhiteBoard.count_following_posts(viewer.id) == 2
     end
 
     test "can_view_post?/2 allows owner always" do
@@ -313,6 +445,92 @@ defmodule Medoru.WhiteBoardTest do
       assert length(comments) == 1
       assert hd(comments).content == "Parent"
       assert length(hd(comments).replies) == 1
+    end
+
+    test "list_comments_for_post/2 filters out comments from blocked users" do
+      owner = owner_fixture()
+      blocker = owner_fixture()
+      blocked = owner_fixture()
+      post = post_fixture(%{user: owner})
+
+      Social.block_user(blocker.id, blocked.id)
+
+      {:ok, _visible_comment} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: owner.id, content: "Visible"})
+
+      {:ok, _blocked_comment} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: blocked.id, content: "Blocked"})
+
+      comments = WhiteBoard.list_comments_for_post(post.id, blocker.id)
+      assert length(comments) == 1
+      assert hd(comments).content == "Visible"
+    end
+
+    test "list_comments_for_post/2 filters out comments from users who blocked the viewer" do
+      owner = owner_fixture()
+      viewer = owner_fixture()
+      post = post_fixture(%{user: owner})
+
+      Social.block_user(owner.id, viewer.id)
+
+      {:ok, _comment} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: owner.id, content: "Hidden"})
+
+      comments = WhiteBoard.list_comments_for_post(post.id, viewer.id)
+      assert comments == []
+    end
+
+    test "list_comments_for_post/2 filters out replies from blocked users" do
+      owner = owner_fixture()
+      blocker = owner_fixture()
+      blocked = owner_fixture()
+      post = post_fixture(%{user: owner})
+
+      Social.block_user(blocker.id, blocked.id)
+
+      {:ok, parent} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: owner.id, content: "Parent"})
+
+      {:ok, _visible_reply} =
+        WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: owner.id,
+          parent_id: parent.id,
+          content: "Visible Reply"
+        })
+
+      {:ok, _blocked_reply} =
+        WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: blocked.id,
+          parent_id: parent.id,
+          content: "Blocked Reply"
+        })
+
+      comments = WhiteBoard.list_comments_for_post(post.id, blocker.id)
+      assert length(comments) == 1
+      assert length(hd(comments).replies) == 1
+      assert hd(hd(comments).replies).content == "Visible Reply"
+    end
+
+    test "list_commenter_ids_for_post/1 returns unique commenter IDs" do
+      owner = owner_fixture()
+      commenter = owner_fixture()
+      post = post_fixture(%{user: owner})
+
+      {:ok, _} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: owner.id, content: "First"})
+
+      {:ok, _} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: commenter.id, content: "Second"})
+
+      {:ok, _} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: owner.id, content: "Third"})
+
+      ids = WhiteBoard.list_commenter_ids_for_post(post.id)
+      assert length(ids) == 2
+      assert owner.id in ids
+      assert commenter.id in ids
     end
   end
 

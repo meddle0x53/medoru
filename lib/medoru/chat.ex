@@ -13,6 +13,7 @@ defmodule Medoru.Chat do
 
   alias Medoru.Chat.{Conversation, ConversationParticipant, Message, ConversationKey}
   alias Medoru.Notifications
+  alias Medoru.Social
   alias MedoruWeb.Presence
 
   # ============================================================================
@@ -95,6 +96,15 @@ defmodule Medoru.Chat do
   """
   def create_group_conversation(creator_id, title, user_ids, encrypted_keys) do
     all_user_ids = Enum.uniq([creator_id | user_ids])
+
+    # Check for bidirectional blocks between any pair of participants
+    for a <- all_user_ids, b <- all_user_ids, a < b do
+      if Social.is_blocked?(a, b) == :blocked do
+        raise Ecto.InvalidChangesetError,
+          changeset: %Ecto.Changeset{errors: [base: {"blocked participants", []}]}
+      end
+    end
+
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     Repo.transaction(fn ->

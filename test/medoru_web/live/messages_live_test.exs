@@ -143,7 +143,7 @@ defmodule MedoruWeb.MessagesLiveTest do
         conn |> log_in_user(user_c) |> live(~p"/messages/#{conv.id}")
     end
 
-    test "shows blocked message when user is blocked", %{conn: conn} do
+    test "redirects when conversation is blocked", %{conn: conn} do
       user_a = user_with_display_name()
       user_b = user_with_display_name()
       {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
@@ -154,9 +154,8 @@ defmodule MedoruWeb.MessagesLiveTest do
 
       Medoru.Social.block_user(user_a.id, user_b.id)
 
-      {:ok, _view, html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
-
-      assert html =~ "You have blocked this user"
+      {:error, {:live_redirect, %{to: "/messages", flash: %{"error" => "Conversation not found."}}}} =
+        conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
     end
 
     test "shows missing keys warning", %{conn: conn} do

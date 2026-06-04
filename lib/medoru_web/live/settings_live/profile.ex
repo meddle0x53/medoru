@@ -6,6 +6,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
   alias Medoru.Accounts
   alias Medoru.Gamification
+  alias Medoru.Learning
   alias Medoru.Social
   alias Phoenix.LiveView.JS
 
@@ -48,6 +49,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
     tags_by_category = Enum.group_by(all_tags, & &1.category)
     selected_tag_ids = Social.list_user_tag_ids(user.id)
 
+    user = socket.assigns.current_scope.current_user
+    words_learned = Learning.count_learned_words(user.id)
+
     {:ok,
      socket
      |> assign(:page_title, gettext("Profile Settings"))
@@ -62,6 +66,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
      |> assign(:selected_tag_ids, selected_tag_ids)
      |> assign(:new_token_plaintext, nil)
      |> assign(:new_token_form, to_form(%{"name" => "", "expires_in_days" => ""}, as: :api_token))
+     |> assign(:show_fluent_confirm, false)
+     |> assign(:is_teacher, Accounts.User.teacher?(user))
+     |> assign(:fluent_disabled, words_learned > 145_000)
      |> allow_upload(:avatar,
        accept: ~w(.jpg .jpeg .png .gif),
        max_entries: 1,
@@ -348,6 +355,33 @@ defmodule MedoruWeb.SettingsLive.Profile do
       end
 
     {:noreply, assign(socket, :selected_tag_ids, new_selected)}
+  end
+
+  @impl true
+  def handle_event("confirm_fluent", _params, socket) do
+    {:noreply, assign(socket, :show_fluent_confirm, true)}
+  end
+
+  @impl true
+  def handle_event("cancel_fluent", _params, socket) do
+    {:noreply, assign(socket, :show_fluent_confirm, false)}
+  end
+
+  @impl true
+  def handle_event("mark_fluent", _params, socket) do
+    user = socket.assigns.current_scope.current_user
+    {:ok, %{kanji_count: kanji_count, word_count: word_count}} = Learning.mark_all_as_learned(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:show_fluent_confirm, false)
+     |> put_flash(
+       :info,
+       gettext("Marked %{kanji} kanji and %{words} words as learned!",
+         kanji: kanji_count,
+         words: word_count
+       )
+     )}
   end
 
   defp format_bytes(bytes) when bytes < 1_000, do: "#{bytes} B"

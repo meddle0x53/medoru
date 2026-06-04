@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.3.1 ✅ COMPLETE  
-**Status**: v0.3.1 complete.  
-**Tests**: 965 passing  
+**Version**: 0.4.0 🔄 IN PROGRESS  
+**Status**: v0.3.1 complete. Working on v0.4.0.  
+**Tests**: 970 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -117,7 +117,30 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `priv/repo/seeds/missing_kanji_full.json`
 - `priv/repo/seeds/kanjivg_stroke_fixes.json`
 
-### What's Next (v0.3.2)
+### What's Complete (v0.4.0) — Kanji Writing Snap Toggle & Fluent Button
+**Status**: 🔄 IN PROGRESS
+
+**Bug Fixes:**
+- **Kanji/Kana writing page reload on wrong stroke**: `kanji_live/show.ex` and `kana_live/show.ex` were missing `handle_event("wrong_stroke", ...)` handlers. Added no-op handlers to prevent LiveSocket reconnect when the `KanjiWriting` hook pushes a wrong-stroke event.
+- **Writing snap toggle**: Added "Snap to correct stroke" checkbox on `/kanji/:id` and `/kana/:character` writing practice views. Uses `data-snap-correct` attribute on the `KanjiWriting` hook. Defaults to `true`.
+
+**Features:**
+- **"Fluent In Japanese" button** (`/settings/profile`):
+  - Visible only to teachers and admins (`User.teacher?/1`)
+  - Red `btn-error` button with inline confirmation pattern (like "Delete My Account")
+  - Clicking shows "Are you sure?" with Cancel / "Yes, Mark Everything"
+  - Calls `Learning.mark_all_as_learned(user_id)` which batch-marks all kanji and all words as learned
+  - Idempotent — second click repeats the operation successfully
+  - Flash message: "Marked X kanji and Y words as learned!"
+  - All strings localized via `gettext`
+
+**Key files:**
+- `lib/medoru_web/live/kanji_live/show.ex` & `show.html.heex`
+- `lib/medoru_web/live/kana_live/show.ex` & `show.html.heex`
+- `lib/medoru_web/live/settings_live/profile.ex` & `profile.html.heex`
+- `lib/medoru/learning.ex` (`mark_all_as_learned/1`)
+
+### What's Next (v0.4.x)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
 - See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 

@@ -6,9 +6,10 @@
         <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <%!-- Avatar --%>
           <div class="flex-shrink-0">
-            <%= if @profile && @profile.avatar do %>
+            <% avatar_src = (@profile && @profile.avatar) || @user.avatar_url %>
+            <%= if avatar_src do %>
               <img
-                src={@profile.avatar}
+                src={avatar_src}
                 alt={@profile.display_name || @user.name}
                 class="w-32 h-32 rounded-full object-cover ring-4 ring-base-200"
               />

@@ -334,6 +334,73 @@
             </div>
           </div>
 
+          <%!-- Profile Visibility --%>
+          <div class="form-control pt-4 border-t border-base-300">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Profile Visibility")}</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="hidden" name={@form[:is_public].name} value="false" />
+              <input
+                type="checkbox"
+                name={@form[:is_public].name}
+                value="true"
+                checked={@form[:is_public].value}
+                class="checkbox checkbox-primary"
+              />
+              <span class="text-sm text-base-content">
+                {gettext("Show my profile in the user directory")}
+              </span>
+            </label>
+            <label class="label">
+              <span class="label-text-alt text-base-content/50">
+                {gettext("When disabled, others can still visit your profile directly but won't find you in search or tag filters.")}
+              </span>
+            </label>
+          </div>
+
+          <%!-- Notification Preferences --%>
+          <div class="form-control pt-4 border-t border-base-300">
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Notification Preferences")}</span>
+            </label>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="hidden" name={@form[:notify_messaging].name} value="false" />
+                <input
+                  type="checkbox"
+                  name={@form[:notify_messaging].name}
+                  value="true"
+                  checked={@form[:notify_messaging].value}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">{gettext("Enable messaging notifications")}</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="hidden" name={@form[:notify_white_board].name} value="false" />
+                <input
+                  type="checkbox"
+                  name={@form[:notify_white_board].name}
+                  value="true"
+                  checked={@form[:notify_white_board].value}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">{gettext("Enable white board notifications")}</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="hidden" name={@form[:notify_achievements].name} value="false" />
+                <input
+                  type="checkbox"
+                  name={@form[:notify_achievements].name}
+                  value="true"
+                  checked={@form[:notify_achievements].value}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">{gettext("Enable achievement notifications")}</span>
+              </label>
+            </div>
+          </div>
+
           <%!-- Submit Button --%>
           <div class="flex flex-col-reverse md:flex-row md:items-center md:justify-between pt-4 border-t border-base-300 gap-3">
             <.link navigate={~p"/dashboard"} class="btn btn-ghost w-full md:w-auto">
@@ -700,6 +767,58 @@
           </p>
         <% end %>
       </div>
+
+      <%!-- Fluent in Japanese (teacher/admin only) --%>
+      <%= if @is_teacher do %>
+        <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <.icon name="hero-language" class="w-5 h-5 text-error" />
+            <h2 class="text-xl font-bold text-base-content">{gettext("Fluent in Japanese")}</h2>
+          </div>
+
+          <p class="text-sm text-base-content/70 mb-4">
+            {gettext("Mark all kanji and words as learned instantly. This is useful if you are already fluent in Japanese and do not want to go through the learning process.")}
+          </p>
+          <p class="text-sm text-error mb-4">
+            {gettext("This action cannot be undone!")}
+          </p>
+
+          <div class="card-actions justify-end">
+            <%= if @fluent_disabled do %>
+              <button disabled class="btn btn-error btn-outline btn-disabled">
+                <.icon name="hero-check-badge" class="w-5 h-5 mr-2" />
+                {gettext("Already Fluent")}
+              </button>
+            <% else %>
+              <%= if @show_fluent_confirm do %>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm font-semibold">{gettext("Are you sure?")}</span>
+                  <button
+                    phx-click="cancel_fluent"
+                    class="btn btn-ghost btn-sm"
+                  >
+                    {gettext("Cancel")}
+                  </button>
+                  <button
+                    phx-click="mark_fluent"
+                    class="btn btn-error btn-sm"
+                  >
+                    {gettext("Yes, Mark Everything")}
+                  </button>
+                </div>
+              <% else %>
+                <button
+                  phx-click="confirm_fluent"
+                  class="btn btn-error btn-outline"
+                >
+                  <.icon name="hero-check-badge" class="w-5 h-5 mr-2" />
+                  {gettext("Fluent In Japanese")}
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
   </div>
 </Layouts.app>

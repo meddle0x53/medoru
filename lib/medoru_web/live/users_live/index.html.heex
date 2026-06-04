@@ -12,7 +12,7 @@
 
     <%!-- Search & Filter --%>
     <div class="mb-6">
-      <form phx-change="search" phx-submit="search" class="flex flex-col sm:flex-row gap-3">
+      <form phx-submit="search" class="flex flex-col sm:flex-row gap-3">
         <div class="relative flex-1">
           <.icon
             name="hero-magnifying-glass"
@@ -40,6 +40,7 @@
         <select
           name="tag_id"
           class="select select-bordered rounded-xl sm:w-48 bg-base-100"
+          phx-change="search"
         >
           <option value="">{gettext("All tags")}</option>
           <%= for tag <- @all_tags do %>
