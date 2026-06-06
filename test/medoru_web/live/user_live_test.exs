@@ -4,7 +4,7 @@ defmodule MedoruWeb.UserLiveTest do
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
 
-  alias Medoru.Accounts
+  alias Medoru.{Accounts, Social}
 
   defp user_with_display_name(attrs \\ %{}) do
     user = user_fixture_with_registration(attrs)
@@ -44,6 +44,136 @@ defmodule MedoruWeb.UserLiveTest do
       # Viewer can still see blocked user's profile to manage the block
       assert html =~ "BlockedUser"
       assert html =~ "Unblock"
+    end
+
+    test "renders follower/following counts as links on own profile", %{conn: conn} do
+      user = user_with_display_name(%{display_name: "Owner"})
+
+      {:ok, _view, html} = conn |> log_in_user(user) |> live(~p"/users/#{user.id}")
+
+      assert html =~ "href=\"/users/#{user.id}/followers\""
+      assert html =~ "href=\"/users/#{user.id}/following\""
+    end
+
+    test "renders follower/following counts as plain text on another user's profile", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      viewer = user_with_display_name()
+
+      {:ok, _view, html} = conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}")
+
+      refute html =~ "href=\"/users/#{owner.id}/followers\""
+      refute html =~ "href=\"/users/#{owner.id}/following\""
+      assert html =~ "followers"
+      assert html =~ "following"
+    end
+
+    test "renders follower/following counts as plain text for anonymous viewers", %{conn: conn} do
+      user = user_with_display_name(%{display_name: "PublicUser"})
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{user.id}")
+
+      refute html =~ "href=\"/users/#{user.id}/followers\""
+      refute html =~ "href=\"/users/#{user.id}/following\""
+    end
+  end
+
+  describe "UserLive.Followers" do
+    test "renders followers for the profile owner", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      follower = user_with_display_name(%{display_name: "FollowerOne"})
+
+      {:ok, _} = Social.follow_user(follower.id, owner.id)
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/followers")
+
+      assert html =~ "Followers"
+      assert html =~ "FollowerOne"
+    end
+
+    test "owner can follow back a follower", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      follower = user_with_display_name(%{display_name: "FollowerOne"})
+
+      {:ok, _} = Social.follow_user(follower.id, owner.id)
+
+      {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/followers")
+
+      assert view
+             |> element("button", "Follow")
+             |> render_click(%{"user_id" => follower.id}) =~ "Unfollow"
+
+      assert Social.following?(owner.id, follower.id)
+    end
+
+    test "owner can unfollow a follower", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      follower = user_with_display_name(%{display_name: "FollowerOne"})
+
+      {:ok, _} = Social.follow_user(follower.id, owner.id)
+      {:ok, _} = Social.follow_user(owner.id, follower.id)
+
+      {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/followers")
+
+      assert view
+             |> element("button", "Unfollow")
+             |> render_click(%{"user_id" => follower.id}) =~ "Follow"
+
+      refute Social.following?(owner.id, follower.id)
+    end
+
+    test "redirects non-owner to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      viewer = user_with_display_name()
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}/followers")
+    end
+
+    test "redirects anonymous viewer to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        live(conn, ~p"/users/#{owner.id}/followers")
+    end
+  end
+
+  describe "UserLive.Following" do
+    test "renders following list for the profile owner", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      followed = user_with_display_name(%{display_name: "FollowedOne"})
+
+      {:ok, _} = Social.follow_user(owner.id, followed.id)
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/following")
+
+      assert html =~ "Following"
+      assert html =~ "FollowedOne"
+    end
+
+    test "owner can unfollow a user from the following list", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      followed = user_with_display_name(%{display_name: "FollowedOne"})
+
+      {:ok, _} = Social.follow_user(owner.id, followed.id)
+
+      {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/following")
+
+      assert view
+             |> element("button", "Unfollow")
+             |> render_click(%{"user_id" => followed.id}) =~ "Follow"
+
+      refute Social.following?(owner.id, followed.id)
+    end
+
+    test "redirects non-owner to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      viewer = user_with_display_name()
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}/following")
     end
   end
 end

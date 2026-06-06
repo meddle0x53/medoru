@@ -4,7 +4,7 @@
 
 **Version**: 0.5.0 ✅ COMPLETE  
 **Status**: v0.5.0 complete. Planning v0.5.1.  
-**Tests**: 1154 passing  
+**Tests**: 1165 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -289,6 +289,18 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `lib/medoru/learning.ex` (grammar progress tracking)
 - `lib/medoru/gamification.ex` (`check_grammar_badges/2`)
 - `assets/js/hooks/chat_crypto.js` (client-side grammar rendering)
+
+### Profile Followers/Following Links
+- **Own-profile follower/following counts are clickable** and navigate to `/users/:id/followers` and `/users/:id/following`
+- **Privacy**: counts remain plain text when viewing another user's profile or as an anonymous viewer
+- **New list pages**: `UserLive.Followers` and `UserLive.Following` with paginated user cards, avatar, level badge, and Follow/Unfollow + Message actions
+- **Owner-only access**: non-owners and anonymous users are redirected to the profile page with an error flash
+
+**Key files:**
+- `lib/medoru_web/live/user_live/followers.ex`, `followers.html.heex`
+- `lib/medoru_web/live/user_live/following.ex`, `following.html.heex`
+- `lib/medoru_web/live/user_live/show/profile_page.html.heex`
+- `lib/medoru_web/router.ex`
 
 ### What's Next (v0.5.x)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)

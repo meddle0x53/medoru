@@ -1045,7 +1045,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
         BoardComment
         |> where([c], c.post_id in ^post_ids)
         |> order_by(asc: :inserted_at)
-        |> preload([user: [:profile], parent_comment: [user: [:profile]]])
+        |> preload([user: [:profile], parent_comment: [user: [:profile]], replies: [user: [:profile]]])
         |> Repo.all()
 
       comments =

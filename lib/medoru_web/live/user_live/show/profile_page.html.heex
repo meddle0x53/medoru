@@ -58,8 +58,23 @@
 
             <%!-- Follower/Following Counts --%>
             <div class="mt-2 flex items-center gap-4 text-sm text-base-content/60 justify-center sm:justify-start">
-              <span><span class="font-semibold text-base-content">{@follower_count}</span> {gettext("followers")}</span>
-              <span><span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}</span>
+              <%= if @current_scope.current_user && @current_scope.current_user.id == @user.id do %>
+                <.link
+                  navigate={~p"/users/#{@user.id}/followers"}
+                  class="hover:text-primary transition-colors"
+                >
+                  <span class="font-semibold text-base-content">{@follower_count}</span> {gettext("followers")}
+                </.link>
+                <.link
+                  navigate={~p"/users/#{@user.id}/following"}
+                  class="hover:text-primary transition-colors"
+                >
+                  <span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}
+                </.link>
+              <% else %>
+                <span><span class="font-semibold text-base-content">{@follower_count}</span> {gettext("followers")}</span>
+                <span><span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}</span>
+              <% end %>
             </div>
 
             <%!-- Level & XP --%>

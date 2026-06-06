@@ -168,7 +168,7 @@ msgstr "アーカイブ"
 msgid "Back to Lesson"
 msgstr "レッスンに戻る"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:612
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:719
 #: lib/medoru_web/live/classroom_live/custom_lesson_complete.ex:388
 #: lib/medoru_web/live/lesson_live/show.html.heex:194
 #: lib/medoru_web/live/lesson_live/show.html.heex:194
@@ -187,22 +187,22 @@ msgstr "レッスンに戻る"
 msgid "Back to Tests"
 msgstr "レッスンに戻る"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:166
-#: lib/medoru_web/live/dashboard_live.html.heex:166
-#: lib/medoru_web/live/dashboard_live.html.heex:168
-#: lib/medoru_web/live/dashboard_live.html.heex:168
+#: lib/medoru_web/live/dashboard_live.html.heex:174
+#: lib/medoru_web/live/dashboard_live.html.heex:174
+#: lib/medoru_web/live/dashboard_live.html.heex:176
+#: lib/medoru_web/live/dashboard_live.html.heex:176
 #, elixir-autogen, elixir-format
 msgid "Browse Kanji"
 msgstr "漢字を閲覧"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:173
-#: lib/medoru_web/live/dashboard_live.html.heex:173
+#: lib/medoru_web/live/dashboard_live.html.heex:181
+#: lib/medoru_web/live/dashboard_live.html.heex:181
 #, elixir-autogen, elixir-format
 msgid "Browse Vocabulary"
 msgstr "語彙を閲覧"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:175
-#: lib/medoru_web/live/dashboard_live.html.heex:175
+#: lib/medoru_web/live/dashboard_live.html.heex:183
+#: lib/medoru_web/live/dashboard_live.html.heex:183
 #, elixir-autogen, elixir-format
 msgid "Browse Words"
 msgstr "単語を閲覧"
@@ -218,7 +218,7 @@ msgstr "単語を閲覧"
 msgid "Bulgarian"
 msgstr "Български"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:527
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:546
 #: lib/medoru_web/live/admin/grammar_form_live/form/form_template.html.heex:126
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:159
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:266
@@ -229,9 +229,9 @@ msgstr "Български"
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:401
 #: lib/medoru_web/live/classroom_game_live/play.ex:1271
 #: lib/medoru_web/live/classroom_live/show.ex:1439
-#: lib/medoru_web/live/dashboard_live.html.heex:434
-#: lib/medoru_web/live/dashboard_live.html.heex:434
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:527
+#: lib/medoru_web/live/dashboard_live.html.heex:442
+#: lib/medoru_web/live/dashboard_live.html.heex:442
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:546
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:159
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:266
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:345
@@ -302,8 +302,8 @@ msgstr "教室"
 msgid "Completed"
 msgstr "完了"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:159
-#: lib/medoru_web/live/dashboard_live.html.heex:159
+#: lib/medoru_web/live/dashboard_live.html.heex:167
+#: lib/medoru_web/live/dashboard_live.html.heex:167
 #: lib/medoru_web/live/lesson_live/show.html.heex:162
 #: lib/medoru_web/live/lesson_live/show.html.heex:162
 #, elixir-autogen, elixir-format, fuzzy
@@ -514,14 +514,14 @@ msgstr "例文（1行に1つ、最大5つ）"
 msgid "Excellent!"
 msgstr "素晴らしい！"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:882
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:999
 #: lib/medoru_web/live/classroom_live/test_results.ex:240
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Explanation:"
 msgstr "解説"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:167
-#: lib/medoru_web/live/dashboard_live.html.heex:167
+#: lib/medoru_web/live/dashboard_live.html.heex:175
+#: lib/medoru_web/live/dashboard_live.html.heex:175
 #, elixir-autogen, elixir-format
 msgid "Explore the kanji database organized by JLPT level."
 msgstr "JLPTレベル別に整理された漢字データベースを探索しましょう。"
@@ -681,7 +681,7 @@ msgstr "漢字"
 #: lib/medoru_web/live/admin/user_live/edit/edit.html.heex:43
 #: lib/medoru_web/live/dashboard_live.html.heex:88
 #: lib/medoru_web/live/dashboard_live.html.heex:88
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:226
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:241
 #, elixir-autogen, elixir-format
 msgid "Kanji Learned"
 msgstr "学習した漢字"
@@ -714,8 +714,8 @@ msgstr "言語"
 msgid "Language updated successfully."
 msgstr "言語設定が正常に更新されました。"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:174
-#: lib/medoru_web/live/dashboard_live.html.heex:174
+#: lib/medoru_web/live/dashboard_live.html.heex:182
+#: lib/medoru_web/live/dashboard_live.html.heex:182
 #, elixir-autogen, elixir-format
 msgid "Learn Japanese words and see their kanji breakdown."
 msgstr "日本語の単語を学び、漢字の内訳を確認しましょう。"
@@ -772,7 +772,7 @@ msgstr "レベル"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:81
 #: lib/medoru_web/live/dashboard_live.html.heex:81
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:307
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:333
 #, elixir-autogen, elixir-format
 msgid "Longest Streak"
 msgstr "最長継続日数"
@@ -910,8 +910,8 @@ msgstr "レッスンを作成できるのは教師のみです。"
 msgid "Only teachers can publish lessons."
 msgstr "レッスンを作成できるのは教師のみです。"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:160
-#: lib/medoru_web/live/dashboard_live.html.heex:160
+#: lib/medoru_web/live/dashboard_live.html.heex:168
+#: lib/medoru_web/live/dashboard_live.html.heex:168
 #, elixir-autogen, elixir-format
 msgid "Pick up where you left off with your lessons."
 msgstr "レッスンの途中から続けましょう。"
@@ -1251,8 +1251,8 @@ msgstr "公開解除"
 msgid "Unpublished from classroom."
 msgstr "教室から公開解除されました。"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:161
-#: lib/medoru_web/live/dashboard_live.html.heex:161
+#: lib/medoru_web/live/dashboard_live.html.heex:169
+#: lib/medoru_web/live/dashboard_live.html.heex:169
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View Lessons"
 msgstr "レッスン"
@@ -1308,7 +1308,7 @@ msgstr "単語"
 #: lib/medoru_web/live/classroom_live/custom_lesson_complete.ex:244
 #: lib/medoru_web/live/dashboard_live.html.heex:96
 #: lib/medoru_web/live/dashboard_live.html.heex:96
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:237
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:252
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Words Learned"
 msgstr "学習した単語"
@@ -1589,9 +1589,9 @@ msgstr "参加済み"
 msgid "Member"
 msgstr "メンバー"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:223
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:226
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:947
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:225
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:228
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1064
 #: lib/medoru_web/live/classroom_live/index.ex:618
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:191
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:191
@@ -1606,6 +1606,8 @@ msgstr "メンバー"
 #: lib/medoru_web/live/kanji_live/show.html.heex:438
 #: lib/medoru_web/live/kanji_live/show.html.heex:438
 #: lib/medoru_web/live/learn_live.ex:224
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:153
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:157
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:177
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:181
 #: lib/medoru_web/live/learned_words_live/index.html.heex:177
@@ -1618,6 +1620,10 @@ msgstr "メンバー"
 #: lib/medoru_web/live/radical_live/index.html.heex:133
 #: lib/medoru_web/live/radical_live/index.html.heex:133
 #: lib/medoru_web/live/radical_live/index.html.heex:133
+#: lib/medoru_web/live/user_live/followers.html.heex:144
+#: lib/medoru_web/live/user_live/followers.html.heex:148
+#: lib/medoru_web/live/user_live/following.html.heex:151
+#: lib/medoru_web/live/user_live/following.html.heex:155
 #: lib/medoru_web/live/users_live/index.html.heex:235
 #: lib/medoru_web/live/users_live/index.html.heex:239
 #: lib/medoru_web/live/word_live/index.html.heex:438
@@ -1643,7 +1649,7 @@ msgstr "所有"
 msgid "Owner"
 msgstr "所有者"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:215
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:217
 #: lib/medoru_web/live/classroom_live/index.ex:610
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:183
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:183
@@ -1667,14 +1673,16 @@ msgstr "承認待ち"
 msgid "Pending Applications"
 msgstr "承認待ちの申請"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:208
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:211
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:210
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:213
 #: lib/medoru_web/live/classroom_live/index.ex:603
 #: lib/medoru_web/live/classroom_live/index.ex:606
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:176
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:176
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:179
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:179
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:121
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:125
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:145
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:149
 #: lib/medoru_web/live/learned_words_live/index.html.heex:145
@@ -1687,6 +1695,10 @@ msgstr "承認待ちの申請"
 #: lib/medoru_web/live/radical_live/index.html.heex:101
 #: lib/medoru_web/live/radical_live/index.html.heex:101
 #: lib/medoru_web/live/radical_live/index.html.heex:101
+#: lib/medoru_web/live/user_live/followers.html.heex:112
+#: lib/medoru_web/live/user_live/followers.html.heex:116
+#: lib/medoru_web/live/user_live/following.html.heex:119
+#: lib/medoru_web/live/user_live/following.html.heex:123
 #: lib/medoru_web/live/users_live/index.html.heex:203
 #: lib/medoru_web/live/users_live/index.html.heex:207
 #: lib/medoru_web/live/word_live/index.html.heex:377
@@ -1713,7 +1725,7 @@ msgstr "前へ"
 msgid "Teacher"
 msgstr "先生"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:215
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:217
 #: lib/medoru_web/live/classroom_live/index.ex:610
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:183
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:183
@@ -1830,8 +1842,8 @@ msgstr "テストを再受験"
 msgid "Start Learning"
 msgstr "学習を開始"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:800
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:983
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:907
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1100
 #: lib/medoru_web/live/learn_live.ex:38
 #: lib/medoru_web/live/lesson_live/show.html.heex:184
 #: lib/medoru_web/live/lesson_live/show.html.heex:184
@@ -1877,7 +1889,7 @@ msgstr "N%{difficulty}のレッスンに戻る"
 msgid "Finish Early"
 msgstr "早期終了"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:719
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:826
 #: lib/medoru_web/live/learn_live.ex:95
 #: lib/medoru_web/live/word_live/show.html.heex:166
 #: lib/medoru_web/live/word_live/show.html.heex:166
@@ -1905,7 +1917,7 @@ msgstr "学習した漢字"
 msgid "Now take the test to complete the lesson and track your progress!"
 msgstr "テストを受けてレッスンを完了し、進捗を追跡しましょう！"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:942
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1059
 #: lib/medoru_web/live/kana_live/show.html.heex:214
 #: lib/medoru_web/live/kana_live/show.html.heex:214
 #: lib/medoru_web/live/kanji_live/show.html.heex:413
@@ -2288,6 +2300,8 @@ msgstr "訓読み"
 msgid "Learned"
 msgstr "学習済み"
 
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:42
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:42
 #: lib/medoru_web/live/kanji_live/show.html.heex:128
 #: lib/medoru_web/live/kanji_live/show.html.heex:128
 #: lib/medoru_web/live/kanji_live/show.html.heex:128
@@ -2339,7 +2353,7 @@ msgstr "音読み"
 #: lib/medoru_web/live/kanji_live/show.html.heex:346
 #: lib/medoru_web/live/moderator/word_live/form.ex:23
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:175
-#: lib/medoru_web/live/user_live/show.ex:317
+#: lib/medoru_web/live/user_live/show.ex:318
 #: lib/medoru_web/live/word_live/index.ex:331
 #: lib/medoru_web/live/word_set_live/show.ex:271
 #, elixir-autogen, elixir-format
@@ -2500,6 +2514,7 @@ msgstr "「%{search}」に一致する単語は見つかりませんでした。
 #: lib/medoru_web/live/admin/tag_live/index/index.html.heex:172
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:284
 #: lib/medoru_web/live/admin/word_live/index/index.html.heex:224
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:27
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:28
 #: lib/medoru_web/live/learned_words_live/index.html.heex:27
 #: lib/medoru_web/live/moderator/kanji_live/index/index.html.heex:171
@@ -2989,6 +3004,8 @@ msgstr "分析"
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:103
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:128
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:128
+#: lib/medoru_web/live/user_live/followers.ex:112
+#: lib/medoru_web/live/user_live/following.ex:112
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:27
 #: lib/medoru_web/live/users_live/index.ex:165
 #: lib/medoru_web/live/words_falling_game_live/play.html.heex:191
@@ -3014,8 +3031,8 @@ msgstr "平均スコア"
 msgid "Avg Test Score"
 msgstr "平均テストスコア"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:792
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:975
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:899
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1092
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:49
 #: lib/medoru_web/live/teacher/game_live/new.html.heex:10
 #: lib/medoru_web/live/teacher/game_live/new.html.heex:10
@@ -3575,8 +3592,8 @@ msgstr "テストが完了し、生徒の準備が整いました。"
 msgid "e.g., N5 Vocabulary Quiz"
 msgstr "例：N5語彙クイズ"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:127
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:127
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:136
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:136
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:421
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:445
 #: lib/medoru_web/live/teacher/test_live/new.ex:105
@@ -4174,7 +4191,7 @@ msgstr "現在の継続日数"
 msgid "Display Name"
 msgstr "表示名"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:177
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:179
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:380
 #: lib/medoru_web/live/admin/kanji_live/index/index.html.heex:116
 #: lib/medoru_web/live/admin/lesson_live/index/index.html.heex:119
@@ -4319,7 +4336,7 @@ msgid "Type"
 msgstr "タイプ"
 
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:119
-#: lib/medoru_web/live/user_live/show.ex:133
+#: lib/medoru_web/live/user_live/show.ex:134
 #, elixir-autogen, elixir-format
 msgid "User"
 msgstr "ユーザー"
@@ -4344,43 +4361,43 @@ msgstr "ユーザータイプ"
 msgid "User type updated to %{type}."
 msgstr "ユーザータイプが%{type}に更新されました"
 
-#: lib/medoru_web/live/user_live/show.ex:135
+#: lib/medoru_web/live/user_live/show.ex:136
 #, elixir-autogen, elixir-format
 msgid "%{name}'s Profile"
 msgstr "%{name}のプロフィール"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:247
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:273
 #, elixir-autogen, elixir-format
 msgid "Badges"
 msgstr "バッジ"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:215
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:230
 #, elixir-autogen, elixir-format
 msgid "Day Streak"
 msgstr "連続日数"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:312
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:338
 #, elixir-autogen, elixir-format
 msgid "Duels Played"
 msgstr "プレイした対戦"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:287
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:313
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Featured"
 msgstr "特集"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:583
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:256
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:282
 #, elixir-autogen, elixir-format
 msgid "Featured Badge"
 msgstr "特集バッジ"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:299
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:325
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Learning Stats"
 msgstr "学習デュエル"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:185
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Member since %{date}"
 msgstr "%{date}からメンバー"
@@ -4391,23 +4408,23 @@ msgstr "%{date}からメンバー"
 msgid "Student"
 msgstr "生徒"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:302
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:328
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Tests Completed"
 msgstr "テスト完了！"
 
 #: lib/medoru_web/live/user_live/show.ex:31
-#: lib/medoru_web/live/user_live/show.ex:82
+#: lib/medoru_web/live/user_live/show.ex:83
 #, elixir-autogen, elixir-format
 msgid "User not found."
 msgstr "ユーザーが見つかりません"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:308
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:334
 #, elixir-autogen, elixir-format
 msgid "days"
 msgstr "日"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:249
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:275
 #, elixir-autogen, elixir-format, fuzzy
 msgid "earned"
 msgstr "学習済み"
@@ -4826,7 +4843,7 @@ msgstr "毎日の復習"
 #: lib/medoru_web/live/admin/classroom_live/index.ex:264
 #: lib/medoru_web/live/admin/custom_lesson_live/index.ex:205
 #: lib/medoru_web/live/admin/game_live/index.ex:199
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:186
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:188
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:390
 #: lib/medoru_web/live/admin/kanji_live/index/index.html.heex:125
 #: lib/medoru_web/live/admin/lesson_live/index/index.html.heex:128
@@ -4834,8 +4851,8 @@ msgstr "毎日の復習"
 #: lib/medoru_web/live/admin/test_live/index.ex:205
 #: lib/medoru_web/live/admin/word_live/index/index.html.heex:156
 #: lib/medoru_web/live/classroom_live/show.ex:2193
-#: lib/medoru_web/live/dashboard_live.html.heex:404
-#: lib/medoru_web/live/dashboard_live.html.heex:404
+#: lib/medoru_web/live/dashboard_live.html.heex:412
+#: lib/medoru_web/live/dashboard_live.html.heex:412
 #: lib/medoru_web/live/messages_live/show.html.heex:531
 #: lib/medoru_web/live/moderator/grammar_definition_live/index/index.html.heex:186
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:390
@@ -4902,10 +4919,10 @@ msgstr "まずテスト要件を有効にしてください。"
 msgid "Enter a single kanji"
 msgstr "1つの漢字を入力"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:436
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:455
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:346
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:382
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:436
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:455
 #: lib/medoru_web/live/moderator/word_live/form/form_template.html.heex:346
 #: lib/medoru_web/live/moderator/word_live/form/form_template.html.heex:382
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:743
@@ -4933,7 +4950,7 @@ msgstr "表現"
 msgid "Failed to add reading. Please check the fields."
 msgstr "読みの追加に失敗しました。フィールドを確認してください。"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:550
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:657
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to complete lesson."
 msgstr "単語の更新に失敗しました。"
@@ -5010,8 +5027,8 @@ msgstr "単語の更新に失敗しました。"
 msgid "Filter by level:"
 msgstr "タイプで絞り込み："
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:774
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:957
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:881
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1074
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Finish Review"
 msgstr "終了"
@@ -5302,22 +5319,22 @@ msgstr "語彙を管理"
 msgid "Manage vocabulary words. Total: %{count}"
 msgstr "語彙を管理。合計：%{count}"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:809
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:992
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:916
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1109
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Mark Complete"
 msgstr "完了"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:806
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:989
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:913
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1106
 #, elixir-autogen, elixir-format
 msgid "Mark this lesson as complete?"
 msgstr "このレッスンを完了としてマークしますか？"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:488
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:507
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:57
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:149
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:488
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:507
 #: lib/medoru_web/live/moderator/word_live/form/form_template.html.heex:57
 #: lib/medoru_web/live/moderator/word_live/form/form_template.html.heex:149
 #: lib/medoru_web/live/word_set_live/test.html.heex:129
@@ -5513,9 +5530,7 @@ msgstr "順序インデックス"
 msgid "Overdue"
 msgstr "期限切れ"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:175
 #: lib/medoru_web/live/admin/word_live/form.ex:19
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:175
 #: lib/medoru_web/live/moderator/word_live/form.ex:19
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:555
 #: lib/medoru_web/live/word_live/index.ex:327
@@ -5544,8 +5559,8 @@ msgstr "位置"
 msgid "Practice Complete!"
 msgstr "テスト完了！"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:785
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:968
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:892
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1085
 #: lib/medoru_web/live/word_set_live/show.ex:335
 #: lib/medoru_web/live/word_set_live/test.ex:47
 #: lib/medoru_web/live/word_set_live/test.html.heex:55
@@ -5702,11 +5717,11 @@ msgid "Romaji"
 msgstr "ローマ字"
 
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:249
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:524
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:543
 #: lib/medoru_web/live/admin/grammar_form_live/form/form_template.html.heex:130
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:348
 #: lib/medoru_web/live/admin/word_class_live/form/form_template.html.heex:117
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:524
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:543
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:348
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:724
 #: lib/medoru_web/live/user_white_board_live.ex:385
@@ -6465,8 +6480,8 @@ msgstr ""
 msgid "Generating..."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:150
-#: lib/medoru_web/live/dashboard_live.html.heex:150
+#: lib/medoru_web/live/dashboard_live.html.heex:158
+#: lib/medoru_web/live/dashboard_live.html.heex:158
 #, elixir-autogen, elixir-format
 msgid "Go to Classrooms"
 msgstr "教室へ移動"
@@ -6501,8 +6516,8 @@ msgstr ""
 msgid "Improve our services"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:138
-#: lib/medoru_web/live/dashboard_live.html.heex:138
+#: lib/medoru_web/live/dashboard_live.html.heex:146
+#: lib/medoru_web/live/dashboard_live.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Join or create classrooms to learn with others and compete on leaderboards."
 msgstr "他の人と一緒に学び、ランキングで競うために教室に参加または作成しましょう。"
@@ -6791,8 +6806,8 @@ msgstr ""
 msgid "You can update your profile information in"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:135
-#: lib/medoru_web/live/dashboard_live.html.heex:135
+#: lib/medoru_web/live/dashboard_live.html.heex:143
+#: lib/medoru_web/live/dashboard_live.html.heex:143
 #, elixir-autogen, elixir-format
 msgid "Your Classrooms"
 msgstr "あなたの教室"
@@ -6857,7 +6872,7 @@ msgstr ""
 msgid "Accepted formats: JPG, PNG, WebP. Max size: 500KB"
 msgstr "対応形式：JPG、PNG、WebP。最大サイズ：500KB"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:325
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:351
 #, elixir-autogen, elixir-format
 msgid "Admin Actions"
 msgstr "管理者アクション"
@@ -6958,7 +6973,7 @@ msgstr "仕組み："
 msgid "Image to Meaning"
 msgstr "画像→意味"
 
-#: lib/medoru_web/live/user_live/show.ex:127
+#: lib/medoru_web/live/user_live/show.ex:128
 #: lib/medoru_web/live/user_white_board_live.ex:652
 #, elixir-autogen, elixir-format
 msgid "Invalid user ID."
@@ -7543,8 +7558,8 @@ msgstr "すべての例には文、読み方、意味が必要です。"
 msgid "All test sessions and answers"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:230
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:230
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:242
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:242
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:577
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:724
 #, elixir-autogen, elixir-format
@@ -7664,7 +7679,11 @@ msgstr "変更"
 msgid "Choose the correct answer"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:867
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:130
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:984
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:72
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:72
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:130
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:250
 #: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:73
 #, elixir-autogen, elixir-format
@@ -7938,20 +7957,20 @@ msgstr ""
 msgid "Example in target form (e.g., 来ない)"
 msgstr "目標形での例（例：来ない）"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:281
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:281
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:283
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:283
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:619
 #, elixir-autogen, elixir-format
 msgid "Example is valid!"
 msgstr "例は有効です！"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:411
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:430
 #: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:123
 #: lib/medoru_web/live/admin/word_class_live/index/index.html.heex:23
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:742
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:85
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:85
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:411
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:849
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:107
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:107
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:430
 #: lib/medoru_web/live/moderator/grammar_definition_live/index/index.html.heex:123
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:913
 #, elixir-autogen, elixir-format
@@ -7968,7 +7987,7 @@ msgstr "例（最大5つ）"
 msgid "Examples (one per line)"
 msgstr "例（1行に1つ）"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:891
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1008
 #, elixir-autogen, elixir-format
 msgid "Examples:"
 msgstr "例："
@@ -8023,8 +8042,8 @@ msgstr "この文法パターンがどのように機能するか説明してく
 msgid "Explain when and how this form is used..."
 msgstr "この形がいつ、どのように使われるか説明してください..."
 
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:71
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:71
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:93
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:93
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:645
 #, elixir-autogen, elixir-format
 msgid "Explanation"
@@ -8235,6 +8254,8 @@ msgstr ""
 msgid "Kanji was not learned."
 msgstr ""
 
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:35
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:35
 #: lib/medoru_web/live/kanji_live/show.html.heex:118
 #: lib/medoru_web/live/kanji_live/show.html.heex:118
 #: lib/medoru_web/live/kanji_live/show.html.heex:118
@@ -8509,7 +8530,7 @@ msgstr ""
 msgid "Particle (助詞)"
 msgstr "助詞 (助詞)"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:841
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:958
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:86
 #, elixir-autogen, elixir-format
 msgid "Pattern:"
@@ -8577,8 +8598,8 @@ msgstr ""
 msgid "Regex Pattern:"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:144
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:144
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:153
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:153
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:675
 #, elixir-autogen, elixir-format
 msgid "Remove"
@@ -8694,11 +8715,15 @@ msgstr "文法ステップの種類を選択"
 msgid "Select a word and target form. The system will generate the question and correct answer. You add the wrong answers."
 msgstr ""
 
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:264
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:264
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:602
 #, elixir-autogen, elixir-format
 msgid "Select a word class..."
 msgstr "単語クラスを選択..."
 
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:230
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:230
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:567
 #, elixir-autogen, elixir-format
 msgid "Select particle..."
@@ -8877,7 +8902,7 @@ msgstr "単語を検索するために入力..."
 msgid "Type your answer in Japanese..."
 msgstr "日本語で答えを入力してください..."
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:922
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1039
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:60
 #, elixir-autogen, elixir-format
 msgid "Type your sentence here..."
@@ -8908,11 +8933,11 @@ msgstr "5秒間入力がないと更新"
 msgid "User progress reset successfully. Deleted %{sessions} test sessions, %{progress} progress records."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:445
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:926
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:156
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:156
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:445
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:464
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1043
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:178
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:178
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:464
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:799
 #, elixir-autogen, elixir-format
 msgid "Validate"
@@ -8974,6 +8999,8 @@ msgstr "この言葉の意味は何ですか？"
 msgid "When enabled, select a word from the database and the system will generate the question and correct answer automatically."
 msgstr ""
 
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:184
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:184
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:509
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:594
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:758
@@ -9199,12 +9226,13 @@ msgstr "例"
 
 #: lib/medoru_web/components/grammar_chat_preview.ex:42
 #: lib/medoru_web/components/grammar_chat_preview.ex:106
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:109
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:106
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:137
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:137
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:44
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:44
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:109
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:63
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:63
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:64
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:106
 #: lib/medoru_web/live/word_set_live/index.ex:339
 #: lib/medoru_web/live/word_set_live/show.ex:291
 #: lib/medoru_web/live/word_set_live/show.ex:568
@@ -9430,7 +9458,7 @@ msgid "Writing Challenge"
 msgstr "書き取りチャレンジ (5点)"
 
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:174
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:682
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:789
 #: lib/medoru_web/live/classroom_live/test.ex:1023
 #: lib/medoru_web/live/moderator/word_live/form/form_template.html.heex:174
 #: lib/medoru_web/live/word_live/show.html.heex:45
@@ -11454,7 +11482,7 @@ msgstr ""
 msgid "Allow student sentence validation"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:170
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:185
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to block this user? They won't be able to message you."
 msgstr "この単語を削除してもよろしいですか？"
@@ -11465,7 +11493,7 @@ msgstr "この単語を削除してもよろしいですか？"
 msgid "Are you sure? This will delete all game data."
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:177
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Block"
 msgstr ""
@@ -11487,8 +11515,8 @@ msgstr "%{date} にブロック"
 msgid "Blocked users cannot send you messages. You won't see their conversations or appear in their search results."
 msgstr "ブロックしたユーザーはあなたにメッセージを送信できません。あなたは彼らの会話を見たり、検索結果に表示されたりすることはありません。"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:327
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:327
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:346
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:346
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1062
 #, elixir-autogen, elixir-format
 msgid "Both"
@@ -11510,7 +11538,7 @@ msgstr ""
 msgid "Configure a falling words typing game for your students."
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show.ex:158
+#: lib/medoru_web/live/user_live/show.ex:159
 #, elixir-autogen, elixir-format
 msgid "Could not block user."
 msgstr "ユーザーをブロックできませんでした。"
@@ -11570,7 +11598,7 @@ msgstr ""
 msgid "Doesn't match pattern. Expected: %{expected}."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:601
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:708
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Lesson"
 msgstr "文法レッスンを編集"
@@ -11585,7 +11613,7 @@ msgstr "単語を追加"
 msgid "Encrypted message"
 msgstr "暗号化されたメッセージ"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:914
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1031
 #, elixir-autogen, elixir-format
 msgid "Enter a sentence using this grammar pattern:"
 msgstr ""
@@ -11600,8 +11628,8 @@ msgstr "カスタム意味を入力..."
 msgid "Enter group name..."
 msgstr "カスタム意味を入力..."
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:321
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:321
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:340
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:340
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1064
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Examples only"
@@ -11622,8 +11650,8 @@ msgstr ""
 msgid "Explanation Sections"
 msgstr "説明"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:324
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:324
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:343
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:343
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1067
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Explanation only"
@@ -11757,7 +11785,9 @@ msgstr ""
 
 #: lib/medoru_web/live/classroom_live/show.ex:2900
 #: lib/medoru_web/live/messages_live/show.ex:1610
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:164
+#: lib/medoru_web/live/user_live/followers.html.heex:81
+#: lib/medoru_web/live/user_live/following.html.heex:81
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:179
 #: lib/medoru_web/live/users_live/index.html.heex:164
 #, elixir-autogen, elixir-format
 msgid "Message"
@@ -11856,7 +11886,7 @@ msgstr "答えを入力してください"
 msgid "Please enter a sentence."
 msgstr "答えを入力してください"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:622
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:729
 #, elixir-autogen, elixir-format
 msgid "Presentation Mode"
 msgstr ""
@@ -11867,7 +11897,7 @@ msgstr ""
 msgid "Preview"
 msgstr "前へ"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:591
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:698
 #, elixir-autogen, elixir-format
 msgid "Preview Mode"
 msgstr ""
@@ -11884,8 +11914,8 @@ msgid "Remove from learned"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/show.ex:2170
-#: lib/medoru_web/live/dashboard_live.html.heex:395
-#: lib/medoru_web/live/dashboard_live.html.heex:395
+#: lib/medoru_web/live/dashboard_live.html.heex:403
+#: lib/medoru_web/live/dashboard_live.html.heex:403
 #: lib/medoru_web/live/messages_live/show.html.heex:508
 #: lib/medoru_web/live/user_white_board_live.ex:523
 #, elixir-autogen, elixir-format
@@ -12016,7 +12046,7 @@ msgstr ""
 msgid "Try a different search term."
 msgstr "別のフィルターを試す"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:911
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:1028
 #, elixir-autogen, elixir-format
 msgid "Try it yourself:"
 msgstr ""
@@ -12059,18 +12089,18 @@ msgid "Type the reading of the falling word before it reaches the danger line!"
 msgstr ""
 
 #: lib/medoru_web/live/settings_live/blocks.html.heex:62
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:137
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:152
 #, elixir-autogen, elixir-format
 msgid "Unblock"
 msgstr "ブロック解除"
 
-#: lib/medoru_web/live/user_live/show.ex:155
+#: lib/medoru_web/live/user_live/show.ex:156
 #, elixir-autogen, elixir-format
 msgid "User blocked."
 msgstr "ユーザーをブロックしました。"
 
 #: lib/medoru_web/live/settings_live/blocks.ex:39
-#: lib/medoru_web/live/user_live/show.ex:176
+#: lib/medoru_web/live/user_live/show.ex:177
 #, elixir-autogen, elixir-format
 msgid "User unblocked."
 msgstr "ユーザーのブロックを解除しました。"
@@ -12080,7 +12110,7 @@ msgstr "ユーザーのブロックを解除しました。"
 msgid "Users will appear here once they set up their profiles."
 msgstr "ユーザーはプロフィールを設定するとここに表示されます。"
 
-#: lib/medoru_web/live/classroom_live/custom_lesson.ex:701
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:808
 #, elixir-autogen, elixir-format
 msgid "View word details"
 msgstr ""
@@ -12090,8 +12120,8 @@ msgstr ""
 msgid "Want to save your progress?"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:280
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:280
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:299
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:299
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:122
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Word Colors"
@@ -12182,7 +12212,7 @@ msgid "You must sign in to view this page."
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:503
-#: lib/medoru_web/live/grammar_definition_live/show.ex:55
+#: lib/medoru_web/live/grammar_definition_live/show.ex:64
 #, elixir-autogen, elixir-format
 msgid "Your sentence matches the pattern!"
 msgstr ""
@@ -12229,8 +12259,8 @@ msgstr ""
 msgid "Account Status"
 msgstr "アカウント"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:422
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:422
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:441
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:441
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Example"
 msgstr "例"
@@ -12253,8 +12283,8 @@ msgstr "新しい読みを追加"
 msgid "Add Tag"
 msgstr "追加"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:347
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:347
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:366
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:366
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add Word Color"
 msgstr "単語クラスを追加"
@@ -12477,8 +12507,8 @@ msgstr ""
 msgid "Basic Information"
 msgstr "基本情報"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:184
-#: lib/medoru_web/live/dashboard_live.html.heex:184
+#: lib/medoru_web/live/dashboard_live.html.heex:192
+#: lib/medoru_web/live/dashboard_live.html.heex:192
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Board Stream"
 msgstr "ボードサイズ"
@@ -12496,8 +12526,8 @@ msgstr ""
 msgid "Browse the 214 traditional Kangxi radicals sorted by how many kanji contain them"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:383
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:383
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:402
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:402
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Bulgarian explanation..."
 msgstr "Български"
@@ -12637,8 +12667,8 @@ msgstr ""
 msgid "Conversation not found."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:248
-#: lib/medoru_web/live/dashboard_live.html.heex:248
+#: lib/medoru_web/live/dashboard_live.html.heex:256
+#: lib/medoru_web/live/dashboard_live.html.heex:256
 #: lib/medoru_web/live/user_white_board_live.ex:321
 #: lib/medoru_web/live/user_white_board_post_live.ex:60
 #, elixir-autogen, elixir-format, fuzzy
@@ -12650,7 +12680,7 @@ msgstr ""
 msgid "Copy to Clipboard"
 msgstr "クリップボードにコピー"
 
-#: lib/medoru_web/live/dashboard_live.ex:146
+#: lib/medoru_web/live/dashboard_live.ex:147
 #: lib/medoru_web/live/user_white_board_live.ex:899
 #: lib/medoru_web/live/user_white_board_post_live.ex:286
 #, elixir-autogen, elixir-format
@@ -12662,7 +12692,9 @@ msgstr ""
 msgid "Could not create post."
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show.ex:223
+#: lib/medoru_web/live/user_live/followers.ex:76
+#: lib/medoru_web/live/user_live/following.ex:76
+#: lib/medoru_web/live/user_live/show.ex:224
 #: lib/medoru_web/live/users_live/index.ex:117
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not follow user."
@@ -12758,7 +12790,7 @@ msgstr "漢字合計"
 msgid "Daily Kanji Challenge"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show.ex:197
+#: lib/medoru_web/live/user_live/show.ex:198
 #, elixir-autogen, elixir-format
 msgid "Daily challenges reset successfully. Deleted %{count} records."
 msgstr ""
@@ -12784,8 +12816,8 @@ msgstr "削除"
 msgid "Delete conversation"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:401
-#: lib/medoru_web/live/dashboard_live.html.heex:401
+#: lib/medoru_web/live/dashboard_live.html.heex:409
+#: lib/medoru_web/live/dashboard_live.html.heex:409
 #: lib/medoru_web/live/user_white_board_live.ex:529
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete this comment?"
@@ -12797,7 +12829,7 @@ msgstr "このレッスンを削除しますか？"
 msgid "Delete this conversation? It will be hidden from your list."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:184
+#: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:186
 #: lib/medoru_web/live/moderator/grammar_definition_live/index/index.html.heex:184
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Delete this grammar point?"
@@ -12833,20 +12865,20 @@ msgstr "削除"
 msgid "Deleted %{count} notifications."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:375
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:375
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:394
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:394
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Description (Bulgarian)"
 msgstr "説明（オプション）"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:360
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:360
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:379
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:379
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Description (English)"
 msgstr "説明"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:390
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:390
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:409
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:409
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Description (Japanese)"
 msgstr "説明"
@@ -12856,8 +12888,8 @@ msgstr "説明"
 msgid "Description..."
 msgstr "説明"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:355
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:355
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:374
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:374
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Descriptions"
 msgstr "説明"
@@ -12867,12 +12899,12 @@ msgstr "説明"
 msgid "Disable"
 msgstr ""
 
-#: lib/medoru_web/live/grammar_definition_live/show.ex:71
+#: lib/medoru_web/live/grammar_definition_live/show.ex:80
 #, elixir-autogen, elixir-format
 msgid "Doesn't match. Expected: %{expected}, but got: %{got}."
 msgstr ""
 
-#: lib/medoru_web/live/grammar_definition_live/show.ex:61
+#: lib/medoru_web/live/grammar_definition_live/show.ex:70
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Doesn't match. Expected: %{expected}."
 msgstr ""
@@ -12910,8 +12942,8 @@ msgstr ""
 msgid "Each correct kanji earns Fibonacci points: 1, 1, 2, 3, 5, 8..."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:448
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:448
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:449
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:449
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Edit Grammar Point"
 msgstr "文法レッスンを編集"
@@ -12975,8 +13007,8 @@ msgstr ""
 msgid "Encryption key registered successfully."
 msgstr "暗号化キーが正常に登録されました。"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:265
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:265
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:284
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:284
 #, elixir-autogen, elixir-format
 msgid "Enter text..."
 msgstr ""
@@ -12986,20 +13018,20 @@ msgstr ""
 msgid "Enter to send"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:296
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:296
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:298
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:298
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Example doesn't match pattern. Expected: %{expected}, but got: %{got}."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:288
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:288
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:290
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:290
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Example doesn't match pattern. Expected: %{expected}."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:368
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:368
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:387
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:387
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Explain the grammar point..."
 msgstr "正解を説明..."
@@ -13105,7 +13137,7 @@ msgid "February"
 msgstr ""
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:174
-#: lib/medoru_web/live/user_live/show.ex:316
+#: lib/medoru_web/live/user_live/show.ex:317
 #, elixir-autogen, elixir-format
 msgid "Female"
 msgstr ""
@@ -13149,20 +13181,24 @@ msgstr ""
 msgid "Fluent in Japanese"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:156
+#: lib/medoru_web/live/user_live/followers.html.heex:73
+#: lib/medoru_web/live/user_live/following.html.heex:73
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:171
 #: lib/medoru_web/live/users_live/index.html.heex:156
 #, elixir-autogen, elixir-format
 msgid "Follow"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:466
-#: lib/medoru_web/live/dashboard_live.html.heex:466
+#: lib/medoru_web/live/dashboard_live.html.heex:474
+#: lib/medoru_web/live/dashboard_live.html.heex:474
 #, elixir-autogen, elixir-format
 msgid "Follow more users or write something on your white board to see posts here."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:236
-#: lib/medoru_web/live/dashboard_live.html.heex:236
+#: lib/medoru_web/live/dashboard_live.html.heex:244
+#: lib/medoru_web/live/dashboard_live.html.heex:244
+#: lib/medoru_web/live/user_live/followers.ex:39
+#: lib/medoru_web/live/user_live/followers.html.heex:13
 #: lib/medoru_web/live/user_white_board_live.ex:309
 #: lib/medoru_web/live/user_white_board_post_live.ex:49
 #, elixir-autogen, elixir-format
@@ -13227,8 +13263,8 @@ msgstr ""
 msgid "Grammar Management"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:384
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:384
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:386
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:386
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Grammar point created successfully."
 msgstr "文法フォームが正常に作成されました。"
@@ -13239,13 +13275,13 @@ msgstr "文法フォームが正常に作成されました。"
 msgid "Grammar point deleted successfully."
 msgstr "文法フォームが正常に削除されました。"
 
-#: lib/medoru_web/live/grammar_definition_live/show.ex:27
+#: lib/medoru_web/live/grammar_definition_live/show.ex:28
 #, elixir-autogen, elixir-format
 msgid "Grammar point not found."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:356
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:356
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:358
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:358
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Grammar point updated successfully."
 msgstr "文法フォームが正常に更新されました。"
@@ -13255,8 +13291,8 @@ msgstr "文法フォームが正常に更新されました。"
 msgid "Hide Deleted"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:282
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:282
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:301
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:301
 #, elixir-autogen, elixir-format
 msgid "Highlight specific words in the explanation and examples with colors."
 msgstr ""
@@ -13330,14 +13366,14 @@ msgstr ""
 msgid "January"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:398
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:398
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:417
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:417
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Japanese explanation..."
 msgstr "日本語の説明"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:466
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:466
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:485
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:485
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Japanese sentence"
 msgstr "日本語"
@@ -13426,20 +13462,20 @@ msgstr ""
 msgid "Left"
 msgstr "退室"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:109
-#: lib/medoru_web/live/dashboard_live.html.heex:109
+#: lib/medoru_web/live/dashboard_live.html.heex:117
+#: lib/medoru_web/live/dashboard_live.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "Level %{level} Progress"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:183
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:183
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:192
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:192
 #, elixir-autogen, elixir-format
 msgid "Literal Text"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:453
-#: lib/medoru_web/live/dashboard_live.html.heex:453
+#: lib/medoru_web/live/dashboard_live.html.heex:461
+#: lib/medoru_web/live/dashboard_live.html.heex:461
 #: lib/medoru_web/live/user_white_board_live.ex:581
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Load more"
@@ -13456,14 +13492,16 @@ msgstr "もっと読み込む"
 msgid "Location"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:69
+#: lib/medoru_web/live/user_live/followers.html.heex:47
+#: lib/medoru_web/live/user_live/following.html.heex:47
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:84
 #: lib/medoru_web/live/users_live/index.html.heex:130
 #, elixir-autogen, elixir-format
 msgid "Lv. %{level}"
 msgstr ""
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:173
-#: lib/medoru_web/live/user_live/show.ex:315
+#: lib/medoru_web/live/user_live/show.ex:316
 #, elixir-autogen, elixir-format
 msgid "Male"
 msgstr ""
@@ -13549,8 +13587,8 @@ msgstr ""
 msgid "Match word pairs in a memory game. Type meanings to win!"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:238
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:238
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:240
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:240
 #, elixir-autogen, elixir-format
 msgid "Maximum 5 examples allowed."
 msgstr ""
@@ -13567,14 +13605,14 @@ msgstr "最大50単語に達しました"
 msgid "May"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:499
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:499
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:518
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:518
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Meaning (Bulgarian)"
 msgstr "意味（英語）:"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:510
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:510
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:529
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:529
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Meaning (Japanese)"
 msgstr "意味"
@@ -13605,8 +13643,8 @@ msgstr ""
 msgid "Never share your private key with anyone. Medoru staff will never ask for it."
 msgstr "秘密鍵を誰とも共有しないでください。Medoruのスタッフがそれを求めることは決してありません。"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:447
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:447
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:448
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:448
 #, elixir-autogen, elixir-format, fuzzy
 msgid "New Grammar Point"
 msgstr "新規文法レッスン"
@@ -13616,7 +13654,7 @@ msgstr "新規文法レッスン"
 msgid "No custom lessons found matching your criteria."
 msgstr "条件に一致するユーザーが見つかりませんでした。"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:341
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:367
 #, elixir-autogen, elixir-format
 msgid "No daily challenges completed today."
 msgstr ""
@@ -13685,8 +13723,8 @@ msgstr ""
 msgid "No pattern elements yet. Add one below."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:463
-#: lib/medoru_web/live/dashboard_live.html.heex:463
+#: lib/medoru_web/live/dashboard_live.html.heex:471
+#: lib/medoru_web/live/dashboard_live.html.heex:471
 #: lib/medoru_web/live/user_white_board_live.ex:591
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No posts yet"
@@ -13745,7 +13783,9 @@ msgstr ""
 msgid "November"
 msgstr "メンバー"
 
-#: lib/medoru_web/live/user_live/show.ex:220
+#: lib/medoru_web/live/user_live/followers.ex:73
+#: lib/medoru_web/live/user_live/following.ex:73
+#: lib/medoru_web/live/user_live/show.ex:221
 #: lib/medoru_web/live/users_live/index.ex:114
 #, elixir-autogen, elixir-format
 msgid "Now following user."
@@ -13774,7 +13814,7 @@ msgstr ""
 msgid "Online"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show.ex:202
+#: lib/medoru_web/live/user_live/show.ex:203
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Only admins can reset daily challenges."
 msgstr "デイリーテストのリセットは管理者のみ可能です。"
@@ -13808,8 +13848,8 @@ msgstr "ここに秘密鍵を貼り付け..."
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:84
 #: lib/medoru_web/live/admin/grammar_definition_live/index/index.html.heex:122
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:30
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:30
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:52
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:52
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:84
 #: lib/medoru_web/live/moderator/grammar_definition_live/index/index.html.heex:122
 #, elixir-autogen, elixir-format, fuzzy
@@ -13836,13 +13876,13 @@ msgstr ""
 msgid "Permanently delete this test? This cannot be undone."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:277
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:277
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:279
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:279
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please enter a Japanese sentence before validating."
 msgstr "検証する前に日本語の文や単語を入力してください。"
 
-#: lib/medoru_web/live/grammar_definition_live/show.ex:50
+#: lib/medoru_web/live/grammar_definition_live/show.ex:59
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please enter a sentence to validate."
 msgstr "答えを入力してください"
@@ -14013,14 +14053,14 @@ msgstr "拒否"
 msgid "Read"
 msgstr "準備完了"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:477
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:477
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:496
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:496
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reading (romaji or kana)"
 msgstr "読み方（ひらがな）:"
 
-#: lib/medoru_web/live/dashboard_live.html.heex:372
-#: lib/medoru_web/live/dashboard_live.html.heex:372
+#: lib/medoru_web/live/dashboard_live.html.heex:380
+#: lib/medoru_web/live/dashboard_live.html.heex:380
 #: lib/medoru_web/live/user_white_board_live.ex:500
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Replying to %{name}"
@@ -14031,12 +14071,12 @@ msgstr "返信中"
 msgid "Request key from others"
 msgstr "他の人にキーを依頼"
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:352
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:378
 #, elixir-autogen, elixir-format
 msgid "Reset Challenges"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:332
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:358
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reset Daily Challenges"
 msgstr "デイリーテストをリセット"
@@ -14144,8 +14184,8 @@ msgstr "ステップ"
 msgid "September"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:199
-#: lib/medoru_web/live/dashboard_live.html.heex:199
+#: lib/medoru_web/live/dashboard_live.html.heex:207
+#: lib/medoru_web/live/dashboard_live.html.heex:207
 #, elixir-autogen, elixir-format
 msgid "Share your thoughts, drawings, or achievements with your followers."
 msgstr ""
@@ -14330,8 +14370,8 @@ msgstr "タイムゾーン"
 msgid "Title (optional)..."
 msgstr "ヒント（任意）"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:135
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:135
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:144
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:144
 #, elixir-autogen, elixir-format
 msgid "Toggle optional"
 msgstr ""
@@ -14360,8 +14400,8 @@ msgstr "合計ポイント"
 msgid "Total: %{count}"
 msgstr ""
 
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:117
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:117
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:139
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:139
 #, elixir-autogen, elixir-format
 msgid "Try Your Own Example"
 msgstr ""
@@ -14394,19 +14434,23 @@ msgstr ""
 msgid "Type the meaning:"
 msgstr "意味を入力..."
 
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:129
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:129
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:151
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:151
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Type your Japanese sentence here..."
 msgstr "ここに文を入力してください..."
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:147
+#: lib/medoru_web/live/user_live/followers.html.heex:63
+#: lib/medoru_web/live/user_live/following.html.heex:63
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:162
 #: lib/medoru_web/live/users_live/index.html.heex:146
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show.ex:243
+#: lib/medoru_web/live/user_live/followers.ex:94
+#: lib/medoru_web/live/user_live/following.ex:94
+#: lib/medoru_web/live/user_live/show.ex:244
 #: lib/medoru_web/live/users_live/index.ex:135
 #, elixir-autogen, elixir-format
 msgid "Unfollowed user."
@@ -14437,7 +14481,7 @@ msgstr ""
 msgid "User has been soft-deleted."
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:335
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:361
 #, elixir-autogen, elixir-format
 msgid "User has completed %{count} challenge(s) today: %{types}. Reset to allow retaking."
 msgstr ""
@@ -14465,8 +14509,8 @@ msgstr "すべて見る"
 msgid "View details"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:255
-#: lib/medoru_web/live/dashboard_live.html.heex:255
+#: lib/medoru_web/live/dashboard_live.html.heex:263
+#: lib/medoru_web/live/dashboard_live.html.heex:263
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View post"
 msgstr "すべて見る"
@@ -14499,52 +14543,46 @@ msgstr ""
 msgid "Where you're based. Max 100 characters."
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:196
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:200
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:211
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:215
 #, elixir-autogen, elixir-format
 msgid "White Board"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:167
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:167
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:176
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:176
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Word Slot"
 msgstr "単語"
-
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:219
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:219
-#, elixir-autogen, elixir-format
-msgid "Word class (optional)"
-msgstr ""
 
 #: lib/medoru_web/live/word_live/show.ex:195
 #, elixir-autogen, elixir-format
 msgid "Word set not found."
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:294
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:294
+#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:313
+#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:313
 #, elixir-autogen, elixir-format
 msgid "Word to highlight"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:428
-#: lib/medoru_web/live/dashboard_live.html.heex:428
+#: lib/medoru_web/live/dashboard_live.html.heex:436
+#: lib/medoru_web/live/dashboard_live.html.heex:436
 #: lib/medoru_web/live/user_white_board_live.ex:556
 #: lib/medoru_web/live/user_white_board_post_live.ex:188
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:427
-#: lib/medoru_web/live/dashboard_live.html.heex:427
+#: lib/medoru_web/live/dashboard_live.html.heex:435
+#: lib/medoru_web/live/dashboard_live.html.heex:435
 #: lib/medoru_web/live/user_white_board_live.ex:555
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr ""
 
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:120
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:120
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:142
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:142
 #, elixir-autogen, elixir-format
 msgid "Write a sentence that follows this grammar pattern and validate it."
 msgstr ""
@@ -14559,8 +14597,8 @@ msgstr ""
 msgid "Write something on your board..."
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:196
-#: lib/medoru_web/live/dashboard_live.html.heex:196
+#: lib/medoru_web/live/dashboard_live.html.heex:204
+#: lib/medoru_web/live/dashboard_live.html.heex:204
 #, elixir-autogen, elixir-format
 msgid "Write something on your white board"
 msgstr ""
@@ -14581,9 +14619,9 @@ msgstr ""
 msgid "Wrong strokes"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:112
-#: lib/medoru_web/live/dashboard_live.html.heex:112
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:72
+#: lib/medoru_web/live/dashboard_live.html.heex:120
+#: lib/medoru_web/live/dashboard_live.html.heex:120
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:87
 #, elixir-autogen, elixir-format
 msgid "XP"
 msgstr ""
@@ -14734,12 +14772,14 @@ msgstr ""
 msgid "edited"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:61
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:66
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:75
 #, elixir-autogen, elixir-format
 msgid "followers"
 msgstr ""
 
-#: lib/medoru_web/live/user_live/show/profile_page.html.heex:62
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:72
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:76
 #, elixir-autogen, elixir-format
 msgid "following"
 msgstr ""
@@ -14771,9 +14811,9 @@ msgstr "漢字"
 msgid "kanji written correctly"
 msgstr ""
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:299
-#: lib/medoru_web/live/grammar_definition_live/show.ex:74
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:299
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:301
+#: lib/medoru_web/live/grammar_definition_live/show.ex:83
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:301
 #, elixir-autogen, elixir-format
 msgid "nothing"
 msgstr ""
@@ -14790,19 +14830,18 @@ msgstr "参加者"
 
 #: lib/medoru_web/components/grammar_chat_preview.ex:52
 #: lib/medoru_web/components/grammar_chat_preview.ex:120
-#: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:122
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:142
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:142
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:54
-#: lib/medoru_web/live/grammar_definition_live/show.html.heex:54
-#: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:122
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:76
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:76
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:69
 #, elixir-autogen, elixir-format, fuzzy
 msgid "particle"
 msgstr "助詞"
 
-#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:298
-#: lib/medoru_web/live/grammar_definition_live/show.ex:73
-#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:298
+#: lib/medoru_web/live/admin/grammar_definition_live/form.ex:300
+#: lib/medoru_web/live/grammar_definition_live/show.ex:82
+#: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:300
 #, elixir-autogen, elixir-format, fuzzy
 msgid "pattern"
 msgstr "パターン："
@@ -14813,8 +14852,8 @@ msgstr "パターン："
 msgid "possible kanji"
 msgstr ""
 
-#: lib/medoru_web/live/dashboard_live.html.heex:185
-#: lib/medoru_web/live/dashboard_live.html.heex:185
+#: lib/medoru_web/live/dashboard_live.html.heex:193
+#: lib/medoru_web/live/dashboard_live.html.heex:193
 #: lib/medoru_web/live/user_white_board_live.ex:41
 #, elixir-autogen, elixir-format, fuzzy
 msgid "posts"
@@ -14933,3 +14972,158 @@ msgstr ""
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Search grammar definitions..."
 msgstr "メールアドレスまたは名前で検索..."
+
+#: lib/medoru_web/live/user_live/followers.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "%{count} people are following you"
+msgstr ""
+
+#: lib/medoru_web/live/grammar_definition_live/show.ex:102
+#, elixir-autogen, elixir-format
+msgid "%{grammar} marked as learned!"
+msgstr ""
+
+#: lib/medoru_web/live/grammar_definition_live/show.ex:119
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{grammar} removed from learned list."
+msgstr ""
+
+#: lib/medoru_web/live/learned_grammars_live/index.ex:37
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:13
+#, elixir-autogen, elixir-format, fuzzy
+msgid "%{name}'s Learned Grammar"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:558
+#, elixir-autogen, elixir-format
+msgid "'%{title}' copied to grammar definitions."
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:574
+#, elixir-autogen, elixir-format
+msgid "A grammar definition with the title '%{title}' already exists."
+msgstr ""
+
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:17
+#, elixir-autogen, elixir-format, fuzzy
+msgid "All %{count} grammar points that have been learned"
+msgstr ""
+
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:32
+#: lib/medoru_web/live/grammar_definition_live/show.html.heex:32
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure? This will remove '%{grammar}' from your learned grammar."
+msgstr ""
+
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:106
+#, elixir-autogen, elixir-format
+msgid "Browse Grammar"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:941
+#, elixir-autogen, elixir-format
+msgid "Copy To Grammar"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:938
+#, elixir-autogen, elixir-format
+msgid "Copy this step to Grammar Definitions"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:569
+#, elixir-autogen, elixir-format
+msgid "Could not copy: %{errors}"
+msgstr ""
+
+#: lib/medoru_web/live/grammar_definition_live/show.ex:105
+#, elixir-autogen, elixir-format
+msgid "Could not mark grammar as learned."
+msgstr ""
+
+#: lib/medoru_web/live/grammar_definition_live/show.ex:128
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not unlearn grammar."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/following.html.heex:104
+#, elixir-autogen, elixir-format
+msgid "Discover Users"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/following.ex:39
+#: lib/medoru_web/live/user_live/following.html.heex:13
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Following"
+msgstr ""
+
+#: lib/medoru_web/live/dashboard_live.html.heex:104
+#: lib/medoru_web/live/dashboard_live.html.heex:104
+#: lib/medoru_web/live/user_live/show/profile_page.html.heex:263
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Grammar Learned"
+msgstr "文法パターン"
+
+#: lib/medoru_web/live/grammar_definition_live/show.ex:125
+#, elixir-autogen, elixir-format
+msgid "Grammar was not learned."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/followers.html.heex:94
+#, elixir-autogen, elixir-format
+msgid "No followers yet"
+msgstr ""
+
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:96
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No grammar learned yet"
+msgstr "文法レッスンはまだありません"
+
+#: lib/medoru_web/live/user_live/following.html.heex:94
+#, elixir-autogen, elixir-format
+msgid "Not following anyone yet"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:578
+#, elixir-autogen, elixir-format
+msgid "Only admins can copy to grammar definitions."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/followers.html.heex:97
+#, elixir-autogen, elixir-format
+msgid "People who follow you will appear here."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/following.html.heex:97
+#, elixir-autogen, elixir-format
+msgid "People you follow will appear here."
+msgstr ""
+
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:99
+#, elixir-autogen, elixir-format
+msgid "Start learning by browsing grammar definitions and marking them as learned."
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/custom_lesson.ex:548
+#, elixir-autogen, elixir-format
+msgid "Text steps cannot be copied to grammar definitions."
+msgstr ""
+
+#: lib/medoru_web/live/user_live/following.html.heex:17
+#, elixir-autogen, elixir-format
+msgid "You are following %{count} people"
+msgstr ""
+
+#: lib/medoru_web/live/user_live/followers.ex:43
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You can only view your own followers."
+msgstr "自分のレッスンのみ編集できます。"
+
+#: lib/medoru_web/live/user_live/following.ex:43
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You can only view your own following list."
+msgstr "自分のレッスンのみ編集できます。"
+
+#: lib/medoru_web/live/learned_grammars_live/index.html.heex:24
+#, elixir-autogen, elixir-format, fuzzy
+msgid "grammar learned"
+msgstr ""
