@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.4.0 🔄 IN PROGRESS  
-**Status**: v0.3.1 complete. Working on v0.4.0.  
-**Tests**: 970 passing  
+**Version**: 0.5.0 ✅ COMPLETE  
+**Status**: v0.5.0 complete. Planning v0.5.1.  
+**Tests**: 1121 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -117,30 +117,114 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `priv/repo/seeds/missing_kanji_full.json`
 - `priv/repo/seeds/kanjivg_stroke_fixes.json`
 
-### What's Complete (v0.4.0) — Kanji Writing Snap Toggle & Fluent Button
-**Status**: 🔄 IN PROGRESS
+### What's Complete (v0.4.0) — Block/Following Logic, Profile Privacy & Classroom Rankings
+**Status**: ✅ COMPLETE
 
-**Bug Fixes:**
-- **Kanji/Kana writing page reload on wrong stroke**: `kanji_live/show.ex` and `kana_live/show.ex` were missing `handle_event("wrong_stroke", ...)` handlers. Added no-op handlers to prevent LiveSocket reconnect when the `KanjiWriting` hook pushes a wrong-stroke event.
-- **Writing snap toggle**: Added "Snap to correct stroke" checkbox on `/kanji/:id` and `/kana/:character` writing practice views. Uses `data-snap-correct` attribute on the `KanjiWriting` hook. Defaults to `true`.
+**Block/Following Logic Audit & Fixes:**
+- **Profile 404 on reverse block**: Blocked users visiting a blocker's profile get redirected with "User not found."
+- **Bidirectional post blocking**: `WhiteBoard.can_view_post?/2`, `apply_blocked_filter/2`, and `list_comments_for_post/2` all check blocking in both directions
+- **Auto-unfollow on block**: `Social.block_user/3` silently unfollows in both directions
+- **Message redirect**: `MessagesLive.Show` redirects blocked 1:1 conversations to `/messages` with "Conversation not found."
+- **Group chat block prevention**: `Chat.create_group_conversation/4` raises if any participant pair has a block
+- **User directory filtering**: Blocked users are hidden from the blocker; blockers can still find blocked users to unblock them
+- **Search privacy**: `filter_blocked_by_users` always applies (not just when `only_following=true`)
 
-**Features:**
-- **"Fluent In Japanese" button** (`/settings/profile`):
-  - Visible only to teachers and admins (`User.teacher?/1`)
-  - Red `btn-error` button with inline confirmation pattern (like "Delete My Account")
-  - Clicking shows "Are you sure?" with Cancel / "Yes, Mark Everything"
-  - Calls `Learning.mark_all_as_learned(user_id)` which batch-marks all kanji and all words as learned
-  - Idempotent — second click repeats the operation successfully
-  - Flash message: "Marked X kanji and Y words as learned!"
-  - All strings localized via `gettext`
+**Profile Privacy:**
+- **`is_public` on `user_profiles`**: New boolean (default `true`). Private profiles are hidden from the user directory and search
+- **Settings toggle**: "Show my profile in the user directory" checkbox on `/settings/profile`
+- **Directory filtering**: `Social.list_users`/`search_users` filter out `is_public = false` users
+
+**Classroom Rankings:**
+- **Clickable avatars**: Classroom ranking avatars and names now link to `/users/:id`
+- Applied to `ClassroomLive.Show` (compact + full rankings) and `ClassroomLive.Rankings`
+
+**Avatar Fallback Fixes:**
+- **OAuth avatar copy**: `register_user_with_oauth` copies `avatar_url` into `profile.avatar` on registration
+- **Template fallbacks**: Profile page, white board, and dashboard now fall back to `user.avatar_url` when `profile.avatar` is nil
+
+**User Directory UX:**
+- **Tag dropdown auto-filter**: Changing the tag `<select>` immediately filters results (via `phx-change` on the select only, not the search input)
 
 **Key files:**
-- `lib/medoru_web/live/kanji_live/show.ex` & `show.html.heex`
-- `lib/medoru_web/live/kana_live/show.ex` & `show.html.heex`
-- `lib/medoru_web/live/settings_live/profile.ex` & `profile.html.heex`
-- `lib/medoru/learning.ex` (`mark_all_as_learned/1`)
+- `lib/medoru/social.ex`, `lib/medoru/white_board.ex`, `lib/medoru/chat.ex`
+- `lib/medoru_web/live/user_live/show.ex`, `lib/medoru_web/live/messages_live/show.ex`
+- `lib/medoru_web/live/classroom_live/show.ex`, `lib/medoru_web/live/classroom_live/rankings.ex`
+- `lib/medoru_web/live/users_live/index.html.heex`
+- `lib/medoru/accounts.ex`, `lib/medoru/accounts/user_profile.ex`
 
-### What's Next (v0.4.x)
+### What's Complete (v0.4.1) — Classroom Test Coverage Expansion
+**Status**: ✅ COMPLETE
+
+**Classroom Context Tests:**
+- `list_visible_classrooms/2` — owned/joined/public visibility, archived exclusion, search, pagination
+- `list_public_classrooms/0` — active public only, excludes private/closed/archived
+- `user_classroom_status/2` — `:owner`, `:none`, `:pending`, `:member` states
+- `get_membership!/1` — returns membership, raises on missing
+- `list_classroom_memberships/1` — returns all memberships
+- `get_classroom_stats_batch/1` — batch stats for multiple classrooms
+- `get_classroom_leaderboard/2` — sorted by points, limit option
+- `get_test_leaderboard/3` — test-specific leaderboard
+- `get_or_create_lesson_progress/3` — creates new or returns existing
+- `start_lesson/3` & `complete_lesson/5` — lesson progress lifecycle
+- `list_user_lesson_progress/2` & `list_classroom_lesson_progress/1`
+
+**Classroom LiveView Tests:**
+- `ClassroomLive.Index` — 20 new tests covering mount, search, invite code validation, join (invite + public), cancel application
+- `Teacher.ClassroomLive.Show` — 7 new tests covering regenerate invite code, approve/reject/remove members, edit/save/cancel settings, tab changes
+
+**Bug Fixes:**
+- Fixed `ChatTest` (`mark_participant_left/2`) to query `ConversationParticipant` directly since `get_classroom_conversation` now filters out left users
+
+**Key files:**
+- `test/medoru/classrooms_test.exs`
+- `test/medoru_web/live/classroom_live/index_test.exs`
+- `test/medoru_web/live/teacher/classroom_live_test.exs`
+- `test/medoru/chat_test.exs`
+
+### What's Complete (v0.5.0) — Grammar Definitions
+**Status**: ✅ COMPLETE
+
+**Database & Schema:**
+- **Migration**: `20260605000000_create_grammar_definitions.exs` — `grammar_definitions` table with title, slug, pattern_elements, word_colors, description (localized en/bg/ja), examples (sentence/reading/meaning + bg/ja variants), jlpt_level
+- **Schema**: `GrammarDefinition` with auto-slug generation, pattern element validation (non-empty), example validation (max 5, required fields), word color validation (0-31 index, apply_to field)
+- **Localized helpers**: `localized_description/2`, `localized_example_meaning/2` with fallback to English
+
+**Context Functions:**
+- `list_grammar_definitions/1` — paginated with page/per_page, jlpt_level filter, title search (ILIKE)
+- `get_grammar_definition!/1`, `get_grammar_definition_by_slug/1`
+- `create_grammar_definition/1`, `update_grammar_definition/2`, `delete_grammar_definition/1`
+- `change_grammar_definition/2`, `search_grammar_definitions/2`
+
+**Public Routes & LiveViews:**
+- `/grammars` — `GrammarDefinitionLive.Index` with JLPT level filter, search, pagination, pattern preview cards
+- `/grammars/:slug` — `GrammarDefinitionLive.Show` with pattern display (colored bubbles), markdown description, examples with readings, "Try Your Own Example" validation using `Grammar.Validator`
+
+**Admin/Moderator Management:**
+- `/admin/grammars/*` — `Admin.GrammarDefinitionLive.Index` (table with filters, delete) + `Form` (new/edit with pattern builder, word colors, examples)
+- `/moderator/grammars/*` — `Moderator.GrammarDefinitionLive.Index` + `Form` (exact duplicate under moderator namespace)
+- Pattern builder reuses grammar lesson patterns: word slots (with forms), particles, literal text
+- Example validation within form using `Grammar.Validator.validate_sentence/2`
+
+**Navigation:**
+- "Grammar" link added after "Words" in desktop nav, mobile drawer, admin content management, moderator content management
+
+**Tests:**
+- `test/medoru/grammar_definitions_test.exs` — 18 context tests (CRUD, pagination, filters, search, localized helpers)
+- `test/medoru_web/live/grammar_definition_live_test.exs` — 12 public LiveView tests (index, show, filters, search, validation, navigation)
+- `test/medoru_web/live/admin/grammar_definition_live_test.exs` — 10 admin LiveView tests (index, create, edit, delete, access control)
+- `test/medoru_web/live/moderator_live_test.exs` — 2 moderator access tests
+
+**Localization:**
+- Full gettext extraction for all new UI strings (en, bg, ja)
+
+**Key files:**
+- `lib/medoru/content/grammar_definition.ex`
+- `lib/medoru/content.ex` (grammar definition section)
+- `lib/medoru_web/live/grammar_definition_live/index.ex`, `show.ex`
+- `lib/medoru_web/live/admin/grammar_definition_live/index.ex`, `form.ex`
+- `lib/medoru_web/live/moderator/grammar_definition_live/index.ex`, `form.ex`
+
+### What's Next (v0.5.x)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
 - See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 

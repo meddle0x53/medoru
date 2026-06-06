@@ -430,15 +430,23 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => true}, socket) do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["true", true] do
     # Submit button clicked when kanji is complete - treat same as kanji_complete
     handle_event("kanji_complete", %{}, socket)
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => false}, socket) do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["false", false] do
     # User gave up or skipped - mark as incorrect
     submit_writing_answer(socket, false, 0.0)
+  end
+
+  @impl true
+  def handle_event("wrong_stroke", _params, socket) do
+    # Wrong stroke drawn - hook shows hint locally, no server action needed
+    {:noreply, socket}
   end
 
   @impl true

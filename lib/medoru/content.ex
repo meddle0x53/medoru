@@ -2689,6 +2689,132 @@ defmodule Medoru.Content do
   end
 
   # ============================================================================
+  # Grammar Definition Functions
+  # ============================================================================
+
+  alias Medoru.Content.GrammarDefinition
+
+  @doc """
+  Returns the list of grammar definitions with pagination and filtering.
+  """
+  def list_grammar_definitions(opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 30)
+    jlpt_level = Keyword.get(opts, :jlpt_level)
+    search = Keyword.get(opts, :search)
+
+    base_query = GrammarDefinition
+
+    base_query =
+      if jlpt_level && jlpt_level in 1..5 do
+        where(base_query, jlpt_level: ^jlpt_level)
+      else
+        base_query
+      end
+
+    base_query =
+      if search && search != "" do
+        search_term = "%#{search}%"
+        where(base_query, [g], ilike(g.title, ^search_term))
+      else
+        base_query
+      end
+
+    total_count = base_query |> select([g], count(g.id)) |> Repo.one()
+    total_pages = max(1, ceil(total_count / per_page))
+    offset = (page - 1) * per_page
+
+    grammar_definitions =
+      base_query
+      |> order_by([g], asc: g.frequency, asc: g.jlpt_level, asc: g.title)
+      |> limit(^per_page)
+      |> offset(^offset)
+      |> Repo.all()
+
+    %{
+      grammar_definitions: grammar_definitions,
+      total_count: total_count,
+      total_pages: total_pages
+    }
+  end
+
+  @doc """
+  Searches grammar definitions by title (case-insensitive).
+  Returns a list of GrammarDefinition structs.
+  """
+  def search_grammar_definitions(search_term, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+
+    search_query = "%#{search_term}%"
+
+    GrammarDefinition
+    |> where([g], ilike(g.title, ^search_query))
+    |> order_by([g], asc: g.frequency, asc: g.jlpt_level, asc: g.title)
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @doc """
+  Looks up a grammar definition by title.
+
+  Tries an exact case-insensitive match first, then falls back to a partial match.
+  If multiple results are found, returns the one with the lowest frequency
+  (most common), or the first result if frequencies are equal.
+
+  Returns `nil` if no match is found.
+  """
+  def get_grammar_definition_by_title(title) do
+    # Try exact case-insensitive match first
+    exact_match =
+      GrammarDefinition
+      |> where([g], ilike(g.title, ^title))
+      |> order_by([g], asc: g.frequency, asc: g.jlpt_level, asc: g.title)
+      |> limit(1)
+      |> Repo.one()
+
+    if exact_match do
+      exact_match
+    else
+      # Fall back to partial match
+      search_query = "%#{title}%"
+
+      GrammarDefinition
+      |> where([g], ilike(g.title, ^search_query))
+      |> order_by([g], asc: g.frequency, asc: g.jlpt_level, asc: g.title)
+      |> limit(1)
+      |> Repo.one()
+    end
+  end
+
+  def get_grammar_definition!(id), do: Repo.get!(GrammarDefinition, id)
+
+  def get_grammar_definition_by_slug(slug) do
+    GrammarDefinition
+    |> where(slug: ^slug)
+    |> Repo.one()
+  end
+
+  def create_grammar_definition(attrs \\ %{}) do
+    %GrammarDefinition{}
+    |> GrammarDefinition.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def update_grammar_definition(%GrammarDefinition{} = grammar_definition, attrs) do
+    grammar_definition
+    |> GrammarDefinition.changeset(attrs)
+    |> Repo.update()
+  end
+
+  def delete_grammar_definition(%GrammarDefinition{} = grammar_definition) do
+    Repo.delete(grammar_definition)
+  end
+
+  def change_grammar_definition(%GrammarDefinition{} = grammar_definition, attrs \\ %{}) do
+    GrammarDefinition.changeset(grammar_definition, attrs)
+  end
+
+  # ============================================================================
   # Word Classes Functions
   # ============================================================================
 

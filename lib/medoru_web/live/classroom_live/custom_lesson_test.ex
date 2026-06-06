@@ -220,13 +220,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => true}, socket) do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["true", true] do
     # Submit button clicked when kanji is complete
     handle_event("kanji_complete", %{}, socket)
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => false}, socket) do
+  def handle_event("submit_writing", %{"completed" => completed}, socket)
+      when completed in ["false", false] do
     # User skipped or didn't complete - mark as incorrect
     session = socket.assigns.session
     step = socket.assigns.current_step
@@ -245,6 +247,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
     end
+  end
+
+  @impl true
+  def handle_event("wrong_stroke", _params, socket) do
+    # Wrong stroke drawn - hook shows hint locally, no server action needed
+    {:noreply, socket}
   end
 
   # Check if answer is correct based on question type

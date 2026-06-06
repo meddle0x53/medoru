@@ -1,0 +1,532 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8 flex items-center gap-2">
+      <.link navigate={~p"/admin/grammars"} class="btn btn-sm btn-ghost">
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+      </.link>
+      <h1 class="text-3xl font-bold text-base-content">{@page_title}</h1>
+    </div>
+
+    <div class="space-y-6">
+      <%!-- Basic Info --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="card-title text-base-content mb-4">{gettext("Basic Information")}</h2>
+
+          <div class="space-y-4">
+            <%!-- Title --%>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Title")} <span class="text-error">*</span>
+              </label>
+              <form phx-change="update_field" phx-value-field="title" class="contents">
+                <input
+                  type="text"
+                  name="title"
+                  value={@form_data.title}
+                  phx-debounce="blur"
+                  class={["input input-bordered w-full", @errors[:title] && "input-error"]}
+                  placeholder={gettext("e.g., te-form")}
+                  required
+                />
+              </form>
+              <%= if @errors[:title] do %>
+                <p class="text-error text-sm mt-1">{Enum.join(@errors[:title], ", ")}</p>
+              <% end %>
+            </div>
+
+            <%!-- JLPT Level --%>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("JLPT Level")} <span class="text-error">*</span>
+              </label>
+              <form phx-change="update_field" phx-value-field="jlpt_level" class="contents">
+                <select
+                  name="jlpt_level"
+                  class="select select-bordered w-full"
+                >
+                <%= for level <- [5, 4, 3, 2, 1] do %>
+                  <option value={level} selected={@form_data.jlpt_level == level}>
+                    N{level}
+                  </option>
+                <% end %>
+                </select>
+              </form>
+            </div>
+
+            <%!-- Frequency --%>
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Frequency")}
+              </label>
+              <form phx-change="update_field" phx-value-field="frequency" class="contents">
+                <input
+                  type="number"
+                  name="frequency"
+                  value={@form_data.frequency}
+                  min="0"
+                  class="input input-bordered w-full"
+                  placeholder={gettext("e.g., 100")}
+                />
+              </form>
+              <p class="text-xs text-secondary mt-1">
+                {gettext("Lower = more common. Default is 1000.")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Pattern Builder --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="card-title text-base-content mb-4">{gettext("Pattern")}</h2>
+
+          <%!-- Current Pattern --%>
+          <div class="bg-base-200 rounded-xl p-4 mb-4 min-h-[60px]">
+            <%= if @form_data.pattern_elements == [] do %>
+              <p class="text-secondary text-sm text-center">
+                {gettext("No pattern elements yet. Add one below.")}
+              </p>
+            <% else %>
+              <div class="flex flex-wrap gap-2 items-center">
+                <%= for {element, idx} <- Enum.with_index(@form_data.pattern_elements) do %>
+                  <div class="flex items-center gap-1">
+                    <%= case element["type"] do %>
+                      <% "literal" -> %>
+                        <span class="px-3 py-1.5 bg-base-300 rounded-lg text-base-content font-medium">
+                          {element["text"] || "..."}
+                        </span>
+                      <% "word_slot" -> %>
+                        <span class={[
+                          "px-3 py-1.5 rounded-lg font-medium",
+                          @word_type_colors[element["word_type"]] || "bg-primary/10 text-primary"
+                        ]}>
+                          <%= if element["word_class"] && element["word_class"] != "" do %>
+                            {element["word_class"]}
+                          <% else %>
+                            {element["word_type"] || gettext("word")}
+                          <% end %>
+                          <%= if element["forms"] && length(element["forms"]) > 0 do %>
+                            <% form_name = hd(element["forms"])
+                               form_display = Enum.find(get_forms_for_word_type(@grammar_forms, element["word_type"]), &(&1.name == form_name))
+                               display_text = if form_display, do: form_display.display_name, else: form_name %>
+                            <span class="text-xs opacity-80">
+                              ({display_text})
+                            </span>
+                          <% end %>
+                        </span>
+                      <% "particle" -> %>
+                        <span class="px-3 py-1.5 bg-orange-500 text-white rounded-lg font-medium">
+                          {element["text"] || gettext("particle")}
+                        </span>
+                    <% end %>
+
+                    <%= if element["optional"] do %>
+                      <span class="text-xs text-secondary">({gettext("optional")})</span>
+                    <% end %>
+
+                    <button
+                      type="button"
+                      phx-click="toggle_optional"
+                      phx-value-index={idx}
+                      class="btn btn-ghost btn-xs btn-circle"
+                      title={gettext("Toggle optional")}
+                    >
+                      <.icon name="hero-question-mark-circle" class="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="remove_pattern_element"
+                      phx-value-index={idx}
+                      class="btn btn-ghost btn-xs btn-circle text-error"
+                      title={gettext("Remove")}
+                    >
+                      <.icon name="hero-x-mark" class="w-3 h-3" />
+                    </button>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+
+          <%= if @errors[:pattern_elements] do %>
+            <p class="text-error text-sm mb-2">{Enum.join(@errors[:pattern_elements], ", ")}</p>
+          <% end %>
+
+          <%!-- Add Element Controls --%>
+          <div class="space-y-4">
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                phx-click="add_pattern_element"
+                phx-value-type="word_slot"
+                class="btn btn-sm btn-outline"
+              >
+                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Word Slot")}
+              </button>
+              <button
+                type="button"
+                phx-click="add_pattern_element"
+                phx-value-type="particle"
+                class="btn btn-sm btn-outline"
+              >
+                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Particle")}
+              </button>
+              <button
+                type="button"
+                phx-click="add_pattern_element"
+                phx-value-type="literal"
+                class="btn btn-sm btn-outline"
+              >
+                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Literal Text")}
+              </button>
+            </div>
+
+            <%!-- Element Configuration --%>
+            <%= for {element, idx} <- Enum.with_index(@form_data.pattern_elements) do %>
+              <div class="p-3 bg-base-200/50 rounded-lg border border-base-200">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-semibold text-secondary uppercase">
+                    {element["type"]}
+                  </span>
+                  <span class="text-xs text-secondary">#{idx + 1}</span>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <%= case element["type"] do %>
+                    <% "word_slot" -> %>
+                      <form phx-change="update_element_word_type" class="contents">
+                        <input type="hidden" name="index" value={idx} />
+                        <select
+                          name="value"
+                          class="select select-bordered select-sm"
+                        >
+                          <%= for {label, value} <- @word_types do %>
+                            <option value={value} selected={element["word_type"] == value}>
+                              {label}
+                            </option>
+                          <% end %>
+                        </select>
+                      </form>
+                      <form phx-change="update_element_word_class" class="contents">
+                        <input type="hidden" name="index" value={idx} />
+                        <input
+                          type="text"
+                          name="value"
+                          value={element["word_class"] || ""}
+                          placeholder={gettext("Word class (optional)")}
+                          class="input input-bordered input-sm flex-1 min-w-[150px]"
+                        />
+                      </form>
+                      <form phx-change="update_element_form" class="contents">
+                        <input type="hidden" name="index" value={idx} />
+                        <select
+                          name="value"
+                          class="select select-bordered select-sm flex-1 min-w-[150px]"
+                        >
+                          <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
+                            {gettext("Any form")}
+                          </option>
+                          <%= for form <- get_forms_for_word_type(@grammar_forms, element["word_type"]) do %>
+                            <option
+                              value={form.name}
+                              selected={element["forms"] && form.name in element["forms"]}
+                            >
+                              {form.display_name}
+                            </option>
+                          <% end %>
+                        </select>
+                      </form>
+
+                    <% "particle" -> %>
+                      <form phx-change="update_element_text" class="contents">
+                        <input type="hidden" name="index" value={idx} />
+                        <select
+                          name="value"
+                          class="select select-bordered select-sm flex-1"
+                        >
+                          <%= for {label, value} <- @particles do %>
+                            <option value={value} selected={element["text"] == value}>
+                              {label}
+                            </option>
+                          <% end %>
+                        </select>
+                      </form>
+
+                    <% "literal" -> %>
+                      <form phx-change="update_element_text" class="contents">
+                        <input type="hidden" name="index" value={idx} />
+                        <input
+                          type="text"
+                          name="value"
+                          value={element["text"] || ""}
+                          placeholder={gettext("Enter text...")}
+                          class="input input-bordered input-sm flex-1"
+                        />
+                      </form>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Word Colors --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="card-title text-base-content mb-4">{gettext("Word Colors")}</h2>
+          <p class="text-sm text-secondary mb-4">
+            {gettext("Highlight specific words in the explanation and examples with colors.")}
+          </p>
+
+          <div class="space-y-3">
+            <%= for {color, idx} <- Enum.with_index(@form_data.word_colors) do %>
+              <div class="flex flex-wrap items-center gap-2 p-3 bg-base-200/50 rounded-lg">
+                <input
+                  type="text"
+                  phx-change="update_word_color"
+                  phx-value-index={idx}
+                  phx-value-field="word"
+                  value={color["word"] || ""}
+                  placeholder={gettext("Word to highlight")}
+                  class="input input-bordered input-sm flex-1 min-w-[120px]"
+                />
+                <div class="flex flex-wrap gap-1">
+                  <%= for {color_class, cidx} <- Enum.with_index(@color_palette) do %>
+                    <button
+                      type="button"
+                      phx-click="update_word_color"
+                      phx-value-index={idx}
+                      phx-value-field="color_index"
+                      phx-value-value={cidx}
+                      class={[
+                        "w-6 h-6 rounded-full border-2 transition-all",
+                        color_class,
+                        if(color["color_index"] == cidx, do: "border-primary scale-110", else: "border-transparent hover:border-base-300")
+                      ]}
+                      title={"Color #{cidx + 1}"}
+                    />
+                  <% end %>
+                </div>
+                <select
+                  phx-change="update_word_color"
+                  phx-value-index={idx}
+                  phx-value-field="apply_to"
+                  class="select select-bordered select-sm"
+                >
+                  <option value="examples" selected={color["apply_to"] == "examples"}>
+                    {gettext("Examples only")}
+                  </option>
+                  <option value="explanation" selected={color["apply_to"] == "explanation"}>
+                    {gettext("Explanation only")}
+                  </option>
+                  <option value="both" selected={color["apply_to"] == "both"}>
+                    {gettext("Both")}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  phx-click="remove_word_color"
+                  phx-value-index={idx}
+                  class="btn btn-ghost btn-sm btn-circle text-error"
+                >
+                  <.icon name="hero-x-mark" class="w-4 h-4" />
+                </button>
+              </div>
+            <% end %>
+          </div>
+
+          <button
+            type="button"
+            phx-click="add_word_color"
+            class="btn btn-sm btn-outline mt-3"
+          >
+            <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Add Word Color")}
+          </button>
+        </div>
+      </div>
+
+      <%!-- Descriptions --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="card-title text-base-content mb-4">{gettext("Descriptions")}</h2>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Description (English)")}
+              </label>
+              <form phx-change="update_field" phx-value-field="description" class="contents">
+                <textarea
+                  name="description"
+                  phx-debounce="blur"
+                  rows="4"
+                  class="textarea textarea-bordered w-full"
+                  placeholder={gettext("Explain the grammar point...")}
+                >{@form_data.description}</textarea>
+              </form>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Description (Bulgarian)")}
+              </label>
+              <form phx-change="update_field" phx-value-field="description_bg" class="contents">
+                <textarea
+                  name="description_bg"
+                  phx-debounce="blur"
+                  rows="4"
+                  class="textarea textarea-bordered w-full"
+                  placeholder={gettext("Bulgarian explanation...")}
+                >{@form_data.description_bg}</textarea>
+              </form>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-base-content mb-1">
+                {gettext("Description (Japanese)")}
+              </label>
+              <form phx-change="update_field" phx-value-field="description_ja" class="contents">
+                <textarea
+                  name="description_ja"
+                  phx-debounce="blur"
+                  rows="4"
+                  class="textarea textarea-bordered w-full"
+                  placeholder={gettext("Japanese explanation...")}
+                >{@form_data.description_ja}</textarea>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Examples --%>
+      <div class="card bg-base-100 border border-base-300 shadow-sm">
+        <div class="card-body p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title text-base-content">
+              {gettext("Examples")}
+              <span class="text-sm font-normal text-secondary">
+                ({length(@form_data.examples)}/5)
+              </span>
+            </h2>
+            <%= if length(@form_data.examples) < 5 do %>
+              <button
+                type="button"
+                phx-click="add_example"
+                class="btn btn-sm btn-outline"
+              >
+                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Add Example")}
+              </button>
+            <% end %>
+          </div>
+
+          <%= if @errors[:examples] do %>
+            <p class="text-error text-sm mb-4">{Enum.join(@errors[:examples], ", ")}</p>
+          <% end %>
+
+          <div class="space-y-4">
+            <%= for {example, idx} <- Enum.with_index(@form_data.examples) do %>
+              <div class="p-4 bg-base-200/50 rounded-xl border border-base-200">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-sm font-semibold text-secondary">
+                    {gettext("Example")} #{idx + 1}
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      phx-click="validate_example"
+                      phx-value-index={idx}
+                      class="btn btn-ghost btn-sm"
+                    >
+                      <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Validate")}
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="remove_example"
+                      phx-value-index={idx}
+                      class="btn btn-ghost btn-sm btn-circle text-error"
+                    >
+                      <.icon name="hero-x-mark" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <form phx-change="update_example" class="contents">
+                    <input type="hidden" name="index" value={idx} />
+                    <input type="hidden" name="field" value="sentence" />
+                    <input
+                      type="text"
+                      name="value"
+                      value={example["sentence"] || ""}
+                      placeholder={gettext("Japanese sentence")}
+                      class="input input-bordered w-full"
+                    />
+                  </form>
+                  <form phx-change="update_example" class="contents">
+                    <input type="hidden" name="index" value={idx} />
+                    <input type="hidden" name="field" value="reading" />
+                    <input
+                      type="text"
+                      name="value"
+                      value={example["reading"] || ""}
+                      placeholder={gettext("Reading (romaji or kana)")}
+                      class="input input-bordered w-full"
+                    />
+                  </form>
+                  <form phx-change="update_example" class="contents">
+                    <input type="hidden" name="index" value={idx} />
+                    <input type="hidden" name="field" value="meaning" />
+                    <input
+                      type="text"
+                      name="value"
+                      value={example["meaning"] || ""}
+                      placeholder={gettext("Meaning (English)")}
+                      class="input input-bordered w-full"
+                    />
+                  </form>
+                  <form phx-change="update_example" class="contents">
+                    <input type="hidden" name="index" value={idx} />
+                    <input type="hidden" name="field" value="meaning_bg" />
+                    <input
+                      type="text"
+                      name="value"
+                      value={example["meaning_bg"] || ""}
+                      placeholder={gettext("Meaning (Bulgarian)")}
+                      class="input input-bordered w-full"
+                    />
+                  </form>
+                  <form phx-change="update_example" class="contents">
+                    <input type="hidden" name="index" value={idx} />
+                    <input type="hidden" name="field" value="meaning_ja" />
+                    <input
+                      type="text"
+                      name="value"
+                      value={example["meaning_ja"] || ""}
+                      placeholder={gettext("Meaning (Japanese)")}
+                      class="input input-bordered w-full"
+                    />
+                  </form>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Actions --%>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" phx-click="save" class="btn btn-primary min-h-[44px] touch-target">
+          <.icon name="hero-check" class="w-4 h-4 mr-2" /> {gettext("Save")}
+        </button>
+        <.link navigate={~p"/admin/grammars"} class="btn btn-ghost min-h-[44px] touch-target">
+          {gettext("Cancel")}
+        </.link>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

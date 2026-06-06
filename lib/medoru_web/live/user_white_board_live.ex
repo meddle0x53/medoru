@@ -10,7 +10,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   alias Medoru.WhiteBoard.BoardComment
   alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
 
-  import Helpers, only: [format_localized_date: 1]
+  import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
   defp all_emojis do
     ~w(😀 😁 😂 🤣 😃 😄 😅 😆 😉 😊 😋 😎 😍 😘 😗 😙 😚 ☺️ 🙂 🤗 🤩 🤔 🤨 😐 😑 😶 🙄 😏 😣 😥 😮 🤐 😯 😪 😫 😴 😌 😛 😜 😝 🤤 😒 😓 😔 😕 🙃 🤑 😲 ☹️ 🙁 😖 😞 😟 😤 😢 😭 😦 😧
@@ -508,8 +508,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                               <p class="text-xs font-semibold text-base-content">
                                 {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
                               </p>
-                              <p class="text-sm text-base-content/80">{comment.content}</p>
+                              <p class="text-sm text-base-content/80">{raw(WhiteBoardPostRenderer.render_comment_content(comment.content))}</p>
                             </div>
+                            <p class="text-xs text-base-content/50 mt-0.5 ml-1">
+                              {format_localized_datetime(comment.inserted_at)}
+                            </p>
                             <div class="flex items-center gap-3 mt-1 ml-1">
                               <button
                                 phx-click="reply_to_comment"
@@ -1185,7 +1188,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   end
 
   defp notify_comment_participants(comment, commenter_id) do
-    post = WhiteBoard.get_post!(comment.post_id)
+    post = WhiteBoard.get_post!(comment.post_id, commenter_id)
     post_owner = Accounts.get_user!(post.user_id)
     commenter = Accounts.get_user!(commenter_id)
 

@@ -45,6 +45,7 @@ defmodule MedoruWeb.UserLive.Show do
               longest_streak: longest_streak,
               total_kanji_learned: Learning.count_learned_kanji(user.id),
               total_words_learned: Learning.count_learned_words(user.id),
+              total_grammar_learned: Learning.count_learned_grammar_definitions(user.id),
               total_tests_completed: cached_stats.total_tests_completed,
               total_duels_played: cached_stats.total_duels_played
             }

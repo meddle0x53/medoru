@@ -404,6 +404,19 @@ defmodule Medoru.Gamification do
   end
 
   @doc """
+  Checks and awards badges based on grammar definition count.
+
+  ## Examples
+
+      iex> check_grammar_badges(user_id, grammar_count)
+      :ok
+
+  """
+  def check_grammar_badges(user_id, grammar_count) do
+    check_and_award_badges(user_id, :grammar_count, grammar_count)
+  end
+
+  @doc """
   Checks and awards badges based on completed lessons count.
 
   ## Examples

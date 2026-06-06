@@ -53,5 +53,20 @@ defmodule MedoruWeb.ModeratorLiveTest do
       {:error, {:redirect, %{to: "/dashboard"}}} =
         conn |> log_in_user(user) |> live(~p"/moderator/words")
     end
+
+    test "moderator can access /moderator/grammars", %{conn: conn} do
+      user = user_fixture_with_registration()
+      {:ok, user} = Medoru.Accounts.update_user_moderator(user, true)
+
+      {:ok, _view, html} = conn |> log_in_user(user) |> live(~p"/moderator/grammars")
+      assert html =~ "Grammar Management"
+    end
+
+    test "non-moderator is redirected from /moderator/grammars", %{conn: conn} do
+      user = user_fixture_with_registration()
+
+      {:error, {:redirect, %{to: "/dashboard"}}} =
+        conn |> log_in_user(user) |> live(~p"/moderator/grammars")
+    end
   end
 end

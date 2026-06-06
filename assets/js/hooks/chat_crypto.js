@@ -626,6 +626,16 @@ const ChatCrypto = {
   },
 
   renderMessageContent(el, text) {
+    // Check for /grammar or \grammar command
+    const grammarMatch = text.match(/^[\\/](?:grammar|g)\s+(.+)$/)
+    if (grammarMatch) {
+      const grammarText = grammarMatch[1].trim()
+      if (grammarText) {
+        this.renderGrammarPreview(el, grammarText)
+        return
+      }
+    }
+
     // Check for /word or \word command
     const wordMatch = text.match(/^[\\/](?:word|w)\s+(.+)$/)
     if (wordMatch) {
@@ -646,16 +656,18 @@ const ChatCrypto = {
       }
     }
 
-    // Check for inline word links |word|, [[word]], and 「word」
+    // Check for inline word links |word|, [[word]], 「word」, and \grammar/
     const pipeRegex = /\|([^|]+)\|/g
     const bracketRegex = /\[\[([^\]]+)\]\]/g
     const cornerRegex = /\u300c([^\u300d]+)\u300d/g
+    const grammarInlineRegex = /\\([^\/]+)\//g
     const pipeMatches = Array.from(text.matchAll(pipeRegex))
     const bracketMatches = Array.from(text.matchAll(bracketRegex))
     const cornerMatches = Array.from(text.matchAll(cornerRegex))
-    const matches = pipeMatches.concat(bracketMatches, cornerMatches).sort((a, b) => a.index - b.index)
-    if (matches.length > 0) {
-      this.renderTextWithWordLinks(el, text, matches)
+    const grammarInlineMatches = Array.from(text.matchAll(grammarInlineRegex))
+    const allMatches = pipeMatches.concat(bracketMatches, cornerMatches, grammarInlineMatches).sort((a, b) => a.index - b.index)
+    if (allMatches.length > 0) {
+      this.renderTextWithLinks(el, text, allMatches)
       return
     }
 
@@ -699,12 +711,13 @@ const ChatCrypto = {
     })
   },
 
-  renderTextWithWordLinks(el, text, matches) {
+  renderTextWithLinks(el, text, matches) {
     let pos = 0
     for (const match of matches) {
       const matchStart = match.index
       const matchLen = match[0].length
-      const wordText = match[1]
+      const capturedText = match[1]
+      const isGrammar = match[0].startsWith("\\")
 
       // Render text before this match
       const beforeText = text.slice(pos, matchStart)
@@ -712,8 +725,12 @@ const ChatCrypto = {
         this.renderTextSegment(el, beforeText)
       }
 
-      // Render word link (async)
-      this.renderWordLink(el, wordText)
+      // Render link (async)
+      if (isGrammar) {
+        this.renderGrammarLink(el, capturedText)
+      } else {
+        this.renderWordLink(el, capturedText)
+      }
 
       pos = matchStart + matchLen
     }
@@ -743,6 +760,34 @@ const ChatCrypto = {
       } else {
         const span = document.createElement("span")
         span.textContent = wordText
+        placeholder.replaceWith(span)
+      }
+
+      const scrollContainer = document.getElementById("messages-container")
+      if (scrollContainer) {
+        scrollContainer.dispatchEvent(new CustomEvent("chat:content-loaded", { bubbles: false }))
+      }
+    })
+  },
+
+  renderGrammarLink(el, grammarText) {
+    const placeholder = document.createElement("span")
+    placeholder.className = "grammar-link-pending"
+    placeholder.textContent = grammarText
+    el.appendChild(placeholder)
+
+    fetchGrammarPreview(grammarText).then((data) => {
+      if (data && data.id) {
+        const a = document.createElement("a")
+        a.href = data.path
+        a.target = "_blank"
+        a.rel = "noopener noreferrer"
+        a.className = "underline decoration-2 underline-offset-2 hover:opacity-80"
+        a.textContent = grammarText
+        placeholder.replaceWith(a)
+      } else {
+        const span = document.createElement("span")
+        span.textContent = "\\" + grammarText + "/"
         placeholder.replaceWith(span)
       }
 
@@ -850,6 +895,72 @@ const ChatCrypto = {
     })
   },
 
+  renderGrammarPreview(el, grammarText) {
+    const container = document.createElement("div")
+    container.className = "grammar-chat-preview-placeholder"
+    container.innerHTML = `<div class="text-sm text-base-content/50">Loading grammar...</div>`
+    el.appendChild(container)
+
+    fetchGrammarPreview(grammarText).then((data) => {
+      if (!data) {
+        container.innerHTML = `<div class="text-sm text-error">Grammar not found</div>`
+        return
+      }
+
+      const jlptBadge = data.jlpt_level
+        ? `<span class="badge badge-sm badge-primary shrink-0">N${data.jlpt_level}</span>`
+        : ""
+
+      const patternHtml = (data.pattern_elements || [])
+        .map((element) => {
+          const type = element.type
+          if (type === "literal") {
+            const text = escapeHtml(element.text || "")
+            return `<span class="px-2 py-0.5 bg-base-200 rounded text-base-content font-medium text-sm">${text}</span>`
+          } else if (type === "word_slot") {
+            const label = element.word_class
+              ? escapeHtml(element.word_class)
+              : escapeHtml(element.word_type || "word")
+            const formsHtml = element.forms && element.forms.length > 0
+              ? `<span class="text-xs opacity-80">(${element.forms.join(", ")})</span>`
+              : ""
+            return `<span class="px-2 py-0.5 bg-primary/10 rounded text-primary font-medium border border-primary/30 text-sm">${label}${formsHtml}</span>`
+          } else if (type === "particle") {
+            const text = escapeHtml(element.text || "particle")
+            return `<span class="px-2 py-0.5 bg-secondary/10 rounded text-secondary font-medium border border-secondary/30 text-sm">${text}</span>`
+          } else {
+            const typeText = escapeHtml(element.type)
+            return `<span class="px-2 py-0.5 bg-base-200 rounded text-base-content text-sm">${typeText}</span>`
+          }
+        })
+        .join("")
+
+      const exampleHtml = data.first_example
+        ? `<div class="mt-2 pt-2 border-t border-base-200">` +
+          `<p class="text-sm text-base-content font-medium">${escapeHtml(data.first_example.sentence || "")}</p>` +
+          (data.first_example.meaning
+            ? `<p class="text-xs text-secondary mt-0.5">${escapeHtml(data.first_example.meaning)}</p>`
+            : "") +
+          `</div>`
+        : ""
+
+      const title = escapeHtml(data.title)
+
+      container.outerHTML =
+        `<a href="${data.path}" target="_blank" rel="noopener noreferrer" class="block max-w-[320px] grammar-chat-preview -mt-1 -mb-1">` +
+        `<div class="bg-base-100 border border-base-300 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">` +
+        `<div class="flex items-center gap-2 mb-2"><div class="font-semibold text-sm text-base-content truncate">${title}</div>${jlptBadge}</div>` +
+        `<div class="flex flex-wrap gap-1.5 items-center">${patternHtml}</div>` +
+        exampleHtml +
+        `</div></a>`
+
+      const scrollContainer = document.getElementById("messages-container")
+      if (scrollContainer) {
+        scrollContainer.dispatchEvent(new CustomEvent("chat:content-loaded", { bubbles: false }))
+      }
+    })
+  },
+
   styleEmojiMessage(el, text) {
     if (!text || !this.isEmojiOnly(text)) return
     const bubble = el.closest(".message-bubble")
@@ -873,6 +984,7 @@ const ChatCrypto = {
 
 const kanjiCache = new Map()
 const wordCache = new Map()
+const grammarCache = new Map()
 
 async function fetchKanjiPreview(character) {
   if (kanjiCache.has(character)) return kanjiCache.get(character)
@@ -898,6 +1010,20 @@ async function fetchWordPreview(text) {
     return data
   } catch (e) {
     console.error("[ChatCrypto] Failed to fetch word preview:", e)
+    return null
+  }
+}
+
+async function fetchGrammarPreview(text) {
+  if (grammarCache.has(text)) return grammarCache.get(text)
+  try {
+    const resp = await fetch(`/api/grammar-preview/${encodeURIComponent(text)}`)
+    if (!resp.ok) return null
+    const data = await resp.json()
+    grammarCache.set(text, data)
+    return data
+  } catch (e) {
+    console.error("[ChatCrypto] Failed to fetch grammar preview:", e)
     return null
   }
 }

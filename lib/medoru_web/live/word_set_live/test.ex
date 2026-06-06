@@ -246,6 +246,12 @@ defmodule MedoruWeb.WordSetLive.Test do
   end
 
   @impl true
+  def handle_event("wrong_stroke", _params, socket) do
+    # Wrong stroke drawn - hook shows hint locally, no server action needed
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("skip_question", _params, socket) do
     session = socket.assigns.session
     step = socket.assigns.current_step

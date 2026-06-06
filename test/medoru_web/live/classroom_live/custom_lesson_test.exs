@@ -1,0 +1,191 @@
+defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
+  use MedoruWeb.ConnCase, async: true
+
+  import Phoenix.LiveViewTest
+  import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
+
+  alias Medoru.{Classrooms, Content, Repo}
+
+  defp classroom_fixture(attrs) do
+    attrs = Map.merge(%{name: attrs[:name] || "Test Classroom"}, attrs)
+    {:ok, classroom} = Classrooms.create_classroom(attrs)
+    Repo.preload(classroom, [:teacher, memberships: :user])
+  end
+
+  describe "copy to grammar button" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      admin = user_fixture(%{type: "admin"})
+
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+
+      # Enroll student (auto-approved since should_approve_memberships is false)
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      # Also enroll admin so they can view the lesson
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, admin.id)
+
+      # Create a published grammar lesson with steps
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "grammar",
+          title: "Grammar Lesson",
+          status: "published"
+        })
+
+      step =
+        grammar_lesson_step_fixture(%{
+          custom_lesson: lesson,
+          title: "〜ている",
+          position: 0,
+          step_type: "grammar",
+          explanation: "Continuous action grammar",
+          pattern_elements: [
+            %{"type" => "word_slot", "word_type" => "verb", "form" => "te-form"},
+            %{"type" => "literal", "text" => "いる"}
+          ],
+          examples: [
+            %{
+              "sentence" => "食べている",
+              "reading" => "たべている",
+              "meaning" => "eating (continuous)"
+            }
+          ]
+        })
+
+      # Publish lesson to classroom
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      %{
+        conn: conn,
+        teacher: teacher,
+        student: student,
+        admin: admin,
+        classroom: classroom,
+        lesson: lesson,
+        step: step
+      }
+    end
+
+    test "admin sees Copy To Grammar button on grammar step", %{
+      conn: conn,
+      admin: admin,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      conn = log_in_user(conn, admin)
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      assert html =~ "Copy To Grammar"
+    end
+
+    test "student does not see Copy To Grammar button", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      conn = log_in_user(conn, student)
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      refute html =~ "Copy To Grammar"
+    end
+
+    test "admin can copy grammar step to new grammar definition", %{
+      conn: conn,
+      admin: admin,
+      classroom: classroom,
+      lesson: lesson,
+      step: step
+    } do
+      conn = log_in_user(conn, admin)
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      # Verify no grammar definition exists yet
+      assert Content.get_grammar_definition_by_title(step.title) == nil
+
+      view
+      |> element("button", "Copy To Grammar")
+      |> render_click()
+
+      # Verify grammar definition was created
+      grammar = Content.get_grammar_definition_by_title(step.title)
+      assert grammar != nil
+      assert grammar.title == step.title
+      assert grammar.description == step.explanation
+      assert length(grammar.pattern_elements) == 2
+
+      # First element should be word_slot with forms array
+      [word_slot, literal] = grammar.pattern_elements
+      assert word_slot["type"] == "word_slot"
+      assert word_slot["forms"] == ["te-form"]
+      refute Map.has_key?(word_slot, "form")
+
+      # Second element should be literal with text
+      assert literal["type"] == "literal"
+      assert literal["text"] == "いる"
+
+      # Flash should show success
+      html = render(view)
+      assert html =~ "copied to grammar definitions"
+    end
+
+    test "shows flash when grammar definition already exists", %{
+      conn: conn,
+      admin: admin,
+      classroom: classroom,
+      lesson: lesson,
+      step: step
+    } do
+      # Pre-create a grammar definition with the same title
+      grammar_definition_fixture(%{title: step.title, slug: "te-iru"})
+
+      conn = log_in_user(conn, admin)
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      html =
+        view
+        |> element("button", "Copy To Grammar")
+        |> render_click()
+
+      assert html =~ "already exists"
+    end
+
+    test "text step does not show Copy To Grammar button", %{
+      conn: conn,
+      admin: admin,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      # Create a text step
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        title: "Introduction",
+        position: 1,
+        step_type: "text",
+        explanation_sections: ["Welcome to the lesson"]
+      })
+
+      conn = log_in_user(conn, admin)
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?step=1")
+
+      refute html =~ "Copy To Grammar"
+    end
+
+    test "admin can copy from preview mode", %{
+      conn: conn,
+      teacher: teacher,
+      lesson: lesson
+    } do
+      # Teacher (who is also creator) can preview
+      conn = log_in_user(conn, teacher)
+      {:ok, view, _html} = live(conn, ~p"/teacher/custom-lessons/#{lesson.id}/preview")
+
+      # Teacher should NOT see the button (only admin)
+      refute render(view) =~ "Copy To Grammar"
+    end
+  end
+end

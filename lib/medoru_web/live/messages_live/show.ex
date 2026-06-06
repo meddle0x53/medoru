@@ -13,6 +13,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.Social
   alias Medoru.Encryption
   alias Medoru.Notifications
+  alias MedoruWeb.GrammarChatPreview
   alias MedoruWeb.KanjiChatPreview
   alias MedoruWeb.WordChatPreview
   alias MedoruWeb.Presence
@@ -28,6 +29,19 @@ defmodule MedoruWeb.MessagesLive.Show do
       conversation = Chat.get_conversation(current_user.id, conversation_id)
 
       if conversation do
+        # For classroom chats, filter out participants who left or are deleted
+        conversation =
+          if conversation.classroom_id do
+            active_participants =
+              Enum.reject(conversation.participants, fn p ->
+                p.has_left || (p.user && p.user.is_deleted)
+              end)
+
+            %{conversation | participants: active_participants}
+          else
+            conversation
+          end
+
         if connected?(socket) do
           Chat.subscribe_to_conversation(conversation_id)
           Chat.mark_read(current_user.id, conversation_id)
@@ -144,6 +158,15 @@ defmodule MedoruWeb.MessagesLive.Show do
         end
 
         messages = Chat.list_messages(conversation_id, limit: @per_page)
+
+        # For classroom chats, filter out messages from deleted or removed users
+        messages =
+          if conversation.classroom_id do
+            Enum.filter(messages, &Chat.sender_visible_in_classroom?(&1, conversation))
+          else
+            messages
+          end
+
         has_more = length(messages) == @per_page
 
         message_ids = Enum.map(messages, & &1.id)
@@ -347,7 +370,13 @@ defmodule MedoruWeb.MessagesLive.Show do
                 Content.get_word_by_text_or_meaning_or_conjugation(word_text) != nil
 
               :error ->
-                true
+                case parse_grammar_command(trimmed) do
+                  {:ok, grammar_text} ->
+                    Content.get_grammar_definition_by_title(grammar_text) != nil
+
+                  :error ->
+                    true
+                end
             end
         end
 
@@ -365,7 +394,7 @@ defmodule MedoruWeb.MessagesLive.Show do
            socket,
            :error,
            gettext(
-             "Invalid command or not found. Usage: /kanji <single kanji>, /k <single kanji>, \\kanji <single kanji>, \\k <single kanji>, /word <word>, /w <word>, \\word <word>, or \\w <word>"
+             "Invalid command or not found. Usage: /kanji <single kanji>, /k <single kanji>, \\kanji <single kanji>, \\k <single kanji>, /word <word>, /w <word>, \\word <word>, \\w <word>, /grammar <pattern>, /g <pattern>, \\grammar <pattern>, or \\g <pattern>"
            )
          )}
       end
@@ -694,6 +723,15 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     new_offset = current_offset + @per_page
     older_messages = Chat.list_messages(conversation.id, limit: @per_page, offset: new_offset)
+
+    # For classroom chats, filter out messages from deleted or removed users
+    older_messages =
+      if conversation.classroom_id do
+        Enum.filter(older_messages, &Chat.sender_visible_in_classroom?(&1, conversation))
+      else
+        older_messages
+      end
+
     has_more = length(older_messages) == @per_page
 
     older_ids = Enum.map(older_messages, & &1.id)
@@ -1102,30 +1140,35 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     message = Medoru.Repo.preload(message, [:sender, :reply_to_message])
 
-    socket =
-      socket
-      |> assign(:messages, socket.assigns.messages ++ [message])
-      |> then(fn s ->
-        if message.sender_id == current_user.id do
-          push_event(s, "scroll_to_bottom", %{})
-        else
-          s
-        end
-      end)
-
-    # Only decrypt if this is an encrypted message (not a classroom chat)
-    socket =
-      if is_nil(conversation.classroom_id) && message.ciphertext do
-        push_event(socket, "decrypt_message", %{
-          id: message.id,
-          ciphertext: Base.encode64(message.ciphertext),
-          iv: Base.encode64(message.iv)
-        })
-      else
+    # For classroom chats, skip messages from deleted or removed users
+    if is_nil(conversation.classroom_id) || Chat.sender_visible_in_classroom?(message, conversation) do
+      socket =
         socket
-      end
+        |> assign(:messages, socket.assigns.messages ++ [message])
+        |> then(fn s ->
+          if message.sender_id == current_user.id do
+            push_event(s, "scroll_to_bottom", %{})
+          else
+            s
+          end
+        end)
 
-    {:noreply, socket}
+      # Only decrypt if this is an encrypted message (not a classroom chat)
+      socket =
+        if is_nil(conversation.classroom_id) && message.ciphertext do
+          push_event(socket, "decrypt_message", %{
+            id: message.id,
+            ciphertext: Base.encode64(message.ciphertext),
+            iv: Base.encode64(message.iv)
+          })
+        else
+          socket
+        end
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -1274,33 +1317,46 @@ defmodule MedoruWeb.MessagesLive.Show do
   def render_message_content(nil), do: ""
 
   def render_message_content(text) do
-    # Check for /word command first
-    case parse_word_command(text) do
-      {:ok, word_text} ->
-        case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
+    # Check for /grammar command first
+    case parse_grammar_command(text) do
+      {:ok, grammar_text} ->
+        case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
             render_message_body(text)
 
-          word ->
-            WordChatPreview.render_html(%{word: word})
+          grammar ->
+            GrammarChatPreview.render_html(%{grammar: grammar})
         end
 
       :error ->
-        # Check for /kanji command
-        case parse_kanji_command(text) do
-          {:ok, character} ->
-            case Content.get_kanji_by_character(character) do
+        # Check for /word command
+        case parse_word_command(text) do
+          {:ok, word_text} ->
+            case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
                 render_message_body(text)
 
-              kanji ->
-                locale = Gettext.get_locale(MedoruWeb.Gettext)
-                assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
-                KanjiChatPreview.render_html(assigns)
+              word ->
+                WordChatPreview.render_html(%{word: word})
             end
 
           :error ->
-            render_message_body(text)
+            # Check for /kanji command
+            case parse_kanji_command(text) do
+              {:ok, character} ->
+                case Content.get_kanji_by_character(character) do
+                  nil ->
+                    render_message_body(text)
+
+                  kanji ->
+                    locale = Gettext.get_locale(MedoruWeb.Gettext)
+                    assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
+                    KanjiChatPreview.render_html(assigns)
+                end
+
+              :error ->
+                render_message_body(text)
+            end
         end
     end
   end
@@ -1309,15 +1365,19 @@ defmodule MedoruWeb.MessagesLive.Show do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
+    grammar_matches = Regex.scan(~r/\\([^\/]+)\//, text, return: :index)
 
     matches =
-      (pipe_matches ++ bracket_matches ++ corner_matches)
-      |> Enum.sort_by(fn [{match_start, _}, _] -> match_start end)
+      (Enum.map(pipe_matches, &{:word, &1}) ++
+       Enum.map(bracket_matches, &{:word, &1}) ++
+       Enum.map(corner_matches, &{:word, &1}) ++
+       Enum.map(grammar_matches, &{:grammar, &1}))
+      |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
       render_text_segment(text)
     else
-      segments = build_word_segments(text, matches, 0, [])
+      segments = build_tagged_segments(text, matches, 0, [])
 
       Enum.flat_map(segments, fn
         {:text, segment_text} ->
@@ -1337,25 +1397,41 @@ defmodule MedoruWeb.MessagesLive.Show do
                  ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
               ]
           end
+
+        {:grammar, grammar_text} ->
+          case Content.get_grammar_definition_by_title(grammar_text) do
+            nil ->
+              {:safe, escaped} = Phoenix.HTML.html_escape("\\#{grammar_text}/")
+              [escaped]
+
+            grammar ->
+              grammar_path = ~p"/grammars/#{grammar.slug}"
+              {:safe, escaped} = Phoenix.HTML.html_escape(grammar_text)
+
+              [
+                {:safe,
+                 ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+              ]
+          end
       end)
     end
   end
 
-  defp build_word_segments(text, [], pos, acc) do
+  defp build_tagged_segments(text, [], pos, acc) do
     remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_word_segments(text, [[{match_start, match_len}, {cap_start, cap_len}] | rest], pos, acc) do
+  defp build_tagged_segments(text, [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest], pos, acc) do
     before_len = match_start - pos
     before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
-    word_text = binary_part(text, cap_start, cap_len)
+    captured_text = binary_part(text, cap_start, cap_len)
 
     acc = if before_text != "", do: [{:text, before_text} | acc], else: acc
-    acc = [{:word, word_text} | acc]
+    acc = [{tag, captured_text} | acc]
 
-    build_word_segments(text, rest, match_start + match_len, acc)
+    build_tagged_segments(text, rest, match_start + match_len, acc)
   end
 
   defp render_text_segment(text) do
@@ -1408,6 +1484,25 @@ defmodule MedoruWeb.MessagesLive.Show do
   defp valid_kanji_command?(<<char::utf8>>) when char in 0x4E00..0x9FFF, do: true
   defp valid_kanji_command?(<<char::utf8>>) when char in 0x3400..0x4DBF, do: true
   defp valid_kanji_command?(_), do: false
+
+  defp parse_grammar_command(text) do
+    case text do
+      "/grammar " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "/g " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "\\grammar " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      "\\g " <> rest ->
+        if rest != "", do: {:ok, rest}, else: :error
+
+      _ ->
+        :error
+    end
+  end
 
   defp parse_word_command(text) do
     case text do

@@ -429,12 +429,15 @@ defmodule Medoru.ChatTest do
       classroom = classroom_fixture(%{teacher_id: teacher.id})
       conv = Chat.get_classroom_conversation(classroom.id)
       student = user_fixture()
-      {:ok, _} = Chat.add_participant_plain(conv.id, student.id)
+      {:ok, participant} = Chat.add_participant_plain(conv.id, student.id)
 
       Chat.mark_participant_left(conv.id, student.id)
 
-      conv = Chat.get_classroom_conversation(classroom.id)
-      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+      # Query directly since get_classroom_conversation filters out left users
+      participant =
+        ConversationParticipant
+        |> Repo.get(participant.id)
+
       assert participant.has_left == true
     end
 

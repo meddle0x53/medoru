@@ -1,0 +1,201 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content">{gettext("Grammar")}</h1>
+      <p class="mt-2 text-secondary">
+        {gettext("Browse Japanese grammar points by JLPT level.")}
+        <%= if @total_count > 0 do %>
+          {gettext("Total: %{count}", count: @total_count)}
+        <% end %>
+      </p>
+    </div>
+
+    <%!-- Filters & Search --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body p-4 sm:p-6">
+        <div class="flex flex-col gap-4">
+          <%!-- JLPT Level Filter --%>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
+              {gettext("Filter by level:")}
+            </span>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="filter_level"
+                phx-value-level=""
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(is_nil(@jlpt_level), do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("All")}
+              </button>
+              <%= for level <- [5, 4, 3, 2, 1] do %>
+                <button
+                  phx-click="filter_level"
+                  phx-value-level={level}
+                  class={[
+                    "btn btn-sm min-h-[40px] touch-target",
+                    if(@jlpt_level == level, do: "btn-active btn-primary", else: "btn-ghost")
+                  ]}
+                >
+                  N{level}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Search --%>
+          <form phx-submit="search" class="flex gap-2">
+            <div class="relative flex-1">
+              <.icon
+                name="hero-magnifying-glass"
+                class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary"
+              />
+              <input
+                type="text"
+                name="search[query]"
+                value={@search || ""}
+                placeholder={gettext("Search grammar by title...")}
+                class="input input-bordered w-full pl-10"
+                phx-debounce="300"
+              />
+            </div>
+            <button type="submit" class="btn btn-primary min-h-[44px] touch-target">
+              <.icon name="hero-magnifying-glass" class="w-4 h-4 mr-1" />
+              {gettext("Search")}
+            </button>
+            <%= if @search || @jlpt_level do %>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="btn btn-ghost btn-sm min-h-[44px] touch-target"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" />
+              </button>
+            <% end %>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Grammar Grid --%>
+    <%= if @grammar_definitions == [] do %>
+      <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">
+        <.icon name="hero-book-open" class="w-16 h-16 text-secondary/30 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-base-content mb-2">
+          {gettext("No grammar points found")}
+        </h3>
+        <p class="text-secondary">
+          <%= if @search != "" do %>
+            {gettext("No grammar points match your search. Try a different term.")}
+          <% else %>
+            {gettext("No grammar points available for this level yet.")}
+          <% end %>
+        </p>
+      </div>
+    <% else %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <%= for grammar <- @grammar_definitions do %>
+          <.link
+            navigate={~p"/grammars/#{grammar.slug}"}
+            class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
+          >
+            <div class="card-body p-4 sm:p-5">
+              <div class="flex items-start justify-between mb-3">
+                <h3 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
+                  {grammar.title}
+                </h3>
+                <div class="flex items-center gap-1.5">
+                  <%= if grammar.frequency && grammar.frequency != 1000 do %>
+                    <span class="badge badge-ghost text-xs" title={gettext("Frequency: lower = more common")}>
+                      #{grammar.frequency}
+                    </span>
+                  <% end %>
+                  <%= if grammar.jlpt_level do %>
+                    <span class={["badge", level_badge_color(grammar.jlpt_level)]}>
+                      N{grammar.jlpt_level}
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+
+              <%!-- Pattern Preview --%>
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                <%= for element <- grammar.pattern_elements do %>
+                  <%= case element["type"] do %>
+                    <% "literal" -> %>
+                      <span class="px-2 py-0.5 bg-base-200 rounded text-sm text-base-content">
+                        {element["text"] || ""}
+                      </span>
+                    <% "word_slot" -> %>
+                      <span class="px-2 py-0.5 bg-primary/10 text-primary rounded text-sm border border-primary/20">
+                        <%= if element["word_class"] do %>
+                          {element["word_class"]}
+                        <% else %>
+                          {element["word_type"] || gettext("word")}
+                        <% end %>
+                      </span>
+                    <% "particle" -> %>
+                      <span class="px-2 py-0.5 bg-secondary/10 text-secondary rounded text-sm border border-secondary/20">
+                        {element["text"] || gettext("particle")}
+                      </span>
+                    <% _ -> %>
+                      <span class="px-2 py-0.5 bg-base-200 rounded text-sm">{element["type"]}</span>
+                  <% end %>
+                <% end %>
+              </div>
+
+              <%!-- Description snippet --%>
+              <%= if grammar.description do %>
+                <p class="text-sm text-secondary line-clamp-2">
+                  {String.slice(grammar.description, 0, 120)}
+                  <%= if String.length(grammar.description) > 120 do %>...<% end %>
+                </p>
+              <% end %>
+
+              <div class="mt-3 flex items-center text-sm text-primary">
+                {gettext("View details")}
+                <.icon name="hero-arrow-right" class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </.link>
+        <% end %>
+      </div>
+
+      <%!-- Pagination --%>
+      <%= if @total_pages > 1 do %>
+        <div class="mt-8 flex justify-center">
+          <div class="flex items-center gap-2">
+            <%= if @page > 1 do %>
+              <.link
+                patch={~p"/grammars?#{%{page: @page - 1, level: @jlpt_level, search: @search}}"}
+                class="btn btn-ghost btn-sm"
+              >
+                ← {gettext("Prev")}
+              </.link>
+            <% else %>
+              <span class="btn btn-ghost btn-sm opacity-50" disabled>← {gettext("Prev")}</span>
+            <% end %>
+
+            <span class="px-4 py-2 bg-base-200 rounded-lg text-base-content">
+              {gettext("Page")} {@page} {gettext("of")} {@total_pages}
+            </span>
+
+            <%= if @page < @total_pages do %>
+              <.link
+                patch={~p"/grammars?#{%{page: @page + 1, level: @jlpt_level, search: @search}}"}
+                class="btn btn-ghost btn-sm"
+              >
+                {gettext("Next")} →
+              </.link>
+            <% else %>
+              <span class="btn btn-ghost btn-sm opacity-50" disabled>{gettext("Next")} →</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</Layouts.app>

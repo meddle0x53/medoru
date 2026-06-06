@@ -1657,17 +1657,20 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   defp member_row(assigns) do
     ~H"""
     <div class="flex items-center justify-between p-4 hover:bg-base-200/50 rounded-xl transition-colors">
-      <div class="flex items-center gap-3">
+      <.link
+        navigate={~p"/users/#{@membership.user.id}"}
+        class="flex items-center gap-3 flex-1 min-w-0"
+      >
         <% avatar_src =
           (@membership.user.profile && @membership.user.profile.avatar) || @membership.user.avatar_url %>
         <%= if avatar_src do %>
-          <div class="avatar">
+          <div class="avatar shrink-0">
             <div class="w-10 h-10 rounded-full">
               <img src={avatar_src} alt="" class="object-cover" />
             </div>
           </div>
         <% else %>
-          <div class="avatar placeholder">
+          <div class="avatar placeholder shrink-0">
             <div class="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
               <% initial =
                 if @membership.user.profile && @membership.user.profile.display_name,
@@ -1678,15 +1681,15 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             </div>
           </div>
         <% end %>
-        <div>
-          <p class="font-medium text-base-content">
+        <div class="min-w-0">
+          <p class="font-medium text-base-content truncate">
             {display_name(@membership.user, @current_user.id, @is_admin)}
           </p>
           <p class="text-sm text-secondary">
             Joined {Calendar.strftime(@membership.joined_at || @membership.inserted_at, "%b %d, %Y")}
           </p>
         </div>
-      </div>
+      </.link>
       <div class="flex items-center gap-4">
         <div class="text-right">
           <p class="font-semibold text-base-content">{@membership.points} pts</p>

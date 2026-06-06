@@ -429,10 +429,13 @@ defmodule Medoru.ClassroomsTest do
       participant = Enum.find(conv.participants, &(&1.user_id == student.id))
       assert participant.has_left == false
 
-      # After removal, marked as left
+      # After removal, marked as left (query directly since get_classroom_conversation filters left users)
       {:ok, _} = Classrooms.remove_member(membership)
-      conv = Medoru.Chat.get_classroom_conversation(classroom.id)
-      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+
+      participant =
+        Medoru.Chat.ConversationParticipant
+        |> Medoru.Repo.get_by(conversation_id: conv.id, user_id: student.id)
+
       assert participant.has_left == true
     end
 
@@ -442,11 +445,15 @@ defmodule Medoru.ClassroomsTest do
     } do
       classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
       {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
-
-      # After leaving, marked as left
-      {:ok, _} = Classrooms.leave_classroom(membership)
       conv = Medoru.Chat.get_classroom_conversation(classroom.id)
-      participant = Enum.find(conv.participants, &(&1.user_id == student.id))
+
+      # After leaving, marked as left (query directly since get_classroom_conversation filters left users)
+      {:ok, _} = Classrooms.leave_classroom(membership)
+
+      participant =
+        Medoru.Chat.ConversationParticipant
+        |> Medoru.Repo.get_by(conversation_id: conv.id, user_id: student.id)
+
       assert participant.has_left == true
     end
 
@@ -463,6 +470,432 @@ defmodule Medoru.ClassroomsTest do
       conv = Medoru.Chat.get_classroom_conversation(classroom.id)
       participant = Enum.find(conv.participants, &(&1.user_id == student.id))
       assert participant.has_left == false
+    end
+  end
+
+  describe "list_visible_classrooms/2" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      other_teacher = user_fixture(%{type: "teacher"})
+
+      # Teacher's own classroom
+      {:ok, own_classroom} =
+        Classrooms.create_classroom(%{
+          name: "Own Classroom",
+          teacher_id: teacher.id,
+          public: false
+        })
+
+      # Public classroom by another teacher
+      {:ok, public_classroom} =
+        Classrooms.create_classroom(%{
+          name: "Public Classroom",
+          teacher_id: other_teacher.id,
+          public: true
+        })
+
+      # Student joined classroom
+      {:ok, joined_classroom} =
+        Classrooms.create_classroom(%{
+          name: "Joined Classroom",
+          teacher_id: other_teacher.id,
+          public: false,
+          should_approve_memberships: false
+        })
+
+      {:ok, _} = Classrooms.apply_to_join(joined_classroom.id, student.id)
+
+      # Archived classroom (should not appear)
+      {:ok, archived_classroom} =
+        Classrooms.create_classroom(%{
+          name: "Archived Classroom",
+          teacher_id: other_teacher.id,
+          public: true
+        })
+
+      {:ok, _} = Classrooms.archive_classroom(archived_classroom)
+
+      %{
+        teacher: teacher,
+        student: student,
+        own_classroom: own_classroom,
+        public_classroom: public_classroom,
+        joined_classroom: joined_classroom,
+        archived_classroom: archived_classroom
+      }
+    end
+
+    test "returns owned classrooms for teacher", %{
+      teacher: teacher,
+      own_classroom: own,
+      public_classroom: public
+    } do
+      result = Classrooms.list_visible_classrooms(teacher.id)
+      ids = Enum.map(result.classrooms, & &1.id)
+
+      assert own.id in ids
+      assert public.id in ids
+    end
+
+    test "returns joined and public classrooms for student", %{
+      student: student,
+      joined_classroom: joined,
+      public_classroom: public,
+      own_classroom: own
+    } do
+      result = Classrooms.list_visible_classrooms(student.id)
+      ids = Enum.map(result.classrooms, & &1.id)
+
+      assert joined.id in ids
+      assert public.id in ids
+      refute own.id in ids
+    end
+
+    test "excludes archived classrooms", %{student: student, archived_classroom: archived} do
+      result = Classrooms.list_visible_classrooms(student.id)
+      ids = Enum.map(result.classrooms, & &1.id)
+
+      refute archived.id in ids
+    end
+
+    test "supports search by name", %{teacher: teacher} do
+      result = Classrooms.list_visible_classrooms(teacher.id, search: "Own")
+      assert length(result.classrooms) == 1
+      assert hd(result.classrooms).name == "Own Classroom"
+    end
+
+    test "supports pagination", %{teacher: teacher} do
+      result = Classrooms.list_visible_classrooms(teacher.id, page: 1, per_page: 1)
+      assert length(result.classrooms) == 1
+      assert result.total_pages >= 2
+    end
+  end
+
+  describe "list_public_classrooms/0" do
+    test "returns only active public classrooms" do
+      teacher = user_fixture(%{type: "teacher"})
+
+      {:ok, public} =
+        Classrooms.create_classroom(%{
+          name: "Public Active",
+          teacher_id: teacher.id,
+          public: true
+        })
+
+      {:ok, private} =
+        Classrooms.create_classroom(%{
+          name: "Private Active",
+          teacher_id: teacher.id,
+          public: false
+        })
+
+      {:ok, closed_public} =
+        Classrooms.create_classroom(%{
+          name: "Public Closed",
+          teacher_id: teacher.id,
+          public: true
+        })
+
+      {:ok, _} = Classrooms.close_classroom(closed_public)
+
+      public_ids = Enum.map(Classrooms.list_public_classrooms(), & &1.id)
+
+      assert public.id in public_ids
+      refute private.id in public_ids
+      refute closed_public.id in public_ids
+    end
+  end
+
+  describe "user_classroom_status/2" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      %{teacher: teacher, student: student, classroom: classroom}
+    end
+
+    test "returns :owner for classroom owner", %{teacher: teacher, classroom: classroom} do
+      assert Classrooms.user_classroom_status(classroom.id, teacher.id) == :owner
+    end
+
+    test "returns :none for non-member", %{student: student, classroom: classroom} do
+      assert Classrooms.user_classroom_status(classroom.id, student.id) == :none
+    end
+
+    test "returns :pending for pending application", %{
+      student: student,
+      classroom: classroom
+    } do
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+      assert Classrooms.user_classroom_status(classroom.id, student.id) == :pending
+    end
+
+    test "returns :member for approved member", %{
+      student: student,
+      classroom: classroom
+    } do
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+      assert Classrooms.user_classroom_status(classroom.id, student.id) == :member
+    end
+  end
+
+  describe "get_membership!/1 and list_classroom_memberships/1" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      %{teacher: teacher, student: student, classroom: classroom}
+    end
+
+    test "get_membership!/1 returns the membership", %{student: student, classroom: classroom} do
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      found = Classrooms.get_membership!(membership.id)
+      assert found.id == membership.id
+    end
+
+    test "get_membership!/1 raises for non-existent id", %{} do
+      assert_raise Ecto.NoResultsError, fn ->
+        Classrooms.get_membership!(Ecto.UUID.generate())
+      end
+    end
+
+    test "list_classroom_memberships/1 returns all memberships", %{
+      student: student,
+      classroom: classroom
+    } do
+      assert Classrooms.list_classroom_memberships(classroom.id) == []
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      assert length(Classrooms.list_classroom_memberships(classroom.id)) == 1
+      assert hd(Classrooms.list_classroom_memberships(classroom.id)).id == membership.id
+    end
+  end
+
+  describe "get_classroom_stats_batch/1" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student1 = user_fixture(%{type: "student"})
+      student2 = user_fixture(%{type: "student"})
+
+      classroom1 = classroom_fixture(%{teacher_id: teacher.id})
+      classroom2 = classroom_fixture(%{teacher_id: teacher.id})
+
+      {:ok, m1} = Classrooms.apply_to_join(classroom1.id, student1.id)
+      {:ok, _} = Classrooms.approve_membership(m1)
+      {:ok, _} = Classrooms.add_member_points(m1, 100)
+
+      {:ok, m2} = Classrooms.apply_to_join(classroom1.id, student2.id)
+      {:ok, _} = Classrooms.approve_membership(m2)
+
+      {:ok, m3} = Classrooms.apply_to_join(classroom2.id, student1.id)
+      {:ok, _} = Classrooms.approve_membership(m3)
+      {:ok, _} = Classrooms.add_member_points(m3, 50)
+
+      %{
+        classroom1: classroom1,
+        classroom2: classroom2
+      }
+    end
+
+    test "returns stats for multiple classrooms", %{
+      classroom1: c1,
+      classroom2: c2
+    } do
+      stats = Classrooms.get_classroom_stats_batch([c1.id, c2.id])
+
+      assert stats[c1.id].total_members == 2
+      assert stats[c1.id].total_points == 100
+      assert stats[c2.id].total_members == 1
+      assert stats[c2.id].total_points == 50
+    end
+
+    test "returns empty map for empty list" do
+      assert Classrooms.get_classroom_stats_batch([]) == %{}
+    end
+  end
+
+  describe "get_classroom_leaderboard/2" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student1 = user_fixture(%{type: "student", email: "s1@example.com"})
+      student2 = user_fixture(%{type: "student", email: "s2@example.com"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      {:ok, m1} = Classrooms.apply_to_join(classroom.id, student1.id)
+      {:ok, _} = Classrooms.approve_membership(m1)
+      {:ok, _} = Classrooms.add_member_points(m1, 200)
+
+      {:ok, m2} = Classrooms.apply_to_join(classroom.id, student2.id)
+      {:ok, _} = Classrooms.approve_membership(m2)
+      {:ok, _} = Classrooms.add_member_points(m2, 100)
+
+      %{classroom: classroom, student1: student1, student2: student2}
+    end
+
+    test "returns members sorted by points descending", %{classroom: classroom} do
+      leaderboard = Classrooms.get_classroom_leaderboard(classroom.id)
+      assert length(leaderboard) == 2
+      assert hd(leaderboard).points == 200
+      assert hd(tl(leaderboard)).points == 100
+    end
+
+    test "limits results with limit option", %{classroom: classroom} do
+      leaderboard = Classrooms.get_classroom_leaderboard(classroom.id, limit: 1)
+      assert length(leaderboard) == 1
+      assert hd(leaderboard).points == 200
+    end
+  end
+
+  describe "get_test_leaderboard/3" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student1 = user_fixture(%{type: "student", email: "s1@example.com"})
+      student2 = user_fixture(%{type: "student", email: "s2@example.com"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      {:ok, m1} = Classrooms.apply_to_join(classroom.id, student1.id)
+      {:ok, _} = Classrooms.approve_membership(m1)
+      {:ok, _} = Classrooms.add_member_points(m1, 150)
+
+      {:ok, m2} = Classrooms.apply_to_join(classroom.id, student2.id)
+      {:ok, _} = Classrooms.approve_membership(m2)
+      {:ok, _} = Classrooms.add_member_points(m2, 75)
+
+      %{classroom: classroom, student1: student1, student2: student2}
+    end
+
+    test "returns empty leaderboard when no test attempts", %{classroom: classroom} do
+      test_id = Ecto.UUID.generate()
+      leaderboard = Classrooms.get_test_leaderboard(classroom.id, test_id)
+      assert leaderboard == []
+    end
+  end
+
+  describe "get_or_create_lesson_progress/3" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      lesson = Medoru.ContentFixtures.lesson_fixture()
+      %{teacher: teacher, student: student, classroom: classroom, lesson: lesson}
+    end
+
+    test "creates new progress when none exists", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      {:ok, progress} =
+        Classrooms.get_or_create_lesson_progress(classroom.id, student.id, lesson.id)
+
+      assert progress.classroom_id == classroom.id
+      assert progress.user_id == student.id
+      assert progress.lesson_id == lesson.id
+      assert progress.status == "not_started"
+    end
+
+    test "returns existing progress when it exists", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      {:ok, progress1} =
+        Classrooms.get_or_create_lesson_progress(classroom.id, student.id, lesson.id)
+
+      {:ok, progress2} =
+        Classrooms.get_or_create_lesson_progress(classroom.id, student.id, lesson.id)
+
+      assert progress1.id == progress2.id
+    end
+  end
+
+  describe "start_lesson/3 and complete_lesson/5" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      lesson = Medoru.ContentFixtures.lesson_fixture()
+
+      # Add student as approved member
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      %{teacher: teacher, student: student, classroom: classroom, lesson: lesson}
+    end
+
+    test "start_lesson marks progress as in_progress", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      {:ok, progress} =
+        Classrooms.start_lesson(classroom.id, student.id, lesson.id)
+
+      assert progress.status == "in_progress"
+      assert progress.started_at != nil
+    end
+
+    test "complete_lesson marks progress as completed with points", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      # Create a real test and test session to satisfy FK constraints
+      test = Medoru.TestsFixtures.test_fixture(%{status: :published})
+      {:ok, test_session} = Medoru.Tests.start_test_session(student.id, test.id)
+      {:ok, test_session} = Medoru.Tests.complete_test_session(test_session.id)
+
+      {:ok, _} = Classrooms.start_lesson(classroom.id, student.id, lesson.id)
+
+      {:ok, progress} =
+        Classrooms.complete_lesson(
+          classroom.id,
+          student.id,
+          lesson.id,
+          test_session.id,
+          50
+        )
+
+      assert progress.status == "completed"
+      assert progress.completed_at != nil
+      assert progress.points_earned == 50
+    end
+  end
+
+  describe "list_user_lesson_progress/2 and list_classroom_lesson_progress/1" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      lesson = Medoru.ContentFixtures.lesson_fixture()
+      %{teacher: teacher, student: student, classroom: classroom, lesson: lesson}
+    end
+
+    test "list_user_lesson_progress returns all user progress", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      {:ok, _} =
+        Classrooms.start_lesson(classroom.id, student.id, lesson.id)
+
+      progress = Classrooms.list_user_lesson_progress(classroom.id, student.id)
+      assert length(progress) == 1
+      assert hd(progress).lesson_id == lesson.id
+    end
+
+    test "list_classroom_lesson_progress returns all classroom progress", %{
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      {:ok, _} =
+        Classrooms.start_lesson(classroom.id, student.id, lesson.id)
+
+      progress = Classrooms.list_classroom_lesson_progress(classroom.id)
+      assert length(progress) == 1
     end
   end
 

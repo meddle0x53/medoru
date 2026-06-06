@@ -129,7 +129,11 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
        |> assign(:word_types, @word_types)
        |> assign(:word_type_colors, @word_type_colors)
        |> assign(:color_palette, @color_palette)
-       |> assign(:particles, @particles)}
+       |> assign(:particles, @particles)
+       |> assign(:grammar_def_modal_open, false)
+       |> assign(:grammar_def_search, "")
+       |> assign(:grammar_def_results, [])
+       |> assign(:grammar_def_selected, nil)}
     end
   end
 
@@ -152,7 +156,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
          |> assign(:changeset, changeset)
          |> assign(:steps, [])
          |> assign(:current_step_index, nil)
-         |> assign(:current_step, nil)}
+         |> assign(:current_step, nil)
+         |> reset_grammar_def_modal()}
 
       :edit ->
         lesson = Content.get_custom_lesson!(params["id"])
@@ -173,7 +178,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
            |> assign(:changeset, changeset)
            |> assign(:steps, steps)
            |> assign(:current_step_index, nil)
-           |> assign(:current_step, nil)}
+           |> assign(:current_step, nil)
+           |> reset_grammar_def_modal()}
         end
     end
   end
@@ -242,6 +248,70 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
        socket
        |> assign(:current_step_index, :new)
        |> assign(:current_step, new_step)}
+    end
+  end
+
+  # Grammar Definition Modal events
+  @impl true
+  def handle_event("open_grammar_def_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:grammar_def_modal_open, true)
+     |> assign(:grammar_def_search, "")
+     |> assign(:grammar_def_results, [])
+     |> assign(:grammar_def_selected, nil)}
+  end
+
+  @impl true
+  def handle_event("close_grammar_def_modal", _, socket) do
+    {:noreply, reset_grammar_def_modal(socket)}
+  end
+
+  @impl true
+  def handle_event("update_grammar_def_search", %{"search" => %{"query" => query}}, socket) do
+    {:noreply, assign(socket, :grammar_def_search, query)}
+  end
+
+  @impl true
+  def handle_event("search_grammar_definitions", _params, socket) do
+    term = socket.assigns.grammar_def_search
+
+    results =
+      if term != "" do
+        Content.search_grammar_definitions(term, limit: 20)
+      else
+        []
+      end
+
+    {:noreply, assign(socket, :grammar_def_results, results)}
+  end
+
+  @impl true
+  def handle_event("select_grammar_definition", %{"id" => id}, socket) do
+    grammar_def = Content.get_grammar_definition!(id)
+    {:noreply, assign(socket, :grammar_def_selected, grammar_def)}
+  end
+
+  @impl true
+  def handle_event("clear_selected_grammar_definition", _, socket) do
+    {:noreply, assign(socket, :grammar_def_selected, nil)}
+  end
+
+  @impl true
+  def handle_event("add_from_grammar_definition", _, socket) do
+    lesson = socket.assigns.lesson
+
+    if is_nil(lesson) do
+      {:noreply, put_flash(socket, :error, gettext("Save the lesson first before adding steps."))}
+    else
+      grammar_def = socket.assigns.grammar_def_selected
+      new_step = create_step_from_grammar_definition(grammar_def, length(socket.assigns.steps))
+
+      {:noreply,
+       socket
+       |> assign(:current_step_index, :new)
+       |> assign(:current_step, new_step)
+       |> reset_grammar_def_modal()}
     end
   end
 
@@ -962,7 +1032,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
               <.icon name="hero-trash" class="w-4 h-4" />
             </button>
           </div>
-          <div class="grid grid-cols-8 gap-1 mb-2">
+          <div class="grid grid-cols-4 sm:grid-cols-8 gap-1 mb-2">
             <%= for {color_class, cidx} <- Enum.with_index(@color_palette) do %>
               <button
                 type="button"
@@ -1032,6 +1102,44 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
   # Get forms for a specific word type
   def get_forms_for_word_type(grammar_forms, word_type) do
     Enum.filter(grammar_forms, fn form -> form.word_type == word_type end)
+  end
+
+  defp reset_grammar_def_modal(socket) do
+    socket
+    |> assign(:grammar_def_modal_open, false)
+    |> assign(:grammar_def_search, "")
+    |> assign(:grammar_def_results, [])
+    |> assign(:grammar_def_selected, nil)
+  end
+
+  defp create_step_from_grammar_definition(grammar_def, position) do
+    pattern_elements =
+      Enum.map(grammar_def.pattern_elements || [], fn el ->
+        case el["type"] do
+          "word_slot" ->
+            Map.merge(el, %{
+              "form" => List.first(el["forms"] || []),
+              "forms" => nil
+            })
+          _ ->
+            el
+        end
+      end)
+
+    %{
+      id: Ecto.UUID.generate(),
+      position: position,
+      step_type: "grammar",
+      title: grammar_def.title || "",
+      explanation: grammar_def.description || "",
+      explanation_sections: [],
+      pattern_elements: pattern_elements,
+      examples: grammar_def.examples || [],
+      word_colors: grammar_def.word_colors || [],
+      difficulty: 1,
+      include_in_test: false,
+      allows_student_validation: false
+    }
   end
 
   defp create_step("grammar", position) do

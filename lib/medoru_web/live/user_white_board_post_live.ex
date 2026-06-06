@@ -168,7 +168,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                           <p class="text-xs font-semibold text-base-content">
                             {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
                           </p>
-                          <p class="text-sm text-base-content mt-0.5">{comment.content}</p>
+                          <p class="text-sm text-base-content mt-0.5">{raw(WhiteBoardPostRenderer.render_comment_content(comment.content))}</p>
                         </div>
                         <p class="text-xs text-base-content/50 mt-0.5 ml-1">
                           {format_localized_datetime(comment.inserted_at)}

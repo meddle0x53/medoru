@@ -148,5 +148,175 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       refute html =~ classroom.name
       assert html =~ "No classrooms yet"
     end
+
+    test "teacher can regenerate invite code", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      old_code = classroom.invite_code
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}")
+
+      view
+      |> element("button", "Regenerate")
+      |> render_click()
+
+      updated = Classrooms.get_classroom!(classroom.id)
+      assert updated.invite_code != old_code
+    end
+
+    test "teacher can approve a pending member", %{conn: conn, teacher: teacher, student: student} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id,
+          should_approve_memberships: true
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=students")
+
+      view
+      |> element("button[phx-click='approve_member']")
+      |> render_click(%{"id" => membership.id})
+
+      updated = Classrooms.get_membership!(membership.id)
+      assert updated.status == :approved
+    end
+
+    test "teacher can reject a pending member", %{conn: conn, teacher: teacher, student: student} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id,
+          should_approve_memberships: true
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=students")
+
+      view
+      |> element("button[phx-click='reject_member']")
+      |> render_click(%{"id" => membership.id})
+
+      updated = Classrooms.get_membership!(membership.id)
+      assert updated.status == :rejected
+    end
+
+    test "teacher can remove an approved member", %{conn: conn, teacher: teacher, student: student} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id,
+          should_approve_memberships: false
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=students")
+
+      view
+      |> element("button[phx-click='remove_member']")
+      |> render_click(%{"id" => membership.id})
+
+      updated = Classrooms.get_membership!(membership.id)
+      assert updated.status == :removed
+    end
+
+    test "teacher can toggle and save classroom settings", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id,
+          should_approve_memberships: true,
+          public: false
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=settings")
+
+      # Click edit settings
+      view
+      |> element("button[phx-click='toggle_edit_settings']")
+      |> render_click()
+
+      # Update name field
+      render_click(view, "update_classroom_field", %{
+        "_target" => ["name"],
+        "name" => "Updated Classroom Name"
+      })
+
+      # Save settings
+      view
+      |> form("form[phx-submit='save_classroom_settings']")
+      |> render_submit()
+
+      updated = Classrooms.get_classroom!(classroom.id)
+      assert updated.name == "Updated Classroom Name"
+    end
+
+    test "teacher can cancel editing settings", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=settings")
+
+      # Click edit settings
+      view
+      |> element("button[phx-click='toggle_edit_settings']")
+      |> render_click()
+
+      # Update name field
+      render_click(view, "update_classroom_field", %{
+        "_target" => ["name"],
+        "name" => "Temporary Name"
+      })
+
+      # Cancel editing
+      view
+      |> element("button[phx-click='cancel_edit_settings']")
+      |> render_click()
+
+      # Name should not have changed
+      updated = Classrooms.get_classroom!(classroom.id)
+      assert updated.name == "Test Classroom"
+    end
+
+    test "teacher can change tabs", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}")
+
+      view
+      |> element("button[phx-click='change_tab'][phx-value-tab='students'].px-4")
+      |> render_click()
+
+      assert_patch(view, ~p"/teacher/classrooms/#{classroom.id}?tab=students")
+    end
   end
 end

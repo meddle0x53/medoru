@@ -18,6 +18,7 @@ defmodule Medoru.Learning.UserProgress do
     belongs_to :user, Medoru.Accounts.User
     belongs_to :kanji, Medoru.Content.Kanji
     belongs_to :word, Medoru.Content.Word
+    belongs_to :grammar_definition, Medoru.Content.GrammarDefinition
     has_one :review_schedule, Medoru.Learning.ReviewSchedule
 
     timestamps(type: :utc_datetime)
@@ -34,7 +35,8 @@ defmodule Medoru.Learning.UserProgress do
       :next_review_at,
       :user_id,
       :kanji_id,
-      :word_id
+      :word_id,
+      :grammar_definition_id
     ])
     |> validate_required([:user_id])
     |> validate_exactly_one_content()
@@ -44,26 +46,28 @@ defmodule Medoru.Learning.UserProgress do
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:kanji_id)
     |> foreign_key_constraint(:word_id)
+    |> foreign_key_constraint(:grammar_definition_id)
     |> unique_constraint([:user_id, :kanji_id], name: :user_progress_user_id_kanji_id_index)
     |> unique_constraint([:user_id, :word_id], name: :user_progress_user_id_word_id_index)
+    |> unique_constraint([:user_id, :grammar_definition_id], name: :user_progress_user_id_grammar_definition_id_index)
   end
 
   defp validate_exactly_one_content(changeset) do
     kanji_id = get_field(changeset, :kanji_id)
     word_id = get_field(changeset, :word_id)
+    grammar_definition_id = get_field(changeset, :grammar_definition_id)
 
-    case {kanji_id, word_id} do
-      {nil, nil} ->
-        add_error(changeset, :kanji_id, "must have either kanji_id or word_id")
+    present_count = Enum.count([kanji_id, word_id, grammar_definition_id], & &1)
 
-      {_, nil} ->
+    cond do
+      present_count == 0 ->
+        add_error(changeset, :kanji_id, "must have either kanji_id, word_id, or grammar_definition_id")
+
+      present_count == 1 ->
         changeset
 
-      {nil, _} ->
-        changeset
-
-      {_, _} ->
-        add_error(changeset, :kanji_id, "cannot have both kanji_id and word_id")
+      present_count > 1 ->
+        add_error(changeset, :kanji_id, "cannot have more than one content type")
     end
   end
 end

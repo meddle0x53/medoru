@@ -4,7 +4,7 @@
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-base-content">{gettext("Moderator Dashboard")}</h1>
       <p class="mt-2 text-secondary">
-        {gettext("Manage words and kanji content.")}
+        {gettext("Manage words, kanji, and grammar content.")}
       </p>
     </div>
 
@@ -39,6 +39,23 @@
             <div>
               <div class="font-semibold text-base-content">{gettext("Words")}</div>
               <div class="text-sm text-base-content/60">{gettext("Manage vocabulary")}</div>
+            </div>
+          </div>
+        </div>
+      </.link>
+
+      <.link
+        navigate={~p"/moderator/grammars"}
+        class="card bg-base-100 shadow-sm border border-base-300 hover:border-primary transition-colors"
+      >
+        <div class="card-body p-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+              <.icon name="hero-book-open" class="w-5 h-5 text-error" />
+            </div>
+            <div>
+              <div class="font-semibold text-base-content">{gettext("Grammar")}</div>
+              <div class="text-sm text-base-content/60">{gettext("Manage grammar points")}</div>
             </div>
           </div>
         </div>

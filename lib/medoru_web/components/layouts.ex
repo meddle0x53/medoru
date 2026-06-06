@@ -92,6 +92,13 @@ defmodule MedoruWeb.Layouts do
               class="hidden xl:block"
             />
             <.nav_link
+              path="/grammars"
+              icon={nil}
+              label={gettext("Grammar")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
+            <.nav_link
               path="/games"
               icon="hero-puzzle-piece"
               label={gettext("Games")}
@@ -221,6 +228,12 @@ defmodule MedoruWeb.Layouts do
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
+                    path="/grammars"
+                    icon="hero-book-open"
+                    label={gettext("Grammar")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
                     path="/games"
                     icon="hero-puzzle-piece"
                     label={gettext("Games")}
@@ -329,6 +342,12 @@ defmodule MedoruWeb.Layouts do
                         locale={@current_scope[:locale]}
                       />
                       <.mobile_nav_link
+                        path="/admin/grammars"
+                        icon="hero-book-open"
+                        label={gettext("Grammar")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
                         path="/admin/word-classes"
                         icon="hero-tag"
                         label={gettext("Word Classes")}
@@ -351,6 +370,12 @@ defmodule MedoruWeb.Layouts do
                         path="/moderator/words"
                         icon="hero-document-text"
                         label={gettext("Words")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
+                        path="/moderator/grammars"
+                        icon="hero-book-open"
+                        label={gettext("Grammar")}
                         locale={@current_scope[:locale]}
                       />
                     <% end %>

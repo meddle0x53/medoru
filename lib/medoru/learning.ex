@@ -14,7 +14,7 @@ defmodule Medoru.Learning do
 
   alias Medoru.Accounts
   alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule, UserDailyChallenge}
-  alias Medoru.Content.{Kanji, Lesson, Word, WordKanji}
+  alias Medoru.Content.{GrammarDefinition, Kanji, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
   # ============================================================================
@@ -291,6 +291,24 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Gets a single user_progress for a grammar definition.
+
+  Returns nil if no progress exists.
+
+  ## Examples
+
+      iex> get_grammar_progress(user_id, grammar_definition_id)
+      %UserProgress{}
+
+  """
+  def get_grammar_progress(user_id, grammar_definition_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and up.grammar_definition_id == ^grammar_definition_id)
+    |> preload(:grammar_definition)
+    |> Repo.one()
+  end
+
+  @doc """
   Checks if a user has learned a specific kanji.
 
   ## Examples
@@ -317,6 +335,21 @@ defmodule Medoru.Learning do
   def word_learned?(user_id, word_id) do
     UserProgress
     |> where([up], up.user_id == ^user_id and up.word_id == ^word_id)
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Checks if a user has learned a specific grammar definition.
+
+  ## Examples
+
+      iex> grammar_learned?(user_id, grammar_definition_id)
+      true
+
+  """
+  def grammar_learned?(user_id, grammar_definition_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and up.grammar_definition_id == ^grammar_definition_id)
     |> Repo.exists?()
   end
 
@@ -392,6 +425,45 @@ defmodule Medoru.Learning do
         with {:ok, _} <- result do
           check_and_award_words_badges(user_id)
           _ = increment_words_learned(user_id)
+        end
+
+        result
+
+      existing_progress ->
+        {:ok, existing_progress}
+    end
+  end
+
+  @doc """
+  Tracks that a user has learned a grammar definition.
+
+  Creates a new user_progress record with mastery_level 1 (just learned).
+  If the user has already learned this grammar, returns the existing progress.
+
+  ## Examples
+
+      iex> track_grammar_learned(user_id, grammar_definition_id)
+      {:ok, %UserProgress{}}
+
+  """
+  def track_grammar_learned(user_id, grammar_definition_id) do
+    case get_grammar_progress(user_id, grammar_definition_id) do
+      nil ->
+        attrs = %{
+          user_id: user_id,
+          grammar_definition_id: grammar_definition_id,
+          mastery_level: 1,
+          times_reviewed: 0
+        }
+
+        result =
+          %UserProgress{}
+          |> UserProgress.changeset(attrs)
+          |> Repo.insert()
+
+        with {:ok, _} <- result do
+          check_and_award_grammar_badges(user_id)
+          _ = increment_grammar_learned(user_id)
         end
 
         result
@@ -548,6 +620,21 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Counts the total number of grammar definitions learned by a user.
+
+  ## Examples
+
+      iex> count_learned_grammar_definitions(user_id)
+      42
+
+  """
+  def count_learned_grammar_definitions(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.grammar_definition_id))
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
   Counts the total number of kanji learned by a user.
 
   ## Examples
@@ -582,6 +669,29 @@ defmodule Medoru.Learning do
     |> limit(^limit)
     |> offset(^offset)
     |> select([up, w], w)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets the list of learned grammar definitions for a user with pagination.
+
+  ## Examples
+
+      iex> list_learned_grammar_definitions(user_id, limit: 30, offset: 0)
+      [%GrammarDefinition{}, ...]
+
+  """
+  def list_learned_grammar_definitions(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 30)
+    offset = Keyword.get(opts, :offset, 0)
+
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.grammar_definition_id))
+    |> join(:inner, [up], g in GrammarDefinition, on: g.id == up.grammar_definition_id)
+    |> order_by([up, g], desc: up.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> select([up, g], g)
     |> Repo.all()
   end
 
@@ -797,6 +907,28 @@ defmodule Medoru.Learning do
     end
   end
 
+  @doc """
+  Unlearns a grammar definition for a user by removing their progress record.
+
+  ## Examples
+
+      iex> unlearn_grammar(user_id, grammar_definition_id)
+      {:ok, %UserProgress{}}
+
+      iex> unlearn_grammar(user_id, not_learned_grammar_id)
+      {:error, :not_learned}
+
+  """
+  def unlearn_grammar(user_id, grammar_definition_id) do
+    case get_grammar_progress(user_id, grammar_definition_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        Repo.delete(progress)
+    end
+  end
+
   # ============================================================================
   # Mastery Level Management (for Daily Test)
   # ============================================================================
@@ -968,6 +1100,7 @@ defmodule Medoru.Learning do
   def get_user_stats(user_id) do
     total_kanji_learned = count_learned_kanji(user_id)
     total_words_learned = count_learned_words(user_id)
+    total_grammar_learned = count_learned_grammar_definitions(user_id)
 
     kanji_by_mastery =
       UserProgress
@@ -993,6 +1126,7 @@ defmodule Medoru.Learning do
     %{
       total_kanji_learned: total_kanji_learned,
       total_words_learned: total_words_learned,
+      total_grammar_learned: total_grammar_learned,
       kanji_by_mastery: kanji_by_mastery,
       lessons_started: lessons_started,
       lessons_completed: lessons_completed
@@ -1070,6 +1204,12 @@ defmodule Medoru.Learning do
     Accounts.update_stats(stats, %{total_words_learned: current + 1})
   end
 
+  defp increment_grammar_learned(user_id) do
+    stats = Accounts.get_or_create_user_stats(user_id)
+    current = stats.total_grammar_learned || 0
+    Accounts.update_stats(stats, %{total_grammar_learned: current + 1})
+  end
+
   # ============================================================================
   # Badge Award Hooks
   # ============================================================================
@@ -1087,6 +1227,11 @@ defmodule Medoru.Learning do
   defp check_and_award_words_badges(user_id) do
     stats = get_user_stats(user_id)
     Gamification.check_words_badges(user_id, stats.total_words_learned)
+  end
+
+  defp check_and_award_grammar_badges(user_id) do
+    stats = get_user_stats(user_id)
+    Gamification.check_grammar_badges(user_id, stats.total_grammar_learned)
   end
 
   defp check_and_award_streak_badges(user_id, current_streak) do

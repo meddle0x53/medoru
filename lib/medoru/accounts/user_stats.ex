@@ -10,6 +10,7 @@ defmodule Medoru.Accounts.UserStats do
   schema "user_stats" do
     field :total_kanji_learned, :integer, default: 0
     field :total_words_learned, :integer, default: 0
+    field :total_grammar_learned, :integer, default: 0
     field :current_streak, :integer, default: 0
     field :longest_streak, :integer, default: 0
     field :total_tests_completed, :integer, default: 0
@@ -29,6 +30,7 @@ defmodule Medoru.Accounts.UserStats do
     |> cast(attrs, [
       :total_kanji_learned,
       :total_words_learned,
+      :total_grammar_learned,
       :current_streak,
       :longest_streak,
       :total_tests_completed,
@@ -39,6 +41,7 @@ defmodule Medoru.Accounts.UserStats do
     ])
     |> validate_number(:total_kanji_learned, greater_than_or_equal_to: 0)
     |> validate_number(:total_words_learned, greater_than_or_equal_to: 0)
+    |> validate_number(:total_grammar_learned, greater_than_or_equal_to: 0)
     |> validate_number(:current_streak, greater_than_or_equal_to: 0)
     |> validate_number(:longest_streak, greater_than_or_equal_to: 0)
     |> validate_number(:total_tests_completed, greater_than_or_equal_to: 0)

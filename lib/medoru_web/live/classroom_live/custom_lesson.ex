@@ -537,6 +537,113 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     end
   end
 
+  @impl true
+  def handle_event("copy_to_grammar", _params, socket) do
+    user = socket.assigns.current_scope && socket.assigns.current_scope.current_user
+
+    if not is_nil(user) and user.type == "admin" do
+      step = socket.assigns.current_step
+
+      if step.step_type == "text" do
+        {:noreply, put_flash(socket, :error, gettext("Text steps cannot be copied to grammar definitions."))}
+      else
+        case Content.get_grammar_definition_by_title(step.title) do
+          nil ->
+            attrs = step_to_grammar_definition_attrs(step, socket.assigns.word_classes)
+
+            case Content.create_grammar_definition(attrs) do
+              {:ok, grammar} ->
+                {:noreply,
+                 socket
+                 |> put_flash(:info, gettext("'%{title}' copied to grammar definitions.", title: grammar.title))}
+
+              {:error, changeset} ->
+                errors =
+                  Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                    Regex.replace(~r/%{(")"""(\w+)}/, msg, fn _, _, key ->
+                      to_string(Keyword.get(opts, String.to_existing_atom(key), key))
+                    end)
+                  end)
+                  |> Enum.map_join(", ", fn {field, msgs} -> "#{field}: #{Enum.join(msgs, ", ")}" end)
+
+                {:noreply, put_flash(socket, :error, gettext("Could not copy: %{errors}", errors: errors))}
+            end
+
+          _existing ->
+            {:noreply,
+             put_flash(socket, :error, gettext("A grammar definition with the title '%{title}' already exists.", title: step.title))}
+        end
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Only admins can copy to grammar definitions."))}
+    end
+  end
+
+  defp step_to_grammar_definition_attrs(step, word_classes) do
+    pattern_elements =
+      Enum.map(step.pattern_elements || [], fn el ->
+        case el["type"] do
+          "word_slot" ->
+            forms =
+              if el["form"] && el["form"] != "" do
+                [el["form"]]
+              else
+                []
+              end
+
+            el
+            |> Map.put("forms", forms)
+            |> Map.delete("form")
+
+          "literal" ->
+            text = el["text"] || el["value"] || ""
+            el |> Map.put("text", text) |> Map.delete("value")
+
+          "word_class" ->
+            class_name = word_classes[el["word_class_id"]] || el["word_class"] || ""
+            el |> Map.put("word_class", class_name) |> Map.delete("word_class_id")
+
+          _ ->
+            el
+        end
+      end)
+
+    # Generate a unique slug that handles Japanese-only titles
+    slug = generate_grammar_slug(step.title)
+
+    %{
+      title: step.title,
+      slug: slug,
+      pattern_elements: pattern_elements,
+      description: step.explanation || "",
+      examples: step.examples || [],
+      word_colors: step.word_colors || [],
+      frequency: 1000
+    }
+  end
+
+  defp generate_grammar_slug(title) do
+    base =
+      title
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "-")
+      |> String.trim("-")
+      |> String.slice(0, 100)
+
+    if base == "" do
+      # Fallback for Japanese-only titles: use a hash of the title
+      hash =
+        :crypto.hash(:sha256, title)
+        |> Base.encode16(case: :lower)
+        |> String.slice(0, 16)
+
+      "grammar-#{hash}"
+    else
+      # Ensure uniqueness by appending a short hash if needed
+      "#{base}-#{System.unique_integer([:positive])}"
+    end
+  end
+
   defp complete_lesson(socket, classroom_id, user_id, lesson_id) do
     case Classrooms.complete_custom_lesson(classroom_id, user_id, lesson_id) do
       {:ok, _} ->
@@ -822,8 +929,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
         <div class="card-body">
           <%!-- Step Title --%>
-          <div class="mb-4">
+          <div class="mb-4 flex items-start justify-between gap-4">
             <h2 class="text-xl font-semibold">{@current_step.title}</h2>
+            <%= if @current_scope && @current_scope.current_user && @current_scope.current_user.type == "admin" && @current_step.step_type == "grammar" do %>
+              <button
+                phx-click="copy_to_grammar"
+                class="btn btn-outline btn-xs shrink-0"
+                title={gettext("Copy this step to Grammar Definitions")}
+              >
+                <.icon name="hero-document-duplicate" class="w-3.5 h-3.5 mr-1" />
+                {gettext("Copy To Grammar")}
+              </button>
+            <% end %>
           </div>
 
           <%= if @current_step.step_type == "text" do %>

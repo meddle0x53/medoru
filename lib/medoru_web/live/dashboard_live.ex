@@ -11,7 +11,7 @@ defmodule MedoruWeb.DashboardLive do
   alias Medoru.WhiteBoard.BoardComment
   alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
 
-  import Helpers, only: [format_localized_date: 1]
+  import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
   embed_templates "*.html"
 
@@ -48,6 +48,7 @@ defmodule MedoruWeb.DashboardLive do
     stats = %{
       total_kanji_learned: learning_stats.total_kanji_learned,
       total_words_learned: learning_stats.total_words_learned,
+      total_grammar_learned: learning_stats.total_grammar_learned,
       current_streak: daily_stats.current_streak,
       longest_streak: daily_stats.longest_streak
     }

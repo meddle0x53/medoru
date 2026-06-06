@@ -198,5 +198,142 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
       html = render(view)
       assert html =~ "まえに、"
     end
+
+    test "opens grammar definition modal", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      html =
+        view
+        |> element("button[phx-click='open_grammar_def_modal']")
+        |> render_click()
+
+      assert html =~ "Add from Grammar Definition"
+      assert html =~ "Search grammar definitions"
+    end
+
+    test "searches and selects grammar definition in modal", %{conn: conn, user: user} do
+      grammar = grammar_definition_fixture(%{title: "te-form pattern", jlpt_level: 5})
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      # Open modal
+      view
+      |> element("button[phx-click='open_grammar_def_modal']")
+      |> render_click()
+
+      # Search
+      html =
+        view
+        |> form("form[phx-change='update_grammar_def_search']")
+        |> render_change(%{search: %{query: "te-form"}})
+
+      assert html =~ "te-form"
+
+      # Submit search
+      html =
+        view
+        |> form("form[phx-submit='search_grammar_definitions']")
+        |> render_submit()
+
+      assert html =~ "te-form pattern"
+      assert html =~ "N5"
+
+      # Select grammar
+      html =
+        view
+        |> element("button[phx-click='select_grammar_definition'][phx-value-id='#{grammar.id}']")
+        |> render_click()
+
+      assert html =~ "te-form pattern"
+      assert html =~ "Add as Step"
+    end
+
+    test "adds grammar definition as a new step", %{conn: conn, user: user} do
+      grammar =
+        grammar_definition_fixture(%{
+          title: "te-form pattern",
+          jlpt_level: 5,
+          pattern_elements: [
+            %{"type" => "word_slot", "word_type" => "verb", "forms" => ["te-form"]},
+            %{"type" => "literal", "text" => "いる"}
+          ],
+          examples: [
+            %{"sentence" => "食べている", "reading" => "たべている", "meaning" => "eating"}
+          ]
+        })
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      # Open modal, search, and select grammar
+      view
+      |> element("button[phx-click='open_grammar_def_modal']")
+      |> render_click()
+
+      view
+      |> form("form[phx-change='update_grammar_def_search']")
+      |> render_change(%{search: %{query: "te-form"}})
+
+      view
+      |> form("form[phx-submit='search_grammar_definitions']")
+      |> render_submit()
+
+      view
+      |> element("button[phx-click='select_grammar_definition'][phx-value-id='#{grammar.id}']")
+      |> render_click()
+
+      # Add as step
+      html =
+        view
+        |> element("button[phx-click='add_from_grammar_definition']")
+        |> render_click()
+
+      # Should have a new step with grammar data populated
+      assert html =~ "te-form pattern"
+      # Modal should be closed
+      refute html =~ "Add from Grammar Definition"
+    end
+
+    test "closes grammar definition modal", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      view
+      |> element("button[phx-click='open_grammar_def_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='close_grammar_def_modal']")
+        |> render_click()
+
+      refute html =~ "Add from Grammar Definition"
+    end
   end
 end

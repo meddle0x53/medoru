@@ -1,0 +1,233 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <%!-- Header --%>
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <.link navigate={~p"/admin"} class="btn btn-sm btn-ghost">
+            <.icon name="hero-arrow-left" class="w-4 h-4" />
+          </.link>
+          <h1 class="text-3xl font-bold text-base-content">{gettext("Grammar Management")}</h1>
+        </div>
+        <p class="mt-1 text-secondary">
+          {gettext("Manage grammar points. Total: %{count}", count: @total_count)}
+        </p>
+      </div>
+      <.link
+        navigate={~p"/admin/grammars/new"}
+        class="btn btn-primary w-full sm:w-auto min-h-[44px] touch-target"
+      >
+        <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Add Grammar")}
+      </.link>
+    </div>
+
+    <%!-- Filters --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body p-4 sm:p-6">
+        <div class="flex flex-col gap-4">
+          <%!-- Level Filter --%>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
+              {gettext("Filter by level:")}
+            </span>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="filter_level"
+                phx-value-level=""
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(is_nil(@level_filter) || @level_filter == "",
+                    do: "btn-active btn-primary",
+                    else: "btn-ghost"
+                  )
+                ]}
+              >
+                {gettext("All")}
+              </button>
+              <%= for level <- [5, 4, 3, 2, 1] do %>
+                <button
+                  phx-click="filter_level"
+                  phx-value-level={level}
+                  class={[
+                    "btn btn-sm min-h-[40px] touch-target",
+                    if(@level_filter == to_string(level),
+                      do: "btn-active btn-primary",
+                      else: "btn-ghost"
+                    )
+                  ]}
+                >
+                  N{level}
+                </button>
+              <% end %>
+            </div>
+          </div>
+
+          <%!-- Search --%>
+          <form phx-submit="search" class="flex gap-2">
+            <div class="relative flex-1">
+              <.icon
+                name="hero-magnifying-glass"
+                class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary"
+              />
+              <input
+                type="text"
+                name="search[query]"
+                value={@search || ""}
+                placeholder={gettext("Search by title...")}
+                class="input input-bordered w-full pl-10"
+                phx-debounce="300"
+              />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm min-h-[44px] touch-target">
+              <.icon name="hero-magnifying-glass" class="w-4 h-4 mr-1" />
+              {gettext("Search")}
+            </button>
+            <%= if @search || @level_filter do %>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="btn btn-ghost btn-sm min-h-[44px] touch-target"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" />
+              </button>
+            <% end %>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Grammar Table --%>
+    <%= if @grammar_definitions == [] do %>
+      <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">
+        <.icon name="hero-book-open" class="w-16 h-16 text-secondary/30 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-base-content mb-2">
+          {gettext("No grammar points yet")}
+        </h3>
+        <p class="text-secondary mb-6">
+          {gettext("Get started by adding your first grammar point.")}
+        </p>
+        <.link navigate={~p"/admin/grammars/new"} class="btn btn-primary">
+          <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Add Grammar")}
+        </.link>
+      </div>
+    <% else %>
+      <div class="card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="table w-full">
+            <thead>
+              <tr class="bg-base-200/50">
+                <th class="text-sm font-semibold text-base-content">{gettext("Title")}</th>
+                <th class="text-sm font-semibold text-base-content">{gettext("Level")}</th>
+                <th class="text-sm font-semibold text-base-content">{gettext("Frequency")}</th>
+                <th class="text-sm font-semibold text-base-content">{gettext("Pattern")}</th>
+                <th class="text-sm font-semibold text-base-content">{gettext("Examples")}</th>
+                <th class="text-sm font-semibold text-base-content text-right">{gettext("Actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <%= for grammar <- @grammar_definitions do %>
+                <tr class="hover:bg-base-200/50 transition-colors border-b border-base-200">
+                  <td class="font-medium text-base-content">
+                    <.link
+                      navigate={~p"/grammars/#{grammar.slug}"}
+                      class="hover:text-primary transition-colors"
+                      target="_blank"
+                    >
+                      {grammar.title}
+                    </.link>
+                  </td>
+                  <td>
+                    <%= if grammar.jlpt_level do %>
+                      <span class={["badge", level_badge_color(grammar.jlpt_level)]}>
+                        N{grammar.jlpt_level}
+                      </span>
+                    <% else %>
+                      <span class="badge badge-ghost">-</span>
+                    <% end %>
+                  </td>
+                  <td class="text-sm text-secondary">
+                    <%= if grammar.frequency && grammar.frequency != 1000 do %>
+                      #{grammar.frequency}
+                    <% else %>
+                      <span class="opacity-50">-</span>
+                    <% end %>
+                  </td>
+                  <td class="text-sm text-secondary max-w-[300px] truncate">
+                    <%= for element <- grammar.pattern_elements do %>
+                      <%= case element["type"] do %>
+                        <% "literal" -> %>
+                          <span>{element["text"] || ""}</span>
+                        <% "word_slot" -> %>
+                          <span class="text-primary">[{element["word_type"] || "word"}]</span>
+                        <% "particle" -> %>
+                          <span class="text-secondary">{element["text"] || "particle"}</span>
+                        <% _ -> %>
+                          <span>[{element["type"]}]</span>
+                      <% end %>
+                    <% end %>
+                  </td>
+                  <td class="text-sm text-secondary">
+                    {length(grammar.examples)}
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <.link
+                        navigate={~p"/admin/grammars/#{grammar.id}/edit"}
+                        class="btn btn-ghost btn-sm btn-circle touch-target"
+                        title={gettext("Edit")}
+                      >
+                        <.icon name="hero-pencil" class="w-4 h-4" />
+                      </.link>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={grammar.id}
+                        data-confirm={gettext("Delete this grammar point?")}
+                        class="btn btn-ghost btn-sm btn-circle text-error touch-target"
+                        title={gettext("Delete")}
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <%!-- Pagination --%>
+      <%= if @total_pages > 1 do %>
+        <div class="mt-6 flex justify-center">
+          <div class="flex items-center gap-2">
+            <%= if @page > 1 do %>
+              <.link
+                patch={~p"/admin/grammars?#{%{page: @page - 1, level: @level_filter, search: @search}}"}
+                class="btn btn-ghost btn-sm"
+              >
+                ← {gettext("Prev")}
+              </.link>
+            <% else %>
+              <span class="btn btn-ghost btn-sm opacity-50" disabled>← {gettext("Prev")}</span>
+            <% end %>
+
+            <span class="px-4 py-2 bg-base-200 rounded-lg text-base-content">
+              {gettext("Page")} {@page} {gettext("of")} {@total_pages}
+            </span>
+
+            <%= if @page < @total_pages do %>
+              <.link
+                patch={~p"/admin/grammars?#{%{page: @page + 1, level: @level_filter, search: @search}}"}
+                class="btn btn-ghost btn-sm"
+              >
+                {gettext("Next")} →
+              </.link>
+            <% else %>
+              <span class="btn btn-ghost btn-sm opacity-50" disabled>{gettext("Next")} →</span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</Layouts.app>

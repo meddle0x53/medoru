@@ -187,5 +187,62 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       assert html =~ "Teacher message here"
       assert html =~ "Teacher"
     end
+
+    test "sends /grammar command and renders grammar preview", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      grammar_definition_fixture(%{title: "te-form pattern", jlpt_level: 5})
+
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      view
+      |> element("#classroom-chat-input")
+      |> render_hook("send_message", %{"content" => "/grammar te-form pattern"})
+
+      html = render(view)
+      assert html =~ "te-form pattern"
+      assert html =~ "/grammars/"
+    end
+
+    test "rejects invalid /grammar command with flash error", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      html =
+        view
+        |> element("#classroom-chat-input")
+        |> render_hook("send_message", %{"content" => "/grammar nonexistent-pattern"})
+
+      assert html =~ "Invalid command or not found"
+    end
+
+    test "renders inline grammar link \\text/ when grammar exists", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      grammar_definition_fixture(%{title: "na-adjective", jlpt_level: 5})
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+      Medoru.Chat.store_plaintext_message(conversation.id, classroom.teacher_id, "Learn \\na-adjective/ today")
+
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      assert html =~ "na-adjective"
+      assert html =~ "/grammars/"
+    end
+
+    test "renders plain text for unknown inline grammar \\text/", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+      Medoru.Chat.store_plaintext_message(conversation.id, classroom.teacher_id, "Try \\onexistent/ grammar")
+
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      assert html =~ "\\onexistent/"
+    end
   end
 end

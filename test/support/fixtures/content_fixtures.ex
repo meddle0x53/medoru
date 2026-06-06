@@ -301,4 +301,31 @@ defmodule Medoru.ContentFixtures do
     {:ok, step} = Content.create_grammar_lesson_step(attrs)
     step
   end
+
+  @doc """
+  Generate a grammar definition.
+  """
+  def grammar_definition_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        title: "Test Grammar #{System.unique_integer([:positive])}",
+        jlpt_level: 5,
+        frequency: 500,
+        pattern_elements: [
+          %{"type" => "word_slot", "word_type" => "verb", "forms" => ["te-form"]},
+          %{"type" => "literal", "text" => "いる"}
+        ],
+        description: "Test grammar description",
+        examples: [
+          %{
+            "sentence" => "食べている",
+            "reading" => "たべている",
+            "meaning" => "eating (continuous)"
+          }
+        ]
+      })
+
+    {:ok, grammar_definition} = Content.create_grammar_definition(attrs)
+    grammar_definition
+  end
 end

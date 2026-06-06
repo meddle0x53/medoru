@@ -65,9 +65,12 @@ defmodule MedoruWeb.Router do
       live "/words", WordLive.Index
       live "/words/:id", WordLive.Show
       live "/words/:id/conjugations", WordLive.Conjugations
+      live "/grammars", GrammarDefinitionLive.Index
+      live "/grammars/:slug", GrammarDefinitionLive.Show
       live "/users", UsersLive.Index
       live "/users/:id/words", LearnedWordsLive.Index
       live "/users/:id/kanji", LearnedKanjiLive.Index
+      live "/users/:id/grammars", LearnedGrammarsLive.Index
       live "/users/:id/kanji/practice", LearnedKanjiLive.PracticeForm
       live "/users/:id/kanji/practice/challenge", LearnedKanjiLive.PracticeChallenge
       live "/users/:id/white-board", UserWhiteBoardLive
@@ -315,6 +318,10 @@ defmodule MedoruWeb.Router do
       live "/words", WordLive.Index
       live "/words/new", WordLive.Form, :new
       live "/words/:id/edit", WordLive.Form, :edit
+
+      live "/grammars", GrammarDefinitionLive.Index
+      live "/grammars/new", GrammarDefinitionLive.Form, :new
+      live "/grammars/:id/edit", GrammarDefinitionLive.Form, :edit
     end
   end
 
@@ -355,6 +362,10 @@ defmodule MedoruWeb.Router do
       live "/grammar-forms/new", GrammarFormLive.Form, :new
       live "/grammar-forms/:id/edit", GrammarFormLive.Form, :edit
 
+      live "/grammars", GrammarDefinitionLive.Index
+      live "/grammars/new", GrammarDefinitionLive.Form, :new
+      live "/grammars/:id/edit", GrammarDefinitionLive.Form, :edit
+
       live "/word-classes", WordClassLive.Index
       live "/word-classes/new", WordClassLive.Form, :new
       live "/word-classes/:id", WordClassLive.Show
@@ -374,6 +385,7 @@ defmodule MedoruWeb.Router do
     delete "/push-subscribe", PushSubscriptionController, :delete
     get "/kanji-preview/:character", KanjiPreviewController, :show
     get "/word-preview/:text", WordPreviewController, :show
+    get "/grammar-preview/:text", GrammarPreviewController, :show
     post "/chat/uploads", ChatUploadController, :create
   end
 

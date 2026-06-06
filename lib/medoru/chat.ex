@@ -558,12 +558,43 @@ defmodule Medoru.Chat do
   @doc """
   Gets the conversation linked to a classroom.
   Returns nil if no classroom chat exists.
+  Filters out participants who have left or whose user account is deleted.
   """
   def get_classroom_conversation(classroom_id) do
-    Conversation
-    |> where([c], c.classroom_id == ^classroom_id)
-    |> preload(participants: [user: :profile])
-    |> Repo.one()
+    conversation =
+      Conversation
+      |> where([c], c.classroom_id == ^classroom_id)
+      |> preload(participants: [user: :profile])
+      |> Repo.one()
+
+    if conversation do
+      active_participants =
+        Enum.reject(conversation.participants, fn p ->
+          p.has_left || (p.user && p.user.is_deleted)
+        end)
+
+      %{conversation | participants: active_participants}
+    else
+      nil
+    end
+  end
+
+  @doc """
+  Checks if a message sender should be visible in a classroom chat.
+  Hidden if the user is deleted or has left the conversation.
+  """
+  def sender_visible_in_classroom?(message, conversation) do
+    sender = message.sender
+
+    cond do
+      is_nil(sender) -> false
+      sender.is_deleted -> false
+      is_nil(conversation.classroom_id) -> true
+      true ->
+        Enum.any?(conversation.participants, fn p ->
+          p.user_id == sender.id && !p.has_left
+        end)
+    end
   end
 
   @doc """

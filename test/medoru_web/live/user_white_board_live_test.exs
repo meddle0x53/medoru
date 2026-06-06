@@ -88,6 +88,63 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
     end
   end
 
+  describe "grammar commands in posts" do
+    test "renders grammar preview for /grammar command in post", %{conn: conn} do
+      owner = owner_fixture()
+      grammar_definition_fixture(%{title: "te-form pattern", jlpt_level: 5})
+
+      {:ok, post} =
+        WhiteBoard.create_post(%{
+          user_id: owner.id,
+          title: "Grammar Post",
+          content: "/grammar te-form pattern",
+          visibility: "public",
+          post_type: "text"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "te-form pattern"
+      assert html =~ "/grammars/"
+    end
+
+    test "renders inline grammar link for \\text/ syntax in post", %{conn: conn} do
+      owner = owner_fixture()
+      grammar_definition_fixture(%{title: "na-adjective", jlpt_level: 5})
+
+      {:ok, post} =
+        WhiteBoard.create_post(%{
+          user_id: owner.id,
+          title: "Inline Grammar",
+          content: "Study \\na-adjective/ today",
+          visibility: "public",
+          post_type: "text"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "na-adjective"
+      assert html =~ "/grammars/"
+    end
+
+    test "renders plain text for unknown inline grammar \\text/", %{conn: conn} do
+      owner = owner_fixture()
+
+      {:ok, post} =
+        WhiteBoard.create_post(%{
+          user_id: owner.id,
+          title: "Unknown Grammar",
+          content: "Try \\onexistent-pattern/ here",
+          visibility: "public",
+          post_type: "text"
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "\\onexistent-pattern/"
+    end
+  end
+
   describe "canvas post" do
     test "owner can save a canvas post", %{conn: conn} do
       owner = owner_fixture()
