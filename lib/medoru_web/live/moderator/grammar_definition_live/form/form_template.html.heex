@@ -103,23 +103,32 @@
                           "px-3 py-1.5 rounded-lg font-medium",
                           @word_type_colors[element["word_type"]] || "bg-primary/10 text-primary"
                         ]}>
-                          <%= if element["word_class"] && element["word_class"] != "" do %>
-                            {element["word_class"]}
-                          <% else %>
-                            {element["word_type"] || gettext("word")}
-                          <% end %>
+                          {element["word_type"] || gettext("word")}
                           <%= if element["forms"] && length(element["forms"]) > 0 do %>
                             <% form_name = hd(element["forms"])
-                               form_display = Enum.find(get_forms_for_word_type(@grammar_forms, element["word_type"]), &(&1.name == form_name))
-                               display_text = if form_display, do: form_display.display_name, else: form_name %>
+                               form_display = if element["word_type"] == "particle" do
+                                 Enum.find(@particles, fn {_label, value} -> value == form_name end)
+                               else
+                                 Enum.find(get_forms_for_word_type(@grammar_forms, element["word_type"]), &(&1.name == form_name))
+                               end
+                               display_text = case form_display do
+                                 {label, _} -> label
+                                 %{display_name: name} -> name
+                                 _ -> form_name
+                               end %>
                             <span class="text-xs opacity-80">
                               ({display_text})
                             </span>
                           <% end %>
                         </span>
-                      <% "particle" -> %>
-                        <span class="px-3 py-1.5 bg-orange-500 text-white rounded-lg font-medium">
-                          {element["text"] || gettext("particle")}
+                      <% "word_class" -> %>
+                        <% class = Enum.find(@word_classes, &(&1.id == element["word_class_id"])) %>
+                        <span class="px-3 py-1.5 bg-secondary text-secondary-content rounded-lg font-medium">
+                          <%= if class do %>
+                            {class.display_name}
+                          <% else %>
+                            {gettext("Class")}
+                          <% end %>
                         </span>
                     <% end %>
 
@@ -169,10 +178,10 @@
               <button
                 type="button"
                 phx-click="add_pattern_element"
-                phx-value-type="particle"
+                phx-value-type="word_class"
                 class="btn btn-sm btn-outline"
               >
-                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Particle")}
+                <.icon name="hero-plus" class="w-3 h-3 mr-1" /> {gettext("Word Class")}
               </button>
               <button
                 type="button"
@@ -210,46 +219,56 @@
                           <% end %>
                         </select>
                       </form>
-                      <form phx-change="update_element_word_class" class="contents">
-                        <input type="hidden" name="index" value={idx} />
-                        <input
-                          type="text"
-                          name="value"
-                          value={element["word_class"] || ""}
-                          placeholder={gettext("Word class (optional)")}
-                          class="input input-bordered input-sm flex-1 min-w-[150px]"
-                        />
-                      </form>
                       <form phx-change="update_element_form" class="contents">
                         <input type="hidden" name="index" value={idx} />
                         <select
                           name="value"
                           class="select select-bordered select-sm flex-1 min-w-[150px]"
                         >
-                          <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
-                            {gettext("Any form")}
-                          </option>
-                          <%= for form <- get_forms_for_word_type(@grammar_forms, element["word_type"]) do %>
-                            <option
-                              value={form.name}
-                              selected={element["forms"] && form.name in element["forms"]}
-                            >
-                              {form.display_name}
+                          <%= if element["word_type"] == "particle" do %>
+                            <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
+                              {gettext("Select particle...")}
                             </option>
+                            <%= for {label, value} <- @particles do %>
+                              <option
+                                value={value}
+                                selected={element["forms"] && value in element["forms"]}
+                              >
+                                {label}
+                              </option>
+                            <% end %>
+                          <% else %>
+                            <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
+                              {gettext("Any form")}
+                            </option>
+                            <%= for form <- get_forms_for_word_type(@grammar_forms, element["word_type"]) do %>
+                              <option
+                                value={form.name}
+                                selected={element["forms"] && form.name in element["forms"]}
+                              >
+                                {form.display_name}
+                              </option>
+                            <% end %>
                           <% end %>
                         </select>
                       </form>
 
-                    <% "particle" -> %>
-                      <form phx-change="update_element_text" class="contents">
+                    <% "word_class" -> %>
+                      <form phx-change="update_element_word_class" class="contents">
                         <input type="hidden" name="index" value={idx} />
                         <select
                           name="value"
-                          class="select select-bordered select-sm flex-1"
+                          class="select select-bordered select-sm flex-1 min-w-[150px]"
                         >
-                          <%= for {label, value} <- @particles do %>
-                            <option value={value} selected={element["text"] == value}>
-                              {label}
+                          <option value="" selected={is_nil(element["word_class_id"]) || element["word_class_id"] == ""}>
+                            {gettext("Select a word class...")}
+                          </option>
+                          <%= for class <- @word_classes do %>
+                            <option
+                              value={class.id}
+                              selected={element["word_class_id"] == class.id}
+                            >
+                              {class.display_name}
                             </option>
                           <% end %>
                         </select>

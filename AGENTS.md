@@ -4,7 +4,7 @@
 
 **Version**: 0.5.0 ✅ COMPLETE  
 **Status**: v0.5.0 complete. Planning v0.5.1.  
-**Tests**: 1121 passing  
+**Tests**: 1154 passing  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -208,14 +208,75 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 **Navigation:**
 - "Grammar" link added after "Words" in desktop nav, mobile drawer, admin content management, moderator content management
 
+**Grammar Forms Dropdown:**
+- Admin/moderator forms use `<select>` populated from `Content.list_grammar_forms()` for word slot forms
+- Form event handling fixed with individual `<form>` wrappers per input for reliable `phx-change`/`phx-value-*`
+
+**Frequency Field:**
+- Added `frequency` (integer, default 1000) to grammar_definitions with migration
+- Sorting: `asc: frequency, asc: jlpt_level, asc: title`
+
+**Dashboard & Navigation:**
+- Admin and moderator dashboards have "Grammar" quick-access cards
+- "Grammar" nav link added after "Words" in desktop nav, mobile drawer, admin/moderator content management
+
+**Teacher "From Grammar Definition" Button:**
+- Teacher form modal to browse/search grammar definitions and auto-populate a new grammar step
+- `create_step_from_grammar_definition/2` maps definition fields to lesson step structure
+
+**Grammar Commands in Chat/Posts/Comments:**
+- `/grammar <text>`, `/g <text>`, `\grammar <text>`, `\g <text>` render grammar preview cards
+- Validation before send; error flash if not found
+- White board: shows original text when grammar not found
+
+**Inline Grammar Links:**
+- `\<text>/` syntax in messages, posts, comments creates links to grammar show pages
+- Same search logic as `/grammar` command; displays `text` without delimiters when found
+- Falls back to plain `text` (delimiters removed) when not found
+
+**Encrypted Chat Grammar Support:**
+- `chat_crypto.js` hook updated to render grammar previews and inline links client-side after decryption
+- `GET /api/grammar-preview/:text` endpoint for client-side grammar lookups
+
+**Comment Improvements:**
+- Comment timestamps added via `format_localized_datetime` on white board feed and dashboard stream
+- Comments wired through `WhiteBoardPostRenderer.render_comment_content/1` for grammar/word/kanji rendering
+
+**Mobile Fixes:**
+- `grammar_chat_preview` max-width adaptive
+- Modal padding `p-4 sm:p-6`
+- Word color editor `grid-cols-4 sm:grid-cols-8`
+
+**"Mark as Learned" for Grammar Definitions:**
+- Polymorphic `user_progress` table extended with `grammar_definition_id` nullable FK + partial unique index
+- `UserStats` schema: `total_grammar_learned` counter
+- `Learning` context: `grammar_learned?/2`, `track_grammar_learned/2`, `unlearn_grammar/2`, `list_learned_grammar_definitions/2`, `count_learned_grammar_definitions/1`
+- `Gamification.check_grammar_badges/2` with `:grammar_count` badge criteria type
+- `GrammarDefinitionLive.Show`: learned toggle button (green "Learned" → red hover to unlearn)
+- Dashboard + Profile: "Grammar Learned" stat card with link to `/users/:id/grammars`
+- New `LearnedGrammarsLive.Index` page: paginated list of learned grammar with pattern preview, JLPT badge, links to `/grammars/:slug`
+
+**"Copy To Grammar" Admin Feature:**
+- Admin-only "Copy To Grammar" button on grammar lesson steps (student view + preview)
+- Checks if grammar definition with same title exists; if not, copies step data to new definition
+- Pattern element transformation: `form` → `forms` array, `value` → `text`, `word_class_id` → `word_class`
+- Japanese-only title slug fallback: SHA256 hash-based slug
+
 **Tests:**
-- `test/medoru/grammar_definitions_test.exs` — 18 context tests (CRUD, pagination, filters, search, localized helpers)
-- `test/medoru_web/live/grammar_definition_live_test.exs` — 12 public LiveView tests (index, show, filters, search, validation, navigation)
-- `test/medoru_web/live/admin/grammar_definition_live_test.exs` — 10 admin LiveView tests (index, create, edit, delete, access control)
+- `test/medoru/grammar_definitions_test.exs` — 18 context tests
+- `test/medoru_web/live/grammar_definition_live_test.exs` — 12 public LiveView tests
+- `test/medoru_web/live/admin/grammar_definition_live_test.exs` — 10 admin LiveView tests
 - `test/medoru_web/live/moderator_live_test.exs` — 2 moderator access tests
+- `test/medoru_web/live/learned_grammars_live_test.exs` — 6 learned grammar list tests
+- `test/medoru_web/live/classroom_live/custom_lesson_test.exs` — 6 "Copy To Grammar" tests
+- `test/medoru_web/controllers/grammar_preview_controller_test.exs` — 4 preview API tests
+- `test/medoru_web/live/teacher/grammar_lesson_live_test.exs` — 4 "From Grammar Definition" modal tests
+- `test/medoru_web/live/user_white_board_live_test.exs` — 3 white board grammar command tests
+- `test/medoru/content_test.exs` — 5 `get_grammar_definition_by_title` context tests
+- `test/medoru_web/live/classroom_live/chat_test.exs` — 4 classroom chat grammar tests
 
 **Localization:**
-- Full gettext extraction for all new UI strings (en, bg, ja)
+- Full gettext extraction for all new UI strings (en, bg, ja) — 0 new untranslated messages
 
 **Key files:**
 - `lib/medoru/content/grammar_definition.ex`
@@ -223,6 +284,11 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `lib/medoru_web/live/grammar_definition_live/index.ex`, `show.ex`
 - `lib/medoru_web/live/admin/grammar_definition_live/index.ex`, `form.ex`
 - `lib/medoru_web/live/moderator/grammar_definition_live/index.ex`, `form.ex`
+- `lib/medoru_web/live/learned_grammars_live/index.ex`, `index.html.heex`
+- `lib/medoru_web/live/classroom_live/custom_lesson.ex` (copy_to_grammar event)
+- `lib/medoru/learning.ex` (grammar progress tracking)
+- `lib/medoru/gamification.ex` (`check_grammar_badges/2`)
+- `assets/js/hooks/chat_crypto.js` (client-side grammar rendering)
 
 ### What's Next (v0.5.x)
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)

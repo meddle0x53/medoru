@@ -159,6 +159,8 @@
                           <span>{element["text"] || ""}</span>
                         <% "word_slot" -> %>
                           <span class="text-primary">[{element["word_type"] || "word"}]</span>
+                        <% "word_class" -> %>
+                          <span class="text-secondary">[{element["word_class"] || "class"}]</span>
                         <% "particle" -> %>
                           <span class="text-secondary">{element["text"] || "particle"}</span>
                         <% _ -> %>

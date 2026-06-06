@@ -60,16 +60,16 @@
                 </span>
               <% "word_slot" -> %>
                 <span class="px-3 py-1.5 bg-primary/10 rounded-lg text-primary font-medium border border-primary/30 text-lg">
-                  <%= if element["word_class"] do %>
-                    {element["word_class"]}
-                  <% else %>
-                    {element["word_type"] || gettext("word")}
-                  <% end %>
+                  {element["word_type"] || gettext("word")}
                   <%= if element["forms"] && length(element["forms"]) > 0 do %>
                     <span class="text-sm opacity-80">
                       ({Enum.join(element["forms"], ", ")})
                     </span>
                   <% end %>
+                </span>
+              <% "word_class" -> %>
+                <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">
+                  {element["word_class"] || gettext("Class")}
                 </span>
               <% "particle" -> %>
                 <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">

@@ -80,6 +80,7 @@ defmodule MedoruWeb.Moderator.GrammarDefinitionLive.Form do
   @impl true
   def mount(_params, _session, socket) do
     grammar_forms = Content.list_grammar_forms()
+    word_classes = Content.list_word_classes()
 
     {:ok,
      socket
@@ -87,7 +88,8 @@ defmodule MedoruWeb.Moderator.GrammarDefinitionLive.Form do
      |> assign(:particles, @particles)
      |> assign(:word_type_colors, @word_type_colors)
      |> assign(:color_palette, @color_palette)
-     |> assign(:grammar_forms, grammar_forms)}
+     |> assign(:grammar_forms, grammar_forms)
+     |> assign(:word_classes, word_classes)}
   end
 
   @impl true
@@ -199,7 +201,7 @@ defmodule MedoruWeb.Moderator.GrammarDefinitionLive.Form do
   def handle_event("update_element_word_class", %{"index" => index, "value" => value}, socket) do
     form_data = socket.assigns.form_data
     elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      Map.put(el, "word_class", value)
+      Map.put(el, "word_class_id", value)
     end)
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
@@ -417,15 +419,14 @@ defmodule MedoruWeb.Moderator.GrammarDefinitionLive.Form do
       "type" => "word_slot",
       "word_type" => "verb",
       "forms" => [],
-      "word_class" => nil,
       "optional" => false
     }
   end
 
-  defp create_pattern_element("particle") do
+  defp create_pattern_element("word_class") do
     %{
-      "type" => "particle",
-      "text" => "は",
+      "type" => "word_class",
+      "word_class_id" => nil,
       "optional" => false
     }
   end
