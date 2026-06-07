@@ -2,12 +2,15 @@
   <div class="max-w-4xl mx-auto px-4 py-8">
     <%!-- Back Link --%>
     <.link
-      navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
+      navigate={if @kanji.jlpt_level, do: ~p"/kanji?level=#{@kanji.jlpt_level}", else: ~p"/kanji"}
       class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
     >
-      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to N%{level} Kanji",
-        level: @kanji.jlpt_level
-      )}
+      <.icon name="hero-arrow-left" class="w-4 h-4" />
+      <%= if @kanji.jlpt_level do %>
+        {gettext("Back to N%{level} Kanji", level: @kanji.jlpt_level)}
+      <% else %>
+        {gettext("Back to Kanji")}
+      <% end %>
     </.link>
 
     <%!-- Main Kanji Card --%>
@@ -27,7 +30,11 @@
           <div class="flex-1">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
-                JLPT N{@kanji.jlpt_level}
+                <%= if @kanji.jlpt_level do %>
+                  JLPT N{@kanji.jlpt_level}
+                <% else %>
+                  {gettext("Unclassified")}
+                <% end %>
               </span>
               <%= if @kanji.school_level do %>
                 <.link
@@ -468,7 +475,7 @@
     <%!-- Navigation --%>
     <div class="mt-8">
       <.link
-        navigate={~p"/kanji?level=#{@kanji.jlpt_level}"}
+        navigate={if @kanji.jlpt_level, do: ~p"/kanji?level=#{@kanji.jlpt_level}", else: ~p"/kanji"}
         class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
       >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}
