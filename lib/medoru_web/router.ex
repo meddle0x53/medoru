@@ -376,6 +376,8 @@ defmodule MedoruWeb.Router do
       live "/tags", TagLive.Index
       live "/tags/new", TagLive.Form, :new
       live "/tags/:id/edit", TagLive.Form, :edit
+
+      live "/game", GameLive
     end
   end
 
@@ -389,6 +391,8 @@ defmodule MedoruWeb.Router do
     get "/word-preview/:text", WordPreviewController, :show
     get "/grammar-preview/:text", GrammarPreviewController, :show
     post "/chat/uploads", ChatUploadController, :create
+    get "/game/user-data", GameApiController, :user_data
+    post "/game/run-result", GameApiController, :run_result
   end
 
   # Other scopes may use custom stacks.

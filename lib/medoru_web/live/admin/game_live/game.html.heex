@@ -1,0 +1,26 @@
+<div class="min-h-screen bg-base-200 flex flex-col items-center justify-center p-4">
+  <div class="mb-4 text-center">
+    <h1 class="text-3xl font-bold text-primary">Kill Medoru!</h1>
+    <p class="text-secondary text-sm mt-1">Admin Battle MVP — v0.1.0</p>
+  </div>
+
+  <div
+    id="game-wrapper"
+    class="relative bg-base-300 rounded-xl shadow-2xl overflow-hidden"
+    style="max-width: 100%; width: 960px; height: 540px;"
+    phx-update="ignore"
+  >
+    <div id="game-container" style="width: 100%; height: 100%;"></div>
+  </div>
+
+  <div class="mt-4 text-center text-xs text-secondary max-w-xl">
+    <p>Type the reading of the shown kanji within the time limit to execute skills at full power.</p>
+    <p class="mt-1">Perfect (fast) = 125% · Success = 100% · Fail = 50%</p>
+  </div>
+
+  <script>
+    window.gameData = <%= raw(@game_data) %>;
+  </script>
+  <script type="text/javascript" src={~p"/assets/js/phaser.min.js"}></script>
+  <script type="text/javascript" src={~p"/assets/js/game.js"}></script>
+</div>

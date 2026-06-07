@@ -348,6 +348,12 @@ defmodule MedoruWeb.Layouts do
                         locale={@current_scope[:locale]}
                       />
                       <.mobile_nav_link
+                        path="/admin/game"
+                        icon="hero-sparkles"
+                        label={gettext("Kill Medoru!")}
+                        locale={@current_scope[:locale]}
+                      />
+                      <.mobile_nav_link
                         path="/admin/word-classes"
                         icon="hero-tag"
                         label={gettext("Word Classes")}

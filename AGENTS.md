@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Version**: 0.5.0 ✅ COMPLETE  
-**Status**: v0.5.0 complete. Planning v0.5.1.  
+**Version**: 0.5.1 ✅ COMPLETE  
+**Status**: v0.5.1 complete. Kill Medoru! battle MVP built. Planning next game iteration in parallel with v0.6.x toward v1.0.0.  
 **Tests**: 1165 passing  
 **URL**: https://medoru.net
 
@@ -302,7 +302,50 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - `lib/medoru_web/live/user_live/show/profile_page.html.heex`
 - `lib/medoru_web/router.ex`
 
-### What's Next (v0.5.x)
+### What's Complete (v0.5.1) — Kill Medoru! Battle MVP (v1.0.0-prealpha)
+**Status**: ✅ MVP BATTLE COMPLETE — Admin-only, parallel development toward v1.0.0
+
+**Game Architecture:**
+- **Phaser 3** runs client-authoritative in a separate JS bundle (`assets/js/game.js`)
+- **Phoenix** serves user data (learned kanji, words, level) and receives run results
+- Admin-only access at `/admin/game` — decoupled design for future Steam export
+- Phaser loaded via `assets/vendor/phaser.min.js`, not bundled with esbuild
+
+**MVP Battle Scene:**
+- Warrior (player, blue square) vs Lesser Oni (enemy, red square)
+- Turn-based stamina system: player gets 10 stamina/turn, enemy gets 8
+- 3 fixed skills: Forward Slash (attack), Setup Defence (block), Heal Potion (heal)
+- Kanji challenge before every skill: type the reading within 5 seconds
+- Challenge tiers: Perfect (<40% time) = 125%, Success = 100%, Fail = 50%
+- Aggressive enemy AI: prefers attacks → buffs → recover
+- Floating combat text, screen shake on crits, HP/stamina bars
+- Win grants 50 XP; lose also reports to server
+- Stats scale with user's site level
+
+**Scenes Implemented (MVP):**
+- `BootScene` — Procedural square textures (replaceable with sprites)
+- `BattleScene` — Full combat loop with challenge overlay
+
+**Planned Scenes (v1.0.0 roadmap):**
+- `MapScene` — Node graph with battles, events, rest, shop
+- `EquipmentScene` — Inventory & skill loadout management
+- `RewardScene` — Choose 1 of 3 drops after battle
+- `RestScene` — Upgrade stats or heal
+- `TextEventScene` — Narrative choices
+- `MiniGameScene` — Reuse existing site games (cascade, cards, etc.)
+- `ShopScene` — Buy potions/upgrades
+
+**Key Files:**
+- `assets/js/game.js` — Entry point (loads `window.Phaser`)
+- `assets/js/game/scenes/BattleScene.js` — Main battle loop
+- `assets/js/game/entities/{Character,Player,Enemy}.js` — Entity system
+- `assets/js/game/systems/{TurnManager,ChallengeSystem}.js` — Core systems
+- `assets/js/game/data/{skills,enemies}.js` — Fixed definitions
+- `lib/medoru_web/live/admin/game_live.ex` — Admin game page
+- `lib/medoru_web/controllers/game_api_controller.ex` — Run result API
+
+### What's Next (v0.5.x / v0.6.x)
+- **Kill Medoru! iteration**: Sprites, Map scene, Equipment scene, more enemy types
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
 - See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
 
