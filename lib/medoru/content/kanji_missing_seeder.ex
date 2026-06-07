@@ -213,5 +213,136 @@ defmodule Medoru.Content.KanjiMissingSeeder do
     end)
   end
 
+  @doc """
+  Fixes stroke data for existing missing kanji by re-reading the seed file.
+
+  This should be run after regenerating `missing_kanji_full.json` with
+  corrected stroke data (e.g., proper KanjiVG center-line paths).
+
+  ## Examples
+
+      Medoru.Content.KanjiMissingSeeder.fix_strokes()
+  """
+  def fix_strokes(opts \\ []) do
+    target_chars = Keyword.get(opts, :characters)
+
+    seed_file =
+      if File.exists?(@seed_file) do
+        @seed_file
+      else
+        Path.join([:code.priv_dir(:medoru), "repo", "seeds", "missing_kanji_full.json"])
+      end
+
+    unless File.exists?(seed_file) do
+      Logger.error("Missing kanji seed file not found: #{seed_file}")
+      return()
+    end
+
+    Logger.info("Loading corrected stroke data from #{seed_file}...")
+
+    case File.read(seed_file) do
+      {:ok, content} ->
+        case Jason.decode(content) do
+          {:ok, %{"kanji" => kanji_list}} ->
+            kanji_to_fix =
+              if target_chars do
+                target_set = MapSet.new(target_chars)
+                Enum.filter(kanji_list, fn k -> MapSet.member?(target_set, k["character"]) end)
+              else
+                kanji_list
+              end
+
+            Logger.info("Fixing strokes for #{length(kanji_to_fix)} kanji...")
+            do_fix_strokes(kanji_to_fix)
+
+          {:error, reason} ->
+            Logger.error("Failed to parse JSON: #{inspect(reason)}")
+            {:error, :json_parse_error}
+        end
+
+      {:error, reason} ->
+        Logger.error("Failed to read file: #{inspect(reason)}")
+        {:error, :file_read_error}
+    end
+  end
+
+  defp do_fix_strokes(kanji_list) do
+    results =
+      Enum.reduce(kanji_list, %{updated: 0, skipped: 0, errors: []}, fn kanji_data, acc ->
+        case update_kanji_strokes(kanji_data) do
+          {:ok, :updated} -> Map.update!(acc, :updated, &(&1 + 1))
+          {:ok, :skipped} -> Map.update!(acc, :skipped, &(&1 + 1))
+          {:error, reason} ->
+            acc
+            |> Map.update!(:errors, &[reason | &1])
+            |> Map.update!(:skipped, &(&1 + 1))
+        end
+      end)
+
+    Logger.info("")
+    Logger.info("Stroke fix complete!")
+    Logger.info("  Updated: #{results.updated}")
+    Logger.info("  Skipped: #{results.skipped}")
+
+    if results.errors != [] do
+      Logger.warning("  Errors: #{length(results.errors)}")
+      Enum.take(results.errors, 10)
+      |> Enum.each(fn err -> Logger.warning("    #{err}") end)
+    end
+
+    {:ok, results}
+  end
+
+  defp update_kanji_strokes(%{"character" => character} = data) do
+    existing = Repo.get_by(Kanji, character: character)
+
+    if existing do
+      stroke_data = data["stroke_data"]
+
+      if stroke_data && stroke_data != %{} do
+        # Merge decomposition and etymology into stroke_data
+        stroke_data =
+          if data["decomposition"] do
+            Map.put(stroke_data, "decomposition", data["decomposition"])
+          else
+            stroke_data
+          end
+
+        stroke_data =
+          if data["etymology"] do
+            Map.put(stroke_data, "etymology", data["etymology"])
+          else
+            stroke_data
+          end
+
+        case Content.update_kanji(existing, %{stroke_data: stroke_data}) do
+          {:ok, _} ->
+            Logger.debug("Updated strokes for: #{character}")
+            {:ok, :updated}
+
+          {:error, changeset} ->
+            Logger.error(
+              "Failed to update #{character}: #{inspect(changeset.errors)}"
+            )
+
+            {:error, "#{character}: #{inspect(changeset.errors)}"}
+        end
+      else
+        # If corrected seed has no stroke data, clear it
+        case Content.update_kanji(existing, %{stroke_data: nil}) do
+          {:ok, _} ->
+            Logger.debug("Cleared strokes for: #{character}")
+            {:ok, :updated}
+
+          {:error, changeset} ->
+            {:error, "#{character}: #{inspect(changeset.errors)}"}
+        end
+      end
+    else
+      Logger.debug("Kanji not found: #{character}")
+      {:ok, :skipped}
+    end
+  end
+
   defp return, do: :ok
 end

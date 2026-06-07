@@ -52,11 +52,11 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={stroke["path"]}
                   fill="none"
-                  stroke={if makemeahanzi?(@bounds), do: "#f9a8d4", else: "currentColor"}
-                  stroke-width={stroke_width(@bounds)}
+                  stroke="currentColor"
+                  stroke-width="3"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class={if makemeahanzi?(@bounds), do: nil, else: "text-pink-200"}
+                  class="text-pink-200"
                 />
               <% end %>
 
@@ -66,12 +66,12 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={current["path"]}
                   fill="none"
-                  stroke={if makemeahanzi?(@bounds), do: "#60a5fa", else: "currentColor"}
-                  stroke-width={current_stroke_width(@bounds)}
+                  stroke="currentColor"
+                  stroke-width="4"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class={if makemeahanzi?(@bounds), do: nil, else: "text-primary"}
-                  style={animation_style(@is_playing, @speed, @bounds)}
+                  class="text-primary"
+                  style={animation_style(@is_playing, @speed)}
                 />
 
                 <%!-- Stroke number indicator --%>
@@ -97,11 +97,11 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={stroke["path"]}
                   fill="none"
-                  stroke={if makemeahanzi?(@bounds), do: "rgba(200,200,200,0.35)", else: "currentColor"}
-                  stroke-width={preview_stroke_width(@bounds)}
+                  stroke="currentColor"
+                  stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class={if makemeahanzi?(@bounds), do: nil, else: "text-base-content/10"}
+                  class="text-base-content/10"
                 />
               <% end %>
             </svg>
@@ -285,49 +285,12 @@ defmodule MedoruWeb.StrokeAnimator do
     end
   end
 
-  defp animation_style(true, speed, bounds) do
+  defp animation_style(true, speed) do
     duration = trunc(1000 / speed)
-    dash = dash_length(bounds)
-
-    "stroke-dasharray: #{dash}; stroke-dashoffset: #{dash}; animation: draw #{duration}ms ease-in-out forwards;"
+    "stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw #{duration}ms ease-in-out forwards;"
   end
 
-  defp animation_style(false, _, _), do: ""
-
-  defp stroke_width(bounds) do
-    case bounds do
-      %{"width" => w} when w > 200 -> "24"
-      _ -> "3"
-    end
-  end
-
-  defp current_stroke_width(bounds) do
-    case bounds do
-      %{"width" => w} when w > 200 -> "32"
-      _ -> "4"
-    end
-  end
-
-  defp preview_stroke_width(bounds) do
-    case bounds do
-      %{"width" => w} when w > 200 -> "16"
-      _ -> "2"
-    end
-  end
-
-  defp dash_length(bounds) do
-    case bounds do
-      %{"width" => w} when w > 200 -> "10000"
-      _ -> "1000"
-    end
-  end
-
-  defp makemeahanzi?(bounds) do
-    case bounds do
-      %{"width" => w} when w > 200 -> true
-      _ -> false
-    end
-  end
+  defp animation_style(false, _), do: ""
 
   defp stroke_class(order, current, completed) do
     cond do
