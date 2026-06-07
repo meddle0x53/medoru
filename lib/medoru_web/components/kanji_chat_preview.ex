@@ -124,7 +124,17 @@ defmodule MedoruWeb.KanjiChatPreview do
     {:safe, html}
   end
 
-  defp get_strokes(%{"strokes" => strokes}) when is_list(strokes), do: strokes
+  defp get_strokes(%{"strokes" => strokes}) when is_list(strokes) do
+    strokes
+    |> Enum.with_index(1)
+    |> Enum.map(fn
+      {stroke, _idx} when is_map(stroke) -> stroke
+      {path, idx} when is_binary(path) -> %{"path" => path, "order" => idx}
+      _ -> nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
   defp get_strokes(_), do: []
 
   defp get_bounds(%{"bounds" => bounds}), do: bounds

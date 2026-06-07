@@ -253,7 +253,18 @@ defmodule MedoruWeb.StrokeAnimator do
   # Helper functions
 
   defp get_strokes(nil), do: []
-  defp get_strokes(%{"strokes" => strokes}) when is_list(strokes), do: strokes
+
+  defp get_strokes(%{"strokes" => strokes}) when is_list(strokes) do
+    strokes
+    |> Enum.with_index(1)
+    |> Enum.map(fn
+      {stroke, _idx} when is_map(stroke) -> stroke
+      {path, idx} when is_binary(path) -> %{"path" => path, "order" => idx}
+      _ -> nil
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
   defp get_strokes(_), do: []
 
   defp get_bounds(nil), do: %{"width" => 100, "height" => 100, "viewBox" => "0 0 100 100"}
