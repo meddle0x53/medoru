@@ -53,7 +53,7 @@ defmodule MedoruWeb.StrokeAnimator do
                   d={stroke["path"]}
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="3"
+                  stroke-width={stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   class="text-pink-200"
@@ -67,11 +67,11 @@ defmodule MedoruWeb.StrokeAnimator do
                   d={current["path"]}
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="4"
+                  stroke-width={current_stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   class="text-primary"
-                  style={animation_style(@is_playing, @speed)}
+                  style={animation_style(@is_playing, @speed, @bounds)}
                 />
 
                 <%!-- Stroke number indicator --%>
@@ -98,7 +98,7 @@ defmodule MedoruWeb.StrokeAnimator do
                   d={stroke["path"]}
                   fill="none"
                   stroke="currentColor"
-                  stroke-width="2"
+                  stroke-width={preview_stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   class="text-base-content/10"
@@ -285,13 +285,42 @@ defmodule MedoruWeb.StrokeAnimator do
     end
   end
 
-  defp animation_style(true, speed) do
+  defp animation_style(true, speed, bounds) do
     duration = trunc(1000 / speed)
+    dash = dash_length(bounds)
 
-    "stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw #{duration}ms ease-in-out forwards;"
+    "stroke-dasharray: #{dash}; stroke-dashoffset: #{dash}; animation: draw #{duration}ms ease-in-out forwards;"
   end
 
-  defp animation_style(false, _), do: ""
+  defp animation_style(false, _, _), do: ""
+
+  defp stroke_width(bounds) do
+    case bounds do
+      %{"width" => w} when w > 200 -> "24"
+      _ -> "3"
+    end
+  end
+
+  defp current_stroke_width(bounds) do
+    case bounds do
+      %{"width" => w} when w > 200 -> "32"
+      _ -> "4"
+    end
+  end
+
+  defp preview_stroke_width(bounds) do
+    case bounds do
+      %{"width" => w} when w > 200 -> "16"
+      _ -> "2"
+    end
+  end
+
+  defp dash_length(bounds) do
+    case bounds do
+      %{"width" => w} when w > 200 -> "10000"
+      _ -> "1000"
+    end
+  end
 
   defp stroke_class(order, current, completed) do
     cond do
