@@ -52,11 +52,11 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={stroke["path"]}
                   fill="none"
-                  stroke="currentColor"
+                  stroke={if makemeahanzi?(@bounds), do: "#f9a8d4", else: "currentColor"}
                   stroke-width={stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="text-pink-200"
+                  class={if makemeahanzi?(@bounds), do: nil, else: "text-pink-200"}
                 />
               <% end %>
 
@@ -66,11 +66,11 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={current["path"]}
                   fill="none"
-                  stroke="currentColor"
+                  stroke={if makemeahanzi?(@bounds), do: "#60a5fa", else: "currentColor"}
                   stroke-width={current_stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="text-primary"
+                  class={if makemeahanzi?(@bounds), do: nil, else: "text-primary"}
                   style={animation_style(@is_playing, @speed, @bounds)}
                 />
 
@@ -97,11 +97,11 @@ defmodule MedoruWeb.StrokeAnimator do
                 <path
                   d={stroke["path"]}
                   fill="none"
-                  stroke="currentColor"
+                  stroke={if makemeahanzi?(@bounds), do: "rgba(200,200,200,0.35)", else: "currentColor"}
                   stroke-width={preview_stroke_width(@bounds)}
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="text-base-content/10"
+                  class={if makemeahanzi?(@bounds), do: nil, else: "text-base-content/10"}
                 />
               <% end %>
             </svg>
@@ -319,6 +319,13 @@ defmodule MedoruWeb.StrokeAnimator do
     case bounds do
       %{"width" => w} when w > 200 -> "10000"
       _ -> "1000"
+    end
+  end
+
+  defp makemeahanzi?(bounds) do
+    case bounds do
+      %{"width" => w} when w > 200 -> true
+      _ -> false
     end
   end
 
