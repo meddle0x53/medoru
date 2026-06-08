@@ -155,7 +155,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                 </div>
               <% else %>
                 <%!-- Text Post Form --%>
-                <div phx-hook="BoardInput" id="board-input-form">
+                <div
+                  phx-hook="BoardInput"
+                  id="board-input-form"
+                  data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                >
                   <form phx-submit="create_post" class="space-y-3">
                     <input
                       type="text"
@@ -262,7 +266,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           type="file"
                           data-board-file-input
                           class="hidden"
-                          accept="image/*,audio/*"
+                          accept="image/*,audio/*,video/*"
                         />
                       </div>
                       <div class="flex gap-2">
@@ -541,7 +545,13 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                     <%!-- Comment Input --%>
                     <%= if @current_scope.current_user do %>
                       <% reply_target = Map.get(@replying_to, post.id) %>
-                      <form phx-submit="add_comment" class="flex gap-2 flex-wrap sm:flex-nowrap">
+                      <form
+                        id={"comment-form-#{post.id}"}
+                        phx-submit="add_comment"
+                        phx-hook="CommentInput"
+                        class="flex gap-2 flex-wrap sm:flex-nowrap"
+                        data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                      >
                         <input type="hidden" name="post_id" value={post.id} />
                         <%= if reply_target do %>
                           <input type="hidden" name="parent_id" value={reply_target} />
@@ -557,6 +567,15 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           }
                           required
                         />
+                        <input type="file" data-comment-file-input class="hidden" />
+                        <button
+                          type="button"
+                          data-comment-attachment-btn
+                          class="btn btn-ghost btn-sm btn-circle shrink-0"
+                          title={gettext("Attach file")}
+                        >
+                          <.icon name="hero-paper-clip" class="w-4 h-4" />
+                        </button>
                         <%= if reply_target do %>
                           <button type="button" phx-click="cancel_reply" phx-value-post-id={post.id} class="btn btn-ghost btn-sm">
                             {gettext("Cancel")}

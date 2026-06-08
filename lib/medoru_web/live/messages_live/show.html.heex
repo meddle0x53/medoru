@@ -194,6 +194,8 @@
                       <span class="truncate block">{gettext("🎤 Voice message")}</span>
                     <% message.reply_to_message.attachment_type == "audio" -> %>
                       <span class="truncate block">{gettext("🔊 Audio")}</span>
+                    <% message.reply_to_message.attachment_type == "video" -> %>
+                      <span class="truncate block">{gettext("🎬 Video")}</span>
                     <% message.reply_to_message.attachment_type == "document" -> %>
                       <span class="truncate block">{gettext("📎 File")}</span>
                     <% message.reply_to_message.ciphertext -> %>
@@ -383,6 +385,25 @@
                             preload="auto"
                           >
                           </audio>
+                        </div>
+                      <% message.attachment_type == "video" && message.attachment_path -> %>
+                        <div class="relative group/video">
+                          <video
+                            class="max-w-[320px] max-h-[240px] rounded-lg object-cover"
+                            controls
+                            preload="metadata"
+                          >
+                            <source src={message.attachment_path} type={video_mime_type(message.attachment_path)} />
+                            <a href={message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+                          </video>
+                          <a
+                            href={message.attachment_path}
+                            download
+                            class="absolute bottom-2 right-2 p-1.5 rounded bg-black/50 text-white opacity-0 group-hover/video:opacity-100 transition-opacity"
+                            title={gettext("Download")}
+                          >
+                            <.icon name="hero-arrow-down-tray" class="w-3.5 h-3.5" />
+                          </a>
                         </div>
                       <% message.attachment_type == "document" && message.attachment_path -> %>
                         <a
@@ -634,6 +655,8 @@
                 <p class="text-sm text-base-content/80 truncate">{gettext("🎤 Voice message")}</p>
               <% @reply_to.attachment_type == "audio" -> %>
                 <p class="text-sm text-base-content/80 truncate">{gettext("🔊 Audio")}</p>
+              <% @reply_to.attachment_type == "video" -> %>
+                <p class="text-sm text-base-content/80 truncate">{gettext("🎬 Video")}</p>
               <% @reply_to.attachment_type == "document" -> %>
                 <p class="text-sm text-base-content/80 truncate">{gettext("📎 File")}</p>
               <% @reply_to.ciphertext -> %>
@@ -943,6 +966,7 @@
                 class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative z-30"
                 phx-hook="ChatInput"
                 data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
+                data-can-upload-video={if Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
               >
                 <%!-- File Preview --%>
                 <div id="chat-file-preview" class="hidden mb-2 relative">
@@ -962,7 +986,7 @@
                 <input
                   type="file"
                   id="chat-file-input"
-                  accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+                  accept="image/*,audio/*,video/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
                   class="hidden"
                 />
 

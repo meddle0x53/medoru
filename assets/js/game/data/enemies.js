@@ -4,9 +4,9 @@
 export const ENEMIES = {
   oni: {
     id: 'oni',
-    name: 'Lesser Oni',
-    nameJa: '小鬼',
-    description: 'A small but vicious demon.',
+    name: 'Kasa-obake',
+    nameJa: '傘おばけ',
+    description: 'A possessed umbrella spirit.',
     color: 0xe74c3c,
     size: 80,
     stats: {

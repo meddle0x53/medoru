@@ -86,6 +86,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> render_markdown()
     |> unwrap_photo_only_html()
     |> render_audio_players(post_id)
+    |> render_video_players(post_id)
     |> render_images(post_id)
   end
 
@@ -94,6 +95,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> render_inline_word_links()
     |> autolink_urls()
     |> render_markdown()
+    |> render_video_players("comment")
   end
 
   defp match_word_command?(text) do
@@ -249,10 +251,18 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
 
     Regex.split(url_regex, text, include_captures: true)
     |> Enum.map(fn segment ->
-      if Regex.match?(url_regex, segment) do
-        "<a href=\"#{segment}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{segment}</a>"
-      else
-        segment
+      cond do
+        Regex.match?(url_regex, segment) ->
+          case MedoruWeb.YoutubeEmbed.video_id(segment) do
+            {:ok, video_id} ->
+              MedoruWeb.YoutubeEmbed.embed_html(video_id)
+
+            :error ->
+              "<a href=\"#{segment}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{segment}</a>"
+          end
+
+        true ->
+          segment
       end
     end)
     |> Enum.join("")
@@ -323,6 +333,26 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
 
   defp unwrap_photo_only_html(html) when is_binary(html) do
     Regex.replace(~r/^<p>\s*(<img[^>]*>)\s*<\/p>$/i, html, "\\1")
+  end
+
+  defp render_video_players(html, _post_id) when is_binary(html) do
+    regex = ~r/<a href="([^"]+\.(?:mp4|webm|ogv|mov))"[^>]*>([^<]*)<\/a>/i
+
+    Regex.replace(regex, html, fn _full_match, href, text ->
+      mime = video_mime_type(href)
+
+      ~s|<span class="block my-2"><video class="rounded-lg w-full max-w-[560px] aspect-video" controls preload="metadata"><source src="#{href}" type="#{mime}" /><a href="#{href}" class="text-primary underline" download>#{text}</a></video></span>|
+    end)
+  end
+
+  defp video_mime_type(path) do
+    case Path.extname(path) |> String.downcase() do
+      ".mp4" -> "video/mp4"
+      ".mov" -> "video/quicktime"
+      ".webm" -> "video/webm"
+      ".ogv" -> "video/ogg"
+      _ -> "video/mp4"
+    end
   end
 
   defp render_images(html, _post_id) when is_binary(html) do

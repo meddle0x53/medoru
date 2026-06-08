@@ -34,7 +34,7 @@ export default class BattleScene extends Phaser.Scene {
 
     this.input.keyboard.on('keydown', this.handleKeyInput, this)
 
-    this.addCombatLog('Battle start! Defeat the Lesser Oni!')
+    this.addCombatLog('Battle start! Defeat the Kasa-obake!')
     this.onTurnChange('player')
   }
 
@@ -66,55 +66,104 @@ export default class BattleScene extends Phaser.Scene {
   // ---------- Graphics creation ----------
 
   createBackground() {
-    this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, GAME_CONFIG.width, GAME_CONFIG.height, GAME_CONFIG.backgroundColor)
-    // Ground line
-    this.add.line(0, 0, 0, 400, GAME_CONFIG.width, 400, 0x0f3460, 0.5).setOrigin(0, 0)
+    // Background image — scale to cover the 960x540 canvas
+    const bg = this.add.image(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, 'battle_background')
+    const scaleX = GAME_CONFIG.width / bg.width
+    const scaleY = GAME_CONFIG.height / bg.height
+    bg.setScale(Math.max(scaleX, scaleY))
+
+    // Ground line (subtle, for visual reference)
+    this.add.line(0, 0, 0, 580, GAME_CONFIG.width, 580, 0x0f3460, 0.5).setOrigin(0, 0)
   }
 
   createCharacters() {
-    // Player — tall rectangle (64×128), feet on ground line at y=400
-    this.playerSprite = this.add.rectangle(200, 336, 64, 128, COLORS.player)
-    this.add.text(200, 280, this.player.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
-    this.add.text(200, 296, '戦士', { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+    // Player sprite — default battle stance (sword + shield)
+    this.playerSprite = this.add.sprite(300, 580, 'player_sword_shield')
+    this.playerSprite.setScale(0.30)
+    this.playerSprite.setOrigin(0.5, 0.99) // Anchor near bottom so feet stay on ground
+    // Feet on ground line (set via origin)
+    // Smooth scaling for anime-style renders
+    this.textures.get('player_sword_shield').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    this.textures.get('player_sword_slash').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    this.textures.get('player_shield_block').setFilter(Phaser.Textures.FilterMode.LINEAR)
 
-    // Enemy — tall rectangle (80×112), feet on ground line at y=400
-    this.enemySprite = this.add.rectangle(760, 344, 80, 112, COLORS.enemy)
-    this.add.text(760, 288, this.enemy.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
-    this.add.text(760, 304, this.enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+    this.drawNameBg(300, 102)
+    this.add.text(300, 95, this.player.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    this.add.text(300, 110, '戦士', { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+
+    // Enemy — kasa-obake facing left toward hero
+    this.enemySprite = this.add.sprite(720, 570, 'enemy_kasa_obake')
+    this.enemySprite.setScale(0.30)
+    this.enemySprite.setOrigin(0.5, 0.99)
+    this.textures.get('enemy_kasa_obake').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    this.textures.get('enemy_kasa_obake_attack').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    this.textures.get('enemy_kasa_obake_defend').setFilter(Phaser.Textures.FilterMode.LINEAR)
+
+    this.drawNameBg(720, 102)
+    this.add.text(720, 95, this.enemy.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    this.add.text(720, 110, this.enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+  }
+
+  setPlayerSprite(key) {
+    this.playerSprite.setTexture(key)
+  }
+
+  setEnemySprite(key) {
+    this.enemySprite.setTexture(key)
+  }
+
+  flashPlayerSprite() {
+    this.tweens.add({
+      targets: this.playerSprite,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 1,
+    })
   }
 
   createUI() {
-    // Turn indicator
+    // Turn indicator with rounded background
+    this.turnTextBg = this.add.graphics()
+    this.drawTurnTextBg()
     this.turnText = this.add.text(GAME_CONFIG.width / 2, 30, 'YOUR TURN', {
       ...FONTS.title,
       fontSize: '18px',
     }).setOrigin(0.5)
 
     // Player bars (left top)
-    this.createBar(120, 70, 'playerHp', COLORS.hp, this.player.hp, this.player.maxHp)
-    this.createBar(120, 90, 'playerStamina', COLORS.stamina, this.player.stamina, this.player.maxStamina)
-    this.playerHpText = this.add.text(120, 70, `${this.player.hp}/${this.player.maxHp}`, { ...FONTS.default, fontSize: '12px' }).setOrigin(0.5)
-    this.playerStaminaText = this.add.text(120, 90, `${this.player.stamina}/${this.player.maxStamina}`, { ...FONTS.default, fontSize: '12px' }).setOrigin(0.5)
+    this.createBar(300, 500, 'playerHp', COLORS.hp, this.player.hp, this.player.maxHp)
+    this.createBar(300, 517, 'playerStamina', COLORS.stamina, this.player.stamina, this.player.maxStamina)
+    this.playerHpText = this.add.text(300, 500, `${this.player.hp}/${this.player.maxHp}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
+    this.playerStaminaText = this.add.text(300, 517, `${this.player.stamina}/${this.player.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
 
     // Enemy bars (right top)
-    this.createBar(GAME_CONFIG.width - 120, 70, 'enemyHp', COLORS.hp, this.enemy.hp, this.enemy.maxHp)
-    this.createBar(GAME_CONFIG.width - 120, 90, 'enemyStamina', COLORS.stamina, this.enemy.stamina, this.enemy.maxStamina)
-    this.enemyHpText = this.add.text(GAME_CONFIG.width - 120, 70, `${this.enemy.hp}/${this.enemy.maxHp}`, { ...FONTS.default, fontSize: '12px' }).setOrigin(0.5)
-    this.enemyStaminaText = this.add.text(GAME_CONFIG.width - 120, 90, `${this.enemy.stamina}/${this.enemy.maxStamina}`, { ...FONTS.default, fontSize: '12px' }).setOrigin(0.5)
+    this.createBar(720, 500, 'enemyHp', COLORS.hp, this.enemy.hp, this.enemy.maxHp)
+    this.createBar(720, 517, 'enemyStamina', COLORS.stamina, this.enemy.stamina, this.enemy.maxStamina)
+    this.enemyHpText = this.add.text(720, 500, `${this.enemy.hp}/${this.enemy.maxHp}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
+    this.enemyStaminaText = this.add.text(720, 517, `${this.enemy.stamina}/${this.enemy.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
 
-    // Skill buttons
+    // Action panel — modern rounded glass panel behind hero sprite
+    this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
+
     this.skillButtons = []
-    this.player.equippedSkills.forEach((skill, i) => {
-      const btn = this.createButton(300 + i * 160, 490, skill.name, () => this.onSkillClick(skill))
-      this.skillButtons.push({ btn, skill })
-    })
+    const s1 = this.player.equippedSkills[0] // Forward Slash
+    const s2 = this.player.equippedSkills[1] // Setup Defence
+    const s3 = this.player.equippedSkills[2] // Heal Potion
 
-    // End turn button
-    this.endTurnBtn = this.createButton(GAME_CONFIG.width / 2, 530, 'End Turn', () => this.onEndTurn())
+    this.skillButtons.push({ btn: this.createButton(120, 195, `${s1.name} (${s1.staminaCost})`, () => this.onSkillClick(s1), 160, 44, 0xc0392b, 0xe74c3c), skill: s1 })
+    this.skillButtons.push({ btn: this.createButton(120, 247, `${s2.name} (${s2.staminaCost})`, () => this.onSkillClick(s2), 160, 44, 0x8b4513, 0xa0522d), skill: s2 })
+    this.skillButtons.push({ btn: this.createButton(120, 299, `${s3.name} (${s3.staminaCost})`, () => this.onSkillClick(s3), 160, 44, 0x27ae60, 0x2ecc71), skill: s3 })
+
+    // Fourth button — Switch Action (blue, does nothing for now)
+    this.switchActionBtn = this.createButton(120, 351, 'Switch Action (1)', () => {}, 160, 44, 0x2980b9, 0x3498db)
+
+    // End turn button inside the panel
+    this.endTurnBtn = this.createButton(120, 475, 'End Turn', () => this.onEndTurn(), 160, 44, 0xe67e22, 0xf39c12)
 
     // Block indicators
-    this.playerBlockText = this.add.text(200, 260, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
-    this.enemyBlockText = this.add.text(760, 268, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
+    this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
+    this.enemyBlockText = this.add.text(720, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
   }
 
   createBar(x, y, key, color, value, max) {
@@ -128,17 +177,100 @@ export default class BattleScene extends Phaser.Scene {
     this[key + 'X'] = x - w / 2
   }
 
-  createButton(x, y, label, onClick) {
-    const w = 140
+  drawNameBg(x, y) {
+    const w = 180
+    const h = 44
+    const radius = 22
+    const g = this.add.graphics()
+    g.fillStyle(0x2c3e50, 0.75)
+    g.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    g.lineStyle(1.5, 0x7f8c8d, 0.4)
+    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    return g
+  }
+
+  drawTurnTextBg() {
+    const w = 220
     const h = 36
-    const bg = this.add.rectangle(x, y, w, h, COLORS.button).setInteractive({ useHandCursor: true })
-    const text = this.add.text(x, y, label, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    const x = GAME_CONFIG.width / 2
+    const y = 30
+    const radius = 18
+    this.turnTextBg.clear()
+    this.turnTextBg.fillStyle(0x2c3e50, 0.75)
+    this.turnTextBg.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    this.turnTextBg.lineStyle(1.5, 0x7f8c8d, 0.4)
+    this.turnTextBg.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+  }
 
-    bg.on('pointerover', () => bg.setFillStyle(COLORS.buttonHover))
-    bg.on('pointerout', () => bg.setFillStyle(COLORS.button))
-    bg.on('pointerdown', onClick)
+  animateTurnChange() {
+    this.tweens.add({
+      targets: [this.turnTextBg, this.turnText],
+      scaleX: 1.15,
+      scaleY: 1.15,
+      duration: 150,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+    })
+  }
 
-    return { bg, text, width: w, height: h, setVisible: (v) => { bg.setVisible(v); text.setVisible(v) }, setInteractive: (v) => { v ? bg.setInteractive() : bg.disableInteractive() } }
+  createModernPanel(x, y, w, h, radius) {
+    const g = this.add.graphics()
+    // Drop shadow
+    g.fillStyle(0x000000, 0.25)
+    g.fillRoundedRect(x - w / 2 + 3, y - h / 2 + 4, w, h, radius)
+    // Fill
+    g.fillStyle(0x1a1a2e, 0.92)
+    g.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    // Border glow
+    g.lineStyle(1.5, 0x3498db, 0.35)
+    g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    // Top highlight
+    g.lineStyle(1, 0xffffff, 0.08)
+    g.lineBetween(x - w / 2 + radius, y - h / 2 + 1, x + w / 2 - radius, y - h / 2 + 1)
+    return g
+  }
+
+  createButton(x, y, label, onClick, w = 140, h = 36, color = COLORS.button, hoverColor = COLORS.buttonHover) {
+    const radius = Math.min(h / 2, 10)
+
+    // Shadow
+    const shadow = this.add.graphics()
+    shadow.fillStyle(0x000000, 0.2)
+    shadow.fillRoundedRect(x - w / 2 + 1, y - h / 2 + 2, w, h, radius)
+
+    // Background
+    const bg = this.add.graphics()
+    const redraw = (c) => {
+      bg.clear()
+      bg.fillStyle(c, 1)
+      bg.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+      // Subtle top highlight
+      bg.lineStyle(1, 0xffffff, 0.1)
+      bg.lineBetween(x - w / 2 + radius, y - h / 2 + 1, x + w / 2 - radius, y - h / 2 + 1)
+    }
+    redraw(color)
+
+    // Invisible hit area for interaction
+    const hitArea = this.add.rectangle(x, y, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
+
+    const text = this.add.text(x, y, label, { ...FONTS.default, fontSize: '15px' }).setOrigin(0.5)
+
+    hitArea.on('pointerover', () => {
+      redraw(hoverColor)
+      text.setScale(1.04)
+    })
+    hitArea.on('pointerout', () => {
+      redraw(color)
+      text.setScale(1)
+    })
+    hitArea.on('pointerdown', onClick)
+
+    return {
+      bg, shadow, hitArea, text, redraw,
+      width: w, height: h,
+      setVisible: (v) => { bg.setVisible(v); shadow.setVisible(v); hitArea.setVisible(v); text.setVisible(v) },
+      setInteractive: (v) => { v ? hitArea.setInteractive({ useHandCursor: true }) : hitArea.disableInteractive() }
+    }
   }
 
   createChallengeOverlay() {
@@ -167,7 +299,8 @@ export default class BattleScene extends Phaser.Scene {
     this.challengeOverlay.add(this.challengeInput)
 
     // Timer bar background
-    this.add.rectangle(0, 100, 300, 12, COLORS.hpBg).setOrigin(0.5)
+    const timerBg = this.add.rectangle(0, 100, 300, 12, COLORS.hpBg).setOrigin(0.5)
+    this.challengeOverlay.add(timerBg)
     this.challengeTimerBar = this.add.rectangle(-150, 100, 300, 12, COLORS.warning).setOrigin(0, 0.5)
     this.challengeOverlay.add(this.challengeTimerBar)
   }
@@ -265,18 +398,23 @@ export default class BattleScene extends Phaser.Scene {
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
     switch (result.type) {
       case 'attack': {
+        this.setPlayerSprite('player_sword_slash')
         const critText = result.isCrit ? ' CRITICAL!' : ''
         this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!`)
         this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
         this.shakeSprite(this.enemySprite)
+        this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
         break
       }
       case 'defence': {
+        this.setPlayerSprite('player_shield_block')
         this.addCombatLog(`${quality} ${this.selectedSkill.name} -> +${result.block} block!`)
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
+        this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
         break
       }
       case 'heal': {
+        this.flashPlayerSprite()
         if (result.error) {
           this.addCombatLog(result.error)
         } else {
@@ -297,11 +435,13 @@ export default class BattleScene extends Phaser.Scene {
     if (turn === 'player') {
       this.turnText.setText('YOUR TURN')
       this.turnText.setColor(COLORS.text)
+      this.animateTurnChange()
       this.setSkillButtonsEnabled(true)
       this.endTurnBtn.setVisible(true)
     } else {
       this.turnText.setText('ENEMY TURN')
       this.turnText.setColor(COLORS.danger)
+      this.animateTurnChange()
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
       await this.runEnemyTurn()
@@ -321,18 +461,26 @@ export default class BattleScene extends Phaser.Scene {
 
       switch (result.type) {
         case 'attack': {
+          this.setEnemySprite('enemy_kasa_obake_attack')
+          this.setPlayerSprite('player_shield_block')
           const critText = result.isCrit ? ' CRITICAL!' : ''
-          this.addCombatLog(`Oni uses ${action.name}${critText}! You take ${result.damage} damage!`)
+          this.addCombatLog(`Kasa-obake uses ${action.name}${critText}! You take ${result.damage} damage!`)
           this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
           this.shakeSprite(this.playerSprite)
+          this.time.delayedCall(800, () => {
+            this.setPlayerSprite('player_sword_shield')
+            this.setEnemySprite('enemy_kasa_obake')
+          })
           break
         }
         case 'buff': {
-          this.addCombatLog(`Oni uses ${action.name}! Its next attack will be stronger!`)
+          this.setEnemySprite('enemy_kasa_obake_defend')
+          this.addCombatLog(`Kasa-obake uses ${action.name}! Its next attack will be stronger!`)
+          this.time.delayedCall(800, () => this.setEnemySprite('enemy_kasa_obake'))
           break
         }
         case 'recover': {
-          this.addCombatLog(`Oni rests and recovers ${result.stamina} stamina.`)
+          this.addCombatLog(`Kasa-obake rests and recovers ${result.stamina} stamina.`)
           break
         }
       }
@@ -378,12 +526,12 @@ export default class BattleScene extends Phaser.Scene {
   setSkillButtonsEnabled(enabled) {
     this.skillButtons.forEach(({ btn, skill }) => {
       if (enabled && this.player.canUseSkill(skill)) {
-        btn.bg.setFillStyle(COLORS.button)
-        btn.bg.setInteractive({ useHandCursor: true })
+        btn.redraw(COLORS.button)
+        btn.hitArea.setInteractive({ useHandCursor: true })
         btn.text.setAlpha(1)
       } else {
-        btn.bg.setFillStyle(COLORS.buttonDisabled)
-        btn.bg.disableInteractive()
+        btn.redraw(COLORS.buttonDisabled)
+        btn.hitArea.disableInteractive()
         btn.text.setAlpha(0.6)
       }
     })
@@ -443,7 +591,7 @@ export default class BattleScene extends Phaser.Scene {
       color: '#' + color.toString(16).padStart(6, '0'),
     }).setOrigin(0.5).setDepth(200)
 
-    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, isWin ? 'You defeated the Lesser Oni!' : 'The Oni was too strong...', {
+    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, isWin ? 'You defeated the Kasa-obake!' : 'The Kasa-obake was too strong...', {
       ...FONTS.default,
       fontSize: '16px',
     }).setOrigin(0.5).setDepth(200)

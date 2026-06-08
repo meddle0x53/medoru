@@ -578,6 +578,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
       case type do
         "image" -> {"📷 Image", "image"}
         "audio" -> {"🔊 Audio", "audio"}
+        "video" -> {"🎬 Video", "video"}
         _ -> {"📎 #{name}", "document"}
       end
 
@@ -1903,6 +1904,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             {gettext("🎤 Voice message")}
                           <% message.reply_to_message.attachment_type == "audio" -> %>
                             {gettext("🔊 Audio")}
+                          <% message.reply_to_message.attachment_type == "video" -> %>
+                            {gettext("🎬 Video")}
                           <% message.reply_to_message.attachment_type == "document" -> %>
                             {gettext("📎 File")}
                           <% true -> %>
@@ -2077,6 +2080,25 @@ defmodule MedoruWeb.ClassroomLive.Show do
                                 preload="auto"
                               >
                               </audio>
+                            </div>
+                          <% message.attachment_type == "video" && message.attachment_path -> %>
+                            <div class="relative group/video">
+                              <video
+                                class="max-w-[320px] max-h-[240px] rounded-lg object-cover"
+                                controls
+                                preload="metadata"
+                              >
+                                <source src={message.attachment_path} type={video_mime_type(message.attachment_path)} />
+                                <a href={message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+                              </video>
+                              <a
+                                href={message.attachment_path}
+                                download
+                                class="absolute bottom-2 right-2 p-1.5 rounded bg-black/50 text-white opacity-0 group-hover/video:opacity-100 transition-opacity"
+                                title={gettext("Download")}
+                              >
+                                <.icon name="hero-arrow-down-tray" class="w-3.5 h-3.5" />
+                              </a>
                             </div>
                           <% message.attachment_type == "document" && message.attachment_path -> %>
                             <a
@@ -2297,6 +2319,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       {gettext("🎤 Voice message")}
                     <% @reply_to.attachment_type == "audio" -> %>
                       {gettext("🔊 Audio")}
+                    <% @reply_to.attachment_type == "video" -> %>
+                      {gettext("🎬 Video")}
                     <% @reply_to.attachment_type == "document" -> %>
                       {gettext("📎 File")}
                     <% true -> %>
@@ -2339,6 +2363,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative z-30"
             phx-hook="ClassroomChatInput"
             data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
+            data-can-upload-video={if @current_user && Medoru.Accounts.User.teacher?(@current_user), do: "true", else: "false"}
           >
             <%!-- File Preview --%>
             <div id="classroom-file-preview" class="hidden mb-2 relative">
@@ -2358,7 +2383,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <input
               type="file"
               id="classroom-file-input"
-              accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+              accept="image/*,audio/*,video/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
               class="hidden"
             />
 
@@ -2725,11 +2750,21 @@ defmodule MedoruWeb.ClassroomLive.Show do
             ""
 
           segment ->
-            if Regex.match?(url_regex, segment) do
-              {:safe, escaped} = Phoenix.HTML.html_escape(segment)
-              {:safe, ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
-            else
-              Phoenix.HTML.html_escape(segment)
+            cond do
+              Regex.match?(url_regex, segment) ->
+                case MedoruWeb.YoutubeEmbed.video_id(segment) do
+                  {:ok, video_id} ->
+                    {:safe, MedoruWeb.YoutubeEmbed.embed_html(video_id)}
+
+                  :error ->
+                    {:safe, escaped} = Phoenix.HTML.html_escape(segment)
+
+                    {:safe,
+                     ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
+                end
+
+              true ->
+                Phoenix.HTML.html_escape(segment)
             end
         end)
     end)
@@ -2945,6 +2980,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
             <audio controls class="w-full">
               <source src={@message.attachment_path} />
             </audio>
+          <% @message.attachment_type == "video" && @message.attachment_path -> %>
+            <video controls class="max-w-full rounded-lg">
+              <source src={@message.attachment_path} type={video_mime_type(@message.attachment_path)} />
+              <a href={@message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+            </video>
           <% @message.ciphertext -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
               [...]
@@ -2978,5 +3018,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
       end
 
     Map.put(reactions, message_id, updated_msg_reactions)
+  end
+
+  defp video_mime_type(path) do
+    case Path.extname(path) |> String.downcase() do
+      ".mp4" -> "video/mp4"
+      ".mov" -> "video/quicktime"
+      ".webm" -> "video/webm"
+      ".ogv" -> "video/ogg"
+      _ -> "video/mp4"
+    end
   end
 end

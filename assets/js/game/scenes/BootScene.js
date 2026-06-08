@@ -1,5 +1,3 @@
-import { COLORS, FONTS } from '../config.js'
-
 /**
  * Boot Scene - loads assets and initial data.
  */
@@ -8,37 +6,39 @@ export default class BootScene extends Phaser.Scene {
     super({ key: 'BootScene' })
   }
 
+  preload() {
+    // Warrior sprites
+    this.load.image('player_idle', '/images/game/player_idle.png')
+    this.load.image('player_ready', '/images/game/player_ready.png')
+    this.load.image('player_sword', '/images/game/player_sword.png')
+    this.load.image('player_shield', '/images/game/player_shield.png')
+    this.load.image('player_sword_shield', '/images/game/player_sword_shield.png')
+    this.load.image('player_sword_slash', '/images/game/player_sword_slash.png')
+    this.load.image('player_shield_block', '/images/game/player_shield_block.png')
+
+    // Battle background
+    this.load.image('battle_background', '/images/game/battle_background.png')
+
+    // Enemy sprites
+    this.load.image('enemy_kasa_obake', '/images/game/enemy_kasa_obake.png')
+    this.load.image('enemy_kasa_obake_attack', '/images/game/enemy_kasa_obake_attack.png')
+    this.load.image('enemy_kasa_obake_defend', '/images/game/enemy_kasa_obake_defend.png')
+
+    // Placeholder textures for UI bars
+    const graphics = this.make.graphics({ x: 0, y: 0, add: false })
+    graphics.fillStyle(0x2ecc71, 1)
+    graphics.fillRect(0, 0, 1, 1)
+    graphics.generateTexture('hpBar', 1, 1)
+    graphics.fillStyle(0xf1c40f, 1)
+    graphics.fillRect(0, 0, 1, 1)
+    graphics.generateTexture('staminaBar', 1, 1)
+    graphics.fillStyle(0x2c3e50, 1)
+    graphics.fillRect(0, 0, 1, 1)
+    graphics.generateTexture('barBg', 1, 1)
+    graphics.destroy()
+  }
+
   create() {
-    // Generate textures programmatically (squares for now)
-    this.createRectTexture('player', COLORS.player, 64, 128)
-    this.createRectTexture('enemy', COLORS.enemy, 80, 112)
-    this.createSquareTexture('button', COLORS.button, 1)
-    this.createSquareTexture('buttonHover', COLORS.buttonHover, 1)
-    this.createSquareTexture('hpBar', COLORS.hp, 1)
-    this.createSquareTexture('staminaBar', COLORS.stamina, 1)
-    this.createSquareTexture('barBg', COLORS.hpBg, 1)
-
     this.scene.start('BattleScene')
-  }
-
-  createRectTexture(key, color, width, height) {
-    const graphics = this.make.graphics({ x: 0, y: 0, add: false })
-    graphics.fillStyle(color, 1)
-    graphics.fillRect(0, 0, width, height)
-    graphics.generateTexture(key, width, height)
-    graphics.destroy()
-  }
-
-  createSquareTexture(key, color, size) {
-    const graphics = this.make.graphics({ x: 0, y: 0, add: false })
-    graphics.fillStyle(color, 1)
-    if (size > 1) {
-      graphics.fillRect(0, 0, size, size)
-    } else {
-      // For bar textures, create a 1x1 pixel
-      graphics.fillRect(0, 0, 1, 1)
-    }
-    graphics.generateTexture(key, size > 1 ? size : 1, size > 1 ? size : 1)
-    graphics.destroy()
   }
 }

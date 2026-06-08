@@ -16,20 +16,22 @@ defmodule MedoruWeb.KanjiLive.Show do
      |> assign(:locale, locale)
      |> assign(:show_writing_practice, false)
      |> assign(:writing_completed, false)
-     |> assign(:snap_correct, true)}
+     |> assign(:snap_correct, true)
+     |> assign(:reading_pages, %{})}
   end
 
   @impl true
   def handle_params(%{"id" => id} = params, _url, socket) do
     kanji = Content.get_kanji_with_readings!(id)
     locale = socket.assigns.locale
+    reading_pages = parse_reading_pages(params["r"])
 
-    # Parse page parameter for words pagination
-    page = parse_page(params["page"])
-
-    # Get words containing this kanji, grouped by reading
+    # Get words containing this kanji, grouped by reading with per-group pagination
     words_data =
-      Content.list_words_by_kanji_grouped_by_reading(kanji.id, page: page, per_page: 20)
+      Content.list_words_by_kanji_grouped_by_reading(kanji.id,
+        reading_pages: reading_pages,
+        per_page: 5
+      )
 
     on_readings = Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on))
     kun_readings = Enum.filter(kanji.kanji_readings, &(&1.reading_type == :kun))
@@ -58,24 +60,28 @@ defmodule MedoruWeb.KanjiLive.Show do
      |> assign(:on_readings, on_readings)
      |> assign(:kun_readings, kun_readings)
      |> assign(:words_data, words_data)
-     |> assign(:page, page)
+     |> assign(:reading_pages, reading_pages)
      |> assign(:kanji_learned, kanji_learned)
      |> assign(:has_stroke_data, has_stroke_data)
      |> assign(:page_title, gettext("%{kanji} - Kanji Details", kanji: kanji.character))}
   end
 
   @impl true
-  def handle_event("change_page", %{"page" => page}, socket) do
+  def handle_event("change_page", %{"reading" => reading, "page" => page}, socket) do
     page = parse_page(page)
     kanji = socket.assigns.kanji
+    reading_pages = Map.put(socket.assigns.reading_pages, reading, page)
 
     words_data =
-      Content.list_words_by_kanji_grouped_by_reading(kanji.id, page: page, per_page: 20)
+      Content.list_words_by_kanji_grouped_by_reading(kanji.id,
+        reading_pages: reading_pages,
+        per_page: 5
+      )
 
     {:noreply,
      socket
      |> assign(:words_data, words_data)
-     |> assign(:page, page)}
+     |> assign(:reading_pages, reading_pages)}
   end
 
   @impl true
@@ -196,6 +202,16 @@ defmodule MedoruWeb.KanjiLive.Show do
 
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
+
+  defp parse_reading_pages(nil), do: %{}
+
+  defp parse_reading_pages(pages) when is_map(pages) do
+    pages
+    |> Enum.map(fn {k, v} -> {k, parse_page(v)} end)
+    |> Enum.into(%{})
+  end
+
+  defp parse_reading_pages(_), do: %{}
 
   # Helper for template: get localized word meaning
   def localized_word_meaning(word, locale) do

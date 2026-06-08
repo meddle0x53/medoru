@@ -1,6 +1,7 @@
 const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
   "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav",
+  "video/mp4", "video/webm", "video/ogg", "video/quicktime",
   "application/pdf", "text/plain", "text/csv",
   "application/json", "text/markdown", "text/x-markdown",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -8,7 +9,8 @@ const ALLOWED_TYPES = [
   "application/epub+zip"
 ]
 
-const MAX_SIZE = 50 * 1024 * 1024
+const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
+const MAX_SIZE_VIDEO = 200 * 1024 * 1024
 
 const ClassroomChatInput = {
   mounted() {
@@ -227,16 +229,42 @@ const ClassroomChatInput = {
   },
 
   processFile(file) {
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const isAllowedType = ALLOWED_TYPES.includes(file.type) || this.allowedByExtension(file.name)
+
+    if (!isAllowedType) {
       alert("File type not allowed.")
       return
     }
-    if (file.size > MAX_SIZE) {
-      alert("File too large. Maximum size is 50MB.")
+
+    const isVideo = file.type.startsWith("video/") || this.isVideoExtension(file.name)
+    const canUploadVideo = this.el.dataset.canUploadVideo === "true"
+
+    if (isVideo && !canUploadVideo) {
+      alert("Video uploads are only available for teachers and admins.")
       return
     }
+
+    const maxSize = isVideo ? MAX_SIZE_VIDEO : MAX_SIZE_DEFAULT
+    const maxSizeMb = maxSize / (1024 * 1024)
+
+    if (file.size > maxSize) {
+      alert(`File too large. Maximum size is ${maxSizeMb}MB.`)
+      return
+    }
+
     this.queuedFile = file
     this.showFilePreview(file.name)
+  },
+
+  allowedByExtension(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'wav', 'webm', 'ogg', 'mp4', 'mov', 'ogv', 'pdf', 'txt', 'csv', 'json', 'md', 'docx', 'xlsx', 'epub']
+    return allowedExts.includes(ext)
+  },
+
+  isVideoExtension(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    return ['mp4', 'mov', 'ogv', 'webm'].includes(ext)
   },
 
   showFilePreview(name) {
@@ -414,6 +442,7 @@ const ClassroomChatInput = {
       const content =
         result.type === "image" ? "📷 Image" :
         result.type === "audio" ? "🔊 Audio" :
+        result.type === "video" ? "🎬 Video" :
         `📎 ${result.name}`
       this.pushEvent("send_file_message", {
         path: result.path,

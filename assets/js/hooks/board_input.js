@@ -1,10 +1,12 @@
 const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
   "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav",
-  "audio/webm", "audio/ogg"
+  "audio/webm", "audio/ogg",
+  "video/mp4", "video/webm", "video/ogg", "video/quicktime"
 ]
 
-const MAX_SIZE = 50 * 1024 * 1024
+const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
+const MAX_SIZE_VIDEO = 200 * 1024 * 1024
 
 export default {
   mounted() {
@@ -133,15 +135,41 @@ export default {
   },
 
   processFile(file) {
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    const isAllowedType = ALLOWED_TYPES.includes(file.type) || this.allowedByExtension(file.name)
+
+    if (!isAllowedType) {
       alert("File type not allowed.")
       return
     }
-    if (file.size > MAX_SIZE) {
-      alert("File too large. Maximum size is 50MB.")
+
+    const isVideo = file.type.startsWith("video/") || this.isVideoExtension(file.name)
+    const canUploadVideo = this.el.dataset.canUploadVideo === "true"
+
+    if (isVideo && !canUploadVideo) {
+      alert("Video uploads are only available for teachers and admins.")
       return
     }
+
+    const maxSize = isVideo ? MAX_SIZE_VIDEO : MAX_SIZE_DEFAULT
+    const maxSizeMb = maxSize / (1024 * 1024)
+
+    if (file.size > maxSize) {
+      alert(`File too large. Maximum size is ${maxSizeMb}MB.`)
+      return
+    }
+
     this.uploadFile(file)
+  },
+
+  allowedByExtension(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'wav', 'webm', 'ogg', 'mp4', 'mov', 'ogv', 'pdf', 'txt', 'csv', 'json', 'md', 'docx', 'xlsx', 'epub']
+    return allowedExts.includes(ext)
+  },
+
+  isVideoExtension(filename) {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    return ['mp4', 'mov', 'ogv', 'webm'].includes(ext)
   },
 
   async uploadFile(file) {
@@ -182,6 +210,8 @@ export default {
       markdown = `![${originalName}](${result.path})`
     } else if (result.type === "audio") {
       markdown = `[🎤 ${originalName}](${result.path})`
+    } else if (result.type === "video") {
+      markdown = `[🎬 ${originalName}](${result.path})`
     }
 
     this.textarea.value = value.slice(0, start) + markdown + value.slice(end)

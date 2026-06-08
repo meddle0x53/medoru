@@ -684,6 +684,7 @@ defmodule MedoruWeb.MessagesLive.Show do
       case type do
         "image" -> {"📷 Image", "image"}
         "audio" -> {"🔊 Audio", "audio"}
+        "video" -> {"🎬 Video", "video"}
         _ -> {"📎 #{name}", "document"}
       end
 
@@ -1452,11 +1453,21 @@ defmodule MedoruWeb.MessagesLive.Show do
             ""
 
           segment ->
-            if Regex.match?(url_regex, segment) do
-              {:safe, escaped} = Phoenix.HTML.html_escape(segment)
-              {:safe, ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
-            else
-              Phoenix.HTML.html_escape(segment)
+            cond do
+              Regex.match?(url_regex, segment) ->
+                case MedoruWeb.YoutubeEmbed.video_id(segment) do
+                  {:ok, video_id} ->
+                    {:safe, MedoruWeb.YoutubeEmbed.embed_html(video_id)}
+
+                  :error ->
+                    {:safe, escaped} = Phoenix.HTML.html_escape(segment)
+
+                    {:safe,
+                     ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
+                end
+
+              true ->
+                Phoenix.HTML.html_escape(segment)
             end
         end)
     end)
@@ -1657,6 +1668,11 @@ defmodule MedoruWeb.MessagesLive.Show do
             <audio controls class="w-full">
               <source src={@message.attachment_path} />
             </audio>
+          <% @message.attachment_type == "video" && @message.attachment_path -> %>
+            <video controls class="max-w-full rounded-lg">
+              <source src={@message.attachment_path} type={video_mime_type(@message.attachment_path)} />
+              <a href={@message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+            </video>
           <% @message.ciphertext -> %>
             <p
               id={"preview-content-#{@message.id}"}
@@ -1706,5 +1722,15 @@ defmodule MedoruWeb.MessagesLive.Show do
       end
 
     Map.put(reactions, message_id, updated_msg_reactions)
+  end
+
+  defp video_mime_type(path) do
+    case Path.extname(path) |> String.downcase() do
+      ".mp4" -> "video/mp4"
+      ".mov" -> "video/quicktime"
+      ".webm" -> "video/webm"
+      ".ogv" -> "video/ogg"
+      _ -> "video/mp4"
+    end
   end
 end

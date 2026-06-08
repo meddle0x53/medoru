@@ -370,6 +370,106 @@ defmodule Medoru.ContentTest do
       assert Enum.map(words, & &1.id) |> Enum.member?(word_with_kanji.id)
     end
 
+    test "list_words_by_kanji_grouped_by_reading/2 sorts by frequency then composition complexity" do
+      # Create a target kanji with a reading
+      kanji = kanji_with_readings_fixture(%{character: "山"})
+      reading = List.first(Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on)))
+
+      # Create words with the same frequency but different composition
+      word_solo = word_fixture(%{text: "山", meaning: "mountain", reading: "やま", usage_frequency: 100})
+      # Kanji + kana, kanji before kana, length 2
+      word_kana_short = word_fixture(%{text: "山あ", meaning: "mountain-a", reading: "やまあ", usage_frequency: 100})
+      # Kanji + kana, kanji before kana, length 3 (longer = lower priority)
+      word_kana_long = word_fixture(%{text: "山あい", meaning: "mountain-ai", reading: "やまあい", usage_frequency: 100})
+      # Kanji + kana, kanji AFTER kana (lower priority than kanji-before-kana)
+      word_kana_after = word_fixture(%{text: "あ山", meaning: "a-mountain", reading: "あやま", usage_frequency: 100})
+      word_kanji1 = word_fixture(%{text: "山口", meaning: "entrance", reading: "やまぐち", usage_frequency: 100})
+      word_mixed = word_fixture(%{text: "山あ口", meaning: "mixed", reading: "やまあぐち", usage_frequency: 100})
+      word_kanji2 = word_fixture(%{text: "山口川", meaning: "three kanji", reading: "やまぐちかわ", usage_frequency: 100})
+
+      # Link all words to the target kanji
+      for word <- [
+            word_solo,
+            word_kana_short,
+            word_kana_long,
+            word_kana_after,
+            word_kanji1,
+            word_mixed,
+            word_kanji2
+          ] do
+        {:ok, _} =
+          Content.create_word_kanji(%{
+            word_id: word.id,
+            kanji_id: kanji.id,
+            kanji_reading_id: reading && reading.id,
+            position: 0
+          })
+      end
+
+      result = Content.list_words_by_kanji_grouped_by_reading(kanji.id, per_page: 10)
+      all_words = Enum.flat_map(result.groups, fn group -> group.words end)
+      texts = Enum.map(all_words, & &1.text)
+
+      # Expected order:
+      # 1. solo kanji
+      # 2. kanji+kana, kanji before kana, shortest first
+      # 3. kanji+kana, kanji before kana, longer
+      # 4. kanji+kana, kanji after kana
+      # 5. +1 other kanji, no kana
+      # 6. +1 other kanji, has kana
+      # 7. +2 other kanji, no kana
+      assert texts == ["山", "山あ", "山あい", "あ山", "山口", "山あ口", "山口川"]
+    end
+
+    test "list_words_by_kanji_grouped_by_reading/2 paginates per reading group" do
+      kanji = kanji_with_readings_fixture(%{character: "水"})
+      reading = List.first(Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on)))
+
+      # Create 7 words with same frequency (using valid Japanese characters only)
+      word_texts = ["水", "水あ", "水い", "水う", "水え", "水お", "水か"]
+      word_readings = ["みず", "みずあ", "みずい", "みずう", "みずえ", "みずお", "みずか"]
+
+      words =
+        Enum.zip(word_texts, word_readings)
+        |> Enum.map(fn {text, reading} ->
+          word_fixture(%{
+            text: text,
+            meaning: "water word",
+            reading: reading,
+            usage_frequency: 100
+          })
+        end)
+
+      for {word, idx} <- Enum.with_index(words) do
+        {:ok, _} =
+          Content.create_word_kanji(%{
+            word_id: word.id,
+            kanji_id: kanji.id,
+            kanji_reading_id: reading && reading.id,
+            position: idx
+          })
+      end
+
+      # Default page 1 shows first 5 words
+      result1 = Content.list_words_by_kanji_grouped_by_reading(kanji.id, per_page: 5)
+      group1 = hd(result1.groups)
+      assert group1.total_count == 7
+      assert group1.page == 1
+      assert group1.total_pages == 2
+      assert length(group1.words) == 5
+
+      # Page 2 shows remaining 2 words
+      result2 =
+        Content.list_words_by_kanji_grouped_by_reading(kanji.id,
+          reading_pages: %{reading.reading => 2},
+          per_page: 5
+        )
+
+      group2 = hd(result2.groups)
+      assert group2.page == 2
+      assert length(group2.words) == 2
+    end
+
     test "search_words/2 returns exact match 'blue' before phrases containing 'blue'" do
       # Create the exact match word "blue" (青い) - HIGH frequency
       blue_exact =

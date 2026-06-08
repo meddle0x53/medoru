@@ -727,64 +727,164 @@ defmodule Medoru.Content do
   end
 
   @doc """
-  Returns words containing a specific kanji, grouped by reading, with pagination.
+  Returns words containing a specific kanji, grouped by reading.
 
-  Returns a map where keys are reading strings and values are lists of words.
-  Each reading group is sorted by usage frequency.
+  Fetches all words from the database, then groups them by reading in memory.
+  Each reading group has its own pagination (default 5 words per page).
+  Known readings come first (on'yomi before kun'yomi), "misc" last.
 
   ## Examples
 
-      iex> list_words_by_kanji_grouped_by_reading(kanji_id, page: 1, per_page: 20)
-      %{"ニチ" => [%Word{}, ...], "ひ" => [%Word{}, ...]}
+      iex> list_words_by_kanji_grouped_by_reading(kanji_id, reading_pages: %{"ひ" => 2}, per_page: 5)
+      %{groups: [%{reading: "ひ", words: [...], page: 2, total_pages: 3, ...}], total_count: 25}
 
   """
   def list_words_by_kanji_grouped_by_reading(kanji_id, opts \\ []) do
-    page = Keyword.get(opts, :page, 1)
-    per_page = Keyword.get(opts, :per_page, 20)
-    offset = (page - 1) * per_page
+    reading_pages = Keyword.get(opts, :reading_pages, %{})
+    per_page = Keyword.get(opts, :per_page, 5)
 
-    # Get total count for pagination
-    total_count =
-      WordKanji
-      |> where(kanji_id: ^kanji_id)
-      |> select([wk], count(wk.id))
-      |> Repo.one()
+    # Get the kanji character for complexity sorting
+    kanji = Repo.get!(Kanji, kanji_id)
 
-    # Get paginated word_kanjis with preloaded data, ordered by word frequency
+    # Get ALL word_kanjis for this kanji - no DB pagination
     word_kanjis =
       WordKanji
       |> where(kanji_id: ^kanji_id)
       |> join(:inner, [wk], w in assoc(wk, :word))
       |> order_by([wk, w], asc: w.usage_frequency)
-      |> limit(^per_page)
-      |> offset(^offset)
       |> preload([:word, :kanji_reading])
       |> Repo.all()
 
+    total_count = length(word_kanjis)
+
+    # Sort by frequency, then by composition complexity:
+    # - words with just this kanji
+    # - words with just this kanji + kana
+    # - words with just this kanji + one another kanji
+    # - words with just this kanji + another kanji + kana
+    # - and so on (more other kanji = later)
+    sorted_word_kanjis =
+      Enum.sort_by(word_kanjis, fn wk ->
+        word = wk.word
+        {word.usage_frequency, word_complexity_key(word.text, kanji.character)}
+      end)
+
     # Group by reading (kanji_reading.reading or "misc" if no specific reading)
     grouped =
-      word_kanjis
+      sorted_word_kanjis
       |> Enum.group_by(fn wk ->
         case wk.kanji_reading do
           nil -> "misc"
           reading -> reading.reading
         end
       end)
-      |> Enum.map(fn {reading, wks} ->
-        # Words are already sorted by frequency from the query
-        words = Enum.map(wks, & &1.word)
 
-        {reading, words}
+    # Sort groups: known readings first (on before kun), "misc" last
+    sorted_groups =
+      grouped
+      |> Enum.sort_by(fn
+        {"misc", _} ->
+          {2, ""}
+
+        {reading, wks} ->
+          reading_type =
+            case List.first(wks).kanji_reading do
+              nil -> :on
+              r -> r.reading_type
+            end
+
+          type_order = if reading_type == :on, do: 0, else: 1
+          {type_order, reading}
       end)
-      |> Enum.into(%{})
+
+    # Apply per-group pagination
+    paginated_groups =
+      Enum.map(sorted_groups, fn {reading, wks} ->
+        page = Map.get(reading_pages, reading, 1)
+        all_words = Enum.map(wks, & &1.word)
+        total_in_group = length(all_words)
+        total_pages = max(ceil(total_in_group / per_page), 1)
+        page = min(page, total_pages)
+        offset = (page - 1) * per_page
+
+        words = Enum.slice(all_words, offset, per_page)
+
+        %{
+          reading: reading,
+          words: words,
+          total_count: total_in_group,
+          page: page,
+          per_page: per_page,
+          total_pages: total_pages
+        }
+      end)
 
     %{
-      groups: grouped,
-      total_count: total_count,
-      page: page,
-      per_page: per_page,
-      total_pages: ceil(total_count / per_page)
+      groups: paginated_groups,
+      total_count: total_count
     }
+  end
+
+  # Computes a sort key for word text relative to a target kanji character.
+  # Lower tuple values sort earlier.
+  # Priority:
+  #   1. Just the target kanji (e.g. 山)
+  #   2. Target kanji + kana, kanji before kana, shortest first (e.g. 山あ, 山あい)
+  #   3. Target kanji + kana, kanji after kana, shortest first (e.g. あ山)
+  #   4. Words with other kanji, fewer other kanji first, pure kanji before mixed
+  defp word_complexity_key(text, target_kanji) do
+    chars = String.to_charlist(text)
+
+    kanji_count =
+      Enum.count(chars, &kanji_char?/1)
+
+    target_count = Enum.count(chars, fn cp -> <<cp::utf8>> == target_kanji end)
+    other_kanji_count = kanji_count - target_count
+    has_kana = Enum.any?(chars, &kana_char?/1)
+
+    cond do
+      # Just the target kanji — highest priority
+      other_kanji_count == 0 and not has_kana ->
+        {0, 0, 0, 0}
+
+      # Target kanji + kana (no other kanji)
+      other_kanji_count == 0 and has_kana ->
+        kanji_first = kanji_before_kana?(text, target_kanji)
+        # 0 when kanji is before kana (priority), 1 otherwise
+        priority = if kanji_first, do: 0, else: 1
+        {0, 1, priority, String.length(text)}
+
+      # Words containing other kanji
+      true ->
+        {other_kanji_count, if(has_kana, do: 1, else: 0), 0, 0}
+    end
+  end
+
+  defp kanji_char?(cp) do
+    (cp >= 0x4E00 and cp <= 0x9FFF) or
+      (cp >= 0x3400 and cp <= 0x4DBF)
+  end
+
+  defp kana_char?(cp) do
+    (cp >= 0x3040 and cp <= 0x309F) or
+      (cp >= 0x30A0 and cp <= 0x30FF) or
+      cp == 0x30FC
+  end
+
+  defp kanji_before_kana?(text, target_kanji) do
+    graphemes = String.graphemes(text)
+
+    kanji_idx = Enum.find_index(graphemes, &(&1 == target_kanji))
+
+    kana_idx =
+      Enum.find_index(graphemes, fn g ->
+        case String.to_charlist(g) do
+          [cp] -> kana_char?(cp)
+          _ -> false
+        end
+      end)
+
+    kanji_idx != nil and kana_idx != nil and kanji_idx < kana_idx
   end
 
   @doc """

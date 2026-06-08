@@ -180,7 +180,13 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
                 <%!-- Add Comment --%>
                 <%= if @current_scope.current_user do %>
-                  <form phx-submit="add_comment" class="flex gap-2 flex-wrap sm:flex-nowrap">
+                  <form
+                    id="comment-form-post"
+                    phx-submit="add_comment"
+                    phx-hook="CommentInput"
+                    class="flex gap-2 flex-wrap sm:flex-nowrap"
+                    data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                  >
                     <input type="hidden" name="post_id" value={@post.id} />
                     <input
                       type="text"
@@ -189,7 +195,16 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                       class="input input-bordered input-sm flex-1 text-base"
                       autocomplete="off"
                     />
-                    <button type="submit" class="btn btn-primary btn-sm">
+                    <input type="file" data-comment-file-input class="hidden" />
+                    <button
+                      type="button"
+                      data-comment-attachment-btn
+                      class="btn btn-ghost btn-sm btn-circle shrink-0"
+                      title={gettext("Attach file")}
+                    >
+                      <.icon name="hero-paper-clip" class="w-4 h-4" />
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-sm shrink-0">
                       <.icon name="hero-paper-airplane" class="w-4 h-4" />
                     </button>
                   </form>

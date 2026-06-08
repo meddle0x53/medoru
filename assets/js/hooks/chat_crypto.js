@@ -698,17 +698,50 @@ const ChatCrypto = {
         segments.forEach((segment, i) => {
           if (segment) el.appendChild(document.createTextNode(segment))
           if (i < urls.length) {
-            const a = document.createElement("a")
-            a.href = urls[i]
-            a.target = "_blank"
-            a.rel = "noopener noreferrer"
-            a.className = "underline break-all text-blue-300 hover:text-blue-200"
-            a.textContent = urls[i]
-            el.appendChild(a)
+            const videoId = this.youtubeVideoId(urls[i])
+            if (videoId) {
+              el.appendChild(this.youtubeEmbed(videoId))
+            } else {
+              const a = document.createElement("a")
+              a.href = urls[i]
+              a.target = "_blank"
+              a.rel = "noopener noreferrer"
+              a.className = "underline break-all text-blue-300 hover:text-blue-200"
+              a.textContent = urls[i]
+              el.appendChild(a)
+            }
           }
         })
       }
     })
+  },
+
+  youtubeVideoId(url) {
+    const patterns = [
+      /https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})/,
+      /https?:\/\/(?:www\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
+      /https?:\/\/(?:www\.)?youtube\.com\/embed\/([A-Za-z0-9_-]{11})/,
+      /https?:\/\/youtu\.be\/([A-Za-z0-9_-]{11})/
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
+    }
+    return null
+  },
+
+  youtubeEmbed(videoId) {
+    const span = document.createElement("span")
+    span.className = "block my-2"
+    const iframe = document.createElement("iframe")
+    iframe.className = "rounded-lg w-full max-w-[560px] aspect-video"
+    iframe.src = `https://www.youtube.com/embed/${videoId}`
+    iframe.frameBorder = "0"
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    iframe.allowFullscreen = true
+    iframe.loading = "lazy"
+    span.appendChild(iframe)
+    return span
   },
 
   renderTextWithLinks(el, text, matches) {

@@ -57,7 +57,7 @@
 - **Display name kanji/kana support**: Removed `~r/^[a-zA-Z0-9_\-\s]+$/` regex validation from `UserProfile` changeset
 - **Age/gender/location display**: Compact info row with icons (`hero-cake`, `hero-user` with gender color, `hero-map-pin`) shown only when set
 
-See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features
 
 ### What's Complete (v0.3.0) — User White Board
 **Status**: ✅ COMPLETE
@@ -347,7 +347,7 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 ### What's Next (v0.5.x / v0.6.x)
 - **Kill Medoru! iteration**: Sprites, Map scene, Equipment scene, more enemy types
 - **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
-- See [PLAN-v0.2.1.md](.agents/logs/PLAN-v0.2.1.md)
+- See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md)
 
 ### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption
 - **User Directory**: Public `/users` page with searchable, paginated list of learners
@@ -454,7 +454,7 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 - Invite code join protection: Teachers can no longer join their own classrooms
 
 ### What's Next (v0.2.0)
-- See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
+- See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features
 - Real-time infrastructure, game engine, classroom chat, user levels, badges
 
 ### What's Complete (v0.1.6)
@@ -536,7 +536,7 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning
 ---
 
 ### What's Next (v0.2.0)
-See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
+See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features.
 
 **Epics:**
 1. Real-time infrastructure (PubSub, Presence, Channels)
@@ -763,7 +763,7 @@ See [PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md) for detailed planning.
 - Anonymous language switching (header selector)
 - Word picture uploads (1-3 images per word)
 
-**Log**: [PLAN-v0.1.2.md](.agents/logs/PLAN-v0.1.2.md)
+**Log**: Archived
 
 ### v0.1.0 - MVP (2026-03-18)
 **Status**: ✅ RELEASED  
@@ -1321,7 +1321,7 @@ See `qa/README.md` for full documentation.
 
 ### Logs and Planning
 - **Current State**: See top of this file
-- **v0.2.0 Plan**: [.agents/logs/PLAN-v0.2.0.md](.agents/logs/PLAN-v0.2.0.md)
+- **v0.6.0 Plan**: [.agents/logs/PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md)
 - **Iteration Logs**: [.agents/logs/ITERATION-*.md](.agents/logs/)
 - **Skills**: [.agents/skills/](.agents/skills/)
 
