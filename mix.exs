@@ -119,6 +119,7 @@ defmodule Medoru.MixProject do
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind medoru", "esbuild medoru"],
       "assets.deploy": [
+        "cmd cp assets/vendor/phaser.min.js priv/static/assets/js/phaser.min.js",
         "tailwind medoru --minify",
         "esbuild medoru --minify",
         "phx.digest"
