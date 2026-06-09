@@ -16,6 +16,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :theme, :string, default: "light"
     field :push_notifications_enabled, :boolean, default: false
     field :chat_enter_sends, :boolean, default: true
+    field :convert_emoticons, :boolean, default: true
     field :notify_messaging, :boolean, default: true
     field :notify_white_board, :boolean, default: true
     field :notify_achievements, :boolean, default: true
@@ -48,6 +49,7 @@ defmodule Medoru.Accounts.UserProfile do
       :theme,
       :push_notifications_enabled,
       :chat_enter_sends,
+      :convert_emoticons,
       :daily_test_step_types,
       :age,
       :gender,

@@ -90,6 +90,22 @@ defmodule Medoru.ClassroomsTest do
       assert {:error, %Ecto.Changeset{}} = Classrooms.update_classroom(classroom, @invalid_attrs)
     end
 
+    test "update_classroom/2 with valid theme updates the classroom", %{teacher: teacher} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      for theme <- ["cupcake", "synthwave", "dark", nil, ""] do
+        attrs = %{theme: theme}
+        assert {:ok, %Classroom{} = updated} = Classrooms.update_classroom(classroom, attrs)
+        assert updated.theme == if(theme == "", do: nil, else: theme)
+      end
+    end
+
+    test "update_classroom/2 with invalid theme returns error changeset", %{teacher: teacher} do
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      assert {:error, changeset} = Classrooms.update_classroom(classroom, %{theme: "not-a-theme"})
+      assert "is not a valid theme" in errors_on(changeset).theme
+    end
+
     test "archive_classroom/1 sets status to archived", %{teacher: teacher} do
       classroom = classroom_fixture(%{teacher_id: teacher.id})
       assert {:ok, %Classroom{} = classroom} = Classrooms.archive_classroom(classroom)

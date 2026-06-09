@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.5.1 ✅ COMPLETE  
-**Status**: v0.5.1 complete. Kill Medoru! battle MVP built. Planning next game iteration in parallel with v0.6.x toward v1.0.0.  
-**Tests**: 1165 passing  
+**Version**: 0.6.0 🔄 IN PROGRESS  
+**Status**: v0.6.0 in progress. Classroom Themes + AI Word Enrichment features under development.  
+**Tests**: 1191 passing (1 pre-existing flaky test)  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -344,9 +344,12 @@ See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features
 - `lib/medoru_web/live/admin/game_live.ex` — Admin game page
 - `lib/medoru_web/controllers/game_api_controller.ex` — Run result API
 
-### What's Next (v0.5.x / v0.6.x)
-- **Kill Medoru! iteration**: Sprites, Map scene, Equipment scene, more enemy types
-- **Activity Stream**: Dashboard feed showing followed users' achievements (badges, level-ups, lesson completions, public test results, streak milestones)
+### What's In Progress (v0.6.0)
+- **Classroom Themes**: Per-classroom DaisyUI themes (light/dark variants), teacher theme picker
+- **AI Word Enrichment**: Admin word form "Enrich with AI" button calling OpenAI API with editable predefined prompt. Populates meanings (separated by `/`), readings, examples (separated by `/`), translations, frequency, and word type.
+  - `lib/medoru/ai/word_enrichment.ex` — Pure Elixir OpenAI client using `Req`
+  - Configurable model via `OPENAI_MODEL` env var (default `gpt-4o-mini`)
+  - 9 unit tests + 8 LiveView tests
 - See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md)
 
 ### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption

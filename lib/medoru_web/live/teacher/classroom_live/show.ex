@@ -80,6 +80,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:edit_description, classroom.description || "")
     |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
     |> assign(:edit_public, classroom.public)
+    |> assign(:edit_theme, classroom.theme)
     |> assign(:edit_errors, %{})
   end
 
@@ -235,6 +236,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
      |> assign(:edit_description, classroom.description || "")
      |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
      |> assign(:edit_public, classroom.public)
+     |> assign(:edit_theme, classroom.theme)
      |> assign(:edit_errors, %{})}
   end
 
@@ -257,6 +259,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
         "public" ->
           assign(socket, :edit_public, value == "true")
 
+        "theme" ->
+          assign(socket, :edit_theme, if(value == "", do: nil, else: value))
+
         _ ->
           socket
       end
@@ -273,7 +278,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       "name" => String.trim(socket.assigns.edit_name),
       "description" => String.trim(socket.assigns.edit_description),
       "should_approve_memberships" => socket.assigns.edit_should_approve_memberships,
-      "public" => socket.assigns.edit_public
+      "public" => socket.assigns.edit_public,
+      "theme" => socket.assigns.edit_theme
     }
 
     case Classrooms.update_classroom(classroom, teacher_id, attrs) do
@@ -317,6 +323,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
      |> assign(:edit_description, classroom.description || "")
      |> assign(:edit_should_approve_memberships, classroom.should_approve_memberships)
      |> assign(:edit_public, classroom.public)
+     |> assign(:edit_theme, classroom.theme)
      |> assign(:edit_errors, %{})}
   end
 
@@ -480,7 +487,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
-      <div class="max-w-6xl mx-auto px-4 py-8">
+      <div class="max-w-6xl mx-auto px-4 py-8" data-theme={@classroom.theme}>
         <%!-- Header --%>
         <div class="mb-8">
           <.link
@@ -619,6 +626,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 edit_description={@edit_description}
                 edit_should_approve_memberships={@edit_should_approve_memberships}
                 edit_public={@edit_public}
+                edit_theme={@edit_theme}
                 edit_errors={@edit_errors}
               />
             <% "chat" -> %>
@@ -1210,6 +1218,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   attr :edit_description, :string, required: true
   attr :edit_should_approve_memberships, :boolean, required: true
   attr :edit_public, :boolean, required: true
+  attr :edit_theme, :string, required: true
   attr :edit_errors, :map, required: true
 
   defp settings_tab(assigns) do
@@ -1316,6 +1325,43 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               <% end %>
             </p>
 
+            <div class="pt-2">
+              <label class="block text-sm font-medium text-base-content mb-2">
+                {gettext("Classroom Theme")}
+              </label>
+              <div class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                <button
+                  type="button"
+                  phx-click="update_classroom_field"
+                  phx-value-field="theme"
+                  phx-value-theme=""
+                  class={[
+                    "btn btn-xs btn-outline",
+                    if(is_nil(@edit_theme), do: "btn-primary", else: "")
+                  ]}
+                >
+                  {gettext("Default")}
+                </button>
+                <%= for theme <- Medoru.Classrooms.Classroom.allowed_themes() do %>
+                  <button
+                    type="button"
+                    phx-click="update_classroom_field"
+                    phx-value-field="theme"
+                    phx-value-theme={theme}
+                    class={[
+                      "btn btn-xs",
+                      if(@edit_theme == theme, do: "btn-primary", else: "btn-ghost")
+                    ]}
+                  >
+                    {theme}
+                  </button>
+                <% end %>
+              </div>
+              <p class="text-xs text-secondary mt-1">
+                {gettext("Choose a visual theme for your classroom. Default uses the site colors.")}
+              </p>
+            </div>
+
             <div class="flex gap-3 pt-2">
               <button type="button" phx-click="cancel_edit_settings" class="btn btn-ghost">
                 {gettext("Cancel")}
@@ -1364,6 +1410,17 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                   {gettext("Public")}
                 <% else %>
                   {gettext("Private")}
+                <% end %>
+              </span>
+            </div>
+
+            <div class="flex justify-between items-center py-3 border-b border-base-200">
+              <span class="text-secondary">{gettext("Theme")}</span>
+              <span class="font-medium text-base-content">
+                <%= if @classroom.theme do %>
+                  <span class="badge badge-sm badge-primary">{@classroom.theme}</span>
+                <% else %>
+                  {gettext("Default (site theme)")}
                 <% end %>
               </span>
             </div>

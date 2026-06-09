@@ -60,6 +60,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
         chat_enter_sends =
           user.profile && user.profile.chat_enter_sends != false
 
+        convert_emoticons =
+          user.profile && user.profile.convert_emoticons != false
+
         socket =
           socket
           |> assign(:page_title, classroom.name)
@@ -84,6 +87,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:preview_message, nil)
           |> assign(:editing_message, nil)
           |> assign(:chat_enter_sends, chat_enter_sends)
+          |> assign(:convert_emoticons, convert_emoticons)
           |> assign(:message_reactions, %{})
           |> assign(:reaction_picker_message_id, nil)
 
@@ -113,6 +117,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
               chat_enter_sends =
                 user.profile && user.profile.chat_enter_sends != false
 
+              convert_emoticons =
+                user.profile && user.profile.convert_emoticons != false
+
               socket =
                 socket
                 |> assign(:page_title, classroom.name)
@@ -137,6 +144,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:preview_message, nil)
                 |> assign(:editing_message, nil)
                 |> assign(:chat_enter_sends, chat_enter_sends)
+                |> assign(:convert_emoticons, convert_emoticons)
                 |> assign(:message_reactions, %{})
                 |> assign(:reaction_picker_message_id, nil)
 
@@ -914,7 +922,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
-      <div class="max-w-6xl mx-auto px-4 py-8">
+      <div class="max-w-6xl mx-auto px-4 py-8" data-theme={@classroom.theme}>
         <%!-- Header --%>
         <div class="mb-6 sm:mb-8">
           <.link
@@ -1040,6 +1048,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 editing_message={@editing_message}
                 typing_users={@chat_typing_users}
                 chat_enter_sends={@chat_enter_sends}
+                convert_emoticons={@convert_emoticons}
                 message_reactions={@message_reactions}
                 reaction_picker_message_id={@reaction_picker_message_id}
               />
@@ -1813,6 +1822,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :editing_message, :any, required: true
   attr :typing_users, :list, required: true
   attr :chat_enter_sends, :boolean, required: true
+  attr :convert_emoticons, :boolean, required: true
   attr :message_reactions, :map, required: true
   attr :reaction_picker_message_id, :any, required: true
 
@@ -1909,7 +1919,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           <% message.reply_to_message.attachment_type == "document" -> %>
                             {gettext("📎 File")}
                           <% true -> %>
-                            {render_message_content(message.reply_to_message.content)}
+                            {render_message_content(message.reply_to_message.content, @convert_emoticons)}
                         <% end %>
                       </span>
                     </button>
@@ -2119,9 +2129,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               />
                             </a>
                           <% is_emoji_msg -> %>
-                            <p class="text-4xl leading-none py-1">{render_message_content(message.content)}</p>
+                            <p class="text-4xl leading-none py-1">{render_message_content(message.content, @convert_emoticons)}</p>
                           <% true -> %>
-                            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{render_message_content(message.content)}</p>
+                            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{render_message_content(message.content, @convert_emoticons)}</p>
                         <% end %>
                       </div>
                       <div class="relative message-actions shrink-0 self-center flex items-center gap-0.5">
@@ -2612,15 +2622,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
       |> String.trim() == ""
   end
 
-  defp render_message_content(nil), do: ""
-
-  defp render_message_content(text) do
+  defp render_message_content(nil, _convert), do: ""
+  defp render_message_content(text, convert_emoticons) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text)
+            render_message_body(text, convert_emoticons)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -2632,7 +2641,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text)
+                render_message_body(text, convert_emoticons)
 
               word ->
                 WordChatPreview.render_html(%{word: word})
@@ -2644,7 +2653,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text)
+                    render_message_body(text, convert_emoticons)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -2653,13 +2662,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 end
 
               :error ->
-                render_message_body(text)
+                render_message_body(text, convert_emoticons)
             end
         end
     end
   end
 
-  defp render_message_body(text) do
+  defp render_message_body(text, convert_emoticons) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -2673,13 +2682,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
-      render_text_segment(text)
+      render_text_segment(text, convert_emoticons)
     else
       segments = build_tagged_segments(text, matches, 0, [])
 
       Enum.flat_map(segments, fn
         {:text, segment_text} ->
-          render_text_segment(segment_text)
+          render_text_segment(segment_text, convert_emoticons)
 
         {:word, word_text} ->
           case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
@@ -2732,7 +2741,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
     build_tagged_segments(text, rest, match_start + match_len, acc)
   end
 
-  defp render_text_segment(text) do
+  defp render_text_segment(text, convert_emoticons) do
     url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
 
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
@@ -2764,6 +2773,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 end
 
               true ->
+                segment = if convert_emoticons, do: MedoruWeb.ChatEmoticons.replace(segment), else: segment
                 Phoenix.HTML.html_escape(segment)
             end
         end)
@@ -2991,7 +3001,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content)}
+              {render_message_content(@message.content, @convert_emoticons)}
             </p>
         <% end %>
       </div>

@@ -197,7 +197,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-3xl mx-auto px-4 py-12">
+      <div class="max-w-3xl mx-auto px-4 py-12" data-theme={@classroom.theme}>
         <div class="card bg-base-100 border border-base-300 shadow-lg">
           <div class="card-body py-12">
             <%!-- Success Icon --%>

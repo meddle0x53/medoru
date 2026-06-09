@@ -245,4 +245,55 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       assert html =~ "\\onexistent/"
     end
   end
+
+  describe "Classroom Theme" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+      teacher = user_fixture(%{email: "teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Themed Classroom",
+          description: "A themed classroom",
+          teacher_id: teacher.id,
+          theme: "cupcake"
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, user.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      %{conn: conn, user: user, classroom: classroom}
+    end
+
+    test "applies data-theme attribute when classroom has a theme", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}")
+      assert html =~ ~s(data-theme="cupcake")
+    end
+
+    test "does not apply data-theme when classroom has no theme", %{
+      conn: _conn
+    } do
+      teacher = user_fixture(%{email: "teacher2@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Default Classroom",
+          description: "No theme",
+          teacher_id: teacher.id
+        })
+
+      user = user_fixture(%{email: "member@example.com"})
+      conn = log_in_user(build_conn(), user)
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, user.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}")
+      # The root layout has data-theme on <html>, but the classroom wrapper should not
+      refute html =~ ~s(class="max-w-6xl mx-auto px-4 py-8" data-theme=)
+    end
+  end
 end

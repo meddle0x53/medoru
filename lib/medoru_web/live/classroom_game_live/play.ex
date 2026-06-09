@@ -983,6 +983,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
         class="max-w-4xl mx-auto px-4 py-6"
         data-memory-card-game="true"
         phx-hook="GameFullscreen"
+        data-theme={@classroom.theme}
       >
         <%!-- Header --%>
         <div class="mb-4 sm:mb-6">

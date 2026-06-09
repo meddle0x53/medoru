@@ -1,4 +1,4 @@
-defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
+defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
   use MedoruWeb.ConnCase, async: true
 
   import Phoenix.LiveViewTest

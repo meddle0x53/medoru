@@ -62,7 +62,7 @@ export const ENEMY_SKILLS = [
     name: 'Claw Strike',
     staminaCost: 3,
     type: 'attack',
-    basePower: 7,
+    basePower: 10,
     scalingStat: 'strength',
     scalingMultiplier: 1.0,
   },
@@ -73,6 +73,7 @@ export const ENEMY_SKILLS = [
     type: 'buff',
     buffType: 'next_attack_bonus',
     buffValue: 4,
+    defenseBonus: 10,
   },
   {
     id: 'wait',

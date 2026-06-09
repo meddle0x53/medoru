@@ -121,7 +121,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
-      <div class="max-w-5xl mx-auto px-4 py-8">
+      <div class="max-w-5xl mx-auto px-4 py-8" data-theme={@classroom.theme}>
         <%!-- Header --%>
         <div class="mb-8">
           <.link

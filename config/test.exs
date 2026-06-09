@@ -40,6 +40,14 @@ config :phoenix_live_view,
 config :phoenix,
   sort_verified_routes_query_params: true
 
+# OpenAI configuration (mocked in tests)
+config :medoru, :openai_api_key, nil
+config :medoru, :openai_model, "gpt-4o-mini"
+config :medoru, :openai_tts_model, "gpt-4o-mini-tts"
+config :medoru, :openai_tts_voice, "shimmer"
+config :medoru, :openai_tts_speed, 0.9
+config :medoru, :openai_image_model, "gpt-image-2"
+
 # Test VAPID keys (safe to share, only for test suite)
 config :medoru, :vapid_details,
   subject: "mailto:admin@medoru.net",

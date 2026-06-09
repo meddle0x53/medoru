@@ -4,7 +4,6 @@ defmodule MedoruWeb.GrammarPreviewControllerTest do
   import Medoru.ContentFixtures
   import Medoru.AccountsFixtures
 
-  alias Medoru.Content
 
   setup %{conn: conn} do
     user = user_fixture()

@@ -15,15 +15,17 @@ defmodule MedoruWeb.SettingsLive.ChatShortcuts do
 
     profile =
       Accounts.get_user_profile(user.id) ||
-        %{chat_enter_sends: true}
+        %{chat_enter_sends: true, convert_emoticons: true}
 
     enter_sends = profile.chat_enter_sends != false
+    convert_emoticons = profile.convert_emoticons != false
 
     {:ok,
      socket
      |> assign(:locale, locale)
      |> assign(:page_title, gettext("Chat Shortcuts"))
-     |> assign(:enter_sends, enter_sends)}
+     |> assign(:enter_sends, enter_sends)
+     |> assign(:convert_emoticons, convert_emoticons)}
   end
 
   @impl true
@@ -32,11 +34,20 @@ defmodule MedoruWeb.SettingsLive.ChatShortcuts do
   end
 
   @impl true
+  def handle_event("toggle_emoticons", _params, socket) do
+    {:noreply, assign(socket, :convert_emoticons, !socket.assigns.convert_emoticons)}
+  end
+
+  @impl true
   def handle_event("save", _params, socket) do
     user = socket.assigns.current_scope.current_user
     enter_sends = socket.assigns.enter_sends
+    convert_emoticons = socket.assigns.convert_emoticons
 
-    case Accounts.update_settings(user, %{chat_enter_sends: enter_sends}) do
+    case Accounts.update_settings(user, %{
+           chat_enter_sends: enter_sends,
+           convert_emoticons: convert_emoticons
+         }) do
       {:ok, _profile} ->
         {:noreply,
          socket
@@ -130,6 +141,24 @@ defmodule MedoruWeb.SettingsLive.ChatShortcuts do
                 </p>
               </div>
             </button>
+
+            <div class="divider"></div>
+
+            <%!-- Emoticon conversion toggle --%>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-base-content">{gettext("Convert emoticons to emoji")}</p>
+                <p class="text-sm text-secondary">
+                  {gettext("Turn text emoticons like :) and :( into emoji automatically.")}
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                class="toggle toggle-primary"
+                checked={@convert_emoticons}
+                phx-click="toggle_emoticons"
+              />
+            </div>
 
             <%!-- Save Button --%>
             <div class="pt-2">

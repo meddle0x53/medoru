@@ -18,6 +18,7 @@ defmodule Medoru.Classrooms.Classroom do
     field :status, Ecto.Enum, values: [:active, :archived, :closed], default: :active
     field :should_approve_memberships, :boolean, default: true
     field :public, :boolean, default: false
+    field :theme, :string
     field :settings, :map, default: %{}
 
     belongs_to :teacher, Medoru.Accounts.User
@@ -26,6 +27,16 @@ defmodule Medoru.Classrooms.Classroom do
 
     timestamps(type: :utc_datetime)
   end
+
+  @allowed_themes [
+    "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
+    "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden",
+    "forest", "aqua", "lofi", "pastel", "fantasy", "wireframe", "black",
+    "luxury", "dracula", "cmyk", "autumn", "business", "acid", "lemonade",
+    "night", "coffee", "winter", "dim", "nord", "sunset"
+  ]
+
+  def allowed_themes, do: @allowed_themes
 
   @doc false
   def changeset(classroom, attrs) do
@@ -38,15 +49,27 @@ defmodule Medoru.Classrooms.Classroom do
       :status,
       :should_approve_memberships,
       :public,
+      :theme,
       :settings,
       :teacher_id
     ])
     |> validate_required([:name, :invite_code, :teacher_id])
     |> validate_length(:name, min: 3, max: 100)
+    |> validate_theme()
     |> validate_slug()
     |> unique_constraint(:slug)
     |> unique_constraint(:invite_code)
     |> foreign_key_constraint(:teacher_id)
+  end
+
+  defp validate_theme(changeset) do
+    theme = get_field(changeset, :theme)
+
+    if is_nil(theme) or theme == "" or theme in @allowed_themes do
+      changeset
+    else
+      add_error(changeset, :theme, "is not a valid theme")
+    end
   end
 
   # Validates slug only if one is provided (slug is auto-generated if empty)

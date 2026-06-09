@@ -708,22 +708,37 @@ defmodule Medoru.Learning do
     limit = Keyword.get(opts, :limit, 30)
     offset = Keyword.get(opts, :offset, 0)
 
-    UserProgress
-    |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
-    |> join(:inner, [up], k in Kanji, on: k.id == up.kanji_id)
-    |> order_by([up, k], desc: up.inserted_at)
-    |> limit(^limit)
-    |> offset(^offset)
-    |> select([up, k], %{
-      id: k.id,
-      character: k.character,
-      meanings: k.meanings,
-      jlpt_level: k.jlpt_level,
-      stroke_count: k.stroke_count,
-      known_score: up.known_score,
-      inserted_at: up.inserted_at
-    })
-    |> Repo.all()
+    progresses =
+      UserProgress
+      |> where([up], up.user_id == ^user_id and not is_nil(up.kanji_id))
+      |> order_by([up], desc: up.inserted_at)
+      |> limit(^limit)
+      |> offset(^offset)
+      |> Repo.all()
+
+    kanji_ids = Enum.map(progresses, & &1.kanji_id)
+
+    kanji_map =
+      Kanji
+      |> where([k], k.id in ^kanji_ids)
+      |> preload(:kanji_readings)
+      |> Repo.all()
+      |> Map.new(fn k -> {k.id, k} end)
+
+    Enum.map(progresses, fn up ->
+      k = Map.get(kanji_map, up.kanji_id)
+      %{
+        id: k.id,
+        character: k.character,
+        meanings: k.meanings,
+        jlpt_level: k.jlpt_level,
+        stroke_count: k.stroke_count,
+        stroke_data: k.stroke_data,
+        known_score: up.known_score,
+        inserted_at: up.inserted_at,
+        kanji_readings: k.kanji_readings
+      }
+    end)
   end
 
   @doc """

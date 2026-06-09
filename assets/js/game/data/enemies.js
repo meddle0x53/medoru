@@ -16,6 +16,7 @@ export const ENEMIES = {
       skill: 2,
       luck: 1,
     },
+    defense: 5,
     armor: 2,
     ai: 'aggressive',
   },

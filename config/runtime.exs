@@ -85,6 +85,14 @@ if config_env() == :prod do
   # Configure uploads directory - use environment variable or default to system temp
   config :medoru, :uploads_dir, System.get_env("UPLOADS_DIR") || "/var/opt/medoru/uploads"
 
+  # OpenAI API configuration
+  config :medoru, :openai_api_key, System.get_env("OPENAI_API_KEY")
+  config :medoru, :openai_model, System.get_env("OPENAI_MODEL", "gpt-4o-mini")
+  config :medoru, :openai_tts_model, System.get_env("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
+  config :medoru, :openai_tts_voice, System.get_env("OPENAI_TTS_VOICE", "shimmer")
+  config :medoru, :openai_tts_speed, String.to_float(System.get_env("OPENAI_TTS_SPEED", "0.9"))
+  config :medoru, :openai_image_model, System.get_env("OPENAI_IMAGE_MODEL", "gpt-image-2")
+
   # Web Push VAPID keys
   vapid_public_key =
     System.get_env("VAPID_PUBLIC_KEY") ||

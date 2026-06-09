@@ -148,6 +148,9 @@ defmodule MedoruWeb.MessagesLive.Show do
         chat_enter_sends =
           current_user.profile && current_user.profile.chat_enter_sends != false
 
+        convert_emoticons =
+          current_user.profile && current_user.profile.convert_emoticons != false
+
         # If this user has no conversation key but others do, request re-encryption.
         if connected?(socket) && conversation_keys == [] && missing_keys == [] do
           other_keys = Chat.list_conversation_keys(conversation_id)
@@ -204,6 +207,7 @@ defmodule MedoruWeb.MessagesLive.Show do
          |> assign(:key_mismatch, key_mismatch)
          |> assign(:last_registered_key, last_registered_key)
          |> assign(:chat_enter_sends, chat_enter_sends)
+         |> assign(:convert_emoticons, convert_emoticons)
          |> assign(:online_user_ids, online_user_ids)
          |> push_event("scroll_to_bottom", %{})}
         end
@@ -1315,15 +1319,14 @@ defmodule MedoruWeb.MessagesLive.Show do
   @doc """
   Renders message content, replacing `:medoru:` with the favicon image.
   """
-  def render_message_content(nil), do: ""
-
-  def render_message_content(text) do
+  def render_message_content(nil, _convert), do: ""
+  def render_message_content(text, convert_emoticons) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text)
+            render_message_body(text, convert_emoticons)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -1335,7 +1338,7 @@ defmodule MedoruWeb.MessagesLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text)
+                render_message_body(text, convert_emoticons)
 
               word ->
                 WordChatPreview.render_html(%{word: word})
@@ -1347,7 +1350,7 @@ defmodule MedoruWeb.MessagesLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text)
+                    render_message_body(text, convert_emoticons)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -1356,13 +1359,13 @@ defmodule MedoruWeb.MessagesLive.Show do
                 end
 
               :error ->
-                render_message_body(text)
+                render_message_body(text, convert_emoticons)
             end
         end
     end
   end
 
-  defp render_message_body(text) do
+  defp render_message_body(text, convert_emoticons) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -1376,13 +1379,13 @@ defmodule MedoruWeb.MessagesLive.Show do
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
-      render_text_segment(text)
+      render_text_segment(text, convert_emoticons)
     else
       segments = build_tagged_segments(text, matches, 0, [])
 
       Enum.flat_map(segments, fn
         {:text, segment_text} ->
-          render_text_segment(segment_text)
+          render_text_segment(segment_text, convert_emoticons)
 
         {:word, word_text} ->
           case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
@@ -1435,7 +1438,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     build_tagged_segments(text, rest, match_start + match_len, acc)
   end
 
-  defp render_text_segment(text) do
+  defp render_text_segment(text, convert_emoticons) do
     url_regex = ~r/https?:\/\/[^\s<>"{}|\\^`\[\]]+/
 
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
@@ -1467,6 +1470,7 @@ defmodule MedoruWeb.MessagesLive.Show do
                 end
 
               true ->
+                segment = if convert_emoticons, do: MedoruWeb.ChatEmoticons.replace(segment), else: segment
                 Phoenix.HTML.html_escape(segment)
             end
         end)
@@ -1687,7 +1691,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content)}
+              {render_message_content(@message.content, @convert_emoticons)}
             </p>
         <% end %>
       </div>

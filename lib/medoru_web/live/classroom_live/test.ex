@@ -929,7 +929,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-8" data-theme={@classroom.theme}>
         <%!-- Header - Mobile Optimized --%>
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-8">
           <div class="flex-1 min-w-0">

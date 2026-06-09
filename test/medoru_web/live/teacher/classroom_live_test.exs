@@ -301,6 +301,70 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert updated.name == "Test Classroom"
     end
 
+    test "teacher can set and save classroom theme", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=settings")
+
+      # Click edit settings
+      view
+      |> element("button[phx-click='toggle_edit_settings']")
+      |> render_click()
+
+      # Select a theme
+      render_click(view, "update_classroom_field", %{
+        "field" => "theme",
+        "theme" => "cupcake"
+      })
+
+      # Save settings
+      view
+      |> form("form[phx-submit='save_classroom_settings']")
+      |> render_submit()
+
+      updated = Classrooms.get_classroom!(classroom.id)
+      assert updated.theme == "cupcake"
+      assert render(view) =~ "cupcake"
+    end
+
+    test "teacher can reset classroom theme to default", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id,
+          theme: "synthwave"
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=settings")
+
+      # Click edit settings
+      view
+      |> element("button[phx-click='toggle_edit_settings']")
+      |> render_click()
+
+      # Click Default theme button
+      render_click(view, "update_classroom_field", %{
+        "field" => "theme",
+        "theme" => ""
+      })
+
+      # Save settings
+      view
+      |> form("form[phx-submit='save_classroom_settings']")
+      |> render_submit()
+
+      updated = Classrooms.get_classroom!(classroom.id)
+      assert is_nil(updated.theme)
+    end
+
     test "teacher can change tabs", %{conn: conn, teacher: teacher} do
       {:ok, classroom} =
         Classrooms.create_classroom(%{

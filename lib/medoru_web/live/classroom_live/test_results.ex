@@ -117,7 +117,7 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-4xl mx-auto px-4 py-8">
+      <div class="max-w-4xl mx-auto px-4 py-8" data-theme={@classroom.theme}>
         <%!-- Header --%>
         <div class="mb-8">
           <.link

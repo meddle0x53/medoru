@@ -368,7 +368,7 @@ defmodule Medoru.ChatTest do
     end
   end
 
-  defp classroom_fixture(attrs \\ %{}) do
+  defp classroom_fixture(attrs) do
     teacher_id = attrs[:teacher_id] || user_fixture().id
 
     {:ok, classroom} =

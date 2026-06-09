@@ -93,7 +93,7 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       owner = owner_fixture()
       grammar_definition_fixture(%{title: "te-form pattern", jlpt_level: 5})
 
-      {:ok, post} =
+      {:ok, _post} =
         WhiteBoard.create_post(%{
           user_id: owner.id,
           title: "Grammar Post",
@@ -112,7 +112,7 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       owner = owner_fixture()
       grammar_definition_fixture(%{title: "na-adjective", jlpt_level: 5})
 
-      {:ok, post} =
+      {:ok, _post} =
         WhiteBoard.create_post(%{
           user_id: owner.id,
           title: "Inline Grammar",
@@ -130,7 +130,7 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
     test "renders plain text for unknown inline grammar \\text/", %{conn: conn} do
       owner = owner_fixture()
 
-      {:ok, post} =
+      {:ok, _post} =
         WhiteBoard.create_post(%{
           user_id: owner.id,
           title: "Unknown Grammar",
@@ -254,7 +254,7 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
 
       {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board")
 
-      html =
+      _html =
         view
         |> element("button[phx-click='toggle_visibility'][phx-value-id='#{post.id}']")
         |> render_click()

@@ -689,6 +689,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         id="lesson-container"
         phx-hook="LessonPlayer"
         class="max-w-3xl mx-auto px-4 py-8"
+        data-theme={@classroom.theme}
       >
         <%!-- Preview Banner --%>
         <%= if @is_preview do %>

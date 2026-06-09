@@ -4,6 +4,7 @@
     id="chat-wrapper"
     phx-hook={if @conversation.classroom_id, do: nil, else: "ChatCrypto"}
     data-conversation-id={@conversation.id}
+    data-convert-emoticons={if @convert_emoticons != false, do: "true", else: "false"}
     data-current-user-id={@current_scope.current_user.id}
     data-encrypted-key={@encrypted_key}
     data-encrypted-keys-v2={Jason.encode!(@encrypted_keys_v2)}
@@ -211,7 +212,7 @@
                       </span>
                     <% true -> %>
                       <span class="truncate block">
-                        {render_message_content(message.reply_to_message.content) || "..."}
+                        {render_message_content(message.reply_to_message.content, @convert_emoticons) || "..."}
                       </span>
                   <% end %>
                 </button>
@@ -438,10 +439,10 @@
                         </a>
                       <% @conversation.classroom_id && message.content -> %>
                         <%= if is_emoji_msg do %>
-                          <p class="text-4xl leading-none py-1">{render_message_content(message.content)}</p>
+                          <p class="text-4xl leading-none py-1">{render_message_content(message.content, @convert_emoticons)}</p>
                         <% else %>
                           <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">
-                            {render_message_content(message.content)}
+                            {render_message_content(message.content, @convert_emoticons)}
                           </p>
                         <% end %>
                       <% message.ciphertext -> %>

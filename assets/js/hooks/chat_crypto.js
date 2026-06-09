@@ -250,6 +250,7 @@ const ChatCrypto = {
   async mounted() {
     this._decryptedCache = new Map() // msgId -> { ciphertext, text }
     this.convId = this.el.dataset.conversationId
+    this.convertEmoticons = this.el.dataset.convertEmoticons !== "false"
 
     // Get current user ID from data attribute for key isolation
     const currentUserId = this.el.dataset.currentUserId
@@ -674,6 +675,23 @@ const ChatCrypto = {
     this.renderTextSegment(el, text)
   },
 
+  replaceEmoticons(text) {
+    const replacements = [
+      [":'-)", "😂"], [":'-(", "😢"], [":-)", "😊"], [":-(", "😞"],
+      [":-D", "😄"], [":-P", "😛"], [":-p", "😛"], [":-*", "😘"],
+      [":-/", "😕"], [":-$", "😳"], [":-O", "😮"], [":-o", "😮"],
+      [":-|", "😐"], [":')", "🥹"], [";-)", "😉"], ["</3", "💔"],
+      [":)", "😊"], [":(", "😞"], [":D", "😄"], [":P", "😛"],
+      [":p", "😛"], [":*", "😘"], [":/", "😕"], [":$", "😳"],
+      [":O", "😮"], [":o", "😮"], [":|", "😐"], [";)", "😉"],
+      ["<3", "❤️"], ["XD", "😆"], ["xD", "😆"], ["B)", "😎"], ["8)", "😎"]
+    ]
+    for (const [pattern, emoji] of replacements) {
+      text = text.split(pattern).join(emoji)
+    }
+    return text
+  },
+
   renderTextSegment(el, text) {
     const emojiRegex = /(:medoru:|:ouroboros:)/
     const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
@@ -696,7 +714,8 @@ const ChatCrypto = {
         const segments = part.split(urlRegex)
         const urls = part.match(urlRegex) || []
         segments.forEach((segment, i) => {
-          if (segment) el.appendChild(document.createTextNode(segment))
+          const converted = this.convertEmoticons ? this.replaceEmoticons(segment) : segment
+          if (segment) el.appendChild(document.createTextNode(converted))
           if (i < urls.length) {
             const videoId = this.youtubeVideoId(urls[i])
             if (videoId) {

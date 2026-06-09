@@ -16,6 +16,8 @@ export default class Character {
     this.capacity = config.capacity || 3
 
     this.armor = config.armor || 0
+    this.baseDefense = config.defense || 0
+    this.tempDefense = 0
     this.block = 0
     this.buffs = []
 
@@ -41,9 +43,19 @@ export default class Character {
     this.stamina = Math.min(this.maxStamina, this.stamina + amount)
   }
 
-  takeDamage(rawDamage) {
+  takeDamage(rawAttack) {
+    // Dark Souls-like defense formula: atk * atk / (atk + def)
+    // Use getTotalDefense if available (Player with shield), otherwise getDefense
+    const defense = this.getTotalDefense ? this.getTotalDefense() : this.getDefense()
+    let damage
+    if (defense <= 0) {
+      damage = rawAttack
+    } else {
+      damage = rawAttack * rawAttack / (rawAttack + defense)
+    }
+    damage = Math.floor(damage)
+
     // Block absorbs damage first
-    let damage = rawDamage
     if (this.block > 0) {
       const absorbed = Math.min(this.block, damage)
       this.block -= absorbed
@@ -81,7 +93,16 @@ export default class Character {
 
   resetForTurn() {
     this.stamina = this.maxStamina
+    this.tempDefense = 0
     // Block decays at start of new round if we want, but for MVP keep it
+  }
+
+  getDefense() {
+    return this.baseDefense + this.tempDefense
+  }
+
+  addDefense(amount) {
+    this.tempDefense += amount
   }
 
   getCritChance() {

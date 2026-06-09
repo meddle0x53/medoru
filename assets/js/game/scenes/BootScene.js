@@ -15,6 +15,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('player_sword_shield', '/images/game/player_sword_shield.png')
     this.load.image('player_sword_slash', '/images/game/player_sword_slash.png')
     this.load.image('player_shield_block', '/images/game/player_shield_block.png')
+    this.load.image('player_defeated', '/images/game/player_defeated.png')
 
     // Battle background
     this.load.image('battle_background', '/images/game/battle_background.png')
@@ -23,6 +24,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('enemy_kasa_obake', '/images/game/enemy_kasa_obake.png')
     this.load.image('enemy_kasa_obake_attack', '/images/game/enemy_kasa_obake_attack.png')
     this.load.image('enemy_kasa_obake_defend', '/images/game/enemy_kasa_obake_defend.png')
+    this.load.image('enemy_kasa_obake_buff', '/images/game/enemy_kasa_obake_buff.png')
+    this.load.image('enemy_kasa_obake_defeated', '/images/game/enemy_kasa_obake_defeated.png')
 
     // Placeholder textures for UI bars
     const graphics = this.make.graphics({ x: 0, y: 0, add: false })

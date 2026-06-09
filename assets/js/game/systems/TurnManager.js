@@ -35,13 +35,35 @@ export default class TurnManager {
 
     switch (skill.type) {
       case 'attack': {
-        const base = skill.basePower + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
-        const weaponBonus = performer.getWeaponBonus ? performer.getWeaponBonus() : 0
-        const total = (base + weaponBonus) * multiplier
+        let total
+        if (performer.calculateWeaponDamage) {
+          // Player: use weapon damage calculation (Dark Souls scaling)
+          total = performer.calculateWeaponDamage() * multiplier
+        } else {
+          // Enemy: use fixed base power + stat scaling
+          const base = skill.basePower + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
+          const weaponBonus = performer.getWeaponBonus ? performer.getWeaponBonus() : 0
+          total = (base + weaponBonus) * multiplier
+        }
         const isCrit = Math.random() < performer.getCritChance()
-        const finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        const rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+
+        // Perfect kanji (0 wrong strokes) bypasses 80% of enemy defense
+        let effectiveDefense = target.getDefense()
+        if (performer.lastKanjiWrongStrokes === 0) {
+          effectiveDefense = Math.floor(effectiveDefense * 0.2)
+        }
+
+        // Dark Souls-like damage formula: atk * atk / (atk + def)
+        let finalDamage
+        if (effectiveDefense <= 0) {
+          finalDamage = rawDamage
+        } else {
+          finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
+        }
+
         const actual = target.takeDamage(finalDamage)
-        result = { type: 'attack', damage: actual, isCrit, multiplier }
+        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
         break
       }
       case 'defence': {

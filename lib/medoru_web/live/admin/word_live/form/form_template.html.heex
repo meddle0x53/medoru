@@ -35,6 +35,15 @@
               <%= for error <- @form[:text].errors do %>
                 <p class="text-error text-sm mt-1">{format_error(error)}</p>
               <% end %>
+
+              <button
+                type="button"
+                phx-click="open_enrich_modal"
+                class="btn btn-sm btn-outline btn-secondary mt-2"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                {gettext("Enrich with AI")}
+              </button>
             </div>
 
             <div>
@@ -229,6 +238,18 @@
                     <% end %>
                   </div>
                 <% end %>
+
+                <%!-- AI TTS Generation Button --%>
+                <div class="pt-2">
+                  <button
+                    type="button"
+                    phx-click="open_tts_modal"
+                    class="btn btn-sm btn-outline btn-secondary"
+                  >
+                    <.icon name="hero-speaker-wave" class="w-4 h-4 mr-1" />
+                    {gettext("Generate with AI")}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -309,6 +330,18 @@
                     <% end %>
                   </div>
                 <% end %>
+
+                <%!-- AI Image Generation Button --%>
+                <div class="pt-2">
+                  <button
+                    type="button"
+                    phx-click="open_image_modal"
+                    class="btn btn-sm btn-outline btn-secondary"
+                  >
+                    <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                    {gettext("Generate with AI")}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -512,4 +545,286 @@
       </div>
     <% end %>
   </div>
+
+  <%!-- TTS Generation Modal --%>
+  <%= if @show_tts_modal do %>
+    <div class="modal modal-open">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+          <.icon name="hero-speaker-wave" class="w-5 h-5 text-secondary" />
+          {gettext("Generate Pronunciation")}
+        </h3>
+
+        <div class="space-y-4">
+          <%!-- TTS Text Input --%>
+          <div>
+            <label class="label">
+              <span class="label-text">{gettext("Text to speak (editable)")}</span>
+            </label>
+            <.input
+              type="text"
+              name="tts_text"
+              value={@tts_text}
+              placeholder={gettext("e.g., にほん")}
+              phx-change="update_tts_text"
+            />
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Edit the text that will be spoken. Defaults to the word reading.")}
+            </p>
+          </div>
+
+          <%!-- Vibe Prompt --%>
+          <div>
+            <label class="label">
+              <span class="label-text">{gettext("Vibe / Style Instructions (editable)")}</span>
+            </label>
+            <textarea
+              phx-change="update_tts_vibe_prompt"
+              phx-debounce="300"
+              class="textarea textarea-bordered w-full h-32 font-mono text-sm"
+            >{@tts_vibe_prompt}</textarea>
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Edit the voice style instructions sent to the TTS model.")}
+            </p>
+          </div>
+
+          <%!-- Error display --%>
+          <%= if @tts_error do %>
+            <div class="alert alert-error alert-soft">
+              <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+              <span>{@tts_error}</span>
+            </div>
+          <% end %>
+
+          <%!-- Audio Preview --%>
+          <%= if @tts_temp_path do %>
+            <div class="p-4 bg-base-200/50 rounded-lg">
+              <p class="text-sm text-secondary mb-2">{gettext("Preview:")}</p>
+              <audio controls class="w-full">
+                <source src={@tts_temp_path} />
+                {gettext("Your browser does not support the audio element.")}
+              </audio>
+
+              <div class="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  phx-click="approve_tts"
+                  class="btn btn-sm btn-success flex-1"
+                >
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                  {gettext("Approve")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="reject_tts"
+                  class="btn btn-sm btn-error flex-1"
+                >
+                  <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
+                  {gettext("Reject")}
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="modal-action flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            phx-click="close_tts_modal"
+            class="btn btn-ghost w-full sm:w-auto"
+          >
+            {gettext("Cancel")}
+          </button>
+          <button
+            type="button"
+            phx-click="generate_pronunciation"
+            class="btn btn-secondary w-full sm:w-auto"
+            disabled={@tts_loading}
+          >
+            <%= if @tts_loading do %>
+              <span class="loading loading-spinner loading-sm mr-2"></span>
+              {gettext("Generating...")}
+            <% else %>
+              <.icon name="hero-speaker-wave" class="w-4 h-4 mr-2" />
+              {gettext("Generate")}
+            <% end %>
+          </button>
+        </div>
+      </div>
+      <div class="modal-backdrop" phx-click="close_tts_modal"></div>
+    </div>
+  <% end %>
+
+  <%!-- Image Generation Modal --%>
+  <%= if @show_image_modal do %>
+    <div class="modal modal-open">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+          <.icon name="hero-photo" class="w-5 h-5 text-secondary" />
+          {gettext("Generate Word Image")}
+        </h3>
+
+        <div class="space-y-4">
+          <%!-- Word info --%>
+          <div class="p-3 bg-base-200 rounded-lg flex gap-4">
+            <div>
+              <span class="text-sm text-base-content/60">{gettext("Word")}:</span>
+              <span class="text-xl font-medium ml-2">{@form[:text].value}</span>
+            </div>
+            <div>
+              <span class="text-sm text-base-content/60">{gettext("Meaning")}:</span>
+              <span class="font-medium ml-2">{@form[:meaning].value}</span>
+            </div>
+          </div>
+
+          <%!-- Prompt textarea --%>
+          <div>
+            <label class="label">
+              <span class="label-text">{gettext("Image Prompt (editable)")}</span>
+            </label>
+            <textarea
+              phx-change="update_image_prompt"
+              phx-debounce="300"
+              class="textarea textarea-bordered w-full h-64 font-mono text-sm"
+            >{@image_prompt}</textarea>
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Edit the prompt before generating. The word and meaning are pre-filled.")}
+            </p>
+          </div>
+
+          <%!-- Error display --%>
+          <%= if @image_error do %>
+            <div class="alert alert-error alert-soft">
+              <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+              <span>{@image_error}</span>
+            </div>
+          <% end %>
+
+          <%!-- Image Preview --%>
+          <%= if @image_temp_path do %>
+            <div class="p-4 bg-base-200/50 rounded-lg">
+              <p class="text-sm text-secondary mb-2">{gettext("Preview:")}</p>
+              <img
+                src={@image_temp_path}
+                alt={gettext("Generated image preview")}
+                class="w-full max-w-[300px] h-auto rounded-xl border border-base-300 mx-auto"
+              />
+
+              <div class="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  phx-click="approve_image"
+                  class="btn btn-sm btn-success flex-1"
+                >
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                  {gettext("Approve")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="reject_image"
+                  class="btn btn-sm btn-error flex-1"
+                >
+                  <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
+                  {gettext("Reject")}
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="modal-action flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            phx-click="close_image_modal"
+            class="btn btn-ghost w-full sm:w-auto"
+          >
+            {gettext("Cancel")}
+          </button>
+          <button
+            type="button"
+            phx-click="generate_image"
+            class="btn btn-secondary w-full sm:w-auto"
+            disabled={@image_loading}
+          >
+            <%= if @image_loading do %>
+              <span class="loading loading-spinner loading-sm mr-2"></span>
+              {gettext("Generating...")}
+            <% else %>
+              <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
+              {gettext("Generate")}
+            <% end %>
+          </button>
+        </div>
+      </div>
+      <div class="modal-backdrop" phx-click="close_image_modal"></div>
+    </div>
+  <% end %>
+
+  <%!-- AI Enrichment Modal --%>
+  <%= if @show_enrich_modal do %>
+    <div class="modal modal-open">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+          <.icon name="hero-sparkles" class="w-5 h-5 text-secondary" />
+          {gettext("AI Word Enrichment")}
+        </h3>
+
+        <div class="space-y-4">
+          <%!-- Word text display --%>
+          <div class="p-3 bg-base-200 rounded-lg">
+            <span class="text-sm text-base-content/60">{gettext("Word")}:</span>
+            <span class="text-xl font-medium ml-2">{@form[:text].value}</span>
+          </div>
+
+          <%!-- Prompt textarea --%>
+          <div>
+            <label class="label">
+              <span class="label-text">{gettext("Prompt (editable)")}</span>
+            </label>
+            <textarea
+              phx-change="update_enrich_prompt"
+              phx-debounce="300"
+              class="textarea textarea-bordered w-full h-48 font-mono text-sm"
+            >{@enrich_prompt}</textarea>
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("You can edit the prompt before sending. The word text will be inserted where the placeholder appears.")}
+            </p>
+          </div>
+
+          <%!-- Error display --%>
+          <%= if @enrich_error do %>
+            <div class="alert alert-error alert-soft">
+              <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+              <span>{@enrich_error}</span>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="modal-action flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            phx-click="close_enrich_modal"
+            class="btn btn-ghost w-full sm:w-auto"
+          >
+            {gettext("Cancel")}
+          </button>
+          <button
+            type="button"
+            phx-click="enrich_word"
+            class="btn btn-secondary w-full sm:w-auto"
+            disabled={@enrich_loading}
+          >
+            <%= if @enrich_loading do %>
+              <span class="loading loading-spinner loading-sm mr-2"></span>
+              {gettext("Generating...")}
+            <% else %>
+              <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
+              {gettext("Generate")}
+            <% end %>
+          </button>
+        </div>
+      </div>
+      <div class="modal-backdrop" phx-click="close_enrich_modal"></div>
+    </div>
+  <% end %>
 </Layouts.app>
