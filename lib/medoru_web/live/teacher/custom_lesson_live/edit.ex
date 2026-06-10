@@ -176,6 +176,22 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   end
 
   @impl true
+  def handle_event("update_title", %{"title" => title}, socket) do
+    lesson = socket.assigns.lesson
+
+    case Content.update_custom_lesson(lesson, %{title: title}) do
+      {:ok, updated_lesson} ->
+        {:noreply,
+         socket
+         |> assign(:lesson, updated_lesson)
+         |> assign(:page_title, gettext("Edit Lesson: %{title}", title: updated_lesson.title))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update title."))}
+    end
+  end
+
+  @impl true
   def handle_event("update_description", %{"description" => description}, socket) do
     lesson = socket.assigns.lesson
 
@@ -462,7 +478,19 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
           </.link>
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-2xl font-bold text-base-content">{@lesson.title}</h1>
+              <form phx-submit="update_title" class="flex items-end gap-2">
+                <input
+                  type="text"
+                  name="title"
+                  value={@lesson.title}
+                  class="input input-bordered text-2xl font-bold w-full"
+                  maxlength="100"
+                  required
+                />
+                <button type="submit" class="btn btn-primary btn-sm mb-1">
+                  {gettext("Save")}
+                </button>
+              </form>
               <p class="text-secondary text-sm">
                 {length(@lesson_words)} {gettext("words")} • {@lesson.status}
               </p>

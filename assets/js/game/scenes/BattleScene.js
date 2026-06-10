@@ -4,6 +4,7 @@ import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
 import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
+import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getWindowGameData, sendRunResult } from '../api.js'
 
 export default class BattleScene extends Phaser.Scene {
@@ -42,6 +43,7 @@ export default class BattleScene extends Phaser.Scene {
     this.createChallengeOverlay()
     this.createReadinessOverlay()
     this.createItemMenu()
+    this.createSwitchActionDialog()
     this.createCombatLog()
 
     this.input.keyboard.on('keydown', this.handleKeyInput, this)
@@ -49,14 +51,33 @@ export default class BattleScene extends Phaser.Scene {
     // Hidden input for mobile touch keyboard during readiness challenge
     this.hiddenInput = document.createElement('input')
     this.hiddenInput.type = 'text'
-    this.hiddenInput.style.position = 'absolute'
+    this.hiddenInput.style.position = 'fixed'
     this.hiddenInput.style.opacity = '0'
     this.hiddenInput.style.pointerEvents = 'none'
-    this.hiddenInput.style.left = '-9999px'
+    this.hiddenInput.style.bottom = '0px'
+    this.hiddenInput.style.left = '0px'
+    this.hiddenInput.style.width = '1px'
+    this.hiddenInput.style.height = '1px'
+    this.hiddenInput.style.border = 'none'
+    this.hiddenInput.style.padding = '0'
+    this.hiddenInput.style.margin = '0'
     this.hiddenInput.autocomplete = 'off'
     this.hiddenInput.autocapitalize = 'off'
     this.hiddenInput.autocorrect = 'off'
+    this.hiddenInput.inputMode = 'text'
     document.body.appendChild(this.hiddenInput)
+
+    // Keep overlay visible when mobile keyboard opens
+    this._onVisualViewportResize = () => {
+      if (this.readinessChallengeActive || this.reactionChallengeActive) {
+        window.scrollTo(0, 0)
+        document.body.scrollTop = 0
+        document.documentElement.scrollTop = 0
+      }
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', this._onVisualViewportResize)
+    }
 
     this.addCombatLog('Battle start! Defeat the Kasa-obake!')
     this.onTurnChange('player')
@@ -117,6 +138,7 @@ export default class BattleScene extends Phaser.Scene {
     // Smooth scaling for anime-style renders
     this.textures.get('player_sword_shield').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('player_sword_slash').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    this.textures.get('player_heavy_slash').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('player_shield_block').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('player_defeated').setFilter(Phaser.Textures.FilterMode.LINEAR)
 
@@ -182,20 +204,20 @@ export default class BattleScene extends Phaser.Scene {
     this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
 
     this.skillButtons = []
-    const s1 = this.player.equippedSkills[0] // Forward Slash
-    const s2 = this.player.equippedSkills[1] // Setup Defence
+    // All active actions get a button (parry is passive but shown)
+    const clickableActions = this.player.activeActions
+    clickableActions.forEach((action, i) => {
+      const y = 195 + i * 52
+      const colors = getActionTypeColor(action.type)
+      const btn = this.createButton(120, y, `${action.name} (${action.staminaCost})`, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      this.skillButtons.push({ btn, skill: action })
+    })
 
-    this.skillButtons.push({ btn: this.createButton(120, 195, `${s1.name} (${s1.staminaCost})`, () => this.onSkillClick(s1), 160, 44, 0xc0392b, 0xe74c3c), skill: s1 })
-    this.skillButtons.push({ btn: this.createButton(120, 247, `${s2.name} (${s2.staminaCost})`, () => this.onSkillClick(s2), 160, 44, 0x8b4513, 0xa0522d), skill: s2 })
+    // Switch Action button
+    const switchY = 195 + clickableActions.length * 52
+    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 44, 0x2980b9, 0x3498db)
 
-    // Use Item button (replaces Heal Potion)
-    const itemCost = 1
-    this.itemButton = this.createButton(120, 299, `Use Item (${itemCost})`, () => this.onUseItemClick(), 160, 44, 0x27ae60, 0x2ecc71)
-
-    // Fourth button — Switch Action (blue, does nothing for now)
-    this.switchActionBtn = this.createButton(120, 351, 'Switch Action (1)', () => {}, 160, 44, 0x2980b9, 0x3498db)
-
-    // End turn button inside the panel
+    // End turn button
     this.endTurnBtn = this.createButton(120, 475, 'End Turn', () => this.onEndTurn(), 160, 44, 0xe67e22, 0xf39c12)
 
     // Block indicators
@@ -446,6 +468,7 @@ export default class BattleScene extends Phaser.Scene {
     this.itemMenuRows.forEach((row, i) => {
       if (i < items.length) {
         const item = items[i]
+        const canAfford = this.player.stamina >= item.staminaCost
         row.icon.setText(item.icon)
         row.name.setText(`${item.name} (${item.staminaCost} STA)`)
         row.desc.setText(item.description)
@@ -454,12 +477,23 @@ export default class BattleScene extends Phaser.Scene {
         row.name.setVisible(true)
         row.desc.setVisible(true)
         row.hitArea.setVisible(true)
-        row.hitArea.setInteractive({ useHandCursor: true })
-        row.hitArea.off('pointerdown')
-        row.hitArea.on('pointerdown', () => this.onItemSelect(item))
-        row.bg.setFillStyle(0x1a1a2e)
-        row.hitArea.on('pointerover', () => row.bg.setFillStyle(0x27ae60))
-        row.hitArea.on('pointerout', () => row.bg.setFillStyle(0x1a1a2e))
+        if (canAfford) {
+          row.hitArea.setInteractive({ useHandCursor: true })
+          row.hitArea.off('pointerdown')
+          row.hitArea.on('pointerdown', () => this.onItemSelect(item))
+          row.bg.setFillStyle(0x1a1a2e)
+          row.hitArea.on('pointerover', () => row.bg.setFillStyle(0x27ae60))
+          row.hitArea.on('pointerout', () => row.bg.setFillStyle(0x1a1a2e))
+          row.name.setAlpha(1)
+          row.desc.setAlpha(1)
+          row.icon.setAlpha(1)
+        } else {
+          row.hitArea.disableInteractive()
+          row.bg.setFillStyle(0x2c2c3a)
+          row.name.setAlpha(0.4)
+          row.desc.setAlpha(0.4)
+          row.icon.setAlpha(0.4)
+        }
       } else {
         row.bg.setVisible(false)
         row.icon.setVisible(false)
@@ -478,6 +512,266 @@ export default class BattleScene extends Phaser.Scene {
     this.challengeActive = false
     this.setSkillButtonsEnabled(true)
     this.endTurnBtn.setVisible(true)
+  }
+
+  // ---------- Switch Action Dialog ----------
+
+  createSwitchActionDialog() {
+    this.switchDialogOverlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    this.switchDialogOverlay.setDepth(100)
+    this.switchDialogOverlay.setVisible(false)
+
+    // Dark backdrop
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
+    backdrop.setInteractive()
+    this.switchDialogOverlay.add(backdrop)
+
+    // Panel
+    const panel = this.add.rectangle(0, 0, 460, 380, COLORS.panelBg).setStrokeStyle(2, 0x3498db)
+    this.switchDialogOverlay.add(panel)
+
+    // Title
+    this.switchDialogTitle = this.add.text(0, -165, 'Switch Actions', { ...FONTS.title, fontSize: '20px', color: '#3498db' }).setOrigin(0.5)
+    this.switchDialogOverlay.add(this.switchDialogTitle)
+
+    // Active section label
+    this.switchDialogActiveLabel = this.add.text(-200, -130, 'ACTIVE', { ...FONTS.default, fontSize: '13px', color: '#2ecc71' }).setOrigin(0, 0)
+    this.switchDialogOverlay.add(this.switchDialogActiveLabel)
+
+    // Inactive section label
+    this.switchDialogInactiveLabel = this.add.text(-200, 20, 'INACTIVE', { ...FONTS.default, fontSize: '13px', color: '#7f8c8d' }).setOrigin(0, 0)
+    this.switchDialogOverlay.add(this.switchDialogInactiveLabel)
+
+    // Action card rows
+    this.switchDialogActiveRows = []
+    this.switchDialogInactiveRows = []
+
+    for (let i = 0; i < 5; i++) {
+      // Active rows (top, up to 3)
+      if (i < 3) {
+        const y = -100 + i * 52
+        const row = this._createActionCard(0, y)
+        this.switchDialogActiveRows.push(row)
+        this.switchDialogOverlay.add(row.container)
+      }
+      // Inactive rows (bottom, up to 2)
+      if (i < 2) {
+        const y = 50 + i * 52
+        const row = this._createActionCard(0, y)
+        this.switchDialogInactiveRows.push(row)
+        this.switchDialogOverlay.add(row.container)
+      }
+    }
+
+    // Hint text
+    this.switchDialogHint = this.add.text(0, 160, 'Click an inactive action, then an active one to swap.', { ...FONTS.default, fontSize: '11px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.switchDialogOverlay.add(this.switchDialogHint)
+
+    // Close button
+    const closeBtn = this.createButton(0, 170, 'Close', () => this.hideSwitchActionDialog(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    this.switchDialogCloseBtn = closeBtn
+    this.switchDialogOverlay.add(closeBtn.bg)
+    this.switchDialogOverlay.add(closeBtn.shadow)
+    this.switchDialogOverlay.add(closeBtn.hitArea)
+    this.switchDialogOverlay.add(closeBtn.text)
+
+    this.switchDialogSelectedInactive = null
+  }
+
+  _createActionCard(x, y) {
+    const container = this.add.container(x, y)
+    const bg = this.add.rectangle(0, 0, 400, 46, 0x1a1a2e).setStrokeStyle(1, 0x7f8c8d).setOrigin(0.5)
+    const typeIcon = this.add.text(-180, 0, '', { ...FONTS.default, fontSize: '16px' }).setOrigin(0.5)
+    const name = this.add.text(-150, -6, '', { ...FONTS.default, fontSize: '14px' }).setOrigin(0, 0.5)
+    const meta = this.add.text(-150, 10, '', { ...FONTS.default, fontSize: '11px', color: '#7f8c8d' }).setOrigin(0, 0.5)
+    const stamina = this.add.text(170, 0, '', { ...FONTS.default, fontSize: '13px' }).setOrigin(0.5)
+    const hitArea = this.add.rectangle(0, 0, 400, 46, 0x000000, 0).setOrigin(0.5)
+
+    container.add(bg)
+    container.add(typeIcon)
+    container.add(name)
+    container.add(meta)
+    container.add(stamina)
+    container.add(hitArea)
+
+    return { container, bg, typeIcon, name, meta, stamina, hitArea }
+  }
+
+  showSwitchActionDialog() {
+    if (this.challengeActive) return
+    if (this.turnManager.currentTurn !== 'player') return
+    if (this.player.stamina < 1) {
+      this.addCombatLog('Not enough stamina to switch actions!')
+      return
+    }
+
+    this.challengeActive = true
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
+    this.switchDialogSelectedInactive = null
+
+    this.renderSwitchDialog()
+    this.switchDialogOverlay.setVisible(true)
+  }
+
+  hideSwitchActionDialog() {
+    this.switchDialogOverlay.setVisible(false)
+    this.challengeActive = false
+    this.setSkillButtonsEnabled(true)
+    this.endTurnBtn.setVisible(true)
+    this.switchDialogSelectedInactive = null
+  }
+
+  renderSwitchDialog() {
+    const maxActive = this.player.maxActiveSlots
+    const activeCount = this.player.activeActions.length
+    this.switchDialogTitle.setText(`Switch Actions (${activeCount}/${maxActive})`)
+
+    const TYPE_ICONS = {
+      attack: '⚔',
+      defence: '🛡',
+      parry: '🔄',
+      heal: '💚',
+      item: '🎒',
+    }
+
+    // Render active rows
+    this.switchDialogActiveRows.forEach((row, i) => {
+      const action = this.player.activeActions[i]
+      if (action) {
+        row.container.setVisible(true)
+        row.typeIcon.setText(TYPE_ICONS[action.type] || '?')
+        row.name.setText(action.name)
+        const typeLabel = action.type.toUpperCase()
+        const equipLabel = action.requiredEquipment || '—'
+        row.meta.setText(`${typeLabel} · ${equipLabel}`)
+        row.stamina.setText(`${action.staminaCost} STA`)
+
+        const colors = getActionTypeColor(action.type)
+        const isSelected = false // active rows can't be selected first
+        row.bg.setStrokeStyle(2, colors.main)
+        row.hitArea.setInteractive({ useHandCursor: true })
+        row.hitArea.off('pointerdown')
+        row.hitArea.on('pointerdown', () => this._onSwitchDialogActiveClick(action))
+        row.hitArea.on('pointerover', () => row.bg.setFillStyle(colors.main, 0.15))
+        row.hitArea.on('pointerout', () => row.bg.setFillStyle(0x1a1a2e, 1))
+      } else {
+        row.container.setVisible(false)
+        row.hitArea.disableInteractive()
+      }
+    })
+
+    // Render inactive rows
+    this.switchDialogInactiveRows.forEach((row, i) => {
+      const action = this.player.inactiveActions[i]
+      if (action) {
+        row.container.setVisible(true)
+        row.typeIcon.setText(TYPE_ICONS[action.type] || '?')
+        row.name.setText(action.name)
+        const typeLabel = action.type.toUpperCase()
+        const equipLabel = action.requiredEquipment || '—'
+        row.meta.setText(`${typeLabel} · ${equipLabel}`)
+        row.stamina.setText(`${action.staminaCost} STA`)
+
+        const isSelected = this.switchDialogSelectedInactive === action.id
+        row.bg.setStrokeStyle(2, isSelected ? 0xf1c40f : 0x7f8c8d)
+        row.bg.setFillStyle(isSelected ? 0xf1c40f : 0x1a1a2e, isSelected ? 0.15 : 1)
+        row.hitArea.setInteractive({ useHandCursor: true })
+        row.hitArea.off('pointerdown')
+        row.hitArea.on('pointerdown', () => this._onSwitchDialogInactiveClick(action))
+      } else {
+        row.container.setVisible(false)
+        row.hitArea.disableInteractive()
+      }
+    })
+
+    if (this.switchDialogSelectedInactive) {
+      this.switchDialogHint.setText('Now click an active action to swap.')
+      this.switchDialogHint.setColor('#f1c40f')
+    } else {
+      this.switchDialogHint.setText('Click an inactive action to select it for swapping.')
+      this.switchDialogHint.setColor('#7f8c8d')
+    }
+  }
+
+  _onSwitchDialogInactiveClick(action) {
+    if (this.switchDialogSelectedInactive === action.id) {
+      this.switchDialogSelectedInactive = null
+    } else {
+      this.switchDialogSelectedInactive = action.id
+    }
+    this.renderSwitchDialog()
+  }
+
+  _onSwitchDialogActiveClick(activeAction) {
+    if (!this.switchDialogSelectedInactive) return
+
+    const inactiveAction = this.player.inactiveActions.find(a => a.id === this.switchDialogSelectedInactive)
+    if (!inactiveAction) {
+      this.switchDialogSelectedInactive = null
+      this.renderSwitchDialog()
+      return
+    }
+
+    // Validate: must keep at least one attack action active
+    const newActive = this.player.activeActions.map(a => a.id)
+    const idx = newActive.indexOf(activeAction.id)
+    if (idx >= 0) newActive[idx] = inactiveAction.id
+
+    const wouldHaveAttack = newActive.some(id => {
+      const a = ALL_ACTIONS.find(act => act.id === id)
+      return a && a.type === 'attack'
+    })
+    if (!wouldHaveAttack) {
+      this.switchDialogHint.setText('You must keep at least one attack action active!')
+      this.switchDialogHint.setColor('#e74c3c')
+      this.time.delayedCall(1500, () => this.renderSwitchDialog())
+      return
+    }
+
+    // Perform swap
+    this.player.swapActions(activeAction.id, inactiveAction.id)
+    this.player.useStamina(1)
+    this.updateBars()
+    this.switchDialogSelectedInactive = null
+
+    // Re-render main UI skill buttons
+    this._refreshSkillButtons()
+
+    // Close dialog after swap
+    this.hideSwitchActionDialog()
+  }
+
+  _refreshSkillButtons() {
+    // Destroy old skill buttons
+    this.skillButtons.forEach(({ btn }) => {
+      btn.bg.destroy()
+      btn.shadow.destroy()
+      btn.hitArea.destroy()
+      btn.text.destroy()
+    })
+    this.skillButtons = []
+
+    // Recreate from active actions
+    const clickableActions = this.player.activeActions
+    clickableActions.forEach((action, i) => {
+      const y = 195 + i * 52
+      const colors = getActionTypeColor(action.type)
+      const btn = this.createButton(120, y, `${action.name} (${action.staminaCost})`, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      this.skillButtons.push({ btn, skill: action })
+    })
+
+    // Reposition switch button
+    const switchY = 195 + clickableActions.length * 52
+    this.switchActionBtn.bg.destroy()
+    this.switchActionBtn.shadow.destroy()
+    this.switchActionBtn.hitArea.destroy()
+    this.switchActionBtn.text.destroy()
+    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 44, 0x2980b9, 0x3498db)
+  }
+
+  onSwitchActionClick() {
+    this.showSwitchActionDialog()
   }
 
   onUseItemClick() {
@@ -639,9 +933,14 @@ export default class BattleScene extends Phaser.Scene {
     this.readinessStartTime = Date.now()
     this.readinessTimeLimit = 10000 // 10 seconds
 
-    // Alternate challenge type: reading or meaning
+    // Always ask for meaning (not reading) since we only have English meanings
     const hasMeaning = wordData.meaning && wordData.meaning.trim().length > 0
-    this.readinessChallengeType = hasMeaning && Math.random() < 0.5 ? 'meaning' : 'reading'
+    if (!hasMeaning) {
+      this.addCombatLog('No meaning available — skipping challenge.')
+      this.turnManager.endTurn()
+      return
+    }
+    this.readinessChallengeType = 'meaning'
 
     // Reset UI state from any previous challenge
     this.readinessTitle.setText('End Turn Challenge')
@@ -652,13 +951,8 @@ export default class BattleScene extends Phaser.Scene {
     this.readinessWord.setAlpha(1)
     this.readinessWord.setY(-15)
 
-    if (this.readinessChallengeType === 'meaning') {
-      this.readinessPrompt.setText('Type the meaning of this word:')
-      this.readinessHint.setText(wordData.reading || '')
-    } else {
-      this.readinessPrompt.setText('Type the reading of this word:')
-      this.readinessHint.setText(wordData.meaning || '')
-    }
+    this.readinessPrompt.setText('Type the meaning of this word:')
+    this.readinessHint.setText(wordData.reading || '')
     this.readinessPrompt.setColor('#ecf0f1')
 
     this.readinessInputText.setText('')
@@ -670,6 +964,7 @@ export default class BattleScene extends Phaser.Scene {
     if (this.hiddenInput) {
       this.hiddenInput.value = ''
       this.hiddenInput.focus()
+      window.scrollTo(0, 0)
     }
   }
 
@@ -891,9 +1186,13 @@ export default class BattleScene extends Phaser.Scene {
       this.reactionStartTime = Date.now()
       this.reactionTimeLimit = 5000 // 5 seconds — quick reaction!
 
-      // Alternate challenge type
+      // Always ask for meaning
       const hasMeaning = wordData.meaning && wordData.meaning.trim().length > 0
-      this.reactionChallengeType = hasMeaning && Math.random() < 0.5 ? 'meaning' : 'reading'
+      if (!hasMeaning) {
+        resolve()
+        return
+      }
+      this.reactionChallengeType = 'meaning'
 
       // Urgent styling — reset everything from previous challenges
       this.readinessTitle.setText('REACTION!')
@@ -904,13 +1203,8 @@ export default class BattleScene extends Phaser.Scene {
       this.readinessWord.setAlpha(1)
       this.readinessWord.setY(-15)
 
-      if (this.reactionChallengeType === 'meaning') {
-        this.readinessPrompt.setText('Quick! Type the meaning:')
-        this.readinessHint.setText(wordData.reading || '')
-      } else {
-        this.readinessPrompt.setText('Quick! Type the reading:')
-        this.readinessHint.setText(wordData.meaning || '')
-      }
+      this.readinessPrompt.setText('Quick! Type the meaning:')
+      this.readinessHint.setText(wordData.reading || '')
       this.readinessPrompt.setColor('#f39c12')
 
       this.readinessInputText.setText('')
@@ -965,12 +1259,14 @@ export default class BattleScene extends Phaser.Scene {
 
     if (isCorrect) {
       this.player.reactionMultiplier = 2
+      this.player.lastReactionCorrect = true
       this.readinessWord.setColor('#2ecc71')
       this.readinessPrompt.setText('PARRY!')
       this.readinessPrompt.setColor('#2ecc71')
       this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 100, 'PARRY!', COLORS.success)
     } else {
       this.player.reactionMultiplier = 0.5
+      this.player.lastReactionCorrect = false
       this.readinessWord.setColor('#e74c3c')
       this.readinessPrompt.setText('Failed...')
       this.readinessPrompt.setColor('#e74c3c')
@@ -1142,6 +1438,78 @@ export default class BattleScene extends Phaser.Scene {
   onSkillClick(skill) {
     if (this.challengeActive) return
     if (this.turnManager.currentTurn !== 'player') return
+
+    // Parry must be set up during player turn (kanji drawing + stamina cost)
+    if (skill.type === 'parry') {
+      if (this.player.parrySetup) {
+        this.addCombatLog('Parry already set up!')
+        return
+      }
+
+      const kanji = '受'
+      let strokeData = null
+      const kanjiData = this.player.kanjiList.find(k => k.character === '受')
+      if (kanjiData?.stroke_data?.strokes?.length > 0) {
+        strokeData = kanjiData.stroke_data
+      }
+      if (!strokeData) {
+        const userData = getWindowGameData()
+        strokeData = userData?.shield_kanji_strokes || { strokes: [] }
+      }
+
+      if (!strokeData.strokes || strokeData.strokes.length === 0) {
+        // No kanji data — set up with base stats
+        this.player.useStamina(skill.staminaCost)
+        this.player.parrySetup = true
+        this.player.parryKanjiQuality = 'sloppy'
+        this.updateBars()
+        this.addCombatLog(`Parry set up! (-${skill.staminaCost} STA)`)
+        return
+      }
+
+      this.challengeActive = true
+      this.setSkillButtonsEnabled(false)
+      this.endTurnBtn.setVisible(false)
+
+      this.kanjiDrawing.start(strokeData, `Set up parry! Draw ${kanji}:`, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          this.player.useStamina(skill.staminaCost)
+          this.player.parrySetup = true
+
+          if (result.completed) {
+            if (result.wrongStrokes === 0) {
+              this.player.parryKanjiQuality = 'perfect'
+              this.addCombatLog(`Perfect ${kanji}! Strong parry stance! (+15% chance)`)
+            } else if (result.wrongStrokes <= 2) {
+              this.player.parryKanjiQuality = 'sloppy'
+              this.addCombatLog(`${kanji} drawn! Parry set up.`)
+            } else {
+              this.player.parryKanjiQuality = 'fail'
+              this.addCombatLog(`${kanji} drawn sloppily! Weak parry stance. (-10% chance)`)
+            }
+          } else {
+            this.player.parryKanjiQuality = 'fail'
+            this.addCombatLog(`${kanji} failed! Weak parry stance. (-10% chance)`)
+          }
+
+          this.updateBars()
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      })
+      return
+    }
+
     if (!this.player.canUseSkill(skill)) {
       this.addCombatLog('Not enough stamina!')
       return
@@ -1225,6 +1593,61 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Heavy Slash uses kanji drawing (same flow as Forward Slash, different kanji)
+    if (skill.id === 'heavy_slash') {
+      // Try to find 斬 stroke data in player's kanji list, fallback to 力
+      let strokeData = null
+      const kanjiData = this.player.kanjiList.find(k => k.character === '斬')
+      if (kanjiData?.stroke_data?.strokes?.length > 0) {
+        strokeData = kanjiData.stroke_data
+      }
+      if (!strokeData) {
+        const userData = getWindowGameData()
+        strokeData = userData?.weapon_kanji_strokes || { strokes: [] }
+      }
+
+      if (!strokeData.strokes || strokeData.strokes.length === 0) {
+        this.challengeActive = false
+        this.executeSkill('success')
+        return
+      }
+
+      const hint = skill.moveHint?.en || 'Unleash a DEVASTATING blow!'
+      this.kanjiDrawing.start(strokeData, hint, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          this.player.setKanjiResult(result.wrongStrokes)
+
+          if (result.completed) {
+            if (result.wrongStrokes >= 3) {
+              this.player.setKanjiBonus(1)
+              this.addCombatLog('Zan drawn! (+1 power, sloppy)')
+            } else {
+              this.player.setKanjiBonus(2)
+              this.addCombatLog('Zan drawn perfectly! (+2 power)')
+            }
+            this.executeSkill('success')
+          } else {
+            this.player.setKanjiBonus(0)
+            this.addCombatLog('Zan failed! No power bonus.')
+            this.executeSkill('fail')
+          }
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      })
+      return
+    }
+
     // Setup Defence uses kanji drawing for shield (盾)
     if (skill.id === 'setup_defence') {
       const userData = getWindowGameData()
@@ -1271,7 +1694,14 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Heal Potion and other skills still use typing challenge
+    // Use Item opens the item menu directly
+    if (skill.id === 'use_item') {
+      this.challengeActive = false
+      this.showItemMenu()
+      return
+    }
+
+    // Fallback: typing challenge for other skills
     this.typedInput = ''
     this.currentChallenge = this.challengeSystem.getChallengeForSkill(skill)
     if (!this.currentChallenge) {
@@ -1316,7 +1746,8 @@ export default class BattleScene extends Phaser.Scene {
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
     switch (result.type) {
       case 'attack': {
-        this.setPlayerSprite('player_sword_slash')
+        const isHeavy = this.selectedSkill?.id === 'heavy_slash'
+        this.setPlayerSprite(isHeavy ? 'player_heavy_slash' : 'player_sword_slash')
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}`)
@@ -1386,6 +1817,9 @@ export default class BattleScene extends Phaser.Scene {
       const action = this.enemy.chooseAction(usedBuffThisTurn)
       if (!action) break
 
+      // Reset reaction correctness for this action
+      this.player.lastReactionCorrect = false
+
       if (action.type === 'buff') usedBuffThisTurn = true
       actionsTaken++
 
@@ -1399,7 +1833,26 @@ export default class BattleScene extends Phaser.Scene {
         }
       }
 
-      const result = this.enemy.performAction(action, this.player)
+      let result
+      let parried = false
+
+      // Parry check (only for attacks, after reaction challenge)
+      if (action.type === 'attack' && this.player.hasActiveParry()) {
+        const parryChance = this.player.getParryChance()
+        this.addCombatLog(`Parry chance: ${(parryChance * 100).toFixed(0)}%`)
+        if (Math.random() < parryChance) {
+          parried = true
+          result = { type: 'attack', damage: 0, isCrit: false, missed: false, parried: true }
+          // Parry is already set up and paid for — no additional cost here
+          this.addCombatLog('Parry triggered! Counter-attack incoming!')
+          // Reset reaction multiplier since parry replaces the attack
+          this.player.reactionMultiplier = 1
+        }
+      }
+
+      if (!parried) {
+        result = this.enemy.performAction(action, this.player)
+      }
 
       // Reset reaction multiplier after the attack resolves
       const reactionMult = this.player.reactionMultiplier
@@ -1411,10 +1864,22 @@ export default class BattleScene extends Phaser.Scene {
       switch (result.type) {
         case 'attack': {
           this.setEnemySprite('enemy_kasa_obake_attack')
-          if (result.missed) {
+          if (result.parried) {
+            this.setPlayerSprite('player_shield_block')
+            const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
+            this.addCombatLog(`Kasa-obake uses ${action.name}... PARRIED!${reactionText}`)
+            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
+            await this.delay(600)
+            this.setPlayerSprite('player_sword_shield')
+            this.setEnemySprite('enemy_kasa_obake')
+            await this.runCounterAttack()
+          } else if (result.missed) {
             const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
             this.addCombatLog(`Kasa-obake uses ${action.name}... but missed!${reactionText}`)
             this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
+            await this.delay(800)
+            this.setPlayerSprite('player_sword_shield')
+            this.setEnemySprite('enemy_kasa_obake')
           } else {
             this.setPlayerSprite('player_shield_block')
             const critText = result.isCrit ? ' CRITICAL!' : ''
@@ -1422,11 +1887,10 @@ export default class BattleScene extends Phaser.Scene {
             this.addCombatLog(`Kasa-obake uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}`)
             this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
             this.shakeSprite(this.playerSprite)
-          }
-          this.time.delayedCall(800, () => {
+            await this.delay(800)
             this.setPlayerSprite('player_sword_shield')
             this.setEnemySprite('enemy_kasa_obake')
-          })
+          }
           break
         }
         case 'buff': {
@@ -1450,6 +1914,79 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.turnManager.battleOver) {
       this.turnManager.endTurn()
     }
+  }
+
+  async runCounterAttack() {
+    const attackAction = this.player.activeActions.find(a => a.type === 'attack')
+    if (!attackAction) {
+      this.addCombatLog('No attack action equipped — counter fails!')
+      return
+    }
+
+    this.addCombatLog(`Counter-attack with ${attackAction.name}!`)
+
+    // Get stroke data for the counter kanji
+    const kanji = attackAction.kanji
+    let strokeData = null
+    if (kanji === '力') {
+      strokeData = getWindowGameData()?.weapon_kanji_strokes || { strokes: [] }
+    } else if (kanji === '斬') {
+      const kanjiData = this.player.kanjiList.find(k => k.character === '斬')
+      if (kanjiData?.stroke_data?.strokes?.length > 0) {
+        strokeData = kanjiData.stroke_data
+      } else {
+        strokeData = getWindowGameData()?.weapon_kanji_strokes || { strokes: [] }
+      }
+    }
+
+    if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
+      this.executeCounterAttack(attackAction, { completed: true, wrongStrokes: 999 })
+      return
+    }
+
+    return new Promise((resolve) => {
+      const allowedWrong = Math.max(Math.floor((strokeData.strokes?.length || 2) / 2), 3)
+      this.kanjiDrawing.start(strokeData, `Counter! Draw ${kanji}:`, {
+        onComplete: (result) => {
+          this.executeCounterAttack(attackAction, result)
+          resolve()
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count}/${allowedWrong} allowed)`,
+            COLORS.danger
+          )
+        },
+      })
+    })
+  }
+
+  executeCounterAttack(action, kanjiResult) {
+    let multiplier = 0.5
+    if (kanjiResult.completed) {
+      if (kanjiResult.wrongStrokes === 0) multiplier = 1.0
+      else if (kanjiResult.wrongStrokes <= 2) multiplier = 0.75
+    }
+
+    const baseDmg = this.player.calculateWeaponDamage(action)
+    const counterDmg = Math.max(1, Math.floor(baseDmg * multiplier))
+    const actual = this.enemy.takeDamage(counterDmg)
+
+    if (!this.enemy.isAlive()) {
+      this.turnManager.battleOver = true
+      this.turnManager.winner = 'player'
+      if (this.turnManager.onBattleEnd) this.turnManager.onBattleEnd('player')
+    }
+
+    this.setPlayerSprite('player_sword_slash')
+    const qualityText = multiplier >= 1.0 ? 'Perfect counter!' : multiplier >= 0.75 ? 'Solid counter!' : 'Weak counter!'
+    this.addCombatLog(`${qualityText} ${action.name} -> ${actual} damage!`)
+    this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${actual}`, COLORS.danger)
+    this.shakeSprite(this.enemySprite)
+
+    this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
   }
 
   // ---------- UI Updates ----------
@@ -1486,8 +2023,12 @@ export default class BattleScene extends Phaser.Scene {
     this.skillButtons.forEach(({ btn, skill }) => {
       // Setup Defence can only be used once per turn
       const setupDefenceUsed = skill.id === 'setup_defence' && this.player.setupDefenceUsed
+      // Use Item needs at least 1 stamina (minimum item cost)
+      const cantUseItem = skill.type === 'item' && this.player.stamina < 1
+      // Parry: already set up can't be paid again; otherwise needs stamina
+      const parryAlreadySetup = skill.type === 'parry' && this.player.parrySetup
 
-      if (enabled && this.player.canUseSkill(skill) && !setupDefenceUsed) {
+      if (enabled && this.player.canUseSkill(skill) && !setupDefenceUsed && !cantUseItem && !parryAlreadySetup) {
         btn.redraw(btn.color)
         btn.hitArea.setInteractive({ useHandCursor: true })
         btn.text.setAlpha(1)
@@ -1498,16 +2039,15 @@ export default class BattleScene extends Phaser.Scene {
       }
     })
 
-    // Item button: enabled if player has stamina for items (cost 1)
-    const itemStaminaCost = 1
-    if (enabled && this.player.stamina >= itemStaminaCost) {
-      this.itemButton.redraw(this.itemButton.color)
-      this.itemButton.hitArea.setInteractive({ useHandCursor: true })
-      this.itemButton.text.setAlpha(1)
+    // Switch Action button (costs 1 stamina to use)
+    if (enabled && this.turnManager.currentTurn === 'player' && this.player.stamina >= 1) {
+      this.switchActionBtn.redraw(this.switchActionBtn.color)
+      this.switchActionBtn.hitArea.setInteractive({ useHandCursor: true })
+      this.switchActionBtn.text.setAlpha(1)
     } else {
-      this.itemButton.redraw(COLORS.buttonDisabled)
-      this.itemButton.hitArea.disableInteractive()
-      this.itemButton.text.setAlpha(0.6)
+      this.switchActionBtn.redraw(COLORS.buttonDisabled)
+      this.switchActionBtn.hitArea.disableInteractive()
+      this.switchActionBtn.text.setAlpha(0.6)
     }
   }
 
@@ -1606,6 +2146,9 @@ export default class BattleScene extends Phaser.Scene {
     }
     if (this.kanjiDrawing) {
       this.kanjiDrawing.destroy()
+    }
+    if (window.visualViewport && this._onVisualViewportResize) {
+      window.visualViewport.removeEventListener('resize', this._onVisualViewportResize)
     }
   }
 }

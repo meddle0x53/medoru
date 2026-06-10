@@ -38,7 +38,8 @@ export default class TurnManager {
         let total
         if (performer.calculateWeaponDamage) {
           // Player: use weapon damage calculation (Dark Souls scaling)
-          total = performer.calculateWeaponDamage() * multiplier
+          // Pass skill for action-specific modifiers (e.g. Heavy Slash)
+          total = performer.calculateWeaponDamage(skill) * multiplier
         } else {
           // Enemy: use fixed base power + stat scaling
           const base = skill.basePower + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
@@ -75,13 +76,9 @@ export default class TurnManager {
         break
       }
       case 'heal': {
-        if (performer.usePotion && !performer.usePotion()) {
-          result = { type: 'heal', healed: 0, error: 'No potions left' }
-        } else {
-          const total = Math.floor(skill.healAmount * multiplier)
-          const actual = performer.heal(total)
-          result = { type: 'heal', healed: actual, multiplier }
-        }
+        const total = Math.floor(skill.healAmount * multiplier)
+        const actual = performer.heal(total)
+        result = { type: 'heal', healed: actual, multiplier }
         break
       }
       default:

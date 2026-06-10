@@ -14,6 +14,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('player_shield', '/images/game/player_shield.png')
     this.load.image('player_sword_shield', '/images/game/player_sword_shield.png')
     this.load.image('player_sword_slash', '/images/game/player_sword_slash.png')
+    this.load.image('player_heavy_slash', '/images/game/player_heavy_slash.png')
     this.load.image('player_shield_block', '/images/game/player_shield_block.png')
     this.load.image('player_defeated', '/images/game/player_defeated.png')
 

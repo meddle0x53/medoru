@@ -236,11 +236,13 @@ defmodule MedoruWeb.Router do
 
       live "/custom-lessons", CustomLessonLive.Index
       live "/custom-lessons/new", CustomLessonLive.New
+      live "/custom-lessons/from-image", CustomLessonLive.FromImage
       live "/custom-lessons/:id/edit", CustomLessonLive.Edit
       live "/custom-lessons/:id/publish", CustomLessonLive.Publish
 
       live "/grammar-lessons", GrammarLessonLive.Index
       live "/grammar-lessons/new", GrammarLessonLive.Form, :new
+      live "/grammar-lessons/from-image", GrammarLessonLive.FromImage
       live "/grammar-lessons/:id/edit", GrammarLessonLive.Form, :edit
     end
   end

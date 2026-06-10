@@ -93,6 +93,8 @@ export default class Character {
 
   resetForTurn() {
     this.stamina = this.maxStamina
+    this.parrySetup = false
+    this.parryKanjiQuality = null
     this.tempDefense = 0
     // Block decays at start of new round if we want, but for MVP keep it
   }

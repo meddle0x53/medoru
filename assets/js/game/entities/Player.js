@@ -1,6 +1,6 @@
 import Character from './Character.js'
-import { PLAYER_SKILLS } from '../data/skills.js'
 import { ITEMS } from '../data/items.js'
+import { splitActions, getMaxActiveActions } from '../data/actions.js'
 
 // Scaling letter multipliers
 const SCALING_MULTIPLIERS = {
@@ -91,7 +91,7 @@ export default class Player extends Character {
       luck: baseStats.luck,
       capacity: 3,
       armor: 1,
-      equippedSkills: [...PLAYER_SKILLS],
+      equippedSkills: [],
       weapon,
       armorItem: { name: 'Shirt', bonus: 1 },
       shirt: { name: 'Traveler Shirt', defense: 5 },
@@ -105,6 +105,15 @@ export default class Player extends Character {
 
     // Equipment
     this.shield = shield
+
+    // Active / inactive action management
+    this.activeActionIds = userData.active_action_ids || ['forward_slash', 'setup_defence', 'shield_parry']
+    const { active, inactive } = splitActions(this)
+    this.activeActions = active
+    this.inactiveActions = inactive
+    // Keep equippedSkills in sync for Character base class compatibility
+    this.equippedSkills = this.activeActions
+    this.maxActiveSlots = getMaxActiveActions(this.capacity || 3)
 
     // Current kanji powerup state during a move
     this.activeKanjiBonus = 0
@@ -120,14 +129,21 @@ export default class Player extends Character {
     // 1 = no effect, 2 = correct reaction (doubles readiness effect), 0.5 = wrong reaction (halves it)
     this.reactionMultiplier = 1
 
+    // Track if last reaction challenge was answered correctly (for parry bonus)
+    this.lastReactionCorrect = false
+
     // Word list for readiness challenge
     this.wordList = userData.word_list || []
 
-    // Inventory (demo: potion + stone)
+    // Inventory (demo: health potion + stone)
     this.inventory = [...ITEMS]
 
     // Current item effect modifier from kanji challenge (-2, 0, +2)
     this.itemEffectModifier = 0
+
+    // Parry setup: player must click Shield Parry during their turn to activate it
+    this.parrySetup = false
+    this.parryKanjiQuality = null // 'perfect', 'sloppy', or 'fail'
 
     // Kanji list for item challenges
     this.kanjiList = userData.kanji_list || []
@@ -135,7 +151,7 @@ export default class Player extends Character {
 
   // ---------- Weapon Damage Calculation ----------
 
-  calculateWeaponDamage() {
+  calculateWeaponDamage(action = null) {
     const w = this.weapon
     if (!w) return 0
 
@@ -153,7 +169,15 @@ export default class Player extends Character {
     // Add active kanji bonus (flat)
     bonus += this.activeKanjiBonus
 
-    return Math.floor(base + bonus)
+    let total = base + bonus
+
+    // Apply action-specific power modifier (e.g. Heavy Slash = 2x Forward Slash base)
+    if (action && action.basePower) {
+      const actionMultiplier = action.basePower / 8 // 8 is Forward Slash basePower
+      total = total * actionMultiplier
+    }
+
+    return Math.floor(total)
   }
 
   // ---------- Kanji Powerups ----------
@@ -232,6 +256,47 @@ export default class Player extends Character {
 
   setReadiness(value) {
     this.readiness = value
+  }
+
+  // ---------- Action Management ----------
+
+  refreshActions() {
+    const { active, inactive } = splitActions(this)
+    this.activeActions = active
+    this.inactiveActions = inactive
+    this.equippedSkills = active
+    this.maxActiveSlots = getMaxActiveActions(this.capacity || 3)
+  }
+
+  setActiveActionIds(ids) {
+    this.activeActionIds = ids
+    this.refreshActions()
+  }
+
+  swapActions(activeId, inactiveId) {
+    const newActive = this.activeActionIds.filter(id => id !== activeId)
+    newActive.push(inactiveId)
+    this.setActiveActionIds(newActive)
+  }
+
+  // ---------- Parry System ----------
+
+  hasActiveParry() {
+    return this.parrySetup
+  }
+
+  getParryChance() {
+    if (!this.hasActiveParry()) return 0
+    const parryAction = this.activeActions.find(a => a.type === 'parry')
+    const base = parryAction?.baseParryChance || 0.15
+    const luckBonus = (this.luck || 0) / 100
+    const readinessBonus = (this.readiness || 0) * 0.10
+    const quizBonus = this.lastReactionCorrect ? 0.10 : 0
+    let chance = base + luckBonus + readinessBonus + quizBonus
+    // Kanji quality bonus
+    if (this.parryKanjiQuality === 'perfect') chance += 0.15
+    else if (this.parryKanjiQuality === 'fail') chance -= 0.10
+    return Math.min(0.60, Math.max(0.05, chance))
   }
 
   // ---------- Item System ----------

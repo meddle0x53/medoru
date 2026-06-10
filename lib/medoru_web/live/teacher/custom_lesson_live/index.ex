@@ -160,10 +160,18 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
               {gettext("Create and manage reading lessons for your classrooms")}
             </p>
           </div>
-          <div class="flex gap-2">
+          <div class="flex gap-2 flex-wrap">
             <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary w-full sm:w-auto">
               <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Vocabulary Lesson")}
             </.link>
+            <%= if @current_scope.current_user.type == "admin" do %>
+              <.link
+                navigate={~p"/teacher/custom-lessons/from-image"}
+                class="btn btn-accent w-full sm:w-auto"
+              >
+                <.icon name="hero-sparkles" class="w-5 h-5 mr-2" /> {gettext("Create from Image")}
+              </.link>
+            <% end %>
             <.link
               navigate={~p"/teacher/grammar-lessons/new"}
               class="btn btn-secondary w-full sm:w-auto"
@@ -214,10 +222,15 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Index do
               <p class="text-secondary mt-2 mb-4">
                 {gettext("Create your first custom reading lesson")}
               </p>
-              <div class="flex flex-col sm:flex-row gap-2 justify-center">
+              <div class="flex flex-col sm:flex-row gap-2 justify-center flex-wrap">
                 <.link navigate={~p"/teacher/custom-lessons/new"} class="btn btn-primary">
                   <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Create Vocabulary Lesson")}
                 </.link>
+                <%= if @current_scope.current_user.type == "admin" do %>
+                  <.link navigate={~p"/teacher/custom-lessons/from-image"} class="btn btn-accent">
+                    <.icon name="hero-sparkles" class="w-5 h-5 mr-2" /> {gettext("Create from Image")}
+                  </.link>
+                <% end %>
                 <.link navigate={~p"/teacher/grammar-lessons/new"} class="btn btn-secondary">
                   <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Create Grammar Lesson")}
                 </.link>

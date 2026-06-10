@@ -979,6 +979,23 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Finds words by their hiragana/katakana reading.
+  Returns a list of words matching the reading.
+
+  ## Examples
+
+      iex> find_words_by_reading("けす")
+      [%Word{text: "消す", reading: "けす"}, ...]
+
+  """
+  def find_words_by_reading(reading) when is_binary(reading) do
+    Word
+    |> where(reading: ^reading)
+    |> order_by([w], asc: w.usage_frequency)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single word by its Japanese text, falling back to a case-insensitive
   meaning search. Returns the first match or `nil`.
 

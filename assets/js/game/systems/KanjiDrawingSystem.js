@@ -30,6 +30,8 @@ export default class KanjiDrawingSystem {
     this.hintText.style.lineHeight = '1.4'
     this.hintText.style.maxHeight = '72px'
     this.hintText.style.overflow = 'hidden'
+    this.hintText.style.touchAction = 'none'
+    this.hintText.style.userSelect = 'none'
 
     // Canvas element (DOM overlay)
     this.canvas = document.createElement('canvas')
@@ -46,6 +48,9 @@ export default class KanjiDrawingSystem {
     this.canvas.style.background = 'rgba(26, 26, 46, 0.92)'
     this.canvas.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)'
     this.canvas.style.display = 'none'
+    this.canvas.style.touchAction = 'none'
+    this.canvas.style.userSelect = 'none'
+    this.canvas.style.webkitUserSelect = 'none'
 
     // Append to game wrapper so it moves with the game
     const wrapper = document.getElementById('game-wrapper')
@@ -190,6 +195,9 @@ export default class KanjiDrawingSystem {
     this.canvas.addEventListener('pointermove', this._onPointerMove)
     this.canvas.addEventListener('pointerup', this._onPointerUp)
     this.canvas.addEventListener('pointerleave', this._onPointerUp)
+    // Touch fallback for mobile browsers
+    this.canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false })
+    this.canvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false })
   }
 
   _unbindEvents() {
