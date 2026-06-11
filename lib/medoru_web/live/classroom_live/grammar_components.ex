@@ -313,9 +313,18 @@ defmodule MedoruWeb.ClassroomLive.GrammarComponents do
   def grammar_pattern_question(assigns) do
     question_data = assigns.step.question_data || %{}
 
+    examples =
+      case question_data do
+        %{"examples" => examples} when is_list(examples) -> Enum.reject(examples, &(&1 == ""))
+        _ -> []
+      end
+
+    example = question_data["example"] || ""
+
     assigns =
       assign(assigns,
-        example: question_data["example"] || "",
+        examples: examples,
+        example: example,
         words: question_data["words"] || ""
       )
 
@@ -325,8 +334,16 @@ defmodule MedoruWeb.ClassroomLive.GrammarComponents do
         {@step.question}
       </div>
 
-      <%!-- Example --%>
-      <%= if @example != "" do %>
+      <%!-- Examples --%>
+      <%= if @examples != [] do %>
+        <div class="bg-base-200 rounded-xl p-4 space-y-2">
+          <p class="text-sm text-secondary mb-1">{gettext("Examples")}</p>
+          <%= for example <- @examples do %>
+            <p class="text-lg font-jp text-base-content">{example}</p>
+          <% end %>
+        </div>
+      <% end %>
+      <%= if @examples == [] && @example != "" do %>
         <div class="bg-base-200 rounded-xl p-4">
           <p class="text-sm text-secondary mb-1">{gettext("Example")}</p>
           <p class="text-lg font-jp text-base-content">{@example}</p>

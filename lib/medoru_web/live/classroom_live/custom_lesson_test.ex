@@ -736,7 +736,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="max-w-3xl mx-auto px-4 py-8" phx-window-keydown="handle_key" data-theme={@classroom.theme}>
+      <div
+        class="max-w-3xl mx-auto px-4 py-8"
+        phx-window-keydown="handle_key"
+        data-theme={@classroom.theme}
+      >
         <%!-- Header --%>
         <div class="mb-6">
           <.link
@@ -821,151 +825,159 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
               <% else %>
                 <%!-- Sentence Validation (Grammar) --%>
                 <%= case @current_step.question_type do %>
-                <% :sentence_validation -> %>
-                  <div class="space-y-4 mb-6">
-                    <p class="text-sm text-secondary">
-                      {gettext("Build a sentence following this pattern:")}
-                    </p>
+                  <% :sentence_validation -> %>
+                    <div class="space-y-4 mb-6">
+                      <p class="text-sm text-secondary">
+                        {gettext("Build a sentence following this pattern:")}
+                      </p>
 
-                    <%!-- Hint button --%>
-                    <%= if @current_step.hints != [] and not @show_hint do %>
-                      <button
-                        type="button"
-                        phx-click="show_hint"
-                        class="btn btn-ghost btn-sm text-info"
-                      >
-                        <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
-                        {gettext("Show Hint")}
-                      </button>
-                    <% end %>
+                      <%!-- Hint button --%>
+                      <%= if @current_step.hints != [] and not @show_hint do %>
+                        <button
+                          type="button"
+                          phx-click="show_hint"
+                          class="btn btn-ghost btn-sm text-info"
+                        >
+                          <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
+                          {gettext("Show Hint")}
+                        </button>
+                      <% end %>
 
-                    <%!-- Show hint when requested --%>
-                    <%= if @show_hint and @current_step.hints != [] do %>
-                      <div class="bg-info/10 border border-info/30 rounded-lg p-3">
-                        <p class="text-sm text-info">
-                          <.icon name="hero-light-bulb" class="w-4 h-4 mr-1 inline" />
-                          {gettext("Hint:")} {List.first(@current_step.hints)}
-                        </p>
-                      </div>
-                    <% end %>
-
-                    <input
-                      type="text"
-                      name="answer"
-                      value={@selected_answer}
-                      placeholder={gettext("Type your answer in Japanese...")}
-                      class="input input-bordered w-full"
-                      phx-keyup="update_answer"
-                      phx-debounce="100"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    phx-click="submit_answer"
-                    disabled={is_nil(@selected_answer) or @selected_answer == ""}
-                    class="w-full btn btn-primary"
-                  >
-                    {gettext("Submit Answer")}
-                  </button>
-                <% :grammar_pattern -> %>
-                  <% qd = @current_step.question_data || %{} %>
-                  <div class="space-y-6 mb-6">
-                    <div class="text-base-content font-medium">
-                      {@current_step.question}
-                    </div>
-
-                    <%= if qd["example"] && qd["example"] != "" do %>
-                      <div class="bg-base-200 rounded-xl p-4">
-                        <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
-                        <div class="text-lg font-jp text-base-content">{qd["example"]}</div>
-                      </div>
-                    <% end %>
-
-                    <%= if qd["words"] && qd["words"] != "" do %>
-                      <div>
-                        <div class="text-sm text-secondary mb-2">{gettext("Words")}</div>
-                        <div class="flex flex-wrap items-center gap-2">
-                          <%= for word <- String.split(qd["words"], " / ", trim: true) do %>
-                            <span class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-jp text-lg">
-                              {word}
-                            </span>
-                          <% end %>
+                      <%!-- Show hint when requested --%>
+                      <%= if @show_hint and @current_step.hints != [] do %>
+                        <div class="bg-info/10 border border-info/30 rounded-lg p-3">
+                          <p class="text-sm text-info">
+                            <.icon name="hero-light-bulb" class="w-4 h-4 mr-1 inline" />
+                            {gettext("Hint:")} {List.first(@current_step.hints)}
+                          </p>
                         </div>
-                      </div>
-                    <% end %>
+                      <% end %>
 
-                    <div>
-                      <label class="block text-sm text-secondary mb-2">
-                        {gettext("Build a sentence following the example")}
-                      </label>
                       <input
                         type="text"
                         name="answer"
                         value={@selected_answer}
-                        placeholder={gettext("Type your answer here...")}
-                        class="input input-bordered w-full font-jp text-lg"
+                        placeholder={gettext("Type your answer in Japanese...")}
+                        class="input input-bordered w-full"
                         phx-keyup="update_answer"
                         phx-debounce="100"
                       />
                     </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    phx-click="submit_answer"
-                    disabled={is_nil(@selected_answer) or @selected_answer == ""}
-                    class="w-full btn btn-primary"
-                  >
-                    {gettext("Submit Answer")}
-                  </button>
+                    <button
+                      type="button"
+                      phx-click="submit_answer"
+                      disabled={is_nil(@selected_answer) or @selected_answer == ""}
+                      class="w-full btn btn-primary"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+                  <% :grammar_pattern -> %>
+                    <% qd = @current_step.question_data || %{} %>
+                    <div class="space-y-6 mb-6">
+                      <div class="text-base-content font-medium">
+                        {@current_step.question}
+                      </div>
 
-                <% _ -> %>
-                  <%!-- Multichoice Options --%>
-                  <% localized_options = localize_options(@current_step, @locale) %>
-                  <div class="space-y-3 mb-6">
-                    <%= for {option, display_value} <- localized_options do %>
-                      <button
-                        type="button"
-                        phx-click="select_answer"
-                        phx-value-answer={option}
-                        class={[
-                          "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
-                          if @selected_answer == option do
-                            "border-primary bg-primary/5"
-                          else
-                            "border-base-200 hover:border-primary/50 hover:bg-base-50"
-                          end
-                        ]}
-                      >
-                        <div class="flex items-center gap-3">
-                          <div class={[
-                            "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-                            if @selected_answer == option do
-                              "border-primary bg-primary"
-                            else
-                              "border-base-300"
-                            end
-                          ]}>
-                            <%= if @selected_answer == option do %>
-                              <div class="w-2 h-2 rounded-full bg-white"></div>
-              <% end %>
-                          </div>
-                          <span class="text-base-content font-medium">{display_value}</span>
+                      <% examples = List.wrap(qd["examples"]) |> Enum.reject(&(&1 == "")) %>
+                      <%= if examples == [] && qd["example"] && qd["example"] != "" do %>
+                        <div class="bg-base-200 rounded-xl p-4">
+                          <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
+                          <div class="text-lg font-jp text-base-content">{qd["example"]}</div>
                         </div>
-                      </button>
-                    <% end %>
-                  </div>
+                      <% end %>
+                      <%= if examples != [] do %>
+                        <div class="bg-base-200 rounded-xl p-4 space-y-2">
+                          <div class="text-sm text-secondary mb-1">{gettext("Examples")}</div>
+                          <%= for example <- examples do %>
+                            <div class="text-lg font-jp text-base-content">{example}</div>
+                          <% end %>
+                        </div>
+                      <% end %>
 
-                  <%!-- Submit Button --%>
-                  <button
-                    type="button"
-                    phx-click="submit_answer"
-                    disabled={is_nil(@selected_answer)}
-                    class="w-full btn btn-primary"
-                  >
-                    {gettext("Submit Answer")}
-                  </button>
+                      <%= if qd["words"] && qd["words"] != "" do %>
+                        <div>
+                          <div class="text-sm text-secondary mb-2">{gettext("Words")}</div>
+                          <div class="flex flex-wrap items-center gap-2">
+                            <%= for word <- String.split(qd["words"], " / ", trim: true) do %>
+                              <span class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-jp text-lg">
+                                {word}
+                              </span>
+                            <% end %>
+                          </div>
+                        </div>
+                      <% end %>
+
+                      <div>
+                        <label class="block text-sm text-secondary mb-2">
+                          {gettext("Build a sentence following the example")}
+                        </label>
+                        <input
+                          type="text"
+                          name="answer"
+                          value={@selected_answer}
+                          placeholder={gettext("Type your answer here...")}
+                          class="input input-bordered w-full font-jp text-lg"
+                          phx-keyup="update_answer"
+                          phx-debounce="100"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      phx-click="submit_answer"
+                      disabled={is_nil(@selected_answer) or @selected_answer == ""}
+                      class="w-full btn btn-primary"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+                  <% _ -> %>
+                    <%!-- Multichoice Options --%>
+                    <% localized_options = localize_options(@current_step, @locale) %>
+                    <div class="space-y-3 mb-6">
+                      <%= for {option, display_value} <- localized_options do %>
+                        <button
+                          type="button"
+                          phx-click="select_answer"
+                          phx-value-answer={option}
+                          class={[
+                            "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
+                            if @selected_answer == option do
+                              "border-primary bg-primary/5"
+                            else
+                              "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                            end
+                          ]}
+                        >
+                          <div class="flex items-center gap-3">
+                            <div class={[
+                              "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                              if @selected_answer == option do
+                                "border-primary bg-primary"
+                              else
+                                "border-base-300"
+                              end
+                            ]}>
+                              <%= if @selected_answer == option do %>
+                                <div class="w-2 h-2 rounded-full bg-white"></div>
+                              <% end %>
+                            </div>
+                            <span class="text-base-content font-medium">{display_value}</span>
+                          </div>
+                        </button>
+                      <% end %>
+                    </div>
+
+                    <%!-- Submit Button --%>
+                    <button
+                      type="button"
+                      phx-click="submit_answer"
+                      disabled={is_nil(@selected_answer)}
+                      class="w-full btn btn-primary"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
                 <% end %>
               <% end %>
             </div>

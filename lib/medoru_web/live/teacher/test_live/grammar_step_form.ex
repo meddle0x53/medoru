@@ -554,7 +554,17 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
         %{}
       end
 
-    assigns = assign(assigns, :qd, qd)
+    examples =
+      case qd do
+        %{"examples" => examples} when is_list(examples) and examples != [] -> examples
+        %{"example" => example} when is_binary(example) and example != "" -> [example]
+        _ -> [""]
+      end
+
+    assigns =
+      assigns
+      |> assign(:qd, qd)
+      |> assign(:examples, examples)
 
     ~H"""
     <div class="space-y-4">
@@ -566,7 +576,10 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           type="text"
           id="step_question"
           name="step[question]"
-          value={(@step_form && @step_form[:question].value) || gettext("Build a sentence following the example")}
+          value={
+            (@step_form && @step_form[:question].value) ||
+              gettext("Build a sentence following the example")
+          }
           class="input input-bordered w-full"
           placeholder={gettext("e.g., Build a sentence following the example")}
           required
@@ -575,19 +588,17 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
 
       <div>
         <label class="label">
-          <span class="label-text">{gettext("Example")}</span>
+          <span class="label-text">{gettext("Examples")}</span>
         </label>
         <p class="text-sm text-secondary mb-2">
-          {gettext("The example shown to students.")}
+          {gettext("Examples shown to students. One per line.")}
         </p>
-        <input
-          type="text"
-          name="step[question_data][example]"
-          value={@qd["example"] || ""}
-          class="input input-bordered w-full font-jp"
+        <textarea
+          name="step[question_data][examples_text]"
+          class="textarea textarea-bordered w-full font-jp"
+          rows="3"
           placeholder={gettext("e.g., ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。")}
-          required
-        />
+        ><%= examples_text(@qd) %></textarea>
       </div>
 
       <div>
@@ -638,6 +649,19 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
       </div>
     </div>
     """
+  end
+
+  defp examples_text(%{"examples_text" => text}) when is_binary(text) and text != "", do: text
+
+  defp examples_text(question_data) do
+    examples =
+      case question_data do
+        %{"examples" => examples} when is_list(examples) -> examples
+        %{"example" => example} when is_binary(example) and example != "" -> [example]
+        _ -> []
+      end
+
+    Enum.join(examples, "\n")
   end
 
   # Type 4: Word Order Form

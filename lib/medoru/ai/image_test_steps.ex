@@ -12,7 +12,7 @@ defmodule Medoru.AI.ImageTestSteps do
 
   Expected response:
   {
-    "example": "-complete example sentence-",
+    "examples": ["-complete example sentence 1-", "-complete example sentence 2-"],
     "steps": [
       {
         "number": 1,
@@ -123,16 +123,22 @@ defmodule Medoru.AI.ImageTestSteps do
   defp parse_response(%{"steps" => steps} = data) when is_list(steps) do
     normalized_steps = Enum.map(steps, &normalize_step/1)
 
-    example =
+    examples =
       case data do
-        %{"example" => ex} when is_binary(ex) and ex != "" -> String.trim(ex)
-        %{"examples" => [ex | _]} when is_binary(ex) -> String.trim(ex)
-        _ -> ""
+        %{"examples" => examples} when is_list(examples) ->
+          examples |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+
+        %{"example" => ex} when is_binary(ex) and ex != "" ->
+          [String.trim(ex)]
+
+        _ ->
+          []
       end
 
     {:ok,
      %{
-       "example" => example,
+       "examples" => examples,
+       "example" => List.first(examples, ""),
        "steps" => normalized_steps
      }}
   end
@@ -199,7 +205,7 @@ defmodule Medoru.AI.ImageTestSteps do
     Return ONLY a valid JSON object in this exact format:
 
     {
-      "example": "-complete example sentence shown in the image, or empty string if none-",
+      "examples": ["-complete example sentence shown in the image-"],
       "steps": [
         {
           "number": 1,
@@ -216,8 +222,9 @@ defmodule Medoru.AI.ImageTestSteps do
     - `correct_answer` must be a complete sentence, not just the missing part.
     - For each numbered question, generate the answer sentence by applying the example's grammar pattern to the given words.
     - If there are alternative valid answers (different particles, kanji vs kana, etc.), include them in `alt_correct_answers`.
-    - If there is no example, return an empty string for `example`.
-    - If the image contains no valid grammar pattern exercises, return {"example": "", "steps": []}.
+    - Return ALL example sentences from the image in the `examples` array.
+    - If there is no example, return an empty array for `examples`.
+    - If the image contains no valid grammar pattern exercises, return {"examples": [], "steps": []}.
     """
   end
 

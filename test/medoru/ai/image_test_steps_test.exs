@@ -3,8 +3,8 @@ defmodule Medoru.AI.ImageTestStepsTest do
 
   alias Medoru.AI.ImageTestSteps
 
-  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-               0x49, 0x48, 0x44, 0x52>>
+  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+               0x44, 0x52>>
 
   describe "extract_grammar_pattern_steps/2" do
     test "returns error when API key is not configured" do
@@ -29,21 +29,22 @@ defmodule Medoru.AI.ImageTestStepsTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "example" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。",
-                    "steps" => [
-                      %{
-                        "number" => 1,
-                        "words" => "山田さん / 学生",
-                        "correct_answer" => "山田さんは学生じゃありません。"
-                      },
-                      %{
-                        "number" => 2,
-                        "words" => "ワットさん / ドイツ人",
-                        "correct_answer" => "ワットさんはドイツ人じゃありません。"
-                      }
-                    ]
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "example" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。",
+                      "steps" => [
+                        %{
+                          "number" => 1,
+                          "words" => "山田さん / 学生",
+                          "correct_answer" => "山田さんは学生じゃありません。"
+                        },
+                        %{
+                          "number" => 2,
+                          "words" => "ワットさん / ドイツ人",
+                          "correct_answer" => "ワットさんはドイツ人じゃありません。"
+                        }
+                      ]
+                    }),
                   "refusal" => nil
                 }
               }
@@ -53,7 +54,12 @@ defmodule Medoru.AI.ImageTestStepsTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, data} = ImageTestSteps.extract_grammar_pattern_steps(@dummy_png, req_opts: [plug: {Req.Test, ImageTestSteps}])
+        assert {:ok, data} =
+                 ImageTestSteps.extract_grammar_pattern_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        assert data["examples"] == ["ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。"]
         assert data["example"] == "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。"
         assert length(data["steps"]) == 2
 
@@ -80,10 +86,12 @@ defmodule Medoru.AI.ImageTestStepsTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => "```json\n" <> Jason.encode!(%{
-                    "example" => "test",
-                    "steps" => []
-                  }) <> "\n```",
+                  "content" =>
+                    "```json\n" <>
+                      Jason.encode!(%{
+                        "example" => "test",
+                        "steps" => []
+                      }) <> "\n```",
                   "refusal" => nil
                 }
               }
@@ -91,7 +99,12 @@ defmodule Medoru.AI.ImageTestStepsTest do
           })
         end)
 
-        assert {:ok, data} = ImageTestSteps.extract_grammar_pattern_steps(@dummy_png, req_opts: [plug: {Req.Test, ImageTestSteps}])
+        assert {:ok, data} =
+                 ImageTestSteps.extract_grammar_pattern_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        assert data["examples"] == ["test"]
         assert data["example"] == "test"
       after
         Application.put_env(:medoru, :openai_api_key, original)
@@ -116,7 +129,11 @@ defmodule Medoru.AI.ImageTestStepsTest do
           })
         end)
 
-        assert {:error, message} = ImageTestSteps.extract_grammar_pattern_steps(@dummy_png, req_opts: [plug: {Req.Test, ImageTestSteps}])
+        assert {:error, message} =
+                 ImageTestSteps.extract_grammar_pattern_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
         assert message =~ "refused"
       after
         Application.put_env(:medoru, :openai_api_key, original)
@@ -133,12 +150,13 @@ defmodule Medoru.AI.ImageTestStepsTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "example" => "",
-                    "steps" => [
-                      %{"number" => "3", "words" => "a / b", "correct_answer" => "ab"}
-                    ]
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "example" => "",
+                      "steps" => [
+                        %{"number" => "3", "words" => "a / b", "correct_answer" => "ab"}
+                      ]
+                    }),
                   "refusal" => nil
                 }
               }
@@ -146,7 +164,11 @@ defmodule Medoru.AI.ImageTestStepsTest do
           })
         end)
 
-        assert {:ok, data} = ImageTestSteps.extract_grammar_pattern_steps(@dummy_png, req_opts: [plug: {Req.Test, ImageTestSteps}])
+        assert {:ok, data} =
+                 ImageTestSteps.extract_grammar_pattern_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
         step = hd(data["steps"])
         assert step["number"] == 3
       after

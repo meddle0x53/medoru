@@ -202,7 +202,7 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
       attrs = %{
         "question" => "Build a sentence following the example",
         "question_data" => %{
-          "example" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。",
+          "examples_text" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。",
           "words" => "山田さん / 学生",
           "alt_correct_answers_text" => ""
         },
@@ -215,6 +215,47 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
 
       assert render(view) =~ "Step added successfully."
       assert has_element?(view, "div", "Build a sentence following the example")
+    end
+
+    test "teacher can save and edit grammar_pattern step with multiple examples", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      test = teacher_test_fixture(teacher.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      view |> element("button", "Add First Step") |> render_click()
+      view |> element("button[phx-value-type='grammar_pattern']") |> render_click()
+
+      attrs = %{
+        "question" => "Build a sentence following the examples",
+        "question_data" => %{
+          "examples_text" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。\n山田さん・学生 → 山田さんは学生じゃありません。",
+          "words" => "ワットさん / ドイツ人",
+          "alt_correct_answers_text" => ""
+        },
+        "correct_answer" => "ワットさんはドイツ人じゃありません。"
+      }
+
+      view
+      |> form("#step-form", %{"step" => attrs})
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully."
+
+      # Edit the saved step and verify both examples were persisted.
+      [step_id] =
+        Regex.run(~r/phx-value-step-id="([^"]+)"/, render(view), capture: :all_but_first)
+
+      view
+      |> element("button[phx-click='edit_step'][phx-value-step-id='#{step_id}']")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。"
+      assert html =~ "山田さん・学生 → 山田さんは学生じゃありません。"
     end
   end
 end

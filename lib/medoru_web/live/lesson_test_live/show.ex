@@ -102,7 +102,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
         end
 
       step.question_type == :grammar_pattern && key == "Enter" &&
-          socket.assigns.feedback == nil &&
+        socket.assigns.feedback == nil &&
           socket.assigns.grammar_pattern_answer != "" ->
         handle_event("submit_grammar_pattern", %{}, socket)
 
@@ -753,10 +753,19 @@ defmodule MedoruWeb.LessonTestLive.Show do
                     {@current_step.question}
                   </div>
 
-                  <%= if qd["example"] && qd["example"] != "" do %>
+                  <% examples = List.wrap(qd["examples"]) |> Enum.reject(&(&1 == "")) %>
+                  <%= if examples == [] && qd["example"] && qd["example"] != "" do %>
                     <div class="bg-base-200 rounded-xl p-4">
                       <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
                       <div class="text-lg font-jp text-base-content">{qd["example"]}</div>
+                    </div>
+                  <% end %>
+                  <%= if examples != [] do %>
+                    <div class="bg-base-200 rounded-xl p-4 space-y-2">
+                      <div class="text-sm text-secondary mb-1">{gettext("Examples")}</div>
+                      <%= for example <- examples do %>
+                        <div class="text-lg font-jp text-base-content">{example}</div>
+                      <% end %>
                     </div>
                   <% end %>
 

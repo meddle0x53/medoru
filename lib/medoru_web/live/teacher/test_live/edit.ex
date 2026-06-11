@@ -77,6 +77,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           # Image extraction state
           |> assign(:extracted_grammar_pattern_steps, nil)
           |> assign(:grammar_pattern_example, nil)
+          |> assign(:grammar_pattern_examples, nil)
           |> assign(:image_extract_loading, false)
           |> allow_upload(:audio,
             accept: ~w(.mp3 .wav),
@@ -195,6 +196,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:available_option_words, [])
      |> assign(:extracted_grammar_pattern_steps, nil)
      |> assign(:grammar_pattern_example, nil)
+     |> assign(:grammar_pattern_examples, nil)
      |> assign(:image_extract_loading, false)}
   end
 
@@ -252,7 +254,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_event("save_grammar_pattern_steps", _params, socket) do
     test = socket.assigns.test
-    example = socket.assigns.grammar_pattern_example
+    examples = socket.assigns.grammar_pattern_examples || []
     steps = socket.assigns.extracted_grammar_pattern_steps || []
 
     if steps == [] do
@@ -272,7 +274,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             "points" => 10,
             "correct_answer" => step["correct_answer"] || "",
             "question_data" => %{
-              "example" => example || "",
+              "examples" => examples,
               "words" => step["words"] || "",
               "alt_correct_answers" => alt_answers
             }
@@ -309,6 +311,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          |> assign(:test, test)
          |> assign(:extracted_grammar_pattern_steps, nil)
          |> assign(:grammar_pattern_example, nil)
+         |> assign(:grammar_pattern_examples, nil)
          |> put_flash(:info, gettext("%{count} steps added!", count: length(steps)))}
       else
         {:noreply, put_flash(socket, :error, gettext("Failed to save some steps."))}
@@ -1974,13 +1977,14 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   @impl true
   def handle_async(:extract_grammar_pattern, {:ok, {:ok, data}}, socket) do
     steps = data["steps"] || []
-    example = data["example"] || ""
+    examples = data["examples"] || []
 
     if steps == [] do
       {:noreply,
        socket
        |> assign(:extracted_grammar_pattern_steps, nil)
        |> assign(:grammar_pattern_example, nil)
+       |> assign(:grammar_pattern_examples, nil)
        |> assign(:image_extract_loading, false)
        |> put_flash(
          :error,
@@ -1990,7 +1994,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       {:noreply,
        socket
        |> assign(:extracted_grammar_pattern_steps, steps)
-       |> assign(:grammar_pattern_example, example)
+       |> assign(:grammar_pattern_example, List.first(examples, ""))
+       |> assign(:grammar_pattern_examples, examples)
        |> assign(:image_extract_loading, false)}
     end
   end
@@ -2826,11 +2831,13 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
               <%= if @step_type == :grammar_pattern && @extracted_grammar_pattern_steps do %>
                 <div class="space-y-6">
-                  <%!-- Example --%>
-                  <%= if @grammar_pattern_example && @grammar_pattern_example != "" do %>
-                    <div class="bg-base-200 rounded-lg p-4">
-                      <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
-                      <div class="font-jp text-base-content">{@grammar_pattern_example}</div>
+                  <%!-- Examples --%>
+                  <%= if @grammar_pattern_examples && @grammar_pattern_examples != [] do %>
+                    <div class="bg-base-200 rounded-lg p-4 space-y-2">
+                      <div class="text-sm text-secondary mb-1">{gettext("Examples")}</div>
+                      <%= for example <- @grammar_pattern_examples do %>
+                        <div class="font-jp text-base-content">{example}</div>
+                      <% end %>
                     </div>
                   <% end %>
 
@@ -3134,6 +3141,42 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp normalize_pattern_in_question_data(question_data), do: question_data
 
   # Convert grammar_pattern textareas to lists
+  defp normalize_grammar_pattern_question_data(%{"examples_text" => text} = question_data)
+       when is_binary(text) do
+    examples =
+      text
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    question_data
+    |> Map.put("examples", examples)
+    |> Map.delete("examples_text")
+    |> Map.delete("example")
+    |> normalize_grammar_pattern_question_data()
+  end
+
+  defp normalize_grammar_pattern_question_data(%{"examples" => examples} = question_data)
+       when is_list(examples) do
+    cleaned =
+      examples
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    question_data
+    |> Map.put("examples", cleaned)
+    |> Map.delete("example")
+    |> normalize_grammar_pattern_question_data()
+  end
+
+  defp normalize_grammar_pattern_question_data(%{"example" => example} = question_data)
+       when is_binary(example) and example != "" do
+    question_data
+    |> Map.put("examples", [String.trim(example)])
+    |> Map.delete("example")
+    |> normalize_grammar_pattern_question_data()
+  end
+
   defp normalize_grammar_pattern_question_data(
          %{"alt_correct_answers_text" => text} = question_data
        )
