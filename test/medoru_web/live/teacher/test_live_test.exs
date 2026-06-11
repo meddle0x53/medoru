@@ -167,5 +167,54 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
       assert path == "/teacher/tests/#{test.id}"
       assert flash["info"] == "This test can no longer be edited."
     end
+
+    test "grammar_pattern form renders example, words, and correct answer fields", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      test = teacher_test_fixture(teacher.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      view |> element("button", "Add First Step") |> render_click()
+      html = view |> element("button[phx-value-type='grammar_pattern']") |> render_click()
+
+      assert html =~ "Example"
+      assert html =~ "Words"
+      assert html =~ "Correct Answer"
+      assert html =~ "Extract from Image"
+      assert html =~ "grammar-pattern-image-form"
+
+      assert view |> form("#grammar-pattern-image-form") |> render_submit() =~
+               "Please select an image file."
+    end
+
+    test "teacher can add grammar_pattern step manually", %{conn: conn, teacher: teacher} do
+      test = teacher_test_fixture(teacher.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      view |> element("button", "Add First Step") |> render_click()
+      view |> element("button[phx-value-type='grammar_pattern']") |> render_click()
+
+      attrs = %{
+        "question" => "Build a sentence following the example",
+        "question_data" => %{
+          "example" => "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。",
+          "words" => "山田さん / 学生",
+          "alt_correct_answers_text" => ""
+        },
+        "correct_answer" => "山田さんは学生じゃありません。"
+      }
+
+      view
+      |> form("#step-form", %{"step" => attrs})
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully."
+      assert has_element?(view, "div", "Build a sentence following the example")
+    end
   end
 end

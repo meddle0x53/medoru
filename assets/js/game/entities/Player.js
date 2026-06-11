@@ -1,6 +1,9 @@
 import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
-import { splitActions, getMaxActiveActions } from '../data/actions.js'
+import { ALL_ACTIONS, splitActions, getMaxActiveActions } from '../data/actions.js'
+import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
+
+const LOADOUT_KEY = 'medoru_loadout_v1'
 
 // Scaling letter multipliers
 const SCALING_MULTIPLIERS = {
@@ -106,8 +109,34 @@ export default class Player extends Character {
     // Equipment
     this.shield = shield
 
+    // Loadout: persistent battle preparation state
+    this.loadout = this.loadLoadout() || {
+      activeItemIds: ['health_potion', 'stone'],
+      heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
+      weaponCharmIds: [],
+      shieldCharmIds: [],
+      selectedActionIds: ALL_ACTIONS.map(a => a.id),
+      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
+      statPoints: 10,
+      statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+    }
+
+    // Apply stat allocations to base stats
+    for (const [stat, points] of Object.entries(this.loadout.statAllocations)) {
+      if (this.baseStats[stat] !== undefined) {
+        this.baseStats[stat] += points
+        this[stat] = this.baseStats[stat]
+      }
+    }
+
+    // Recalculate derived stats after allocations
+    this.maxHp = 80 + this.baseStats.vitality * 5
+    this.hp = this.maxHp
+    this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
+    this.stamina = this.maxStamina
+
     // Active / inactive action management
-    this.activeActionIds = userData.active_action_ids || ['forward_slash', 'setup_defence', 'shield_parry']
+    this.activeActionIds = this.loadout.activeActionIds
     const { active, inactive } = splitActions(this)
     this.activeActions = active
     this.inactiveActions = inactive
@@ -145,6 +174,9 @@ export default class Player extends Character {
     this.parrySetup = false
     this.parryKanjiQuality = null // 'perfect', 'sloppy', or 'fail'
 
+    // Cache computed charm stats so we don't recompute every frame
+    this._charmEffects = null
+
     // Kanji list for item challenges
     this.kanjiList = userData.kanji_list || []
   }
@@ -175,6 +207,12 @@ export default class Player extends Character {
     if (action && action.basePower) {
       const actionMultiplier = action.basePower / 8 // 8 is Forward Slash basePower
       total = total * actionMultiplier
+    }
+
+    // Apply charm damage bonus (percent)
+    const charmEffects = this.getCharmEffects()
+    if (charmEffects.damageBonus) {
+      total *= (1 + charmEffects.damageBonus)
     }
 
     return Math.floor(total)
@@ -244,10 +282,12 @@ export default class Player extends Character {
     this.activeShieldBonus = 0
   }
 
-  // Total defense = base + temp + shield base/scaling + shield kanji bonus + readiness bonus
+  // Total defense = base + temp + shield base/scaling + shield kanji bonus + readiness bonus + charm bonus
   getTotalDefense() {
     const readinessBonus = this.readiness > 0 ? 5 : 0
-    return this.baseDefense + this.tempDefense + this.calculateShieldDefense() + readinessBonus
+    const charmEffects = this.getCharmEffects()
+    const charmDefense = charmEffects.defense || 0
+    return this.baseDefense + this.tempDefense + this.calculateShieldDefense() + readinessBonus + charmDefense
   }
 
   resetReadiness() {
@@ -329,5 +369,142 @@ export default class Player extends Character {
   getItemDamage(baseValue) {
     const stoneDmg = this.calculateStoneDamage()
     return Math.max(1, stoneDmg + this.itemEffectModifier)
+  }
+
+  // ---------- Loadout Persistence ----------
+
+  loadLoadout() {
+    try {
+      const raw = localStorage.getItem(LOADOUT_KEY)
+      if (raw) {
+        const loadout = JSON.parse(raw)
+        // Migration: ensure demo has stat points to spend
+        if (typeof loadout.statPoints === 'number' && loadout.statPoints < 10) {
+          loadout.statPoints = 10
+          try {
+            localStorage.setItem(LOADOUT_KEY, JSON.stringify(loadout))
+          } catch (_) {}
+        }
+        return loadout
+      }
+    } catch (e) {
+      console.warn('[Player] Failed to load loadout:', e)
+    }
+    return null
+  }
+
+  saveLoadout() {
+    try {
+      localStorage.setItem(LOADOUT_KEY, JSON.stringify(this.loadout))
+    } catch (e) {
+      console.warn('[Player] Failed to save loadout:', e)
+    }
+  }
+
+  // ---------- Charm System ----------
+
+  getHeroCharmSlots() {
+    return 4
+  }
+
+  getWeaponCharmSlots() {
+    return Math.min(3, Math.floor((this.weapon?.level || 0) / 3))
+  }
+
+  getShieldCharmSlots() {
+    return Math.min(3, Math.floor((this.shield?.level || 0) / 3))
+  }
+
+  getEquippedCharms() {
+    return [
+      ...this.loadout.heroCharmIds.map(id => ({ id, slot: 'hero' })),
+      ...this.loadout.weaponCharmIds.map(id => ({ id, slot: 'weapon' })),
+      ...this.loadout.shieldCharmIds.map(id => ({ id, slot: 'shield' })),
+    ]
+      .map(({ id, slot }) => {
+        const charm = getCharmById(id)
+        return charm ? { ...charm, slot } : null
+      })
+      .filter(Boolean)
+  }
+
+  canEquipCharm(charmId, slotType) {
+    const charm = getCharmById(charmId)
+    const heroUsed = this.loadout.heroCharmIds.length
+    const weaponUsed = this.loadout.weaponCharmIds.length
+    const shieldUsed = this.loadout.shieldCharmIds.length
+    return canEquipCharm(charm, heroUsed, weaponUsed, shieldUsed, this.weapon?.level || 0, this.shield?.level || 0)
+  }
+
+  equipCharm(charmId, slotType) {
+    const charm = getCharmById(charmId)
+    if (!charm) return { ok: false, reason: 'Charm not found.' }
+    if (charm.type !== slotType) {
+      return { ok: false, reason: 'This charm cannot go in that slot type.' }
+    }
+    if (slotType === CHARM_TYPES.HERO) {
+      if (this.loadout.heroCharmIds.length >= this.getHeroCharmSlots()) {
+        return { ok: false, reason: 'No free hero charm slots.' }
+      }
+      if (this.loadout.heroCharmIds.includes(charmId)) {
+        return { ok: false, reason: 'Already equipped.' }
+      }
+      this.loadout.heroCharmIds.push(charmId)
+    } else if (slotType === CHARM_TYPES.WEAPON) {
+      if (this.loadout.weaponCharmIds.length >= this.getWeaponCharmSlots()) {
+        return { ok: false, reason: 'No free weapon charm slots.' }
+      }
+      if (this.loadout.weaponCharmIds.includes(charmId)) {
+        return { ok: false, reason: 'Already equipped.' }
+      }
+      this.loadout.weaponCharmIds.push(charmId)
+    } else if (slotType === CHARM_TYPES.SHIELD) {
+      if (this.loadout.shieldCharmIds.length >= this.getShieldCharmSlots()) {
+        return { ok: false, reason: 'No free shield charm slots.' }
+      }
+      if (this.loadout.shieldCharmIds.includes(charmId)) {
+        return { ok: false, reason: 'Already equipped.' }
+      }
+      this.loadout.shieldCharmIds.push(charmId)
+    }
+    this._charmEffects = null
+    this.saveLoadout()
+    return { ok: true }
+  }
+
+  unequipCharm(charmId, slotType) {
+    if (slotType === CHARM_TYPES.HERO) {
+      this.loadout.heroCharmIds = this.loadout.heroCharmIds.filter(id => id !== charmId)
+    } else if (slotType === CHARM_TYPES.WEAPON) {
+      this.loadout.weaponCharmIds = this.loadout.weaponCharmIds.filter(id => id !== charmId)
+    } else if (slotType === CHARM_TYPES.SHIELD) {
+      this.loadout.shieldCharmIds = this.loadout.shieldCharmIds.filter(id => id !== charmId)
+    }
+    this._charmEffects = null
+    this.saveLoadout()
+  }
+
+  unequipAllCharms() {
+    this.loadout.heroCharmIds = []
+    this.loadout.weaponCharmIds = []
+    this.loadout.shieldCharmIds = []
+    this._charmEffects = null
+    this.saveLoadout()
+  }
+
+  // Returns a plain object of accumulated charm effects, e.g.
+  // { strength: 2, skill: 2, critChance: 0.05, damageBonus: 0.18 }
+  getCharmEffects() {
+    if (this._charmEffects) return this._charmEffects
+    const effects = {}
+    for (const charm of this.getEquippedCharms()) {
+      const { stat, value } = charm.effect || {}
+      if (!stat || value === undefined) continue
+      if (typeof value === 'number') {
+        effects[stat] = (effects[stat] || 0) + value
+      }
+    }
+    this._charmEffects = effects
+    return effects
   }
 }

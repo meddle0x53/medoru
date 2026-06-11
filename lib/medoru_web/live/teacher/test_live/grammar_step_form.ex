@@ -7,6 +7,7 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
   - Type 2: Conjugation (base form → target form)
   - Type 3: Conjugation multiple choice
   - Type 4: Word order (arrange bubbles)
+  - Type 5: Grammar pattern (build sentence from words following an example)
   """
 
   use MedoruWeb, :html
@@ -45,6 +46,11 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           />
         <% :word_order -> %>
           <.word_order_form
+            step_form={@step_form}
+            step_changeset={@step_changeset}
+          />
+        <% :grammar_pattern -> %>
+          <.grammar_pattern_form
             step_form={@step_form}
             step_changeset={@step_changeset}
           />
@@ -535,6 +541,101 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
           </p>
         </div>
       <% end %>
+    </div>
+    """
+  end
+
+  # Type 5: Grammar Pattern Form
+  defp grammar_pattern_form(assigns) do
+    qd =
+      if assigns.step_form do
+        assigns.step_form[:question_data].value || %{}
+      else
+        %{}
+      end
+
+    assigns = assign(assigns, :qd, qd)
+
+    ~H"""
+    <div class="space-y-4">
+      <div>
+        <label class="label" for="step_question">
+          <span class="label-text">{gettext("Question")}</span>
+        </label>
+        <input
+          type="text"
+          id="step_question"
+          name="step[question]"
+          value={(@step_form && @step_form[:question].value) || gettext("Build a sentence following the example")}
+          class="input input-bordered w-full"
+          placeholder={gettext("e.g., Build a sentence following the example")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Example")}</span>
+        </label>
+        <p class="text-sm text-secondary mb-2">
+          {gettext("The example shown to students.")}
+        </p>
+        <input
+          type="text"
+          name="step[question_data][example]"
+          value={@qd["example"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Words")}</span>
+        </label>
+        <p class="text-sm text-secondary mb-2">
+          {gettext("Words given to the student, separated by /")}
+        </p>
+        <input
+          type="text"
+          name="step[question_data][words]"
+          value={@qd["words"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., 山田さん / 学生")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label" for="correct_answer">
+          <span class="label-text">{gettext("Correct Answer")}</span>
+        </label>
+        <input
+          type="text"
+          id="correct_answer"
+          name="step[correct_answer]"
+          value={@step_form[:correct_answer].value}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., 山田さんは学生じゃありません。")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Alternative Correct Answers (optional)")}</span>
+        </label>
+        <p class="text-sm text-secondary mb-2">
+          {gettext("One per line. Used when multiple answers are correct.")}
+        </p>
+        <textarea
+          name="step[question_data][alt_correct_answers_text]"
+          class="textarea textarea-bordered w-full font-jp"
+          rows="3"
+          placeholder={gettext("e.g., 山田さんは学生です。")}
+        ><%= Enum.join(@qd["alt_correct_answers"] || [], "\n") %></textarea>
+      </div>
     </div>
     """
   end

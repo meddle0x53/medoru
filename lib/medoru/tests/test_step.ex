@@ -37,7 +37,8 @@ defmodule Medoru.Tests.TestStep do
     :sentence_validation,
     :conjugation,
     :conjugation_multichoice,
-    :word_order
+    :word_order,
+    :grammar_pattern
   ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -124,6 +125,7 @@ defmodule Medoru.Tests.TestStep do
       :conjugation -> 3
       :conjugation_multichoice -> 3
       :word_order -> 3
+      :grammar_pattern -> 10
     end
   end
 
@@ -164,6 +166,9 @@ defmodule Medoru.Tests.TestStep do
 
         {:word_order, p, :grammar} when p != 3 ->
           add_error(changeset, :points, "word order questions must be worth 3 points")
+
+        {:grammar_pattern, p, :grammar} when p != 10 ->
+          add_error(changeset, :points, "grammar pattern questions must be worth 10 points")
 
         _ ->
           changeset

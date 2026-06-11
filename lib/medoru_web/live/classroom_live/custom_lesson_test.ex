@@ -257,17 +257,29 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   # Check if answer is correct based on question type
   defp check_answer_correctness(answer, step) do
-    if step.question_type == :sentence_validation do
-      # Use Grammar.Validator for sentence validation
-      pattern = get_in(step.question_data, ["pattern"]) || []
+    case step.question_type do
+      :sentence_validation ->
+        # Use Grammar.Validator for sentence validation
+        pattern = get_in(step.question_data, ["pattern"]) || []
 
-      case Medoru.Grammar.Validator.validate_sentence(answer, pattern) do
-        {:ok, _breakdown} -> true
-        {:error, _reason} -> false
-      end
-    else
-      # For other question types, compare with correct_answer
-      normalize_answer(answer) == normalize_answer(step.correct_answer)
+        case Medoru.Grammar.Validator.validate_sentence(answer, pattern) do
+          {:ok, _breakdown} -> true
+          {:error, _reason} -> false
+        end
+
+      :grammar_pattern ->
+        normalized = normalize_answer(answer)
+
+        if normalized == normalize_answer(step.correct_answer) do
+          true
+        else
+          alt_answers = get_in(step.question_data, ["alt_correct_answers"]) || []
+          Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
+        end
+
+      _ ->
+        # For other question types, compare with correct_answer
+        normalize_answer(answer) == normalize_answer(step.correct_answer)
     end
   end
 
@@ -808,7 +820,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                 />
               <% else %>
                 <%!-- Sentence Validation (Grammar) --%>
-                <%= if @current_step.question_type == :sentence_validation do %>
+                <%= case @current_step.question_type do %>
+                <% :sentence_validation -> %>
                   <div class="space-y-4 mb-6">
                     <p class="text-sm text-secondary">
                       {gettext("Build a sentence following this pattern:")}
@@ -855,7 +868,59 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                   >
                     {gettext("Submit Answer")}
                   </button>
-                <% else %>
+                <% :grammar_pattern -> %>
+                  <% qd = @current_step.question_data || %{} %>
+                  <div class="space-y-6 mb-6">
+                    <div class="text-base-content font-medium">
+                      {@current_step.question}
+                    </div>
+
+                    <%= if qd["example"] && qd["example"] != "" do %>
+                      <div class="bg-base-200 rounded-xl p-4">
+                        <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
+                        <div class="text-lg font-jp text-base-content">{qd["example"]}</div>
+                      </div>
+                    <% end %>
+
+                    <%= if qd["words"] && qd["words"] != "" do %>
+                      <div>
+                        <div class="text-sm text-secondary mb-2">{gettext("Words")}</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <%= for word <- String.split(qd["words"], " / ", trim: true) do %>
+                            <span class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-jp text-lg">
+                              {word}
+                            </span>
+                          <% end %>
+                        </div>
+                      </div>
+                    <% end %>
+
+                    <div>
+                      <label class="block text-sm text-secondary mb-2">
+                        {gettext("Build a sentence following the example")}
+                      </label>
+                      <input
+                        type="text"
+                        name="answer"
+                        value={@selected_answer}
+                        placeholder={gettext("Type your answer here...")}
+                        class="input input-bordered w-full font-jp text-lg"
+                        phx-keyup="update_answer"
+                        phx-debounce="100"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    phx-click="submit_answer"
+                    disabled={is_nil(@selected_answer) or @selected_answer == ""}
+                    class="w-full btn btn-primary"
+                  >
+                    {gettext("Submit Answer")}
+                  </button>
+
+                <% _ -> %>
                   <%!-- Multichoice Options --%>
                   <% localized_options = localize_options(@current_step, @locale) %>
                   <div class="space-y-3 mb-6">
@@ -884,7 +949,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                           ]}>
                             <%= if @selected_answer == option do %>
                               <div class="w-2 h-2 rounded-full bg-white"></div>
-                            <% end %>
+              <% end %>
                           </div>
                           <span class="text-base-content font-medium">{display_value}</span>
                         </div>

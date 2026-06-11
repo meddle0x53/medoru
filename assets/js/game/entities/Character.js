@@ -108,10 +108,25 @@ export default class Character {
   }
 
   getCritChance() {
-    return Math.min(0.25, this.luck * 0.05)
+    let base = Math.min(0.25, this.luck * 0.05)
+    if (typeof this.getCharmEffects === 'function') {
+      const charmEffects = this.getCharmEffects()
+      if (charmEffects && charmEffects.critChance) {
+        base += charmEffects.critChance
+      }
+    }
+    return Math.min(0.50, base)
   }
 
   getStatValue(statName) {
-    return this[statName] || 0
+    let base = this[statName] || 0
+    // If the concrete class has charm effects (Player), add them in.
+    if (typeof this.getCharmEffects === 'function') {
+      const charmEffects = this.getCharmEffects()
+      if (charmEffects && charmEffects[statName]) {
+        base += charmEffects[statName]
+      }
+    }
+    return base
   }
 }

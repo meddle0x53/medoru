@@ -74,10 +74,19 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           # Grammar step state
           |> assign(:grammar_pattern_elements, [])
           |> assign(:selected_word_class_id, nil)
+          # Image extraction state
+          |> assign(:extracted_grammar_pattern_steps, nil)
+          |> assign(:grammar_pattern_example, nil)
+          |> assign(:image_extract_loading, false)
           |> allow_upload(:audio,
             accept: ~w(.mp3 .wav),
             max_entries: 1,
             max_file_size: 10_000_000
+          )
+          |> allow_upload(:test_step_image,
+            accept: ~w(.jpg .jpeg .png .webp),
+            max_entries: 1,
+            max_file_size: 5_000_000
           )
 
         {:ok, socket}
@@ -117,6 +126,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         "conjugation" -> {:conjugation, "grammar"}
         "conjugation_multichoice" -> {:conjugation_multichoice, "grammar"}
         "word_order" -> {:word_order, "grammar"}
+        "grammar_pattern" -> {:grammar_pattern, "grammar"}
         _ -> {:multichoice, "vocabulary"}
       end
 
@@ -182,12 +192,128 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:new_option_text, "")
      |> assign(:option_word_ids, [])
      |> assign(:option_word_search_query, "")
-     |> assign(:available_option_words, [])}
+     |> assign(:available_option_words, [])
+     |> assign(:extracted_grammar_pattern_steps, nil)
+     |> assign(:grammar_pattern_example, nil)
+     |> assign(:image_extract_loading, false)}
+  end
+
+  @impl true
+  def handle_event("cancel_test_step_image_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :test_step_image, ref)}
   end
 
   @impl true
   def handle_event("cancel_audio_upload", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :audio, ref)}
+  end
+
+  @impl true
+  def handle_event("validate_grammar_pattern_image", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("extract_grammar_pattern_image", _params, socket) do
+    case consume_uploaded_entries(socket, :test_step_image, fn %{path: path}, _entry ->
+           {:ok, File.read!(path)}
+         end) do
+      [] ->
+        {:noreply, put_flash(socket, :error, gettext("Please select an image file."))}
+
+      [image_binary] ->
+        {:noreply,
+         socket
+         |> assign(:image_extract_loading, true)
+         |> assign(:error, nil)
+         |> start_async(:extract_grammar_pattern, fn ->
+           Medoru.AI.ImageTestSteps.extract_grammar_pattern_steps(image_binary)
+         end)}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "update_extracted_step",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
+    index = String.to_integer(index)
+    steps = socket.assigns.extracted_grammar_pattern_steps || []
+
+    updated_steps =
+      List.update_at(steps, index, fn step ->
+        Map.put(step, field, value)
+      end)
+
+    {:noreply, assign(socket, :extracted_grammar_pattern_steps, updated_steps)}
+  end
+
+  @impl true
+  def handle_event("save_grammar_pattern_steps", _params, socket) do
+    test = socket.assigns.test
+    example = socket.assigns.grammar_pattern_example
+    steps = socket.assigns.extracted_grammar_pattern_steps || []
+
+    if steps == [] do
+      {:noreply, put_flash(socket, :error, gettext("No steps to save."))}
+    else
+      results =
+        steps
+        |> Enum.with_index()
+        |> Enum.map(fn {step, i} ->
+          alt_answers = parse_alt_correct_answers_text(step)
+
+          attrs = %{
+            "order_index" => socket.assigns.step_count + i,
+            "step_type" => "grammar",
+            "question_type" => "grammar_pattern",
+            "question" => gettext("Build a sentence following the example"),
+            "points" => 10,
+            "correct_answer" => step["correct_answer"] || "",
+            "question_data" => %{
+              "example" => example || "",
+              "words" => step["words"] || "",
+              "alt_correct_answers" => alt_answers
+            }
+          }
+
+          Tests.create_test_step(test, attrs)
+        end)
+
+      errors =
+        Enum.filter(results, fn
+          {:error, _} -> true
+          _ -> false
+        end)
+
+      if errors != [] do
+        require Logger
+
+        Enum.each(errors, fn {:error, changeset} ->
+          Logger.error("Failed to save grammar pattern step: #{inspect(changeset.errors)}")
+        end)
+      end
+
+      if errors == [] do
+        steps = Tests.list_test_steps(test.id)
+        test = Tests.get_test!(test.id)
+
+        {:noreply,
+         socket
+         |> assign(:show_step_form, false)
+         |> assign(:step_changeset, nil)
+         |> assign(:step_form, nil)
+         |> assign(:steps, steps)
+         |> assign(:step_count, length(steps))
+         |> assign(:test, test)
+         |> assign(:extracted_grammar_pattern_steps, nil)
+         |> assign(:grammar_pattern_example, nil)
+         |> put_flash(:info, gettext("%{count} steps added!", count: length(steps)))}
+      else
+        {:noreply, put_flash(socket, :error, gettext("Failed to save some steps."))}
+      end
+    end
   end
 
   @impl true
@@ -276,6 +402,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             data
             |> normalize_pattern_in_question_data()
             |> normalize_checkbox_values()
+            |> normalize_grammar_pattern_question_data()
 
           Map.put(attrs, "question_data", normalized_data)
 
@@ -387,6 +514,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
              |> put_flash(:info, gettext("Step added successfully."))}
 
           {:error, changeset} ->
+            require Logger
+            Logger.error("Failed to save step: #{inspect(changeset.errors)}")
+
             {:noreply,
              socket
              |> assign(:step_changeset, changeset)
@@ -452,7 +582,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     attrs =
       case socket.assigns.step_changeset do
         %{changes: %{question_data: data}} when is_map(data) and map_size(data) > 0 ->
-          normalized_data = normalize_pattern_in_question_data(data)
+          normalized_data =
+            data
+            |> normalize_pattern_in_question_data()
+            |> normalize_grammar_pattern_question_data()
+
           Map.put(attrs, "question_data", normalized_data)
 
         _ ->
@@ -1838,6 +1972,48 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp conjugate_na_adjective(word, _), do: word
 
   @impl true
+  def handle_async(:extract_grammar_pattern, {:ok, {:ok, data}}, socket) do
+    steps = data["steps"] || []
+    example = data["example"] || ""
+
+    if steps == [] do
+      {:noreply,
+       socket
+       |> assign(:extracted_grammar_pattern_steps, nil)
+       |> assign(:grammar_pattern_example, nil)
+       |> assign(:image_extract_loading, false)
+       |> put_flash(
+         :error,
+         gettext("No grammar pattern steps could be extracted from the image.")
+       )}
+    else
+      {:noreply,
+       socket
+       |> assign(:extracted_grammar_pattern_steps, steps)
+       |> assign(:grammar_pattern_example, example)
+       |> assign(:image_extract_loading, false)}
+    end
+  end
+
+  @impl true
+  def handle_async(:extract_grammar_pattern, {:ok, {:error, msg}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:image_extract_loading, false)
+     |> assign(:error, msg)
+     |> put_flash(:error, gettext("Extraction failed: %{message}", message: msg))}
+  end
+
+  @impl true
+  def handle_async(:extract_grammar_pattern, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:image_extract_loading, false)
+     |> assign(:error, inspect(reason))
+     |> put_flash(:error, gettext("Extraction process crashed."))}
+  end
+
+  @impl true
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
   end
@@ -1937,648 +2113,821 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
               </div>
             </div>
 
-            <div class="p-6">
-              <.form
-                for={@step_form}
-                as={:step}
-                id="step-form"
-                phx-change="validate_step"
-                phx-submit={if @editing_step, do: "update_step", else: "save_step"}
-                class="space-y-6"
-              >
-                <%!-- Hidden fields --%>
-                <% kanji_id = @selected_kanji && @selected_kanji.id %>
-                <% # For grammar steps, word_id comes from question_data - BUG 3 FIX
-                word_id =
-                  if @selected_word && @selected_word.id do
-                    @selected_word.id
-                  else
-                    get_in(@step_form[:question_data].value, ["selected_word"])
-                  end %>
-                <% step_type_category =
-                  cond do
-                    @step_type in [
-                      :sentence_validation,
-                      :conjugation,
-                      :conjugation_multichoice,
-                      :word_order
-                    ] ->
-                      "grammar"
-
-                    @step_type == :listening ->
-                      "listening"
-
-                    true ->
-                      "vocabulary"
-                  end %>
-                <input type="hidden" name="step[question_type]" value={@step_type} />
-                <input type="hidden" name="step[step_type]" value={step_type_category} />
-                <input type="hidden" name="step[points]" value={TestStep.default_points(@step_type)} />
-                <input type="hidden" name="step[kanji_id]" value={kanji_id} />
-                <input type="hidden" name="step[word_id]" value={word_id} />
-
-                <%!-- Grammar Step Forms --%>
-                <%= if step_type_category == "grammar" do %>
-                  <GrammarStepForm.grammar_step_form
-                    step_form={@step_form}
-                    step_type={@step_type}
-                    step_changeset={@step_changeset}
-                    grammar_forms={@grammar_forms}
-                    word_classes={@word_classes}
-                  />
-                <% else %>
-                  <%= if step_type_category == "listening" do %>
-                    <%!-- Listening Step Forms --%>
-
-                    <%!-- Audio Upload --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Audio File")}
-                        <span class="text-error">*</span>
-                      </label>
-                      <div class="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
-                        <.live_file_input upload={@uploads.audio} class="hidden" />
-                        <button
-                          type="button"
-                          phx-click={JS.dispatch("click", to: "##{@uploads.audio.ref}")}
-                          class="btn btn-outline btn-sm"
-                        >
-                          <.icon name="hero-arrow-up-tray" class="w-4 h-4 mr-1" />
-                          {gettext("Upload Audio")}
-                        </button>
-                        <p class="text-xs text-secondary mt-2">
-                          {gettext("MP3 or WAV, max 10MB")}
+            <div class="p-6 space-y-6">
+              <%= if @step_type == :grammar_pattern && is_nil(@editing_step) && is_nil(@extracted_grammar_pattern_steps) do %>
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Extract from Image")}
+                  </label>
+                  <form
+                    id="grammar-pattern-image-form"
+                    phx-change="validate_grammar_pattern_image"
+                    phx-submit="extract_grammar_pattern_image"
+                    class="space-y-3"
+                  >
+                    <div
+                      class="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                      phx-drop-target={@uploads.test_step_image.ref}
+                    >
+                      <.live_file_input upload={@uploads.test_step_image} class="hidden" />
+                      <div phx-click={JS.dispatch("click", to: "##{@uploads.test_step_image.ref}")}>
+                        <.icon name="hero-photo" class="w-8 h-8 mx-auto text-base-300 mb-2" />
+                        <p class="text-sm text-base-content font-medium">
+                          {gettext("Click or drag an image here")}
+                        </p>
+                        <p class="text-xs text-secondary mt-1">
+                          {gettext("JPG, PNG, WebP up to 5MB")}
                         </p>
                       </div>
-                      <%= for entry <- @uploads.audio.entries do %>
-                        <div class="mt-3 flex items-center justify-between bg-base-200 rounded-lg p-3">
-                          <div class="flex items-center gap-2 min-w-0">
-                            <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary shrink-0" />
-                            <span class="text-sm truncate">{entry.client_name}</span>
-                            <span class="text-xs text-secondary">
-                              {entry.progress}%
-                            </span>
-                          </div>
+                    </div>
+
+                    <%= for entry <- @uploads.test_step_image.entries do %>
+                      <div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">
+                        <.icon name="hero-document" class="w-4 h-4 text-primary" />
+                        <span class="text-sm flex-1 truncate">{entry.client_name}</span>
+                        <button
+                          type="button"
+                          phx-click="cancel_test_step_image_upload"
+                          phx-value-ref={entry.ref}
+                          class="text-secondary hover:text-error"
+                        >
+                          <.icon name="hero-x-mark" class="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <%= for err <- upload_errors(@uploads.test_step_image, entry) do %>
+                        <p class="text-error text-xs">{error_to_string(err)}</p>
+                      <% end %>
+                    <% end %>
+
+                    <div class="flex justify-end">
+                      <button
+                        type="submit"
+                        class="btn btn-accent btn-sm"
+                        disabled={@uploads.test_step_image.entries == []}
+                      >
+                        <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                        {gettext("Extract Steps")}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              <% end %>
+
+              <%= if @step_type != :grammar_pattern || is_nil(@extracted_grammar_pattern_steps) do %>
+                <.form
+                  for={@step_form}
+                  as={:step}
+                  id="step-form"
+                  phx-change="validate_step"
+                  phx-submit={if @editing_step, do: "update_step", else: "save_step"}
+                  class="space-y-6"
+                >
+                  <%!-- Hidden fields --%>
+                  <% kanji_id = @selected_kanji && @selected_kanji.id %>
+                  <% # For grammar steps, word_id comes from question_data - BUG 3 FIX
+                  word_id =
+                    if @selected_word && @selected_word.id do
+                      @selected_word.id
+                    else
+                      get_in(@step_form[:question_data].value, ["selected_word"])
+                    end %>
+                  <% step_type_category =
+                    cond do
+                      @step_type in [
+                        :sentence_validation,
+                        :conjugation,
+                        :conjugation_multichoice,
+                        :word_order,
+                        :grammar_pattern
+                      ] ->
+                        "grammar"
+
+                      @step_type == :listening ->
+                        "listening"
+
+                      true ->
+                        "vocabulary"
+                    end %>
+                  <input type="hidden" name="step[question_type]" value={@step_type} />
+                  <input type="hidden" name="step[step_type]" value={step_type_category} />
+                  <input
+                    type="hidden"
+                    name="step[points]"
+                    value={TestStep.default_points(@step_type)}
+                  />
+                  <input type="hidden" name="step[kanji_id]" value={kanji_id} />
+                  <input type="hidden" name="step[word_id]" value={word_id} />
+
+                  <%!-- Grammar Step Forms --%>
+                  <%= if step_type_category == "grammar" do %>
+                    <GrammarStepForm.grammar_step_form
+                      step_form={@step_form}
+                      step_type={@step_type}
+                      step_changeset={@step_changeset}
+                      grammar_forms={@grammar_forms}
+                      word_classes={@word_classes}
+                    />
+                  <% else %>
+                    <%= if step_type_category == "listening" do %>
+                      <%!-- Listening Step Forms --%>
+
+                      <%!-- Audio Upload --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Audio File")}
+                          <span class="text-error">*</span>
+                        </label>
+                        <div class="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                          <.live_file_input upload={@uploads.audio} class="hidden" />
                           <button
                             type="button"
-                            phx-click="cancel_audio_upload"
-                            phx-value-ref={entry.ref}
-                            class="p-1 text-secondary hover:text-error rounded transition-colors shrink-0"
+                            phx-click={JS.dispatch("click", to: "##{@uploads.audio.ref}")}
+                            class="btn btn-outline btn-sm"
                           >
-                            <.icon name="hero-x-mark" class="w-4 h-4" />
+                            <.icon name="hero-arrow-up-tray" class="w-4 h-4 mr-1" />
+                            {gettext("Upload Audio")}
                           </button>
+                          <p class="text-xs text-secondary mt-2">
+                            {gettext("MP3 or WAV, max 10MB")}
+                          </p>
                         </div>
-                        <%= for err <- upload_errors(@uploads.audio, entry) do %>
-                          <p class="text-error text-xs mt-1">{error_to_string(err)}</p>
-                        <% end %>
-                      <% end %>
-                      <%= if @editing_step && @editing_step.question_data["audio_path"] do %>
-                        <div class="mt-3 flex items-center gap-2 bg-base-200 rounded-lg p-3">
-                          <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary" />
-                          <span class="text-sm">{gettext("Existing audio file")}</span>
-                          <audio controls class="h-8 ml-auto">
-                            <source src={@editing_step.question_data["audio_path"]} />
-                          </audio>
-                        </div>
-                      <% end %>
-                    </div>
-
-                    <%!-- Question --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Question")}
-                        <span class="text-error">*</span>
-                      </label>
-                      <.input
-                        field={@step_form[:question]}
-                        type="textarea"
-                        rows="3"
-                        placeholder={gettext("Enter your question...")}
-                      />
-                    </div>
-
-                    <%!-- Correct Answer --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Correct Answer")}
-                        <span class="text-error">*</span>
-                      </label>
-                      <.input
-                        field={@step_form[:correct_answer]}
-                        type="text"
-                        placeholder={gettext("Enter the correct answer...")}
-                      />
-                    </div>
-
-                    <%!-- Incorrect Answers --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Incorrect Answers")}
-                        <span class="text-xs text-secondary ml-2">
-                          ({gettext("1-7 options required")})
-                        </span>
-                      </label>
-                      <textarea
-                        name="step[options]"
-                        rows="4"
-                        class="textarea textarea-bordered w-full"
-                        placeholder={gettext("Enter one wrong answer per line...")}
-                      ><%= format_options_for_submission(@step_form[:options].value) %></textarea>
-                    </div>
-                  <% else %>
-                    <%!-- Vocabulary Step Forms --%>
-
-                    <%!-- Question --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Question")}
-                      </label>
-                      <.input
-                        field={@step_form[:question]}
-                        type="textarea"
-                        rows="3"
-                        placeholder={gettext("Enter your question...")}
-                      />
-                    </div>
-
-                    <%!-- Kanji Search (for writing type) --%>
-                    <%= if @step_type == :writing do %>
-                      <div>
-                        <label class="block text-sm font-medium text-base-content mb-2">
-                          {gettext("Select Kanji")}
-                        </label>
-                        <input
-                          type="text"
-                          phx-keyup="search_kanji"
-                          phx-debounce="300"
-                          class="input input-bordered w-full"
-                          placeholder={gettext("Type kanji character, meaning, or reading...")}
-                          value={@kanji_search_query}
-                        />
-                        <%= if length(@available_kanji) > 0 do %>
-                          <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
-                            <%= for kanji <- @available_kanji do %>
-                              <% readings =
-                                if is_list(kanji.kanji_readings) and length(kanji.kanji_readings) > 0,
-                                  do: Enum.map_join(kanji.kanji_readings, ", ", & &1.reading),
-                                  else: "" %>
-                              <button
-                                type="button"
-                                phx-click="select_kanji"
-                                phx-value-kanji-id={kanji.id}
-                                class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
-                              >
-                                <div class="flex items-center justify-between">
-                                  <span class="text-2xl font-medium">{kanji.character}</span>
-                                  <div class="text-right">
-                                    <div class="text-sm font-medium">
-                                      {Enum.join(kanji.meanings, ", ")}
-                                    </div>
-                                    <div class="text-xs text-secondary">{readings}</div>
-                                  </div>
-                                </div>
-                              </button>
-                            <% end %>
-                          </div>
-                        <% end %>
-
-                        <%!-- Selected Kanji Info & Preview --%>
-                        <%= if @selected_kanji do %>
-                          <div class="mt-4 bg-base-200 rounded-xl p-4">
-                            <%!-- Kanji Info Header --%>
-                            <div class="flex items-center justify-between mb-4">
-                              <div class="flex items-center gap-4">
-                                <span class="text-4xl font-bold text-base-content">
-                                  {@selected_kanji.character}
-                                </span>
-                                <div>
-                                  <p class="text-sm text-secondary">
-                                    {Enum.join(@selected_kanji.meanings, ", ")}
-                                  </p>
-                                  <p class="text-xs text-secondary mt-1">
-                                    {case @selected_kanji.stroke_data do
-                                      %{"strokes" => s} when is_list(s) ->
-                                        gettext("%{count} strokes", count: length(s))
-
-                                      _ ->
-                                        gettext("No stroke data")
-                                    end} • N{@selected_kanji.jlpt_level}
-                                  </p>
-                                </div>
-                              </div>
-                              <%= if @show_kanji_preview do %>
-                                <span class="badge badge-success badge-sm">
-                                  {gettext("Ready for writing")}
-                                </span>
-                              <% else %>
-                                <span class="badge badge-error badge-sm">
-                                  {gettext("No stroke data")}
-                                </span>
-                              <% end %>
-                            </div>
-
-                            <%!-- Stroke Animation Preview --%>
-                            <%= if @show_kanji_preview do %>
-                              <div class="border-t border-base-300 pt-4">
-                                <p class="text-sm font-medium text-base-content mb-3">
-                                  {gettext("Stroke Order Preview")}
-                                </p>
-                                <.live_component
-                                  module={MedoruWeb.StrokeAnimator}
-                                  id="kanji-writing-preview"
-                                  stroke_data={@selected_kanji.stroke_data}
-                                />
-                              </div>
-                            <% else %>
-                              <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
-                                <.icon
-                                  name="hero-exclamation-triangle"
-                                  class="w-6 h-6 text-error mb-2"
-                                />
-                                <p class="text-sm text-error">
-                                  {gettext(
-                                    "This kanji doesn't have stroke data. Writing validation will not work for this step."
-                                  )}
-                                </p>
-                              </div>
-                            <% end %>
-                          </div>
-                        <% end %>
-                      </div>
-                    <% end %>
-
-                    <%= if @step_type in [:multichoice, :picture_multichoice, :fill] do %>
-                      <div>
-                        <label class="block text-sm font-medium text-base-content mb-2">
-                          <%= if @step_type == :picture_multichoice do %>
-                            {gettext("Link to Word (required for picture questions)")}
-                          <% else %>
-                            {gettext("Link to Word (optional)")}
-                          <% end %>
-                          <%= case @search_type do %>
-                            <% :reading -> %>
-                              <span class="text-xs text-info ml-2">
-                                {gettext("Reading search detected")}
-                              </span>
-                            <% :meaning -> %>
-                              <span class="text-xs text-success ml-2">
-                                {gettext("Meaning search detected")}
-                              </span>
-                            <% _ -> %>
-                          <% end %>
-                        </label>
-                        <input
-                          type="text"
-                          phx-keyup="search_words"
-                          phx-debounce="300"
-                          class="input input-bordered w-full"
-                          placeholder={gettext("Type to search words...")}
-                          value={@word_search_query}
-                        />
-                        <%= if length(@available_words) > 0 do %>
-                          <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
-                            <%= for word <- @available_words do %>
-                              <button
-                                type="button"
-                                phx-click="select_word"
-                                phx-value-word-id={word.id}
-                                class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
-                              >
-                                <div class="flex items-center justify-between">
-                                  <span class="font-medium">{word.text}</span>
-                                  <span class="text-sm text-secondary">
-                                    {Content.get_localized_meaning(word, @locale)}
-                                  </span>
-                                </div>
-                              </button>
-                            <% end %>
-                          </div>
-                        <% end %>
-
-                        <%!-- Selected Word Info for Fill Type --%>
-                        <%= if @step_type == :fill and @selected_word do %>
-                          <div class="mt-4 bg-base-200 rounded-lg p-4">
-                            <div class="flex items-center gap-4 mb-4">
-                              <span class="text-2xl font-bold">{@selected_word.text}</span>
-                              <div>
-                                <p class="text-sm text-secondary">{@selected_word.reading}</p>
-                                <p class="text-sm font-medium">
-                                  {Content.get_localized_meaning(@selected_word, @locale)}
-                                </p>
-                              </div>
-                            </div>
-
-                            <%!-- Include Reading Checkbox --%>
-                            <div class="flex items-center gap-3 mb-4 p-3 bg-base-100 rounded-lg">
-                              <label class="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  name="step[include_reading]"
-                                  phx-click="toggle_include_reading"
-                                  checked={@include_reading}
-                                  class="checkbox checkbox-sm checkbox-primary"
-                                />
-                                <span class="text-sm font-medium">
-                                  {gettext("Also require reading in hiragana")}
-                                </span>
-                              </label>
+                        <%= for entry <- @uploads.audio.entries do %>
+                          <div class="mt-3 flex items-center justify-between bg-base-200 rounded-lg p-3">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary shrink-0" />
+                              <span class="text-sm truncate">{entry.client_name}</span>
                               <span class="text-xs text-secondary">
-                                <%= if @include_reading do %>
-                                  ({gettext("3 points total: 2 for meaning + 1 for reading")})
-                                <% else %>
-                                  ({gettext("2 points for meaning only")})
-                                <% end %>
+                                {entry.progress}%
                               </span>
                             </div>
-
-                            <%!-- Default vs Custom Meaning Toggle --%>
-                            <div class="flex items-center gap-3 mb-4">
-                              <label class="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  phx-click="toggle_default_meaning"
-                                  checked={@use_default_meaning}
-                                  class="checkbox checkbox-sm checkbox-primary"
-                                />
-                                <span class="text-sm">
-                                  {gettext("Use default meaning as answer")}
-                                </span>
-                              </label>
-                            </div>
-
-                            <%!-- Custom Meaning Input --%>
-                            <%= if not @use_default_meaning do %>
-                              <div class="mb-4">
-                                <label class="block text-sm font-medium text-base-content mb-2">
-                                  {gettext("Custom Meaning Answer")}
-                                </label>
-                                <input
-                                  type="text"
-                                  name="step[custom_meaning]"
-                                  value={@custom_meaning}
-                                  phx-keyup="update_custom_meaning"
-                                  class="input input-bordered w-full"
-                                  placeholder={gettext("Enter custom meaning...")}
-                                />
-                                <p class="text-xs text-secondary mt-1">
-                                  {gettext("Students must match this exactly (case-insensitive)")}
-                                </p>
-                              </div>
-                            <% end %>
-
-                            <%!-- Reading Answer (Hiragana) - Only show if include_reading is checked --%>
-                            <%= if @include_reading do %>
-                              <div>
-                                <label class="block text-sm font-medium text-base-content mb-2">
-                                  {gettext("Reading Answer (Hiragana)")}
-                                  <span class="text-xs text-secondary ml-1">
-                                    - {gettext("students must also enter this")}
-                                  </span>
-                                </label>
-                                <input
-                                  type="text"
-                                  name="step[reading_answer]"
-                                  value={@reading_answer || @selected_word.reading}
-                                  phx-keyup="update_reading_answer"
-                                  class="input input-bordered w-full"
-                                  placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
-                                />
-                                <p class="text-xs text-secondary mt-1">
-                                  {gettext(
-                                    "Default from word database. Edit if you want a different reading accepted."
-                                  )}
-                                </p>
-                              </div>
-                            <% end %>
-                          </div>
-                        <% end %>
-                      </div>
-                    <% end %>
-
-                    <%!-- Correct Answer --%>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Correct Answer")}
-                      </label>
-                      <.input
-                        field={@step_form[:correct_answer]}
-                        type="text"
-                        placeholder={gettext("Enter the correct answer...")}
-                        phx-keyup="update_correct_answer"
-                        phx-debounce="3000"
-                      />
-                      <p class="text-xs text-secondary mt-1">
-                        {gettext(
-                          "Changes will update the correct option after 3 seconds of inactivity."
-                        )}
-                      </p>
-                    </div>
-
-                    <%!-- Options for multichoice types --%>
-                    <%= if @step_type in [:multichoice, :picture_multichoice, :conjugation_multichoice] do %>
-                      <div>
-                        <label class="block text-sm font-medium text-base-content mb-2">
-                          <%= if @step_type == :picture_multichoice do %>
-                            {gettext("Answer Options (must be words with images)")}
-                          <% else %>
-                            {gettext("Answer Options")}
-                          <% end %>
-                          <span class="text-xs text-secondary ml-2">
-                            ({gettext("4-8 options required")})
-                          </span>
-                        </label>
-
-                        <% options = @step_form[:options].value || [] %>
-                        <% question_data = @step_form[:question_data].value || %{} %>
-                        <% correct =
-                          if @step_type == :conjugation_multichoice do
-                            question_data["generated_answer"] || @step_form[:correct_answer].value
-                          else
-                            @step_form[:correct_answer].value
-                          end %>
-                        <% correct_trimmed = if correct, do: String.trim(correct), else: "" %>
-
-                        <%!-- Options as tags --%>
-                        <div class="flex flex-wrap gap-2 mb-3 min-h-[40px] p-3 bg-base-200 rounded-lg">
-                          <%!-- Correct answer tag (not removable) --%>
-                          <%= if correct_trimmed != "" do %>
-                            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-success/20 text-success border border-success/30 rounded-lg">
-                              <.icon name="hero-check-circle" class="w-4 h-4" />
-                              <span class="font-medium">{correct_trimmed}</span>
-                              <span class="text-xs opacity-70">({gettext("correct")})</span>
-                            </div>
-                          <% end %>
-
-                          <%!-- Wrong answer tags (removable) --%>
-                          <%= for {option, index} <- Enum.with_index(options) do %>
-                            <% trimmed = if is_binary(option), do: String.trim(option), else: "" %>
-                            <% is_correct = correct_trimmed == trimmed %>
-                            <%= if not is_correct and trimmed != "" do %>
-                              <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg group">
-                                <span>{trimmed}</span>
-                                <button
-                                  type="button"
-                                  phx-click="remove_option"
-                                  phx-value-index={index}
-                                  class="text-secondary hover:text-error transition-colors"
-                                  title={gettext("Remove option")}
-                                >
-                                  <.icon name="hero-x-mark" class="w-4 h-4" />
-                                </button>
-                              </div>
-                            <% end %>
-                          <% end %>
-
-                          <%!-- Empty state --%>
-                          <%= if length(options) < 4 do %>
-                            <span class="text-sm text-secondary italic">
-                              {gettext("Add %{count} more option(s)", count: 4 - length(options))}
-                            </span>
-                          <% end %>
-                        </div>
-
-                        <%!-- Add new option input --%>
-                        <%= if @step_type == :picture_multichoice do %>
-                          <%!-- For picture_multichoice: search and select words with images --%>
-                          <div>
-                            <label class="block text-xs font-medium text-secondary mb-1">
-                              {gettext("Search for a word with image to add as option")}
-                            </label>
-                            <input
-                              type="text"
-                              phx-keyup="search_option_words"
-                              phx-debounce="300"
-                              class="input input-bordered w-full"
-                              placeholder={gettext("Type to search words with images...")}
-                              value={@option_word_search_query}
-                            />
-                            <%= if length(@available_option_words) > 0 do %>
-                              <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
-                                <%= for word <- @available_option_words do %>
-                                  <button
-                                    type="button"
-                                    phx-click="select_option_word"
-                                    phx-value-word-id={word.id}
-                                    class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors flex items-center gap-3"
-                                  >
-                                    <%= if word.image_path do %>
-                                      <img
-                                        src={word.image_path}
-                                        alt={word.text}
-                                        class="w-10 h-10 object-cover rounded"
-                                      />
-                                    <% end %>
-                                    <div>
-                                      <span class="font-medium">{word.text}</span>
-                                      <span class="text-sm text-secondary ml-2">
-                                        {Content.get_localized_meaning(word, @locale)}
-                                      </span>
-                                    </div>
-                                  </button>
-                                <% end %>
-                              </div>
-                            <% end %>
-                          </div>
-                        <% else %>
-                          <%!-- For regular multichoice: type text --%>
-                          <div class="flex gap-2">
-                            <input
-                              type="text"
-                              id="new-option-input"
-                              value={@new_option_text}
-                              phx-keyup="update_new_option"
-                              phx-hook="OptionInput"
-                              class="input input-bordered flex-1"
-                              placeholder={gettext("Type a wrong answer and press Enter...")}
-                            />
                             <button
                               type="button"
-                              phx-click="add_option"
-                              disabled={String.trim(@new_option_text) == ""}
-                              class="btn btn-outline btn-sm"
+                              phx-click="cancel_audio_upload"
+                              phx-value-ref={entry.ref}
+                              class="p-1 text-secondary hover:text-error rounded transition-colors shrink-0"
                             >
-                              <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
+                              <.icon name="hero-x-mark" class="w-4 h-4" />
                             </button>
                           </div>
+                          <%= for err <- upload_errors(@uploads.audio, entry) do %>
+                            <p class="text-error text-xs mt-1">{error_to_string(err)}</p>
+                          <% end %>
                         <% end %>
+                        <%= if @editing_step && @editing_step.question_data["audio_path"] do %>
+                          <div class="mt-3 flex items-center gap-2 bg-base-200 rounded-lg p-3">
+                            <.icon name="hero-speaker-wave" class="w-5 h-5 text-primary" />
+                            <span class="text-sm">{gettext("Existing audio file")}</span>
+                            <audio controls class="h-8 ml-auto">
+                              <source src={@editing_step.question_data["audio_path"]} />
+                            </audio>
+                          </div>
+                        <% end %>
+                      </div>
 
-                        <%!-- Validation messages --%>
-                        <%= if @step_changeset && @step_changeset.errors[:options] do %>
-                          <p class="text-error text-sm mt-2">
-                            {elem(@step_changeset.errors[:options], 0)}
-                          </p>
-                        <% end %>
-                        <%= if @step_changeset && @step_changeset.errors[:correct_answer] do %>
-                          <p class="text-error text-sm mt-2">
-                            {elem(@step_changeset.errors[:correct_answer], 0)}
-                          </p>
-                        <% end %>
+                      <%!-- Question --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Question")}
+                          <span class="text-error">*</span>
+                        </label>
+                        <.input
+                          field={@step_form[:question]}
+                          type="textarea"
+                          rows="3"
+                          placeholder={gettext("Enter your question...")}
+                        />
+                      </div>
 
-                        <%!-- Textarea for form submission ( visually hidden but functionally present) --%>
-                        <% all_options =
-                          if correct_trimmed != "",
-                            do: [
-                              correct_trimmed
-                              | Enum.reject(options, &(String.trim(&1) == correct_trimmed))
-                            ],
-                            else: options %>
+                      <%!-- Correct Answer --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Correct Answer")}
+                          <span class="text-error">*</span>
+                        </label>
+                        <.input
+                          field={@step_form[:correct_answer]}
+                          type="text"
+                          placeholder={gettext("Enter the correct answer...")}
+                        />
+                      </div>
+
+                      <%!-- Incorrect Answers --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Incorrect Answers")}
+                          <span class="text-xs text-secondary ml-2">
+                            ({gettext("1-7 options required")})
+                          </span>
+                        </label>
                         <textarea
                           name="step[options]"
-                          class="sr-only"
-                          aria-hidden="true"
-                          readonly
-                        >{format_options_for_submission(all_options)}</textarea>
+                          rows="4"
+                          class="textarea textarea-bordered w-full"
+                          placeholder={gettext("Enter one wrong answer per line...")}
+                        ><%= format_options_for_submission(@step_form[:options].value) %></textarea>
+                      </div>
+                    <% else %>
+                      <%!-- Vocabulary Step Forms --%>
+
+                      <%!-- Question --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Question")}
+                        </label>
+                        <.input
+                          field={@step_form[:question]}
+                          type="textarea"
+                          rows="3"
+                          placeholder={gettext("Enter your question...")}
+                        />
+                      </div>
+
+                      <%!-- Kanji Search (for writing type) --%>
+                      <%= if @step_type == :writing do %>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            {gettext("Select Kanji")}
+                          </label>
+                          <input
+                            type="text"
+                            phx-keyup="search_kanji"
+                            phx-debounce="300"
+                            class="input input-bordered w-full"
+                            placeholder={gettext("Type kanji character, meaning, or reading...")}
+                            value={@kanji_search_query}
+                          />
+                          <%= if length(@available_kanji) > 0 do %>
+                            <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                              <%= for kanji <- @available_kanji do %>
+                                <% readings =
+                                  if is_list(kanji.kanji_readings) and
+                                       length(kanji.kanji_readings) > 0,
+                                     do: Enum.map_join(kanji.kanji_readings, ", ", & &1.reading),
+                                     else: "" %>
+                                <button
+                                  type="button"
+                                  phx-click="select_kanji"
+                                  phx-value-kanji-id={kanji.id}
+                                  class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
+                                >
+                                  <div class="flex items-center justify-between">
+                                    <span class="text-2xl font-medium">{kanji.character}</span>
+                                    <div class="text-right">
+                                      <div class="text-sm font-medium">
+                                        {Enum.join(kanji.meanings, ", ")}
+                                      </div>
+                                      <div class="text-xs text-secondary">{readings}</div>
+                                    </div>
+                                  </div>
+                                </button>
+                              <% end %>
+                            </div>
+                          <% end %>
+
+                          <%!-- Selected Kanji Info & Preview --%>
+                          <%= if @selected_kanji do %>
+                            <div class="mt-4 bg-base-200 rounded-xl p-4">
+                              <%!-- Kanji Info Header --%>
+                              <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-4">
+                                  <span class="text-4xl font-bold text-base-content">
+                                    {@selected_kanji.character}
+                                  </span>
+                                  <div>
+                                    <p class="text-sm text-secondary">
+                                      {Enum.join(@selected_kanji.meanings, ", ")}
+                                    </p>
+                                    <p class="text-xs text-secondary mt-1">
+                                      {case @selected_kanji.stroke_data do
+                                        %{"strokes" => s} when is_list(s) ->
+                                          gettext("%{count} strokes", count: length(s))
+
+                                        _ ->
+                                          gettext("No stroke data")
+                                      end} • N{@selected_kanji.jlpt_level}
+                                    </p>
+                                  </div>
+                                </div>
+                                <%= if @show_kanji_preview do %>
+                                  <span class="badge badge-success badge-sm">
+                                    {gettext("Ready for writing")}
+                                  </span>
+                                <% else %>
+                                  <span class="badge badge-error badge-sm">
+                                    {gettext("No stroke data")}
+                                  </span>
+                                <% end %>
+                              </div>
+
+                              <%!-- Stroke Animation Preview --%>
+                              <%= if @show_kanji_preview do %>
+                                <div class="border-t border-base-300 pt-4">
+                                  <p class="text-sm font-medium text-base-content mb-3">
+                                    {gettext("Stroke Order Preview")}
+                                  </p>
+                                  <.live_component
+                                    module={MedoruWeb.StrokeAnimator}
+                                    id="kanji-writing-preview"
+                                    stroke_data={@selected_kanji.stroke_data}
+                                  />
+                                </div>
+                              <% else %>
+                                <div class="bg-error/10 border border-error/30 rounded-lg p-4 text-center">
+                                  <.icon
+                                    name="hero-exclamation-triangle"
+                                    class="w-6 h-6 text-error mb-2"
+                                  />
+                                  <p class="text-sm text-error">
+                                    {gettext(
+                                      "This kanji doesn't have stroke data. Writing validation will not work for this step."
+                                    )}
+                                  </p>
+                                </div>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <%= if @step_type in [:multichoice, :picture_multichoice, :fill] do %>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            <%= if @step_type == :picture_multichoice do %>
+                              {gettext("Link to Word (required for picture questions)")}
+                            <% else %>
+                              {gettext("Link to Word (optional)")}
+                            <% end %>
+                            <%= case @search_type do %>
+                              <% :reading -> %>
+                                <span class="text-xs text-info ml-2">
+                                  {gettext("Reading search detected")}
+                                </span>
+                              <% :meaning -> %>
+                                <span class="text-xs text-success ml-2">
+                                  {gettext("Meaning search detected")}
+                                </span>
+                              <% _ -> %>
+                            <% end %>
+                          </label>
+                          <input
+                            type="text"
+                            phx-keyup="search_words"
+                            phx-debounce="300"
+                            class="input input-bordered w-full"
+                            placeholder={gettext("Type to search words...")}
+                            value={@word_search_query}
+                          />
+                          <%= if length(@available_words) > 0 do %>
+                            <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                              <%= for word <- @available_words do %>
+                                <button
+                                  type="button"
+                                  phx-click="select_word"
+                                  phx-value-word-id={word.id}
+                                  class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors"
+                                >
+                                  <div class="flex items-center justify-between">
+                                    <span class="font-medium">{word.text}</span>
+                                    <span class="text-sm text-secondary">
+                                      {Content.get_localized_meaning(word, @locale)}
+                                    </span>
+                                  </div>
+                                </button>
+                              <% end %>
+                            </div>
+                          <% end %>
+
+                          <%!-- Selected Word Info for Fill Type --%>
+                          <%= if @step_type == :fill and @selected_word do %>
+                            <div class="mt-4 bg-base-200 rounded-lg p-4">
+                              <div class="flex items-center gap-4 mb-4">
+                                <span class="text-2xl font-bold">{@selected_word.text}</span>
+                                <div>
+                                  <p class="text-sm text-secondary">{@selected_word.reading}</p>
+                                  <p class="text-sm font-medium">
+                                    {Content.get_localized_meaning(@selected_word, @locale)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <%!-- Include Reading Checkbox --%>
+                              <div class="flex items-center gap-3 mb-4 p-3 bg-base-100 rounded-lg">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    name="step[include_reading]"
+                                    phx-click="toggle_include_reading"
+                                    checked={@include_reading}
+                                    class="checkbox checkbox-sm checkbox-primary"
+                                  />
+                                  <span class="text-sm font-medium">
+                                    {gettext("Also require reading in hiragana")}
+                                  </span>
+                                </label>
+                                <span class="text-xs text-secondary">
+                                  <%= if @include_reading do %>
+                                    ({gettext("3 points total: 2 for meaning + 1 for reading")})
+                                  <% else %>
+                                    ({gettext("2 points for meaning only")})
+                                  <% end %>
+                                </span>
+                              </div>
+
+                              <%!-- Default vs Custom Meaning Toggle --%>
+                              <div class="flex items-center gap-3 mb-4">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    phx-click="toggle_default_meaning"
+                                    checked={@use_default_meaning}
+                                    class="checkbox checkbox-sm checkbox-primary"
+                                  />
+                                  <span class="text-sm">
+                                    {gettext("Use default meaning as answer")}
+                                  </span>
+                                </label>
+                              </div>
+
+                              <%!-- Custom Meaning Input --%>
+                              <%= if not @use_default_meaning do %>
+                                <div class="mb-4">
+                                  <label class="block text-sm font-medium text-base-content mb-2">
+                                    {gettext("Custom Meaning Answer")}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="step[custom_meaning]"
+                                    value={@custom_meaning}
+                                    phx-keyup="update_custom_meaning"
+                                    class="input input-bordered w-full"
+                                    placeholder={gettext("Enter custom meaning...")}
+                                  />
+                                  <p class="text-xs text-secondary mt-1">
+                                    {gettext("Students must match this exactly (case-insensitive)")}
+                                  </p>
+                                </div>
+                              <% end %>
+
+                              <%!-- Reading Answer (Hiragana) - Only show if include_reading is checked --%>
+                              <%= if @include_reading do %>
+                                <div>
+                                  <label class="block text-sm font-medium text-base-content mb-2">
+                                    {gettext("Reading Answer (Hiragana)")}
+                                    <span class="text-xs text-secondary ml-1">
+                                      - {gettext("students must also enter this")}
+                                    </span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="step[reading_answer]"
+                                    value={@reading_answer || @selected_word.reading}
+                                    phx-keyup="update_reading_answer"
+                                    class="input input-bordered w-full"
+                                    placeholder={gettext("Enter hiragana reading (e.g., あおい)...")}
+                                  />
+                                  <p class="text-xs text-secondary mt-1">
+                                    {gettext(
+                                      "Default from word database. Edit if you want a different reading accepted."
+                                    )}
+                                  </p>
+                                </div>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <%!-- Correct Answer --%>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Correct Answer")}
+                        </label>
+                        <.input
+                          field={@step_form[:correct_answer]}
+                          type="text"
+                          placeholder={gettext("Enter the correct answer...")}
+                          phx-keyup="update_correct_answer"
+                          phx-debounce="3000"
+                        />
+                        <p class="text-xs text-secondary mt-1">
+                          {gettext(
+                            "Changes will update the correct option after 3 seconds of inactivity."
+                          )}
+                        </p>
+                      </div>
+
+                      <%!-- Options for multichoice types --%>
+                      <%= if @step_type in [:multichoice, :picture_multichoice, :conjugation_multichoice] do %>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            <%= if @step_type == :picture_multichoice do %>
+                              {gettext("Answer Options (must be words with images)")}
+                            <% else %>
+                              {gettext("Answer Options")}
+                            <% end %>
+                            <span class="text-xs text-secondary ml-2">
+                              ({gettext("4-8 options required")})
+                            </span>
+                          </label>
+
+                          <% options = @step_form[:options].value || [] %>
+                          <% question_data = @step_form[:question_data].value || %{} %>
+                          <% correct =
+                            if @step_type == :conjugation_multichoice do
+                              question_data["generated_answer"] || @step_form[:correct_answer].value
+                            else
+                              @step_form[:correct_answer].value
+                            end %>
+                          <% correct_trimmed = if correct, do: String.trim(correct), else: "" %>
+
+                          <%!-- Options as tags --%>
+                          <div class="flex flex-wrap gap-2 mb-3 min-h-[40px] p-3 bg-base-200 rounded-lg">
+                            <%!-- Correct answer tag (not removable) --%>
+                            <%= if correct_trimmed != "" do %>
+                              <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-success/20 text-success border border-success/30 rounded-lg">
+                                <.icon name="hero-check-circle" class="w-4 h-4" />
+                                <span class="font-medium">{correct_trimmed}</span>
+                                <span class="text-xs opacity-70">({gettext("correct")})</span>
+                              </div>
+                            <% end %>
+
+                            <%!-- Wrong answer tags (removable) --%>
+                            <%= for {option, index} <- Enum.with_index(options) do %>
+                              <% trimmed = if is_binary(option), do: String.trim(option), else: "" %>
+                              <% is_correct = correct_trimmed == trimmed %>
+                              <%= if not is_correct and trimmed != "" do %>
+                                <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-base-100 border border-base-300 rounded-lg group">
+                                  <span>{trimmed}</span>
+                                  <button
+                                    type="button"
+                                    phx-click="remove_option"
+                                    phx-value-index={index}
+                                    class="text-secondary hover:text-error transition-colors"
+                                    title={gettext("Remove option")}
+                                  >
+                                    <.icon name="hero-x-mark" class="w-4 h-4" />
+                                  </button>
+                                </div>
+                              <% end %>
+                            <% end %>
+
+                            <%!-- Empty state --%>
+                            <%= if length(options) < 4 do %>
+                              <span class="text-sm text-secondary italic">
+                                {gettext("Add %{count} more option(s)", count: 4 - length(options))}
+                              </span>
+                            <% end %>
+                          </div>
+
+                          <%!-- Add new option input --%>
+                          <%= if @step_type == :picture_multichoice do %>
+                            <%!-- For picture_multichoice: search and select words with images --%>
+                            <div>
+                              <label class="block text-xs font-medium text-secondary mb-1">
+                                {gettext("Search for a word with image to add as option")}
+                              </label>
+                              <input
+                                type="text"
+                                phx-keyup="search_option_words"
+                                phx-debounce="300"
+                                class="input input-bordered w-full"
+                                placeholder={gettext("Type to search words with images...")}
+                                value={@option_word_search_query}
+                              />
+                              <%= if length(@available_option_words) > 0 do %>
+                                <div class="mt-2 bg-base-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                                  <%= for word <- @available_option_words do %>
+                                    <button
+                                      type="button"
+                                      phx-click="select_option_word"
+                                      phx-value-word-id={word.id}
+                                      class="w-full text-left p-2 hover:bg-base-300 rounded-lg transition-colors flex items-center gap-3"
+                                    >
+                                      <%= if word.image_path do %>
+                                        <img
+                                          src={word.image_path}
+                                          alt={word.text}
+                                          class="w-10 h-10 object-cover rounded"
+                                        />
+                                      <% end %>
+                                      <div>
+                                        <span class="font-medium">{word.text}</span>
+                                        <span class="text-sm text-secondary ml-2">
+                                          {Content.get_localized_meaning(word, @locale)}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  <% end %>
+                                </div>
+                              <% end %>
+                            </div>
+                          <% else %>
+                            <%!-- For regular multichoice: type text --%>
+                            <div class="flex gap-2">
+                              <input
+                                type="text"
+                                id="new-option-input"
+                                value={@new_option_text}
+                                phx-keyup="update_new_option"
+                                phx-hook="OptionInput"
+                                class="input input-bordered flex-1"
+                                placeholder={gettext("Type a wrong answer and press Enter...")}
+                              />
+                              <button
+                                type="button"
+                                phx-click="add_option"
+                                disabled={String.trim(@new_option_text) == ""}
+                                class="btn btn-outline btn-sm"
+                              >
+                                <.icon name="hero-plus" class="w-4 h-4" /> {gettext("Add")}
+                              </button>
+                            </div>
+                          <% end %>
+
+                          <%!-- Validation messages --%>
+                          <%= if @step_changeset && @step_changeset.errors[:options] do %>
+                            <p class="text-error text-sm mt-2">
+                              {elem(@step_changeset.errors[:options], 0)}
+                            </p>
+                          <% end %>
+                          <%= if @step_changeset && @step_changeset.errors[:correct_answer] do %>
+                            <p class="text-error text-sm mt-2">
+                              {elem(@step_changeset.errors[:correct_answer], 0)}
+                            </p>
+                          <% end %>
+
+                          <%!-- Textarea for form submission ( visually hidden but functionally present) --%>
+                          <% all_options =
+                            if correct_trimmed != "",
+                              do: [
+                                correct_trimmed
+                                | Enum.reject(options, &(String.trim(&1) == correct_trimmed))
+                              ],
+                              else: options %>
+                          <textarea
+                            name="step[options]"
+                            class="sr-only"
+                            aria-hidden="true"
+                            readonly
+                          >{format_options_for_submission(all_options)}</textarea>
+                        </div>
+                      <% end %>
+                      <%!-- End of multichoice options --%>
+                    <% end %>
+                    <%!-- End of vocabulary branch --%>
+                  <% end %>
+                  <%!-- End of listening/vocabulary/grammar conditional --%>
+
+                  <%!-- Hints --%>
+                  <div>
+                    <label class="block text-sm font-medium text-base-content mb-2">
+                      {gettext("Hint (optional)")}
+                    </label>
+                    <.input
+                      field={@step_form[:hints]}
+                      type="text"
+                      placeholder={gettext("Give students a hint...")}
+                    />
+                  </div>
+
+                  <%!-- Explanation --%>
+                  <div>
+                    <label class="block text-sm font-medium text-base-content mb-2">
+                      {gettext("Explanation (shown after answering)")}
+                    </label>
+                    <.input
+                      field={@step_form[:explanation]}
+                      type="textarea"
+                      rows="2"
+                      placeholder={gettext("Explain the correct answer...")}
+                    />
+                  </div>
+
+                  <%!-- Form Actions --%>
+                  <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
+                    <button
+                      type="button"
+                      phx-click="close_step_form"
+                      class="btn btn-ghost"
+                    >
+                      {gettext("Cancel")}
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                      <%= if @editing_step do %>
+                        {gettext("Update Step")}
+                      <% else %>
+                        {gettext("Add Step")}
+                      <% end %>
+                    </button>
+                  </div>
+                </.form>
+              <% end %>
+
+              <%= if @step_type == :grammar_pattern && @extracted_grammar_pattern_steps do %>
+                <div class="space-y-6">
+                  <%!-- Example --%>
+                  <%= if @grammar_pattern_example && @grammar_pattern_example != "" do %>
+                    <div class="bg-base-200 rounded-lg p-4">
+                      <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
+                      <div class="font-jp text-base-content">{@grammar_pattern_example}</div>
+                    </div>
+                  <% end %>
+
+                  <%!-- Steps --%>
+                  <div class="space-y-4">
+                    <h4 class="font-medium">
+                      {gettext("Extracted Steps")}
+                      <span class="badge badge-primary badge-sm ml-2">
+                        {length(@extracted_grammar_pattern_steps)}
+                      </span>
+                    </h4>
+
+                    <%= for {step, index} <- Enum.with_index(@extracted_grammar_pattern_steps) do %>
+                      <div class="bg-base-100 border border-base-200 rounded-lg p-4 space-y-3">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm text-secondary font-medium">#{step["number"]}</span>
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Question")}</span>
+                          </label>
+                          <div class="text-sm text-base-content">
+                            {gettext("Build a sentence following the example")}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Words")}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["words"]}
+                            phx-change="update_extracted_step"
+                            phx-value-index={index}
+                            phx-value-field="words"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Correct Answer")}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["correct_answer"]}
+                            phx-change="update_extracted_step"
+                            phx-value-index={index}
+                            phx-value-field="correct_answer"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">
+                              {gettext("Alternative Answers (optional)")}
+                            </span>
+                          </label>
+                          <textarea
+                            phx-change="update_extracted_step"
+                            phx-value-index={index}
+                            phx-value-field="alt_correct_answers_text"
+                            phx-debounce="300"
+                            class="textarea textarea-bordered textarea-sm w-full font-jp"
+                            rows="2"
+                            placeholder={gettext("One per line")}
+                          ><%= Enum.join(step["alt_correct_answers"] || [], "\n") %></textarea>
+                        </div>
                       </div>
                     <% end %>
-                    <%!-- End of multichoice options --%>
-                  <% end %>
-                  <%!-- End of vocabulary branch --%>
-                <% end %>
-                <%!-- End of listening/vocabulary/grammar conditional --%>
+                  </div>
 
-                <%!-- Hints --%>
-                <div>
-                  <label class="block text-sm font-medium text-base-content mb-2">
-                    {gettext("Hint (optional)")}
-                  </label>
-                  <.input
-                    field={@step_form[:hints]}
-                    type="text"
-                    placeholder={gettext("Give students a hint...")}
-                  />
+                  <%!-- Actions --%>
+                  <div class="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      phx-click="close_step_form"
+                      class="btn btn-ghost"
+                    >
+                      {gettext("Cancel")}
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="save_grammar_pattern_steps"
+                      class="btn btn-primary"
+                    >
+                      <.icon name="hero-plus" class="w-5 h-5 mr-2" />
+                      {gettext("Save All Steps")}
+                    </button>
+                  </div>
                 </div>
-
-                <%!-- Explanation --%>
-                <div>
-                  <label class="block text-sm font-medium text-base-content mb-2">
-                    {gettext("Explanation (shown after answering)")}
-                  </label>
-                  <.input
-                    field={@step_form[:explanation]}
-                    type="textarea"
-                    rows="2"
-                    placeholder={gettext("Explain the correct answer...")}
-                  />
-                </div>
-
-                <%!-- Form Actions --%>
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-200">
-                  <button
-                    type="button"
-                    phx-click="close_step_form"
-                    class="btn btn-ghost"
-                  >
-                    {gettext("Cancel")}
-                  </button>
-                  <button type="submit" class="btn btn-primary">
-                    <%= if @editing_step do %>
-                      {gettext("Update Step")}
-                    <% else %>
-                      {gettext("Add Step")}
-                    <% end %>
-                  </button>
-                </div>
-              </.form>
+              <% end %>
             </div>
           </div>
         </div>
@@ -2731,6 +3080,19 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     params
   end
 
+  defp parse_alt_correct_answers_text(step) when is_map(step) do
+    case step do
+      %{"alt_correct_answers" => list} when is_list(list) ->
+        Enum.map(list, &String.trim/1) |> Enum.reject(&(&1 == ""))
+
+      %{"alt_correct_answers_text" => text} when is_binary(text) ->
+        text |> String.split("\n") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+
+      _ ->
+        []
+    end
+  end
+
   # Normalize checkbox values from "on" to true, and absence to false
   defp normalize_checkbox_values(question_data) do
     question_data
@@ -2770,6 +3132,25 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   end
 
   defp normalize_pattern_in_question_data(question_data), do: question_data
+
+  # Convert grammar_pattern textareas to lists
+  defp normalize_grammar_pattern_question_data(
+         %{"alt_correct_answers_text" => text} = question_data
+       )
+       when is_binary(text) do
+    answers =
+      text
+      |> String.split("\n")
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    question_data
+    |> Map.put("alt_correct_answers", answers)
+    |> Map.delete("alt_correct_answers_text")
+    |> normalize_grammar_pattern_question_data()
+  end
+
+  defp normalize_grammar_pattern_question_data(question_data), do: question_data
 
   # Ensure each element has a type field based on its structure
   defp add_type_to_element(%{"type" => _} = element), do: element

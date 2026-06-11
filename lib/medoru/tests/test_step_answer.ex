@@ -128,11 +128,22 @@ defmodule Medoru.Tests.TestStepAnswer do
         selected_word_id == correct_word_id
       else
         # Fallback to text comparison if indices not found
-        normalize_answer(answer) == normalize_answer(correct_answer)
+        answer_matches_any?(answer, correct_answer, question_data)
       end
     else
       # Standard text comparison for non-localized questions
-      normalize_answer(answer) == normalize_answer(correct_answer)
+      answer_matches_any?(answer, correct_answer, question_data)
+    end
+  end
+
+  defp answer_matches_any?(answer, correct_answer, question_data) do
+    normalized = normalize_answer(answer)
+
+    if normalized == normalize_answer(correct_answer) do
+      true
+    else
+      alt_answers = question_data["alt_correct_answers"] || question_data[:alt_correct_answers] || []
+      Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
     end
   end
 

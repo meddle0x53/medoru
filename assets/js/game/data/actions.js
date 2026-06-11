@@ -71,6 +71,68 @@ export const ALL_ACTIONS = [
     equipmentType: null,
     requiredEquipment: null,
     staminaCost: 1,
+    kanji: '使',
+  },
+  {
+    id: 'quick_stab',
+    name: 'Quick Stab',
+    nameJa: '突き',
+    description: 'A fast thrust that costs little stamina.',
+    type: 'attack',
+    equipmentType: 'weapon',
+    requiredEquipment: 'Long Sword',
+    staminaCost: 2,
+    basePower: 5,
+    scalingStat: 'skill',
+    scalingMultiplier: 0.9,
+    kanji: '突',
+  },
+  {
+    id: 'guard_break',
+    name: 'Guard Break',
+    nameJa: '破防',
+    description: 'An overhead smash that ignores enemy defense.',
+    type: 'attack',
+    equipmentType: 'weapon',
+    requiredEquipment: 'Long Sword',
+    staminaCost: 5,
+    basePower: 12,
+    scalingStat: 'strength',
+    scalingMultiplier: 1.0,
+    kanji: '破',
+  },
+  {
+    id: 'focus',
+    name: 'Focus',
+    nameJa: '集中',
+    description: 'Raise readiness to maximum.',
+    type: 'buff',
+    equipmentType: null,
+    requiredEquipment: null,
+    staminaCost: 2,
+    kanji: '集',
+  },
+  {
+    id: 'taunt',
+    name: 'Taunt',
+    nameJa: '挑発',
+    description: 'Force the enemy to target you and lower their defense.',
+    type: 'debuff',
+    equipmentType: null,
+    requiredEquipment: null,
+    staminaCost: 2,
+    kanji: '挑',
+  },
+  {
+    id: 'dash',
+    name: 'Dash',
+    nameJa: '疾走',
+    description: 'Dodge the next enemy attack.',
+    type: 'defence',
+    equipmentType: null,
+    requiredEquipment: null,
+    staminaCost: 3,
+    kanji: '疾',
   },
 ]
 
@@ -99,16 +161,28 @@ export function getAvailableActions(player) {
 
 /**
  * Split available actions into active/inactive based on player state.
+ * Uses the player's selected action pool if configured via loadout.
  * Returns { active, inactive }
  */
 export function splitActions(player) {
+  // Determine the action pool: loadout.selectedActionIds if available, otherwise all actions
+  const poolIds = player.loadout?.selectedActionIds
+  const universe = poolIds && poolIds.length > 0
+    ? ALL_ACTIONS.filter(a => poolIds.includes(a.id))
+    : ALL_ACTIONS
+
   const available = getAvailableActions(player)
+  // Intersect available gear with selected pool
+  const pool = universe.filter(a => available.some(av => av.id === a.id))
+
   const maxActive = getMaxActiveActions(player.capacity || 3)
 
-  // If player has stored preferences, use them
-  if (player.activeActionIds && player.activeActionIds.length > 0) {
-    const active = available.filter(a => player.activeActionIds.includes(a.id))
-    const inactive = available.filter(a => !player.activeActionIds.includes(a.id))
+  // Use loadout.activeActionIds if present, otherwise fall back to direct property
+  const activeIds = player.loadout?.activeActionIds || player.activeActionIds || []
+
+  if (activeIds.length > 0) {
+    const active = pool.filter(a => activeIds.includes(a.id))
+    const inactive = pool.filter(a => !activeIds.includes(a.id))
     // Ensure we have at least one attack in active
     if (!active.some(a => a.type === 'attack')) {
       const firstAttack = inactive.find(a => a.type === 'attack')
@@ -135,7 +209,7 @@ export function splitActions(player) {
   const active = []
   const inactive = []
 
-  for (const action of available) {
+  for (const action of pool) {
     if (defaultActiveIds.includes(action.id) && active.length < maxActive) {
       active.push(action)
     } else {
@@ -165,6 +239,8 @@ export function getActionTypeColor(type) {
     case 'parry': return { main: 0x8e44ad, hover: 0x9b59b6, label: 'PRY' }
     case 'heal': return { main: 0x27ae60, hover: 0x2ecc71, label: 'HL' }
     case 'item': return { main: 0x16a085, hover: 0x1abc9c, label: 'ITM' }
+    case 'buff': return { main: 0xf39c12, hover: 0xf1c40f, label: 'BUF' }
+    case 'debuff': return { main: 0x8e44ad, hover: 0x9b59b6, label: 'DEB' }
     default: return { main: 0x7f8c8d, hover: 0x95a5a6, label: '???' }
   }
 }

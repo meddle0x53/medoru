@@ -303,6 +303,69 @@ defmodule MedoruWeb.ClassroomLive.GrammarComponents do
     |> Enum.reject(&(&1 == ""))
   end
 
+  @doc """
+  Renders a grammar pattern question with example, words, and text input.
+  """
+  attr :step, :map, required: true
+  attr :answer, :string, default: ""
+  attr :step_id, :any, required: true
+
+  def grammar_pattern_question(assigns) do
+    question_data = assigns.step.question_data || %{}
+
+    assigns =
+      assign(assigns,
+        example: question_data["example"] || "",
+        words: question_data["words"] || ""
+      )
+
+    ~H"""
+    <div class="space-y-4" id={"grammar-pattern-#{@step_id}"}>
+      <div class="text-base-content font-medium">
+        {@step.question}
+      </div>
+
+      <%!-- Example --%>
+      <%= if @example != "" do %>
+        <div class="bg-base-200 rounded-xl p-4">
+          <p class="text-sm text-secondary mb-1">{gettext("Example")}</p>
+          <p class="text-lg font-jp text-base-content">{@example}</p>
+        </div>
+      <% end %>
+
+      <%!-- Words --%>
+      <%= if @words != "" do %>
+        <div>
+          <p class="text-sm text-secondary mb-2">{gettext("Words")}</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <%= for word <- String.split(@words, " / ", trim: true) do %>
+              <span class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-jp text-lg">
+                {word}
+              </span>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Input --%>
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Build a sentence following the example")}
+        </label>
+        <.input
+          type="text"
+          name="answer"
+          id={"answer-#{@step_id}"}
+          value={@answer}
+          placeholder={gettext("Type your answer here...")}
+          class="w-full font-jp"
+          required
+        />
+      </div>
+    </div>
+    """
+  end
+
   defp icon(assigns) do
     apply(CoreComponents, :icon, [assigns])
   end

@@ -5,6 +5,8 @@ import TurnManager from '../systems/TurnManager.js'
 import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
+import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
+import { getCharmById } from '../data/charms.js'
 import { getWindowGameData, sendRunResult } from '../api.js'
 
 export default class BattleScene extends Phaser.Scene {
@@ -14,7 +16,8 @@ export default class BattleScene extends Phaser.Scene {
 
   create() {
     const userData = getWindowGameData()
-    this.player = new Player(userData)
+    const passedPlayer = this.scene.settings.data?.player
+    this.player = passedPlayer || new Player(userData)
     this.enemy = new Enemy('oni')
     this.turnManager = new TurnManager(this.player, this.enemy)
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
@@ -101,6 +104,14 @@ export default class BattleScene extends Phaser.Scene {
       this.updateReactionTimer()
     }
 
+    // Charm overlays bob gently above the hero's head
+    if (this.charmOverlays) {
+      this.charmOverlays.forEach((overlay) => {
+        const bob = Math.sin((time * 0.003) + overlay.bobPhase) * 3
+        overlay.container.setPosition(overlay.baseX, overlay.baseY + bob)
+      })
+    }
+
     // Floating particles
     this.particles = this.particles.filter(p => {
       p.y -= p.speed * (delta / 1000)
@@ -131,7 +142,8 @@ export default class BattleScene extends Phaser.Scene {
 
   createCharacters() {
     // Player sprite — default battle stance (sword + shield)
-    this.playerSprite = this.add.sprite(300, 580, 'player_sword_shield')
+    const startPose = getHeroPose(HERO_DEFAULT_POSE)
+    this.playerSprite = this.add.sprite(300 + startPose.x, 580 + startPose.y, startPose.textureKey)
     this.playerSprite.setScale(0.30)
     this.playerSprite.setOrigin(0.5, 0.99) // Anchor near bottom so feet stay on ground
     // Feet on ground line (set via origin)
@@ -145,6 +157,9 @@ export default class BattleScene extends Phaser.Scene {
     this.drawNameBg(300, 102)
     this.add.text(300, 95, this.player.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
     this.add.text(300, 110, '戦士', { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+
+    // Charm overlays: small luminous kanji floating above the hero's head
+    this.createCharmOverlays()
 
     // Enemy — kasa-obake facing left toward hero
     this.enemySprite = this.add.sprite(690, 570, 'enemy_kasa_obake')
@@ -161,8 +176,83 @@ export default class BattleScene extends Phaser.Scene {
     this.add.text(690, 110, this.enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
   }
 
-  setPlayerSprite(key) {
-    this.playerSprite.setTexture(key)
+  setPlayerPose(poseKey) {
+    const pose = getHeroPose(poseKey)
+    this.playerSprite.setTexture(pose.textureKey)
+    this.playerSprite.setPosition(300 + pose.x, 580 + pose.y)
+    // Keep charm overlays tracking the head position after pose change
+    this.updateCharmOverlayPositions()
+  }
+
+  // ---------- Charm Visuals ----------
+
+  createCharmOverlays() {
+    this.charmOverlays = []
+    const charms = this.player.getEquippedCharms()
+
+    charms.forEach((charm, index) => {
+      const overlay = this.createSingleCharmOverlay(charm, index, charms.length)
+      this.charmOverlays.push(overlay)
+    })
+
+    this.updateCharmOverlayPositions()
+  }
+
+  createSingleCharmOverlay(charm, index, total) {
+    const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
+    const container = this.add.container(0, 0)
+
+    // Glow: multiple blurred backing layers to simulate luminance
+    const glowLayers = 3
+    for (let i = glowLayers; i > 0; i--) {
+      const glow = this.add.text(0, 0, charm.kanji, {
+        fontFamily: FONTS.kanji.fontFamily,
+        fontSize: '20px',
+        color: colorHex,
+        stroke: colorHex,
+        strokeThickness: i * 2,
+      }).setOrigin(0.5)
+      glow.setAlpha(0.35)
+      container.add(glow)
+    }
+
+    // Core kanji
+    const core = this.add.text(0, 0, charm.kanji, {
+      fontFamily: FONTS.kanji.fontFamily,
+      fontSize: '20px',
+      color: '#ffffff',
+      stroke: colorHex,
+      strokeThickness: 2,
+    }).setOrigin(0.5)
+    container.add(core)
+
+    return { container, charm, index, total, baseX: 0, baseY: 0, bobPhase: index * 1.2 }
+  }
+
+  updateCharmOverlayPositions() {
+    if (!this.charmOverlays || !this.playerSprite) return
+
+    const baseX = this.playerSprite.x
+    // Position above the hero's head; tune this if sprites have different head heights
+    const baseY = this.playerSprite.y - (this.playerSprite.height * 0.30 * 0.95)
+
+    const spacing = 26
+    const total = this.charmOverlays.length
+    const startX = baseX - ((total - 1) * spacing) / 2
+
+    this.charmOverlays.forEach((overlay, index) => {
+      overlay.baseX = startX + index * spacing
+      overlay.baseY = baseY
+    })
+  }
+
+  // Refresh overlays when charms change (e.g. UI equip/unequip)
+  refreshCharmOverlays() {
+    if (this.charmOverlays) {
+      this.charmOverlays.forEach(({ container }) => container.destroy())
+    }
+    this.charmOverlays = []
+    this.createCharmOverlays()
   }
 
   setEnemySprite(key) {
@@ -455,9 +545,10 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   showItemMenu() {
-    const items = this.player.inventory || []
+    const activeItemIds = this.player.loadout?.activeItemIds || []
+    const items = (this.player.inventory || []).filter(item => activeItemIds.includes(item.id))
     if (items.length === 0) {
-      this.addCombatLog('No items in inventory!')
+      this.addCombatLog('No active items equipped!')
       return
     }
 
@@ -900,11 +991,11 @@ export default class BattleScene extends Phaser.Scene {
         this.turnManager.winner = 'player'
         if (this.turnManager.onBattleEnd) this.turnManager.onBattleEnd('player')
       }
-      this.setPlayerSprite('player_sword_shield') // placeholder until we have stone throw sprite
+      this.setPlayerPose('idle') // placeholder until we have stone throw sprite
       this.addCombatLog(`${item.name} thrown! -> ${actual} damage!`)
       this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${actual}`, COLORS.danger)
       this.shakeSprite(this.enemySprite)
-      this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
+      this.time.delayedCall(600, () => this.setPlayerPose('idle'))
     }
 
     this.player.clearItemEffectModifier()
@@ -1747,20 +1838,20 @@ export default class BattleScene extends Phaser.Scene {
     switch (result.type) {
       case 'attack': {
         const isHeavy = this.selectedSkill?.id === 'heavy_slash'
-        this.setPlayerSprite(isHeavy ? 'player_heavy_slash' : 'player_sword_slash')
+        this.setPlayerPose(isHeavy ? 'slash_heavy' : 'slash_light_01')
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}`)
         this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
         this.shakeSprite(this.enemySprite)
-        this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
+        this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
       }
       case 'defence': {
-        this.setPlayerSprite('player_shield_block')
+        this.setPlayerPose('block_idle')
         this.addCombatLog(`${quality} ${this.selectedSkill.name} -> +${result.block} block!`)
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
-        this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
+        this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
       }
       case 'heal': {
@@ -1865,12 +1956,12 @@ export default class BattleScene extends Phaser.Scene {
         case 'attack': {
           this.setEnemySprite('enemy_kasa_obake_attack')
           if (result.parried) {
-            this.setPlayerSprite('player_shield_block')
+            this.setPlayerPose('block_idle')
             const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
             this.addCombatLog(`Kasa-obake uses ${action.name}... PARRIED!${reactionText}`)
             this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
             await this.delay(600)
-            this.setPlayerSprite('player_sword_shield')
+            this.setPlayerPose('idle')
             this.setEnemySprite('enemy_kasa_obake')
             await this.runCounterAttack()
           } else if (result.missed) {
@@ -1878,17 +1969,17 @@ export default class BattleScene extends Phaser.Scene {
             this.addCombatLog(`Kasa-obake uses ${action.name}... but missed!${reactionText}`)
             this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
             await this.delay(800)
-            this.setPlayerSprite('player_sword_shield')
+            this.setPlayerPose('idle')
             this.setEnemySprite('enemy_kasa_obake')
           } else {
-            this.setPlayerSprite('player_shield_block')
+            this.setPlayerPose('block_idle')
             const critText = result.isCrit ? ' CRITICAL!' : ''
             const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
             this.addCombatLog(`Kasa-obake uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}`)
             this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
             this.shakeSprite(this.playerSprite)
             await this.delay(800)
-            this.setPlayerSprite('player_sword_shield')
+            this.setPlayerPose('idle')
             this.setEnemySprite('enemy_kasa_obake')
           }
           break
@@ -1980,13 +2071,13 @@ export default class BattleScene extends Phaser.Scene {
       if (this.turnManager.onBattleEnd) this.turnManager.onBattleEnd('player')
     }
 
-    this.setPlayerSprite('player_sword_slash')
+    this.setPlayerPose('slash_light_01')
     const qualityText = multiplier >= 1.0 ? 'Perfect counter!' : multiplier >= 0.75 ? 'Solid counter!' : 'Weak counter!'
     this.addCombatLog(`${qualityText} ${action.name} -> ${actual} damage!`)
     this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${actual}`, COLORS.danger)
     this.shakeSprite(this.enemySprite)
 
-    this.time.delayedCall(600, () => this.setPlayerSprite('player_sword_shield'))
+    this.time.delayedCall(600, () => this.setPlayerPose('idle'))
   }
 
   // ---------- UI Updates ----------
@@ -2098,7 +2189,7 @@ export default class BattleScene extends Phaser.Scene {
     if (isWin) {
       this.setEnemySprite('enemy_kasa_obake_defeated')
     } else {
-      this.setPlayerSprite('player_defeated')
+      this.setPlayerPose('defeated')
     }
 
     const title = isWin ? 'VICTORY!' : 'DEFEAT...'

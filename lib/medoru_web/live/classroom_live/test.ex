@@ -217,6 +217,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp initial_answer_for_step(%{question_type: :word_order}), do: []
   defp initial_answer_for_step(%{question_type: :sentence_validation}), do: ""
   defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
+  defp initial_answer_for_step(%{question_type: :grammar_pattern}), do: ""
   defp initial_answer_for_step(_), do: ""
 
   @impl true
@@ -394,6 +395,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       :word_order ->
         handle_word_order_answer(socket, answer, step, session, attempt)
+
+      :grammar_pattern ->
+        handle_grammar_pattern_answer(socket, answer, step, session, attempt)
 
       _ ->
         # Standard multichoice handling
@@ -691,6 +695,51 @@ defmodule MedoruWeb.ClassroomLive.Test do
           "grammar_step" => true,
           "word_order" => true,
           "word_selection" => socket.assigns.answer || []
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 40
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Grammar pattern: compare against correct_answer and alt_correct_answers
+  defp handle_grammar_pattern_answer(socket, answer, step, session, attempt) do
+    question_data = step.question_data || %{}
+    correct_answer = step.correct_answer
+    alt_answers = question_data["alt_correct_answers"] || []
+
+    normalized = normalize_answer(answer)
+
+    is_correct =
+      normalized == normalize_answer(correct_answer) ||
+        Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
+
+    points_earned = if is_correct, do: 10, else: 0
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 40,
+        "step_index" => step.order_index,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "grammar_step" => true,
+          "grammar_pattern" => true
         }
       })
 
@@ -1100,6 +1149,12 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     />
                   <% :word_order -> %>
                     <MedoruWeb.ClassroomLive.GrammarComponents.word_order_question
+                      step={@current_step}
+                      step_id={@current_step.id}
+                      answer={@answer}
+                    />
+                  <% :grammar_pattern -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.grammar_pattern_question
                       step={@current_step}
                       step_id={@current_step.id}
                       answer={@answer}

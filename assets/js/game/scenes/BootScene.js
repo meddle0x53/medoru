@@ -21,6 +21,9 @@ export default class BootScene extends Phaser.Scene {
     // Battle background
     this.load.image('battle_background', '/images/game/battle_background.png')
 
+    // Loadout portrait
+    this.load.image('hero_portrait', '/images/game/hero_portrait.png')
+
     // Enemy sprites
     this.load.image('enemy_kasa_obake', '/images/game/enemy_kasa_obake.png')
     this.load.image('enemy_kasa_obake_attack', '/images/game/enemy_kasa_obake_attack.png')
@@ -43,6 +46,6 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('BattleScene')
+    this.scene.start('LoadoutScene')
   }
 }

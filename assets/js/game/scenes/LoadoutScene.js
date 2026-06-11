@@ -1,0 +1,1392 @@
+import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
+import Player from '../entities/Player.js'
+import { ITEMS } from '../data/items.js'
+import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions } from '../data/actions.js'
+import { getCharmById, getCharmsByType, CHARM_TYPES, getWeaponCharmSlots, getShieldCharmSlots } from '../data/charms.js'
+import { getWindowGameData } from '../api.js'
+
+const TAB_NAMES = ['items', 'heroCharms', 'weaponCharms', 'abilities', 'stats']
+const TAB_LABELS = ['Items', 'Hero', 'Weapon', 'Abilities', 'Stats']
+
+export default class LoadoutScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'LoadoutScene' })
+  }
+
+  create() {
+    const userData = getWindowGameData()
+    this.player = new Player(userData)
+
+    this.dragItem = null
+    this.dragClone = null
+    this.currentTab = 'items'
+
+    this.createBackground()
+    this.createLeftPanel()
+    this.createRightPanel()
+    this.createTabs()
+    this.showTab('items')
+
+    this.createReadyButton()
+
+    // Global trackpad / wheel scrolling for the item list
+    this._wheelHandler = (e) => {
+      if (this.currentTab === 'items' && this.itemListContainer) {
+        e.preventDefault()
+        this.scrollItemList(e.deltaY * 0.8)
+      }
+    }
+    this.game.canvas.addEventListener('wheel', this._wheelHandler, { passive: false })
+    this.events.on('shutdown', () => {
+      this.game.canvas.removeEventListener('wheel', this._wheelHandler)
+    })
+  }
+
+  // ---------- Background ----------
+
+  createBackground() {
+    this.add.rectangle(
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2,
+      GAME_CONFIG.width,
+      GAME_CONFIG.height,
+      0x0f1525
+    )
+  }
+
+  update() {
+    // Apply momentum scrolling to the item list
+    if (!this.itemListDragging && Math.abs(this.itemListVelocity) > 0.5) {
+      this.setItemListScroll(this.itemListScroll + this.itemListVelocity)
+      this.itemListVelocity *= 0.9
+      if (Math.abs(this.itemListVelocity) < 0.5) {
+        this.itemListVelocity = 0
+      }
+    }
+  }
+
+  // ---------- Left Panel: Hero Portrait ----------
+
+  createLeftPanel() {
+    // Frame background
+    this.leftPanel = this.add.container(0, 0)
+    const frame = this.add.graphics()
+    frame.fillStyle(0x1a1a2e, 0.9)
+    frame.fillRoundedRect(20, 20, 400, 500, 16)
+    frame.lineStyle(2, 0x3498db, 0.3)
+    frame.strokeRoundedRect(20, 20, 400, 500, 16)
+    this.leftPanel.add(frame)
+
+    // Title
+    this.leftPanel.add(
+      this.add.text(220, 44, 'Prepare for Battle', {
+        ...FONTS.title,
+        fontSize: '20px',
+      }).setOrigin(0.5)
+    )
+
+    // Hero portrait
+    this.heroPortrait = this.add.image(220, 330, 'hero_portrait')
+      .setDisplaySize(260, 390)
+      .setOrigin(0.5)
+    this.leftPanel.add(this.heroPortrait)
+
+    // Charm slots
+    this.createCharmSlots()
+
+    // Active action slot indicators
+    this.createActiveActionSlots()
+
+    // Equipped charm glows (reuse BattleScene logic)
+    this.refreshCharmGlows()
+  }
+
+  createCharmSlots() {
+    this.charmSlots = []
+    const cx = 220
+    const cy = 360
+    const slotRadius = 18 // larger for mobile touch
+
+    // Hero charm slots: fixed arc above head (4 slots hardcoded for visibility)
+    const heroSlotPositions = [
+      { x: cx - 62, y: cy - 182 },
+      { x: cx - 21, y: cy - 205 },
+      { x: cx + 21, y: cy - 205 },
+      { x: cx + 62, y: cy - 182 },
+    ]
+    const heroSlotCount = this.player.getHeroCharmSlots()
+    for (let i = 0; i < heroSlotPositions.length; i++) {
+      const pos = heroSlotPositions[i]
+      const unlocked = i < heroSlotCount
+      this.charmSlots.push(this.createSlot(pos.x, pos.y, 'hero', i, unlocked, slotRadius))
+    }
+
+    // Weapon charm slots: left side of body
+    const weaponSlotCount = this.player.getWeaponCharmSlots()
+    for (let i = 0; i < 4; i++) {
+      const x = cx - 150
+      const y = cy - 50 + i * 44
+      const unlocked = i < weaponSlotCount
+      this.charmSlots.push(this.createSlot(x, y, 'weapon', i, unlocked, slotRadius))
+    }
+
+    // Shield charm slots: right side of body
+    const shieldSlotCount = this.player.getShieldCharmSlots()
+    for (let i = 0; i < 4; i++) {
+      const x = cx + 150
+      const y = cy - 50 + i * 44
+      const unlocked = i < shieldSlotCount
+      this.charmSlots.push(this.createSlot(x, y, 'shield', i, unlocked, slotRadius))
+    }
+  }
+
+  createSlot(x, y, type, index, unlocked = true, radius = 18) {
+    const g = this.add.graphics()
+    if (unlocked) {
+      g.lineStyle(2, 0x3498db, 0.5)
+      g.strokeCircle(x, y, radius)
+      g.fillStyle(0x3498db, 0.1)
+      g.fillCircle(x, y, radius)
+    } else {
+      g.lineStyle(2, 0x555555, 0.3)
+      g.strokeCircle(x, y, radius)
+      g.fillStyle(0x000000, 0.2)
+      g.fillCircle(x, y, radius)
+      // Lock icon
+      const lock = this.add.text(x, y, '🔒', { fontSize: '14px' }).setOrigin(0.5)
+      this.leftPanel.add(lock)
+    }
+
+    const slot = {
+      type,
+      index,
+      x,
+      y,
+      radius,
+      unlocked,
+      graphics: g,
+      hitArea: null,
+      charmId: null,
+      glowContainer: null,
+    }
+
+    // Populate from loadout
+    const loadoutKey = type === 'hero' ? 'heroCharmIds' : type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+    const equipped = this.player.loadout[loadoutKey][index]
+    if (equipped) {
+      slot.charmId = equipped
+    }
+
+    // Make unlocked slots clickable/tappable to unequip
+    if (unlocked) {
+      const hitArea = this.add.circle(x, y, radius + 6, 0x000000, 0)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+          if (slot.charmId) {
+            this.unequipCharmFromSlot(slot)
+          }
+        })
+      this.leftPanel.add(hitArea)
+      slot.hitArea = hitArea
+    }
+
+    this.leftPanel.add(g)
+    return slot
+  }
+
+  syncSlotCharmIds() {
+    this.charmSlots.forEach(slot => {
+      const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+      slot.charmId = this.player.loadout[loadoutKey][slot.index] || null
+    })
+  }
+
+  createActiveActionSlots() {
+    this.actionSlots = []
+    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    const startX = 220 - ((maxSlots - 1) * 45) / 2
+    const y = 370
+    const size = 36
+
+    for (let i = 0; i < maxSlots; i++) {
+      const x = startX + i * 40
+      const g = this.add.graphics()
+      g.lineStyle(2, 0xf1c40f, 0.5)
+      g.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 6)
+      g.fillStyle(0xf1c40f, 0.1)
+      g.fillRoundedRect(x - size / 2, y - size / 2, size, size, 6)
+      this.leftPanel.add(g)
+
+      const actionId = this.player.loadout.activeActionIds[i]
+      let label = ''
+      let action = null
+      if (actionId) {
+        action = ALL_ACTIONS.find(a => a.id === actionId)
+        label = action ? action.kanji : '?'
+      }
+
+      const text = this.add.text(x, y, label, {
+        fontFamily: FONTS.kanji.fontFamily,
+        fontSize: '18px',
+        color: '#ffffff',
+      }).setOrigin(0.5)
+      this.leftPanel.add(text)
+
+      // Invisible hit area for click-to-remove and drop-target
+      const hitArea = this.add.rectangle(x, y, size + 8, size + 8, 0x000000, 0)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+          if (actionId) {
+            this.deactivateAbility(actionId)
+          }
+        })
+      this.leftPanel.add(hitArea)
+
+      const slot = {
+        x, y, size,
+        index: i,
+        actionId,
+        action,
+        text,
+        graphics: g,
+        hitArea,
+      }
+      this.actionSlots.push(slot)
+    }
+  }
+
+  deactivateAbility(actionId) {
+    const idx = this.player.loadout.activeActionIds.indexOf(actionId)
+    if (idx < 0) return
+
+    // Don't deactivate if it's the last active attack
+    const actionObj = ALL_ACTIONS.find(a => a.id === actionId)
+    if (actionObj?.type === 'attack') {
+      const remainingAttacks = this.player.loadout.activeActionIds
+        .filter(id => id !== actionId)
+        .map(id => ALL_ACTIONS.find(a => a.id === id))
+        .filter(a => a?.type === 'attack')
+      if (remainingAttacks.length === 0) {
+        this.showToast('At least one attack must be active')
+        return
+      }
+    }
+
+    this.player.loadout.activeActionIds.splice(idx, 1)
+    this.player.saveLoadout()
+    this.refreshActionSlots()
+    this.showTab('abilities')
+  }
+
+  activateAbility(actionId) {
+    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    if (this.player.loadout.activeActionIds.length >= maxSlots) {
+      this.showToast(`Max ${maxSlots} active actions`)
+      return
+    }
+    if (this.player.loadout.activeActionIds.includes(actionId)) {
+      this.showToast('Already active')
+      return
+    }
+    // Ensure ability is in selected pool first
+    if (!this.player.loadout.selectedActionIds.includes(actionId)) {
+      // Add to selected pool, auto-discard oldest non-use_item if needed
+      this.addToSelectedPool(actionId)
+    }
+    this.player.loadout.activeActionIds.push(actionId)
+    this.player.saveLoadout()
+    this.refreshActionSlots()
+    this.showTab('abilities')
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    if (action) this.showToast(`${action.name} activated`)
+  }
+
+  addToSelectedPool(actionId) {
+    // Use Item is always allowed and doesn't count toward the 10
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    if (action?.id === 'use_item') {
+      if (!this.player.loadout.selectedActionIds.includes('use_item')) {
+        this.player.loadout.selectedActionIds.push('use_item')
+      }
+      return
+    }
+
+    // Count combat abilities (exclude use_item)
+    const combatCount = this.player.loadout.selectedActionIds.filter(id => id !== 'use_item').length
+    if (combatCount >= 10) {
+      // Auto-discard first non-use_item ability to make room
+      const discardIdx = this.player.loadout.selectedActionIds.findIndex(id => id !== 'use_item')
+      if (discardIdx >= 0) {
+        const discardedId = this.player.loadout.selectedActionIds[discardIdx]
+        this.player.loadout.selectedActionIds.splice(discardIdx, 1)
+        // Also remove from active if it was active
+        const activeIdx = this.player.loadout.activeActionIds.indexOf(discardedId)
+        if (activeIdx >= 0) {
+          this.player.loadout.activeActionIds.splice(activeIdx, 1)
+        }
+        const discarded = ALL_ACTIONS.find(a => a.id === discardedId)
+        this.showToast(`${discarded ? discarded.name : 'Ability'} discarded for new one`)
+      }
+    }
+    if (!this.player.loadout.selectedActionIds.includes(actionId)) {
+      this.player.loadout.selectedActionIds.push(actionId)
+    }
+  }
+
+  refreshCharmGlows() {
+    // Remove old glows
+    if (this.charmGlows) {
+      this.charmGlows.forEach(g => g.destroy())
+    }
+    this.charmGlows = []
+
+    // Always read fresh from loadout so we never render stale data
+    this.syncSlotCharmIds()
+
+    this.charmSlots.forEach(slot => {
+      if (!slot.charmId || !slot.unlocked) return
+      const charm = getCharmById(slot.charmId)
+      if (!charm) return
+
+      const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
+      const container = this.add.container(slot.x, slot.y)
+
+      // Glow layers
+      for (let i = 3; i > 0; i--) {
+        const glow = this.add.text(0, 0, charm.kanji, {
+          fontFamily: FONTS.kanji.fontFamily,
+          fontSize: '18px',
+          color: colorHex,
+          stroke: colorHex,
+          strokeThickness: i * 2,
+        }).setOrigin(0.5)
+        glow.setAlpha(0.35)
+        container.add(glow)
+      }
+
+      // Core
+      const core = this.add.text(0, 0, charm.kanji, {
+        fontFamily: FONTS.kanji.fontFamily,
+        fontSize: '18px',
+        color: '#ffffff',
+        stroke: colorHex,
+        strokeThickness: 2,
+      }).setOrigin(0.5)
+      container.add(core)
+
+      this.leftPanel.add(container)
+      this.charmGlows.push(container)
+    })
+  }
+
+  unequipCharmFromSlot(slot) {
+    if (!slot.charmId) return
+    const charm = getCharmById(slot.charmId)
+    const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+    this.player.loadout[loadoutKey][slot.index] = null
+    this.player._charmEffects = null
+    this.player.saveLoadout()
+    this.syncSlotCharmIds()
+    this.refreshCharmGlows()
+    this.showTab(this.currentTab)
+    if (charm) this.showToast(`${charm.name} removed`)
+  }
+
+  // ---------- Right Panel: Tabs & Content ----------
+
+  createRightPanel() {
+    this.rightPanel = this.add.container(0, 0)
+    const bg = this.add.graphics()
+    bg.fillStyle(0x1a1a2e, 0.9)
+    bg.fillRoundedRect(440, 20, 500, 500, 16)
+    bg.lineStyle(2, 0x3498db, 0.3)
+    bg.strokeRoundedRect(440, 20, 500, 500, 16)
+    this.rightPanel.add(bg)
+  }
+
+  createTabs() {
+    this.tabButtons = []
+    const tabWidth = 98
+    const startX = 460 + tabWidth / 2
+    const y = 48
+
+    TAB_NAMES.forEach((key, i) => {
+      const x = startX + i * tabWidth
+      const text = this.add.text(x, y, TAB_LABELS[i], {
+        fontFamily: FONTS.default.fontFamily,
+        fontSize: '14px',
+        color: key === this.currentTab ? '#3498db' : '#7f8c8d',
+      }).setOrigin(0.5)
+
+      // Larger invisible hit area for mobile
+      const hitArea = this.add.rectangle(x, y, tabWidth - 4, 36, 0x000000, 0)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.showTab(key))
+      this.rightPanel.add(hitArea)
+
+      this.tabButtons.push({ key, text, hitArea })
+      this.rightPanel.add(text)
+    })
+
+    // Underline indicator
+    this.tabIndicator = this.add.graphics()
+    this.rightPanel.add(this.tabIndicator)
+    this.updateTabIndicator()
+  }
+
+  updateTabIndicator() {
+    this.tabIndicator.clear()
+    const activeBtn = this.tabButtons.find(b => b.key === this.currentTab)
+    if (!activeBtn) return
+    const x = activeBtn.text.x
+    const y = activeBtn.text.y + 16
+    this.tabIndicator.fillStyle(0x3498db, 1)
+    this.tabIndicator.fillRect(x - 42, y, 84, 3)
+  }
+
+  showTab(tabName) {
+    this.currentTab = tabName
+
+    // Update tab button colors
+    this.tabButtons.forEach(({ key, text }) => {
+      text.setColor(key === tabName ? '#3498db' : '#7f8c8d')
+    })
+    this.updateTabIndicator()
+
+    // Clear previous content
+    if (this.tabContent) {
+      this.tabContent.destroy()
+    }
+    this.tabContent = this.add.container(0, 0)
+    this.rightPanel.add(this.tabContent)
+
+    switch (tabName) {
+      case 'items': this.createItemsTab(); break
+      case 'heroCharms': this.createCharmsTab(CHARM_TYPES.HERO); break
+      case 'weaponCharms': this.createCharmsTab(CHARM_TYPES.WEAPON); break
+      case 'abilities': this.createAbilitiesTab(); break
+      case 'stats': this.createStatsTab(); break
+    }
+  }
+
+  // ---------- Items Tab ----------
+
+  createItemsTab() {
+    const activeItemIds = this.player.loadout.activeItemIds
+    const startY = 80
+    const itemHeight = 58
+    const listX = 460
+    const listY = startY
+    const listW = 460
+    const visibleRows = 6
+    const listH = visibleRows * itemHeight // 348px, fits whole rows
+
+    // Create scrollable container
+    this.itemListContainer = this.add.container(listX, listY)
+    this.tabContent.add(this.itemListContainer)
+
+    // Add rows to the scrollable container
+    this.itemListRows = []
+    ITEMS.forEach((item, i) => {
+      const y = i * itemHeight
+      const isActive = activeItemIds.includes(item.id)
+      const row = this.createItemRow(0, y, item, isActive)
+      this.itemListContainer.add(row.container)
+      this.itemListRows.push(row)
+    })
+
+    // Scroll state
+    this.itemListMaxScroll = Math.max(0, ITEMS.length * itemHeight - listH)
+    this.itemListScroll = 0
+    this.itemListVisibleHeight = listH
+    this.itemListItemHeight = itemHeight
+
+    // Geometry mask to clip rows to the visible list area
+    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false })
+    maskGraphics.fillStyle(0xffffff)
+    maskGraphics.fillRect(listX, listY, listW, listH)
+    const mask = maskGraphics.createGeometryMask()
+    this.itemListContainer.setMask(mask)
+
+    // Invisible interactive area for wheel + drag scrolling (slightly wider for mobile)
+    const scrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW + 16, listH, 0x000000, 0.01)
+      .setInteractive({ useHandCursor: false })
+    this.tabContent.add(scrollHitArea)
+
+    // Touch / drag scrolling with momentum
+    this.itemListVelocity = 0
+    this.itemListDragging = false
+    let listDragStartY = 0
+    let listDragStartScroll = 0
+    let listLastY = 0
+    let listLastTime = 0
+
+    const startListDrag = (pointer) => {
+      this.itemListDragging = true
+      this.itemListVelocity = 0
+      listDragStartY = pointer.y
+      listLastY = pointer.y
+      listDragStartScroll = this.itemListScroll
+      listLastTime = performance.now()
+    }
+
+    const moveListDrag = (pointer) => {
+      if (!this.itemListDragging) return
+      const dy = pointer.y - listDragStartY
+      this.setItemListScroll(listDragStartScroll - dy)
+
+      const now = performance.now()
+      const dt = now - listLastTime
+      if (dt > 0) {
+        this.itemListVelocity = -(pointer.y - listLastY) / dt * 16
+      }
+      listLastY = pointer.y
+      listLastTime = now
+    }
+
+    const endListDrag = () => {
+      this.itemListDragging = false
+    }
+
+    scrollHitArea.on('pointerdown', startListDrag)
+    scrollHitArea.on('pointermove', moveListDrag)
+    scrollHitArea.on('pointerup', endListDrag)
+    scrollHitArea.on('pointerupoutside', endListDrag)
+
+    // Scrollbar track (wider for mobile)
+    const trackX = listX + listW + 12
+    const trackH = listH
+    const trackW = 12
+    const track = this.add.rectangle(trackX, listY + listH / 2, trackW, trackH, 0x2c3e50, 0.5)
+    this.tabContent.add(track)
+
+    // Scrollbar thumb — fixed small size so it clearly travels top-to-bottom
+    const thumbH = this.itemListMaxScroll > 0 ? 50 : trackH
+    this.itemListThumbH = thumbH
+    this.itemListThumb = this.add.rectangle(trackX, listY + thumbH / 2, trackW, thumbH, 0x3498db, 0.9)
+    this.tabContent.add(this.itemListThumb)
+
+    // Invisible wider thumb hit area for easier touch grabs
+    const thumbHitH = Math.max(thumbH + 16, 56)
+    const thumbHit = this.add.rectangle(trackX, listY + thumbH / 2, 28, thumbHitH, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+    this.tabContent.add(thumbHit)
+
+    // Draggable scrollbar thumb
+    let thumbDragStartY = 0
+    let thumbDragStartScroll = 0
+    const startThumbDrag = (pointer) => {
+      this.itemListDragging = true
+      this.itemListVelocity = 0
+      thumbDragStartY = pointer.y
+      thumbDragStartScroll = this.itemListScroll
+    }
+    const moveThumbDrag = (pointer) => {
+      if (!this.itemListDragging) return
+      const dy = pointer.y - thumbDragStartY
+      const trackRatio = this.itemListMaxScroll / (trackH - thumbH)
+      this.setItemListScroll(thumbDragStartScroll + dy * trackRatio)
+    }
+    const endThumbDrag = () => {
+      this.itemListDragging = false
+    }
+
+    thumbHit.on('pointerdown', startThumbDrag)
+    thumbHit.on('pointermove', moveThumbDrag)
+    thumbHit.on('pointerup', endThumbDrag)
+    thumbHit.on('pointerupoutside', endThumbDrag)
+
+    this.updateItemListScrollThumb(listY, listH, thumbH)
+    this.setItemListScroll(0)
+
+    // Active count indicator
+    const countText = this.add.text(690, 470, `${activeItemIds.length}/5 Active`, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: activeItemIds.length > 5 ? '#e74c3c' : '#7f8c8d',
+    }).setOrigin(0.5)
+    this.tabContent.add(countText)
+  }
+
+  scrollItemList(delta) {
+    this.setItemListScroll(this.itemListScroll + delta)
+  }
+
+  setItemListScroll(value) {
+    if (!this.itemListContainer) return
+    this.itemListScroll = Math.max(0, Math.min(this.itemListMaxScroll, value))
+    this.itemListContainer.setY(80 - this.itemListScroll)
+
+    // Visibility culling: hide rows outside the visible area
+    const visibleH = this.itemListVisibleHeight
+    const rowH = this.itemListItemHeight
+    this.itemListRows.forEach((row, i) => {
+      const relY = i * rowH - this.itemListScroll
+      const visible = relY + rowH > 0 && relY < visibleH
+      row.container.setVisible(visible)
+    })
+
+    this.updateItemListScrollThumb()
+  }
+
+  updateItemListScrollThumb(listY = 80, listH = 348) {
+    if (!this.itemListThumb || this.itemListMaxScroll <= 0) return
+    const thumbH = this.itemListThumbH || 40
+    const trackH = listH
+    const pct = this.itemListScroll / this.itemListMaxScroll
+    const thumbY = listY + thumbH / 2 + pct * (trackH - thumbH)
+    this.itemListThumb.setY(thumbY)
+  }
+
+  createItemRow(x, y, item, isActive) {
+    const container = this.add.container(x, y)
+    const rowH = 54
+
+    // Background
+    const bg = this.add.graphics()
+    bg.fillStyle(isActive ? 0x2980b9 : 0x16213e, 0.8)
+    bg.fillRoundedRect(0, 0, 460, rowH, 8)
+    bg.lineStyle(1.5, isActive ? 0x3498db : 0x2c3e50, 0.5)
+    bg.strokeRoundedRect(0, 0, 460, rowH, 8)
+    container.add(bg)
+
+    // Icon
+    const icon = this.add.text(28, rowH / 2, item.icon, { fontSize: '22px' }).setOrigin(0.5)
+    container.add(icon)
+
+    // Name
+    const name = this.add.text(56, 14, item.name, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#ecf0f1',
+    })
+    container.add(name)
+
+    // Description
+    const desc = this.add.text(56, 34, item.description, {
+      ...FONTS.default,
+      fontSize: '11px',
+      color: '#7f8c8d',
+    })
+    container.add(desc)
+
+    // Stamina cost
+    const cost = this.add.text(360, rowH / 2, `${item.staminaCost} STA`, {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#f1c40f',
+    }).setOrigin(0.5)
+    container.add(cost)
+
+    // Toggle button
+    const toggleColor = isActive ? 0xe74c3c : 0x27ae60
+    const toggleLabel = isActive ? 'Remove' : 'Add'
+    const toggleBtn = this.createMiniButton(420, rowH / 2, toggleLabel, toggleColor, () => {
+      this.toggleActiveItem(item.id)
+    })
+    container.add(toggleBtn.container)
+
+    // Make whole row clickable for toggling
+    const hitArea = this.add.rectangle(230, rowH / 2, 460, rowH, 0x000000, 0).setInteractive({ useHandCursor: true })
+    hitArea.on('pointerdown', () => this.toggleActiveItem(item.id))
+    container.add(hitArea)
+
+    return { container, bg, hitArea }
+  }
+
+  toggleActiveItem(itemId) {
+    const ids = this.player.loadout.activeItemIds
+    const idx = ids.indexOf(itemId)
+    if (idx >= 0) {
+      ids.splice(idx, 1)
+    } else {
+      if (ids.length >= 5) {
+        this.showToast('Max 5 active items')
+        return
+      }
+      ids.push(itemId)
+    }
+    this.player.saveLoadout()
+    this.showTab('items')
+  }
+
+  // ---------- Charms Tabs ----------
+
+  createCharmsTab(charmType) {
+    const charms = getCharmsByType(charmType)
+    const cols = 2
+    const cellW = 230
+    const cellH = 90
+    const startX = 470
+    const startY = 80
+
+    charms.forEach((charm, i) => {
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const x = startX + col * cellW
+      const y = startY + row * cellH
+      const card = this.createCharmCard(x, y, charm, charmType)
+      this.tabContent.add(card.container)
+    })
+
+    // Slot info text
+    const slotInfo = charmType === CHARM_TYPES.HERO
+      ? `Slots: ${this.player.loadout.heroCharmIds.filter(Boolean).length}/${this.player.getHeroCharmSlots()}`
+      : charmType === CHARM_TYPES.WEAPON
+        ? `Slots: ${this.player.loadout.weaponCharmIds.filter(Boolean).length}/${this.player.getWeaponCharmSlots()}`
+        : `Slots: ${this.player.loadout.shieldCharmIds.filter(Boolean).length}/${this.player.getShieldCharmSlots()}`
+
+    const infoText = this.add.text(690, 470, slotInfo, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#7f8c8d',
+    }).setOrigin(0.5)
+    this.tabContent.add(infoText)
+  }
+
+  createCharmCard(x, y, charm, targetType) {
+    const container = this.add.container(x, y)
+    const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
+    const isEquipped = this.player.getEquippedCharms().some(c => c.id === charm.id)
+    const cardW = 220
+    const cardH = 80
+
+    // Background
+    const bg = this.add.graphics()
+    bg.fillStyle(isEquipped ? 0x2c3e50 : 0x16213e, 0.9)
+    bg.fillRoundedRect(0, 0, cardW, cardH, 8)
+    bg.lineStyle(1.5, charm.color, isEquipped ? 0.8 : 0.3)
+    bg.strokeRoundedRect(0, 0, cardW, cardH, 8)
+    container.add(bg)
+
+    // Kanji
+    const kanji = this.add.text(28, 40, charm.kanji, {
+      fontFamily: FONTS.kanji.fontFamily,
+      fontSize: '32px',
+      color: colorHex,
+      stroke: colorHex,
+      strokeThickness: 3,
+    }).setOrigin(0.5)
+    container.add(kanji)
+
+    // Name
+    const name = this.add.text(80, 22, charm.name, {
+      ...FONTS.default,
+      fontSize: '13px',
+      color: '#ecf0f1',
+    })
+    container.add(name)
+
+    // Effect
+    const effectText = charm.effect.stat + ' +' + charm.effect.value
+    const effect = this.add.text(80, 44, effectText, {
+      ...FONTS.default,
+      fontSize: '11px',
+      color: '#7f8c8d',
+    })
+    container.add(effect)
+
+    // Equipped indicator
+    if (isEquipped) {
+      const check = this.add.text(200, 62, '✓', {
+        fontSize: '16px',
+        color: '#2ecc71',
+      }).setOrigin(0.5)
+      container.add(check)
+    }
+
+    // Draggable / tappable hit area
+    const hitArea = this.add.rectangle(cardW / 2, cardH / 2, cardW, cardH, 0x000000, 0).setInteractive({ useHandCursor: true, draggable: true })
+    container.add(hitArea)
+
+    hitArea.on('dragstart', (pointer) => {
+      this.startDrag(charm, targetType, container, pointer.x, pointer.y)
+    })
+    hitArea.on('drag', (pointer) => {
+      if (this.dragClone) {
+        this.dragClone.setPosition(pointer.x, pointer.y)
+      }
+    })
+    hitArea.on('dragend', (pointer) => {
+      this.endDrag(charm, targetType, pointer)
+    })
+
+    // Tap-to-equip fallback (mobile-friendly)
+    hitArea.on('pointerup', (pointer) => {
+      // Only treat as tap if there was very little movement
+      const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+      if (moveDist < 8) {
+        this.tapEquipCharm(charm, targetType)
+      }
+    })
+
+    return { container, bg, hitArea }
+  }
+
+  startDrag(charm, targetType, sourceContainer, x, y) {
+    const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
+    this.dragClone = this.add.text(0, 0, charm.kanji, {
+      fontFamily: FONTS.kanji.fontFamily,
+      fontSize: '28px',
+      color: '#ffffff',
+      stroke: colorHex,
+      strokeThickness: 4,
+    }).setOrigin(0.5)
+    this.dragClone.setPosition(x, y)
+    this.dragClone.setDepth(1000)
+    this.dragItem = { charm, targetType, sourceContainer }
+  }
+
+  endDrag(charm, targetType, pointer) {
+    if (this.dragClone) {
+      this.syncSlotCharmIds()
+      const droppedSlot = this.findDropSlot(pointer.x, pointer.y, targetType)
+
+      if (droppedSlot) {
+        this.equipCharmToSlot(charm, targetType, droppedSlot)
+      }
+
+      this.dragClone.destroy()
+      this.dragClone = null
+      this.dragItem = null
+      this.syncSlotCharmIds()
+      this.refreshCharmGlows()
+      this.showTab(this.currentTab)
+    }
+  }
+
+  tapEquipCharm(charm, targetType) {
+    // Ensure slot state is fresh before looking for empty slots
+    this.syncSlotCharmIds()
+
+    // Find first empty unlocked slot of the correct type
+    const emptySlot = this.charmSlots.find(slot =>
+      slot.type === targetType && slot.unlocked && !slot.charmId
+    )
+    if (emptySlot) {
+      this.equipCharmToSlot(charm, targetType, emptySlot)
+      this.syncSlotCharmIds()
+      this.refreshCharmGlows()
+      this.showTab(this.currentTab)
+      return
+    }
+
+    // If no empty slot, find first slot of this type and replace
+    const firstSlot = this.charmSlots.find(slot =>
+      slot.type === targetType && slot.unlocked
+    )
+    if (firstSlot) {
+      this.equipCharmToSlot(charm, targetType, firstSlot)
+      this.syncSlotCharmIds()
+      this.refreshCharmGlows()
+      this.showTab(this.currentTab)
+      return
+    }
+
+    this.showToast('No free charm slots')
+  }
+
+  findDropSlot(x, y, targetType) {
+    return this.charmSlots.find(slot => {
+      if (!slot.unlocked) return false
+      if (slot.type !== targetType) return false
+      const dx = slot.x - x
+      const dy = slot.y - y
+      return Math.sqrt(dx * dx + dy * dy) < (slot.radius + 10)
+    })
+  }
+
+  equipCharmToSlot(charm, targetType, slot) {
+    this.unequipCharmIfEquipped(charm.id)
+    const loadoutKey = targetType === 'hero' ? 'heroCharmIds' : targetType === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+    const arr = this.player.loadout[loadoutKey]
+    const oldIdx = arr.indexOf(charm.id)
+    if (oldIdx >= 0) arr.splice(oldIdx, 1)
+    arr[slot.index] = charm.id
+    this.player._charmEffects = null
+    this.player.saveLoadout()
+    this.showToast(`${charm.name} equipped`)
+  }
+
+  unequipCharmIfEquipped(charmId) {
+    for (const type of ['hero', 'weapon', 'shield']) {
+      const key = type === 'hero' ? 'heroCharmIds' : type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+      const arr = this.player.loadout[key]
+      const idx = arr.indexOf(charmId)
+      if (idx >= 0) {
+        arr[idx] = null
+        this.player.saveLoadout()
+        this.syncSlotCharmIds()
+        return
+      }
+    }
+  }
+
+  // ---------- Abilities Tab ----------
+
+  createAbilitiesTab() {
+    // Ensure Use Item is always in selected pool
+    if (!this.player.loadout.selectedActionIds.includes('use_item')) {
+      this.player.loadout.selectedActionIds.push('use_item')
+      this.player.saveLoadout()
+    }
+
+    const selectedIds = this.player.loadout.selectedActionIds
+    const activeIds = this.player.loadout.activeActionIds
+    const maxActive = getMaxActiveActions(this.player.capacity || 3)
+    const combatSelected = selectedIds.filter(id => id !== 'use_item')
+
+    // Label: Selected for Battle
+    this.tabContent.add(
+      this.add.text(460, 72, 'Selected for Battle', {
+        ...FONTS.default,
+        fontSize: '14px',
+        color: '#3498db',
+      })
+    )
+
+    // Selected action slots (up to 10 combat + Use Item)
+    const selectedStartY = 92
+    const selectedCols = 4
+    const selectedCellW = 118
+    const selectedCellH = 58
+
+    // Show Use Item first, then combat abilities
+    const useItemAction = ALL_ACTIONS.find(a => a.id === 'use_item')
+    const combatActions = combatSelected
+      .map(id => ALL_ACTIONS.find(a => a.id === id))
+      .filter(Boolean)
+    const selectedActions = useItemAction ? [useItemAction, ...combatActions] : combatActions
+
+    selectedActions.forEach((action, i) => {
+      const col = i % selectedCols
+      const row = Math.floor(i / selectedCols)
+      const x = 470 + col * selectedCellW
+      const y = selectedStartY + row * selectedCellH
+      const isActive = activeIds.includes(action.id)
+      const card = this.createAbilityCard(x, y, action, isActive, maxActive, true)
+      this.tabContent.add(card.container)
+    })
+
+    // Empty slots
+    for (let i = selectedActions.length; i < 11; i++) {
+      const col = i % selectedCols
+      const row = Math.floor(i / selectedCols)
+      const x = 470 + col * selectedCellW
+      const y = selectedStartY + row * selectedCellH
+      const empty = this.createEmptyAbilitySlot(x, y)
+      this.tabContent.add(empty)
+    }
+
+    // Available actions (exclude Use Item, it's always in pool)
+    const availableStartY = 275
+    const available = ALL_ACTIONS.filter(a => !selectedIds.includes(a.id) && a.id !== 'use_item')
+    const availCols = 4
+    const availCellW = 118
+    const availCellH = 58
+
+    available.forEach((action, i) => {
+      const col = i % availCols
+      const row = Math.floor(i / availCols)
+      const x = 470 + col * availCellW
+      const y = availableStartY + row * availCellH
+      const card = this.createAbilityCard(x, y, action, false, maxActive, false)
+      this.tabContent.add(card.container)
+    })
+
+    // Info
+    const combatCount = combatSelected.length
+    const color = combatCount > 10 ? '#e74c3c' : '#7f8c8d'
+    this.tabContent.add(
+      this.add.text(690, 470, `${combatCount}/10 Combat · ${activeIds.length}/${maxActive} Active`, {
+        ...FONTS.default,
+        fontSize: '13px',
+        color,
+      }).setOrigin(0.5)
+    )
+  }
+
+  createAbilityCard(x, y, action, isActive, maxActive, inSelectedPool) {
+    const container = this.add.container(x, y)
+    const colors = getActionTypeColor(action.type)
+    const cardW = 110
+    const cardH = 52
+
+    const bg = this.add.graphics()
+    bg.fillStyle(isActive ? colors.main : 0x16213e, 0.9)
+    bg.fillRoundedRect(0, 0, cardW, cardH, 6)
+    bg.lineStyle(1.5, colors.main, isActive ? 0.9 : 0.4)
+    bg.strokeRoundedRect(0, 0, cardW, cardH, 6)
+    container.add(bg)
+
+    // Kanji
+    if (action.kanji) {
+      container.add(
+        this.add.text(18, 26, action.kanji, {
+          fontFamily: FONTS.kanji.fontFamily,
+          fontSize: '20px',
+          color: '#ffffff',
+        }).setOrigin(0.5)
+      )
+    }
+
+    // Name
+    container.add(
+      this.add.text(58, 18, action.name, {
+        ...FONTS.default,
+        fontSize: '11px',
+        color: '#ecf0f1',
+      }).setOrigin(0.5)
+    )
+
+    // STA cost
+    container.add(
+      this.add.text(58, 36, `${action.staminaCost}`, {
+        ...FONTS.default,
+        fontSize: '10px',
+        color: '#f1c40f',
+      }).setOrigin(0.5)
+    )
+
+    // Star icon for active
+    if (isActive) {
+      container.add(
+        this.add.text(98, 10, '★', {
+          fontSize: '12px',
+          color: '#f1c40f',
+        }).setOrigin(0.5)
+      )
+    }
+
+    // Remove button (×) for selected pool items (except Use Item)
+    if (inSelectedPool && action.id !== 'use_item') {
+      const removeBtn = this.add.text(98, 40, '×', {
+        fontSize: '14px',
+        color: '#e74c3c',
+      }).setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', (pointer) => {
+          pointer.event.stopPropagation()
+          // Remove from selected pool
+          const selIdx = this.player.loadout.selectedActionIds.indexOf(action.id)
+          if (selIdx >= 0) this.player.loadout.selectedActionIds.splice(selIdx, 1)
+          // Also remove from active if present
+          const actIdx = this.player.loadout.activeActionIds.indexOf(action.id)
+          if (actIdx >= 0) this.player.loadout.activeActionIds.splice(actIdx, 1)
+          // Ensure at least one attack remains active
+          const remainingActive = this.player.loadout.activeActionIds
+            .map(id => ALL_ACTIONS.find(a => a.id === id))
+            .filter(Boolean)
+          if (!remainingActive.some(a => a.type === 'attack')) {
+            const firstAttack = this.player.loadout.selectedActionIds
+              .map(id => ALL_ACTIONS.find(a => a.id === id))
+              .find(a => a?.type === 'attack')
+            if (firstAttack) {
+              this.player.loadout.activeActionIds.push(firstAttack.id)
+            }
+          }
+          this.player.saveLoadout()
+          this.showTab('abilities')
+          this.refreshActionSlots()
+        })
+      container.add(removeBtn)
+    }
+
+    // Drag to active slot
+    const hitW = inSelectedPool ? 90 : cardW
+    const hitArea = this.add.rectangle(cardW / 2, cardH / 2, hitW, cardH, 0x000000, 0)
+      .setInteractive({ useHandCursor: true, draggable: true })
+
+    hitArea.on('dragstart', (pointer) => {
+      this.startAbilityDrag(action, container, pointer.x, pointer.y)
+    })
+    hitArea.on('drag', (pointer) => {
+      if (this.abilityDragClone) {
+        this.abilityDragClone.setPosition(pointer.x, pointer.y)
+      }
+    })
+    hitArea.on('dragend', (pointer) => {
+      this.endAbilityDrag(action, pointer)
+    })
+
+    // Click vs drag: use pointerup with distance check so showTab() doesn't destroy
+    // the hitArea before dragend can fire.
+    hitArea.on('pointerup', (pointer) => {
+      const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+
+      // Real drag: dragend will handle the drop and cleanup
+      if (moveDist >= 8) return
+
+      // It was a click — clean up any stray clone that dragstart may have created,
+      // then run the click logic.
+      if (this.abilityDragClone) {
+        this.abilityDragClone.destroy()
+        this.abilityDragClone = null
+        this.abilityDragAction = null
+      }
+
+      if (inSelectedPool) {
+        const idx = this.player.loadout.activeActionIds.indexOf(action.id)
+        if (idx >= 0) {
+          this.deactivateAbility(action.id)
+        } else {
+          this.activateAbility(action.id)
+        }
+      } else {
+        this.addToSelectedPool(action.id)
+        const maxActive = getMaxActiveActions(this.player.capacity || 3)
+        if (this.player.loadout.activeActionIds.length < maxActive) {
+          this.player.loadout.activeActionIds.push(action.id)
+        }
+        this.player.saveLoadout()
+        this.showTab('abilities')
+        this.refreshActionSlots()
+      }
+    })
+
+    container.add(hitArea)
+
+    return { container }
+  }
+
+  createEmptyAbilitySlot(x, y) {
+    const g = this.add.graphics()
+    g.lineStyle(1.5, 0x2c3e50, 0.3)
+    g.strokeRoundedRect(x, y, 110, 52, 6)
+    g.fillStyle(0x000000, 0.1)
+    g.fillRoundedRect(x, y, 110, 52, 6)
+    return g
+  }
+
+  refreshActionSlots() {
+    // Rebuild the left panel action slot indicators
+    this.actionSlots.forEach(slot => {
+      slot.text.destroy()
+      slot.graphics.destroy()
+    })
+    this.createActiveActionSlots()
+  }
+
+  // ---------- Stats Tab ----------
+
+  createStatsTab() {
+    const stats = [
+      { key: 'vitality', label: 'Vitality', derived: `HP: ${this.player.maxHp}` },
+      { key: 'stamina', label: 'Stamina', derived: `Max STA: ${this.player.maxStamina}` },
+      { key: 'skill', label: 'Skill', derived: `Crit: ${Math.round(this.player.getCritChance() * 100)}%` },
+      { key: 'strength', label: 'Strength', derived: `Dmg: ${this.player.calculateWeaponDamage()}` },
+      { key: 'mana', label: 'Mana', derived: '—' },
+      { key: 'luck', label: 'Luck', derived: `Crit+: ${Math.round((this.player.luck || 0) * 0.05 * 100)}%` },
+    ]
+
+    const startY = 80
+    const rowH = 58
+
+    stats.forEach((stat, i) => {
+      const y = startY + i * rowH
+      const baseVal = this.player.baseStats[stat.key]
+      const alloc = this.player.loadout.statAllocations[stat.key] || 0
+      const total = baseVal + alloc
+
+      const row = this.add.container(460, y)
+
+      // Background
+      const bg = this.add.graphics()
+      bg.fillStyle(0x16213e, 0.8)
+      bg.fillRoundedRect(0, 0, 460, 52, 8)
+      row.add(bg)
+
+      // Label
+      row.add(
+        this.add.text(16, 14, stat.label, {
+          ...FONTS.default,
+          fontSize: '14px',
+          color: '#ecf0f1',
+        })
+      )
+
+      // Base + allocation display
+      row.add(
+        this.add.text(16, 32, `Base ${baseVal} + Alloc ${alloc} = ${total}`, {
+          ...FONTS.default,
+          fontSize: '11px',
+          color: '#7f8c8d',
+        })
+      )
+
+      // Derived stat
+      row.add(
+        this.add.text(200, 26, stat.derived, {
+          ...FONTS.default,
+          fontSize: '12px',
+          color: '#3498db',
+        }).setOrigin(0, 0.5)
+      )
+
+      // + button
+      const plusBtn = this.createMiniButton(420, 26, '+', 0x27ae60, () => {
+        if (this.player.loadout.statPoints <= 0) {
+          this.showToast('No stat points available')
+          return
+        }
+        this.player.loadout.statPoints--
+        this.player.loadout.statAllocations[stat.key]++
+        // Apply immediately to player stat
+        this.player.baseStats[stat.key]++
+        this.player[stat.key] = this.player.baseStats[stat.key]
+        // Recalculate derived stats
+        if (stat.key === 'vitality') {
+          this.player.maxHp = 80 + this.player.baseStats.vitality * 5
+          this.player.hp = this.player.maxHp
+        }
+        if (stat.key === 'stamina') {
+          this.player.maxStamina = 8 + Math.floor(this.player.baseStats.stamina / 3)
+          this.player.stamina = this.player.maxStamina
+        }
+        this.player.saveLoadout()
+        this.showTab('stats')
+      })
+      row.add(plusBtn.container)
+
+      this.tabContent.add(row)
+    })
+
+    // Stat points remaining
+    this.tabContent.add(
+      this.add.text(690, 470, `Stat Points: ${this.player.loadout.statPoints}`, {
+        ...FONTS.default,
+        fontSize: '16px',
+        color: this.player.loadout.statPoints > 0 ? '#f1c40f' : '#7f8c8d',
+      }).setOrigin(0.5)
+    )
+  }
+
+  // ---------- Ability Drag & Drop ----------
+
+  startAbilityDrag(action, sourceContainer, x, y) {
+    const colors = getActionTypeColor(action.type)
+    const colorHex = '#' + (colors.main || 0xffffff).toString(16).padStart(6, '0')
+    this.abilityDragClone = this.add.text(0, 0, action.kanji || '◆', {
+      fontFamily: FONTS.kanji.fontFamily,
+      fontSize: '28px',
+      color: '#ffffff',
+      stroke: colorHex,
+      strokeThickness: 4,
+    }).setOrigin(0.5)
+    this.abilityDragClone.setPosition(x, y)
+    this.abilityDragClone.setDepth(1000)
+    this.abilityDragAction = action
+  }
+
+  endAbilityDrag(action, pointer) {
+    if (this.abilityDragClone) {
+      // Check if dropped on an active action slot
+      const droppedSlot = this.actionSlots.find(slot => {
+        const dx = slot.x - pointer.x
+        const dy = slot.y - pointer.y
+        return Math.sqrt(dx * dx + dy * dy) < (slot.size / 2 + 12)
+      })
+
+      if (droppedSlot) {
+        // If slot already has an ability, deactivate it first
+        if (droppedSlot.actionId) {
+          this.deactivateAbility(droppedSlot.actionId)
+        }
+        this.activateAbility(action.id)
+      }
+
+      this.abilityDragClone.destroy()
+      this.abilityDragClone = null
+      this.abilityDragAction = null
+    }
+  }
+
+  // ---------- UI Helpers ----------
+
+  createMiniButton(x, y, label, color, onClick) {
+    const container = this.add.container(x, y)
+    const w = label === '+' ? 40 : 68
+    const h = 32
+
+    const bg = this.add.graphics()
+    bg.fillStyle(color, 0.9)
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 4)
+    container.add(bg)
+
+    const text = this.add.text(0, 0, label, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#ffffff',
+    }).setOrigin(0.5)
+    container.add(text)
+
+    const hitArea = this.add.rectangle(0, 0, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
+    hitArea.on('pointerdown', onClick)
+    container.add(hitArea)
+
+    return { container, bg, text, hitArea }
+  }
+
+  createReadyButton() {
+    const btn = this.add.container(220, 460)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(0x27ae60, 0.95)
+    bg.fillRoundedRect(-80, -20, 160, 40, 8)
+    bg.lineStyle(2, 0x2ecc71, 0.8)
+    bg.strokeRoundedRect(-80, -20, 160, 40, 8)
+    btn.add(bg)
+
+    const text = this.add.text(0, 0, 'Ready for Battle', {
+      ...FONTS.default,
+      fontSize: '16px',
+      fontStyle: 'bold',
+      color: '#ffffff',
+    }).setOrigin(0.5)
+    btn.add(text)
+
+    const hitArea = this.add.rectangle(0, 0, 160, 40, 0x000000, 0).setInteractive({ useHandCursor: true })
+    hitArea.on('pointerdown', () => this.startBattle())
+    hitArea.on('pointerover', () => {
+      bg.clear()
+      bg.fillStyle(0x2ecc71, 0.95)
+      bg.fillRoundedRect(-80, -20, 160, 40, 8)
+      bg.lineStyle(2, 0x27ae60, 0.8)
+      bg.strokeRoundedRect(-80, -20, 160, 40, 8)
+    })
+    hitArea.on('pointerout', () => {
+      bg.clear()
+      bg.fillStyle(0x27ae60, 0.95)
+      bg.fillRoundedRect(-80, -20, 160, 40, 8)
+      bg.lineStyle(2, 0x2ecc71, 0.8)
+      bg.strokeRoundedRect(-80, -20, 160, 40, 8)
+    })
+    btn.add(hitArea)
+
+    this.leftPanel.add(btn)
+  }
+
+  showToast(message) {
+    // Simple floating toast
+    const toast = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 40, message, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#ffffff',
+      backgroundColor: '#e74c3c',
+    }).setOrigin(0.5).setDepth(2000)
+
+    this.tweens.add({
+      targets: toast,
+      y: toast.y - 30,
+      alpha: 0,
+      duration: 1200,
+      ease: 'Quad.easeOut',
+      onComplete: () => toast.destroy(),
+    })
+  }
+
+  startBattle() {
+    this.player.saveLoadout()
+    this.scene.start('BattleScene', { player: this.player })
+  }
+}

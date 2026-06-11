@@ -57,6 +57,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
           |> assign(:selected_answer, nil)
           |> assign(:meaning_answer, "")
           |> assign(:reading_answer, "")
+          |> assign(:grammar_pattern_answer, "")
           |> assign(:feedback, nil)
           |> assign(:show_hint, false)
           |> assign(:show_stroke_preview, false)
@@ -100,6 +101,11 @@ defmodule MedoruWeb.LessonTestLive.Show do
           {:submit, event} -> handle_event(event, %{}, socket)
         end
 
+      step.question_type == :grammar_pattern && key == "Enter" &&
+          socket.assigns.feedback == nil &&
+          socket.assigns.grammar_pattern_answer != "" ->
+        handle_event("submit_grammar_pattern", %{}, socket)
+
       true ->
         {:noreply, socket}
     end
@@ -115,6 +121,61 @@ defmodule MedoruWeb.LessonTestLive.Show do
   def handle_event("update_reading", params, socket) do
     value = Map.get(params, "reading_answer", params["value"] || "")
     {:noreply, assign(socket, :reading_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_grammar_pattern", params, socket) do
+    value = Map.get(params, "grammar_pattern_answer", params["value"] || "")
+    {:noreply, assign(socket, :grammar_pattern_answer, value)}
+  end
+
+  @impl true
+  def handle_event("submit_grammar_pattern", _params, socket) do
+    answer = socket.assigns.grammar_pattern_answer
+
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please type your answer"))}
+    else
+      session = socket.assigns.session
+      step = socket.assigns.current_step
+
+      case LessonTestSession.submit_answer(session.id, step.id, answer, time_spent_seconds: 10) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:grammar_pattern_answer, "")
+            |> assign(:show_hint, false)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:grammar_pattern_answer, "")
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
   end
 
   @impl true
@@ -203,6 +264,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
             |> assign(:meaning_answer, "")
             |> assign(:reading_answer, "")
+            |> assign(:grammar_pattern_answer, "")
             |> assign(:show_hint, false)
             |> assign(:meaning_error, false)
             |> assign(:reading_error, false)
@@ -223,6 +285,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
             |> assign(:meaning_answer, "")
             |> assign(:reading_answer, "")
+            |> assign(:grammar_pattern_answer, "")
             |> assign(:show_hint, false)
             |> assign(:meaning_error, !result.wrong_answer.meaning_correct)
             |> assign(:reading_error, !result.wrong_answer.reading_correct)
@@ -266,6 +329,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:selected_answer, nil)
       |> assign(:meaning_answer, "")
       |> assign(:reading_answer, "")
+      |> assign(:grammar_pattern_answer, "")
       |> assign(:show_hint, false)
       |> assign(:feedback, nil)
       |> assign(:meaning_error, false)
@@ -297,6 +361,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:reading_error, false)
       |> assign(:correct_meaning, nil)
       |> assign(:correct_reading, nil)
+      |> assign(:grammar_pattern_answer, "")
       |> assign(:next_step_after_correction, nil)
 
     {:noreply, socket}
@@ -679,6 +744,49 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   <% end %>
                 </div>
               <% end %>
+
+              <%!-- Grammar Pattern Step --%>
+              <%= if @current_step.question_type == :grammar_pattern do %>
+                <% qd = @current_step.question_data || %{} %>
+                <div class="space-y-6 mb-6">
+                  <div class="text-base-content font-medium">
+                    {@current_step.question}
+                  </div>
+
+                  <%= if qd["example"] && qd["example"] != "" do %>
+                    <div class="bg-base-200 rounded-xl p-4">
+                      <div class="text-sm text-secondary mb-1">{gettext("Example")}</div>
+                      <div class="text-lg font-jp text-base-content">{qd["example"]}</div>
+                    </div>
+                  <% end %>
+
+                  <div>
+                    <div class="text-sm text-secondary mb-2">{gettext("Words")}</div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <%= for word <- String.split(qd["words"] || "", " / ", trim: true) do %>
+                        <span class="px-3 py-1.5 bg-primary/10 text-primary rounded-lg font-jp text-lg">
+                          {word}
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm text-secondary mb-2">
+                      {gettext("Build a sentence following the example")}
+                    </label>
+                    <input
+                      type="text"
+                      name="grammar_pattern_answer"
+                      value={@grammar_pattern_answer}
+                      phx-change="update_grammar_pattern"
+                      class="input input-bordered w-full font-jp text-lg"
+                      placeholder={gettext("Type your answer here...")}
+                      disabled={@feedback != nil}
+                    />
+                  </div>
+                </div>
+              <% end %>
             <% end %>
 
             <%!-- Actions --%>
@@ -751,6 +859,25 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   class="px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
                 >
                   {gettext("Continue →")}
+                </button>
+              <% end %>
+
+              <%= if @current_step.question_type == :grammar_pattern && @feedback != :incorrect do %>
+                <button
+                  type="button"
+                  phx-click="submit_grammar_pattern"
+                  disabled={@grammar_pattern_answer == ""}
+                  class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                >
+                  {gettext("Submit Answer")}
+                </button>
+
+                <button
+                  type="button"
+                  phx-click="skip_question"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                >
+                  {gettext("Skip →")}
                 </button>
               <% end %>
             </div>

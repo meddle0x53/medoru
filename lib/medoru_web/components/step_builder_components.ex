@@ -132,7 +132,8 @@ defmodule MedoruWeb.StepBuilderComponents do
       sentence_validation: "bg-emerald-100 text-emerald-800",
       conjugation: "bg-amber-100 text-amber-800",
       conjugation_multichoice: "bg-cyan-100 text-cyan-800",
-      word_order: "bg-pink-100 text-pink-800"
+      word_order: "bg-pink-100 text-pink-800",
+      grammar_pattern: "bg-lime-100 text-lime-800"
     }
 
     labels = %{
@@ -148,7 +149,8 @@ defmodule MedoruWeb.StepBuilderComponents do
       sentence_validation: "Grammar: Sentence",
       conjugation: "Grammar: Conjugation",
       conjugation_multichoice: "Grammar: Multi Choice",
-      word_order: "Grammar: Word Order"
+      word_order: "Grammar: Word Order",
+      grammar_pattern: "Grammar: Pattern"
     }
 
     assigns =
@@ -288,6 +290,14 @@ defmodule MedoruWeb.StepBuilderComponents do
             title="Word Order"
             description="Students arrange words in correct order"
             points="3 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:grammar_pattern}
+            icon="hero-puzzle-piece"
+            title="Grammar Pattern"
+            description="Students build a sentence from words following examples"
+            points="10 points"
             on_select={@on_select}
           />
         </div>
