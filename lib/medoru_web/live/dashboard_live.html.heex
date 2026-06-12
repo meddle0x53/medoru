@@ -52,7 +52,9 @@
             ]}
           >
             <%= if completed > 0 do %>
-              <.icon name="hero-check" class="w-4 h-4 mr-1.5 flex-shrink-0" /> {completed} / {total} {gettext("Completed")}
+              <.icon name="hero-check" class="w-4 h-4 mr-1.5 flex-shrink-0" /> {completed} / {total} {gettext(
+                "Completed"
+              )}
             <% else %>
               <.icon name="hero-play" class="w-4 h-4 mr-1.5 flex-shrink-0" /> {gettext(
                 "Daily Challenges"
@@ -198,7 +200,11 @@
         <div class="card bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/20 hover:border-primary/40 hover:shadow-md transition-all duration-200 group">
           <div class="card-body p-4 sm:p-6">
             <div class="flex items-center gap-4">
-              <img src="/images/whiteboard.png" alt="White board" class="w-14 h-14 object-contain shrink-0 group-hover:scale-105 transition-transform" />
+              <img
+                src="/images/whiteboard.png"
+                alt="White board"
+                class="w-14 h-14 object-contain shrink-0 group-hover:scale-105 transition-transform"
+              />
               <div class="flex-1 min-w-0">
                 <h3 class="text-lg font-semibold text-base-content group-hover:text-primary transition-colors">
                   {gettext("Write something on your white board")}
@@ -207,7 +213,10 @@
                   {gettext("Share your thoughts, drawings, or achievements with your followers.")}
                 </p>
               </div>
-              <.icon name="hero-arrow-right" class="w-5 h-5 text-primary shrink-0 group-hover:translate-x-1 transition-transform" />
+              <.icon
+                name="hero-arrow-right"
+                class="w-5 h-5 text-primary shrink-0 group-hover:translate-x-1 transition-transform"
+              />
             </div>
           </div>
         </div>
@@ -222,7 +231,8 @@
               <div class="flex items-start justify-between">
                 <div class="flex items-center gap-3 min-w-0">
                   <.link navigate={~p"/users/#{post.user_id}"}>
-                    <% avatar_src = (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
+                    <% avatar_src =
+                      (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
                     <%= if avatar_src do %>
                       <img src={avatar_src} class="w-10 h-10 rounded-full object-cover shrink-0" />
                     <% else %>
@@ -241,7 +251,9 @@
                     <p class="text-xs text-base-content/50 truncate">
                       {format_localized_date(post.inserted_at)}
                       <%= if post.visibility == "followers" do %>
-                        <span class="badge badge-xs badge-ghost ml-1">{gettext("Followers")}</span>
+                        <span class="badge badge-xs badge-ghost ml-1">
+                          {gettext("Followers")}
+                        </span>
                       <% end %>
                     </p>
                   </div>
@@ -282,28 +294,57 @@
                   data-grid={Jason.encode!(post.canvas_data["grid"] || %{})}
                   data-background={post.canvas_data["background"]}
                 >
-                  <div id={"stream-canvas-player-#{post.id}"} class="canvas-player-container w-full h-full" phx-update="ignore"></div>
+                  <div
+                    id={"stream-canvas-player-#{post.id}"}
+                    class="canvas-player-container w-full h-full"
+                    phx-update="ignore"
+                  >
+                  </div>
                 </div>
               <% end %>
 
               <%= if post.content do %>
                 <%= if WhiteBoardPostRenderer.emoji_only?(post.content) do %>
                   <div class="mt-2 text-center text-5xl leading-none py-2">
-                    {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                    {raw(
+                      WhiteBoardPostRenderer.render_post_content(
+                        post.content,
+                        post.id,
+                        @current_scope.current_user
+                      )
+                    )}
                   </div>
                 <% else %>
                   <%= if WhiteBoardPostRenderer.command_only?(post.content) do %>
                     <div class="mt-2 flex justify-center">
-                      {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                      {raw(
+                        WhiteBoardPostRenderer.render_post_content(
+                          post.content,
+                          post.id,
+                          @current_scope.current_user
+                        )
+                      )}
                     </div>
                   <% else %>
                     <%= if WhiteBoardPostRenderer.photo_only?(post.content) do %>
                       <div class="mt-2">
-                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                        {raw(
+                          WhiteBoardPostRenderer.render_post_content(
+                            post.content,
+                            post.id,
+                            @current_scope.current_user
+                          )
+                        )}
                       </div>
                     <% else %>
                       <div class="mt-2 prose prose-sm dark:prose-invert max-w-none">
-                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                        {raw(
+                          WhiteBoardPostRenderer.render_post_content(
+                            post.content,
+                            post.id,
+                            @current_scope.current_user
+                          )
+                        )}
                       </div>
                     <% end %>
                   <% end %>
@@ -320,11 +361,11 @@
                     phx-value-emoji={emoji}
                     class={[
                       "badge badge-sm gap-1 cursor-pointer transition-all",
-                      data.me? && "badge-primary" || "badge-ghost"
+                      (data.me? && "badge-primary") || "badge-ghost"
                     ]}
                   >
                     <span>{emoji}</span>
-                    <span class={data.me? && "text-primary-content" || "text-base-content/60"}>
+                    <span class={(data.me? && "text-primary-content") || "text-base-content/60"}>
                       {data.count}
                     </span>
                   </button>
@@ -364,9 +405,14 @@
                     <%= for comment <- comments do %>
                       <div class="flex gap-2">
                         <.link navigate={~p"/users/#{comment.user_id}"}>
-                          <% avatar_src = (comment.user.profile && comment.user.profile.avatar) || comment.user.avatar_url %>
+                          <% avatar_src =
+                            (comment.user.profile && comment.user.profile.avatar) ||
+                              comment.user.avatar_url %>
                           <%= if avatar_src do %>
-                            <img src={avatar_src} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                            <img
+                              src={avatar_src}
+                              class="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                            />
                           <% else %>
                             <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                               <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
@@ -377,7 +423,12 @@
                           <%= if comment.parent_comment do %>
                             <div class="mb-1 pl-2 border-l-2 border-base-300">
                               <p class="text-[10px] text-base-content/40">
-                                {gettext("Replying to %{name}", name: (comment.parent_comment.user.profile && comment.parent_comment.user.profile.display_name) || comment.parent_comment.user.name)}
+                                {gettext("Replying to %{name}",
+                                  name:
+                                    (comment.parent_comment.user.profile &&
+                                       comment.parent_comment.user.profile.display_name) ||
+                                      comment.parent_comment.user.name
+                                )}
                               </p>
                               <p class="text-xs text-base-content/50 truncate">
                                 {comment.parent_comment.content}
@@ -386,9 +437,17 @@
                           <% end %>
                           <div class="bg-base-200 rounded-lg px-3 py-2">
                             <p class="text-xs font-semibold text-base-content">
-                              {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
+                              {(comment.user.profile && comment.user.profile.display_name) ||
+                                comment.user.name}
                             </p>
-                            <p class="text-sm text-base-content/80">{raw(WhiteBoardPostRenderer.render_comment_content(comment.content))}</p>
+                            <p class="text-sm text-base-content/80">
+                              {raw(
+                                WhiteBoardPostRenderer.render_comment_content(
+                                  comment.content,
+                                  @current_scope.current_user
+                                )
+                              )}
+                            </p>
                           </div>
                           <p class="text-xs text-base-content/50 mt-0.5 ml-1">
                             {format_localized_datetime(comment.inserted_at)}
@@ -426,7 +485,12 @@
                       phx-submit="stream_add_comment"
                       phx-hook="CommentInput"
                       class="flex gap-2 flex-wrap sm:flex-nowrap"
-                      data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                      data-can-upload-video={
+                        if @current_scope && @current_scope.current_user &&
+                             Medoru.Accounts.User.teacher?(@current_scope.current_user),
+                           do: "true",
+                           else: "false"
+                      }
                     >
                       <input type="hidden" name="post_id" value={post.id} />
                       <%= if reply_target do %>
@@ -453,7 +517,12 @@
                         <.icon name="hero-paper-clip" class="w-4 h-4" />
                       </button>
                       <%= if reply_target do %>
-                        <button type="button" phx-click="stream_cancel_reply" phx-value-post-id={post.id} class="btn btn-ghost btn-sm">
+                        <button
+                          type="button"
+                          phx-click="stream_cancel_reply"
+                          phx-value-post-id={post.id}
+                          class="btn btn-ghost btn-sm"
+                        >
                           {gettext("Cancel")}
                         </button>
                       <% end %>
@@ -486,7 +555,9 @@
               {gettext("No posts yet")}
             </h2>
             <p class="text-secondary">
-              {gettext("Follow more users or write something on your white board to see posts here.")}
+              {gettext(
+                "Follow more users or write something on your white board to see posts here."
+              )}
             </p>
           </div>
         </div>

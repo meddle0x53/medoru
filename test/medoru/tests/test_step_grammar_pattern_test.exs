@@ -45,32 +45,32 @@ defmodule Medoru.Tests.TestStepGrammarPatternTest do
 
     test "validate_answer compares strings for grammar_pattern" do
       assert TestStepAnswer.validate_answer(
-        "山田さんは学生じゃありません。",
-        "山田さんは学生じゃありません。",
-        %{}
-      )
+               "山田さんは学生じゃありません。",
+               "山田さんは学生じゃありません。",
+               %{}
+             )
 
       refute TestStepAnswer.validate_answer(
-        "wrong answer",
-        "山田さんは学生じゃありません。",
-        %{}
-      )
+               "wrong answer",
+               "山田さんは学生じゃありません。",
+               %{}
+             )
     end
 
     test "validate_answer accepts alternative correct answers" do
       assert TestStepAnswer.validate_answer(
-        "山田さんは学生です。",
-        "山田さんは学生じゃありません。",
-        %{"alt_correct_answers" => ["山田さんは学生です。"]}
-      )
+               "山田さんは学生です。",
+               "山田さんは学生じゃありません。",
+               %{"alt_correct_answers" => ["山田さんは学生です。"]}
+             )
     end
 
     test "normalize_answer handles Japanese whitespace" do
       assert TestStepAnswer.validate_answer(
-        "  山田さんは学生じゃありません。  ",
-        "山田さんは学生じゃありません。",
-        %{}
-      )
+               "  山田さんは学生じゃありません。  ",
+               "山田さんは学生じゃありません。",
+               %{}
+             )
     end
 
     test "creates grammar_pattern step via Tests context" do

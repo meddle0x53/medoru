@@ -63,17 +63,29 @@
                   navigate={~p"/users/#{@user.id}/followers"}
                   class="hover:text-primary transition-colors"
                 >
-                  <span class="font-semibold text-base-content">{@follower_count}</span> {gettext("followers")}
+                  <span class="font-semibold text-base-content">{@follower_count}</span> {gettext(
+                    "followers"
+                  )}
                 </.link>
                 <.link
                   navigate={~p"/users/#{@user.id}/following"}
                   class="hover:text-primary transition-colors"
                 >
-                  <span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}
+                  <span class="font-semibold text-base-content">{@following_count}</span> {gettext(
+                    "following"
+                  )}
                 </.link>
               <% else %>
-                <span><span class="font-semibold text-base-content">{@follower_count}</span> {gettext("followers")}</span>
-                <span><span class="font-semibold text-base-content">{@following_count}</span> {gettext("following")}</span>
+                <span>
+                  <span class="font-semibold text-base-content">{@follower_count}</span> {gettext(
+                    "followers"
+                  )}
+                </span>
+                <span>
+                  <span class="font-semibold text-base-content">{@following_count}</span> {gettext(
+                    "following"
+                  )}
+                </span>
               <% end %>
             </div>
 
@@ -108,7 +120,10 @@
                 <% end %>
                 <%= if @profile.gender do %>
                   <span class="flex items-center gap-1">
-                    <.icon name="hero-user" class={["w-4 h-4", gender_icon_class(@profile.gender)]} />
+                    <.icon
+                      name="hero-user"
+                      class={["w-4 h-4", gender_icon_class(@profile.gender)]}
+                    />
                     {gender_label(@profile.gender)}
                   </span>
                 <% end %>
@@ -333,7 +348,6 @@
             <span class="text-base-content/70">{gettext("Longest Streak")}</span>
             <span class="font-semibold">{@stats.longest_streak} {gettext("days")}</span>
           </div>
-
         </div>
       </div>
     </div>

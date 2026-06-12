@@ -545,7 +545,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       step = socket.assigns.current_step
 
       if step.step_type == "text" do
-        {:noreply, put_flash(socket, :error, gettext("Text steps cannot be copied to grammar definitions."))}
+        {:noreply,
+         put_flash(socket, :error, gettext("Text steps cannot be copied to grammar definitions."))}
       else
         case Content.get_grammar_definition_by_title(step.title) do
           nil ->
@@ -555,7 +556,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               {:ok, grammar} ->
                 {:noreply,
                  socket
-                 |> put_flash(:info, gettext("'%{title}' copied to grammar definitions.", title: grammar.title))}
+                 |> put_flash(
+                   :info,
+                   gettext("'%{title}' copied to grammar definitions.", title: grammar.title)
+                 )}
 
               {:error, changeset} ->
                 errors =
@@ -564,18 +568,28 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                       to_string(Keyword.get(opts, String.to_existing_atom(key), key))
                     end)
                   end)
-                  |> Enum.map_join(", ", fn {field, msgs} -> "#{field}: #{Enum.join(msgs, ", ")}" end)
+                  |> Enum.map_join(", ", fn {field, msgs} ->
+                    "#{field}: #{Enum.join(msgs, ", ")}"
+                  end)
 
-                {:noreply, put_flash(socket, :error, gettext("Could not copy: %{errors}", errors: errors))}
+                {:noreply,
+                 put_flash(socket, :error, gettext("Could not copy: %{errors}", errors: errors))}
             end
 
           _existing ->
             {:noreply,
-             put_flash(socket, :error, gettext("A grammar definition with the title '%{title}' already exists.", title: step.title))}
+             put_flash(
+               socket,
+               :error,
+               gettext("A grammar definition with the title '%{title}' already exists.",
+                 title: step.title
+               )
+             )}
         end
       end
     else
-      {:noreply, put_flash(socket, :error, gettext("Only admins can copy to grammar definitions."))}
+      {:noreply,
+       put_flash(socket, :error, gettext("Only admins can copy to grammar definitions."))}
     end
   end
 

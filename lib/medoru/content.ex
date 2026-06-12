@@ -389,6 +389,7 @@ defmodule Medoru.Content do
   """
   def search_words(query, opts \\ []) do
     limit = Keyword.get(opts, :limit, 20)
+    include_mature = Keyword.get(opts, :include_mature, true)
 
     if String.trim(query) == "" do
       []
@@ -427,8 +428,15 @@ defmodule Medoru.Content do
           |> Repo.all()
         end
 
-      # Combine and sort
+      # Combine and filter mature content if needed
       words = exact_matches ++ partial_matches
+
+      words =
+        if include_mature do
+          words
+        else
+          Enum.reject(words, & &1.mature)
+        end
 
       Enum.sort_by(words, fn word ->
         meaning_lower = String.downcase(word.meaning || "")
@@ -590,13 +598,14 @@ defmodule Medoru.Content do
     word_type = Keyword.get(opts, :word_type)
     learned_filter = Keyword.get(opts, :learned_filter)
     user_id = Keyword.get(opts, :user_id)
+    include_mature = Keyword.get(opts, :include_mature, true)
 
     search = if search, do: String.trim(search), else: search
 
     if search && search != "" do
       # Use search_words for matching and ranking, then filter/paginate in Elixir.
       # This preserves the exact-matches-first ordering from search_words.
-      words = search_words(search, limit: 10_000)
+      words = search_words(search, limit: 10_000, include_mature: include_mature)
 
       # Apply difficulty filter
       words =
@@ -659,6 +668,10 @@ defmodule Medoru.Content do
       query = Word
 
       # Apply difficulty filter
+      # Apply mature content filter
+      query = if include_mature, do: query, else: where(query, mature: false)
+
+      # Apply difficulty filter
       query = if difficulty, do: where(query, difficulty: ^difficulty), else: query
 
       # Apply word_type filter
@@ -718,10 +731,17 @@ defmodule Medoru.Content do
       [%Word{}, ...]
 
   """
-  def list_words_by_kanji(kanji_id) do
-    Word
-    |> join(:inner, [w], wk in WordKanji, on: wk.word_id == w.id)
-    |> where([w, wk], wk.kanji_id == ^kanji_id)
+  def list_words_by_kanji(kanji_id, opts \\ []) do
+    include_mature = Keyword.get(opts, :include_mature, true)
+
+    query =
+      Word
+      |> join(:inner, [w], wk in WordKanji, on: wk.word_id == w.id)
+      |> where([w, wk], wk.kanji_id == ^kanji_id)
+
+    query = if include_mature, do: query, else: where(query, mature: false)
+
+    query
     |> order_by([w], asc: w.sort_score)
     |> Repo.all()
   end
@@ -742,6 +762,7 @@ defmodule Medoru.Content do
   def list_words_by_kanji_grouped_by_reading(kanji_id, opts \\ []) do
     reading_pages = Keyword.get(opts, :reading_pages, %{})
     per_page = Keyword.get(opts, :per_page, 5)
+    include_mature = Keyword.get(opts, :include_mature, true)
 
     # Get the kanji character for complexity sorting
     kanji = Repo.get!(Kanji, kanji_id)
@@ -754,6 +775,13 @@ defmodule Medoru.Content do
       |> order_by([wk, w], asc: w.usage_frequency)
       |> preload([:word, :kanji_reading])
       |> Repo.all()
+
+    word_kanjis =
+      if include_mature do
+        word_kanjis
+      else
+        Enum.reject(word_kanjis, & &1.word.mature)
+      end
 
     total_count = length(word_kanjis)
 
@@ -1036,7 +1064,7 @@ defmodule Medoru.Content do
                 word.meaning
                 |> String.split(["/", ","])
                 |> Enum.map(&String.trim/1)
-                |> Enum.any?(& &1 == text)
+                |> Enum.any?(&(&1 == text))
               end)
 
             case pick_best_word(split_matches) do
@@ -1103,6 +1131,7 @@ defmodule Medoru.Content do
   # 2. Shortest combined text + reading length
   # 3. First by insertion order (id)
   defp pick_best_word([]), do: nil
+
   defp pick_best_word(words) when is_list(words) do
     words
     |> Enum.sort_by(fn word ->
@@ -2608,21 +2637,26 @@ defmodule Medoru.Content do
 
   def search_words_localized(query, locale, opts) when locale in ["bg", "ja"] do
     limit = Keyword.get(opts, :limit, 20)
+    include_mature = Keyword.get(opts, :include_mature, true)
 
     if String.trim(query) == "" do
       []
     else
       search_term = "%#{query}%"
 
-      # Search in translations JSONB and English meaning
-      Word
-      |> where(
-        [w],
-        ilike(w.text, ^search_term) or
-          ilike(w.reading, ^search_term) or
-          ilike(w.meaning, ^search_term) or
-          fragment("?->?->>? ILIKE ?", w.translations, ^locale, "meaning", ^search_term)
-      )
+      query =
+        Word
+        |> where(
+          [w],
+          ilike(w.text, ^search_term) or
+            ilike(w.reading, ^search_term) or
+            ilike(w.meaning, ^search_term) or
+            fragment("?->?->>? ILIKE ?", w.translations, ^locale, "meaning", ^search_term)
+        )
+
+      query = if include_mature, do: query, else: where(query, mature: false)
+
+      query
       |> order_by([w], asc: w.sort_score)
       |> limit(^limit)
       |> Repo.all()

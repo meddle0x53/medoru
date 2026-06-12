@@ -115,7 +115,9 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
       assert lesson_word.word.text == "消す"
     end
 
-    test "upgrades previously created kana word to kanji version when available", %{teacher: teacher} do
+    test "upgrades previously created kana word to kanji version when available", %{
+      teacher: teacher
+    } do
       # First, a kana-only word was created from a previous upload
       kana_word = word_fixture(%{text: "けす", reading: "けす", meaning: "turn off"})
 
@@ -191,7 +193,11 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
       ]
 
       assert {:ok, lesson} =
-               ImageLessonBuilder.build_lesson_from_extracted_words(extracted_words, %{}, teacher.id)
+               ImageLessonBuilder.build_lesson_from_extracted_words(
+                 extracted_words,
+                 %{},
+                 teacher.id
+               )
 
       assert lesson.title == "Vocabulary lesson from image — change the name"
     end

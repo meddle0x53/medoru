@@ -26,7 +26,10 @@ defmodule MedoruWeb.UsersLive.Index do
     current_user = socket.assigns.current_scope[:current_user]
     viewer_id = current_user && current_user.id
 
-    is_staff = current_user && (Accounts.User.admin?(current_user) || Accounts.User.moderator?(current_user))
+    is_staff =
+      current_user &&
+        (Accounts.User.admin?(current_user) || Accounts.User.moderator?(current_user))
+
     only_following = current_user && !is_staff && search == ""
 
     following_ids =
@@ -38,14 +41,27 @@ defmodule MedoruWeb.UsersLive.Index do
 
     users =
       if search != "" do
-        Social.search_users(search, viewer_id, page: page, per_page: @per_page, tag_id: tag_id, only_following: only_following)
+        Social.search_users(search, viewer_id,
+          page: page,
+          per_page: @per_page,
+          tag_id: tag_id,
+          only_following: only_following
+        )
       else
-        Social.list_users(viewer_id, page: page, per_page: @per_page, tag_id: tag_id, only_following: only_following)
+        Social.list_users(viewer_id,
+          page: page,
+          per_page: @per_page,
+          tag_id: tag_id,
+          only_following: only_following
+        )
       end
 
     total_count =
       if search != "" do
-        Social.count_search_users(search, viewer_id, tag_id: tag_id, only_following: only_following)
+        Social.count_search_users(search, viewer_id,
+          tag_id: tag_id,
+          only_following: only_following
+        )
       else
         Social.count_users(viewer_id, tag_id: tag_id, only_following: only_following)
       end

@@ -141,7 +141,11 @@ defmodule MedoruWeb.SettingsLive.Profile do
     case Accounts.update_profile(profile, profile_params) do
       {:ok, updated_profile} ->
         # Save tags
-        _ = Social.set_user_tags(socket.assigns.current_scope.current_user.id, socket.assigns.selected_tag_ids)
+        _ =
+          Social.set_user_tags(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.selected_tag_ids
+          )
 
         # Refresh the current user to update avatar in header
         user = socket.assigns.current_scope.current_user
@@ -370,7 +374,9 @@ defmodule MedoruWeb.SettingsLive.Profile do
   @impl true
   def handle_event("mark_fluent", _params, socket) do
     user = socket.assigns.current_scope.current_user
-    {:ok, %{kanji_count: kanji_count, word_count: word_count}} = Learning.mark_all_as_learned(user.id)
+
+    {:ok, %{kanji_count: kanji_count, word_count: word_count}} =
+      Learning.mark_all_as_learned(user.id)
 
     {:noreply,
      socket

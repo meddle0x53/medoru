@@ -102,7 +102,9 @@ defmodule Medoru.WhiteBoardTest do
     test "update_post/2 updates post attributes" do
       post = post_fixture()
 
-      assert {:ok, updated} = WhiteBoard.update_post(post, %{title: "Updated", content: "New content"})
+      assert {:ok, updated} =
+               WhiteBoard.update_post(post, %{title: "Updated", content: "New content"})
+
       assert updated.title == "Updated"
       assert updated.content == "New content"
     end
@@ -125,7 +127,9 @@ defmodule Medoru.WhiteBoardTest do
       commenter = owner_fixture()
       post = post_fixture(%{user: owner})
 
-      {:ok, _} = WhiteBoard.create_comment(%{post_id: post.id, user_id: commenter.id, content: "Nice!"})
+      {:ok, _} =
+        WhiteBoard.create_comment(%{post_id: post.id, user_id: commenter.id, content: "Nice!"})
+
       {:ok, _, _} = WhiteBoard.toggle_reaction(post.id, commenter.id, "👍")
 
       assert {:ok, _} = WhiteBoard.delete_post(post)
@@ -226,6 +230,7 @@ defmodule Medoru.WhiteBoardTest do
 
     test "list_posts/3 supports pagination" do
       owner = owner_fixture()
+
       for i <- 1..7 do
         post_fixture(%{user: owner, content: "Post #{i}"})
       end

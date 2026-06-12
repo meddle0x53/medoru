@@ -69,10 +69,11 @@ defmodule Medoru.Content.ImageLessonBuilder do
         add_single_word(lesson.id, word_data, position)
       end)
 
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
 
     if errors == [] do
       # Refresh lesson with word count updated
@@ -99,11 +100,17 @@ defmodule Medoru.Content.ImageLessonBuilder do
       else
         case find_kanji_version_by_reading(reading) do
           nil ->
-            Logger.info("[ImageLessonBuilder] No kanji fallback for '#{text}' (reading: '#{reading}') — keeping as-is")
+            Logger.info(
+              "[ImageLessonBuilder] No kanji fallback for '#{text}' (reading: '#{reading}') — keeping as-is"
+            )
+
             text
 
           kanji_text ->
-            Logger.info("[ImageLessonBuilder] Kanji fallback: '#{text}' → '#{kanji_text}' (reading: '#{reading}')")
+            Logger.info(
+              "[ImageLessonBuilder] Kanji fallback: '#{text}' → '#{kanji_text}' (reading: '#{reading}')"
+            )
+
             kanji_text
         end
       end
@@ -134,7 +141,9 @@ defmodule Medoru.Content.ImageLessonBuilder do
     word_id =
       case existing_word do
         nil ->
-          Logger.debug("[ImageLessonBuilder] Creating new word: text='#{text}', reading='#{reading}'")
+          Logger.debug(
+            "[ImageLessonBuilder] Creating new word: text='#{text}', reading='#{reading}'"
+          )
 
           # Create new word
           word_attrs = %{
@@ -147,7 +156,9 @@ defmodule Medoru.Content.ImageLessonBuilder do
           }
 
           case Content.create_word(word_attrs) do
-            {:ok, word} -> word.id
+            {:ok, word} ->
+              word.id
+
             {:error, changeset} ->
               # Try to extract a cleaner error
               error_msg =
@@ -155,6 +166,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
                   [{field, {msg, _}} | _] -> "#{field}: #{msg}"
                   _ -> "Failed to create word '#{text}'"
                 end
+
               return_error(error_msg)
           end
 
@@ -201,7 +213,9 @@ defmodule Medoru.Content.ImageLessonBuilder do
     if count == 0 do
       Logger.info("[ImageLessonBuilder] No DB words found for reading '#{reading}'")
     else
-      Logger.info("[ImageLessonBuilder] DB search for reading '#{reading}' found #{count} word(s)")
+      Logger.info(
+        "[ImageLessonBuilder] DB search for reading '#{reading}' found #{count} word(s)"
+      )
     end
 
     case words do
@@ -213,7 +227,10 @@ defmodule Medoru.Content.ImageLessonBuilder do
         result =
           Enum.find_value(words, fn word ->
             has_kanji = has_kanji?(word.text)
-            Logger.info("[ImageLessonBuilder]   candidate: text='#{word.text}', reading='#{word.reading}', has_kanji=#{has_kanji}")
+
+            Logger.info(
+              "[ImageLessonBuilder]   candidate: text='#{word.text}', reading='#{word.reading}', has_kanji=#{has_kanji}"
+            )
 
             if has_kanji do
               word.text
@@ -233,7 +250,17 @@ defmodule Medoru.Content.ImageLessonBuilder do
   end
 
   defp safe_word_type_atom(word_type) do
-    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+    valid_types = [
+      "noun",
+      "verb",
+      "adjective",
+      "adverb",
+      "particle",
+      "pronoun",
+      "counter",
+      "expression",
+      "other"
+    ]
 
     if word_type in valid_types do
       String.to_existing_atom(word_type)

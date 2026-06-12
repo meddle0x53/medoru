@@ -78,7 +78,11 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
   end
 
   @impl true
-  def handle_event("update_section", %{"index" => index, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_section",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
     index = String.to_integer(index)
     sections = socket.assigns.extracted_sections
 
@@ -91,7 +95,11 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
   end
 
   @impl true
-  def handle_event("update_example", %{"section_index" => sidx, "example_index" => eidx, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_example",
+        %{"section_index" => sidx, "example_index" => eidx, "field" => field, "value" => value},
+        socket
+      ) do
     sidx = String.to_integer(sidx)
     eidx = String.to_integer(eidx)
     sections = socket.assigns.extracted_sections
@@ -99,10 +107,12 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
     updated_sections =
       List.update_at(sections, sidx, fn section ->
         examples = section["examples"] || []
+
         updated_examples =
           List.update_at(examples, eidx, fn ex ->
             Map.put(ex, field, value)
           end)
+
         Map.put(section, "examples", updated_examples)
       end)
 
@@ -180,7 +190,12 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
               "#{field}: #{msg}"
             end)
 
-          {:noreply, put_flash(socket, :error, gettext("Failed to create lesson: %{errors}", errors: errors))}
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Failed to create lesson: %{errors}", errors: errors)
+           )}
       end
     end
   end
@@ -287,7 +302,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                     <%= for entry <- @uploads.image.entries do %>
                       <div class="mt-4 flex items-center gap-3 p-3 bg-base-200 rounded-lg">
                         <.icon name="hero-document" class="w-5 h-5 text-primary" />
-                        <span class="text-sm text-base-content flex-1 truncate">{entry.client_name}</span>
+                        <span class="text-sm text-base-content flex-1 truncate">
+                          {entry.client_name}
+                        </span>
                         <button
                           type="button"
                           phx-click="cancel-upload"
@@ -317,7 +334,6 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                 </.form>
               </div>
             </div>
-
           <% :preview -> %>
             <% selected_count = MapSet.size(@selected_section_indices) %>
 

@@ -4,7 +4,6 @@ defmodule MedoruWeb.GrammarPreviewControllerTest do
   import Medoru.ContentFixtures
   import Medoru.AccountsFixtures
 
-
   setup %{conn: conn} do
     user = user_fixture()
     conn = log_in_user(conn, user)
@@ -50,8 +49,15 @@ defmodule MedoruWeb.GrammarPreviewControllerTest do
     end
 
     test "returns most frequent grammar when multiple match", %{conn: conn} do
-      _less_frequent = grammar_definition_fixture(%{title: "Common Grammar", jlpt_level: 4, frequency: 100})
-      more_frequent = grammar_definition_fixture(%{title: "Common Grammar Pattern", jlpt_level: 5, frequency: 10})
+      _less_frequent =
+        grammar_definition_fixture(%{title: "Common Grammar", jlpt_level: 4, frequency: 100})
+
+      more_frequent =
+        grammar_definition_fixture(%{
+          title: "Common Grammar Pattern",
+          jlpt_level: 5,
+          frequency: 10
+        })
 
       conn = get(conn, ~p"/api/grammar-preview/Common")
       response = json_response(conn, 200)

@@ -18,7 +18,11 @@
     </div>
 
     <%!-- Form --%>
-    <form phx-submit="save" phx-change="update_field" class="card bg-base-100 border border-base-300">
+    <form
+      phx-submit="save"
+      phx-change="update_field"
+      class="card bg-base-100 border border-base-300"
+    >
       <div class="card-body">
         <%!-- Name --%>
         <div class="mb-4">
@@ -81,8 +85,9 @@
                   {KanjiRadicals.meaning(@selected_radical)}
                 </p>
                 <p class="text-sm text-secondary">
-                  {KanjiRadicals.frequency(@selected_radical)} {gettext("kanji contain this radical")}
-                  • {KanjiRadicals.get(@selected_radical).stroke_count} {gettext("strokes")}
+                  {KanjiRadicals.frequency(@selected_radical)} {gettext(
+                    "kanji contain this radical"
+                  )} • {KanjiRadicals.get(@selected_radical).stroke_count} {gettext("strokes")}
                 </p>
               </div>
             </div>

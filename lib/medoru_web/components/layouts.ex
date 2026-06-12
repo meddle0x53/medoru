@@ -885,45 +885,45 @@ defmodule MedoruWeb.Layouts do
 
     <%!-- Footer with Attribution --%>
     <footer class="bg-base-100 border-t border-base-300 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="text-sm text-secondary">
-              <span>© 2025 Medoru</span>
-              <span class="mx-2">·</span>
-              <.link navigate={~p"/privacy"} class="hover:text-primary transition-colors">
-                {gettext("Privacy")}
-              </.link>
-              <span class="mx-2">·</span>
-              <.link navigate={~p"/cookies"} class="hover:text-primary transition-colors">
-                {gettext("Cookies")}
-              </.link>
-              <span class="mx-2">·</span>
-              <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
-                {gettext("Data Attribution")}
-              </.link>
-            </div>
-            <div class="text-xs text-secondary/60">
-              Data from <a
-                href="https://github.com/davidluzgouveia/kanji-data"
-                target="_blank"
-                class="hover:text-primary"
-              >Kanji Data</a>, <a
-                href="http://kanjivg.tagaini.net"
-                target="_blank"
-                class="hover:text-primary"
-              >KanjiVG</a>,
-              <a
-                href="https://github.com/skishore/makemeahanzi"
-                target="_blank"
-                class="hover:text-primary"
-              >
-                MakeMeAHanzi
-              </a>
-              & <a href="https://www.edrdg.org/" target="_blank" class="hover:text-primary">EDRDG</a>
-            </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="text-sm text-secondary">
+            <span>© 2025 Medoru</span>
+            <span class="mx-2">·</span>
+            <.link navigate={~p"/privacy"} class="hover:text-primary transition-colors">
+              {gettext("Privacy")}
+            </.link>
+            <span class="mx-2">·</span>
+            <.link navigate={~p"/cookies"} class="hover:text-primary transition-colors">
+              {gettext("Cookies")}
+            </.link>
+            <span class="mx-2">·</span>
+            <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
+              {gettext("Data Attribution")}
+            </.link>
+          </div>
+          <div class="text-xs text-secondary/60">
+            Data from <a
+              href="https://github.com/davidluzgouveia/kanji-data"
+              target="_blank"
+              class="hover:text-primary"
+            >Kanji Data</a>, <a
+              href="http://kanjivg.tagaini.net"
+              target="_blank"
+              class="hover:text-primary"
+            >KanjiVG</a>,
+            <a
+              href="https://github.com/skishore/makemeahanzi"
+              target="_blank"
+              class="hover:text-primary"
+            >
+              MakeMeAHanzi
+            </a>
+            & <a href="https://www.edrdg.org/" target="_blank" class="hover:text-primary">EDRDG</a>
           </div>
         </div>
-      </footer>
+      </div>
+    </footer>
 
     <.flash_group flash={@flash} />
 

@@ -121,7 +121,12 @@
               </div>
             </div>
           <% else %>
-            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4" data-snap-correct={to_string(@snap_correct)}>
+            <div
+              id="writing-practice-area"
+              phx-hook="KanjiWriting"
+              class="mt-4"
+              data-snap-correct={to_string(@snap_correct)}
+            >
               <div
                 data-stroke-data={Jason.encode!(@kana.stroke_data["strokes"] || [])}
                 class="hidden"
@@ -137,7 +142,9 @@
                       checked={@snap_correct}
                       class="checkbox checkbox-sm checkbox-primary"
                     />
-                    <span class="text-sm text-secondary">{gettext("Snap to correct stroke")}</span>
+                    <span class="text-sm text-secondary">
+                      {gettext("Snap to correct stroke")}
+                    </span>
                   </label>
                 </div>
 

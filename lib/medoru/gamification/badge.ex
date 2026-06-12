@@ -12,7 +12,16 @@ defmodule Medoru.Gamification.Badge do
     field :color, :string, default: "blue"
 
     field :criteria_type, Ecto.Enum,
-      values: [:manual, :streak, :kanji_count, :words_count, :grammar_count, :lessons_completed, :daily_reviews, :level]
+      values: [
+        :manual,
+        :streak,
+        :kanji_count,
+        :words_count,
+        :grammar_count,
+        :lessons_completed,
+        :daily_reviews,
+        :level
+      ]
 
     field :criteria_value, :integer
     field :order_index, :integer, default: 0

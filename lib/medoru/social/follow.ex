@@ -24,8 +24,8 @@ defmodule Medoru.Social.Follow do
     |> foreign_key_constraint(:follower_id)
     |> foreign_key_constraint(:following_id)
     |> check_constraint(:follower_id,
-        name: :cannot_follow_self,
-        message: "cannot follow yourself"
-      )
+      name: :cannot_follow_self,
+      message: "cannot follow yourself"
+    )
   end
 end

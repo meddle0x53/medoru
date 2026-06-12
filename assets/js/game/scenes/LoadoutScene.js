@@ -14,8 +14,13 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   create() {
-    const userData = getWindowGameData()
-    this.player = new Player(userData)
+    const passedPlayer = this.scene.settings.data?.player
+    if (passedPlayer) {
+      this.player = passedPlayer
+    } else {
+      const userData = getWindowGameData()
+      this.player = new Player(userData)
+    }
 
     this.dragItem = null
     this.dragClone = null
@@ -205,8 +210,16 @@ export default class LoadoutScene extends Phaser.Scene {
     this.actionSlots = []
     const maxSlots = getMaxActiveActions(this.player.capacity || 3)
     const startX = 220 - ((maxSlots - 1) * 45) / 2
-    const y = 370
+    const y = 380
     const size = 36
+
+    this.leftPanel.add(
+      this.add.text(220, y - 42, `Active for Battle (${maxSlots} max)`, {
+        ...FONTS.default,
+        fontSize: '12px',
+        color: '#f1c40f',
+      }).setOrigin(0.5)
+    )
 
     for (let i = 0; i < maxSlots; i++) {
       const x = startX + i * 40
@@ -255,25 +268,38 @@ export default class LoadoutScene extends Phaser.Scene {
     }
   }
 
-  deactivateAbility(actionId) {
+  deactivateAbility(actionId, { force = false } = {}) {
     const idx = this.player.loadout.activeActionIds.indexOf(actionId)
     if (idx < 0) return
 
-    // Don't deactivate if it's the last active attack
     const actionObj = ALL_ACTIONS.find(a => a.id === actionId)
-    if (actionObj?.type === 'attack') {
+    let fallbackAttackId = null
+
+    if (!force && actionObj?.type === 'attack') {
       const remainingAttacks = this.player.loadout.activeActionIds
         .filter(id => id !== actionId)
         .map(id => ALL_ACTIONS.find(a => a.id === id))
         .filter(a => a?.type === 'attack')
       if (remainingAttacks.length === 0) {
-        this.showToast('At least one attack must be active')
-        return
+        // Try to keep an attack active by falling back to another known attack
+        const fallback = this.player.loadout.selectedActionIds
+          .filter(id => id !== actionId)
+          .map(id => ALL_ACTIONS.find(a => a.id === id))
+          .find(a => a?.type === 'attack')
+        if (!fallback) {
+          this.showToast('At least one attack must be active')
+          return
+        }
+        fallbackAttackId = fallback.id
       }
     }
 
     this.player.loadout.activeActionIds.splice(idx, 1)
+    if (fallbackAttackId && !this.player.loadout.activeActionIds.includes(fallbackAttackId)) {
+      this.player.loadout.activeActionIds.push(fallbackAttackId)
+    }
     this.player.saveLoadout()
+    this.player.refreshActions()
     this.refreshActionSlots()
     this.showTab('abilities')
   }
@@ -295,6 +321,7 @@ export default class LoadoutScene extends Phaser.Scene {
     }
     this.player.loadout.activeActionIds.push(actionId)
     this.player.saveLoadout()
+    this.player.refreshActions()
     this.refreshActionSlots()
     this.showTab('abilities')
     const action = ALL_ACTIONS.find(a => a.id === actionId)
@@ -936,9 +963,9 @@ export default class LoadoutScene extends Phaser.Scene {
     const maxActive = getMaxActiveActions(this.player.capacity || 3)
     const combatSelected = selectedIds.filter(id => id !== 'use_item')
 
-    // Label: Selected for Battle
+    // Label: Known Abilities
     this.tabContent.add(
-      this.add.text(460, 72, 'Selected for Battle', {
+      this.add.text(460, 72, 'Known Abilities', {
         ...FONTS.default,
         fontSize: '14px',
         color: '#3498db',
@@ -1058,40 +1085,6 @@ export default class LoadoutScene extends Phaser.Scene {
       )
     }
 
-    // Remove button (×) for selected pool items (except Use Item)
-    if (inSelectedPool && action.id !== 'use_item') {
-      const removeBtn = this.add.text(98, 40, '×', {
-        fontSize: '14px',
-        color: '#e74c3c',
-      }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', (pointer) => {
-          pointer.event.stopPropagation()
-          // Remove from selected pool
-          const selIdx = this.player.loadout.selectedActionIds.indexOf(action.id)
-          if (selIdx >= 0) this.player.loadout.selectedActionIds.splice(selIdx, 1)
-          // Also remove from active if present
-          const actIdx = this.player.loadout.activeActionIds.indexOf(action.id)
-          if (actIdx >= 0) this.player.loadout.activeActionIds.splice(actIdx, 1)
-          // Ensure at least one attack remains active
-          const remainingActive = this.player.loadout.activeActionIds
-            .map(id => ALL_ACTIONS.find(a => a.id === id))
-            .filter(Boolean)
-          if (!remainingActive.some(a => a.type === 'attack')) {
-            const firstAttack = this.player.loadout.selectedActionIds
-              .map(id => ALL_ACTIONS.find(a => a.id === id))
-              .find(a => a?.type === 'attack')
-            if (firstAttack) {
-              this.player.loadout.activeActionIds.push(firstAttack.id)
-            }
-          }
-          this.player.saveLoadout()
-          this.showTab('abilities')
-          this.refreshActionSlots()
-        })
-      container.add(removeBtn)
-    }
-
     // Drag to active slot
     const hitW = inSelectedPool ? 90 : cardW
     const hitArea = this.add.rectangle(cardW / 2, cardH / 2, hitW, cardH, 0x000000, 0)
@@ -1145,6 +1138,56 @@ export default class LoadoutScene extends Phaser.Scene {
     })
 
     container.add(hitArea)
+
+    // Remove button (×) for selected pool items (except Use Item)
+    // Added after the drag hit area so it receives clicks on top.
+    if (inSelectedPool && action.id !== 'use_item') {
+      const removeBtn = this.add.text(98, 40, '×', {
+        fontSize: '14px',
+        color: '#e74c3c',
+      }).setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', (pointer) => {
+          pointer.event.stopPropagation()
+
+          // Prevent removing the last known attack
+          const actionObj = ALL_ACTIONS.find(a => a.id === action.id)
+          if (actionObj?.type === 'attack') {
+            const remainingKnownAttacks = this.player.loadout.selectedActionIds
+              .filter(id => id !== action.id)
+              .map(id => ALL_ACTIONS.find(a => a.id === id))
+              .filter(a => a?.type === 'attack')
+            if (remainingKnownAttacks.length === 0) {
+              this.showToast('At least one attack must be known')
+              return
+            }
+          }
+
+          // Remove from selected pool
+          const selIdx = this.player.loadout.selectedActionIds.indexOf(action.id)
+          if (selIdx >= 0) this.player.loadout.selectedActionIds.splice(selIdx, 1)
+          // Also remove from active if present
+          const actIdx = this.player.loadout.activeActionIds.indexOf(action.id)
+          if (actIdx >= 0) this.player.loadout.activeActionIds.splice(actIdx, 1)
+          // Ensure at least one attack remains active
+          const remainingActive = this.player.loadout.activeActionIds
+            .map(id => ALL_ACTIONS.find(a => a.id === id))
+            .filter(Boolean)
+          if (!remainingActive.some(a => a.type === 'attack')) {
+            const firstAttack = this.player.loadout.selectedActionIds
+              .map(id => ALL_ACTIONS.find(a => a.id === id))
+              .find(a => a?.type === 'attack')
+            if (firstAttack) {
+              this.player.loadout.activeActionIds.push(firstAttack.id)
+            }
+          }
+          this.player.saveLoadout()
+          this.player.refreshActions()
+          this.showTab('abilities')
+          this.refreshActionSlots()
+        })
+      container.add(removeBtn)
+    }
 
     return { container }
   }
@@ -1288,9 +1331,15 @@ export default class LoadoutScene extends Phaser.Scene {
       })
 
       if (droppedSlot) {
+        // Allow dragging an attack onto an active attack slot to replace it,
+        // even if it is the only currently active attack.
+        const incomingIsAttack = action.type === 'attack'
+        const slotIsAttack = droppedSlot.action?.type === 'attack'
+        const forceReplace = incomingIsAttack && slotIsAttack
+
         // If slot already has an ability, deactivate it first
         if (droppedSlot.actionId) {
-          this.deactivateAbility(droppedSlot.actionId)
+          this.deactivateAbility(droppedSlot.actionId, { force: forceReplace })
         }
         this.activateAbility(action.id)
       }
@@ -1386,7 +1435,15 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   startBattle() {
+    const hasActiveAttack = this.player.loadout.activeActionIds
+      .map(id => ALL_ACTIONS.find(a => a.id === id))
+      .some(a => a?.type === 'attack')
+    if (!hasActiveAttack) {
+      this.showToast('At least one attack must be active to battle')
+      return
+    }
     this.player.saveLoadout()
+    this.player.refreshActions()
     this.scene.start('BattleScene', { player: this.player })
   }
 }

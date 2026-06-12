@@ -1272,8 +1272,11 @@ defmodule Medoru.Games do
       Classrooms.add_points_to_member(game.classroom_id, session.user_id, score)
 
       # Award XP for completing a card game
-      _ = Accounts.add_xp(session.user_id, 20,
-            source_type: "card_game", description: "Completed memory card game")
+      _ =
+        Accounts.add_xp(session.user_id, 20,
+          source_type: "card_game",
+          description: "Completed memory card game"
+        )
 
       {:ok, completed_session}
     end
@@ -1472,8 +1475,11 @@ defmodule Medoru.Games do
 
     with {:ok, _} <- result,
          user_id when not is_nil(user_id) <- attrs[:user_id] do
-      _ = Accounts.add_xp(user_id, 10,
-            source_type: "cascade_game", description: "Completed Kana Cascade game")
+      _ =
+        Accounts.add_xp(user_id, 10,
+          source_type: "cascade_game",
+          description: "Completed Kana Cascade game"
+        )
     end
 
     result
@@ -1950,8 +1956,11 @@ defmodule Medoru.Games do
 
     with {:ok, _} <- result,
          user_id when not is_nil(user_id) <- attrs[:user_id] do
-      _ = Accounts.add_xp(user_id, 10,
-            source_type: "cascade_game", description: "Completed Words Cascade game")
+      _ =
+        Accounts.add_xp(user_id, 10,
+          source_type: "cascade_game",
+          description: "Completed Words Cascade game"
+        )
     end
 
     result
@@ -2083,8 +2092,11 @@ defmodule Medoru.Games do
 
     with {:ok, _} <- result,
          user_id when not is_nil(user_id) <- attrs[:user_id] do
-      _ = Accounts.add_xp(user_id, 10,
-            source_type: "radical_hunt_game", description: "Completed Radical Hunt game")
+      _ =
+        Accounts.add_xp(user_id, 10,
+          source_type: "radical_hunt_game",
+          description: "Completed Radical Hunt game"
+        )
     end
 
     result
@@ -2129,8 +2141,11 @@ defmodule Medoru.Games do
 
     with {:ok, _} <- result,
          user_id when not is_nil(user_id) <- attrs[:user_id] do
-      _ = Accounts.add_xp(user_id, 10,
-            source_type: "cascade_game", description: "Completed Kanji Cascade game")
+      _ =
+        Accounts.add_xp(user_id, 10,
+          source_type: "cascade_game",
+          description: "Completed Kanji Cascade game"
+        )
     end
 
     result

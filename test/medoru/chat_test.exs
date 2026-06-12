@@ -62,6 +62,56 @@ defmodule Medoru.ChatTest do
       assert Chat.get_conversation(user_c.id, conv.id) == nil
     end
 
+    test "update_conversation_theme/3 updates theme for participant" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      assert {:ok, updated} = Chat.update_conversation_theme(user_a.id, conv.id, "dracula")
+      assert updated.theme == "dracula"
+      assert Chat.get_conversation(user_a.id, conv.id).theme == "dracula"
+    end
+
+    test "update_conversation_theme/3 clears theme when empty string" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+      {:ok, conv} = Chat.update_conversation_theme(user_a.id, conv.id, "dracula")
+
+      assert {:ok, updated} = Chat.update_conversation_theme(user_a.id, conv.id, "")
+      assert is_nil(updated.theme)
+    end
+
+    test "update_conversation_theme/3 rejects invalid theme" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Chat.update_conversation_theme(user_a.id, conv.id, "not-a-theme")
+    end
+
+    test "update_conversation_theme/3 returns not_found for non-participant" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      user_c = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      assert {:error, :not_found} =
+               Chat.update_conversation_theme(user_c.id, conv.id, "dracula")
+    end
+
+    test "update_conversation_theme/3 returns classroom for classroom conversation" do
+      teacher = user_fixture()
+      student = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+      {:ok, _} = Chat.add_participant_plain(conv.id, student.id)
+
+      assert {:error, :classroom} =
+               Chat.update_conversation_theme(student.id, conv.id, "dracula")
+    end
+
     test "list_conversations/1 returns conversations for user" do
       user_a = user_fixture()
       user_b = user_fixture()

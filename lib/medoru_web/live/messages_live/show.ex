@@ -10,6 +10,7 @@ defmodule MedoruWeb.MessagesLive.Show do
 
   alias Medoru.Chat
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias Medoru.Social
   alias Medoru.Encryption
   alias Medoru.Notifications
@@ -101,115 +102,115 @@ defmodule MedoruWeb.MessagesLive.Show do
            |> put_flash(:error, gettext("Conversation not found."))
            |> push_navigate(to: ~p"/messages")}
         else
-        # Get participant public keys for conversation key creation.
-        # get_public_keys/1 now returns %{user_id => [keys]} (multi-device support).
-        participant_ids = Enum.map(conversation.participants, & &1.user_id)
-        public_keys = Encryption.get_public_keys(participant_ids)
+          # Get participant public keys for conversation key creation.
+          # get_public_keys/1 now returns %{user_id => [keys]} (multi-device support).
+          participant_ids = Enum.map(conversation.participants, & &1.user_id)
+          public_keys = Encryption.get_public_keys(participant_ids)
 
-        # Backward-compat: single most-recent key per user (old clients)
-        participant_public_keys =
-          Map.new(public_keys, fn {uid, keys} ->
-            most_recent = List.first(keys)
-            {to_string(uid), Base.encode64(most_recent.public_key_spki)}
-          end)
+          # Backward-compat: single most-recent key per user (old clients)
+          participant_public_keys =
+            Map.new(public_keys, fn {uid, keys} ->
+              most_recent = List.first(keys)
+              {to_string(uid), Base.encode64(most_recent.public_key_spki)}
+            end)
 
-        # Multi-key format: all active keys per user (new clients)
-        participant_public_keys_v2 =
-          Map.new(public_keys, fn {uid, keys} ->
-            {to_string(uid), Enum.map(keys, &Base.encode64(&1.public_key_spki))}
-          end)
+          # Multi-key format: all active keys per user (new clients)
+          participant_public_keys_v2 =
+            Map.new(public_keys, fn {uid, keys} ->
+              {to_string(uid), Enum.map(keys, &Base.encode64(&1.public_key_spki))}
+            end)
 
-        missing_keys = Enum.reject(participant_ids, &Map.has_key?(public_keys, &1))
+          missing_keys = Enum.reject(participant_ids, &Map.has_key?(public_keys, &1))
 
-        # Get current user's encrypted conversation keys (multi-device support).
-        conversation_keys = Chat.get_conversation_keys(conversation_id, current_user.id)
+          # Get current user's encrypted conversation keys (multi-device support).
+          conversation_keys = Chat.get_conversation_keys(conversation_id, current_user.id)
 
-        # Backward-compat: single string for old clients
-        encrypted_key =
-          case conversation_keys do
-            [first | _] -> Base.encode64(first.encrypted_key)
-            _ -> nil
+          # Backward-compat: single string for old clients
+          encrypted_key =
+            case conversation_keys do
+              [first | _] -> Base.encode64(first.encrypted_key)
+              _ -> nil
+            end
+
+          # Multi-key format: array with fingerprints for new clients
+          encrypted_keys_v2 =
+            Enum.map(conversation_keys, fn ck ->
+              %{
+                fingerprint: ck.key_fingerprint || "legacy",
+                key: Base.encode64(ck.encrypted_key)
+              }
+            end)
+
+          # key_mismatch is detected client-side for accuracy.
+          key_mismatch = false
+          last_registered_key = nil
+
+          # Chat keyboard shortcut preference
+          chat_enter_sends =
+            current_user.profile && current_user.profile.chat_enter_sends != false
+
+          convert_emoticons =
+            current_user.profile && current_user.profile.convert_emoticons != false
+
+          # If this user has no conversation key but others do, request re-encryption.
+          if connected?(socket) && conversation_keys == [] && missing_keys == [] do
+            other_keys = Chat.list_conversation_keys(conversation_id)
+
+            if other_keys != [] do
+              Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
+            end
           end
 
-        # Multi-key format: array with fingerprints for new clients
-        encrypted_keys_v2 =
-          Enum.map(conversation_keys, fn ck ->
-            %{
-              fingerprint: ck.key_fingerprint || "legacy",
-              key: Base.encode64(ck.encrypted_key)
-            }
-          end)
+          messages = Chat.list_messages(conversation_id, limit: @per_page)
 
-        # key_mismatch is detected client-side for accuracy.
-        key_mismatch = false
-        last_registered_key = nil
+          # For classroom chats, filter out messages from deleted or removed users
+          messages =
+            if conversation.classroom_id do
+              Enum.filter(messages, &Chat.sender_visible_in_classroom?(&1, conversation))
+            else
+              messages
+            end
 
-        # Chat keyboard shortcut preference
-        chat_enter_sends =
-          current_user.profile && current_user.profile.chat_enter_sends != false
+          has_more = length(messages) == @per_page
 
-        convert_emoticons =
-          current_user.profile && current_user.profile.convert_emoticons != false
+          message_ids = Enum.map(messages, & &1.id)
+          message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
 
-        # If this user has no conversation key but others do, request re-encryption.
-        if connected?(socket) && conversation_keys == [] && missing_keys == [] do
-          other_keys = Chat.list_conversation_keys(conversation_id)
+          page_title =
+            if conversation.is_group do
+              conversation.title || gettext("Group Chat")
+            else
+              other = List.first(other_participants)
+              gettext("Chat with %{name}", name: participant_name(other))
+            end
 
-          if other_keys != [] do
-            Chat.broadcast_key_reencryption_request(conversation.id, current_user.id)
-          end
-        end
-
-        messages = Chat.list_messages(conversation_id, limit: @per_page)
-
-        # For classroom chats, filter out messages from deleted or removed users
-        messages =
-          if conversation.classroom_id do
-            Enum.filter(messages, &Chat.sender_visible_in_classroom?(&1, conversation))
-          else
-            messages
-          end
-
-        has_more = length(messages) == @per_page
-
-        message_ids = Enum.map(messages, & &1.id)
-        message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
-
-        page_title =
-          if conversation.is_group do
-            conversation.title || gettext("Group Chat")
-          else
-            other = List.first(other_participants)
-            gettext("Chat with %{name}", name: participant_name(other))
-          end
-
-        {:ok,
-         socket
-         |> assign(:locale, locale)
-         |> assign(:conversation, conversation)
-         |> assign(:other_participants, other_participants)
-         |> assign(:participant_public_keys, participant_public_keys)
-         |> assign(:participant_public_keys_v2, participant_public_keys_v2)
-         |> assign(:encrypted_key, encrypted_key)
-         |> assign(:encrypted_keys_v2, encrypted_keys_v2)
-         |> assign(:messages, messages)
-         |> assign(:has_more_messages, has_more)
-         |> assign(:message_offset, 0)
-         |> assign(:message_reactions, message_reactions)
-         |> assign(:reply_to, nil)
-         |> assign(:preview_message, nil)
-         |> assign(:editing_message, nil)
-         |> assign(:reaction_picker_message_id, nil)
-         |> assign(:page_title, page_title)
-         |> assign(:typing_users, [])
-         |> assign(:is_blocked, is_blocked)
-         |> assign(:missing_keys, missing_keys)
-         |> assign(:key_mismatch, key_mismatch)
-         |> assign(:last_registered_key, last_registered_key)
-         |> assign(:chat_enter_sends, chat_enter_sends)
-         |> assign(:convert_emoticons, convert_emoticons)
-         |> assign(:online_user_ids, online_user_ids)
-         |> push_event("scroll_to_bottom", %{})}
+          {:ok,
+           socket
+           |> assign(:locale, locale)
+           |> assign(:conversation, conversation)
+           |> assign(:other_participants, other_participants)
+           |> assign(:participant_public_keys, participant_public_keys)
+           |> assign(:participant_public_keys_v2, participant_public_keys_v2)
+           |> assign(:encrypted_key, encrypted_key)
+           |> assign(:encrypted_keys_v2, encrypted_keys_v2)
+           |> assign(:messages, messages)
+           |> assign(:has_more_messages, has_more)
+           |> assign(:message_offset, 0)
+           |> assign(:message_reactions, message_reactions)
+           |> assign(:reply_to, nil)
+           |> assign(:preview_message, nil)
+           |> assign(:editing_message, nil)
+           |> assign(:reaction_picker_message_id, nil)
+           |> assign(:page_title, page_title)
+           |> assign(:typing_users, [])
+           |> assign(:is_blocked, is_blocked)
+           |> assign(:missing_keys, missing_keys)
+           |> assign(:key_mismatch, key_mismatch)
+           |> assign(:last_registered_key, last_registered_key)
+           |> assign(:chat_enter_sends, chat_enter_sends)
+           |> assign(:convert_emoticons, convert_emoticons)
+           |> assign(:online_user_ids, online_user_ids)
+           |> push_event("scroll_to_bottom", %{})}
         end
       else
         {:ok, push_navigate(socket, to: ~p"/messages")}
@@ -1146,7 +1147,8 @@ defmodule MedoruWeb.MessagesLive.Show do
     message = Medoru.Repo.preload(message, [:sender, :reply_to_message])
 
     # For classroom chats, skip messages from deleted or removed users
-    if is_nil(conversation.classroom_id) || Chat.sender_visible_in_classroom?(message, conversation) do
+    if is_nil(conversation.classroom_id) ||
+         Chat.sender_visible_in_classroom?(message, conversation) do
       socket =
         socket
         |> assign(:messages, socket.assigns.messages ++ [message])
@@ -1171,6 +1173,20 @@ defmodule MedoruWeb.MessagesLive.Show do
         end
 
       {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_info({:conversation_updated, _conversation}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation_id = socket.assigns.conversation.id
+
+    conversation = Chat.get_conversation(current_user.id, conversation_id)
+
+    if conversation do
+      {:noreply, assign(socket, :conversation, conversation)}
     else
       {:noreply, socket}
     end
@@ -1319,14 +1335,16 @@ defmodule MedoruWeb.MessagesLive.Show do
   @doc """
   Renders message content, replacing `:medoru:` with the favicon image.
   """
-  def render_message_content(nil, _convert), do: ""
-  def render_message_content(text, convert_emoticons) do
+  def render_message_content(text, convert_emoticons, viewer \\ nil)
+  def render_message_content(nil, _convert, _viewer), do: ""
+
+  def render_message_content(text, convert_emoticons, viewer) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text, convert_emoticons)
+            render_message_body(text, convert_emoticons, viewer)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -1338,10 +1356,14 @@ defmodule MedoruWeb.MessagesLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text, convert_emoticons)
+                render_message_body(text, convert_emoticons, viewer)
 
               word ->
-                WordChatPreview.render_html(%{word: word})
+                if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                  WordChatPreview.render_html(%{word: word})
+                else
+                  WordChatPreview.render_html(%{blocked: true})
+                end
             end
 
           :error ->
@@ -1350,7 +1372,7 @@ defmodule MedoruWeb.MessagesLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text, convert_emoticons)
+                    render_message_body(text, convert_emoticons, viewer)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -1359,13 +1381,13 @@ defmodule MedoruWeb.MessagesLive.Show do
                 end
 
               :error ->
-                render_message_body(text, convert_emoticons)
+                render_message_body(text, convert_emoticons, viewer)
             end
         end
     end
   end
 
-  defp render_message_body(text, convert_emoticons) do
+  defp render_message_body(text, convert_emoticons, viewer) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -1373,9 +1395,9 @@ defmodule MedoruWeb.MessagesLive.Show do
 
     matches =
       (Enum.map(pipe_matches, &{:word, &1}) ++
-       Enum.map(bracket_matches, &{:word, &1}) ++
-       Enum.map(corner_matches, &{:word, &1}) ++
-       Enum.map(grammar_matches, &{:grammar, &1}))
+         Enum.map(bracket_matches, &{:word, &1}) ++
+         Enum.map(corner_matches, &{:word, &1}) ++
+         Enum.map(grammar_matches, &{:grammar, &1}))
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
@@ -1393,13 +1415,19 @@ defmodule MedoruWeb.MessagesLive.Show do
               [Phoenix.HTML.html_escape(word_text)]
 
             word ->
-              word_path = ~p"/words/#{word.id}"
-              {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+              if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                word_path = ~p"/words/#{word.id}"
+                {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
 
-              [
-                {:safe,
-                 ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
-              ]
+                [
+                  {:safe,
+                   ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                ]
+              else
+                [
+                  {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
+                ]
+              end
           end
 
         {:grammar, grammar_text} ->
@@ -1422,12 +1450,19 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   defp build_tagged_segments(text, [], pos, acc) do
-    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+    remaining =
+      if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_tagged_segments(text, [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest], pos, acc) do
+  defp build_tagged_segments(
+         text,
+         [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest],
+         pos,
+         acc
+       ) do
     before_len = match_start - pos
     before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
     captured_text = binary_part(text, cap_start, cap_len)
@@ -1444,10 +1479,16 @@ defmodule MedoruWeb.MessagesLive.Show do
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
     |> Enum.flat_map(fn
       ":medoru:" ->
-        [{:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}]
+        [
+          {:safe,
+           ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
+        ]
 
       ":ouroboros:" ->
-        [{:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}]
+        [
+          {:safe,
+           ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}
+        ]
 
       part ->
         Regex.split(url_regex, part, include_captures: true, trim: true)
@@ -1470,7 +1511,11 @@ defmodule MedoruWeb.MessagesLive.Show do
                 end
 
               true ->
-                segment = if convert_emoticons, do: MedoruWeb.ChatEmoticons.replace(segment), else: segment
+                segment =
+                  if convert_emoticons,
+                    do: MedoruWeb.ChatEmoticons.replace(segment),
+                    else: segment
+
                 Phoenix.HTML.html_escape(segment)
             end
         end)
@@ -1617,6 +1662,7 @@ defmodule MedoruWeb.MessagesLive.Show do
 
   attr :message, :map, required: true
   attr :current_user_id, :string, required: true
+  attr :current_user, :map, required: true
   attr :conversation, :map, required: true
 
   def message_preview_panel(assigns) do
@@ -1635,7 +1681,12 @@ defmodule MedoruWeb.MessagesLive.Show do
       <div class="flex items-start gap-3">
         <% sender_avatar =
           (@message.sender.profile && @message.sender.profile.avatar) || @message.sender.avatar_url %>
-        <a href={~p"/users/#{@message.sender.id}"} target="_blank" rel="noopener noreferrer" class="shrink-0">
+        <a
+          href={~p"/users/#{@message.sender.id}"}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0"
+        >
           <%= if sender_avatar do %>
             <img
               src={sender_avatar}
@@ -1675,7 +1726,9 @@ defmodule MedoruWeb.MessagesLive.Show do
           <% @message.attachment_type == "video" && @message.attachment_path -> %>
             <video controls class="max-w-full rounded-lg">
               <source src={@message.attachment_path} type={video_mime_type(@message.attachment_path)} />
-              <a href={@message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+              <a href={@message.attachment_path} class="text-primary underline" download>
+                {gettext("Download video")}
+              </a>
             </video>
           <% @message.ciphertext -> %>
             <p
@@ -1691,7 +1744,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content, @convert_emoticons)}
+              {render_message_content(@message.content, @convert_emoticons, @current_user)}
             </p>
         <% end %>
       </div>

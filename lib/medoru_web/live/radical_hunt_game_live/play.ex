@@ -288,6 +288,7 @@ defmodule MedoruWeb.RadicalHuntGameLive.Play do
   defp format_time(seconds) do
     m = div(seconds, 60)
     s = rem(seconds, 60)
+
     "#{String.pad_leading(Integer.to_string(m), 2, "0")}:#{String.pad_leading(Integer.to_string(s), 2, "0")}"
   end
 end

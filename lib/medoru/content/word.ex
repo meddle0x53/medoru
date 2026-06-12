@@ -40,6 +40,7 @@ defmodule Medoru.Content.Word do
     field :image_path, :string
     # Pronunciation audio path for word (stored in priv/static/uploads/word_sounds/)
     field :pronunciation_path, :string
+    field :mature, :boolean, default: false
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
 
@@ -56,6 +57,7 @@ defmodule Medoru.Content.Word do
       :difficulty,
       :usage_frequency,
       :word_type,
+      :mature,
       :sort_score,
       :core_rank,
       :example_sentence,

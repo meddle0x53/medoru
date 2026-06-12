@@ -126,10 +126,10 @@ defmodule Medoru.AI.ImageTestSteps do
     examples =
       case data do
         %{"examples" => examples} when is_list(examples) ->
-          examples |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+          examples |> Enum.map(&single_line/1) |> Enum.reject(&(&1 == ""))
 
         %{"example" => ex} when is_binary(ex) and ex != "" ->
-          [String.trim(ex)]
+          [single_line(ex)]
 
         _ ->
           []
@@ -147,11 +147,13 @@ defmodule Medoru.AI.ImageTestSteps do
 
   defp normalize_step(step) when is_map(step) do
     correct_answer =
-      get_first_non_empty([
+      [
         step["answer"],
         step["correct_answer"],
         step["sentence"]
-      ])
+      ]
+      |> get_first_non_empty()
+      |> single_line()
 
     words =
       get_first_non_empty([
@@ -164,8 +166,13 @@ defmodule Medoru.AI.ImageTestSteps do
 
     alt_answers =
       case step["alt_correct_answers"] do
-        list when is_list(list) -> Enum.filter(list, &(is_binary(&1) && String.trim(&1) != ""))
-        _ -> []
+        list when is_list(list) ->
+          list
+          |> Enum.filter(&(is_binary(&1) && String.trim(&1) != ""))
+          |> Enum.map(&single_line/1)
+
+        _ ->
+          []
       end
 
     %{
@@ -193,6 +200,126 @@ defmodule Medoru.AI.ImageTestSteps do
     |> String.replace(~r/\s+/u, " ")
     |> String.trim()
   end
+
+  defp single_line(text) when is_binary(text) do
+    text
+    |> String.replace(~r/\s+/u, " ")
+    |> String.trim()
+  end
+
+  defp single_line(text), do: text
+
+  @doc """
+  Extracts writing fill-in test steps from an image binary.
+
+  Expected response:
+  {
+    "examples": ["-complete example sentence shown in the image-"],
+    "steps": [
+      {
+        "number": 1,
+        "template": "あなたは（___）ですか。",
+        "correct_answer": "あなたは（学生）ですか。",
+        "alt_correct_answers": ["-alternative full sentence 1-"]
+      }
+    ]
+  }
+  """
+  def extract_writing_fill_in_steps(image_binary, opts \\ []) do
+    model = Keyword.get(opts, :model, @default_model)
+    mime_type = Keyword.get(opts, :mime_type, "image/png")
+    api_key = get_api_key()
+
+    if api_key == "" do
+      {:error, "API key is not configured"}
+    else
+      prompt = Keyword.get(opts, :prompt, default_writing_fill_in_prompt())
+      req_opts = Keyword.get(opts, :req_opts, [])
+
+      case call_vision_api(image_binary, mime_type, prompt,
+             api_key: api_key,
+             model: model,
+             req_opts: req_opts
+           ) do
+        {:ok, content} -> parse_writing_fill_in_response(content)
+        {:error, reason} -> {:error, reason}
+      end
+    end
+  end
+
+  defp parse_writing_fill_in_response(content) when is_binary(content) do
+    case Jason.decode(content) do
+      {:ok, decoded} -> parse_writing_fill_in_response(decoded)
+      {:error, reason} -> {:error, "Failed to parse JSON: #{inspect(reason)}"}
+    end
+  end
+
+  defp parse_writing_fill_in_response(%{"steps" => steps} = data) when is_list(steps) do
+    normalized_steps = Enum.map(steps, &normalize_writing_fill_in_step/1)
+
+    examples =
+      case data do
+        %{"examples" => examples} when is_list(examples) ->
+          examples |> Enum.map(&single_line/1) |> Enum.reject(&(&1 == ""))
+
+        %{"example" => ex} when is_binary(ex) and ex != "" ->
+          [single_line(ex)]
+
+        _ ->
+          []
+      end
+
+    {:ok, %{"examples" => examples, "steps" => normalized_steps}}
+  end
+
+  defp parse_writing_fill_in_response(_),
+    do: {:error, "Invalid response structure: missing steps"}
+
+  defp normalize_writing_fill_in_step(step) when is_map(step) do
+    correct_answer =
+      [
+        step["correct_answer"],
+        step["answer"],
+        step["sentence"]
+      ]
+      |> get_first_non_empty()
+      |> single_line()
+
+    template =
+      [
+        step["template"],
+        step["question"]
+      ]
+      |> get_first_non_empty()
+      |> single_line()
+
+    alt_answers =
+      case step["alt_correct_answers"] do
+        list when is_list(list) ->
+          list
+          |> Enum.filter(&(is_binary(&1) && String.trim(&1) != ""))
+          |> Enum.map(&single_line/1)
+
+        _ ->
+          []
+      end
+
+    %{
+      "number" => parse_number(step["number"]),
+      "template" => normalize_template(template),
+      "correct_answer" => correct_answer,
+      "alt_correct_answers" => alt_answers
+    }
+  end
+
+  defp normalize_template(template) when is_binary(template) do
+    template
+    |> String.replace(~r/（\s*）/, "（___）")
+    |> String.replace(~r/\(\s*\)/, "(___)")
+    |> String.replace(~r/_+/, "___")
+  end
+
+  defp normalize_template(template), do: template
 
   defp default_grammar_pattern_prompt do
     """
@@ -225,6 +352,41 @@ defmodule Medoru.AI.ImageTestSteps do
     - Return ALL example sentences from the image in the `examples` array.
     - If there is no example, return an empty array for `examples`.
     - If the image contains no valid grammar pattern exercises, return {"examples": [], "steps": []}.
+    """
+  end
+
+  defp default_writing_fill_in_prompt do
+    """
+    You are an AI assistant helping extract Japanese writing fill-in exercises from an image.
+
+    The image shows an example sentence with a filled blank, followed by numbered questions.
+    Each question has:
+    - A sentence template with one or more blanks
+    - A correct answer that is the full sentence with blanks filled in
+
+    Return ONLY a valid JSON object in this exact format:
+
+    {
+      "examples": ["-complete example sentence shown in the image-"],
+      "steps": [
+        {
+          "number": 1,
+          "template": "-sentence with ___ for each blank-",
+          "correct_answer": "-complete sentence with blanks filled in-",
+          "alt_correct_answers": ["-alternative full sentence 1-"]
+        }
+      ]
+    }
+
+    Rules:
+    - In `template`, replace every blank with `___` (three underscores).
+    - `template` must contain the entire sentence from the image, including all text before and after each blank, even if the image wraps it across multiple lines. Output it as one continuous line with no line breaks.
+    - `correct_answer`, each `example`, and each item in `alt_correct_answers` must also be a single line. Do not split any sentence across multiple lines.
+    - `correct_answer` must be the complete sentence, not just the missing words.
+    - If there are alternative valid full sentences (different particles, kanji vs kana, etc.), include them in `alt_correct_answers`.
+    - Return ALL example sentences from the image in the `examples` array.
+    - If there is no example, return an empty array for `examples`.
+    - If the image contains no valid writing fill-in exercises, return {"examples": [], "steps": []}.
     """
   end
 

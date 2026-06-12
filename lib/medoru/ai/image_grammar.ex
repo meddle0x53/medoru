@@ -12,30 +12,30 @@ defmodule Medoru.AI.ImageGrammar do
   @openai_chat_url "https://api.openai.com/v1/chat/completions"
 
   @extraction_prompt """
-Extract all grammar sections from this Japanese textbook page.
+  Extract all grammar sections from this Japanese textbook page.
 
-Return a JSON object with:
-- "title": the page title (e.g. "IV. Grammar Notes"). If no clear title, use "Grammar Lesson".
-- "sections": array of numbered sections, each with:
-  - "number": section number as integer (1, 2, 3, etc.)
-  - "title": section title (e.g. "V て-form", "Verb Groups")
-  - "description": the full explanatory text of this section. Preserve all content.
-  - "examples": array of examples found in this section (from circled numbers ①②③ etc.), each with:
-    - "sentence": Japanese sentence with kanji preserved
-    - "reading": full reading in hiragana/katakana (include all furigana)
-    - "meaning": English meaning/translation
-  - "is_grammar_pattern": true if the title contains grammar pattern markers like V, N, A, Noun, Verb, Adjective, Adverb, or numbered variables like V1, N1, A1, etc. false otherwise.
+  Return a JSON object with:
+  - "title": the page title (e.g. "IV. Grammar Notes"). If no clear title, use "Grammar Lesson".
+  - "sections": array of numbered sections, each with:
+    - "number": section number as integer (1, 2, 3, etc.)
+    - "title": section title (e.g. "V て-form", "Verb Groups")
+    - "description": the full explanatory text of this section. Preserve all content.
+    - "examples": array of examples found in this section (from circled numbers ①②③ etc.), each with:
+      - "sentence": Japanese sentence with kanji preserved
+      - "reading": full reading in hiragana/katakana (include all furigana)
+      - "meaning": English meaning/translation
+    - "is_grammar_pattern": true if the title contains grammar pattern markers like V, N, A, Noun, Verb, Adjective, Adverb, or numbered variables like V1, N1, A1, etc. false otherwise.
 
-RULES:
-- Numbered sections like "1. Verb Groups", "2. V て-form" are the main sections.
-- Sub-sections like "1) Group I Verbs", "(1) When the last sound..." should be included IN the description of their parent section, not as separate sections.
-- Circled numbers (①, ②, ③) indicate examples. Extract ALL of them.
-- If a section has no circled examples, return an empty examples array.
-- Preserve all kanji in sentences.
-- Include complete readings with furigana.
+  RULES:
+  - Numbered sections like "1. Verb Groups", "2. V て-form" are the main sections.
+  - Sub-sections like "1) Group I Verbs", "(1) When the last sound..." should be included IN the description of their parent section, not as separate sections.
+  - Circled numbers (①, ②, ③) indicate examples. Extract ALL of them.
+  - If a section has no circled examples, return an empty examples array.
+  - Preserve all kanji in sentences.
+  - Include complete readings with furigana.
 
-Return ONLY a JSON object. No markdown, no explanations.
-"""
+  Return ONLY a JSON object. No markdown, no explanations.
+  """
 
   @doc """
   Extracts grammar sections from an image binary.
@@ -98,7 +98,9 @@ Return ONLY a JSON object. No markdown, no explanations.
         parse_response(response_body)
 
       {:ok, %{status: status, body: response_body}} when is_map(response_body) ->
-        error_message = get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+        error_message =
+          get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+
         {:error, error_message}
 
       {:ok, %{status: status}} ->
@@ -127,16 +129,18 @@ Return ONLY a JSON object. No markdown, no explanations.
 
         case Jason.decode(json_text) do
           {:ok, %{"title" => title, "sections" => sections}} when is_list(sections) ->
-            {:ok, %{
-              "title" => title || "Grammar Lesson",
-              "sections" => Enum.map(sections, &normalize_section/1)
-            }}
+            {:ok,
+             %{
+               "title" => title || "Grammar Lesson",
+               "sections" => Enum.map(sections, &normalize_section/1)
+             }}
 
           {:ok, %{"sections" => sections}} when is_list(sections) ->
-            {:ok, %{
-              "title" => "Grammar Lesson",
-              "sections" => Enum.map(sections, &normalize_section/1)
-            }}
+            {:ok,
+             %{
+               "title" => "Grammar Lesson",
+               "sections" => Enum.map(sections, &normalize_section/1)
+             }}
 
           {:ok, _} ->
             {:error, "OpenAI returned unexpected JSON structure"}
@@ -189,12 +193,14 @@ Return ONLY a JSON object. No markdown, no explanations.
   defp normalize_example(_), do: nil
 
   defp parse_number(n) when is_integer(n), do: n
+
   defp parse_number(n) when is_binary(n) do
     case Integer.parse(n) do
       {int, _} -> int
       :error -> 0
     end
   end
+
   defp parse_number(_), do: 0
 
   defp default_model do

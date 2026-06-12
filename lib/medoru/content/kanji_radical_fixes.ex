@@ -259,7 +259,7 @@ defmodule Medoru.Content.KanjiRadicalFixes do
     "惣" => ["心"],
     "惇" => ["心"],
     "澪" => ["火"],
-    "無" => ["爪"],
+    "無" => ["爪"]
   }
 
   @doc """
@@ -267,17 +267,21 @@ defmodule Medoru.Content.KanjiRadicalFixes do
   Returns the number of kanji updated.
   """
   def apply! do
-    fixed = for {char, radicals} <- @fixes, reduce: 0 do
-      count ->
-        case Repo.get_by(Kanji, character: char) do
-          nil -> count
-          kanji ->
-            kanji
-            |> Ecto.Changeset.change(radicals: radicals)
-            |> Repo.update!()
-            count + 1
-        end
-    end
+    fixed =
+      for {char, radicals} <- @fixes, reduce: 0 do
+        count ->
+          case Repo.get_by(Kanji, character: char) do
+            nil ->
+              count
+
+            kanji ->
+              kanji
+              |> Ecto.Changeset.change(radicals: radicals)
+              |> Repo.update!()
+
+              count + 1
+          end
+      end
 
     IO.puts("Fixed #{fixed} kanji radicals")
     fixed

@@ -38,6 +38,41 @@ defmodule MedoruWeb.SettingsLiveTest do
       assert profile.bio == "Hello, this is my bio!"
     end
 
+    test "updates safety mode setting", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      result =
+        view
+        |> form("#profile-form",
+          user_profile: %{display_name: "SafetyTester", safety: "false"}
+        )
+        |> render_submit()
+
+      assert {:error, {:live_redirect, %{to: "/settings/profile"}}} = result
+
+      profile = Medoru.Accounts.get_profile_by_user!(user.id)
+      assert profile.display_name == "SafetyTester"
+      assert profile.safety == false
+    end
+
+    test "changing a checkbox keeps the selected gender", %{conn: conn, user: user} do
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{gender: 0})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      html =
+        view
+        |> form("#profile-form",
+          user_profile: %{gender: "0", notify_messaging: "true"}
+        )
+        |> render_change()
+
+      select_html =
+        Regex.run(~r/<select[^>]*name="user_profile\[gender\]"[\s\S]*?<\/select>/, html) |> hd()
+
+      assert select_html =~ ~r/<option value="0" selected(="")?>/
+    end
+
     test "validates display name uniqueness", %{conn: conn, user: user} do
       # Create another user with a display name
       other_user =
@@ -143,7 +178,9 @@ defmodule MedoruWeb.SettingsLiveTest do
       # Submit with is_public unchecked
       result =
         view
-        |> form("#profile-form", user_profile: %{display_name: user.profile.display_name, is_public: false})
+        |> form("#profile-form",
+          user_profile: %{display_name: user.profile.display_name, is_public: false}
+        )
         |> render_submit()
 
       assert {:error, {:live_redirect, %{to: "/settings/profile"}}} = result

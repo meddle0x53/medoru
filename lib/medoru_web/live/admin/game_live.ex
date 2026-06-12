@@ -29,9 +29,15 @@ defmodule MedoruWeb.Admin.GameLive do
       |> Enum.filter(fn k -> k.stroke_count && k.stroke_count > 0 end)
       |> Enum.map(fn k ->
         meanings = Enum.take(k.meanings || [], 2)
-        on_readings = k.kanji_readings |> Enum.filter(& &1.reading_type == :on) |> Enum.map(& &1.reading)
-        kun_readings = k.kanji_readings |> Enum.filter(& &1.reading_type == :kun) |> Enum.map(& &1.reading)
+
+        on_readings =
+          k.kanji_readings |> Enum.filter(&(&1.reading_type == :on)) |> Enum.map(& &1.reading)
+
+        kun_readings =
+          k.kanji_readings |> Enum.filter(&(&1.reading_type == :kun)) |> Enum.map(& &1.reading)
+
         stroke_data = Map.get(k, :stroke_data) || %{}
+
         %{
           character: k.character,
           meanings: meanings,
@@ -57,6 +63,7 @@ defmodule MedoruWeb.Admin.GameLive do
 
     # Fetch stroke data for weapon kanji (力 - chikara)
     weapon_kanji = Content.get_kanji_by_character("力")
+
     weapon_kanji_strokes =
       if weapon_kanji && weapon_kanji.stroke_data do
         %{
@@ -69,6 +76,7 @@ defmodule MedoruWeb.Admin.GameLive do
 
     # Fetch stroke data for shield kanji (盾 - tate)
     shield_kanji = Content.get_kanji_by_character("盾")
+
     shield_kanji_strokes =
       if shield_kanji && shield_kanji.stroke_data do
         %{

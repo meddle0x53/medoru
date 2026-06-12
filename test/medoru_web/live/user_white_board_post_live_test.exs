@@ -52,11 +52,14 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
       reactor = owner_fixture()
       post = post_fixture(%{user: owner, visibility: "public"})
 
-      {:ok, view, _html} = conn |> log_in_user(reactor) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+      {:ok, view, _html} =
+        conn |> log_in_user(reactor) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
 
       html =
         view
-        |> element("button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']")
+        |> element(
+          "button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']"
+        )
         |> render_click()
 
       assert html =~ "😀"
@@ -75,7 +78,9 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
 
       html =
         view
-        |> element("button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='👍']")
+        |> element(
+          "button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='👍']"
+        )
         |> render_click()
 
       refute html =~ "badge-primary"
@@ -106,7 +111,9 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
       post = post_fixture(%{user: owner, visibility: "public"})
 
       {:ok, view, _html} =
-        conn |> log_in_user(commenter) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+        conn
+        |> log_in_user(commenter)
+        |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
 
       html =
         view

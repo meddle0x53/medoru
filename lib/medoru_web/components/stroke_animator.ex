@@ -287,6 +287,7 @@ defmodule MedoruWeb.StrokeAnimator do
 
   defp animation_style(true, speed) do
     duration = trunc(1000 / speed)
+
     "stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw #{duration}ms ease-in-out forwards;"
   end
 

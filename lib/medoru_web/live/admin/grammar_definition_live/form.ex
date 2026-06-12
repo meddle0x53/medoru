@@ -59,15 +59,40 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   }
 
   @color_palette [
-    "bg-red-200", "bg-red-300", "bg-orange-200", "bg-orange-300",
-    "bg-amber-200", "bg-amber-300", "bg-yellow-200", "bg-yellow-300",
-    "bg-lime-200", "bg-lime-300", "bg-green-200", "bg-green-300",
-    "bg-emerald-200", "bg-emerald-300", "bg-teal-200", "bg-teal-300",
-    "bg-cyan-200", "bg-cyan-300", "bg-sky-200", "bg-sky-300",
-    "bg-blue-200", "bg-blue-300", "bg-indigo-200", "bg-indigo-300",
-    "bg-violet-200", "bg-violet-300", "bg-purple-200", "bg-purple-300",
-    "bg-fuchsia-200", "bg-fuchsia-300", "bg-pink-200", "bg-pink-300",
-    "bg-rose-200", "bg-rose-300"
+    "bg-red-200",
+    "bg-red-300",
+    "bg-orange-200",
+    "bg-orange-300",
+    "bg-amber-200",
+    "bg-amber-300",
+    "bg-yellow-200",
+    "bg-yellow-300",
+    "bg-lime-200",
+    "bg-lime-300",
+    "bg-green-200",
+    "bg-green-300",
+    "bg-emerald-200",
+    "bg-emerald-300",
+    "bg-teal-200",
+    "bg-teal-300",
+    "bg-cyan-200",
+    "bg-cyan-300",
+    "bg-sky-200",
+    "bg-sky-300",
+    "bg-blue-200",
+    "bg-blue-300",
+    "bg-indigo-200",
+    "bg-indigo-300",
+    "bg-violet-200",
+    "bg-violet-300",
+    "bg-purple-200",
+    "bg-purple-300",
+    "bg-fuchsia-200",
+    "bg-fuchsia-300",
+    "bg-pink-200",
+    "bg-pink-300",
+    "bg-rose-200",
+    "bg-rose-300"
   ]
 
   @impl true
@@ -179,39 +204,51 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   @impl true
   def handle_event("update_element_word_type", %{"index" => index, "value" => value}, socket) do
     form_data = socket.assigns.form_data
-    elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      el
-      |> Map.put("word_type", value)
-      |> Map.put("forms", [])
-    end)
+
+    elements =
+      update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
+        el
+        |> Map.put("word_type", value)
+        |> Map.put("forms", [])
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
   @impl true
   def handle_event("update_element_form", %{"index" => index, "value" => value}, socket) do
     form_data = socket.assigns.form_data
-    elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      forms = if value == "", do: [], else: [value]
-      Map.put(el, "forms", forms)
-    end)
+
+    elements =
+      update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
+        forms = if value == "", do: [], else: [value]
+        Map.put(el, "forms", forms)
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
   @impl true
   def handle_event("update_element_word_class", %{"index" => index, "value" => value}, socket) do
     form_data = socket.assigns.form_data
-    elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      Map.put(el, "word_class_id", value)
-    end)
+
+    elements =
+      update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
+        Map.put(el, "word_class_id", value)
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
   @impl true
   def handle_event("update_element_text", %{"index" => index, "value" => value}, socket) do
     form_data = socket.assigns.form_data
-    elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      Map.put(el, "text", value)
-    end)
+
+    elements =
+      update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
+        Map.put(el, "text", value)
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
@@ -225,9 +262,12 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   @impl true
   def handle_event("toggle_optional", %{"index" => index}, socket) do
     form_data = socket.assigns.form_data
-    elements = update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
-      Map.put(el, "optional", !Map.get(el, "optional", false))
-    end)
+
+    elements =
+      update_in_list(form_data.pattern_elements, String.to_integer(index), fn el ->
+        Map.put(el, "optional", !Map.get(el, "optional", false))
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
@@ -240,24 +280,34 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
       {:noreply, put_flash(socket, :error, gettext("Maximum 5 examples allowed."))}
     else
       examples =
-        form_data.examples ++ [%{
-          "sentence" => "",
-          "reading" => "",
-          "meaning" => "",
-          "meaning_bg" => "",
-          "meaning_ja" => ""
-        }]
+        form_data.examples ++
+          [
+            %{
+              "sentence" => "",
+              "reading" => "",
+              "meaning" => "",
+              "meaning_bg" => "",
+              "meaning_ja" => ""
+            }
+          ]
 
       {:noreply, assign(socket, :form_data, %{form_data | examples: examples})}
     end
   end
 
   @impl true
-  def handle_event("update_example", %{"index" => index, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_example",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
     form_data = socket.assigns.form_data
-    examples = update_in_list(form_data.examples, String.to_integer(index), fn ex ->
-      Map.put(ex, field, value)
-    end)
+
+    examples =
+      update_in_list(form_data.examples, String.to_integer(index), fn ex ->
+        Map.put(ex, field, value)
+      end)
+
     {:noreply, assign(socket, :form_data, %{form_data | examples: examples})}
   end
 
@@ -317,7 +367,11 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   end
 
   @impl true
-  def handle_event("update_word_color", %{"index" => index, "field" => field, "value" => value}, socket) do
+  def handle_event(
+        "update_word_color",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
     form_data = socket.assigns.form_data
 
     colors =
@@ -402,11 +456,21 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   end
 
   defp put_in_form_data(form_data, "title", value), do: %{form_data | title: value}
-  defp put_in_form_data(form_data, "jlpt_level", value), do: %{form_data | jlpt_level: String.to_integer(value)}
-  defp put_in_form_data(form_data, "frequency", value), do: %{form_data | frequency: String.to_integer(value)}
+
+  defp put_in_form_data(form_data, "jlpt_level", value),
+    do: %{form_data | jlpt_level: String.to_integer(value)}
+
+  defp put_in_form_data(form_data, "frequency", value),
+    do: %{form_data | frequency: String.to_integer(value)}
+
   defp put_in_form_data(form_data, "description", value), do: %{form_data | description: value}
-  defp put_in_form_data(form_data, "description_bg", value), do: %{form_data | description_bg: value}
-  defp put_in_form_data(form_data, "description_ja", value), do: %{form_data | description_ja: value}
+
+  defp put_in_form_data(form_data, "description_bg", value),
+    do: %{form_data | description_bg: value}
+
+  defp put_in_form_data(form_data, "description_ja", value),
+    do: %{form_data | description_ja: value}
+
   defp put_in_form_data(form_data, _, _), do: form_data
 
   defp update_in_list(list, index, fun) do

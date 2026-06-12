@@ -250,14 +250,17 @@
         <% else %>
           <div class="bg-error/5 border border-error/20 rounded-lg p-4 mb-6">
             <p class="text-sm text-base-content/70">
-              {gettext("Soft-deleting this user will prevent them from logging in. Their data will be preserved.")}
+              {gettext(
+                "Soft-deleting this user will prevent them from logging in. Their data will be preserved."
+              )}
             </p>
           </div>
           <button
             type="button"
             phx-click="soft_delete"
             data-confirm={
-              gettext("Are you sure you want to soft-delete %{email}? They will not be able to log in.",
+              gettext(
+                "Are you sure you want to soft-delete %{email}? They will not be able to log in.",
                 email: @user.email
               )
             }

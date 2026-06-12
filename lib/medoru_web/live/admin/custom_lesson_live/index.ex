@@ -15,7 +15,9 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-base-content">{gettext("Custom Lesson Management")}</h1>
           <p class="mt-2 text-secondary">
-            {gettext("Manage all custom lessons across the platform. Total: %{count}", count: length(@lessons))}
+            {gettext("Manage all custom lessons across the platform. Total: %{count}",
+              count: length(@lessons)
+            )}
           </p>
         </div>
 
@@ -142,7 +144,9 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
                       <button
                         phx-click="delete"
                         phx-value-id={lesson.id}
-                        data-confirm={gettext("Permanently delete this lesson? This cannot be undone.")}
+                        data-confirm={
+                          gettext("Permanently delete this lesson? This cannot be undone.")
+                        }
                         class="btn btn-sm btn-ghost text-error"
                       >
                         <.icon name="hero-trash" class="w-4 h-4" />
@@ -215,7 +219,9 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
           <%= if @lessons == [] do %>
             <div class="p-12 text-center">
               <.icon name="hero-book-open" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
-              <p class="text-base-content/50">{gettext("No custom lessons found matching your criteria.")}</p>
+              <p class="text-base-content/50">
+                {gettext("No custom lessons found matching your criteria.")}
+              </p>
             </div>
           <% end %>
         </div>
@@ -269,7 +275,11 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, socket.assigns.status_filter} | &1],
+          else: &1
+      )
 
     lessons = Content.list_all_custom_lessons(opts)
 
@@ -286,7 +296,11 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, socket.assigns.status_filter} | &1],
+          else: &1
+      )
 
     lessons = Content.list_all_custom_lessons(opts)
 
@@ -303,7 +317,11 @@ defmodule MedoruWeb.Admin.CustomLessonLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, socket.assigns.status_filter} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, socket.assigns.status_filter} | &1],
+          else: &1
+      )
 
     lessons = Content.list_all_custom_lessons(opts)
 

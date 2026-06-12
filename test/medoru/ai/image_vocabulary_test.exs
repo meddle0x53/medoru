@@ -3,8 +3,8 @@ defmodule Medoru.AI.ImageVocabularyTest do
 
   alias Medoru.AI.ImageVocabulary
 
-  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-               0x49, 0x48, 0x44, 0x52>>
+  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+               0x44, 0x52>>
 
   describe "extract_vocabulary/2" do
     test "returns error when API key is not configured" do
@@ -21,16 +21,17 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!([
-                    %{
-                      "text" => "消す",
-                      "reading" => "けす",
-                      "meaning" => "to turn off",
-                      "word_type" => "verb",
-                      "verb_group" => "I",
-                      "image_text" => "消します"
-                    }
-                  ]),
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "消す",
+                        "reading" => "けす",
+                        "meaning" => "to turn off",
+                        "word_type" => "verb",
+                        "verb_group" => "I",
+                        "image_text" => "消します"
+                      }
+                    ]),
                   "refusal" => nil
                 }
               }
@@ -40,7 +41,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["text"] == "消す"
         assert word["reading"] == "けす"
         assert word["meaning"] == "to turn off"
@@ -58,16 +63,17 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "words" => [
-                      %{
-                        "text" => "電気",
-                        "reading" => "でんき",
-                        "meaning" => "electricity",
-                        "word_type" => "noun"
-                      }
-                    ]
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "words" => [
+                        %{
+                          "text" => "電気",
+                          "reading" => "でんき",
+                          "meaning" => "electricity",
+                          "word_type" => "noun"
+                        }
+                      ]
+                    }),
                   "refusal" => nil
                 }
               }
@@ -77,7 +83,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["text"] == "電気"
         assert word["reading"] == "でんき"
         assert word["notes"] == ""
@@ -91,16 +101,18 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => "```json\n" <> Jason.encode!([
-                    %{
-                      "text" => "食べる",
-                      "reading" => "たべる",
-                      "meaning" => "to eat",
-                      "word_type" => "verb",
-                      "verb_group" => "II",
-                      "image_text" => "食べます"
-                    }
-                  ]) <> "\n```",
+                  "content" =>
+                    "```json\n" <>
+                      Jason.encode!([
+                        %{
+                          "text" => "食べる",
+                          "reading" => "たべる",
+                          "meaning" => "to eat",
+                          "word_type" => "verb",
+                          "verb_group" => "II",
+                          "image_text" => "食べます"
+                        }
+                      ]) <> "\n```",
                   "refusal" => nil
                 }
               }
@@ -110,7 +122,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["text"] == "食べる"
         assert word["notes"] == "Group II verb (from: 食べます)"
       end)
@@ -133,7 +149,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:error, message} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:error, message} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert message =~ "refused"
       end)
     end
@@ -155,7 +175,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:error, message} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:error, message} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert message =~ "empty response"
       end)
     end
@@ -173,7 +197,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:error, message} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:error, message} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert message =~ "Rate limit exceeded"
       end)
     end
@@ -185,16 +213,17 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!([
-                    %{
-                      "text" => "する",
-                      "reading" => "する",
-                      "meaning" => "to do",
-                      "word_type" => "verb",
-                      "verb_group" => "III",
-                      "image_text" => "します"
-                    }
-                  ]),
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "する",
+                        "reading" => "する",
+                        "meaning" => "to do",
+                        "word_type" => "verb",
+                        "verb_group" => "III",
+                        "image_text" => "します"
+                      }
+                    ]),
                   "refusal" => nil
                 }
               }
@@ -204,7 +233,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["notes"] == "Group III verb (from: します)"
       end)
     end
@@ -216,14 +249,15 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!([
-                    %{
-                      "text" => "学校",
-                      "reading" => "がっこう",
-                      "meaning" => "school",
-                      "word_type" => "noun"
-                    }
-                  ]),
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "学校",
+                        "reading" => "がっこう",
+                        "meaning" => "school",
+                        "word_type" => "noun"
+                      }
+                    ]),
                   "refusal" => nil
                 }
               }
@@ -233,7 +267,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["notes"] == ""
         assert word["verb_group"] == nil
       end)
@@ -246,14 +284,15 @@ defmodule Medoru.AI.ImageVocabularyTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!([
-                    %{
-                      "text" => "速い",
-                      "reading" => "はやい",
-                      "meaning" => "fast",
-                      "word_type" => "Adjective"
-                    }
-                  ]),
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "速い",
+                        "reading" => "はやい",
+                        "meaning" => "fast",
+                        "word_type" => "Adjective"
+                      }
+                    ]),
                   "refusal" => nil
                 }
               }
@@ -263,7 +302,11 @@ defmodule Medoru.AI.ImageVocabularyTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, [word]} = ImageVocabulary.extract_vocabulary(@dummy_png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
         assert word["word_type"] == "adjective"
       end)
     end
@@ -285,7 +328,10 @@ defmodule Medoru.AI.ImageVocabularyTest do
           })
         end)
 
-        assert {:ok, []} = ImageVocabulary.extract_vocabulary(png, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, []} =
+                 ImageVocabulary.extract_vocabulary(png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
       end)
     end
 
@@ -306,7 +352,10 @@ defmodule Medoru.AI.ImageVocabularyTest do
           })
         end)
 
-        assert {:ok, []} = ImageVocabulary.extract_vocabulary(jpeg, req_opts: [plug: {Req.Test, ImageVocabulary}])
+        assert {:ok, []} =
+                 ImageVocabulary.extract_vocabulary(jpeg,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
       end)
     end
   end

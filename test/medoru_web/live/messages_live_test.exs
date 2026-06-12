@@ -154,7 +154,8 @@ defmodule MedoruWeb.MessagesLiveTest do
 
       Medoru.Social.block_user(user_a.id, user_b.id)
 
-      {:error, {:live_redirect, %{to: "/messages", flash: %{"error" => "Conversation not found."}}}} =
+      {:error,
+       {:live_redirect, %{to: "/messages", flash: %{"error" => "Conversation not found."}}}} =
         conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
     end
 

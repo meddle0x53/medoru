@@ -4,6 +4,7 @@ import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
 import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
+import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { getCharmById } from '../data/charms.js'
@@ -18,6 +19,7 @@ export default class BattleScene extends Phaser.Scene {
     const userData = getWindowGameData()
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
+    this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.enemy = new Enemy('oni')
     this.turnManager = new TurnManager(this.player, this.enemy)
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
@@ -44,14 +46,14 @@ export default class BattleScene extends Phaser.Scene {
     this.createUI()
     this.createIntentionIcons()
     this.createChallengeOverlay()
-    this.createReadinessOverlay()
+    this.createWordChallenge()
     this.createItemMenu()
     this.createSwitchActionDialog()
     this.createCombatLog()
 
     this.input.keyboard.on('keydown', this.handleKeyInput, this)
 
-    // Hidden input for mobile touch keyboard during readiness challenge
+    // Hidden input for mobile touch keyboard during word challenges
     this.hiddenInput = document.createElement('input')
     this.hiddenInput.type = 'text'
     this.hiddenInput.style.position = 'fixed'
@@ -72,7 +74,7 @@ export default class BattleScene extends Phaser.Scene {
 
     // Keep overlay visible when mobile keyboard opens
     this._onVisualViewportResize = () => {
-      if (this.readinessChallengeActive || this.reactionChallengeActive) {
+      if (this.wordChallengeActive) {
         window.scrollTo(0, 0)
         document.body.scrollTop = 0
         document.documentElement.scrollTop = 0
@@ -87,21 +89,13 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (this.challengeActive && this.currentChallenge && !this.readinessChallengeActive && !this.reactionChallengeActive) {
+    if (this.challengeActive && this.currentChallenge && !this.wordChallengeActive) {
       const elapsed = Date.now() - this.currentChallenge.startTime
       const pct = Math.max(0, 1 - elapsed / this.currentChallenge.timeLimit)
       this.challengeTimerBar.setScale(pct, 1)
       if (elapsed >= this.currentChallenge.timeLimit) {
         this.submitChallenge()
       }
-    }
-
-    if (this.readinessChallengeActive) {
-      this.updateReadinessTimer()
-    }
-
-    if (this.reactionChallengeActive) {
-      this.updateReactionTimer()
     }
 
     // Charm overlays bob gently above the hero's head
@@ -293,6 +287,11 @@ export default class BattleScene extends Phaser.Scene {
     // Action panel — modern rounded glass panel behind hero sprite
     this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
 
+    // TEMPORARY: Win Battle button for testing the reward loop
+    this.winBattleBtn = this.createButton(120, 140, 'Win Battle', () => {
+      this.scene.start('WinScene', { player: this.player, enemy: this.enemy })
+    }, 160, 36, 0x27ae60, 0x2ecc71)
+
     this.skillButtons = []
     // All active actions get a button (parry is passive but shown)
     const clickableActions = this.player.activeActions
@@ -455,48 +454,14 @@ export default class BattleScene extends Phaser.Scene {
     this.challengeOverlay.add(this.challengeTimerBar)
   }
 
-  createReadinessOverlay() {
-    this.readinessOverlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
-    this.readinessOverlay.setDepth(100)
-    this.readinessOverlay.setVisible(false)
-
-    // Dark backdrop
-    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
-    this.readinessOverlay.add(backdrop)
-
-    // Panel
-    const panel = this.add.rectangle(0, 0, 440, 280, COLORS.panelBg).setStrokeStyle(2, COLORS.warning)
-    this.readinessOverlay.add(panel)
-
-    // Title
-    this.readinessTitle = this.add.text(0, -100, 'End Turn Challenge', { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessTitle)
-
-    // Prompt
-    this.readinessPrompt = this.add.text(0, -60, 'Type the reading of this word:', { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessPrompt)
-
-    // Word display (large Japanese text)
-    this.readinessWord = this.add.text(0, -15, '', { ...FONTS.kanji, fontSize: '42px', color: '#ecf0f1' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessWord)
-
-    // Reading hint (small, shown after a few seconds on failure path)
-    this.readinessHint = this.add.text(0, 25, '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessHint)
-
-    // Input display
-    this.readinessInputText = this.add.text(0, 55, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessInputText)
-
-    // Timer bar background
-    const timerBg = this.add.rectangle(0, 95, 320, 12, COLORS.hpBg).setOrigin(0.5)
-    this.readinessOverlay.add(timerBg)
-    this.readinessTimerBar = this.add.rectangle(-160, 95, 320, 12, COLORS.warning).setOrigin(0, 0.5)
-    this.readinessOverlay.add(this.readinessTimerBar)
-
-    // Timer text
-    this.readinessTimerText = this.add.text(0, 115, '10.0s', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
-    this.readinessOverlay.add(this.readinessTimerText)
+  createWordChallenge() {
+    this.wordChallengeActive = false
+    this.wordChallenge = new WordChallengeSystem(this, {
+      title: 'End Turn Challenge',
+      promptForMeaning: 'Type the meaning of this word:',
+      timeLimit: 10000,
+      hangOnWrong: 5000,
+    })
   }
 
   createItemMenu() {
@@ -1012,103 +977,55 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    this.readinessChallengeActive = true
-    this.challengeActive = true
-    this.setSkillButtonsEnabled(false)
-    this.endTurnBtn.setVisible(false)
-
     // Pick a random word
     const wordData = wordList[Math.floor(Math.random() * wordList.length)]
-    this.currentReadinessWord = wordData
-    this.readinessInput = ''
-    this.readinessStartTime = Date.now()
-    this.readinessTimeLimit = 10000 // 10 seconds
-
-    // Always ask for meaning (not reading) since we only have English meanings
-    const hasMeaning = wordData.meaning && wordData.meaning.trim().length > 0
-    if (!hasMeaning) {
+    if (!wordData.meaning || wordData.meaning.trim().length === 0) {
       this.addCombatLog('No meaning available — skipping challenge.')
       this.turnManager.endTurn()
       return
     }
-    this.readinessChallengeType = 'meaning'
 
-    // Reset UI state from any previous challenge
-    this.readinessTitle.setText('End Turn Challenge')
-    this.readinessTitle.setColor('#f39c12')
-    this.readinessWord.setText(wordData.word)
-    this.readinessWord.setColor('#ecf0f1')
-    this.readinessWord.setScale(1)
-    this.readinessWord.setAlpha(1)
-    this.readinessWord.setY(-15)
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
 
-    this.readinessPrompt.setText('Type the meaning of this word:')
-    this.readinessHint.setText(wordData.reading || '')
-    this.readinessPrompt.setColor('#ecf0f1')
-
-    this.readinessInputText.setText('')
-    this.readinessTimerBar.setScale(1, 1)
-    this.readinessTimerText.setText('10.0s')
-    this.readinessOverlay.setVisible(true)
-
-    // Focus hidden input to trigger mobile keyboard
-    if (this.hiddenInput) {
-      this.hiddenInput.value = ''
-      this.hiddenInput.focus()
-      window.scrollTo(0, 0)
-    }
+    this.wordChallenge.start(wordData, {
+      title: 'End Turn Challenge',
+      promptType: 'meaning',
+      timeLimit: 10000,
+      hangOnWrong: 5000,
+      hangOnCorrect: 900,
+      onStart: () => {
+        this.challengeActive = true
+        this.wordChallengeActive = true
+        window.scrollTo(0, 0)
+      },
+      onResult: ({ success, timedOut, word, correctAnswer }) => {
+        if (success) {
+          this.player.setReadiness(1)
+          this._animateWordChallengeSuccess(this.wordChallenge.wordText)
+        } else {
+          this.player.setReadiness(0)
+          this._animateWordChallengeFailure(this.wordChallenge.wordText, timedOut, correctAnswer)
+        }
+      },
+      onComplete: ({ success, timedOut, word }) => {
+        this.challengeActive = false
+        this.wordChallengeActive = false
+        if (success) {
+          this.addCombatLog('Readiness: Focused! (+5 DEF, enemy miss chance doubled)')
+          this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 120, 'FOCUSED!', COLORS.success)
+        } else {
+          const logMsg = timedOut ? "Time's up! Readiness: Distracted..." : 'Wrong! Readiness: Distracted...'
+          this.addCombatLog(logMsg)
+          if (word?.meaning) this.addCombatLog(`Correct meaning: ${word.meaning}`)
+        }
+        this.turnManager.endTurn()
+      },
+    })
   }
 
-  updateReadinessTimer() {
-    if (!this.readinessChallengeActive) return
-    const elapsed = Date.now() - this.readinessStartTime
-    const remaining = Math.max(0, this.readinessTimeLimit - elapsed)
-    const pct = remaining / this.readinessTimeLimit
-    this.readinessTimerBar.setScale(pct, 1)
-    this.readinessTimerText.setText((remaining / 1000).toFixed(1) + 's')
-
-    if (remaining <= 0) {
-      this.submitReadinessChallenge(true)
-    }
-  }
-
-  submitReadinessChallenge(timedOut = false) {
-    if (!this.readinessChallengeActive) return
-
-    this.readinessChallengeActive = false
-    this.challengeActive = false
-
-    // Blur hidden input to hide mobile keyboard
-    if (this.hiddenInput) {
-      this.hiddenInput.blur()
-    }
-
-    const input = this.readinessInput.trim()
-    const challengeType = this.readinessChallengeType || 'reading'
-    const wordData = this.currentReadinessWord
-
-    let isCorrect = false
-    let correctAnswer = ''
-    if (challengeType === 'meaning') {
-      correctAnswer = (wordData?.meaning || '').trim()
-      isCorrect = !timedOut && input.length > 0 && input.toLowerCase() === correctAnswer.toLowerCase()
-    } else {
-      correctAnswer = (wordData?.reading || '').trim()
-      isCorrect = !timedOut && input.length > 0 && input.toLowerCase() === correctAnswer.toLowerCase()
-    }
-
-    if (isCorrect) {
-      this.player.setReadiness(1)
-      this._animateReadinessSuccess(challengeType, correctAnswer)
-    } else {
-      this.player.setReadiness(0)
-      this._animateReadinessFailure(timedOut, challengeType, correctAnswer)
-    }
-  }
-
-  _animateReadinessSuccess(challengeType, correctAnswer) {
+  _animateWordChallengeSuccess(word) {
     // Positive animation: word bounces up, flashes green, sparkles
-    const word = this.readinessWord
     word.setColor('#2ecc71')
 
     this.tweens.add({
@@ -1141,7 +1058,7 @@ export default class BattleScene extends Phaser.Scene {
         fontSize: '16px',
         color: '#2ecc71',
       }).setOrigin(0.5).setAlpha(0)
-      this.readinessOverlay.add(p)
+      this.wordChallenge.overlay.add(p)
 
       this.tweens.add({
         targets: p,
@@ -1163,25 +1080,15 @@ export default class BattleScene extends Phaser.Scene {
         },
       })
     }
-
-    this.readinessPrompt.setText('Correct! Stay focused!')
-    this.readinessPrompt.setColor('#2ecc71')
-
-    this.time.delayedCall(900, () => {
-      this.readinessOverlay.setVisible(false)
-      word.setColor('#ecf0f1')
-      word.setScale(1)
-      this.readinessPrompt.setColor('#ecf0f1')
-      this.addCombatLog('Readiness: Focused! (+5 DEF, enemy miss chance doubled)')
-      this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 120, 'FOCUSED!', COLORS.success)
-      this.turnManager.endTurn()
-    })
   }
 
-  _animateReadinessFailure(timedOut, challengeType, correctAnswer) {
+  _animateWordChallengeFailure(word, timedOut, correctAnswer) {
     // Negative animation: word shakes, flashes red, drops
-    const word = this.readinessWord
     word.setColor('#e74c3c')
+
+    const msg = timedOut ? "Time's up!" : 'Wrong!'
+    this.wordChallenge.feedbackText.setText(`${msg} The meaning was: ${correctAnswer || '?'}`)
+    this.wordChallenge.feedbackText.setColor('#e74c3c')
 
     this.tweens.add({
       targets: word,
@@ -1209,7 +1116,7 @@ export default class BattleScene extends Phaser.Scene {
         fontSize: '24px',
         color: '#e74c3c',
       }).setOrigin(0.5).setAlpha(0)
-      this.readinessOverlay.add(xMark)
+      this.wordChallenge.overlay.add(xMark)
 
       this.tweens.add({
         targets: xMark,
@@ -1230,26 +1137,6 @@ export default class BattleScene extends Phaser.Scene {
         },
       })
     }
-
-    const msg = timedOut ? "Time's up!" : 'Wrong!'
-    const answerLabel = challengeType === 'meaning' ? 'The meaning was' : 'The reading was'
-    this.readinessPrompt.setText(`${msg} ${answerLabel}: ${correctAnswer || '?'}`)
-    this.readinessPrompt.setColor('#e74c3c')
-
-    this.time.delayedCall(5000, () => {
-      this.readinessOverlay.setVisible(false)
-      word.setColor('#ecf0f1')
-      word.setAlpha(1)
-      word.setScale(1)
-      this.readinessPrompt.setColor('#ecf0f1')
-      const logMsg = timedOut ? "Time's up! Readiness: Distracted..." : 'Wrong! Readiness: Distracted...'
-      this.addCombatLog(logMsg)
-      if (correctAnswer) {
-        const logLabel = challengeType === 'meaning' ? 'Correct meaning' : 'Correct reading'
-        this.addCombatLog(`${logLabel}: ${correctAnswer}`)
-      }
-      this.turnManager.endTurn()
-    })
   }
 
   // ---------- Reaction Challenge (during enemy attacks) ----------
@@ -1266,114 +1153,48 @@ export default class BattleScene extends Phaser.Scene {
         return
       }
 
-      this.reactionResolve = resolve
-      this.reactionChallengeActive = true
-      this.challengeActive = true
-
       // Pick a random word
       const wordData = wordList[Math.floor(Math.random() * wordList.length)]
-      this.currentReactionWord = wordData
-      this.reactionInput = ''
-      this.reactionStartTime = Date.now()
-      this.reactionTimeLimit = 5000 // 5 seconds — quick reaction!
-
-      // Always ask for meaning
-      const hasMeaning = wordData.meaning && wordData.meaning.trim().length > 0
-      if (!hasMeaning) {
+      if (!wordData.meaning || wordData.meaning.trim().length === 0) {
         resolve()
         return
       }
-      this.reactionChallengeType = 'meaning'
 
-      // Urgent styling — reset everything from previous challenges
-      this.readinessTitle.setText('REACTION!')
-      this.readinessTitle.setColor('#e74c3c')
-      this.readinessWord.setText(wordData.word)
-      this.readinessWord.setColor('#ecf0f1')
-      this.readinessWord.setScale(1)
-      this.readinessWord.setAlpha(1)
-      this.readinessWord.setY(-15)
-
-      this.readinessPrompt.setText('Quick! Type the meaning:')
-      this.readinessHint.setText(wordData.reading || '')
-      this.readinessPrompt.setColor('#f39c12')
-
-      this.readinessInputText.setText('')
-      this.readinessTimerBar.setScale(1, 1)
-      this.readinessTimerText.setText('5.0s')
-      this.readinessOverlay.setVisible(true)
-
-      // Focus hidden input for mobile keyboard
-      if (this.hiddenInput) {
-        this.hiddenInput.value = ''
-        this.hiddenInput.focus()
-      }
-    })
-  }
-
-  updateReactionTimer() {
-    if (!this.reactionChallengeActive) return
-    const elapsed = Date.now() - this.reactionStartTime
-    const remaining = Math.max(0, this.reactionTimeLimit - elapsed)
-    const pct = remaining / this.reactionTimeLimit
-    this.readinessTimerBar.setScale(pct, 1)
-    this.readinessTimerText.setText((remaining / 1000).toFixed(1) + 's')
-
-    if (remaining <= 0) {
-      this.submitReactionChallenge(true)
-    }
-  }
-
-  submitReactionChallenge(timedOut = false) {
-    if (!this.reactionChallengeActive) return
-
-    this.reactionChallengeActive = false
-    this.challengeActive = false
-
-    if (this.hiddenInput) {
-      this.hiddenInput.blur()
-    }
-
-    const input = this.reactionInput.trim()
-    const challengeType = this.reactionChallengeType || 'reading'
-    const wordData = this.currentReactionWord
-
-    let isCorrect = false
-    let correctAnswer = ''
-    if (challengeType === 'meaning') {
-      correctAnswer = (wordData?.meaning || '').trim()
-      isCorrect = !timedOut && input.length > 0 && input.toLowerCase() === correctAnswer.toLowerCase()
-    } else {
-      correctAnswer = (wordData?.reading || '').trim()
-      isCorrect = !timedOut && input.length > 0 && input.toLowerCase() === correctAnswer.toLowerCase()
-    }
-
-    if (isCorrect) {
-      this.player.reactionMultiplier = 2
-      this.player.lastReactionCorrect = true
-      this.readinessWord.setColor('#2ecc71')
-      this.readinessPrompt.setText('PARRY!')
-      this.readinessPrompt.setColor('#2ecc71')
-      this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 100, 'PARRY!', COLORS.success)
-    } else {
-      this.player.reactionMultiplier = 0.5
-      this.player.lastReactionCorrect = false
-      this.readinessWord.setColor('#e74c3c')
-      this.readinessPrompt.setText('Failed...')
-      this.readinessPrompt.setColor('#e74c3c')
-      this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 100, 'FAILED!', COLORS.danger)
-    }
-
-    // Brief delay so the player sees the feedback before the attack lands
-    this.time.delayedCall(400, () => {
-      this.readinessOverlay.setVisible(false)
-      this.readinessWord.setColor('#ecf0f1')
-      this.readinessPrompt.setColor('#ecf0f1')
-
-      if (this.reactionResolve) {
-        this.reactionResolve()
-        this.reactionResolve = null
-      }
+      this.wordChallenge.start(wordData, {
+        title: 'REACTION!',
+        promptType: 'meaning',
+        timeLimit: 5000,
+        hangOnWrong: 400,
+        hangOnCorrect: 400,
+        onStart: () => {
+          this.challengeActive = true
+          this.wordChallengeActive = true
+          this.wordChallenge.titleText.setColor('#e74c3c')
+          this.wordChallenge.promptText.setColor('#f39c12')
+        },
+        onResult: ({ success, timedOut, word }) => {
+          if (success) {
+            this.player.reactionMultiplier = 2
+            this.player.lastReactionCorrect = true
+            this.wordChallenge.wordText.setColor('#2ecc71')
+            this.wordChallenge.feedbackText.setText('PARRY!')
+            this.wordChallenge.feedbackText.setColor('#2ecc71')
+            this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 100, 'PARRY!', COLORS.success)
+          } else {
+            this.player.reactionMultiplier = 0.5
+            this.player.lastReactionCorrect = false
+            this.wordChallenge.wordText.setColor('#e74c3c')
+            this.wordChallenge.feedbackText.setText('Failed...')
+            this.wordChallenge.feedbackText.setColor('#e74c3c')
+            this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 100, 'FAILED!', COLORS.danger)
+          }
+        },
+        onComplete: () => {
+          this.challengeActive = false
+          this.wordChallengeActive = false
+          resolve()
+        },
+      })
     })
   }
 
@@ -1487,31 +1308,8 @@ export default class BattleScene extends Phaser.Scene {
     // Prevent browser find/search from intercepting typed keys
     event.preventDefault()
 
-    // Reaction challenge (during enemy turn) takes priority
-    if (this.reactionChallengeActive) {
-      if (event.key === 'Backspace') {
-        this.reactionInput = this.reactionInput.slice(0, -1)
-      } else if (event.key === 'Enter') {
-        this.submitReactionChallenge()
-        return
-      } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
-        this.reactionInput += event.key
-      }
-      this.readinessInputText.setText(this.reactionInput)
-      return
-    }
-
-    // Readiness challenge uses its own input state
-    if (this.readinessChallengeActive) {
-      if (event.key === 'Backspace') {
-        this.readinessInput = this.readinessInput.slice(0, -1)
-      } else if (event.key === 'Enter') {
-        this.submitReadinessChallenge()
-        return
-      } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
-        this.readinessInput += event.key
-      }
-      this.readinessInputText.setText(this.readinessInput)
+    // The reusable word challenge manages its own keyboard input
+    if (this.wordChallengeActive) {
       return
     }
 
@@ -1837,12 +1635,16 @@ export default class BattleScene extends Phaser.Scene {
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
     switch (result.type) {
       case 'attack': {
-        const isHeavy = this.selectedSkill?.id === 'heavy_slash'
+        const isHeavy = this.selectedSkill?.id === 'heavy_slash' || this.selectedSkill?.id === 'two_hand_heavy'
         this.setPlayerPose(isHeavy ? 'slash_heavy' : 'slash_light_01')
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
-        this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}`)
+        const lifestealText = result.lifesteal ? ` (+${result.lifesteal} HP)` : ''
+        this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
         this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
+        if (result.lifesteal) {
+          this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.lifesteal}`, COLORS.success)
+        }
         this.shakeSprite(this.enemySprite)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
@@ -1852,6 +1654,23 @@ export default class BattleScene extends Phaser.Scene {
         this.addCombatLog(`${quality} ${this.selectedSkill.name} -> +${result.block} block!`)
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+        break
+      }
+      case 'attack_defence': {
+        this.setPlayerPose('block_idle')
+        const critText = result.isCrit ? ' CRITICAL!' : ''
+        const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
+        this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
+        this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
+        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
+        this.shakeSprite(this.enemySprite)
+        this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+        break
+      }
+      case 'buff': {
+        const buffLabel = result.buffType === 'sword_damage_bonus' ? 'Blade sharpened!' : result.buffType === 'berserk_lifesteal' ? 'Berserk rage!' : 'Buff active'
+        this.addCombatLog(`${quality} ${this.selectedSkill.name} -> ${buffLabel}`)
+        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, buffLabel, 0xf39c12)
         break
       }
       case 'heal': {
@@ -2188,12 +2007,23 @@ export default class BattleScene extends Phaser.Scene {
     const isWin = winner === 'player'
     if (isWin) {
       this.setEnemySprite('enemy_kasa_obake_defeated')
-    } else {
-      this.setPlayerPose('defeated')
+      // Send result to server before transitioning
+      sendRunResult({
+        winner,
+        playerHp: this.player.hp,
+        enemyHp: this.enemy.hp,
+        turnCount: this.turnManager.turnCount,
+        timestamp: new Date().toISOString(),
+      })
+      this.scene.start('WinScene', { player: this.player, enemy: this.enemy })
+      return
     }
 
-    const title = isWin ? 'VICTORY!' : 'DEFEAT...'
-    const color = isWin ? COLORS.success : COLORS.danger
+    // Defeat handling — keep existing static overlay
+    this.setPlayerPose('defeated')
+
+    const title = 'DEFEAT...'
+    const color = COLORS.danger
 
     // Overlay
     const overlay = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.6).setDepth(200)
@@ -2204,7 +2034,7 @@ export default class BattleScene extends Phaser.Scene {
       color: '#' + color.toString(16).padStart(6, '0'),
     }).setOrigin(0.5).setDepth(200)
 
-    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, isWin ? 'You defeated the Kasa-obake!' : 'The Kasa-obake was too strong...', {
+    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, 'The Kasa-obake was too strong...', {
       ...FONTS.default,
       fontSize: '16px',
     }).setOrigin(0.5).setDepth(200)
@@ -2237,6 +2067,9 @@ export default class BattleScene extends Phaser.Scene {
     }
     if (this.kanjiDrawing) {
       this.kanjiDrawing.destroy()
+    }
+    if (this.wordChallenge) {
+      this.wordChallenge.destroy()
     }
     if (window.visualViewport && this._onVisualViewportResize) {
       window.visualViewport.removeEventListener('resize', this._onVisualViewportResize)

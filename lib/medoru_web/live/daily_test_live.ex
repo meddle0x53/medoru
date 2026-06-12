@@ -531,10 +531,12 @@ defmodule MedoruWeb.DailyTestLive do
 
     # Award XP and update streak via daily challenge system
     xp = score
-    _ = Learning.complete_daily_challenge(user.id, "daily_test", xp,
-          score: score,
-          metadata: %{total_possible: total_possible, test_id: test.id}
-        )
+
+    _ =
+      Learning.complete_daily_challenge(user.id, "daily_test", xp,
+        score: score,
+        metadata: %{total_possible: total_possible, test_id: test.id}
+      )
 
     # Check daily reviews badges
     daily_count = Tests.count_completed_daily_tests(user.id)

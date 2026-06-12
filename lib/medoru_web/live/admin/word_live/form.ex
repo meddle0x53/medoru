@@ -683,11 +683,11 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     uploads_dir = uploads_dir()
     filename = Path.basename(temp_web_path)
     temp_full_path = Path.join(uploads_dir, String.trim_leading(temp_web_path, "/uploads/"))
-    
+
     dest_dir = Path.join(uploads_dir, "word_pronunciations")
     File.mkdir_p!(dest_dir)
     dest_full_path = Path.join(dest_dir, filename)
-    
+
     File.rename!(temp_full_path, dest_full_path)
     "/uploads/word_pronunciations/#{filename}"
   end
@@ -720,11 +720,11 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     uploads_dir = uploads_dir()
     filename = Path.basename(temp_web_path)
     temp_full_path = Path.join(uploads_dir, String.trim_leading(temp_web_path, "/uploads/"))
-    
+
     dest_dir = Path.join(uploads_dir, "word_images")
     File.mkdir_p!(dest_dir)
     dest_full_path = Path.join(dest_dir, filename)
-    
+
     File.rename!(temp_full_path, dest_full_path)
     "/uploads/word_images/#{filename}"
   end

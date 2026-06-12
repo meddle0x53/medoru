@@ -37,7 +37,9 @@ defmodule MedoruWeb.Admin.ClassroomLive.Show do
             <%= if @classroom.status == :active do %>
               <button
                 phx-click="close_classroom"
-                data-confirm={gettext("Close this classroom? Students will no longer be able to join.")}
+                data-confirm={
+                  gettext("Close this classroom? Students will no longer be able to join.")
+                }
                 class="btn btn-warning"
               >
                 <.icon name="hero-lock-closed" class="w-4 h-4 mr-2" /> {gettext("Close Classroom")}

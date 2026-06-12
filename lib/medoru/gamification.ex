@@ -267,9 +267,11 @@ defmodule Medoru.Gamification do
           end
 
           # Award XP for earning the badge
-          _ = Accounts.add_xp(user_id, 100,
-                source_type: "badge_earned",
-                description: "Earned badge: #{badge.name}")
+          _ =
+            Accounts.add_xp(user_id, 100,
+              source_type: "badge_earned",
+              description: "Earned badge: #{badge.name}"
+            )
 
           user_badge
         end)

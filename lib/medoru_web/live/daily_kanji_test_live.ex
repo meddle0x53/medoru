@@ -24,7 +24,10 @@ defmodule MedoruWeb.DailyKanjiTestLive do
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-base-content">{gettext("Daily Kanji Challenge")}</h1>
           <p class="text-secondary mt-1">
-            {gettext("Practice writing %{count} kanji. 10 are your least-known, 5 are random. Each kanji is worth 30 XP if you keep wrong strokes under 4.", count: @kanji_count)}
+            {gettext(
+              "Practice writing %{count} kanji. 10 are your least-known, 5 are random. Each kanji is worth 30 XP if you keep wrong strokes under 4.",
+              count: @kanji_count
+            )}
           </p>
         </div>
 
@@ -116,9 +119,14 @@ defmodule MedoruWeb.DailyKanjiTestLive do
                     {@current_kanji.meanings |> Enum.take(2) |> Enum.join(", ")}
                   </h3>
                   <p class="text-sm text-secondary mt-1">
-                    <span class="font-medium">{gettext("On")}:</span> {first_reading(@current_kanji, :on)} •
-                    <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@current_kanji, :kun)} •
-                    {@current_kanji.stroke_count} {gettext("strokes")}
+                    <span class="font-medium">{gettext("On")}:</span> {first_reading(
+                      @current_kanji,
+                      :on
+                    )} •
+                    <span class="font-medium">{gettext("Kun")}:</span> {first_reading(
+                      @current_kanji,
+                      :kun
+                    )} • {@current_kanji.stroke_count} {gettext("strokes")}
                   </p>
                 </div>
 
@@ -127,7 +135,13 @@ defmodule MedoruWeb.DailyKanjiTestLive do
                   id={"daily-kanji-writing-" <> @current_kanji.id}
                   phx-hook="KanjiWriting"
                 >
-                  <div data-stroke-data={Jason.encode!((@current_kanji.stroke_data || %{})["strokes"] || [])} class="hidden"></div>
+                  <div
+                    data-stroke-data={
+                      Jason.encode!((@current_kanji.stroke_data || %{})["strokes"] || [])
+                    }
+                    class="hidden"
+                  >
+                  </div>
 
                   <div class="flex justify-center mb-4">
                     <div
@@ -202,7 +216,13 @@ defmodule MedoruWeb.DailyKanjiTestLive do
         {:ok,
          socket
          |> assign(:page_title, gettext("Daily Kanji Challenge"))
-         |> put_flash(:error, gettext("Not enough learned kanji with stroke data. Learn at least %{count} kanji first!", count: @kanji_count))
+         |> put_flash(
+           :error,
+           gettext(
+             "Not enough learned kanji with stroke data. Learn at least %{count} kanji first!",
+             count: @kanji_count
+           )
+         )
          |> assign(:finished, true)
          |> assign(:already_completed, false)
          |> assign(:kanji_count, @kanji_count)
@@ -256,13 +276,16 @@ defmodule MedoruWeb.DailyKanjiTestLive do
     {:noreply, assign(socket, :current_wrong_strokes, count)}
   end
 
-  defp parse_wrong_strokes(%{"wrong_strokes" => wrong_strokes}) when is_integer(wrong_strokes), do: wrong_strokes
+  defp parse_wrong_strokes(%{"wrong_strokes" => wrong_strokes}) when is_integer(wrong_strokes),
+    do: wrong_strokes
+
   defp parse_wrong_strokes(%{"wrong_strokes" => wrong_strokes}) when is_binary(wrong_strokes) do
     case Integer.parse(wrong_strokes) do
       {n, _} -> n
       :error -> 0
     end
   end
+
   defp parse_wrong_strokes(_), do: 0
 
   defp parse_boolean(true, _default), do: true
@@ -282,7 +305,8 @@ defmodule MedoruWeb.DailyKanjiTestLive do
 
     results = [{current_kanji.id, completed, wrong_strokes} | socket.assigns.results]
 
-    correct_count = if completed, do: socket.assigns.correct_count + 1, else: socket.assigns.correct_count
+    correct_count =
+      if completed, do: socket.assigns.correct_count + 1, else: socket.assigns.correct_count
 
     if current_index >= @kanji_count do
       # Finished - calculate XP per kanji (<4 wrong strokes = 30 XP, 4+ = 0 XP)

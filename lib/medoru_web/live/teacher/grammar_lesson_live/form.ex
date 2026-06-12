@@ -1121,6 +1121,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
               "form" => List.first(el["forms"] || []),
               "forms" => nil
             })
+
           _ ->
             el
         end

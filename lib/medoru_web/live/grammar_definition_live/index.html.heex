@@ -109,7 +109,10 @@
                 </h3>
                 <div class="flex items-center gap-1.5">
                   <%= if grammar.frequency && grammar.frequency != 1000 do %>
-                    <span class="badge badge-ghost text-xs" title={gettext("Frequency: lower = more common")}>
+                    <span
+                      class="badge badge-ghost text-xs"
+                      title={gettext("Frequency: lower = more common")}
+                    >
                       #{grammar.frequency}
                     </span>
                   <% end %>
@@ -142,7 +145,9 @@
                         {element["text"] || gettext("particle")}
                       </span>
                     <% _ -> %>
-                      <span class="px-2 py-0.5 bg-base-200 rounded text-sm">{element["type"]}</span>
+                      <span class="px-2 py-0.5 bg-base-200 rounded text-sm">
+                        {element["type"]}
+                      </span>
                   <% end %>
                 <% end %>
               </div>
@@ -151,13 +156,18 @@
               <%= if grammar.description do %>
                 <p class="text-sm text-secondary line-clamp-2">
                   {String.slice(grammar.description, 0, 120)}
-                  <%= if String.length(grammar.description) > 120 do %>...<% end %>
+                  <%= if String.length(grammar.description) > 120 do %>
+                    ...
+                  <% end %>
                 </p>
               <% end %>
 
               <div class="mt-3 flex items-center text-sm text-primary">
                 {gettext("View details")}
-                <.icon name="hero-arrow-right" class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                <.icon
+                  name="hero-arrow-right"
+                  class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
+                />
               </div>
             </div>
           </.link>

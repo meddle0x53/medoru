@@ -40,7 +40,9 @@ defmodule Medoru.Content.KanjiStrokeFlipFix do
     results =
       Enum.reduce(candidates, %{fixed: 0, errors: []}, fn kanji, acc ->
         case fix_kanji(kanji) do
-          {:ok, :fixed} -> Map.update!(acc, :fixed, &(&1 + 1))
+          {:ok, :fixed} ->
+            Map.update!(acc, :fixed, &(&1 + 1))
+
           {:error, reason} ->
             acc
             |> Map.update!(:errors, &[reason | &1])
@@ -53,6 +55,7 @@ defmodule Medoru.Content.KanjiStrokeFlipFix do
 
     if results.errors != [] do
       Logger.warning("  Errors: #{length(results.errors)}")
+
       Enum.take(results.errors, 10)
       |> Enum.each(fn err -> Logger.warning("    #{err}") end)
     end

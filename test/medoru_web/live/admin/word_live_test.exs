@@ -59,20 +59,21 @@ defmodule MedoruWeb.Admin.WordLiveTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{
-                  "meaning" => "Japan",
-                  "reading" => "にほん",
-                  "difficulty" => 5,
-                  "word_type" => "noun",
-                  "usage_frequency" => 100,
-                  "example_sentence" => "日本に行きたいです。",
-                  "example_reading" => "にほんにいきたいです。",
-                  "example_meaning" => "I want to go to Japan.",
-                  "translations" => %{
-                    "bg" => %{"meaning" => "Япония", "example" => "Искам да отида в Япония."},
-                    "ja" => %{"meaning" => "日本", "example" => "日本に行きたいです。"}
-                  }
-                })
+                "content" =>
+                  Jason.encode!(%{
+                    "meaning" => "Japan",
+                    "reading" => "にほん",
+                    "difficulty" => 5,
+                    "word_type" => "noun",
+                    "usage_frequency" => 100,
+                    "example_sentence" => "日本に行きたいです。",
+                    "example_reading" => "にほんにいきたいです。",
+                    "example_meaning" => "I want to go to Japan.",
+                    "translations" => %{
+                      "bg" => %{"meaning" => "Япония", "example" => "Искам да отида в Япония."},
+                      "ja" => %{"meaning" => "日本", "example" => "日本に行きたいです。"}
+                    }
+                  })
               }
             }
           ]

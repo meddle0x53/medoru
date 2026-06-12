@@ -801,7 +801,12 @@ const ChatCrypto = {
     el.appendChild(placeholder)
 
     fetchWordPreview(wordText).then((data) => {
-      if (data && data.id) {
+      if (data && data.blocked) {
+        const span = document.createElement("span")
+        span.className = "text-error text-sm italic"
+        span.textContent = data.message || "unsafe content detected"
+        placeholder.replaceWith(span)
+      } else if (data && data.id) {
         const a = document.createElement("a")
         a.href = data.path
         a.target = "_blank"
@@ -912,6 +917,11 @@ const ChatCrypto = {
     fetchWordPreview(wordText).then((data) => {
       if (!data) {
         container.innerHTML = `<div class="text-sm text-error">Word not found</div>`
+        return
+      }
+
+      if (data.blocked) {
+        container.innerHTML = `<div class="text-error text-sm italic">${escapeHtml(data.message || "unsafe content detected")}</div>`
         return
       }
 

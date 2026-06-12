@@ -170,7 +170,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       })
 
       conn = log_in_user(conn, admin)
-      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?step=1")
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?step=1")
 
       refute html =~ "Copy To Grammar"
     end

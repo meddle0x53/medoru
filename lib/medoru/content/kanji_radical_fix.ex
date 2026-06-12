@@ -8,9 +8,7 @@ defmodule Medoru.Content.KanjiRadicalFix do
   alias Medoru.Content.Kanji
   import Ecto.Query
 
-  @mapping %{
-
-  }
+  @mapping %{}
 
   @doc """
   Apply the radical fixes to the database.
@@ -24,7 +22,10 @@ defmodule Medoru.Content.KanjiRadicalFix do
 
     kanji_to_fix =
       Kanji
-      |> where([k], fragment("array_length(?, 1) IS NULL OR array_length(?, 1) = 0", k.radicals, k.radicals))
+      |> where(
+        [k],
+        fragment("array_length(?, 1) IS NULL OR array_length(?, 1) = 0", k.radicals, k.radicals)
+      )
       |> or_where([k], fragment("EXISTS (SELECT 1 FROM unnest(?) r WHERE r IS NULL)", k.radicals))
       |> Repo.all()
 

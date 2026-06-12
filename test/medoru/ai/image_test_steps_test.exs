@@ -176,4 +176,57 @@ defmodule Medoru.AI.ImageTestStepsTest do
       end
     end
   end
+
+  describe "extract_writing_fill_in_steps/2" do
+    test "normalizes multiline examples and answers to single lines" do
+      original = Application.get_env(:medoru, :openai_api_key)
+      Application.put_env(:medoru, :openai_api_key, "test-key")
+
+      try do
+        Req.Test.stub(ImageTestSteps, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!(%{
+                      "examples" => [
+                        "あなたは\n（学生）ですか。"
+                      ],
+                      "steps" => [
+                        %{
+                          "number" => 1,
+                          "template" => "あなたは\n（___）ですか。",
+                          "correct_answer" => "あなたは\n（学生）ですか。",
+                          "alt_correct_answers" => [
+                            "あなたは\n学生ですか。"
+                          ]
+                        }
+                      ]
+                    }),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, data} =
+                 ImageTestSteps.extract_writing_fill_in_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        assert data["examples"] == ["あなたは （学生）ですか。"]
+
+        [step] = data["steps"]
+        assert step["template"] == "あなたは （___）ですか。"
+        assert step["correct_answer"] == "あなたは （学生）ですか。"
+        assert step["alt_correct_answers"] == ["あなたは 学生ですか。"]
+      after
+        Application.put_env(:medoru, :openai_api_key, original)
+      end
+    end
+  end
 end

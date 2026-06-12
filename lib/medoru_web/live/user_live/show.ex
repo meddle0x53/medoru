@@ -60,7 +60,8 @@ defmodule MedoruWeb.UserLive.Show do
             daily_challenges_status = get_daily_challenges_status(user.id)
 
             # Check block status if viewing another user
-            current_user = socket.assigns.current_scope && socket.assigns.current_scope.current_user
+            current_user =
+              socket.assigns.current_scope && socket.assigns.current_scope.current_user
 
             is_blocked =
               if current_user do
@@ -83,42 +84,42 @@ defmodule MedoruWeb.UserLive.Show do
                |> put_flash(:error, gettext("User not found."))
                |> push_navigate(to: ~p"/")}
             else
-            # Check follow status and counts
+              # Check follow status and counts
 
-            is_following =
-              if current_user && current_user.id != user.id do
-                Social.following?(current_user.id, user.id)
-              else
-                false
+              is_following =
+                if current_user && current_user.id != user.id do
+                  Social.following?(current_user.id, user.id)
+                else
+                  false
+                end
+
+              follower_count = Social.count_followers(user.id)
+              following_count = Social.count_following(user.id)
+              user_tags = Social.list_user_tags(user.id)
+
+              # Check online status
+              is_online = Presence.list("user_online:#{user.id}") != %{}
+
+              if connected?(socket) do
+                Phoenix.PubSub.subscribe(Medoru.PubSub, "user_online:#{user.id}")
               end
 
-            follower_count = Social.count_followers(user.id)
-            following_count = Social.count_following(user.id)
-            user_tags = Social.list_user_tags(user.id)
-
-            # Check online status
-            is_online = Presence.list("user_online:#{user.id}") != %{}
-
-            if connected?(socket) do
-              Phoenix.PubSub.subscribe(Medoru.PubSub, "user_online:#{user.id}")
-            end
-
-            {:ok,
-             socket
-             |> assign(:page_title, profile_title(user))
-             |> assign(:user, user)
-             |> assign(:profile, user.profile)
-             |> assign(:stats, real_stats)
-             |> assign(:user_badges, user_badges)
-             |> assign(:featured_badge, featured_badge)
-             |> assign(:xp_progress, xp_progress)
-             |> assign(:daily_challenges_status, daily_challenges_status)
-             |> assign(:is_blocked, is_blocked)
-             |> assign(:is_following, is_following)
-             |> assign(:follower_count, follower_count)
-             |> assign(:following_count, following_count)
-             |> assign(:user_tags, user_tags)
-             |> assign(:is_online, is_online)}
+              {:ok,
+               socket
+               |> assign(:page_title, profile_title(user))
+               |> assign(:user, user)
+               |> assign(:profile, user.profile)
+               |> assign(:stats, real_stats)
+               |> assign(:user_badges, user_badges)
+               |> assign(:featured_badge, featured_badge)
+               |> assign(:xp_progress, xp_progress)
+               |> assign(:daily_challenges_status, daily_challenges_status)
+               |> assign(:is_blocked, is_blocked)
+               |> assign(:is_following, is_following)
+               |> assign(:follower_count, follower_count)
+               |> assign(:following_count, following_count)
+               |> assign(:user_tags, user_tags)
+               |> assign(:is_online, is_online)}
             end
         end
 

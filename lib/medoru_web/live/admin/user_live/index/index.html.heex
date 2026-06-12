@@ -287,7 +287,8 @@
           <.link
             navigate={
               if @page > 1,
-                do: ~p"/admin/users?#{%{page: @page - 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
+                do:
+                  ~p"/admin/users?#{%{page: @page - 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
                 else: "#"
             }
             class={["join-item btn btn-sm min-w-[40px]", if(@page <= 1, do: "btn-disabled")]}
@@ -312,7 +313,8 @@
           <.link
             navigate={
               if @page < @total_pages,
-                do: ~p"/admin/users?#{%{page: @page + 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
+                do:
+                  ~p"/admin/users?#{%{page: @page + 1, type: @type_filter, search: @search, show_deleted: if(@show_deleted, do: "true", else: nil)}}",
                 else: "#"
             }
             class={[

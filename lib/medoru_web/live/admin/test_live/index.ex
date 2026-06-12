@@ -214,7 +214,10 @@ defmodule MedoruWeb.Admin.TestLive.Index do
 
           <%= if @tests == [] do %>
             <div class="p-12 text-center">
-              <.icon name="hero-clipboard-document-list" class="w-12 h-12 text-base-content/30 mx-auto mb-4" />
+              <.icon
+                name="hero-clipboard-document-list"
+                class="w-12 h-12 text-base-content/30 mx-auto mb-4"
+              />
               <p class="text-base-content/50">{gettext("No tests found matching your criteria.")}</p>
             </div>
           <% end %>
@@ -269,7 +272,11 @@ defmodule MedoruWeb.Admin.TestLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     tests = Tests.list_all_tests(opts)
 
@@ -286,7 +293,11 @@ defmodule MedoruWeb.Admin.TestLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     tests = Tests.list_all_tests(opts)
 
@@ -303,7 +314,11 @@ defmodule MedoruWeb.Admin.TestLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     tests = Tests.list_all_tests(opts)
 

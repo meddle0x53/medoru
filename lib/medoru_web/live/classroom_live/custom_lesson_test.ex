@@ -8,6 +8,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   alias Medoru.Content
   alias Medoru.Tests
   alias MedoruWeb.TestKeyboardShortcuts
+  alias MedoruWeb.WritingFillInComponents
 
   @impl true
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id} = params, session, socket) do
@@ -153,13 +154,24 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
 
   @impl true
   def handle_event("submit_answer", _params, socket) do
-    answer = socket.assigns.selected_answer
+    step = socket.assigns.current_step
+
+    answer =
+      if step.question_type == :writing_fill_in do
+        answers = socket.assigns.selected_answer || %{}
+
+        WritingFillInComponents.build_filled_sentence(
+          step.question_data["template"] || "",
+          answers
+        )
+      else
+        socket.assigns.selected_answer
+      end
 
     if is_nil(answer) or answer == "" do
       {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
     else
       session = socket.assigns.session
-      step = socket.assigns.current_step
 
       # Determine correctness based on question type
       is_correct = check_answer_correctness(answer, step)
@@ -184,6 +196,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
           {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
       end
     end
+  end
+
+  @impl true
+  def handle_event("update_writing_fill_in", params, socket) do
+    index = params["index"]
+
+    value =
+      params["value"] ||
+        get_in(params, ["writing_fill_in_answer", to_string(index)]) || ""
+
+    current = socket.assigns.selected_answer || %{}
+    {:noreply, assign(socket, :selected_answer, Map.put(current, index, value))}
   end
 
   @impl true
@@ -277,6 +301,16 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
           Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
         end
 
+      :writing_fill_in ->
+        normalized = normalize_answer(answer)
+
+        if normalized == normalize_answer(step.correct_answer) do
+          true
+        else
+          alt_answers = get_in(step.question_data, ["alt_correct_answers"]) || []
+          Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
+        end
+
       _ ->
         # For other question types, compare with correct_answer
         normalize_answer(answer) == normalize_answer(step.correct_answer)
@@ -290,6 +324,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     answer
     |> String.trim()
     |> String.downcase()
+    |> String.replace(~r/\p{P}/u, "")
   end
 
   defp handle_correct_answer(socket, _step) do
@@ -928,6 +963,22 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                       type="button"
                       phx-click="submit_answer"
                       disabled={is_nil(@selected_answer) or @selected_answer == ""}
+                      class="w-full btn btn-primary"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+                  <% :writing_fill_in -> %>
+                    <WritingFillInComponents.fill_in_question
+                      step={@current_step}
+                      answers={@selected_answer || %{}}
+                      input_event="update_writing_fill_in"
+                      disabled={@feedback != nil}
+                    />
+
+                    <button
+                      type="button"
+                      phx-click="submit_answer"
+                      disabled={@feedback != nil}
                       class="w-full btn btn-primary"
                     >
                       {gettext("Submit Answer")}

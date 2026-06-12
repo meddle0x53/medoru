@@ -24,7 +24,10 @@ defmodule MedoruWeb.DailyCardGameLive do
       if length(words) < @pair_count do
         {:ok,
          socket
-         |> put_flash(:error, gettext("Not enough words learned yet. Complete some lessons first!"))
+         |> put_flash(
+           :error,
+           gettext("Not enough words learned yet. Complete some lessons first!")
+         )
          |> push_navigate(to: ~p"/daily-challenges")}
       else
         card_positions =
@@ -504,7 +507,9 @@ defmodule MedoruWeb.DailyCardGameLive do
             <div class="card-body text-center">
               <.icon name="hero-check-circle" class="w-16 h-16 text-success mx-auto mb-4" />
               <h2 class="text-xl font-bold">{gettext("Already Completed!")}</h2>
-              <p class="text-secondary">{gettext("You have already completed today's card challenge.")}</p>
+              <p class="text-secondary">
+                {gettext("You have already completed today's card challenge.")}
+              </p>
               <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
                 <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
                   {gettext("Back to Daily Challenges")}
@@ -515,7 +520,6 @@ defmodule MedoruWeb.DailyCardGameLive do
               </div>
             </div>
           </div>
-
         <% @game_over -> %>
           <div class="card bg-base-100 shadow-xl">
             <div class="card-body text-center">
@@ -544,7 +548,6 @@ defmodule MedoruWeb.DailyCardGameLive do
               </div>
             </div>
           </div>
-
         <% true -> %>
           <%!-- Game Board --%>
           <div class="mb-4 flex items-center justify-between">
@@ -553,7 +556,7 @@ defmodule MedoruWeb.DailyCardGameLive do
                 <span class="text-secondary">{gettext("Attempts")}:</span>
                 <span class={[
                   "font-bold",
-                  attempts_remaining(@session) <= 3 && "text-error" || "text-base-content"
+                  (attempts_remaining(@session) <= 3 && "text-error") || "text-base-content"
                 ]}>
                   {attempts_remaining(@session)} / {@session.max_attempts}
                 </span>
@@ -561,7 +564,7 @@ defmodule MedoruWeb.DailyCardGameLive do
               <div class="text-sm">
                 <span class="text-secondary">{gettext("Pairs")}:</span>
                 <span class="font-bold text-base-content">
-                  {length(@session.cards_state["collected_indices"] || []) / 2 |> trunc()} / {@pair_count}
+                  {(length(@session.cards_state["collected_indices"] || []) / 2) |> trunc()} / {@pair_count}
                 </span>
               </div>
             </div>
@@ -576,7 +579,10 @@ defmodule MedoruWeb.DailyCardGameLive do
               <button
                 phx-click="flip_card"
                 phx-value-position={index}
-                disabled={card_state == :collected or card_state == :flipped or game_over?(@session) or @show_input_modal}
+                disabled={
+                  card_state == :collected or card_state == :flipped or game_over?(@session) or
+                    @show_input_modal
+                }
                 class={[
                   "aspect-[3/4] rounded-xl font-bold transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden text-xs sm:text-sm",
                   card_state == :hidden &&
@@ -585,7 +591,8 @@ defmodule MedoruWeb.DailyCardGameLive do
                     "bg-base-100 border-2 border-primary text-base-content shadow-lg scale-105",
                   card_state == :collected &&
                     "bg-success/20 border-2 border-success text-success opacity-50 cursor-default",
-                  (game_over?(@session) or @show_input_modal) && card_state == :hidden && "opacity-60 cursor-not-allowed"
+                  (game_over?(@session) or @show_input_modal) && card_state == :hidden &&
+                    "opacity-60 cursor-not-allowed"
                 ]}
               >
                 <%= case card_state do %>
@@ -644,14 +651,22 @@ defmodule MedoruWeb.DailyCardGameLive do
                   value={@answer_meaning}
                   phx-change="update_answer"
                   disabled={@input_disabled}
-                  class={["input input-bordered w-full text-base", @input_disabled && "bg-base-200 opacity-60"]}
+                  class={[
+                    "input input-bordered w-full text-base",
+                    @input_disabled && "bg-base-200 opacity-60"
+                  ]}
                   placeholder={gettext("Type the meaning...")}
                   phx-mounted={!@input_disabled && JS.focus(to: "#meaning-input")}
                 />
               </div>
 
               <div class="flex gap-3 justify-end pt-2">
-                <button type="button" phx-click="cancel_input" disabled={@input_disabled} class="btn btn-ghost">
+                <button
+                  type="button"
+                  phx-click="cancel_input"
+                  disabled={@input_disabled}
+                  class="btn btn-ghost"
+                >
                   {gettext("Give Up")}
                 </button>
                 <button type="submit" disabled={@input_disabled} class="btn btn-primary">

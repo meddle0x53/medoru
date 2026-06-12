@@ -559,7 +559,8 @@ defmodule Medoru.Accounts do
     result
   end
 
-  def add_xp(user_id, amount, opts) when is_binary(user_id) and is_integer(amount) and amount > 0 do
+  def add_xp(user_id, amount, opts)
+      when is_binary(user_id) and is_integer(amount) and amount > 0 do
     user = get_user!(user_id)
     add_xp(user, amount, opts)
   end

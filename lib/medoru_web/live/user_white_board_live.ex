@@ -19,7 +19,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 🦄 🐝 🐛 🦋 🐌 🐚 🐞 🐜 🦗 🕷 🕸 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🐘 🦏 🐪 🐫 🦒 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐩 🐈 🐓 🦃 🕊 🐇 🐁 🐀 🐿 🦔 🐾
 🐉 🐲 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍃 🍂 🍁 🍄 🌾 💐 🌷 🌹 🥀 🌺 🌼 🌻 🌞 🌝 🌛 🌜 🌚 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 🌎 🌍 🌏 💫 ⭐️ 🌟 ⚡️ ☄️ 💥 🌪 ☀️ 🌤 ⛅️ 🌥 ☁️ 🌦 🌧 ⛈ 🌩 🌨
 ❄️ ☃️ ⛄️ 🌬 💨 💧 💦 ☔️ ☂️ 🌊 🌫 🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍈 🍒 🍑 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥒 🌶 🌽 🥕 🥔 🍠 🥐 🍞 🥖 🥨 🧀 🥚 🍳 🥞 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🌮 🌯
-🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++ [":ouroboros:", ":medoru:"]
+🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++
+      [":ouroboros:", ":medoru:"]
   end
 
   @impl true
@@ -34,7 +35,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
               <.icon name="hero-arrow-left" class="w-4 h-4 mr-1" /> {gettext("Profile")}
             </.link>
             <h1 class="text-2xl font-bold text-base-content">
-              {gettext("%{name}'s White Board", name: (@profile && @profile.display_name) || @user.name)}
+              {gettext("%{name}'s White Board",
+                name: (@profile && @profile.display_name) || @user.name
+              )}
             </h1>
           </div>
           <p class="text-secondary text-sm">
@@ -101,7 +104,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                     <button data-draw-action="clear" class="btn btn-sm btn-ghost">
                       <.icon name="hero-trash" class="w-4 h-4" />
                     </button>
-                    <label class="btn btn-sm btn-ghost cursor-pointer" title={gettext("Background image")}>
+                    <label
+                      class="btn btn-sm btn-ghost cursor-pointer"
+                      title={gettext("Background image")}
+                    >
                       <.icon name="hero-photo" class="w-4 h-4" />
                       <input
                         type="file"
@@ -110,7 +116,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         accept="image/*"
                       />
                     </label>
-                    <button data-draw-action="clear-background" class="btn btn-sm btn-ghost" title={gettext("Clear background")}>
+                    <button
+                      data-draw-action="clear-background"
+                      class="btn btn-sm btn-ghost"
+                      title={gettext("Clear background")}
+                    >
                       <.icon name="hero-x-mark" class="w-4 h-4" />
                     </button>
                   </div>
@@ -158,7 +168,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                 <div
                   phx-hook="BoardInput"
                   id="board-input-form"
-                  data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                  data-can-upload-video={
+                    if @current_scope && @current_scope.current_user &&
+                         Medoru.Accounts.User.teacher?(@current_scope.current_user),
+                       do: "true",
+                       else: "false"
+                  }
                 >
                   <form phx-submit="create_post" class="space-y-3">
                     <input
@@ -219,7 +234,13 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             <% pages = Enum.chunk_every(all_emojis, 48) %>
                             <div class="emoji-pages">
                               <%= for {page_emojis, page_idx} <- Enum.with_index(pages) do %>
-                                <div class={["emoji-page grid grid-cols-8 gap-2", page_idx != 0 && "hidden"]} data-page={page_idx}>
+                                <div
+                                  class={[
+                                    "emoji-page grid grid-cols-8 gap-2",
+                                    page_idx != 0 && "hidden"
+                                  ]}
+                                  data-page={page_idx}
+                                >
                                   <%= for emoji <- page_emojis do %>
                                     <%= if emoji in [":medoru:", ":ouroboros:"] do %>
                                       <button
@@ -227,7 +248,14 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                                         data-emoji={emoji}
                                         class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center min-w-[36px] min-h-[36px]"
                                       >
-                                        <img src={if emoji == ":medoru:", do: "/favicon.png", else: "/images/ouroboros.png"} class="w-6 h-6 object-contain pointer-events-none" />
+                                        <img
+                                          src={
+                                            if emoji == ":medoru:",
+                                              do: "/favicon.png",
+                                              else: "/images/ouroboros.png"
+                                          }
+                                          class="w-6 h-6 object-contain pointer-events-none"
+                                        />
                                       </button>
                                     <% else %>
                                       <button
@@ -243,10 +271,16 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                               <% end %>
                             </div>
                             <div class="flex justify-between items-center mt-2 pt-2 border-t border-base-300">
-                              <button type="button" class="emoji-page-prev btn btn-ghost btn-xs" disabled>
+                              <button
+                                type="button"
+                                class="emoji-page-prev btn btn-ghost btn-xs"
+                                disabled
+                              >
                                 <.icon name="hero-chevron-left" class="w-4 h-4" />
                               </button>
-                              <span class="emoji-page-info text-xs text-base-content/60">1 / <%= length(pages) %></span>
+                              <span class="emoji-page-info text-xs text-base-content/60">
+                                1 / {length(pages)}
+                              </span>
                               <button type="button" class="emoji-page-next btn btn-ghost btn-xs">
                                 <.icon name="hero-chevron-right" class="w-4 h-4" />
                               </button>
@@ -270,7 +304,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         />
                       </div>
                       <div class="flex gap-2">
-                        <button type="button" phx-click="open_canvas" class="btn btn-secondary btn-sm flex-1">
+                        <button
+                          type="button"
+                          phx-click="open_canvas"
+                          class="btn btn-secondary btn-sm flex-1"
+                        >
                           <.icon name="hero-paint-brush" class="w-4 h-4 mr-1" /> {gettext("Draw")}
                         </button>
                         <button type="submit" class="btn btn-primary btn-sm flex-1">
@@ -294,7 +332,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                 <div class="flex items-start justify-between">
                   <div class="flex items-center gap-3 min-w-0">
                     <.link navigate={~p"/users/#{post.user_id}"}>
-                      <% avatar_src = (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
+                      <% avatar_src =
+                        (post.user.profile && post.user.profile.avatar) || post.user.avatar_url %>
                       <%= if avatar_src do %>
                         <img src={avatar_src} class="w-10 h-10 rounded-full object-cover shrink-0" />
                       <% else %>
@@ -332,7 +371,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         phx-click="toggle_visibility"
                         phx-value-id={post.id}
                         class="btn btn-ghost btn-xs"
-                        title={if(post.visibility == "public", do: gettext("Public"), else: gettext("Followers only"))}
+                        title={
+                          if(post.visibility == "public",
+                            do: gettext("Public"),
+                            else: gettext("Followers only")
+                          )
+                        }
                       >
                         <%= if post.visibility == "public" do %>
                           <.icon name="hero-globe-alt" class="w-4 h-4 text-success" />
@@ -344,7 +388,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         <button tabindex="0" class="btn btn-ghost btn-xs">
                           <.icon name="hero-ellipsis-vertical" class="w-4 h-4" />
                         </button>
-                        <ul tabindex="0" class="dropdown-content menu menu-sm bg-base-100 rounded-box z-[1] w-32 p-2 shadow border border-base-300">
+                        <ul
+                          tabindex="0"
+                          class="dropdown-content menu menu-sm bg-base-100 rounded-box z-[1] w-32 p-2 shadow border border-base-300"
+                        >
                           <li>
                             <button phx-click="edit_post" phx-value-id={post.id}>
                               <.icon name="hero-pencil" class="w-4 h-4" /> {gettext("Edit")}
@@ -405,28 +452,57 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                       data-grid={Jason.encode!(post.canvas_data["grid"] || %{})}
                       data-background={post.canvas_data["background"]}
                     >
-                      <div id={"canvas-player-#{post.id}"} class="canvas-player-container w-full h-full" phx-update="ignore"></div>
+                      <div
+                        id={"canvas-player-#{post.id}"}
+                        class="canvas-player-container w-full h-full"
+                        phx-update="ignore"
+                      >
+                      </div>
                     </div>
                   <% end %>
 
                   <%= if post.content do %>
                     <%= if WhiteBoardPostRenderer.emoji_only?(post.content) do %>
                       <div class="mt-2 text-center text-5xl leading-none py-2">
-                        {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                        {raw(
+                          WhiteBoardPostRenderer.render_post_content(
+                            post.content,
+                            post.id,
+                            @current_scope.current_user
+                          )
+                        )}
                       </div>
                     <% else %>
                       <%= if WhiteBoardPostRenderer.command_only?(post.content) do %>
                         <div class="mt-2 flex justify-center">
-                          {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                          {raw(
+                            WhiteBoardPostRenderer.render_post_content(
+                              post.content,
+                              post.id,
+                              @current_scope.current_user
+                            )
+                          )}
                         </div>
                       <% else %>
                         <%= if WhiteBoardPostRenderer.photo_only?(post.content) do %>
                           <div class="mt-2">
-                            {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                            {raw(
+                              WhiteBoardPostRenderer.render_post_content(
+                                post.content,
+                                post.id,
+                                @current_scope.current_user
+                              )
+                            )}
                           </div>
                         <% else %>
                           <div class="mt-2 prose prose-sm dark:prose-invert max-w-none">
-                            {raw(WhiteBoardPostRenderer.render_post_content(post.content, post.id))}
+                            {raw(
+                              WhiteBoardPostRenderer.render_post_content(
+                                post.content,
+                                post.id,
+                                @current_scope.current_user
+                              )
+                            )}
                           </div>
                         <% end %>
                       <% end %>
@@ -444,11 +520,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                       phx-value-emoji={emoji}
                       class={[
                         "badge badge-sm gap-1 cursor-pointer transition-all",
-                        data.me? && "badge-primary" || "badge-ghost"
+                        (data.me? && "badge-primary") || "badge-ghost"
                       ]}
                     >
                       <span>{emoji}</span>
-                      <span class={data.me? && "text-primary-content" || "text-base-content/60"}>
+                      <span class={(data.me? && "text-primary-content") || "text-base-content/60"}>
                         {data.count}
                       </span>
                     </button>
@@ -488,9 +564,14 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                       <%= for comment <- comments do %>
                         <div class="flex gap-2">
                           <.link navigate={~p"/users/#{comment.user_id}"}>
-                            <% avatar_src = (comment.user.profile && comment.user.profile.avatar) || comment.user.avatar_url %>
+                            <% avatar_src =
+                              (comment.user.profile && comment.user.profile.avatar) ||
+                                comment.user.avatar_url %>
                             <%= if avatar_src do %>
-                              <img src={avatar_src} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                              <img
+                                src={avatar_src}
+                                class="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                              />
                             <% else %>
                               <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                 <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
@@ -501,7 +582,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             <%= if comment.parent_comment do %>
                               <div class="mb-1 pl-2 border-l-2 border-base-300">
                                 <p class="text-[10px] text-base-content/40">
-                                  {gettext("Replying to %{name}", name: (comment.parent_comment.user.profile && comment.parent_comment.user.profile.display_name) || comment.parent_comment.user.name)}
+                                  {gettext("Replying to %{name}",
+                                    name:
+                                      (comment.parent_comment.user.profile &&
+                                         comment.parent_comment.user.profile.display_name) ||
+                                        comment.parent_comment.user.name
+                                  )}
                                 </p>
                                 <p class="text-xs text-base-content/50 truncate">
                                   {comment.parent_comment.content}
@@ -510,9 +596,17 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             <% end %>
                             <div class="bg-base-200 rounded-lg px-3 py-2">
                               <p class="text-xs font-semibold text-base-content">
-                                {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
+                                {(comment.user.profile && comment.user.profile.display_name) ||
+                                  comment.user.name}
                               </p>
-                              <p class="text-sm text-base-content/80">{raw(WhiteBoardPostRenderer.render_comment_content(comment.content))}</p>
+                              <p class="text-sm text-base-content/80">
+                                {raw(
+                                  WhiteBoardPostRenderer.render_comment_content(
+                                    comment.content,
+                                    @current_scope.current_user
+                                  )
+                                )}
+                              </p>
                             </div>
                             <p class="text-xs text-base-content/50 mt-0.5 ml-1">
                               {format_localized_datetime(comment.inserted_at)}
@@ -550,7 +644,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                         phx-submit="add_comment"
                         phx-hook="CommentInput"
                         class="flex gap-2 flex-wrap sm:flex-nowrap"
-                        data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                        data-can-upload-video={
+                          if @current_scope && @current_scope.current_user &&
+                               Medoru.Accounts.User.teacher?(@current_scope.current_user),
+                             do: "true",
+                             else: "false"
+                        }
                       >
                         <input type="hidden" name="post_id" value={post.id} />
                         <%= if reply_target do %>
@@ -577,7 +676,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           <.icon name="hero-paper-clip" class="w-4 h-4" />
                         </button>
                         <%= if reply_target do %>
-                          <button type="button" phx-click="cancel_reply" phx-value-post-id={post.id} class="btn btn-ghost btn-sm">
+                          <button
+                            type="button"
+                            phx-click="cancel_reply"
+                            phx-value-post-id={post.id}
+                            class="btn btn-ghost btn-sm"
+                          >
                             {gettext("Cancel")}
                           </button>
                         <% end %>
@@ -648,7 +752,12 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
         {:ok,
          socket
-         |> assign(:page_title, gettext("%{name}'s White Board", name: (user.profile && user.profile.display_name) || user.name))
+         |> assign(
+           :page_title,
+           gettext("%{name}'s White Board",
+             name: (user.profile && user.profile.display_name) || user.name
+           )
+         )
          |> assign(:user, user)
          |> assign(:profile, user.profile)
          |> assign(:is_owner, is_owner)
@@ -716,7 +825,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
     canvas_data = %{"strokes" => strokes}
     canvas_data = if grid, do: Map.put(canvas_data, "grid", grid), else: canvas_data
-    canvas_data = if background, do: Map.put(canvas_data, "background", background), else: canvas_data
+
+    canvas_data =
+      if background, do: Map.put(canvas_data, "background", background), else: canvas_data
 
     attrs = %{
       user_id: user.id,
@@ -898,7 +1009,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
       case WhiteBoard.create_comment(attrs) do
         {:ok, comment} ->
-          comment = Repo.preload(comment, [user: [:profile], parent_comment: [user: [:profile]]])
+          comment = Repo.preload(comment, user: [:profile], parent_comment: [user: [:profile]])
           WhiteBoard.broadcast_comment(socket.assigns.user.id, comment, self())
 
           # Notify post author and other commenters
@@ -939,7 +1050,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   end
 
   @impl true
-  def handle_event("reply_to_comment", %{"post-id" => post_id, "comment-id" => comment_id}, socket) do
+  def handle_event(
+        "reply_to_comment",
+        %{"post-id" => post_id, "comment-id" => comment_id},
+        socket
+      ) do
     replying_to = Map.put(socket.assigns.replying_to, post_id, comment_id)
     {:noreply, assign(socket, :replying_to, replying_to)}
   end
@@ -958,7 +1073,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   def handle_event("load_more", _params, socket) do
     page = socket.assigns.page + 1
     user = socket.assigns.user
-    viewer_id = socket.assigns.current_scope[:current_user] && socket.assigns.current_scope.current_user.id
+
+    viewer_id =
+      socket.assigns.current_scope[:current_user] && socket.assigns.current_scope.current_user.id
 
     new_posts = WhiteBoard.list_posts(user.id, viewer_id, page: page)
     post_count = WhiteBoard.count_posts(user.id, viewer_id)
@@ -1015,7 +1132,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
   @impl true
   def handle_info({:reaction, post_id, user_id_reacting, added_emoji, removed_emoji}, socket) do
-    current_user_id = socket.assigns.current_scope[:current_user] && socket.assigns.current_scope.current_user.id
+    current_user_id =
+      socket.assigns.current_scope[:current_user] && socket.assigns.current_scope.current_user.id
+
     me? = user_id_reacting == current_user_id
 
     reactions =
@@ -1064,7 +1183,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
         BoardComment
         |> where([c], c.post_id in ^post_ids)
         |> order_by(asc: :inserted_at)
-        |> preload([user: [:profile], parent_comment: [user: [:profile]], replies: [user: [:profile]]])
+        |> preload(
+          user: [:profile],
+          parent_comment: [user: [:profile]],
+          replies: [user: [:profile]]
+        )
         |> Repo.all()
 
       comments =
@@ -1184,11 +1307,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   end
 
   defp clean_string(nil), do: nil
+
   defp clean_string(str) do
     str = String.trim(str)
     if str == "", do: nil, else: str
   end
-
 
   # ============================================================================
   # Notification Helpers
@@ -1197,12 +1320,16 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   defp notify_followers_of_post(poster, post) do
     follower_ids = Social.list_follower_ids(poster.id)
 
-    Task.async_stream(follower_ids, fn follower_id ->
-      # Don't notify users who have blocked the poster
-      unless Social.blocked_by?(follower_id, poster.id) do
-        Notifications.notify_white_board_post(follower_id, poster.name, poster.id, post.id)
-      end
-    end, timeout: :infinity)
+    Task.async_stream(
+      follower_ids,
+      fn follower_id ->
+        # Don't notify users who have blocked the poster
+        unless Social.blocked_by?(follower_id, poster.id) do
+          Notifications.notify_white_board_post(follower_id, poster.name, poster.id, post.id)
+        end
+      end,
+      timeout: :infinity
+    )
     |> Stream.run()
   end
 
@@ -1220,18 +1347,22 @@ defmodule MedoruWeb.UserWhiteBoardLive do
       |> Enum.uniq()
       |> List.delete(commenter_id)
 
-    Task.async_stream(recipient_ids, fn recipient_id ->
-      # Don't notify users who have blocked the commenter
-      unless Social.blocked_by?(recipient_id, commenter_id) do
-        Notifications.notify_white_board_comment(
-          recipient_id,
-          commenter.name,
-          comment.post_id,
-          post_owner.id,
-          post_owner.name
-        )
-      end
-    end, timeout: :infinity)
+    Task.async_stream(
+      recipient_ids,
+      fn recipient_id ->
+        # Don't notify users who have blocked the commenter
+        unless Social.blocked_by?(recipient_id, commenter_id) do
+          Notifications.notify_white_board_comment(
+            recipient_id,
+            commenter.name,
+            comment.post_id,
+            post_owner.id,
+            post_owner.name
+          )
+        end
+      end,
+      timeout: :infinity
+    )
     |> Stream.run()
   end
 end

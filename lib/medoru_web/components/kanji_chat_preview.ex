@@ -32,7 +32,7 @@ defmodule MedoruWeb.KanjiChatPreview do
             <%= if i > 0 do %>
               <span class="text-base-content/30">, </span>
             <% end %>
-            <span><%= meaning %></span>
+            <span>{meaning}</span>
           <% end %>
         </div>
 
@@ -57,10 +57,10 @@ defmodule MedoruWeb.KanjiChatPreview do
         <%!-- Readings --%>
         <div class="text-xs text-center mt-2 flex justify-center gap-2">
           <%= if @on_reading do %>
-            <span class="font-medium text-primary"><%= @on_reading %></span>
+            <span class="font-medium text-primary">{@on_reading}</span>
           <% end %>
           <%= if @kun_reading do %>
-            <span class="font-medium text-accent"><%= @kun_reading %></span>
+            <span class="font-medium text-accent">{@kun_reading}</span>
           <% end %>
         </div>
       </div>
@@ -71,7 +71,12 @@ defmodule MedoruWeb.KanjiChatPreview do
   @doc """
   Renders the kanji preview as a safe HTML string for use outside of HEEx templates.
   """
-  def render_html(%{kanji: kanji, meanings: meanings, on_reading: on_reading, kun_reading: kun_reading}) do
+  def render_html(%{
+        kanji: kanji,
+        meanings: meanings,
+        on_reading: on_reading,
+        kun_reading: kun_reading
+      }) do
     strokes = get_strokes(kanji.stroke_data)
     bounds = get_bounds(kanji.stroke_data)
     total = length(strokes)
@@ -115,11 +120,11 @@ defmodule MedoruWeb.KanjiChatPreview do
     # Build compact HTML with no extra whitespace to avoid issues with whitespace-pre-wrap
     html =
       ~s|<a href="#{kanji_path}" target="_blank" rel="noopener noreferrer" class="block max-w-[180px] kanji-chat-preview -mt-1 -mb-1">| <>
-      ~s|<div class="bg-base-100 border border-base-300 rounded-xl p-2 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">| <>
-      ~s|<div class="text-xs text-center text-secondary mb-1 truncate px-1">#{meanings_html}</div>| <>
-      ~s|<div class="bg-base-100 border border-base-300 rounded-lg p-1.5 mx-auto w-fit"><svg viewBox="#{viewbox}" class="w-20 h-20">#{stroke_paths}</svg></div>| <>
-      ~s|<div class="text-xs text-center mt-1 flex justify-center gap-2">#{on_html}#{kun_html}</div>| <>
-      ~s|</div></a>|
+        ~s|<div class="bg-base-100 border border-base-300 rounded-xl p-2 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">| <>
+        ~s|<div class="text-xs text-center text-secondary mb-1 truncate px-1">#{meanings_html}</div>| <>
+        ~s|<div class="bg-base-100 border border-base-300 rounded-lg p-1.5 mx-auto w-fit"><svg viewBox="#{viewbox}" class="w-20 h-20">#{stroke_paths}</svg></div>| <>
+        ~s|<div class="text-xs text-center mt-1 flex justify-center gap-2">#{on_html}#{kun_html}</div>| <>
+        ~s|</div></a>|
 
     {:safe, html}
   end

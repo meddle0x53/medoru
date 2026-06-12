@@ -245,7 +245,14 @@ defmodule Medoru.NotificationsTest do
     end
 
     test "notify_white_board_post/4 creates white board post notification", %{user: user} do
-      assert {:ok, notification} = Notifications.notify_white_board_post(user.id, "Alice", "user-id-456", "post-id-123")
+      assert {:ok, notification} =
+               Notifications.notify_white_board_post(
+                 user.id,
+                 "Alice",
+                 "user-id-456",
+                 "post-id-123"
+               )
+
       assert notification.type == "white_board_post"
       assert notification.title == "📝 New Post from Alice"
       assert notification.data[:post_id] == "post-id-123"
@@ -254,7 +261,13 @@ defmodule Medoru.NotificationsTest do
 
     test "notify_white_board_comment/5 creates white board comment notification", %{user: user} do
       assert {:ok, notification} =
-               Notifications.notify_white_board_comment(user.id, "Bob", "post-id-123", "owner-id-789", "Alice")
+               Notifications.notify_white_board_comment(
+                 user.id,
+                 "Bob",
+                 "post-id-123",
+                 "owner-id-789",
+                 "Alice"
+               )
 
       assert notification.type == "white_board_comment"
       assert notification.title == "💬 New Comment on Alice's Post"

@@ -92,10 +92,14 @@ defmodule Medoru.Content.KanjiMissingSeeder do
   defp do_import(kanji_list) do
     results =
       Enum.reduce(kanji_list, %{created: 0, updated: 0, skipped: 0, errors: []}, fn kanji_data,
-                                                                                     acc ->
+                                                                                    acc ->
         case import_kanji(kanji_data) do
-          {:ok, :created} -> Map.update!(acc, :created, &(&1 + 1))
-          {:ok, :skipped} -> Map.update!(acc, :skipped, &(&1 + 1))
+          {:ok, :created} ->
+            Map.update!(acc, :created, &(&1 + 1))
+
+          {:ok, :skipped} ->
+            Map.update!(acc, :skipped, &(&1 + 1))
+
           {:error, reason} ->
             acc
             |> Map.update!(:errors, &[reason | &1])
@@ -111,6 +115,7 @@ defmodule Medoru.Content.KanjiMissingSeeder do
 
     if results.errors != [] do
       Logger.warning("  Errors: #{length(results.errors)}")
+
       Enum.take(results.errors, 10)
       |> Enum.each(fn err -> Logger.warning("    #{err}") end)
     end
@@ -165,9 +170,7 @@ defmodule Medoru.Content.KanjiMissingSeeder do
         {:ok, :created}
 
       {:error, changeset} ->
-        Logger.error(
-          "Failed to create kanji #{data["character"]}: #{inspect(changeset.errors)}"
-        )
+        Logger.error("Failed to create kanji #{data["character"]}: #{inspect(changeset.errors)}")
 
         {:error, "#{data["character"]}: #{inspect(changeset.errors)}"}
     end
@@ -270,8 +273,12 @@ defmodule Medoru.Content.KanjiMissingSeeder do
     results =
       Enum.reduce(kanji_list, %{updated: 0, skipped: 0, errors: []}, fn kanji_data, acc ->
         case update_kanji_strokes(kanji_data) do
-          {:ok, :updated} -> Map.update!(acc, :updated, &(&1 + 1))
-          {:ok, :skipped} -> Map.update!(acc, :skipped, &(&1 + 1))
+          {:ok, :updated} ->
+            Map.update!(acc, :updated, &(&1 + 1))
+
+          {:ok, :skipped} ->
+            Map.update!(acc, :skipped, &(&1 + 1))
+
           {:error, reason} ->
             acc
             |> Map.update!(:errors, &[reason | &1])
@@ -286,6 +293,7 @@ defmodule Medoru.Content.KanjiMissingSeeder do
 
     if results.errors != [] do
       Logger.warning("  Errors: #{length(results.errors)}")
+
       Enum.take(results.errors, 10)
       |> Enum.each(fn err -> Logger.warning("    #{err}") end)
     end
@@ -321,9 +329,7 @@ defmodule Medoru.Content.KanjiMissingSeeder do
             {:ok, :updated}
 
           {:error, changeset} ->
-            Logger.error(
-              "Failed to update #{character}: #{inspect(changeset.errors)}"
-            )
+            Logger.error("Failed to update #{character}: #{inspect(changeset.errors)}")
 
             {:error, "#{character}: #{inspect(changeset.errors)}"}
         end

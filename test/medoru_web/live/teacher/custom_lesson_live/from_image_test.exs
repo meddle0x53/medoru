@@ -5,14 +5,13 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.FromImageTest do
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
 
-
-
   describe "from-image page" do
     test "redirects non-admin users", %{conn: conn} do
       teacher = user_fixture(%{type: "teacher"})
       conn = log_in_user(conn, teacher)
 
-      assert {:error, {:live_redirect, %{to: "/teacher/custom-lessons", flash: %{"error" => msg}}}} =
+      assert {:error,
+              {:live_redirect, %{to: "/teacher/custom-lessons", flash: %{"error" => msg}}}} =
                live(conn, ~p"/teacher/custom-lessons/from-image")
 
       assert msg =~ "Only admins can create lessons from images"

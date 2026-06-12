@@ -157,7 +157,8 @@ defmodule MedoruWeb.NotificationDropdownLive do
 
       %{type: type, data: %{"poster_id" => poster_id, "post_id" => post_id}}
       when type in ["white_board_post", "white_board_comment"] ->
-        {:noreply, push_navigate(socket, to: ~p"/users/#{poster_id}/white-board/posts/#{post_id}")}
+        {:noreply,
+         push_navigate(socket, to: ~p"/users/#{poster_id}/white-board/posts/#{post_id}")}
 
       _ ->
         {:noreply, socket}

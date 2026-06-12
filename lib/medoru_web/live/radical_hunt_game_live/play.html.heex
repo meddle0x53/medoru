@@ -27,8 +27,9 @@
                 {Medoru.Content.KanjiRadicals.meaning(@config.radical)}
               </p>
               <p class="text-sm text-secondary mt-1">
-                {@valid_kanji_count} {gettext("possible kanji")}
-                • {@config.timeout_seconds}s {gettext("timeout")}
+                {@valid_kanji_count} {gettext("possible kanji")} • {@config.timeout_seconds}s {gettext(
+                  "timeout"
+                )}
               </p>
             </div>
           </div>
@@ -65,7 +66,6 @@
             </button>
           </div>
         </div>
-
       <% :playing -> %>
         <%!-- Playing Screen --%>
         <div class="max-w-2xl mx-auto px-4 py-4">
@@ -170,7 +170,6 @@
             </div>
           <% end %>
         </div>
-
       <% :game_over -> %>
         <%!-- Game Over Screen --%>
         <div class="max-w-2xl mx-auto px-4 py-8">
@@ -191,7 +190,9 @@
                 {gettext("Score Breakdown")}
               </h3>
               <%= if @found_kanji == [] do %>
-                <p class="text-secondary text-center py-4">{gettext("No kanji found this round")}</p>
+                <p class="text-secondary text-center py-4">
+                  {gettext("No kanji found this round")}
+                </p>
               <% else %>
                 <div class="space-y-2">
                   <%= for {kanji, idx} <- Enum.with_index(Enum.reverse(@found_kanji), 1) do %>

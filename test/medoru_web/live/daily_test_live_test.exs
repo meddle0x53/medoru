@@ -80,7 +80,11 @@ defmodule MedoruWeb.DailyTestLiveTest do
       assert html =~ "Daily Review"
     end
 
-    test "mastery and schedule are updated after answering", %{conn: conn, user: user, words: words} do
+    test "mastery and schedule are updated after answering", %{
+      conn: conn,
+      user: user,
+      words: words
+    } do
       {:ok, view, _html} = live(conn, ~p"/daily-test")
 
       first_word = List.first(words)

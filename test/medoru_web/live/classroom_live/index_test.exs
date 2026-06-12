@@ -239,7 +239,11 @@ defmodule MedoruWeb.ClassroomLive.IndexTest do
       assert html =~ "Invalid invite code"
     end
 
-    test "shows already_member error on join", %{conn: conn, student: student, classroom: classroom} do
+    test "shows already_member error on join", %{
+      conn: conn,
+      student: student,
+      classroom: classroom
+    } do
       {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
       {:ok, _} = Classrooms.approve_membership(membership)
 

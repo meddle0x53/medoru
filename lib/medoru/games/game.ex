@@ -10,7 +10,14 @@ defmodule Medoru.Games.Game do
 
   alias Medoru.Classrooms.Classroom
 
-  @types ["memory_cards", "kana_memory_cards", "kana_falling", "kanji_falling", "words_falling", "radical_hunt"]
+  @types [
+    "memory_cards",
+    "kana_memory_cards",
+    "kana_falling",
+    "kanji_falling",
+    "words_falling",
+    "radical_hunt"
+  ]
   @statuses [:draft, :published, :archived]
   @skill_levels 1..5
 

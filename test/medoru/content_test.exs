@@ -376,16 +376,39 @@ defmodule Medoru.ContentTest do
       reading = List.first(Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on)))
 
       # Create words with the same frequency but different composition
-      word_solo = word_fixture(%{text: "山", meaning: "mountain", reading: "やま", usage_frequency: 100})
+      word_solo =
+        word_fixture(%{text: "山", meaning: "mountain", reading: "やま", usage_frequency: 100})
+
       # Kanji + kana, kanji before kana, length 2
-      word_kana_short = word_fixture(%{text: "山あ", meaning: "mountain-a", reading: "やまあ", usage_frequency: 100})
+      word_kana_short =
+        word_fixture(%{text: "山あ", meaning: "mountain-a", reading: "やまあ", usage_frequency: 100})
+
       # Kanji + kana, kanji before kana, length 3 (longer = lower priority)
-      word_kana_long = word_fixture(%{text: "山あい", meaning: "mountain-ai", reading: "やまあい", usage_frequency: 100})
+      word_kana_long =
+        word_fixture(%{
+          text: "山あい",
+          meaning: "mountain-ai",
+          reading: "やまあい",
+          usage_frequency: 100
+        })
+
       # Kanji + kana, kanji AFTER kana (lower priority than kanji-before-kana)
-      word_kana_after = word_fixture(%{text: "あ山", meaning: "a-mountain", reading: "あやま", usage_frequency: 100})
-      word_kanji1 = word_fixture(%{text: "山口", meaning: "entrance", reading: "やまぐち", usage_frequency: 100})
-      word_mixed = word_fixture(%{text: "山あ口", meaning: "mixed", reading: "やまあぐち", usage_frequency: 100})
-      word_kanji2 = word_fixture(%{text: "山口川", meaning: "three kanji", reading: "やまぐちかわ", usage_frequency: 100})
+      word_kana_after =
+        word_fixture(%{text: "あ山", meaning: "a-mountain", reading: "あやま", usage_frequency: 100})
+
+      word_kanji1 =
+        word_fixture(%{text: "山口", meaning: "entrance", reading: "やまぐち", usage_frequency: 100})
+
+      word_mixed =
+        word_fixture(%{text: "山あ口", meaning: "mixed", reading: "やまあぐち", usage_frequency: 100})
+
+      word_kanji2 =
+        word_fixture(%{
+          text: "山口川",
+          meaning: "three kanji",
+          reading: "やまぐちかわ",
+          usage_frequency: 100
+        })
 
       # Link all words to the target kanji
       for word <- [

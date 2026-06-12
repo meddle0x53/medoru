@@ -21,6 +21,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :notify_white_board, :boolean, default: true
     field :notify_achievements, :boolean, default: true
     field :is_public, :boolean, default: true
+    field :safety, :boolean, default: true
 
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
@@ -57,7 +58,8 @@ defmodule Medoru.Accounts.UserProfile do
       :notify_messaging,
       :notify_white_board,
       :notify_achievements,
-      :is_public
+      :is_public,
+      :safety
     ])
     |> validate_length(:display_name, min: 1, max: 50)
     |> validate_length(:bio, max: 500)

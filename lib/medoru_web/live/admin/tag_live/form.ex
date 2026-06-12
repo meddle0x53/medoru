@@ -23,10 +23,32 @@ defmodule MedoruWeb.Admin.TagLive.Form do
   ]
 
   @colors [
-    "red", "orange", "amber", "yellow", "lime", "green", "emerald",
-    "teal", "cyan", "sky", "blue", "indigo", "violet", "purple",
-    "fuchsia", "pink", "rose", "slate", "stone", "primary", "secondary",
-    "accent", "info", "success", "warning", "error"
+    "red",
+    "orange",
+    "amber",
+    "yellow",
+    "lime",
+    "green",
+    "emerald",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "rose",
+    "slate",
+    "stone",
+    "primary",
+    "secondary",
+    "accent",
+    "info",
+    "success",
+    "warning",
+    "error"
   ]
 
   @impl true

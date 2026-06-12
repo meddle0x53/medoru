@@ -191,7 +191,12 @@
             </div>
           <% else %>
             <%!-- Writing practice area with hook --%>
-            <div id="writing-practice-area" phx-hook="KanjiWriting" class="mt-4" data-snap-correct={to_string(@snap_correct)}>
+            <div
+              id="writing-practice-area"
+              phx-hook="KanjiWriting"
+              class="mt-4"
+              data-snap-correct={to_string(@snap_correct)}
+            >
               <%!-- Hidden stroke data for JS --%>
               <div
                 data-stroke-data={Jason.encode!(@kanji.stroke_data["strokes"] || [])}
@@ -209,7 +214,9 @@
                       checked={@snap_correct}
                       class="checkbox checkbox-sm checkbox-primary"
                     />
-                    <span class="text-sm text-secondary">{gettext("Snap to correct stroke")}</span>
+                    <span class="text-sm text-secondary">
+                      {gettext("Snap to correct stroke")}
+                    </span>
                   </label>
                 </div>
 
@@ -447,7 +454,9 @@
     <%!-- Navigation --%>
     <div class="mt-8">
       <.link
-        navigate={if @kanji.jlpt_level, do: ~p"/kanji?level=#{@kanji.jlpt_level}", else: ~p"/kanji"}
+        navigate={
+          if @kanji.jlpt_level, do: ~p"/kanji?level=#{@kanji.jlpt_level}", else: ~p"/kanji"
+        }
         class="inline-flex items-center gap-2 text-secondary hover:text-primary font-medium transition-colors"
       >
         <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to list")}

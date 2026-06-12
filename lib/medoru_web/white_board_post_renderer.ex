@@ -5,9 +5,12 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   """
 
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias MedoruWeb.{GrammarChatPreview, KanjiChatPreview, WordChatPreview}
 
-  def render_post_content(text, post_id) when is_binary(text) do
+  def render_post_content(text_or_nil, post_id, viewer \\ nil)
+
+  def render_post_content(text, post_id, viewer) when is_binary(text) do
     lines = String.split(text, "\n")
 
     {segments, last_group} =
@@ -18,8 +21,11 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
           trimmed == "" ->
             {segments, group ++ [line]}
 
-          match_word_command?(trimmed) or match_kanji_command?(trimmed) or match_grammar_command?(trimmed) ->
-            segments = if group != [], do: [{:text, Enum.join(group, "\n")} | segments], else: segments
+          match_word_command?(trimmed) or match_kanji_command?(trimmed) or
+              match_grammar_command?(trimmed) ->
+            segments =
+              if group != [], do: [{:text, Enum.join(group, "\n")} | segments], else: segments
+
             segments = [{:command, trimmed} | segments]
             {segments, []}
 
@@ -28,24 +34,27 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
         end
       end)
 
-    segments = if last_group != [], do: [{:text, Enum.join(last_group, "\n")} | segments], else: segments
+    segments =
+      if last_group != [], do: [{:text, Enum.join(last_group, "\n")} | segments], else: segments
 
     segments
     |> Enum.reverse()
     |> Enum.map(fn
-      {:text, txt} -> render_post_body(txt, post_id)
-      {:command, cmd} -> render_command(cmd)
+      {:text, txt} -> render_post_body(txt, post_id, viewer)
+      {:command, cmd} -> render_command(cmd, viewer)
     end)
     |> Enum.join("\n")
   end
 
-  def render_post_content(nil, _post_id), do: ""
+  def render_post_content(nil, _post_id, _viewer), do: ""
 
   @doc """
   Renders comment content with command support (grammar, word, kanji),
   inline word links, URL autolinking, and markdown.
   """
-  def render_comment_content(text) when is_binary(text) do
+  def render_comment_content(text_or_nil, viewer \\ nil)
+
+  def render_comment_content(text, viewer) when is_binary(text) do
     lines = String.split(text, "\n")
 
     {segments, last_group} =
@@ -56,8 +65,11 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
           trimmed == "" ->
             {segments, group ++ [line]}
 
-          match_word_command?(trimmed) or match_kanji_command?(trimmed) or match_grammar_command?(trimmed) ->
-            segments = if group != [], do: [{:text, Enum.join(group, "\n")} | segments], else: segments
+          match_word_command?(trimmed) or match_kanji_command?(trimmed) or
+              match_grammar_command?(trimmed) ->
+            segments =
+              if group != [], do: [{:text, Enum.join(group, "\n")} | segments], else: segments
+
             segments = [{:command, trimmed} | segments]
             {segments, []}
 
@@ -66,22 +78,23 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
         end
       end)
 
-    segments = if last_group != [], do: [{:text, Enum.join(last_group, "\n")} | segments], else: segments
+    segments =
+      if last_group != [], do: [{:text, Enum.join(last_group, "\n")} | segments], else: segments
 
     segments
     |> Enum.reverse()
     |> Enum.map(fn
-      {:text, txt} -> render_comment_body(txt)
-      {:command, cmd} -> render_command(cmd)
+      {:text, txt} -> render_comment_body(txt, viewer)
+      {:command, cmd} -> render_command(cmd, viewer)
     end)
     |> Enum.join("\n")
   end
 
-  def render_comment_content(nil), do: ""
+  def render_comment_content(nil, _viewer), do: ""
 
-  defp render_post_body(text, post_id) do
+  defp render_post_body(text, post_id, viewer) do
     text
-    |> render_inline_word_links()
+    |> render_inline_word_links(viewer)
     |> autolink_urls()
     |> render_markdown()
     |> unwrap_photo_only_html()
@@ -90,9 +103,9 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> render_images(post_id)
   end
 
-  defp render_comment_body(text) do
+  defp render_comment_body(text, viewer) do
     text
-    |> render_inline_word_links()
+    |> render_inline_word_links(viewer)
     |> autolink_urls()
     |> render_markdown()
     |> render_video_players("comment")
@@ -119,7 +132,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
       String.starts_with?(text, "\\k ")
   end
 
-  defp render_command(text) do
+  defp render_command(text, viewer) do
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
@@ -131,15 +144,24 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
         case parse_word_command(text) do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-              nil -> text
-              word -> WordChatPreview.render_html(%{word: word}) |> elem(1)
+              nil ->
+                text
+
+              word ->
+                if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                  WordChatPreview.render_html(%{word: word}) |> elem(1)
+                else
+                  WordChatPreview.render_html(%{blocked: true}) |> elem(1)
+                end
             end
 
           :error ->
             case parse_kanji_command(text) do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
-                  nil -> text
+                  nil ->
+                    text
+
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
                     assigns = KanjiChatPreview.build_preview_assigns(kanji, locale)
@@ -153,7 +175,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     end
   end
 
-  defp render_inline_word_links(text) do
+  defp render_inline_word_links(text, viewer) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -161,9 +183,9 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
 
     matches =
       (Enum.map(pipe_matches, &{:word, &1}) ++
-       Enum.map(bracket_matches, &{:word, &1}) ++
-       Enum.map(corner_matches, &{:word, &1}) ++
-       Enum.map(grammar_matches, &{:grammar, &1}))
+         Enum.map(bracket_matches, &{:word, &1}) ++
+         Enum.map(corner_matches, &{:word, &1}) ++
+         Enum.map(grammar_matches, &{:grammar, &1}))
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
@@ -178,8 +200,15 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
 
         {:word, word_text} ->
           case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-            nil -> word_text
-            word -> ~s|<a href="/words/#{word.id}" target="_blank" rel="noopener noreferrer" class="link link-primary hover:opacity-80">#{word_text}</a>|
+            nil ->
+              word_text
+
+            word ->
+              if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                ~s|<a href="/words/#{word.id}" target="_blank" rel="noopener noreferrer" class="link link-primary hover:opacity-80">#{word_text}</a>|
+              else
+                ~s|<span class="text-error text-sm">unsafe content detected</span>|
+              end
           end
 
         {:grammar, grammar_text} ->
@@ -196,12 +225,19 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   end
 
   defp build_word_link_segments(text, [], pos, acc) do
-    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+    remaining =
+      if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_word_link_segments(text, [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest], pos, acc) do
+  defp build_word_link_segments(
+         text,
+         [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest],
+         pos,
+         acc
+       ) do
     before_len = match_start - pos
     before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
     captured_text = binary_part(text, cap_start, cap_len)
@@ -373,7 +409,9 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
 
   def command_only?(text) do
     trimmed = String.trim(text)
-    match_word_command?(trimmed) or match_kanji_command?(trimmed) or match_grammar_command?(trimmed)
+
+    match_word_command?(trimmed) or match_kanji_command?(trimmed) or
+      match_grammar_command?(trimmed)
   end
 
   def emoji_only?(nil), do: false

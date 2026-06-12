@@ -55,7 +55,9 @@ defmodule MedoruWeb.UserLiveTest do
       assert html =~ "href=\"/users/#{user.id}/following\""
     end
 
-    test "renders follower/following counts as plain text on another user's profile", %{conn: conn} do
+    test "renders follower/following counts as plain text on another user's profile", %{
+      conn: conn
+    } do
       owner = user_with_display_name(%{display_name: "Owner"})
       viewer = user_with_display_name()
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "medoru-v24";
+const CACHE_NAME = "medoru-v32";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/assets/css/app.css",
@@ -113,7 +113,9 @@ self.addEventListener("notificationclick", (event) => {
   const data = event.notification.data || {};
   let url = "/";
 
-  if (data.conversation_id) {
+  if (data.classroom_id) {
+    url = `/classrooms/${data.classroom_id}?tab=chat`;
+  } else if (data.conversation_id) {
     url = `/messages/${data.conversation_id}`;
   } else if (data.url) {
     url = data.url;

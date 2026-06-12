@@ -10,6 +10,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias Medoru.Chat
   alias Medoru.Classrooms
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias Medoru.Games
   alias Medoru.Learning.WordSets
   alias Medoru.Notifications
@@ -259,7 +260,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
       has_more = length(messages) == @chat_message_limit
 
       # Filter out messages from deleted or removed users
-      visible_messages = Enum.filter(messages, &Chat.sender_visible_in_classroom?(&1, conversation))
+      visible_messages =
+        Enum.filter(messages, &Chat.sender_visible_in_classroom?(&1, conversation))
 
       message_ids = Enum.map(visible_messages, & &1.id)
       message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
@@ -1114,7 +1116,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     ]}>
                       {index}
                     </span>
-                    <.link navigate={~p"/users/#{member.user.id}"} class="flex items-center gap-3 min-w-0">
+                    <.link
+                      navigate={~p"/users/#{member.user.id}"}
+                      class="flex items-center gap-3 min-w-0"
+                    >
                       <% avatar_src =
                         (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
                       <%= if avatar_src do %>
@@ -1130,7 +1135,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               if member.user.profile && member.user.profile.display_name,
                                 do: String.first(member.user.profile.display_name) |> String.upcase(),
                                 else:
-                                  String.first(member.user.name || member.user.email) |> String.upcase() %>
+                                  String.first(member.user.name || member.user.email)
+                                  |> String.upcase() %>
                             <span class="text-xs">{initial}</span>
                           </div>
                         </div>
@@ -1191,7 +1197,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   ]}>
                     {index}
                   </span>
-                  <.link navigate={~p"/users/#{member.user.id}"} class="flex items-center gap-3 min-w-0">
+                  <.link
+                    navigate={~p"/users/#{member.user.id}"}
+                    class="flex items-center gap-3 min-w-0"
+                  >
                     <% avatar_src =
                       (member.user.profile && member.user.profile.avatar) || member.user.avatar_url %>
                     <%= if avatar_src do %>
@@ -1220,18 +1229,18 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         {display_name(member.user, @current_user.id, @current_user.type == "admin")}
                         <%= if member.user_id == @current_user.id do %>
                           <span class="badge badge-primary badge-xs sm:badge-sm ml-1 sm:ml-2">
-                          {gettext("You")}
-                        </span>
-                      <% end %>
-                    </p>
-                    <p class="text-xs sm:text-sm text-secondary">
-                      {gettext("Joined")} {Calendar.strftime(
-                        member.joined_at || member.inserted_at,
-                        "%b %d, %Y"
-                      )}
-                    </p>
-                  </div>
-                </.link>
+                            {gettext("You")}
+                          </span>
+                        <% end %>
+                      </p>
+                      <p class="text-xs sm:text-sm text-secondary">
+                        {gettext("Joined")} {Calendar.strftime(
+                          member.joined_at || member.inserted_at,
+                          "%b %d, %Y"
+                        )}
+                      </p>
+                    </div>
+                  </.link>
                 </div>
                 <span class="font-bold text-base sm:text-lg text-base-content ml-2 shrink-0">
                   {member.points} {gettext("pts")}
@@ -1919,7 +1928,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           <% message.reply_to_message.attachment_type == "document" -> %>
                             {gettext("📎 File")}
                           <% true -> %>
-                            {render_message_content(message.reply_to_message.content, @convert_emoticons)}
+                            {render_message_content(
+                              message.reply_to_message.content,
+                              @convert_emoticons,
+                              @current_user
+                            )}
                         <% end %>
                       </span>
                     </button>
@@ -1936,7 +1949,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 >
                   <%= if not is_me do %>
                     <%= if show_avatar do %>
-                      <a href={~p"/users/#{message.sender_id}"} target="_blank" rel="noopener noreferrer" class="shrink-0 self-end">
+                      <a
+                        href={~p"/users/#{message.sender_id}"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="shrink-0 self-end"
+                      >
                         <%= if avatar = chat_avatar(message.sender) do %>
                           <img
                             src={avatar}
@@ -2098,8 +2116,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
                                 controls
                                 preload="metadata"
                               >
-                                <source src={message.attachment_path} type={video_mime_type(message.attachment_path)} />
-                                <a href={message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+                                <source
+                                  src={message.attachment_path}
+                                  type={video_mime_type(message.attachment_path)}
+                                />
+                                <a
+                                  href={message.attachment_path}
+                                  class="text-primary underline"
+                                  download
+                                >
+                                  {gettext("Download video")}
+                                </a>
                               </video>
                               <a
                                 href={message.attachment_path}
@@ -2129,19 +2156,37 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               />
                             </a>
                           <% is_emoji_msg -> %>
-                            <p class="text-4xl leading-none py-1">{render_message_content(message.content, @convert_emoticons)}</p>
+                            <p class="text-4xl leading-none py-1">
+                              {render_message_content(
+                                message.content,
+                                @convert_emoticons,
+                                @current_user
+                              )}
+                            </p>
                           <% true -> %>
-                            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">{render_message_content(message.content, @convert_emoticons)}</p>
+                            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">
+                              {render_message_content(
+                                message.content,
+                                @convert_emoticons,
+                                @current_user
+                              )}
+                            </p>
                         <% end %>
                       </div>
                       <div class="relative message-actions shrink-0 self-center flex items-center gap-0.5">
                         <div
                           class="relative"
-                          phx-click-away={if @reaction_picker_message_id == message.id, do: "close_reaction_picker"}
+                          phx-click-away={
+                            if @reaction_picker_message_id == message.id, do: "close_reaction_picker"
+                          }
                         >
                           <button
                             type="button"
-                            phx-click={if @reaction_picker_message_id == message.id, do: "close_reaction_picker", else: "open_reaction_picker"}
+                            phx-click={
+                              if @reaction_picker_message_id == message.id,
+                                do: "close_reaction_picker",
+                                else: "open_reaction_picker"
+                            }
                             phx-value-id={message.id}
                             class="p-1.5 rounded-full text-base-content/30 hover:text-base-content/70 hover:bg-base-200 transition-colors"
                             title={gettext("React")}
@@ -2160,7 +2205,23 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               ]}
                             >
                               <div class="flex flex-wrap gap-1 justify-center">
-                                <% reaction_emojis = ["👍", "❤️", "😂", "😮", "😢", "🎉", "👏", "🔥", "😊", "😭", "🙏", "✨", "🥰", "🤔", "😅"] %>
+                                <% reaction_emojis = [
+                                  "👍",
+                                  "❤️",
+                                  "😂",
+                                  "😮",
+                                  "😢",
+                                  "🎉",
+                                  "👏",
+                                  "🔥",
+                                  "😊",
+                                  "😭",
+                                  "🙏",
+                                  "✨",
+                                  "🥰",
+                                  "🤔",
+                                  "😅"
+                                ] %>
                                 <%= for emoji <- reaction_emojis do %>
                                   <button
                                     type="button"
@@ -2250,7 +2311,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             class={[
                               "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs border transition-colors",
                               r.me? && "bg-primary/15 border-primary/30 text-primary",
-                              not r.me? && "bg-base-200/70 border-base-300 text-base-content/70 hover:bg-base-200"
+                              not r.me? &&
+                                "bg-base-200/70 border-base-300 text-base-content/70 hover:bg-base-200"
                             ]}
                           >
                             <span>{emoji}</span>
@@ -2373,7 +2435,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
             class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative z-30"
             phx-hook="ClassroomChatInput"
             data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
-            data-can-upload-video={if @current_user && Medoru.Accounts.User.teacher?(@current_user), do: "true", else: "false"}
+            data-can-upload-video={
+              if @current_user && Medoru.Accounts.User.teacher?(@current_user),
+                do: "true",
+                else: "false"
+            }
           >
             <%!-- File Preview --%>
             <div id="classroom-file-preview" class="hidden mb-2 relative">
@@ -2415,7 +2481,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
               <% pages = Enum.chunk_every(all_emojis, 48) %>
               <div class="emoji-pages">
                 <%= for {page_emojis, page_idx} <- Enum.with_index(pages) do %>
-                  <div class={["emoji-page grid grid-cols-8 gap-2", page_idx != 0 && "hidden"]} data-page={page_idx}>
+                  <div
+                    class={["emoji-page grid grid-cols-8 gap-2", page_idx != 0 && "hidden"]}
+                    data-page={page_idx}
+                  >
                     <%= for emoji <- page_emojis do %>
                       <%= if emoji in [":medoru:", ":ouroboros:"] do %>
                         <button
@@ -2423,15 +2492,22 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           data-emoji={emoji}
                           class="hover:bg-base-200 rounded-lg p-1 transition-colors flex items-center justify-center"
                         >
-                          <img src={if emoji == ":medoru:", do: "/favicon.png", else: "/images/ouroboros.png"} class="w-6 h-6 object-contain pointer-events-none" />
+                          <img
+                            src={
+                              if emoji == ":medoru:",
+                                do: "/favicon.png",
+                                else: "/images/ouroboros.png"
+                            }
+                            class="w-6 h-6 object-contain pointer-events-none"
+                          />
                         </button>
-                        <% else %>
+                      <% else %>
                         <button
                           type="button"
                           data-emoji={emoji}
                           class="text-2xl hover:bg-base-200 rounded-lg p-1 transition-colors"
                         >
-                        {emoji}
+                          {emoji}
                         </button>
                       <% end %>
                     <% end %>
@@ -2442,7 +2518,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 <button type="button" class="emoji-page-prev btn btn-ghost btn-xs" disabled>
                   <.icon name="hero-chevron-left" class="w-4 h-4" />
                 </button>
-                <span class="emoji-page-info text-xs text-base-content/60">1 / <%= length(pages) %></span>
+                <span class="emoji-page-info text-xs text-base-content/60">1 / {length(pages)}</span>
                 <button type="button" class="emoji-page-next btn btn-ghost btn-xs">
                   <.icon name="hero-chevron-right" class="w-4 h-4" />
                 </button>
@@ -2522,7 +2598,6 @@ defmodule MedoruWeb.ClassroomLive.Show do
               </div>
             </div>
           </div>
-
         </div>
       <% else %>
         <div class="card bg-base-100 border border-base-300 shadow-sm p-6 sm:p-8 text-center w-full">
@@ -2622,14 +2697,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
       |> String.trim() == ""
   end
 
-  defp render_message_content(nil, _convert), do: ""
-  defp render_message_content(text, convert_emoticons) do
+  defp render_message_content(text, convert_emoticons, viewer)
+  defp render_message_content(nil, _convert, _viewer), do: ""
+
+  defp render_message_content(text, convert_emoticons, viewer) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text, convert_emoticons)
+            render_message_body(text, convert_emoticons, viewer)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -2641,10 +2718,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text, convert_emoticons)
+                render_message_body(text, convert_emoticons, viewer)
 
               word ->
-                WordChatPreview.render_html(%{word: word})
+                if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                  WordChatPreview.render_html(%{word: word})
+                else
+                  WordChatPreview.render_html(%{blocked: true})
+                end
             end
 
           :error ->
@@ -2653,7 +2734,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text, convert_emoticons)
+                    render_message_body(text, convert_emoticons, viewer)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -2662,13 +2743,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 end
 
               :error ->
-                render_message_body(text, convert_emoticons)
+                render_message_body(text, convert_emoticons, viewer)
             end
         end
     end
   end
 
-  defp render_message_body(text, convert_emoticons) do
+  defp render_message_body(text, convert_emoticons, viewer) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -2676,9 +2757,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
     matches =
       (Enum.map(pipe_matches, &{:word, &1}) ++
-       Enum.map(bracket_matches, &{:word, &1}) ++
-       Enum.map(corner_matches, &{:word, &1}) ++
-       Enum.map(grammar_matches, &{:grammar, &1}))
+         Enum.map(bracket_matches, &{:word, &1}) ++
+         Enum.map(corner_matches, &{:word, &1}) ++
+         Enum.map(grammar_matches, &{:grammar, &1}))
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
@@ -2696,13 +2777,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
               [Phoenix.HTML.html_escape(word_text)]
 
             word ->
-              word_path = ~p"/words/#{word.id}"
-              {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+              if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                word_path = ~p"/words/#{word.id}"
+                {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
 
-              [
-                {:safe,
-                 ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
-              ]
+                [
+                  {:safe,
+                   ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                ]
+              else
+                [
+                  {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
+                ]
+              end
           end
 
         {:grammar, grammar_text} ->
@@ -2725,12 +2812,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   defp build_tagged_segments(text, [], pos, acc) do
-    remaining = if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+    remaining =
+      if pos < byte_size(text), do: binary_part(text, pos, byte_size(text) - pos), else: ""
+
     acc = if remaining != "", do: [{:text, remaining} | acc], else: acc
     Enum.reverse(acc)
   end
 
-  defp build_tagged_segments(text, [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest], pos, acc) do
+  defp build_tagged_segments(
+         text,
+         [{tag, [{match_start, match_len}, {cap_start, cap_len}]} | rest],
+         pos,
+         acc
+       ) do
     before_len = match_start - pos
     before_text = if before_len > 0, do: binary_part(text, pos, before_len), else: ""
     captured_text = binary_part(text, cap_start, cap_len)
@@ -2747,10 +2841,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
     Regex.split(~r/(:medoru:|:ouroboros:)/, text, include_captures: true, trim: true)
     |> Enum.flat_map(fn
       ":medoru:" ->
-        [{:safe, ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}]
+        [
+          {:safe,
+           ~s|<img src="/favicon.png" class="medoru-emoji inline align-text-bottom" alt="medoru" />|}
+        ]
 
       ":ouroboros:" ->
-        [{:safe, ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}]
+        [
+          {:safe,
+           ~s|<img src="/images/ouroboros.png" class="medoru-emoji inline align-text-bottom" alt="ouroboros" />|}
+        ]
 
       part ->
         Regex.split(url_regex, part, include_captures: true, trim: true)
@@ -2773,7 +2873,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 end
 
               true ->
-                segment = if convert_emoticons, do: MedoruWeb.ChatEmoticons.replace(segment), else: segment
+                segment =
+                  if convert_emoticons,
+                    do: MedoruWeb.ChatEmoticons.replace(segment),
+                    else: segment
+
                 Phoenix.HTML.html_escape(segment)
             end
         end)
@@ -2953,7 +3057,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
     </div>
     <div class="preview-body flex-1 overflow-y-auto p-4 flex flex-col gap-4">
       <div class="flex items-start gap-3">
-        <a href={~p"/users/#{@message.sender.id}"} target="_blank" rel="noopener noreferrer" class="shrink-0">
+        <a
+          href={~p"/users/#{@message.sender.id}"}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0"
+        >
           <%= if avatar = chat_avatar(@message.sender) do %>
             <img
               src={avatar}
@@ -2993,7 +3102,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
           <% @message.attachment_type == "video" && @message.attachment_path -> %>
             <video controls class="max-w-full rounded-lg">
               <source src={@message.attachment_path} type={video_mime_type(@message.attachment_path)} />
-              <a href={@message.attachment_path} class="text-primary underline" download>{gettext("Download video")}</a>
+              <a href={@message.attachment_path} class="text-primary underline" download>
+                {gettext("Download video")}
+              </a>
             </video>
           <% @message.ciphertext -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
@@ -3001,7 +3112,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content, @convert_emoticons)}
+              {render_message_content(@message.content, @convert_emoticons, @current_user)}
             </p>
         <% end %>
       </div>

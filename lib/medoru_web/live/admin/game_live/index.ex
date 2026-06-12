@@ -263,7 +263,11 @@ defmodule MedoruWeb.Admin.GameLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     games = Games.list_all_games(opts)
 
@@ -280,7 +284,11 @@ defmodule MedoruWeb.Admin.GameLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     games = Games.list_all_games(opts)
 
@@ -297,7 +305,11 @@ defmodule MedoruWeb.Admin.GameLive.Index do
 
     opts =
       []
-      |> then(&if socket.assigns.status_filter, do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1], else: &1)
+      |> then(
+        &if socket.assigns.status_filter,
+          do: [{:status, String.to_atom(socket.assigns.status_filter)} | &1],
+          else: &1
+      )
 
     games = Games.list_all_games(opts)
 

@@ -23,26 +23,27 @@ defmodule Medoru.AI.WordEnrichmentTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{
-                  "meaning" => "Japan",
-                  "reading" => "にほん",
-                  "difficulty" => 5,
-                  "word_type" => "noun",
-                  "usage_frequency" => 100,
-                  "example_sentence" => "日本に行きたいです。/ 日本は美しい国です。",
-                  "example_reading" => "にほんにいきたいです。/ にほんはうつくしいくにです。",
-                  "example_meaning" => "I want to go to Japan. / Japan is a beautiful country.",
-                  "translations" => %{
-                    "bg" => %{
-                      "meaning" => "Япония",
-                      "example" => "Искам да отида в Япония. / Япония е красива страна."
-                    },
-                    "ja" => %{
-                      "meaning" => "日本",
-                      "example" => "日本に行きたいです。/ 日本は美しい国です。"
+                "content" =>
+                  Jason.encode!(%{
+                    "meaning" => "Japan",
+                    "reading" => "にほん",
+                    "difficulty" => 5,
+                    "word_type" => "noun",
+                    "usage_frequency" => 100,
+                    "example_sentence" => "日本に行きたいです。/ 日本は美しい国です。",
+                    "example_reading" => "にほんにいきたいです。/ にほんはうつくしいくにです。",
+                    "example_meaning" => "I want to go to Japan. / Japan is a beautiful country.",
+                    "translations" => %{
+                      "bg" => %{
+                        "meaning" => "Япония",
+                        "example" => "Искам да отида в Япония. / Япония е красива страна."
+                      },
+                      "ja" => %{
+                        "meaning" => "日本",
+                        "example" => "日本に行きたいです。/ 日本は美しい国です。"
+                      }
                     }
-                  }
-                })
+                  })
               }
             }
           ]
@@ -67,7 +68,10 @@ defmodule Medoru.AI.WordEnrichmentTest do
       assert data["example_meaning"] == "I want to go to Japan. / Japan is a beautiful country."
 
       assert data["translations"]["bg"]["meaning"] == "Япония"
-      assert data["translations"]["bg"]["example"] == "Искам да отида в Япония. / Япония е красива страна."
+
+      assert data["translations"]["bg"]["example"] ==
+               "Искам да отида в Япония. / Япония е красива страна."
+
       assert data["translations"]["ja"]["meaning"] == "日本"
       assert data["translations"]["ja"]["example"] == "日本に行きたいです。/ 日本は美しい国です。"
     end
@@ -78,12 +82,13 @@ defmodule Medoru.AI.WordEnrichmentTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{
-                  "meaning" => "book",
-                  "reading" => "ほん",
-                  "difficulty" => "5",
-                  "word_type" => "noun"
-                })
+                "content" =>
+                  Jason.encode!(%{
+                    "meaning" => "book",
+                    "reading" => "ほん",
+                    "difficulty" => "5",
+                    "word_type" => "noun"
+                  })
               }
             }
           ]
@@ -107,12 +112,13 @@ defmodule Medoru.AI.WordEnrichmentTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{
-                  "meaning" => "to eat",
-                  "reading" => "たべる",
-                  "difficulty" => 5,
-                  "word_type" => "Verb"
-                })
+                "content" =>
+                  Jason.encode!(%{
+                    "meaning" => "to eat",
+                    "reading" => "たべる",
+                    "difficulty" => 5,
+                    "word_type" => "Verb"
+                  })
               }
             }
           ]
@@ -201,10 +207,11 @@ defmodule Medoru.AI.WordEnrichmentTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{
-                  "meaning" => "Japan",
-                  "reading" => "にほん"
-                })
+                "content" =>
+                  Jason.encode!(%{
+                    "meaning" => "Japan",
+                    "reading" => "にほん"
+                  })
               }
             }
           ]

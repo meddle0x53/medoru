@@ -110,15 +110,20 @@ export default class Player extends Character {
     this.shield = shield
 
     // Loadout: persistent battle preparation state
+    const starterActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
     this.loadout = this.loadLoadout() || {
+      class: 'warrior',
       activeItemIds: ['health_potion', 'stone'],
       heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
       weaponCharmIds: [],
       shieldCharmIds: [],
-      selectedActionIds: ALL_ACTIONS.map(a => a.id),
+      selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
       statPoints: 10,
       statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      gold: 0,
+      inventory: { health_potion: 2, stone: 1 },
+      ownedCharmIds: [],
     }
 
     // Apply stat allocations to base stats
@@ -381,9 +386,15 @@ export default class Player extends Character {
         // Migration: ensure demo has stat points to spend
         if (typeof loadout.statPoints === 'number' && loadout.statPoints < 10) {
           loadout.statPoints = 10
-          try {
-            localStorage.setItem(LOADOUT_KEY, JSON.stringify(loadout))
-          } catch (_) {}
+        }
+        // Migration: ensure new rogue-like fields exist
+        if (!loadout.class) loadout.class = 'warrior'
+        if (typeof loadout.gold !== 'number') loadout.gold = 0
+        if (!loadout.inventory || typeof loadout.inventory !== 'object') {
+          loadout.inventory = { health_potion: 2, stone: 1 }
+        }
+        if (!Array.isArray(loadout.ownedCharmIds)) {
+          loadout.ownedCharmIds = []
         }
         return loadout
       }
@@ -506,5 +517,67 @@ export default class Player extends Character {
     }
     this._charmEffects = effects
     return effects
+  }
+
+  // ---------- Inventory & Gold ----------
+
+  addGold(amount) {
+    this.loadout.gold = Math.max(0, (this.loadout.gold || 0) + Math.floor(amount))
+    this.saveLoadout()
+  }
+
+  addItem(itemId, count = 1) {
+    if (!this.loadout.inventory) this.loadout.inventory = {}
+    this.loadout.inventory[itemId] = (this.loadout.inventory[itemId] || 0) + count
+    this.saveLoadout()
+  }
+
+  hasItem(itemId) {
+    return (this.loadout.inventory?.[itemId] || 0) > 0
+  }
+
+  consumeItem(itemId, count = 1) {
+    if (!this.hasItem(itemId)) return false
+    this.loadout.inventory[itemId] -= count
+    if (this.loadout.inventory[itemId] <= 0) {
+      delete this.loadout.inventory[itemId]
+    }
+    this.saveLoadout()
+    return true
+  }
+
+  // ---------- Ability Learning ----------
+
+  hasAbility(actionId) {
+    return this.loadout.selectedActionIds.includes(actionId)
+  }
+
+  countCombatAbilities() {
+    return this.loadout.selectedActionIds.filter(id => id !== 'use_item').length
+  }
+
+  learnAbility(actionId) {
+    if (!this.loadout.selectedActionIds.includes(actionId)) {
+      this.loadout.selectedActionIds.push(actionId)
+    }
+    // If it's an attack, make sure at least one attack stays active
+    this.refreshActions()
+    this.saveLoadout()
+  }
+
+  replaceAbility(oldActionId, newActionId) {
+    const idx = this.loadout.selectedActionIds.indexOf(oldActionId)
+    if (idx >= 0) {
+      this.loadout.selectedActionIds[idx] = newActionId
+    } else {
+      this.loadout.selectedActionIds.push(newActionId)
+    }
+    // Replace in active list too if present
+    const activeIdx = this.loadout.activeActionIds.indexOf(oldActionId)
+    if (activeIdx >= 0) {
+      this.loadout.activeActionIds[activeIdx] = newActionId
+    }
+    this.refreshActions()
+    this.saveLoadout()
   }
 }

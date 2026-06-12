@@ -22,7 +22,8 @@ defmodule MedoruWeb.DashboardLive do
 🦄 🐝 🐛 🦋 🐌 🐚 🐞 🐜 🦗 🕷 🕸 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🐘 🦏 🐪 🐫 🦒 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐩 🐈 🐓 🦃 🕊 🐇 🐁 🐀 🐿 🦔 🐾
 🐉 🐲 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍃 🍂 🍁 🍄 🌾 💐 🌷 🌹 🥀 🌺 🌼 🌻 🌞 🌝 🌛 🌜 🌚 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 🌎 🌍 🌏 💫 ⭐️ 🌟 ⚡️ ☄️ 💥 🌪 ☀️ 🌤 ⛅️ 🌥 ☁️ 🌦 🌧 ⛈ 🌩 🌨
 ❄️ ☃️ ⛄️ 🌬 💨 💧 💦 ☔️ ☂️ 🌊 🌫 🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍈 🍒 🍑 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥒 🌶 🌽 🥕 🥔 🍠 🥐 🍞 🥖 🥨 🧀 🥚 🍳 🥞 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🌮 🌯
-🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++ [":ouroboros:", ":medoru:"]
+🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++
+      [":ouroboros:", ":medoru:"]
   end
 
   @impl true
@@ -131,7 +132,7 @@ defmodule MedoruWeb.DashboardLive do
 
       case WhiteBoard.create_comment(attrs) do
         {:ok, comment} ->
-          comment = Repo.preload(comment, [user: [:profile], parent_comment: [user: [:profile]]])
+          comment = Repo.preload(comment, user: [:profile], parent_comment: [user: [:profile]])
 
           comments =
             Map.update(socket.assigns.stream_comments, post_id, [comment], fn existing ->
@@ -168,7 +169,11 @@ defmodule MedoruWeb.DashboardLive do
   end
 
   @impl true
-  def handle_event("stream_reply_to_comment", %{"post-id" => post_id, "comment-id" => comment_id}, socket) do
+  def handle_event(
+        "stream_reply_to_comment",
+        %{"post-id" => post_id, "comment-id" => comment_id},
+        socket
+      ) do
     replying_to = Map.put(socket.assigns.stream_replying_to, post_id, comment_id)
     {:noreply, assign(socket, :stream_replying_to, replying_to)}
   end
@@ -219,7 +224,7 @@ defmodule MedoruWeb.DashboardLive do
         BoardComment
         |> where([c], c.post_id in ^post_ids)
         |> order_by(asc: :inserted_at)
-        |> preload([user: [:profile], parent_comment: [user: [:profile]]])
+        |> preload(user: [:profile], parent_comment: [user: [:profile]])
         |> Repo.all()
 
       comments =

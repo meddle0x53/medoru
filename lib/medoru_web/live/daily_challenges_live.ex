@@ -63,7 +63,10 @@ defmodule MedoruWeb.DailyChallengesLive do
           <%!-- Daily Test --%>
           <div class={[
             "card border transition-all",
-            if(@stats.daily_test_completed, do: "border-success/30 bg-success/5", else: "border-base-300 bg-base-100")
+            if(@stats.daily_test_completed,
+              do: "border-success/30 bg-success/5",
+              else: "border-base-300 bg-base-100"
+            )
           ]}>
             <div class="card-body">
               <div class="flex items-center justify-between mb-4">
@@ -110,7 +113,10 @@ defmodule MedoruWeb.DailyChallengesLive do
           <%!-- Daily Kanji Test --%>
           <div class={[
             "card border transition-all",
-            if(@stats.daily_kanji_completed, do: "border-success/30 bg-success/5", else: "border-base-300 bg-base-100")
+            if(@stats.daily_kanji_completed,
+              do: "border-success/30 bg-success/5",
+              else: "border-base-300 bg-base-100"
+            )
           ]}>
             <div class="card-body">
               <div class="flex items-center justify-between mb-4">
@@ -157,7 +163,10 @@ defmodule MedoruWeb.DailyChallengesLive do
           <%!-- Daily Card Game --%>
           <div class={[
             "card border transition-all",
-            if(@stats.daily_cards_completed, do: "border-success/30 bg-success/5", else: "border-base-300 bg-base-100")
+            if(@stats.daily_cards_completed,
+              do: "border-success/30 bg-success/5",
+              else: "border-base-300 bg-base-100"
+            )
           ]}>
             <div class="card-body">
               <div class="flex items-center justify-between mb-4">

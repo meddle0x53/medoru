@@ -30,7 +30,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
             <div class="flex items-start justify-between">
               <div class="flex items-center gap-3 min-w-0">
                 <.link navigate={~p"/users/#{@post.user_id}"}>
-                  <% avatar_src = (@post.user.profile && @post.user.profile.avatar) || @post.user.avatar_url %>
+                  <% avatar_src =
+                    (@post.user.profile && @post.user.profile.avatar) || @post.user.avatar_url %>
                   <%= if avatar_src do %>
                     <img src={avatar_src} class="w-10 h-10 rounded-full object-cover shrink-0" />
                   <% else %>
@@ -78,28 +79,57 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                 data-grid={Jason.encode!(@post.canvas_data["grid"] || %{})}
                 data-background={@post.canvas_data["background"]}
               >
-                <div id={"canvas-player-#{@post.id}"} class="canvas-player-container w-full h-full" phx-update="ignore"></div>
+                <div
+                  id={"canvas-player-#{@post.id}"}
+                  class="canvas-player-container w-full h-full"
+                  phx-update="ignore"
+                >
+                </div>
               </div>
             <% end %>
 
             <%= if @post.content do %>
               <%= if WhiteBoardPostRenderer.emoji_only?(@post.content) do %>
                 <div class="mt-2 text-center text-5xl leading-none py-2">
-                  {raw(WhiteBoardPostRenderer.render_post_content(@post.content, @post.id))}
+                  {raw(
+                    WhiteBoardPostRenderer.render_post_content(
+                      @post.content,
+                      @post.id,
+                      @current_scope.current_user
+                    )
+                  )}
                 </div>
               <% else %>
                 <%= if WhiteBoardPostRenderer.command_only?(@post.content) do %>
                   <div class="mt-2 flex justify-center">
-                    {raw(WhiteBoardPostRenderer.render_post_content(@post.content, @post.id))}
+                    {raw(
+                      WhiteBoardPostRenderer.render_post_content(
+                        @post.content,
+                        @post.id,
+                        @current_scope.current_user
+                      )
+                    )}
                   </div>
                 <% else %>
                   <%= if WhiteBoardPostRenderer.photo_only?(@post.content) do %>
                     <div class="mt-2">
-                      {raw(WhiteBoardPostRenderer.render_post_content(@post.content, @post.id))}
+                      {raw(
+                        WhiteBoardPostRenderer.render_post_content(
+                          @post.content,
+                          @post.id,
+                          @current_scope.current_user
+                        )
+                      )}
                     </div>
                   <% else %>
                     <div class="mt-2 prose prose-sm dark:prose-invert max-w-none">
-                      {raw(WhiteBoardPostRenderer.render_post_content(@post.content, @post.id))}
+                      {raw(
+                        WhiteBoardPostRenderer.render_post_content(
+                          @post.content,
+                          @post.id,
+                          @current_scope.current_user
+                        )
+                      )}
                     </div>
                   <% end %>
                 <% end %>
@@ -115,7 +145,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                   phx-value-emoji={emoji}
                   class={[
                     "badge badge-sm gap-1 cursor-pointer transition-all",
-                    data.me? && "badge-primary" || "badge-ghost"
+                    (data.me? && "badge-primary") || "badge-ghost"
                   ]}
                 >
                   <span>{emoji}</span>
@@ -154,9 +184,14 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                   <%= for comment <- @comments do %>
                     <div class="flex gap-2">
                       <.link navigate={~p"/users/#{comment.user_id}"}>
-                        <% avatar_src = (comment.user.profile && comment.user.profile.avatar) || comment.user.avatar_url %>
+                        <% avatar_src =
+                          (comment.user.profile && comment.user.profile.avatar) ||
+                            comment.user.avatar_url %>
                         <%= if avatar_src do %>
-                          <img src={avatar_src} class="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                          <img
+                            src={avatar_src}
+                            class="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          />
                         <% else %>
                           <div class="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <.icon name="hero-user" class="w-3 h-3 text-primary/50" />
@@ -166,9 +201,17 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                       <div class="flex-1 min-w-0">
                         <div class="bg-base-200 rounded-lg px-3 py-2">
                           <p class="text-xs font-semibold text-base-content">
-                            {(comment.user.profile && comment.user.profile.display_name) || comment.user.name}
+                            {(comment.user.profile && comment.user.profile.display_name) ||
+                              comment.user.name}
                           </p>
-                          <p class="text-sm text-base-content mt-0.5">{raw(WhiteBoardPostRenderer.render_comment_content(comment.content))}</p>
+                          <p class="text-sm text-base-content mt-0.5">
+                            {raw(
+                              WhiteBoardPostRenderer.render_comment_content(
+                                comment.content,
+                                @current_scope.current_user
+                              )
+                            )}
+                          </p>
                         </div>
                         <p class="text-xs text-base-content/50 mt-0.5 ml-1">
                           {format_localized_datetime(comment.inserted_at)}
@@ -185,7 +228,12 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                     phx-submit="add_comment"
                     phx-hook="CommentInput"
                     class="flex gap-2 flex-wrap sm:flex-nowrap"
-                    data-can-upload-video={if @current_scope && @current_scope.current_user && Medoru.Accounts.User.teacher?(@current_scope.current_user), do: "true", else: "false"}
+                    data-can-upload-video={
+                      if @current_scope && @current_scope.current_user &&
+                           Medoru.Accounts.User.teacher?(@current_scope.current_user),
+                         do: "true",
+                         else: "false"
+                    }
                   >
                     <input type="hidden" name="post_id" value={@post.id} />
                     <input
@@ -264,8 +312,23 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
     case WhiteBoard.toggle_reaction(post_id, user_id, emoji) do
       {:ok, added, removed} ->
-        reactions = update_reaction_map(socket.assigns.reactions, post_id, added && emoji, removed && removed.emoji)
-        WhiteBoard.broadcast_reaction(socket.assigns.post.user_id, post_id, user_id, added && emoji, removed && removed.emoji, self())
+        reactions =
+          update_reaction_map(
+            socket.assigns.reactions,
+            post_id,
+            added && emoji,
+            removed && removed.emoji
+          )
+
+        WhiteBoard.broadcast_reaction(
+          socket.assigns.post.user_id,
+          post_id,
+          user_id,
+          added && emoji,
+          removed && removed.emoji,
+          self()
+        )
+
         {:noreply, assign(socket, :reactions, reactions)}
 
       {:error, _} ->
@@ -291,7 +354,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
       case WhiteBoard.create_comment(attrs) do
         {:ok, comment} ->
-          comment = Repo.preload(comment, [user: [:profile]])
+          comment = Repo.preload(comment, user: [:profile])
           WhiteBoard.broadcast_comment(socket.assigns.post.user_id, comment, self())
 
           comments = socket.assigns.comments ++ [comment]
@@ -306,7 +369,15 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
   @impl true
   def handle_info({:reaction, post_id, _user_id_reacting, added_emoji, removed_emoji}, socket) do
     if post_id == socket.assigns.post.id do
-      reactions = update_reaction_map_from_broadcast(socket.assigns.reactions, post_id, added_emoji, removed_emoji, false)
+      reactions =
+        update_reaction_map_from_broadcast(
+          socket.assigns.reactions,
+          post_id,
+          added_emoji,
+          removed_emoji,
+          false
+        )
+
       {:noreply, assign(socket, :reactions, reactions)}
     else
       {:noreply, socket}
@@ -332,7 +403,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 🦄 🐝 🐛 🦋 🐌 🐚 🐞 🐜 🦗 🕷 🕸 🦂 🐢 🐍 🦎 🦖 🦕 🐙 🦑 🦐 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🐘 🦏 🐪 🐫 🦒 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🐐 🦌 🐕 🐩 🐈 🐓 🦃 🕊 🐇 🐁 🐀 🐿 🦔 🐾
 🐉 🐲 🌵 🎄 🌲 🌳 🌴 🌱 🌿 ☘️ 🍃 🍂 🍁 🍄 🌾 💐 🌷 🌹 🥀 🌺 🌼 🌻 🌞 🌝 🌛 🌜 🌚 🌕 🌖 🌗 🌘 🌑 🌒 🌓 🌔 🌎 🌍 🌏 💫 ⭐️ 🌟 ⚡️ ☄️ 💥 🌪 ☀️ 🌤 ⛅️ 🌥 ☁️ 🌦 🌧 ⛈ 🌩 🌨
 ❄️ ☃️ ⛄️ 🌬 💨 💧 💦 ☔️ ☂️ 🌊 🌫 🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🍈 🍒 🍑 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥒 🌶 🌽 🥕 🥔 🍠 🥐 🍞 🥖 🥨 🧀 🥚 🍳 🥞 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🌮 🌯
-🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++ [":ouroboros:", ":medoru:"]
+🥗 🥘 🥫 🍝 🍲 🍛 🥟 🍤 🍚 🥠 🍢 🍧 🍨 🍦 🥧 🍰 🎂 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 🥛 🍼 ☕️ 🍵 🥤 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🍾 🥄 🍴 🍽 🥣 🥡 🥢) ++
+      [":ouroboros:", ":medoru:"]
   end
 
   defp update_reaction_map(reactions, post_id, added_emoji, removed_emoji) do
@@ -342,19 +414,28 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
       if removed_emoji && removed_emoji != added_emoji do
         current = Map.get(post_reactions, removed_emoji, %{count: 0, me?: false})
         new_count = max(current.count - 1, 0)
-        if new_count == 0, do: Map.delete(post_reactions, removed_emoji), else: Map.put(post_reactions, removed_emoji, %{count: new_count, me?: false})
+
+        if new_count == 0,
+          do: Map.delete(post_reactions, removed_emoji),
+          else: Map.put(post_reactions, removed_emoji, %{count: new_count, me?: false})
       else
         post_reactions
       end
 
     post_reactions =
       cond do
-        is_nil(added_emoji) && removed_emoji -> post_reactions
-        added_emoji && added_emoji == removed_emoji -> post_reactions
+        is_nil(added_emoji) && removed_emoji ->
+          post_reactions
+
+        added_emoji && added_emoji == removed_emoji ->
+          post_reactions
+
         added_emoji ->
           current = Map.get(post_reactions, added_emoji, %{count: 0, me?: false})
           Map.put(post_reactions, added_emoji, %{count: current.count + 1, me?: true})
-        true -> post_reactions
+
+        true ->
+          post_reactions
       end
 
     Map.put(reactions, post_id, post_reactions)
@@ -367,22 +448,33 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
       if removed_emoji && removed_emoji != added_emoji do
         current = Map.get(post_reactions, removed_emoji, %{count: 0, me?: false})
         new_count = max(current.count - 1, 0)
-        if new_count == 0, do: Map.delete(post_reactions, removed_emoji), else: Map.put(post_reactions, removed_emoji, %{count: new_count, me?: me?})
+
+        if new_count == 0,
+          do: Map.delete(post_reactions, removed_emoji),
+          else: Map.put(post_reactions, removed_emoji, %{count: new_count, me?: me?})
       else
         post_reactions
       end
 
     post_reactions =
       cond do
-        is_nil(added_emoji) && removed_emoji -> post_reactions
+        is_nil(added_emoji) && removed_emoji ->
+          post_reactions
+
         added_emoji && added_emoji == removed_emoji ->
           current = Map.get(post_reactions, added_emoji, %{count: 0, me?: false})
           new_count = max(current.count - 1, 0)
-          if new_count == 0, do: Map.delete(post_reactions, added_emoji), else: Map.put(post_reactions, added_emoji, %{count: new_count, me?: me?})
+
+          if new_count == 0,
+            do: Map.delete(post_reactions, added_emoji),
+            else: Map.put(post_reactions, added_emoji, %{count: new_count, me?: me?})
+
         added_emoji ->
           current = Map.get(post_reactions, added_emoji, %{count: 0, me?: false})
           Map.put(post_reactions, added_emoji, %{count: current.count + 1, me?: me?})
-        true -> post_reactions
+
+        true ->
+          post_reactions
       end
 
     Map.put(reactions, post_id, post_reactions)

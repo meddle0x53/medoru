@@ -8,7 +8,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImageTest do
     test "redirects non-admin users", %{conn: conn} do
       teacher = user_fixture(%{type: "teacher"})
       conn = log_in_user(conn, teacher)
-      {:error, {:live_redirect, %{to: "/teacher/grammar-lessons"}}} = live(conn, ~p"/teacher/grammar-lessons/from-image")
+
+      {:error, {:live_redirect, %{to: "/teacher/grammar-lessons"}}} =
+        live(conn, ~p"/teacher/grammar-lessons/from-image")
     end
 
     test "mounts for admin user", %{conn: conn} do

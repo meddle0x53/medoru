@@ -1205,7 +1205,8 @@ defmodule Medoru.Content.KanjiDecompositionRadicals do
     "齎" => ["齊", "貝"],
     "齦" => ["齒", "艮"],
     "齪" => ["齒", "足"],
-    "龍" => ["龍", "立", "月"]  }
+    "龍" => ["龍", "立", "月"]
+  }
 
   @doc """
   Apply decomposition-based radical fixes for kanji.
@@ -1215,22 +1216,30 @@ defmodule Medoru.Content.KanjiDecompositionRadicals do
     changed_count =
       Enum.reduce(@fixes, 0, fn {char, radicals}, count ->
         case Repo.get_by(Kanji, character: char) do
-          nil -> count
+          nil ->
+            count
+
           kanji ->
             current_radicals = kanji.radicals || []
             radicals = List.wrap(radicals)
+
             if current_radicals == radicals do
               count
             else
               kanji
               |> Ecto.Changeset.change(radicals: radicals)
               |> Repo.update!()
+
               count + 1
             end
         end
       end)
 
-    Logger.info("Applied decomposition radical fixes: " <> Integer.to_string(changed_count) <> " kanji updated")
+    Logger.info(
+      "Applied decomposition radical fixes: " <>
+        Integer.to_string(changed_count) <> " kanji updated"
+    )
+
     :ok
   end
 
@@ -1240,14 +1249,52 @@ defmodule Medoru.Content.KanjiDecompositionRadicals do
 
   @ids_operators ~r/[⿰⿱⿲⿳⿴⿵⿶⿷⿸⿹⿺⿻]/u
   @variant_map %{
-    "⺀" => "一", "⺊" => "卜", "⺌" => "小", "⺗" => "心", "⺮" => "竹", "⺼" => "肉",
-    "㔾" => "卩", "丬" => "爿", "丷" => "八", "乚" => "乙", "亻" => "人", "刂" => "刀",
-    "川" => "巛", "巳" => "己", "忄" => "心", "户" => "戶", "扌" => "手", "攵" => "攴",
-    "旡" => "无", "曰" => "日", "母" => "毋", "氵" => "水", "氺" => "水", "灬" => "火",
-    "爫" => "爪", "犭" => "犬", "玊" => "玉", "王" => "玉", "礻" => "示", "糹" => "糸",
-    "罒" => "网", "耂" => "老", "艹" => "艸", "虎" => "虍", "衤" => "衣", "西" => "襾",
-    "覀" => "襾", "讠" => "言", "辶" => "辵", "釒" => "金", "镸" => "長", "阝" => "阜",
-    "青" => "靑", "飠" => "食", "麦" => "麥", "黄" => "黃"
+    "⺀" => "一",
+    "⺊" => "卜",
+    "⺌" => "小",
+    "⺗" => "心",
+    "⺮" => "竹",
+    "⺼" => "肉",
+    "㔾" => "卩",
+    "丬" => "爿",
+    "丷" => "八",
+    "乚" => "乙",
+    "亻" => "人",
+    "刂" => "刀",
+    "川" => "巛",
+    "巳" => "己",
+    "忄" => "心",
+    "户" => "戶",
+    "扌" => "手",
+    "攵" => "攴",
+    "旡" => "无",
+    "曰" => "日",
+    "母" => "毋",
+    "氵" => "水",
+    "氺" => "水",
+    "灬" => "火",
+    "爫" => "爪",
+    "犭" => "犬",
+    "玊" => "玉",
+    "王" => "玉",
+    "礻" => "示",
+    "糹" => "糸",
+    "罒" => "网",
+    "耂" => "老",
+    "艹" => "艸",
+    "虎" => "虍",
+    "衤" => "衣",
+    "西" => "襾",
+    "覀" => "襾",
+    "讠" => "言",
+    "辶" => "辵",
+    "釒" => "金",
+    "镸" => "長",
+    "阝" => "阜",
+    "青" => "靑",
+    "飠" => "食",
+    "麦" => "麥",
+    "黄" => "黃"
   }
 
   @doc """
@@ -1255,12 +1302,19 @@ defmodule Medoru.Content.KanjiDecompositionRadicals do
   Fallback for kanji not in the hardcoded @fixes map.
   """
   def apply_all! do
-    kanji_with_decomp = Repo.all(from k in Kanji, where: not is_nil(k.stroke_data["decomposition"]))
+    kanji_with_decomp =
+      Repo.all(from k in Kanji, where: not is_nil(k.stroke_data["decomposition"]))
+
     changed =
       Enum.reduce(kanji_with_decomp, 0, fn kanji, count ->
         decomp = kanji.stroke_data["decomposition"]
         radicals = extract_radicals(decomp)
-        radicals = if Medoru.Content.KanjiRadicals.radical?(kanji.character), do: [kanji.character | radicals], else: radicals
+
+        radicals =
+          if Medoru.Content.KanjiRadicals.radical?(kanji.character),
+            do: [kanji.character | radicals],
+            else: radicals
+
         radicals = Enum.uniq(radicals)
 
         if radicals != kanji.radicals do
@@ -1273,7 +1327,7 @@ defmodule Medoru.Content.KanjiDecompositionRadicals do
 
     Logger.info(
       "Decomposition radical update complete! " <>
-      "#{changed}/#{length(kanji_with_decomp)} kanji changed."
+        "#{changed}/#{length(kanji_with_decomp)} kanji changed."
     )
   end
 

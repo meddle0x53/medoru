@@ -51,7 +51,10 @@ defmodule MedoruWeb.GameApiController do
 
     # Grant a small XP reward for winning
     if params["winner"] == "player" do
-      Accounts.add_xp(user, 50, source_type: "game_battle", description: "Won a battle in Kill Medoru!")
+      Accounts.add_xp(user, 50,
+        source_type: "game_battle",
+        description: "Won a battle in Kill Medoru!"
+      )
     end
 
     json(conn, %{status: "ok"})

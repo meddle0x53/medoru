@@ -3,12 +3,18 @@
  * Uses a DOM canvas overlay for drawing with the exact same stroke validation.
  */
 export default class KanjiDrawingSystem {
-  constructor(scene, x, y, size = 300) {
+  constructor(scene, x, y, size = 300, options = {}) {
     this.scene = scene
     this.size = size
     this.centerX = x
     this.centerY = y
     this.halfSize = size / 2
+    this.options = {
+      offsetXPercent: 0.05,
+      offsetYPercent: 0.05,
+      offsetYAdjust: -20,
+      ...options,
+    }
 
     // Hint text element (above canvas)
     this.hintText = document.createElement('div')
@@ -171,8 +177,8 @@ export default class KanjiDrawingSystem {
     // Detect viewBox and compute scale
     const viewBoxSize = (strokes[0] && strokes[0].path && strokes[0].path.includes('109')) ? 109 : 100
     this.state.scale = this.size / viewBoxSize
-    this.state.offsetX = this.size * 0.05
-    this.state.offsetY = this.size * 0.05 - 20
+    this.state.offsetX = this.size * this.options.offsetXPercent
+    this.state.offsetY = this.size * this.options.offsetYPercent + this.options.offsetYAdjust
   }
 
   _resetState() {

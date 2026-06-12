@@ -175,7 +175,9 @@
                 <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Grammar")}
               </button>
               <button phx-click="open_grammar_def_modal" class="btn btn-secondary btn-sm">
-                <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext("From Grammar Definition")}
+                <.icon name="hero-book-open" class="w-4 h-4 mr-1" /> {gettext(
+                  "From Grammar Definition"
+                )}
               </button>
               <button phx-click="add_step" phx-value-type="text" class="btn btn-outline btn-sm">
                 <.icon name="hero-document-text" class="w-4 h-4 mr-1" /> {gettext("Text")}
@@ -825,7 +827,10 @@
     <%!-- Grammar Definition Selection Modal --%>
     <%= if @grammar_def_modal_open do %>
       <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-base-100 rounded-2xl shadow-xl max-w-lg w-full p-4 sm:p-6" phx-click-away="close_grammar_def_modal">
+        <div
+          class="bg-base-100 rounded-2xl shadow-xl max-w-lg w-full p-4 sm:p-6"
+          phx-click-away="close_grammar_def_modal"
+        >
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold">{gettext("Add from Grammar Definition")}</h3>
             <button phx-click="close_grammar_def_modal" class="btn btn-ghost btn-circle btn-sm">
@@ -834,7 +839,11 @@
           </div>
 
           <%= if is_nil(@grammar_def_selected) do %>
-            <form phx-change="update_grammar_def_search" phx-submit="search_grammar_definitions" class="mb-4">
+            <form
+              phx-change="update_grammar_def_search"
+              phx-submit="search_grammar_definitions"
+              class="mb-4"
+            >
               <div class="join w-full">
                 <input
                   type="text"
@@ -901,7 +910,10 @@
                       </span>
                     <% end %>
                   </div>
-                  <button phx-click="clear_selected_grammar_definition" class="btn btn-ghost btn-circle btn-xs">
+                  <button
+                    phx-click="clear_selected_grammar_definition"
+                    class="btn btn-ghost btn-circle btn-xs"
+                  >
                     <.icon name="hero-x-mark" class="w-3 h-3" />
                   </button>
                 </div>
@@ -909,17 +921,24 @@
                   <p class="text-sm text-secondary mt-2">{@grammar_def_selected.description}</p>
                 <% end %>
                 <div class="text-xs text-secondary mt-2">
-                  {gettext("Pattern elements")}: {length(@grammar_def_selected.pattern_elements || [])}
-                  · {gettext("Examples")}: {length(@grammar_def_selected.examples || [])}
+                  {gettext("Pattern elements")}: {length(
+                    @grammar_def_selected.pattern_elements || []
+                  )} · {gettext("Examples")}: {length(@grammar_def_selected.examples || [])}
                 </div>
               </div>
             </div>
 
             <div class="flex flex-col sm:flex-row justify-end gap-2">
-              <button phx-click="clear_selected_grammar_definition" class="btn btn-ghost w-full sm:w-auto">
+              <button
+                phx-click="clear_selected_grammar_definition"
+                class="btn btn-ghost w-full sm:w-auto"
+              >
                 {gettext("Back")}
               </button>
-              <button phx-click="add_from_grammar_definition" class="btn btn-primary w-full sm:w-auto">
+              <button
+                phx-click="add_from_grammar_definition"
+                class="btn btn-primary w-full sm:w-auto"
+              >
                 <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add as Step")}
               </button>
             </div>

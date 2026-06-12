@@ -1,5 +1,19 @@
 import { CryptoState } from "./chat_crypto"
 
+const CHAT_DRAFTS = window.__medoruChatDrafts || (window.__medoruChatDrafts = {})
+
+function saveChatDraft(key, value) {
+  if (key) CHAT_DRAFTS[key] = value
+}
+
+function getChatDraft(key) {
+  return key ? CHAT_DRAFTS[key] : undefined
+}
+
+function clearChatDraft(key) {
+  delete CHAT_DRAFTS[key]
+}
+
 const EMOJIS = [
   "😀", "😂", "❤️", "👍", "🎉", "🔥", "😊", "😭", "🙏", "✨",
   "🥰", "🤔", "😅", "👏", "🌸", "🍀", "⭐", "💯", "🎊", "🌟",
@@ -21,6 +35,48 @@ const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
 const MAX_SIZE_VIDEO = 200 * 1024 * 1024
 
 const ChatInput = {
+  beforeUpdate() {
+    this._saveDraft()
+  },
+
+  updated() {
+    this._restoreDraft()
+  },
+
+  _draftKey() {
+    return this.el.id || `chat-draft-${this.convId || "unknown"}`
+  },
+
+  _saveDraft() {
+    if (this.textarea) {
+      this._draftHadFocus = document.activeElement === this.textarea
+      saveChatDraft(this._draftKey(), this.textarea.value)
+    }
+  },
+
+  _restoreDraft() {
+    this.textarea = this.el.querySelector("textarea")
+    if (!this.textarea) return
+
+    const draft = getChatDraft(this._draftKey())
+    if (draft && this.textarea.value === "") {
+      this.textarea.value = draft
+      this.textarea.style.height = "auto"
+      const maxHeight = parseInt(getComputedStyle(this.textarea).maxHeight, 10) || 128
+      this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
+      if (this._draftHadFocus) {
+        this.textarea.focus()
+      }
+    }
+
+    clearChatDraft(this._draftKey())
+    this._draftHadFocus = false
+  },
+
+  _clearDraft() {
+    clearChatDraft(this._draftKey())
+  },
+
   mounted() {
     this.textarea = this.el.querySelector("textarea")
     this.sendButton = this.el.querySelector("#chat-send-button")
@@ -69,6 +125,7 @@ const ChatInput = {
           window.chatEditingMessage = null
           this.textarea.value = ""
           this.textarea.style.height = "auto"
+          this._clearDraft()
           this.pushEvent("cancel_edit", {})
         }
         return
@@ -197,6 +254,7 @@ const ChatInput = {
     }
     document.addEventListener("click", this._outsideClickHandler)
 
+    this._restoreDraft()
     this.textarea.focus()
 
     this.handleEvent("focus_chat_input", () => {
@@ -445,6 +503,7 @@ const ChatInput = {
       this.textarea.value = ""
       this.textarea.style.height = "auto"
       this.textarea.focus()
+      this._clearDraft()
       return
     }
 
@@ -501,6 +560,7 @@ const ChatInput = {
     this.textarea.value = ""
     this.textarea.style.height = "auto"
     this.textarea.focus()
+    this._clearDraft()
   }
 }
 

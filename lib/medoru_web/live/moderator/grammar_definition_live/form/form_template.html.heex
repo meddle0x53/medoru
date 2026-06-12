@@ -46,11 +46,11 @@
                   name="jlpt_level"
                   class="select select-bordered w-full"
                 >
-                <%= for level <- [5, 4, 3, 2, 1] do %>
-                  <option value={level} selected={@form_data.jlpt_level == level}>
-                    N{level}
-                  </option>
-                <% end %>
+                  <%= for level <- [5, 4, 3, 2, 1] do %>
+                    <option value={level} selected={@form_data.jlpt_level == level}>
+                      N{level}
+                    </option>
+                  <% end %>
                 </select>
               </form>
             </div>
@@ -106,16 +106,23 @@
                           {element["word_type"] || gettext("word")}
                           <%= if element["forms"] && length(element["forms"]) > 0 do %>
                             <% form_name = hd(element["forms"])
-                               form_display = if element["word_type"] == "particle" do
-                                 Enum.find(@particles, fn {_label, value} -> value == form_name end)
-                               else
-                                 Enum.find(get_forms_for_word_type(@grammar_forms, element["word_type"]), &(&1.name == form_name))
-                               end
-                               display_text = case form_display do
-                                 {label, _} -> label
-                                 %{display_name: name} -> name
-                                 _ -> form_name
-                               end %>
+
+                            form_display =
+                              if element["word_type"] == "particle" do
+                                Enum.find(@particles, fn {_label, value} -> value == form_name end)
+                              else
+                                Enum.find(
+                                  get_forms_for_word_type(@grammar_forms, element["word_type"]),
+                                  &(&1.name == form_name)
+                                )
+                              end
+
+                            display_text =
+                              case form_display do
+                                {label, _} -> label
+                                %{display_name: name} -> name
+                                _ -> form_name
+                              end %>
                             <span class="text-xs opacity-80">
                               ({display_text})
                             </span>
@@ -226,7 +233,10 @@
                           class="select select-bordered select-sm flex-1 min-w-[150px]"
                         >
                           <%= if element["word_type"] == "particle" do %>
-                            <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
+                            <option
+                              value=""
+                              selected={is_nil(element["forms"]) || element["forms"] == []}
+                            >
                               {gettext("Select particle...")}
                             </option>
                             <%= for {label, value} <- @particles do %>
@@ -238,7 +248,10 @@
                               </option>
                             <% end %>
                           <% else %>
-                            <option value="" selected={is_nil(element["forms"]) || element["forms"] == []}>
+                            <option
+                              value=""
+                              selected={is_nil(element["forms"]) || element["forms"] == []}
+                            >
                               {gettext("Any form")}
                             </option>
                             <%= for form <- get_forms_for_word_type(@grammar_forms, element["word_type"]) do %>
@@ -252,7 +265,6 @@
                           <% end %>
                         </select>
                       </form>
-
                     <% "word_class" -> %>
                       <form phx-change="update_element_word_class" class="contents">
                         <input type="hidden" name="index" value={idx} />
@@ -260,7 +272,12 @@
                           name="value"
                           class="select select-bordered select-sm flex-1 min-w-[150px]"
                         >
-                          <option value="" selected={is_nil(element["word_class_id"]) || element["word_class_id"] == ""}>
+                          <option
+                            value=""
+                            selected={
+                              is_nil(element["word_class_id"]) || element["word_class_id"] == ""
+                            }
+                          >
                             {gettext("Select a word class...")}
                           </option>
                           <%= for class <- @word_classes do %>
@@ -273,7 +290,6 @@
                           <% end %>
                         </select>
                       </form>
-
                     <% "literal" -> %>
                       <form phx-change="update_element_text" class="contents">
                         <input type="hidden" name="index" value={idx} />
@@ -324,7 +340,10 @@
                       class={[
                         "w-6 h-6 rounded-full border-2 transition-all",
                         color_class,
-                        if(color["color_index"] == cidx, do: "border-primary scale-110", else: "border-transparent hover:border-base-300")
+                        if(color["color_index"] == cidx,
+                          do: "border-primary scale-110",
+                          else: "border-transparent hover:border-base-300"
+                        )
                       ]}
                       title={"Color #{cidx + 1}"}
                     />

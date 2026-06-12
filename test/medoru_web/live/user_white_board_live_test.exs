@@ -82,7 +82,8 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       owner = owner_fixture()
       stranger = owner_fixture()
 
-      {:ok, _view, html} = conn |> log_in_user(stranger) |> live(~p"/users/#{owner.id}/white-board")
+      {:ok, _view, html} =
+        conn |> log_in_user(stranger) |> live(~p"/users/#{owner.id}/white-board")
 
       refute html =~ "phx-submit=\"create_post\""
     end
@@ -163,7 +164,14 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       html =
         view
         |> render_hook("save_canvas", %{
-          "strokes" => [%{"tool" => "pencil", "color" => "#000", "width" => 3, "points" => [%{"x" => 10, "y" => 20}]}],
+          "strokes" => [
+            %{
+              "tool" => "pencil",
+              "color" => "#000",
+              "width" => 3,
+              "points" => [%{"x" => 10, "y" => 20}]
+            }
+          ],
           "grid" => nil,
           "background" => nil
         })
@@ -203,7 +211,11 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       |> render_click()
 
       view
-      |> form("form[phx-submit='update_post']", %{post_id: post.id, title: "Updated", content: "Updated content"})
+      |> form("form[phx-submit='update_post']", %{
+        post_id: post.id,
+        title: "Updated",
+        content: "Updated content"
+      })
       |> render_submit()
 
       html = render(view)
@@ -295,7 +307,9 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       # Click reply button
       html =
         view
-        |> element("button[phx-click='reply_to_comment'][phx-value-post-id='#{post.id}'][phx-value-comment-id='#{parent.id}']")
+        |> element(
+          "button[phx-click='reply_to_comment'][phx-value-post-id='#{post.id}'][phx-value-comment-id='#{parent.id}']"
+        )
         |> render_click()
 
       assert html =~ "Write a reply"
@@ -353,7 +367,9 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       # Use 😀 which is in the first 30 emojis shown in the picker
       html =
         view
-        |> element("button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']")
+        |> element(
+          "button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']"
+        )
         |> render_click()
 
       assert html =~ "😀"
@@ -372,7 +388,9 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
 
       html =
         view
-        |> element("button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='👍']")
+        |> element(
+          "button[phx-click='toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='👍']"
+        )
         |> render_click()
 
       refute html =~ "badge-primary"

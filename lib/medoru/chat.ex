@@ -69,6 +69,40 @@ defmodule Medoru.Chat do
   end
 
   @doc """
+  Updates the shared theme for a non-classroom conversation.
+  Only current participants may change the theme.
+  """
+  def update_conversation_theme(user_id, conversation_id, theme) do
+    conversation = get_conversation(user_id, conversation_id)
+
+    cond do
+      is_nil(conversation) ->
+        {:error, :not_found}
+
+      conversation.classroom_id != nil ->
+        {:error, :classroom}
+
+      not Enum.any?(conversation.participants, &(&1.user_id == user_id)) ->
+        {:error, :not_found}
+
+      true ->
+        attrs = %{"theme" => if(theme == "", do: nil, else: theme)}
+
+        conversation
+        |> Conversation.changeset(attrs)
+        |> Repo.update()
+        |> case do
+          {:ok, updated} ->
+            broadcast_conversation_updated(updated)
+            {:ok, updated}
+
+          error ->
+            error
+        end
+    end
+  end
+
+  @doc """
   Finds an existing 1:1 conversation between two users, or creates one.
   """
   def find_or_create_conversation(user_a_id, user_b_id) do
@@ -587,9 +621,15 @@ defmodule Medoru.Chat do
     sender = message.sender
 
     cond do
-      is_nil(sender) -> false
-      sender.is_deleted -> false
-      is_nil(conversation.classroom_id) -> true
+      is_nil(sender) ->
+        false
+
+      sender.is_deleted ->
+        false
+
+      is_nil(conversation.classroom_id) ->
+        true
+
       true ->
         Enum.any?(conversation.participants, fn p ->
           p.user_id == sender.id && !p.has_left
@@ -844,6 +884,14 @@ defmodule Medoru.Chat do
     )
   end
 
+  defp broadcast_conversation_updated(conversation) do
+    Phoenix.PubSub.broadcast(
+      PubSub,
+      "chat:#{conversation.id}",
+      {:conversation_updated, conversation}
+    )
+  end
+
   @doc """
   Subscribes to a conversation's PubSub topic.
   """
@@ -988,7 +1036,9 @@ defmodule Medoru.Chat do
     |> Enum.map(fn {msg_id, rows} ->
       grouped =
         rows
-        |> Enum.group_by(fn {_msg_id, emoji, _user_id} -> emoji end, fn {_msg_id, _emoji, user_id} -> user_id end)
+        |> Enum.group_by(fn {_msg_id, emoji, _user_id} -> emoji end, fn {_msg_id, _emoji, user_id} ->
+          user_id
+        end)
         |> Enum.map(fn {emoji, user_ids} ->
           {emoji,
            %{
@@ -1070,11 +1120,18 @@ defmodule Medoru.Chat do
             sender
           end
 
+        push_data =
+          if conversation.classroom_id do
+            %{classroom_id: conversation.classroom_id}
+          else
+            %{conversation_id: conversation_id}
+          end
+
         Notifications.send_push_notification(
           participant.user_id,
           title,
           body,
-          %{conversation_id: conversation_id}
+          push_data
         )
       end
     end

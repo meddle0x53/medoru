@@ -214,7 +214,11 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert updated.status == :rejected
     end
 
-    test "teacher can remove an approved member", %{conn: conn, teacher: teacher, student: student} do
+    test "teacher can remove an approved member", %{
+      conn: conn,
+      teacher: teacher,
+      student: student
+    } do
       {:ok, classroom} =
         Classrooms.create_classroom(%{
           name: "Test Classroom",

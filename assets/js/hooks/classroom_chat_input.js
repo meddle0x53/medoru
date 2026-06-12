@@ -12,7 +12,63 @@ const ALLOWED_TYPES = [
 const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
 const MAX_SIZE_VIDEO = 200 * 1024 * 1024
 
+const CHAT_DRAFTS = window.__medoruChatDrafts || (window.__medoruChatDrafts = {})
+
+function saveChatDraft(key, value) {
+  if (key) CHAT_DRAFTS[key] = value
+}
+
+function getChatDraft(key) {
+  return key ? CHAT_DRAFTS[key] : undefined
+}
+
+function clearChatDraft(key) {
+  delete CHAT_DRAFTS[key]
+}
+
 const ClassroomChatInput = {
+  beforeUpdate() {
+    this._saveDraft()
+  },
+
+  updated() {
+    this._restoreDraft()
+  },
+
+  _draftKey() {
+    return this.el.id || "classroom-chat-draft"
+  },
+
+  _saveDraft() {
+    if (this.textarea) {
+      this._draftHadFocus = document.activeElement === this.textarea
+      saveChatDraft(this._draftKey(), this.textarea.value)
+    }
+  },
+
+  _restoreDraft() {
+    this.textarea = this.el.querySelector("#classroom-chat-textarea")
+    if (!this.textarea) return
+
+    const draft = getChatDraft(this._draftKey())
+    if (draft && this.textarea.value === "") {
+      this.textarea.value = draft
+      this.textarea.style.height = "auto"
+      const maxHeight = parseInt(getComputedStyle(this.textarea).maxHeight, 10) || 128
+      this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
+      if (this._draftHadFocus) {
+        this.textarea.focus()
+      }
+    }
+
+    clearChatDraft(this._draftKey())
+    this._draftHadFocus = false
+  },
+
+  _clearDraft() {
+    clearChatDraft(this._draftKey())
+  },
+
   mounted() {
     this.textarea = this.el.querySelector("#classroom-chat-textarea")
     this.sendButton = this.el.querySelector("#classroom-chat-send-button")
@@ -63,6 +119,7 @@ const ClassroomChatInput = {
           window.classroomEditingMessage = null
           this.textarea.value = ""
           this.textarea.style.height = "auto"
+          this._clearDraft()
           this.pushEvent("cancel_edit", {})
         }
         return
@@ -81,6 +138,8 @@ const ClassroomChatInput = {
       this.textarea.style.height = Math.min(this.textarea.scrollHeight, maxHeight) + "px"
       this.sendTypingIndicator()
     })
+
+    this._restoreDraft()
 
     this.textarea.addEventListener("paste", (e) => {
       const files = e.clipboardData?.files
@@ -460,6 +519,7 @@ const ClassroomChatInput = {
     this.textarea.value = ""
     this.textarea.style.height = "auto"
     this.textarea.focus()
+    this._clearDraft()
   }
 }
 

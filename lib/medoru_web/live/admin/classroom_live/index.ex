@@ -160,7 +160,9 @@ defmodule MedoruWeb.Admin.ClassroomLive.Index do
                         <button
                           phx-click="close_classroom"
                           phx-value-id={classroom.id}
-                          data-confirm={gettext("Close this classroom? Students will no longer be able to join.")}
+                          data-confirm={
+                            gettext("Close this classroom? Students will no longer be able to join.")
+                          }
                           class="btn btn-sm btn-ghost text-warning"
                         >
                           <.icon name="hero-lock-closed" class="w-4 h-4" /> {gettext("Close")}

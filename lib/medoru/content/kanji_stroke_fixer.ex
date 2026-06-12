@@ -50,7 +50,11 @@ defmodule Medoru.Content.KanjiStrokeFixer do
               new_stroke_data =
                 current
                 |> Map.merge(stroke_data)
-                |> Map.put_new("bounds", %{"width" => 109, "height" => 109, "viewBox" => "0 0 109 109"})
+                |> Map.put_new("bounds", %{
+                  "width" => 109,
+                  "height" => 109,
+                  "viewBox" => "0 0 109 109"
+                })
 
               kanji
               |> Ecto.Changeset.change(stroke_data: new_stroke_data)

@@ -29,8 +29,18 @@ defmodule Medoru.Social.Tag do
     |> validate_length(:name, min: 1, max: 50)
     |> validate_length(:slug, min: 1, max: 50)
     |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
-        message: "can only contain lowercase letters, numbers, and hyphens")
-    |> validate_inclusion(:category, ["level", "music", "movies", "literature", "gaming", "lifestyle", "sport", "goal"])
+      message: "can only contain lowercase letters, numbers, and hyphens"
+    )
+    |> validate_inclusion(:category, [
+      "level",
+      "music",
+      "movies",
+      "literature",
+      "gaming",
+      "lifestyle",
+      "sport",
+      "goal"
+    ])
     |> unique_constraint(:slug)
     |> unique_constraint(:name)
   end

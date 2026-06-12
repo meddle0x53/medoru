@@ -105,7 +105,10 @@ defmodule Medoru.LearningTest do
       end)
     end
 
-    test "next_review_at is calculated from now plus interval days", %{user: user, progress: progress} do
+    test "next_review_at is calculated from now plus interval days", %{
+      user: user,
+      progress: progress
+    } do
       before = DateTime.utc_now() |> DateTime.truncate(:second)
       assert {:ok, schedule} = Learning.record_review(user.id, progress.id, 4)
       after_time = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -138,7 +141,11 @@ defmodule Medoru.LearningTest do
       assert progress.last_reviewed_at != nil
     end
 
-    test "incorrect answer decreases mastery level", %{user: user, word: word, progress: _progress} do
+    test "incorrect answer decreases mastery level", %{
+      user: user,
+      word: word,
+      progress: _progress
+    } do
       # First get to mastery level 2
       Learning.adjust_word_mastery(user.id, word.id, :correct)
 
@@ -163,7 +170,11 @@ defmodule Medoru.LearningTest do
       assert progress.mastery_level == 5
     end
 
-    test "updates review schedule on correct answer", %{user: user, word: word, progress: progress} do
+    test "updates review schedule on correct answer", %{
+      user: user,
+      word: word,
+      progress: progress
+    } do
       assert {:ok, _updated_progress} = Learning.adjust_word_mastery(user.id, word.id, :correct)
 
       schedule = Learning.get_review_schedule(user.id, progress.id)
@@ -171,7 +182,11 @@ defmodule Medoru.LearningTest do
       assert schedule.repetitions == 1
     end
 
-    test "updates review schedule on incorrect answer", %{user: user, word: word, progress: progress} do
+    test "updates review schedule on incorrect answer", %{
+      user: user,
+      word: word,
+      progress: progress
+    } do
       # First succeed to build up repetitions
       Learning.adjust_word_mastery(user.id, word.id, :correct)
       Learning.adjust_word_mastery(user.id, word.id, :correct)
@@ -186,7 +201,9 @@ defmodule Medoru.LearningTest do
 
     test "returns error for unlearned word", %{user: user} do
       unlearned_word = word_fixture()
-      assert {:error, :not_learned} = Learning.adjust_word_mastery(user.id, unlearned_word.id, :correct)
+
+      assert {:error, :not_learned} =
+               Learning.adjust_word_mastery(user.id, unlearned_word.id, :correct)
     end
   end
 
@@ -297,7 +314,9 @@ defmodule Medoru.LearningTest do
       {:ok, p2} = Learning.track_word_learned(user.id, word2.id)
 
       # Word 1: has a future schedule (repetitions > 0, next_review in future)
-      create_review_schedule(user.id, p1.id, DateTime.add(DateTime.utc_now(), +7, :day), %{repetitions: 3})
+      create_review_schedule(user.id, p1.id, DateTime.add(DateTime.utc_now(), +7, :day), %{
+        repetitions: 3
+      })
 
       # Word 2: no schedule (or repetitions=0)
       create_review_schedule(user.id, p2.id, DateTime.utc_now(), %{repetitions: 0})
@@ -314,7 +333,7 @@ defmodule Medoru.LearningTest do
       {:ok, _progress} = Learning.track_word_learned(user.id, word.id)
 
       results = Learning.get_words_for_daily_test(user.id)
-      assert Enum.any?(results, & &1.word_id == word.id)
+      assert Enum.any?(results, &(&1.word_id == word.id))
     end
 
     test "respects limit", %{user: user} do

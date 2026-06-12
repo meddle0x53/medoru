@@ -142,7 +142,9 @@ defmodule Medoru.Tests.TestStepAnswer do
     if normalized == normalize_answer(correct_answer) do
       true
     else
-      alt_answers = question_data["alt_correct_answers"] || question_data[:alt_correct_answers] || []
+      alt_answers =
+        question_data["alt_correct_answers"] || question_data[:alt_correct_answers] || []
+
       Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
     end
   end
@@ -159,6 +161,7 @@ defmodule Medoru.Tests.TestStepAnswer do
     |> String.trim()
     |> String.downcase()
     |> String.replace(~r/\s+/, " ")
+    |> String.replace(~r/\p{P}/u, "")
   end
 
   def normalize_answer(nil), do: ""

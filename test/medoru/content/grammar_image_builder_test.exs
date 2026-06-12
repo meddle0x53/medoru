@@ -14,6 +14,7 @@ defmodule Medoru.Content.GrammarImageBuilderTest do
 
     test "returns error for empty sections", %{user: user} do
       data = %{"title" => "Test", "sections" => []}
+
       assert {:error, "No grammar sections found"} =
                GrammarImageBuilder.build_lesson_from_extracted_grammar(data, %{}, user.id)
     end
@@ -93,7 +94,12 @@ defmodule Medoru.Content.GrammarImageBuilderTest do
 
       steps = Content.list_grammar_lesson_steps(lesson.id)
       step = hd(steps)
-      assert step.explanation_sections == ["First paragraph.", "Second paragraph.", "Third paragraph."]
+
+      assert step.explanation_sections == [
+               "First paragraph.",
+               "Second paragraph.",
+               "Third paragraph."
+             ]
     end
 
     test "uses AI title when no custom title provided", %{user: user} do
@@ -143,9 +149,10 @@ defmodule Medoru.Content.GrammarImageBuilderTest do
             "number" => 1,
             "title" => "V て-form",
             "description" => "desc",
-            "examples" => Enum.map(1..6, fn i ->
-              %{"sentence" => "s#{i}", "reading" => "r#{i}", "meaning" => "m#{i}"}
-            end),
+            "examples" =>
+              Enum.map(1..6, fn i ->
+                %{"sentence" => "s#{i}", "reading" => "r#{i}", "meaning" => "m#{i}"}
+              end),
             "step_type" => "grammar"
           }
         ]

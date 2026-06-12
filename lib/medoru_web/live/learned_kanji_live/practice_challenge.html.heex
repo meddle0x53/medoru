@@ -12,7 +12,10 @@
         <h1 class="text-2xl font-bold text-base-content">{gettext("Kanji Practice")}</h1>
       </div>
       <p class="text-secondary mt-1">
-        {gettext("Practice writing %{count} kanji. Keep wrong strokes under 4 to count as correct.", count: @kanji_count)}
+        {gettext(
+          "Practice writing %{count} kanji. Keep wrong strokes under 4 to count as correct.",
+          count: @kanji_count
+        )}
       </p>
     </div>
 
@@ -36,8 +39,13 @@
           </div>
 
           <div class="flex flex-col sm:flex-row justify-center gap-3">
-            <.link navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji"} class="btn btn-primary">
-              <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> {gettext("Back to Learned Kanji")}
+            <.link
+              navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji"}
+              class="btn btn-primary"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> {gettext(
+                "Back to Learned Kanji"
+              )}
             </.link>
             <.link
               navigate={~p"/users/#{assigns.current_scope.current_user.id}/kanji/practice"}
@@ -90,9 +98,14 @@
                       {@current_kanji.meanings |> Enum.take(2) |> Enum.join(", ")}
                     </h3>
                     <p class="text-sm text-secondary mt-1">
-                      <span class="font-medium">{gettext("On")}:</span> {first_reading(@current_kanji, :on)} •
-                      <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@current_kanji, :kun)} •
-                      {@current_kanji.stroke_count} {gettext("strokes")}
+                      <span class="font-medium">{gettext("On")}:</span> {first_reading(
+                        @current_kanji,
+                        :on
+                      )} •
+                      <span class="font-medium">{gettext("Kun")}:</span> {first_reading(
+                        @current_kanji,
+                        :kun
+                      )} • {@current_kanji.stroke_count} {gettext("strokes")}
                     </p>
                   </div>
                 </div>
@@ -105,7 +118,13 @@
               phx-hook="KanjiWriting"
               data-snap-correct={to_string(@snap_correct)}
             >
-              <div data-stroke-data={Jason.encode!((@current_kanji.stroke_data || %{})["strokes"] || [])} class="hidden"></div>
+              <div
+                data-stroke-data={
+                  Jason.encode!((@current_kanji.stroke_data || %{})["strokes"] || [])
+                }
+                class="hidden"
+              >
+              </div>
 
               <div class="flex justify-center mb-4">
                 <div
@@ -118,7 +137,8 @@
                     id="writing-canvas"
                     class="w-full h-full"
                     data-kanji-id={@current_kanji.id}
-                  ></canvas>
+                  >
+                  </canvas>
                 </div>
               </div>
 

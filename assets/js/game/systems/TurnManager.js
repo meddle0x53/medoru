@@ -47,12 +47,19 @@ export default class TurnManager {
           total = (base + weaponBonus) * multiplier
         }
         const isCrit = Math.random() < performer.getCritChance()
-        const rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
 
         // Perfect kanji (0 wrong strokes) bypasses 80% of enemy defense
         let effectiveDefense = target.getDefense()
         if (performer.lastKanjiWrongStrokes === 0) {
           effectiveDefense = Math.floor(effectiveDefense * 0.2)
+        }
+
+        // Sword buff bonus damage (0-5 based on kanji quality)
+        const swordBuff = performer.buffs.find(b => b.type === 'sword_damage_bonus')
+        if (swordBuff && skill.equipmentType === 'weapon') {
+          const bonus = performer.lastKanjiWrongStrokes === 0 ? 5 : performer.lastKanjiWrongStrokes <= 2 ? 3 : 1
+          rawDamage += bonus
         }
 
         // Dark Souls-like damage formula: atk * atk / (atk + def)
@@ -64,7 +71,17 @@ export default class TurnManager {
         }
 
         const actual = target.takeDamage(finalDamage)
-        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
+
+        // Berserk lifesteal on sword attacks
+        const berserk = performer.buffs.find(b => b.type === 'berserk_lifesteal')
+        let lifesteal = 0
+        if (berserk && skill.equipmentType === 'weapon' && actual > 0) {
+          const ratio = performer.lastKanjiWrongStrokes === 0 ? 0.5 : 0.25
+          lifesteal = Math.floor(actual * ratio)
+          if (lifesteal > 0) performer.heal(lifesteal)
+        }
+
+        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal }
         break
       }
       case 'defence': {
@@ -79,6 +96,41 @@ export default class TurnManager {
         const total = Math.floor(skill.healAmount * multiplier)
         const actual = performer.heal(total)
         result = { type: 'heal', healed: actual, multiplier }
+        break
+      }
+      case 'buff': {
+        performer.addBuff({ type: skill.buffType, value: 0 })
+        result = { type: 'buff', buffType: skill.buffType, multiplier }
+        break
+      }
+      case 'attack_defence': {
+        let total
+        if (performer.calculateWeaponDamage) {
+          total = performer.calculateWeaponDamage(skill) * multiplier
+        } else {
+          const base = skill.basePower + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
+          total = base * multiplier
+        }
+        const isCrit = Math.random() < performer.getCritChance()
+        const rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        let effectiveDefense = target.getDefense()
+        if (performer.lastKanjiWrongStrokes === 0) {
+          effectiveDefense = Math.floor(effectiveDefense * 0.2)
+        }
+        let finalDamage
+        if (effectiveDefense <= 0) {
+          finalDamage = rawDamage
+        } else {
+          finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
+        }
+        const actual = target.takeDamage(finalDamage)
+
+        // Add partial block
+        const blockBase = (skill.baseBlock || 0) + performer.getStatValue(skill.scalingBlockStat || 'skill') * (skill.scalingBlockMultiplier || 0)
+        const blockTotal = Math.floor((blockBase + (performer.getShieldBonus ? performer.getShieldBonus() : 0)) * multiplier)
+        if (blockTotal > 0) performer.addBlock(blockTotal)
+
+        result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
         break
       }
       default:

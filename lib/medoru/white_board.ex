@@ -132,13 +132,19 @@ defmodule Medoru.WhiteBoard do
       # Blocked in either direction: not visible
       viewer_id && Social.is_blocked?(post.user_id, viewer_id) == :blocked ->
         false
+
       # Owner can always see
-      viewer_id && post.user_id == viewer_id -> true
+      viewer_id && post.user_id == viewer_id ->
+        true
+
       # Public posts visible to all
-      post.visibility == "public" -> true
+      post.visibility == "public" ->
+        true
+
       # Followers-only: check if viewer follows the author
       post.visibility == "followers" && viewer_id ->
         Social.following?(viewer_id, post.user_id)
+
       true ->
         false
     end
@@ -157,7 +163,7 @@ defmodule Medoru.WhiteBoard do
       BoardComment
       |> where([c], c.post_id == ^post_id and is_nil(c.parent_id))
       |> order_by(asc: :inserted_at)
-      |> preload([user: [:profile], replies: [user: [:profile]]])
+      |> preload(user: [:profile], replies: [user: [:profile]])
       |> Repo.all()
 
     if viewer_id do
@@ -302,7 +308,10 @@ defmodule Medoru.WhiteBoard do
     |> Enum.map(fn {post_id, rows} ->
       grouped =
         rows
-        |> Enum.group_by(fn {_post_id, emoji, _user_id} -> emoji end, fn {_post_id, _emoji, user_id} -> user_id end)
+        |> Enum.group_by(fn {_post_id, emoji, _user_id} -> emoji end, fn {_post_id, _emoji,
+                                                                          user_id} ->
+          user_id
+        end)
         |> Enum.map(fn {emoji, user_ids} ->
           {emoji,
            %{
@@ -349,7 +358,14 @@ defmodule Medoru.WhiteBoard do
     )
   end
 
-  def broadcast_reaction(user_id, post_id, user_id_reacting, added_emoji, removed_emoji, from_pid \\ nil) do
+  def broadcast_reaction(
+        user_id,
+        post_id,
+        user_id_reacting,
+        added_emoji,
+        removed_emoji,
+        from_pid \\ nil
+      ) do
     msg = {:reaction, post_id, user_id_reacting, added_emoji, removed_emoji}
 
     if from_pid do
@@ -389,7 +405,8 @@ defmodule Medoru.WhiteBoard do
   # Private
   # ============================================================================
 
-  defp apply_visibility_filter(query, nil, _owner_id), do: where(query, [p], p.visibility == "public")
+  defp apply_visibility_filter(query, nil, _owner_id),
+    do: where(query, [p], p.visibility == "public")
 
   defp apply_visibility_filter(query, viewer_id, owner_id) do
     if viewer_id == owner_id do

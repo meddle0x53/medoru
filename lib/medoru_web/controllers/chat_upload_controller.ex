@@ -32,8 +32,14 @@ defmodule MedoruWeb.ChatUploadController do
     "application/json" => %{type: "document", ext: ".json"},
     "text/markdown" => %{type: "document", ext: ".md"},
     "text/x-markdown" => %{type: "document", ext: ".md"},
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => %{type: "document", ext: ".docx"},
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => %{type: "document", ext: ".xlsx"},
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => %{
+      type: "document",
+      ext: ".docx"
+    },
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => %{
+      type: "document",
+      ext: ".xlsx"
+    },
     "application/epub+zip" => %{type: "document", ext: ".epub"}
   }
 

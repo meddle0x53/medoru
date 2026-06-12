@@ -4,6 +4,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
   alias Medoru.{Accounts, Content, Tests}
   alias Medoru.Tests.LessonTestSession
   alias MedoruWeb.TestKeyboardShortcuts
+  alias MedoruWeb.WritingFillInComponents
 
   @impl true
   def mount(%{"lesson_id" => lesson_id}, session, socket) do
@@ -58,6 +59,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
           |> assign(:meaning_answer, "")
           |> assign(:reading_answer, "")
           |> assign(:grammar_pattern_answer, "")
+          |> assign(:writing_fill_in_answers, %{})
           |> assign(:feedback, nil)
           |> assign(:show_hint, false)
           |> assign(:show_stroke_preview, false)
@@ -160,6 +162,69 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:current_step, result.next_step)
             |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
             |> assign(:grammar_pattern_answer, "")
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("update_writing_fill_in", params, socket) do
+    index = params["index"]
+
+    value =
+      params["value"] ||
+        get_in(params, ["writing_fill_in_answer", to_string(index)]) || ""
+
+    answers = Map.put(socket.assigns.writing_fill_in_answers, index, value)
+    {:noreply, assign(socket, :writing_fill_in_answers, answers)}
+  end
+
+  @impl true
+  def handle_event("submit_writing_fill_in", _params, socket) do
+    step = socket.assigns.current_step
+    answers = socket.assigns.writing_fill_in_answers
+    template = get_in(step.question_data, ["template"]) || ""
+    answer = WritingFillInComponents.build_filled_sentence(template, answers)
+
+    if String.trim(answer) == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please fill in all blanks"))}
+    else
+      session = socket.assigns.session
+
+      case LessonTestSession.submit_answer(session.id, step.id, answer, time_spent_seconds: 10) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:writing_fill_in_answers, %{})
+            |> assign(:show_hint, false)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:writing_fill_in_answers, %{})
 
           {:noreply, socket}
 
@@ -330,6 +395,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:meaning_answer, "")
       |> assign(:reading_answer, "")
       |> assign(:grammar_pattern_answer, "")
+      |> assign(:writing_fill_in_answers, %{})
       |> assign(:show_hint, false)
       |> assign(:feedback, nil)
       |> assign(:meaning_error, false)
@@ -796,6 +862,16 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   </div>
                 </div>
               <% end %>
+
+              <%!-- Writing Fill In Step --%>
+              <%= if @current_step.question_type == :writing_fill_in do %>
+                <WritingFillInComponents.fill_in_question
+                  step={@current_step}
+                  answers={@writing_fill_in_answers}
+                  input_event="update_writing_fill_in"
+                  disabled={@feedback != nil}
+                />
+              <% end %>
             <% end %>
 
             <%!-- Actions --%>
@@ -876,6 +952,24 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   type="button"
                   phx-click="submit_grammar_pattern"
                   disabled={@grammar_pattern_answer == ""}
+                  class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                >
+                  {gettext("Submit Answer")}
+                </button>
+
+                <button
+                  type="button"
+                  phx-click="skip_question"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                >
+                  {gettext("Skip →")}
+                </button>
+              <% end %>
+
+              <%= if @current_step.question_type == :writing_fill_in && @feedback != :incorrect do %>
+                <button
+                  type="button"
+                  phx-click="submit_writing_fill_in"
                   class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}

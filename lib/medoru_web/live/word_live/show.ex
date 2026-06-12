@@ -3,6 +3,7 @@ defmodule MedoruWeb.WordLive.Show do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias Medoru.Learning
   alias Medoru.Learning.WordSets
 
@@ -27,34 +28,49 @@ defmodule MedoruWeb.WordLive.Show do
   def handle_params(params, _url, socket) do
     %{"id" => id} = params
     word = Content.get_word_with_kanji!(id)
-    locale = socket.assigns.locale
-    localized_meaning = Content.get_localized_meaning(word, locale)
 
-    # Check if user has learned this word (if authenticated)
-    word_learned =
-      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-        Learning.word_learned?(socket.assigns.current_scope.current_user.id, word.id)
+    current_user =
+      if socket.assigns.current_scope do
+        socket.assigns.current_scope.current_user
       else
-        false
+        nil
       end
 
-    # Store return URL and step for navigation back to lesson
-    return_to = params["return_to"]
-    step = parse_step_param(params["step"])
-    practice = params["practice"] == "true"
+    unless MatureContent.mature_word_visible_to_user?(word, current_user) do
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Word not found."))
+       |> push_navigate(to: ~p"/words")}
+    else
+      locale = socket.assigns.locale
+      localized_meaning = Content.get_localized_meaning(word, locale)
 
-    {:noreply,
-     socket
-     |> assign(:word, word)
-     |> assign(:localized_meaning, localized_meaning)
-     |> assign(:word_learned, word_learned)
-     |> assign(:return_to, return_to)
-     |> assign(:step, step)
-     |> assign(:practice, practice)
-     |> assign(
-       :page_title,
-       gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
-     )}
+      # Check if user has learned this word (if authenticated)
+      word_learned =
+        if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+          Learning.word_learned?(socket.assigns.current_scope.current_user.id, word.id)
+        else
+          false
+        end
+
+      # Store return URL and step for navigation back to lesson
+      return_to = params["return_to"]
+      step = parse_step_param(params["step"])
+      practice = params["practice"] == "true"
+
+      {:noreply,
+       socket
+       |> assign(:word, word)
+       |> assign(:localized_meaning, localized_meaning)
+       |> assign(:word_learned, word_learned)
+       |> assign(:return_to, return_to)
+       |> assign(:step, step)
+       |> assign(:practice, practice)
+       |> assign(
+         :page_title,
+         gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
+       )}
+    end
   end
 
   defp parse_step_param(nil), do: nil
@@ -182,7 +198,9 @@ defmodule MedoruWeb.WordLive.Show do
              put_flash(
                socket,
                :error,
-               gettext("This word set is full (maximum %{max} words).", max: Medoru.Learning.WordSet.max_words())
+               gettext("This word set is full (maximum %{max} words).",
+                 max: Medoru.Learning.WordSet.max_words()
+               )
              )}
 
           {:error, _} ->

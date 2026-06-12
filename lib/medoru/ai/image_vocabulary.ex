@@ -10,27 +10,27 @@ defmodule Medoru.AI.ImageVocabulary do
   @openai_chat_url "https://api.openai.com/v1/chat/completions"
 
   @extraction_prompt """
-Extract all Japanese vocabulary from this image.
+  Extract all Japanese vocabulary from this image.
 
-For each word, return a JSON array of objects with these fields:
-- "text": the MAIN form of the word, WITH kanji when present.
-  - For verbs: convert the ます-form to dictionary form, but KEEP any kanji.
-    Example: if image shows "消します", text should be "消す" (not "けす").
-    Example: if image shows "開けます", text should be "開ける" (not "あける").
-    Example: if image shows "話します", text should be "話す" (not "はなす").
-  - For nouns/adjectives: use the kanji form shown in the image.
-- "reading": ONLY hiragana/katakana (no kanji). This is the pronunciation.
-  Example: for text "消す", reading should be "けす".
-  Example: for text "電気", reading should be "でんき".
-- "image_text": the exact form as shown in the image (may include ます, kanji, etc.)
-- "meaning": English meaning
-- "word_type": noun, verb, adjective, adverb, particle, pronoun, counter, expression, or other
-- "verb_group": for verbs only — "I", "II", or "III". Null for non-verbs.
+  For each word, return a JSON array of objects with these fields:
+  - "text": the MAIN form of the word, WITH kanji when present.
+    - For verbs: convert the ます-form to dictionary form, but KEEP any kanji.
+      Example: if image shows "消します", text should be "消す" (not "けす").
+      Example: if image shows "開けます", text should be "開ける" (not "あける").
+      Example: if image shows "話します", text should be "話す" (not "はなす").
+    - For nouns/adjectives: use the kanji form shown in the image.
+  - "reading": ONLY hiragana/katakana (no kanji). This is the pronunciation.
+    Example: for text "消す", reading should be "けす".
+    Example: for text "電気", reading should be "でんき".
+  - "image_text": the exact form as shown in the image (may include ます, kanji, etc.)
+  - "meaning": English meaning
+  - "word_type": noun, verb, adjective, adverb, particle, pronoun, counter, expression, or other
+  - "verb_group": for verbs only — "I", "II", or "III". Null for non-verbs.
 
-CRITICAL: "text" must contain kanji when the original word uses kanji. "reading" must be pure kana.
+  CRITICAL: "text" must contain kanji when the original word uses kanji. "reading" must be pure kana.
 
-Return ONLY a JSON array. No markdown, no explanations.
-"""
+  Return ONLY a JSON array. No markdown, no explanations.
+  """
 
   @doc """
   Extracts vocabulary from an image binary.
@@ -93,7 +93,9 @@ Return ONLY a JSON array. No markdown, no explanations.
         parse_response(response_body)
 
       {:ok, %{status: status, body: response_body}} when is_map(response_body) ->
-        error_message = get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+        error_message =
+          get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+
         {:error, error_message}
 
       {:ok, %{status: status}} ->
@@ -182,7 +184,18 @@ Return ONLY a JSON array. No markdown, no explanations.
 
   defp normalize_word_type(type) when is_binary(type) do
     normalized = String.downcase(String.trim(type))
-    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+
+    valid_types = [
+      "noun",
+      "verb",
+      "adjective",
+      "adverb",
+      "particle",
+      "pronoun",
+      "counter",
+      "expression",
+      "other"
+    ]
 
     if normalized in valid_types do
       normalized

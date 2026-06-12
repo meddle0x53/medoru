@@ -3,6 +3,7 @@ defmodule MedoruWeb.WordLive.Index do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias Medoru.Learning
 
   embed_templates "index.html"
@@ -46,6 +47,15 @@ defmodule MedoruWeb.WordLive.Index do
         nil
       end
 
+    current_user =
+      if socket.assigns.current_scope do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    include_mature = not MatureContent.viewer_restricted_from_mature?(current_user)
+
     result =
       Content.list_words_paginated(
         page: page,
@@ -56,7 +66,8 @@ defmodule MedoruWeb.WordLive.Index do
         sort_by: sort_by,
         sort_order: sort_order,
         learned_filter: learned_filter,
-        user_id: user_id
+        user_id: user_id,
+        include_mature: include_mature
       )
 
     {:noreply,

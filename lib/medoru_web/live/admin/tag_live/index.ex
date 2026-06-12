@@ -61,9 +61,7 @@ defmodule MedoruWeb.Admin.TagLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(
-       to: ~p"/admin/tags?#{%{category: cat_param, search: socket.assigns.search}}"
-     )}
+     |> push_patch(to: ~p"/admin/tags?#{%{category: cat_param, search: socket.assigns.search}}")}
   end
 
   @impl true
@@ -73,8 +71,7 @@ defmodule MedoruWeb.Admin.TagLive.Index do
     {:noreply,
      socket
      |> push_patch(
-       to:
-         ~p"/admin/tags?#{%{category: socket.assigns.category_filter, search: search_param}}"
+       to: ~p"/admin/tags?#{%{category: socket.assigns.category_filter, search: search_param}}"
      )}
   end
 

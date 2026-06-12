@@ -245,7 +245,12 @@ defmodule Medoru.AccountsTest do
       assert stats.xp == 0
       assert stats.level == 0
 
-      assert {:ok, %{stats: %UserStats{} = stats, transaction: %XpTransaction{} = tx, leveled_up: false}} =
+      assert {:ok,
+              %{
+                stats: %UserStats{} = stats,
+                transaction: %XpTransaction{} = tx,
+                leveled_up: false
+              }} =
                Accounts.add_xp(user, 50, source_type: "test", description: "Test XP")
 
       assert stats.xp == 50

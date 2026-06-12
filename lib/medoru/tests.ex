@@ -971,7 +971,8 @@ defmodule Medoru.Tests do
   """
   def count_completed_daily_tests(user_id) do
     from(ts in TestSession,
-      join: t in Test, on: ts.test_id == t.id,
+      join: t in Test,
+      on: ts.test_id == t.id,
       where: ts.user_id == ^user_id and t.test_type == :daily and ts.status == :completed,
       select: count(ts.id)
     )
@@ -1469,12 +1470,14 @@ defmodule Medoru.Tests do
   defp xp_for_question_type(:reading_text), do: 70
   defp xp_for_question_type(:listening), do: 100
   defp xp_for_question_type(:grammar_pattern), do: 50
+  defp xp_for_question_type(:writing_fill_in), do: 50
   defp xp_for_question_type(_), do: 0
 
   defp award_test_xp(session_id, user_id) do
     correct_types =
       from(tsa in TestStepAnswer,
-        join: ts in TestStep, on: tsa.test_step_id == ts.id,
+        join: ts in TestStep,
+        on: tsa.test_step_id == ts.id,
         where: tsa.test_session_id == ^session_id and tsa.is_correct == true,
         select: ts.question_type
       )

@@ -17151,7 +17151,9 @@ defmodule Medoru.Content.KanjiMissingStrokeFix do
     results =
       Enum.reduce(kanji_to_fix, %{updated: 0, skipped: 0, errors: []}, fn kanji, acc ->
         case update_kanji(kanji, stroke_data_by_char) do
-          {:ok, :updated} -> Map.update!(acc, :updated, &(&1 + 1))
+          {:ok, :updated} ->
+            Map.update!(acc, :updated, &(&1 + 1))
+
           {:error, reason} ->
             acc
             |> Map.update!(:errors, &[reason | &1])
@@ -17165,6 +17167,7 @@ defmodule Medoru.Content.KanjiMissingStrokeFix do
 
     if results.errors != [] do
       Logger.warning("  Errors: #{length(results.errors)}")
+
       Enum.take(results.errors, 10)
       |> Enum.each(fn err -> Logger.warning("    #{err}") end)
     end
@@ -17187,7 +17190,9 @@ defmodule Medoru.Content.KanjiMissingStrokeFix do
       # Preserve existing decomposition/etymology if not in corrected data
       merged =
         case kanji.stroke_data do
-          nil -> corrected_stroke_data
+          nil ->
+            corrected_stroke_data
+
           existing ->
             corrected_stroke_data
             |> maybe_preserve(existing, "decomposition")

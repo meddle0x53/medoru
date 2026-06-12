@@ -121,7 +121,9 @@
                 <th class="text-sm font-semibold text-base-content">{gettext("Frequency")}</th>
                 <th class="text-sm font-semibold text-base-content">{gettext("Pattern")}</th>
                 <th class="text-sm font-semibold text-base-content">{gettext("Examples")}</th>
-                <th class="text-sm font-semibold text-base-content text-right">{gettext("Actions")}</th>
+                <th class="text-sm font-semibold text-base-content text-right">
+                  {gettext("Actions")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -204,7 +206,9 @@
           <div class="flex items-center gap-2">
             <%= if @page > 1 do %>
               <.link
-                patch={~p"/admin/grammars?#{%{page: @page - 1, level: @level_filter, search: @search}}"}
+                patch={
+                  ~p"/admin/grammars?#{%{page: @page - 1, level: @level_filter, search: @search}}"
+                }
                 class="btn btn-ghost btn-sm"
               >
                 ← {gettext("Prev")}
@@ -219,7 +223,9 @@
 
             <%= if @page < @total_pages do %>
               <.link
-                patch={~p"/admin/grammars?#{%{page: @page + 1, level: @level_filter, search: @search}}"}
+                patch={
+                  ~p"/admin/grammars?#{%{page: @page + 1, level: @level_filter, search: @search}}"
+                }
                 class="btn btn-ghost btn-sm"
               >
                 {gettext("Next")} →

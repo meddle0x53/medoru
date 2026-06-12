@@ -97,9 +97,10 @@ defmodule Medoru.AI.GrammarParserTest do
             "number" => 1,
             "title" => "V て-form",
             "description" => "desc",
-            "examples" => Enum.map(1..10, fn i ->
-              %{"sentence" => "s#{i}", "reading" => "r#{i}", "meaning" => "m#{i}"}
-            end),
+            "examples" =>
+              Enum.map(1..10, fn i ->
+                %{"sentence" => "s#{i}", "reading" => "r#{i}", "meaning" => "m#{i}"}
+              end),
             "is_grammar_pattern" => true
           }
         ]
@@ -134,14 +135,14 @@ defmodule Medoru.AI.GrammarParserTest do
 
     test "handles missing data gracefully" do
       assert GrammarParser.parse_extracted_grammar(nil) == %{
-        "title" => "Grammar Lesson",
-        "sections" => []
-      }
+               "title" => "Grammar Lesson",
+               "sections" => []
+             }
 
       assert GrammarParser.parse_extracted_grammar(%{}) == %{
-        "title" => "Grammar Lesson",
-        "sections" => []
-      }
+               "title" => "Grammar Lesson",
+               "sections" => []
+             }
     end
 
     test "handles sections without number" do
@@ -166,8 +167,20 @@ defmodule Medoru.AI.GrammarParserTest do
       data = %{
         "title" => "Test",
         "sections" => [
-          %{"number" => 1, "title" => "V1 + N2", "description" => "desc", "examples" => [], "is_grammar_pattern" => nil},
-          %{"number" => 2, "title" => "A1 + い", "description" => "desc", "examples" => [], "is_grammar_pattern" => nil}
+          %{
+            "number" => 1,
+            "title" => "V1 + N2",
+            "description" => "desc",
+            "examples" => [],
+            "is_grammar_pattern" => nil
+          },
+          %{
+            "number" => 2,
+            "title" => "A1 + い",
+            "description" => "desc",
+            "examples" => [],
+            "is_grammar_pattern" => nil
+          }
         ]
       }
 

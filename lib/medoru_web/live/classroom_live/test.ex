@@ -7,6 +7,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   alias Medoru.Classrooms
   alias Medoru.Tests
   alias Medoru.Grammar.Validator
+  alias MedoruWeb.WritingFillInComponents
 
   @impl true
   def mount(%{"id" => classroom_id, "test_id" => test_id}, _session, socket) do
@@ -218,6 +219,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp initial_answer_for_step(%{question_type: :sentence_validation}), do: ""
   defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
   defp initial_answer_for_step(%{question_type: :grammar_pattern}), do: ""
+  defp initial_answer_for_step(%{question_type: :writing_fill_in}), do: %{}
   defp initial_answer_for_step(_), do: ""
 
   @impl true
@@ -377,6 +379,22 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
+  def handle_event("submit_answer", %{"writing_fill_in_answer" => answers}, socket)
+      when is_map(answers) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+
+    answer =
+      WritingFillInComponents.build_filled_sentence(
+        step.question_data["template"] || "",
+        answers
+      )
+
+    handle_writing_fill_in_answer(socket, answer, step, session, attempt)
+  end
+
+  @impl true
   def handle_event("submit_answer", %{"answer" => answer}, socket) do
     step = socket.assigns.current_step
     session = socket.assigns.session
@@ -403,6 +421,18 @@ defmodule MedoruWeb.ClassroomLive.Test do
         # Standard multichoice handling
         handle_standard_answer(socket, answer, step, session, attempt)
     end
+  end
+
+  @impl true
+  def handle_event("update_writing_fill_in", params, socket) do
+    index = params["index"]
+
+    value =
+      params["value"] ||
+        get_in(params, ["writing_fill_in_answer", to_string(index)]) || ""
+
+    answer = Map.put(socket.assigns.answer, index, value)
+    {:noreply, assign(socket, :answer, answer)}
   end
 
   # Timer and Writing event handlers
@@ -761,6 +791,50 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
+  defp handle_writing_fill_in_answer(socket, answer, step, session, attempt) do
+    question_data = step.question_data || %{}
+    correct_answer = step.correct_answer
+    alt_answers = question_data["alt_correct_answers"] || []
+
+    normalized = normalize_answer(answer)
+
+    is_correct =
+      normalized == normalize_answer(correct_answer) ||
+        Enum.any?(alt_answers, &(normalize_answer(&1) == normalized))
+
+    points_earned = if is_correct, do: step.points, else: 0
+
+    result =
+      Tests.record_step_answer(session.id, step.id, %{
+        "answer" => answer,
+        "time_spent_seconds" => 40,
+        "step_index" => step.order_index,
+        "is_correct" => is_correct,
+        "points_earned" => points_earned,
+        "metadata" => %{
+          "writing_fill_in" => true,
+          "blank_answers" => socket.assigns.answer
+        }
+      })
+
+    case result do
+      {:ok, _step_answer} ->
+        Classrooms.update_test_progress(attempt.id, %{
+          score: points_earned,
+          time_spent_seconds: attempt.time_spent_seconds + 40
+        })
+
+        move_to_next_step(socket, session, attempt)
+
+      {:error, changeset} ->
+        require Logger
+        Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+        {:noreply,
+         put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
   # Helper to move to next step or complete test
   defp move_to_next_step(socket, session, attempt) do
     next_index = socket.assigns.current_step_index + 1
@@ -786,6 +860,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
     answer
     |> String.trim()
     |> String.replace(~r/\s+/, "")
+    |> String.replace(~r/\p{P}/u, "")
   end
 
   defp normalize_answer(answer), do: to_string(answer)
@@ -1158,6 +1233,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       step={@current_step}
                       step_id={@current_step.id}
                       answer={@answer}
+                    />
+                  <% :writing_fill_in -> %>
+                    <WritingFillInComponents.fill_in_question
+                      step={@current_step}
+                      answers={@answer}
+                      input_event="update_writing_fill_in"
+                      disabled={false}
                     />
                   <% _ -> %>
                     <.input

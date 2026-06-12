@@ -49,7 +49,9 @@ defmodule Medoru.Learning.UserProgress do
     |> foreign_key_constraint(:grammar_definition_id)
     |> unique_constraint([:user_id, :kanji_id], name: :user_progress_user_id_kanji_id_index)
     |> unique_constraint([:user_id, :word_id], name: :user_progress_user_id_word_id_index)
-    |> unique_constraint([:user_id, :grammar_definition_id], name: :user_progress_user_id_grammar_definition_id_index)
+    |> unique_constraint([:user_id, :grammar_definition_id],
+      name: :user_progress_user_id_grammar_definition_id_index
+    )
   end
 
   defp validate_exactly_one_content(changeset) do
@@ -61,7 +63,11 @@ defmodule Medoru.Learning.UserProgress do
 
     cond do
       present_count == 0 ->
-        add_error(changeset, :kanji_id, "must have either kanji_id, word_id, or grammar_definition_id")
+        add_error(
+          changeset,
+          :kanji_id,
+          "must have either kanji_id, word_id, or grammar_definition_id"
+        )
 
       present_count == 1 ->
         changeset

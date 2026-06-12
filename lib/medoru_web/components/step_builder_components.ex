@@ -238,6 +238,14 @@ defmodule MedoruWeb.StepBuilderComponents do
             points="5 points"
             on_select={@on_select}
           />
+          <.step_type_option
+            type={:writing_fill_in}
+            icon="hero-document-text"
+            title="Writing Fill In"
+            description="Students fill in blanks in a sentence template"
+            points="5 points"
+            on_select={@on_select}
+          />
         </div>
       </div>
 

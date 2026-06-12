@@ -5,9 +5,14 @@ defmodule MedoruWeb.YoutubeEmbedTest do
 
   describe "video_id/1" do
     test "extracts ID from watch URL" do
-      assert YoutubeEmbed.video_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ") == {:ok, "dQw4w9WgXcQ"}
-      assert YoutubeEmbed.video_id("https://youtube.com/watch?v=dQw4w9WgXcQ") == {:ok, "dQw4w9WgXcQ"}
-      assert YoutubeEmbed.video_id("http://www.youtube.com/watch?v=dQw4w9WgXcQ") == {:ok, "dQw4w9WgXcQ"}
+      assert YoutubeEmbed.video_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ") ==
+               {:ok, "dQw4w9WgXcQ"}
+
+      assert YoutubeEmbed.video_id("https://youtube.com/watch?v=dQw4w9WgXcQ") ==
+               {:ok, "dQw4w9WgXcQ"}
+
+      assert YoutubeEmbed.video_id("http://www.youtube.com/watch?v=dQw4w9WgXcQ") ==
+               {:ok, "dQw4w9WgXcQ"}
     end
 
     test "extracts ID from short URL (youtu.be)" do
@@ -16,11 +21,13 @@ defmodule MedoruWeb.YoutubeEmbedTest do
     end
 
     test "extracts ID from embed URL" do
-      assert YoutubeEmbed.video_id("https://www.youtube.com/embed/dQw4w9WgXcQ") == {:ok, "dQw4w9WgXcQ"}
+      assert YoutubeEmbed.video_id("https://www.youtube.com/embed/dQw4w9WgXcQ") ==
+               {:ok, "dQw4w9WgXcQ"}
     end
 
     test "extracts ID from shorts URL" do
-      assert YoutubeEmbed.video_id("https://www.youtube.com/shorts/dQw4w9WgXcQ") == {:ok, "dQw4w9WgXcQ"}
+      assert YoutubeEmbed.video_id("https://www.youtube.com/shorts/dQw4w9WgXcQ") ==
+               {:ok, "dQw4w9WgXcQ"}
     end
 
     test "returns :error for non-YouTube URLs" do

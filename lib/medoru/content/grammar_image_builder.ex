@@ -77,10 +77,11 @@ defmodule Medoru.Content.GrammarImageBuilder do
         create_step(lesson.id, section, index)
       end)
 
-    errors = Enum.filter(results, fn
-      {:error, _} -> true
-      _ -> false
-    end)
+    errors =
+      Enum.filter(results, fn
+        {:error, _} -> true
+        _ -> false
+      end)
 
     if errors == [] do
       {:ok, Content.get_custom_lesson!(lesson.id)}

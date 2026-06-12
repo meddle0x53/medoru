@@ -84,7 +84,9 @@ defmodule MedoruWeb.DashboardLiveTest do
 
       html =
         view
-        |> element("button[phx-click='stream_toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']")
+        |> element(
+          "button[phx-click='stream_toggle_reaction'][phx-value-post-id='#{post.id}'][phx-value-emoji='😀']"
+        )
         |> render_click()
 
       assert html =~ "😀"
@@ -102,7 +104,10 @@ defmodule MedoruWeb.DashboardLiveTest do
 
       html =
         view
-        |> form("form[phx-submit='stream_add_comment']", %{post_id: post.id, content: "Stream comment!"})
+        |> form("form[phx-submit='stream_add_comment']", %{
+          post_id: post.id,
+          content: "Stream comment!"
+        })
         |> render_submit()
 
       assert html =~ "Stream comment!"
@@ -141,7 +146,11 @@ defmodule MedoruWeb.DashboardLiveTest do
         WhiteBoard.create_comment(%{post_id: post.id, user_id: followed.id, content: "Nice post"})
 
       {:ok, _} =
-        WhiteBoard.create_comment(%{post_id: post.id, user_id: blocker.id, content: "Mean comment"})
+        WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: blocker.id,
+          content: "Mean comment"
+        })
 
       Social.block_user(blocker.id, viewer.id)
 

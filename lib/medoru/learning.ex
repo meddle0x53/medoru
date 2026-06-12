@@ -13,7 +13,15 @@ defmodule Medoru.Learning do
   alias Medoru.Repo
 
   alias Medoru.Accounts
-  alias Medoru.Learning.{UserProgress, LessonProgress, DailyStreak, ReviewSchedule, UserDailyChallenge}
+
+  alias Medoru.Learning.{
+    UserProgress,
+    LessonProgress,
+    DailyStreak,
+    ReviewSchedule,
+    UserDailyChallenge
+  }
+
   alias Medoru.Content.{GrammarDefinition, Kanji, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
@@ -727,6 +735,7 @@ defmodule Medoru.Learning do
 
     Enum.map(progresses, fn up ->
       k = Map.get(kanji_map, up.kanji_id)
+
       %{
         id: k.id,
         character: k.character,
@@ -1442,7 +1451,10 @@ defmodule Medoru.Learning do
     today = Date.utc_today()
 
     UserDailyChallenge
-    |> where([c], c.user_id == ^user_id and c.challenge_type == ^challenge_type and c.date == ^today)
+    |> where(
+      [c],
+      c.user_id == ^user_id and c.challenge_type == ^challenge_type and c.date == ^today
+    )
     |> Repo.one()
   end
 

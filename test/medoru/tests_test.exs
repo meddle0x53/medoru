@@ -200,6 +200,33 @@ defmodule Medoru.TestsTest do
       assert {:error, %Ecto.Changeset{}} = Tests.create_test_step(test_record, attrs)
     end
 
+    test "create_test_step/2 validates writing_fill_in requires 10 points", %{
+      test_record: test_record
+    } do
+      attrs = %{
+        order_index: 2,
+        step_type: :vocabulary,
+        question_type: :writing_fill_in,
+        question: "Fill in the blanks",
+        correct_answer: "あなたは学生ですか。",
+        points: 5,
+        question_data: %{
+          "template" => "あなたは___ですか。",
+          "examples" => ["あなたは学生ですか。"]
+        }
+      }
+
+      assert {:error, %Ecto.Changeset{errors: errors}} =
+               Tests.create_test_step(test_record, attrs)
+
+      assert errors[:points]
+
+      attrs = %{attrs | points: 10}
+      assert {:ok, %TestStep{} = step} = Tests.create_test_step(test_record, attrs)
+      assert step.question_type == :writing_fill_in
+      assert step.points == 10
+    end
+
     test "create_test_steps/2 creates multiple steps", %{test_record: test_record} do
       steps = [@valid_step_attrs, @valid_fill_attrs]
       assert {:ok, created_steps} = Tests.create_test_steps(test_record, steps)

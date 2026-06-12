@@ -96,6 +96,7 @@ defmodule MedoruWeb.GrammarChatPreview do
         case element["type"] do
           "literal" ->
             text = Phoenix.HTML.html_escape(element["text"] || "") |> elem(1)
+
             ~s|<span class="px-2 py-0.5 bg-base-200 rounded text-base-content font-medium text-sm">#{text}</span>|
 
           "word_slot" ->
@@ -118,10 +119,12 @@ defmodule MedoruWeb.GrammarChatPreview do
 
           "particle" ->
             text = Phoenix.HTML.html_escape(element["text"] || gettext("particle")) |> elem(1)
+
             ~s|<span class="px-2 py-0.5 bg-secondary/10 rounded text-secondary font-medium border border-secondary/30 text-sm">#{text}</span>|
 
           _ ->
             type = Phoenix.HTML.html_escape(element["type"]) |> elem(1)
+
             ~s|<span class="px-2 py-0.5 bg-base-200 rounded text-base-content text-sm">#{type}</span>|
         end
       end)
@@ -150,11 +153,11 @@ defmodule MedoruWeb.GrammarChatPreview do
 
     html =
       ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="block max-w-[320px] grammar-chat-preview -mt-1 -mb-1">| <>
-      ~s|<div class="bg-base-100 border border-base-300 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">| <>
-      ~s|<div class="flex items-center gap-2 mb-2"><div class="font-semibold text-sm text-base-content truncate">#{title}</div>#{jlpt_badge}</div>| <>
-      ~s|<div class="flex flex-wrap gap-1.5 items-center">#{pattern_html}</div>| <>
-      example_html <>
-      ~s|</div></a>|
+        ~s|<div class="bg-base-100 border border-base-300 rounded-xl p-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all">| <>
+        ~s|<div class="flex items-center gap-2 mb-2"><div class="font-semibold text-sm text-base-content truncate">#{title}</div>#{jlpt_badge}</div>| <>
+        ~s|<div class="flex flex-wrap gap-1.5 items-center">#{pattern_html}</div>| <>
+        example_html <>
+        ~s|</div></a>|
 
     {:safe, html}
   end

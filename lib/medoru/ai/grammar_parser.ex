@@ -39,10 +39,11 @@ defmodule Medoru.AI.GrammarParser do
     parse_extracted_grammar(%{"title" => "Grammar Lesson", "sections" => sections})
   end
 
-  def parse_extracted_grammar(_), do: %{
-    "title" => "Grammar Lesson",
-    "sections" => []
-  }
+  def parse_extracted_grammar(_),
+    do: %{
+      "title" => "Grammar Lesson",
+      "sections" => []
+    }
 
   defp parse_section(%{"title" => title} = section) do
     description = String.trim(section["description"] || "")

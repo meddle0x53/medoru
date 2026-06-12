@@ -18,6 +18,7 @@ export const ALL_ACTIONS = [
     scalingStat: 'strength',
     scalingMultiplier: 1.0,
     kanji: '力',
+    rarity: 'normal',
     moveHint: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' },
   },
   {
@@ -33,6 +34,7 @@ export const ALL_ACTIONS = [
     scalingStat: 'strength',
     scalingMultiplier: 1.2,
     kanji: '斬',
+    rarity: 'normal',
     moveHint: { en: 'Unleash a DEVASTATING blow!', ja: '壊滅的な一撃を放て！' },
   },
   {
@@ -48,6 +50,7 @@ export const ALL_ACTIONS = [
     scalingStat: 'skill',
     scalingMultiplier: 0.8,
     kanji: '盾',
+    rarity: 'normal',
     moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
   },
   {
@@ -61,6 +64,7 @@ export const ALL_ACTIONS = [
     staminaCost: 2,
     baseParryChance: 0.15,
     kanji: '受',
+    rarity: 'normal',
   },
   {
     id: 'use_item',
@@ -72,6 +76,7 @@ export const ALL_ACTIONS = [
     requiredEquipment: null,
     staminaCost: 1,
     kanji: '使',
+    rarity: 'normal',
   },
   {
     id: 'quick_stab',
@@ -86,6 +91,7 @@ export const ALL_ACTIONS = [
     scalingStat: 'skill',
     scalingMultiplier: 0.9,
     kanji: '突',
+    rarity: 'normal',
   },
   {
     id: 'guard_break',
@@ -100,6 +106,7 @@ export const ALL_ACTIONS = [
     scalingStat: 'strength',
     scalingMultiplier: 1.0,
     kanji: '破',
+    rarity: 'normal',
   },
   {
     id: 'focus',
@@ -111,6 +118,7 @@ export const ALL_ACTIONS = [
     requiredEquipment: null,
     staminaCost: 2,
     kanji: '集',
+    rarity: 'normal',
   },
   {
     id: 'taunt',
@@ -122,6 +130,7 @@ export const ALL_ACTIONS = [
     requiredEquipment: null,
     staminaCost: 2,
     kanji: '挑',
+    rarity: 'normal',
   },
   {
     id: 'dash',
@@ -133,6 +142,66 @@ export const ALL_ACTIONS = [
     requiredEquipment: null,
     staminaCost: 3,
     kanji: '疾',
+    rarity: 'normal',
+  },
+  {
+    id: 'two_hand_heavy',
+    name: 'Two-Hand Heavy',
+    nameJa: '両手重撃',
+    description: 'A powerful two-handed strike.',
+    type: 'attack',
+    equipmentType: 'weapon',
+    requiredEquipment: 'Long Sword',
+    staminaCost: 5,
+    basePower: 24,
+    scalingStat: 'strength',
+    scalingMultiplier: 1.2,
+    kanji: '両',
+    rarity: 'normal',
+  },
+  {
+    id: 'sword_buff',
+    name: 'Sharpen Blade',
+    nameJa: '鋭気',
+    description: 'Kanji quality sharpens your blade; sword attacks deal bonus damage.',
+    type: 'buff',
+    equipmentType: 'weapon',
+    requiredEquipment: 'Long Sword',
+    staminaCost: 3,
+    kanji: '鋭',
+    rarity: 'normal',
+    buffType: 'sword_damage_bonus',
+  },
+  {
+    id: 'shield_bash',
+    name: 'Shield Bash',
+    nameJa: '盾打',
+    description: 'Strike with your shield and raise a partial guard.',
+    type: 'attack_defence',
+    equipmentType: 'shield',
+    requiredEquipment: 'Wooden Shield',
+    staminaCost: 2,
+    basePower: 2,
+    scalingStat: 'strength',
+    scalingMultiplier: 0.5,
+    baseBlock: 3,
+    scalingBlockStat: 'skill',
+    scalingBlockMultiplier: 0.4,
+    kanji: '打',
+    rarity: 'normal',
+  },
+  {
+    id: 'berserk',
+    name: 'Berserk',
+    nameJa: '狂戦',
+    description: 'Enter a rage; sword attacks heal you for part of the damage dealt.',
+    type: 'buff',
+    equipmentType: 'weapon',
+    requiredEquipment: 'Long Sword',
+    staminaCost: 6,
+    kanji: '狂',
+    rarity: 'normal',
+    buffType: 'berserk_lifesteal',
   },
 ]
 
@@ -204,26 +273,14 @@ export function splitActions(player) {
     return { active, inactive }
   }
 
-  // Default split for demo
-  const defaultActiveIds = ['forward_slash', 'setup_defence', 'shield_parry']
+  // No active abilities selected: fall back to a single known attack only.
   const active = []
-  const inactive = []
+  const inactive = [...pool]
 
-  for (const action of pool) {
-    if (defaultActiveIds.includes(action.id) && active.length < maxActive) {
-      active.push(action)
-    } else {
-      inactive.push(action)
-    }
-  }
-
-  // Ensure at least one attack is active
-  if (!active.some(a => a.type === 'attack')) {
-    const firstAttack = inactive.find(a => a.type === 'attack')
-    if (firstAttack) {
-      inactive.splice(inactive.indexOf(firstAttack), 1)
-      active.push(firstAttack)
-    }
+  const firstAttack = inactive.find(a => a.type === 'attack')
+  if (firstAttack) {
+    inactive.splice(inactive.indexOf(firstAttack), 1)
+    active.push(firstAttack)
   }
 
   return { active, inactive }
@@ -241,6 +298,7 @@ export function getActionTypeColor(type) {
     case 'item': return { main: 0x16a085, hover: 0x1abc9c, label: 'ITM' }
     case 'buff': return { main: 0xf39c12, hover: 0xf1c40f, label: 'BUF' }
     case 'debuff': return { main: 0x8e44ad, hover: 0x9b59b6, label: 'DEB' }
+    case 'attack_defence': return { main: 0x16a085, hover: 0x1abc9c, label: 'ATK/DEF' }
     default: return { main: 0x7f8c8d, hover: 0x95a5a6, label: '???' }
   }
 }

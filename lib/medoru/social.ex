@@ -374,8 +374,11 @@ defmodule Medoru.Social do
       |> Repo.insert()
 
     with {:ok, _} <- result do
-      _ = Accounts.add_xp(follower_id, 10,
-            source_type: "follow_user", description: "Followed a user")
+      _ =
+        Accounts.add_xp(follower_id, 10,
+          source_type: "follow_user",
+          description: "Followed a user"
+        )
     end
 
     result

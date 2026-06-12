@@ -47,9 +47,7 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(
-       to: ~p"/grammars?#{%{level: socket.assigns.jlpt_level, search: search_param}}"
-     )}
+     |> push_patch(to: ~p"/grammars?#{%{level: socket.assigns.jlpt_level, search: search_param}}")}
   end
 
   @impl true
@@ -62,9 +60,7 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(
-       to: ~p"/grammars?#{%{level: level_param, search: socket.assigns.search}}"
-     )}
+     |> push_patch(to: ~p"/grammars?#{%{level: level_param, search: socket.assigns.search}}")}
   end
 
   @impl true
@@ -95,6 +91,4 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
   defp level_badge_color(2), do: "badge-error"
   defp level_badge_color(1), do: "badge-secondary"
   defp level_badge_color(_), do: "badge-ghost"
-
-
 end

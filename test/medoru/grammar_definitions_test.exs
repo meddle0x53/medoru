@@ -173,7 +173,10 @@ defmodule Medoru.GrammarDefinitionsTest do
 
     test "update_grammar_definition/2 with valid data updates the grammar definition" do
       {:ok, gd} = Content.create_grammar_definition(@valid_attrs)
-      assert {:ok, %GrammarDefinition{} = gd} = Content.update_grammar_definition(gd, @update_attrs)
+
+      assert {:ok, %GrammarDefinition{} = gd} =
+               Content.update_grammar_definition(gd, @update_attrs)
+
       assert gd.title == "ta-form"
       assert gd.description == "The ta-form is the past tense."
     end

@@ -9,11 +9,17 @@
       </div>
       <div class="flex gap-2">
         <%= if @current_scope.current_user.type == "admin" do %>
-          <.link navigate={~p"/teacher/grammar-lessons/from-image"} class="btn btn-accent w-full sm:w-auto">
+          <.link
+            navigate={~p"/teacher/grammar-lessons/from-image"}
+            class="btn btn-accent w-full sm:w-auto"
+          >
             <.icon name="hero-photo" class="w-5 h-5 mr-2" /> {gettext("Create from Image")}
           </.link>
         <% end %>
-        <.link navigate={~p"/teacher/grammar-lessons/new"} class="btn btn-primary w-full sm:w-auto">
+        <.link
+          navigate={~p"/teacher/grammar-lessons/new"}
+          class="btn btn-primary w-full sm:w-auto"
+        >
           <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("New Grammar Lesson")}
         </.link>
       </div>

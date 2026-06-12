@@ -120,5 +120,38 @@ defmodule Medoru.Tests.TestStepAnswerTest do
       assert Ecto.Changeset.get_field(changeset, :is_correct) == false
       assert Ecto.Changeset.get_field(changeset, :points_earned) == 0
     end
+
+    test "matches alternative correct answers from question_data" do
+      attrs = %{
+        "answer" => "alternative",
+        "step_index" => 0,
+        "attempts" => 1,
+        "hints_used" => 0
+      }
+
+      question_data = %{"alt_correct_answers" => ["alternative", "another"]}
+
+      changeset =
+        TestStepAnswer.answer_changeset(%TestStepAnswer{}, attrs, "correct", 10, question_data)
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == true
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 10
+    end
+
+    test "ignores punctuation when comparing answers" do
+      attrs = %{
+        "answer" => "学生です",
+        "step_index" => 0,
+        "attempts" => 1,
+        "hints_used" => 0
+      }
+
+      changeset =
+        TestStepAnswer.answer_changeset(%TestStepAnswer{}, attrs, "学生です。", 10)
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == true
+    end
   end
 end

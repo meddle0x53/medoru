@@ -77,13 +77,21 @@ defmodule Medoru.AI.VocabularyParser do
     stem = String.replace_suffix(masu_form, "ます", "")
 
     cond do
-      stem == "き" -> "くる"
-      stem == "来" -> "来る"
-      stem == "する" -> "する"
+      stem == "き" ->
+        "くる"
+
+      stem == "来" ->
+        "来る"
+
+      stem == "する" ->
+        "する"
+
       String.ends_with?(stem, "し") ->
         # 勉強します → 勉強し → 勉強する
         String.replace_suffix(stem, "し", "する")
-      true -> stem <> "する"
+
+      true ->
+        stem <> "する"
     end
   end
 
@@ -146,7 +154,18 @@ defmodule Medoru.AI.VocabularyParser do
 
   defp normalize_word_type(type) when is_binary(type) do
     normalized = String.downcase(String.trim(type))
-    valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+
+    valid_types = [
+      "noun",
+      "verb",
+      "adjective",
+      "adverb",
+      "particle",
+      "pronoun",
+      "counter",
+      "expression",
+      "other"
+    ]
 
     if normalized in valid_types do
       normalized

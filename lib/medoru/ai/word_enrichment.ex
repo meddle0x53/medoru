@@ -203,7 +203,10 @@ defmodule Medoru.AI.WordEnrichment do
     body = %{
       model: model,
       messages: [
-        %{role: "system", content: "You are a helpful Japanese language assistant that returns only valid JSON."},
+        %{
+          role: "system",
+          content: "You are a helpful Japanese language assistant that returns only valid JSON."
+        },
         %{role: "user", content: prompt}
       ],
       response_format: %{type: "json_object"},
@@ -222,7 +225,9 @@ defmodule Medoru.AI.WordEnrichment do
         parse_response(response_body)
 
       {:ok, %{status: status, body: response_body}} when is_map(response_body) ->
-        error_message = get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+        error_message =
+          get_in(response_body, ["error", "message"]) || "OpenAI API returned status #{status}"
+
         {:error, error_message}
 
       {:ok, %{status: status}} ->
@@ -280,7 +285,18 @@ defmodule Medoru.AI.WordEnrichment do
     case data["word_type"] do
       val when is_binary(val) ->
         normalized = String.downcase(String.trim(val))
-        valid_types = ["noun", "verb", "adjective", "adverb", "particle", "pronoun", "counter", "expression", "other"]
+
+        valid_types = [
+          "noun",
+          "verb",
+          "adjective",
+          "adverb",
+          "particle",
+          "pronoun",
+          "counter",
+          "expression",
+          "other"
+        ]
 
         if normalized in valid_types do
           Map.put(data, "word_type", normalized)
@@ -319,7 +335,10 @@ defmodule Medoru.AI.WordEnrichment do
         {:ok, IO.iodata_to_binary(body)}
 
       {:ok, %{status: status, body: response_body}} when is_map(response_body) ->
-        error_message = get_in(response_body, ["error", "message"]) || "OpenAI TTS API returned status #{status}"
+        error_message =
+          get_in(response_body, ["error", "message"]) ||
+            "OpenAI TTS API returned status #{status}"
+
         {:error, error_message}
 
       {:ok, %{status: status}} ->
@@ -410,7 +429,11 @@ defmodule Medoru.AI.WordEnrichment do
 
       {:ok, %{status: status, body: response_body}} ->
         response_body = decode_json_body(response_body)
-        error_message = get_in(response_body, ["error", "message"]) || "OpenAI Image API returned status #{status}"
+
+        error_message =
+          get_in(response_body, ["error", "message"]) ||
+            "OpenAI Image API returned status #{status}"
+
         {:error, error_message}
 
       {:error, exception} ->
@@ -419,12 +442,14 @@ defmodule Medoru.AI.WordEnrichment do
   end
 
   defp decode_json_body(%{} = body), do: body
+
   defp decode_json_body(body) when is_binary(body) do
     case Jason.decode(body) do
       {:ok, decoded} -> decoded
       {:error, _} -> %{"raw" => body}
     end
   end
+
   defp decode_json_body(body), do: %{"raw" => inspect(body)}
 
   defp download_image(url, req_opts) do

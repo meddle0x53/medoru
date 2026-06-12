@@ -126,6 +126,7 @@ defmodule MedoruWeb.Router do
       live "/messages", MessagesLive.Index
       live "/messages/new-group", MessagesLive.NewGroup
       live "/messages/:id", MessagesLive.Show
+      live "/messages/:id/settings", MessagesLive.Settings
       live "/daily-review", DailyReviewLive
     end
   end

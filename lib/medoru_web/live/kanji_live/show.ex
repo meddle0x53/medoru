@@ -3,6 +3,7 @@ defmodule MedoruWeb.KanjiLive.Show do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Content.MatureContent
   alias Medoru.Learning
 
   embed_templates "*.html"
@@ -26,11 +27,21 @@ defmodule MedoruWeb.KanjiLive.Show do
     locale = socket.assigns.locale
     reading_pages = parse_reading_pages(params["r"])
 
+    current_user =
+      if socket.assigns.current_scope do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    include_mature = not MatureContent.viewer_restricted_from_mature?(current_user)
+
     # Get words containing this kanji, grouped by reading with per-group pagination
     words_data =
       Content.list_words_by_kanji_grouped_by_reading(kanji.id,
         reading_pages: reading_pages,
-        per_page: 5
+        per_page: 5,
+        include_mature: include_mature
       )
 
     on_readings = Enum.filter(kanji.kanji_readings, &(&1.reading_type == :on))
@@ -72,10 +83,20 @@ defmodule MedoruWeb.KanjiLive.Show do
     kanji = socket.assigns.kanji
     reading_pages = Map.put(socket.assigns.reading_pages, reading, page)
 
+    current_user =
+      if socket.assigns.current_scope do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    include_mature = not MatureContent.viewer_restricted_from_mature?(current_user)
+
     words_data =
       Content.list_words_by_kanji_grouped_by_reading(kanji.id,
         reading_pages: reading_pages,
-        per_page: 5
+        per_page: 5,
+        include_mature: include_mature
       )
 
     {:noreply,

@@ -225,7 +225,12 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
     } do
       grammar_definition_fixture(%{title: "na-adjective", jlpt_level: 5})
       conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
-      Medoru.Chat.store_plaintext_message(conversation.id, classroom.teacher_id, "Learn \\na-adjective/ today")
+
+      Medoru.Chat.store_plaintext_message(
+        conversation.id,
+        classroom.teacher_id,
+        "Learn \\na-adjective/ today"
+      )
 
       {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
 
@@ -238,7 +243,12 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       classroom: classroom
     } do
       conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
-      Medoru.Chat.store_plaintext_message(conversation.id, classroom.teacher_id, "Try \\onexistent/ grammar")
+
+      Medoru.Chat.store_plaintext_message(
+        conversation.id,
+        classroom.teacher_id,
+        "Try \\onexistent/ grammar"
+      )
 
       {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
 

@@ -28,7 +28,16 @@ defmodule Medoru.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :provider, :provider_uid, :name, :avatar_url, :type, :moderator, :is_deleted])
+    |> cast(attrs, [
+      :email,
+      :provider,
+      :provider_uid,
+      :name,
+      :avatar_url,
+      :type,
+      :moderator,
+      :is_deleted
+    ])
     |> validate_required([:email, :provider, :provider_uid, :moderator])
     |> validate_required([:email, :provider, :provider_uid])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)

@@ -51,6 +51,70 @@ defmodule MedoruWeb.WordLiveTest do
     end
   end
 
+  describe "mature content filtering" do
+    test "hides mature words from anonymous users on index", %{conn: conn} do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+
+      {:ok, _view, html} = live(conn, ~p"/words")
+
+      refute html =~ word.text
+    end
+
+    test "hides mature words from restricted users on index", %{conn: conn} do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+      user = user_fixture_with_profile()
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{age: 17, safety: false})
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} = live(conn, ~p"/words")
+
+      refute html =~ word.text
+    end
+
+    test "shows mature words to adult users with safety disabled on index", %{
+      conn: conn
+    } do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+      user = user_fixture_with_profile()
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{age: 18, safety: false})
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} = live(conn, ~p"/words")
+
+      assert html =~ word.text
+    end
+
+    test "redirects anonymous users away from mature word show page", %{conn: conn} do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+
+      assert {:error, {:live_redirect, %{to: "/words", flash: %{"error" => "Word not found."}}}} =
+               live(conn, ~p"/words/#{word.id}")
+    end
+
+    test "redirects restricted users away from mature word show page", %{conn: conn} do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+      user = user_fixture_with_profile()
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{age: 17, safety: false})
+      conn = log_in_user(conn, user)
+
+      assert {:error, {:live_redirect, %{to: "/words", flash: %{"error" => "Word not found."}}}} =
+               live(conn, ~p"/words/#{word.id}")
+    end
+
+    test "allows adult users with safety disabled to view mature word show page", %{
+      conn: conn
+    } do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+      user = user_fixture_with_profile()
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{age: 18, safety: false})
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ word.text
+    end
+  end
+
   describe "Show" do
     setup [:create_word_with_kanji, :create_user]
 

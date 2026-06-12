@@ -3,8 +3,8 @@
 ## Current State
 
 **Version**: 0.6.0 🔄 IN PROGRESS  
-**Status**: v0.6.0 in progress. Classroom Themes + AI Word Enrichment features under development.  
-**Tests**: 1191 passing (1 pre-existing flaky test)  
+**Status**: v0.6.0 in progress. Classroom Themes + Per-Chat Theme Settings + Writing Fill In test steps complete. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`.  
+**Tests**: 1353 passing (1 pre-existing flaky distractor assertion in `LessonTestGeneratorTest`)  
 **URL**: https://medoru.net
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
@@ -344,13 +344,51 @@ See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features
 - `lib/medoru_web/live/admin/game_live.ex` — Admin game page
 - `lib/medoru_web/controllers/game_api_controller.ex` — Run result API
 
+### What's Complete (v0.6.0) — Classroom & Chat Themes
+- **Classroom Themes**: Per-classroom DaisyUI themes, teacher theme picker in classroom settings
+- **Per-Chat Theme Settings**: Shared theme for 1-1 and group conversations persisted on `conversations.theme`
+  - Route `/messages/:id/settings` with theme grid; any participant can change the theme
+  - `Chat.update_conversation_theme/2` validates against `Classroom.allowed_themes/0` and broadcasts `{:conversation_updated, conversation}`
+  - Chat page applies `data-theme` from `@conversation.theme`; classroom chats continue using `@conversation.classroom.theme`
+  - `MessagesLive.Show` handles `{:conversation_updated, _}` to update the theme in real time for all viewers
+  - Tests: `MessagesLive.SettingsTest` (6 LiveView tests) + `ChatTest` context tests
+  - Service worker cache bumped to `medoru-v32`
+
 ### What's In Progress (v0.6.0)
-- **Classroom Themes**: Per-classroom DaisyUI themes (light/dark variants), teacher theme picker
 - **AI Word Enrichment**: Admin word form "Enrich with AI" button calling OpenAI API with editable predefined prompt. Populates meanings (separated by `/`), readings, examples (separated by `/`), translations, frequency, and word type.
   - `lib/medoru/ai/word_enrichment.ex` — Pure Elixir OpenAI client using `Req`
   - Configurable model via `OPENAI_MODEL` env var (default `gpt-4o-mini`)
   - 9 unit tests + 8 LiveView tests
+- **Writing Fill In Test Step Type**: New `:writing_fill_in` question type for tests and custom lessons. Students see example(s) plus a sentence template with `___` blanks; their completed full sentence is compared against a hidden `correct_answer` and optional `alt_correct_answers`.
+  - Schema: `Medoru.Tests.TestStep` enum, default 10 points, points validation
+  - Manual form: `MedoruWeb.Teacher.TestLive.WritingFillInStepForm`
+  - AI image extraction: `Medoru.AI.ImageTestSteps.extract_writing_fill_in_steps/2`
+  - Shared component: `MedoruWeb.WritingFillInComponents.fill_in_question/1` + `build_filled_sentence/2`
+  - Student views wired in `LessonTestLive.Show`, `ClassroomLive.Test`, and `ClassroomLive.CustomLessonTest`
 - See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md)
+
+### Mature Word Content Filtering ✅ COMPLETE
+- **Database & schemas**: `mature` boolean on `words`, `safety` boolean on `user_profiles`
+- **Visibility helper**: `Medoru.Content.MatureContent.mature_word_visible_to_user?/2` — hidden from anonymous users, users without age, users under 18, and users with safety mode ON
+- **Public word surfaces**: `WordLive.Index`, `WordLive.Show`, `KanjiLive.Show` lists filter mature words for restricted viewers; mature word show page returns 404-style redirect
+- **Admin/moderator UI**: Word forms include "Mature content" checkbox; profile settings include "Safety Mode" toggle
+- **Chat & post previews**: `/word` commands and inline word links in messages, classroom chat, and white-board posts/comments render an "unsafe content detected" placeholder for restricted viewers
+- **Encrypted chat**: `WordPreviewController` returns `{blocked: true}` for mature words; `chat_crypto.js` renders the placeholder client-side
+- **Service Worker**: Cache bumped to `medoru-v30` so browsers fetch the updated `chat_crypto.js` and chat input hook bundles
+- **Tests**: `MatureContentTest`, `WordLiveTest` filtering/redirect tests, `WordPreviewControllerTest`, `WhiteBoardPostRendererTest`
+- **Key files**:
+  - `lib/medoru/content/mature_content.ex`
+  - `lib/medoru/content/word.ex`
+  - `lib/medoru/accounts/user_profile.ex`
+  - `lib/medoru/content.ex`
+  - `lib/medoru_web/live/word_live/{index,show}.ex`
+  - `lib/medoru_web/live/kanji_live/show.ex`
+  - `lib/medoru_web/components/word_chat_preview.ex`
+  - `lib/medoru_web/live/messages_live/show.ex`
+  - `lib/medoru_web/live/classroom_live/show.ex`
+  - `lib/medoru_web/white_board_post_renderer.ex`
+  - `lib/medoru_web/controllers/word_preview_controller.ex`
+  - `assets/js/hooks/chat_crypto.js`
 
 ### What's Complete (v0.1.9) — Chat, User Directory & End-to-End Encryption
 - **User Directory**: Public `/users` page with searchable, paginated list of learners

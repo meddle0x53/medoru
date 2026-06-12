@@ -14,8 +14,6 @@ defmodule Medoru.Repo.Migrations.CreateFollows do
     create unique_index(:follows, [:follower_id, :following_id])
     create index(:follows, [:following_id])
 
-    create constraint(:follows, :cannot_follow_self,
-      check: "follower_id != following_id"
-    )
+    create constraint(:follows, :cannot_follow_self, check: "follower_id != following_id")
   end
 end

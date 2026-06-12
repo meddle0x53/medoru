@@ -22,16 +22,36 @@
         >
           <%!-- Basic Info --%>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <.input field={@form[:name]} type="text" label={gettext("Name")} placeholder={gettext("e.g., Rock")} />
-            <.input field={@form[:slug]} type="text" label={gettext("Slug")} placeholder={gettext("e.g., rock")} />
+            <.input
+              field={@form[:name]}
+              type="text"
+              label={gettext("Name")}
+              placeholder={gettext("e.g., Rock")}
+            />
+            <.input
+              field={@form[:slug]}
+              type="text"
+              label={gettext("Slug")}
+              placeholder={gettext("e.g., rock")}
+            />
           </div>
           <p class="text-xs text-base-content/50 -mt-4">
             {gettext("Slug: lowercase letters, numbers, and hyphens only")}
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <.input field={@form[:category]} type="select" label={gettext("Category")} options={@categories} />
-            <.input field={@form[:color]} type="select" label={gettext("Color")} options={@colors} />
+            <.input
+              field={@form[:category]}
+              type="select"
+              label={gettext("Category")}
+              options={@categories}
+            />
+            <.input
+              field={@form[:color]}
+              type="select"
+              label={gettext("Color")}
+              options={@colors}
+            />
           </div>
           <div class="flex flex-wrap gap-1 -mt-4">
             <%= for color <- @colors do %>
@@ -40,7 +60,12 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <.input field={@form[:order_index]} type="number" label={gettext("Order Index")} placeholder={gettext("e.g., 10")} />
+            <.input
+              field={@form[:order_index]}
+              type="number"
+              label={gettext("Order Index")}
+              placeholder={gettext("e.g., 10")}
+            />
             <.input field={@form[:is_official]} type="checkbox" label={gettext("Official Tag")} />
           </div>
 

@@ -114,6 +114,19 @@
             </div>
           </div>
 
+          <%!-- Mature Content Toggle --%>
+          <div class="border-t border-base-300 pt-6">
+            <label class="label cursor-pointer justify-start gap-3" for={@form[:mature].id}>
+              <.input field={@form[:mature]} type="checkbox" />
+              <span class="label-text">{gettext("Mature content")}</span>
+            </label>
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext(
+                "Mature words are hidden from users under 18, users without age, and users with safety mode enabled."
+              )}
+            </p>
+          </div>
+
           <%!-- Example Sentence --%>
           <div class="border-t border-base-300 pt-6">
             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">

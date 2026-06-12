@@ -337,7 +337,10 @@ defmodule Medoru.GamificationTest do
       assert hd(awarded).badge_id == badges.level.id
     end
 
-    test "check_level_badges/2 awards multiple badges if applicable", %{user: user, badges: badges} do
+    test "check_level_badges/2 awards multiple badges if applicable", %{
+      user: user,
+      badges: badges
+    } do
       {:ok, level_1_badge} =
         Gamification.create_badge(%{
           name: "Level 1",

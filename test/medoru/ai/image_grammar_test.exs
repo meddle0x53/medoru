@@ -3,8 +3,8 @@ defmodule Medoru.AI.ImageGrammarTest do
 
   alias Medoru.AI.ImageGrammar
 
-  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-               0x49, 0x48, 0x44, 0x52>>
+  @dummy_png <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48,
+               0x44, 0x52>>
 
   describe "extract_grammar/2" do
     test "returns error when API key is not configured" do
@@ -21,31 +21,32 @@ defmodule Medoru.AI.ImageGrammarTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "title" => "IV. Grammar Notes",
-                    "sections" => [
-                      %{
-                        "number" => 1,
-                        "title" => "Verb Groups",
-                        "description" => "Japanese verbs conjugate...",
-                        "examples" => [],
-                        "is_grammar_pattern" => false
-                      },
-                      %{
-                        "number" => 2,
-                        "title" => "V て-form",
-                        "description" => "The verb form that ends with て...",
-                        "examples" => [
-                          %{
-                            "sentence" => "かきます",
-                            "reading" => "かきます",
-                            "meaning" => "write"
-                          }
-                        ],
-                        "is_grammar_pattern" => true
-                      }
-                    ]
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "title" => "IV. Grammar Notes",
+                      "sections" => [
+                        %{
+                          "number" => 1,
+                          "title" => "Verb Groups",
+                          "description" => "Japanese verbs conjugate...",
+                          "examples" => [],
+                          "is_grammar_pattern" => false
+                        },
+                        %{
+                          "number" => 2,
+                          "title" => "V て-form",
+                          "description" => "The verb form that ends with て...",
+                          "examples" => [
+                            %{
+                              "sentence" => "かきます",
+                              "reading" => "かきます",
+                              "meaning" => "write"
+                            }
+                          ],
+                          "is_grammar_pattern" => true
+                        }
+                      ]
+                    }),
                   "refusal" => nil
                 }
               }
@@ -55,7 +56,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, data} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:ok, data} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert data["title"] == "IV. Grammar Notes"
         assert length(data["sections"]) == 2
 
@@ -77,10 +82,12 @@ defmodule Medoru.AI.ImageGrammarTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => "```json\n" <> Jason.encode!(%{
-                    "title" => "Grammar",
-                    "sections" => []
-                  }) <> "\n```",
+                  "content" =>
+                    "```json\n" <>
+                      Jason.encode!(%{
+                        "title" => "Grammar",
+                        "sections" => []
+                      }) <> "\n```",
                   "refusal" => nil
                 }
               }
@@ -90,7 +97,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:ok, data} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:ok, data} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert data["title"] == "Grammar"
       end)
     end
@@ -112,7 +123,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           Req.Test.json(conn, response)
         end)
 
-        assert {:error, message} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:error, message} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert message =~ "refused"
       end)
     end
@@ -132,7 +147,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           })
         end)
 
-        assert {:error, message} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:error, message} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert message =~ "empty response"
       end)
     end
@@ -141,6 +160,7 @@ defmodule Medoru.AI.ImageGrammarTest do
       with_mock_response(fn ->
         Req.Test.stub(ImageGrammar, fn conn ->
           conn = Plug.Conn.put_status(conn, 429)
+
           Req.Test.json(conn, %{
             "error" => %{
               "message" => "Rate limit exceeded"
@@ -148,7 +168,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           })
         end)
 
-        assert {:error, message} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:error, message} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert message =~ "Rate limit exceeded"
       end)
     end
@@ -160,12 +184,18 @@ defmodule Medoru.AI.ImageGrammarTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "title" => "Test",
-                    "sections" => [
-                      %{"number" => "3", "title" => "Section", "description" => "text", "examples" => []}
-                    ]
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "title" => "Test",
+                      "sections" => [
+                        %{
+                          "number" => "3",
+                          "title" => "Section",
+                          "description" => "text",
+                          "examples" => []
+                        }
+                      ]
+                    }),
                   "refusal" => nil
                 }
               }
@@ -173,7 +203,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           })
         end)
 
-        assert {:ok, data} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:ok, data} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         section = hd(data["sections"])
         assert section["number"] == 3
       end)
@@ -186,9 +220,10 @@ defmodule Medoru.AI.ImageGrammarTest do
             "choices" => [
               %{
                 "message" => %{
-                  "content" => Jason.encode!(%{
-                    "sections" => []
-                  }),
+                  "content" =>
+                    Jason.encode!(%{
+                      "sections" => []
+                    }),
                   "refusal" => nil
                 }
               }
@@ -196,7 +231,11 @@ defmodule Medoru.AI.ImageGrammarTest do
           })
         end)
 
-        assert {:ok, data} = ImageGrammar.extract_grammar(@dummy_png, req_opts: [plug: {Req.Test, ImageGrammar}])
+        assert {:ok, data} =
+                 ImageGrammar.extract_grammar(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageGrammar}]
+                 )
+
         assert data["title"] == "Grammar Lesson"
       end)
     end

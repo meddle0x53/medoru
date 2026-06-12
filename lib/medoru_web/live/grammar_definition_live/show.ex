@@ -31,7 +31,10 @@ defmodule MedoruWeb.GrammarDefinitionLive.Show do
       grammar_definition ->
         grammar_learned =
           if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-            Learning.grammar_learned?(socket.assigns.current_scope.current_user.id, grammar_definition.id)
+            Learning.grammar_learned?(
+              socket.assigns.current_scope.current_user.id,
+              grammar_definition.id
+            )
           else
             false
           end
@@ -55,8 +58,7 @@ defmodule MedoruWeb.GrammarDefinitionLive.Show do
     grammar = socket.assigns.grammar_definition
 
     if sentence == "" do
-      {:noreply,
-       put_flash(socket, :error, gettext("Please enter a sentence to validate."))}
+      {:noreply, put_flash(socket, :error, gettext("Please enter a sentence to validate."))}
     else
       result =
         case Validator.validate_sentence(sentence, grammar.pattern_elements) do
@@ -116,7 +118,10 @@ defmodule MedoruWeb.GrammarDefinitionLive.Show do
         {:noreply,
          socket
          |> assign(:grammar_learned, false)
-         |> put_flash(:info, gettext("%{grammar} removed from learned list.", grammar: grammar.title))}
+         |> put_flash(
+           :info,
+           gettext("%{grammar} removed from learned list.", grammar: grammar.title)
+         )}
 
       {:error, :not_learned} ->
         {:noreply,

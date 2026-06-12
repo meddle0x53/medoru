@@ -1,0 +1,53 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-2xl mx-auto px-4 py-6">
+    <%!-- Header --%>
+    <div class="flex items-center gap-3 mb-6">
+      <.link
+        navigate={~p"/messages/#{@conversation.id}"}
+        class="text-secondary hover:text-primary transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-5 h-5" />
+      </.link>
+      <h1 class="text-xl font-bold text-base-content flex items-center gap-2">
+        <.icon name="hero-cog-6-tooth" class="w-5 h-5 text-primary" />
+        {@page_title}
+      </h1>
+    </div>
+
+    <div class="bg-base-100 border border-base-300 rounded-xl p-4 sm:p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-base-content mb-2">
+        {gettext("Chat Theme")}
+      </h2>
+      <p class="text-sm text-base-content/60 mb-4">
+        {gettext("Choose a visual theme for this chat. Everyone in the conversation will see it.")}
+      </p>
+
+      <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+        <button
+          type="button"
+          phx-click="set_theme"
+          phx-value-theme=""
+          class={[
+            "btn btn-sm btn-outline",
+            if(is_nil(@current_theme), do: "btn-primary")
+          ]}
+        >
+          {gettext("Default")}
+        </button>
+        <%= for theme <- @themes do %>
+          <button
+            type="button"
+            phx-click="set_theme"
+            phx-value-theme={theme}
+            class={[
+              "btn btn-sm",
+              if(@current_theme == theme, do: "btn-primary", else: "btn-ghost")
+            ]}
+          >
+            {theme}
+          </button>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

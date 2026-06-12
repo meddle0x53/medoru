@@ -4,7 +4,10 @@ defmodule Medoru.Repo.Migrations.CreateMessageReactions do
   def change do
     create table(:message_reactions, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :message_id, references(:messages, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :message_id, references(:messages, on_delete: :delete_all, type: :binary_id),
+        null: false
+
       add :user_id, references(:users, on_delete: :delete_all, type: :binary_id), null: false
       add :emoji, :string, null: false, size: 32
 

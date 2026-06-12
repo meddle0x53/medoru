@@ -15,7 +15,12 @@ defmodule MedoruWeb.DailyKanjiTestLiveTest do
       conn = log_in_user(conn, user)
 
       Enum.each(1..15, fn i ->
-        kanji = kanji_fixture(%{character: <<0x3400 + i::utf8>>, stroke_data: %{"strokes" => ["M0,0 L10,10"]}})
+        kanji =
+          kanji_fixture(%{
+            character: <<0x3400 + i::utf8>>,
+            stroke_data: %{"strokes" => ["M0,0 L10,10"]}
+          })
+
         Learning.track_kanji_learned(user.id, kanji.id)
       end)
 
@@ -29,7 +34,12 @@ defmodule MedoruWeb.DailyKanjiTestLiveTest do
       conn = log_in_user(conn, user)
 
       Enum.each(1..5, fn i ->
-        kanji = kanji_fixture(%{character: <<0x3400 + i::utf8>>, stroke_data: %{"strokes" => ["M0,0 L10,10"]}})
+        kanji =
+          kanji_fixture(%{
+            character: <<0x3400 + i::utf8>>,
+            stroke_data: %{"strokes" => ["M0,0 L10,10"]}
+          })
+
         Learning.track_kanji_learned(user.id, kanji.id)
       end)
 
@@ -73,7 +83,12 @@ defmodule MedoruWeb.DailyKanjiTestLiveTest do
 
       kanji_list =
         Enum.map(1..15, fn i ->
-          kanji = kanji_fixture(%{character: <<0x3400 + i::utf8>>, stroke_data: %{"strokes" => ["M0,0 L10,10"]}})
+          kanji =
+            kanji_fixture(%{
+              character: <<0x3400 + i::utf8>>,
+              stroke_data: %{"strokes" => ["M0,0 L10,10"]}
+            })
+
           Learning.track_kanji_learned(user.id, kanji.id)
           kanji
         end)

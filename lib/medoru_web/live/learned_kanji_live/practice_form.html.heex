@@ -14,7 +14,10 @@
         </h1>
       </div>
       <p class="text-secondary">
-        {gettext("Select up to %{max} kanji to practice writing. Your known score will be updated.", max: @max_selection)}
+        {gettext(
+          "Select up to %{max} kanji to practice writing. Your known score will be updated.",
+          max: @max_selection
+        )}
       </p>
     </div>
 
@@ -67,7 +70,8 @@
             "group relative bg-base-100 border rounded-xl p-5 shadow-sm cursor-pointer transition-all duration-200",
             if(k.id in @selected_ids,
               do: "border-primary bg-primary/5 shadow-md",
-              else: "border-base-300 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5"
+              else:
+                "border-base-300 hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5"
             )
           ]}
         >
@@ -99,12 +103,23 @@
             <span class={[
               "inline-block px-2 py-0.5 rounded text-xs font-medium",
               case k.jlpt_level do
-                5 -> "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                4 -> "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
-                3 -> "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
-                2 -> "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
-                1 -> "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                _ -> "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
+                5 ->
+                  "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+
+                4 ->
+                  "bg-lime-100/80 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300"
+
+                3 ->
+                  "bg-yellow-100/80 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300"
+
+                2 ->
+                  "bg-orange-100/80 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300"
+
+                1 ->
+                  "bg-red-100/80 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+
+                _ ->
+                  "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
               end
             ]}>
               N{k.jlpt_level}

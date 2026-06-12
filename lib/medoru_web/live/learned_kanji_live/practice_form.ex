@@ -16,7 +16,14 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
-    {:ok, assign(socket, locale: locale, selected_ids: [], max_selection: @max_selection, snap_correct: true)}
+
+    {:ok,
+     assign(socket,
+       locale: locale,
+       selected_ids: [],
+       max_selection: @max_selection,
+       snap_correct: true
+     )}
   end
 
   @impl true
@@ -64,7 +71,12 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
     else
       ids_param = Enum.join(selected, ",")
       snap = if socket.assigns.snap_correct, do: "true", else: "false"
-      {:noreply, push_navigate(socket, to: ~p"/users/#{socket.assigns.user.id}/kanji/practice/challenge?ids=#{ids_param}&snap=#{snap}")}
+
+      {:noreply,
+       push_navigate(socket,
+         to:
+           ~p"/users/#{socket.assigns.user.id}/kanji/practice/challenge?ids=#{ids_param}&snap=#{snap}"
+       )}
     end
   end
 end

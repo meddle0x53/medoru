@@ -11,7 +11,9 @@ defmodule Medoru.Repo.Migrations.BackfillLevelBadges do
   def up do
     # Get all level badges
     {:ok, %{rows: badge_rows}} =
-      Repo.query("SELECT id, criteria_value FROM badges WHERE criteria_type = 'level' ORDER BY criteria_value ASC")
+      Repo.query(
+        "SELECT id, criteria_value FROM badges WHERE criteria_type = 'level' ORDER BY criteria_value ASC"
+      )
 
     level_badges =
       badge_rows
