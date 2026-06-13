@@ -352,7 +352,7 @@ See [PLAN-v0.6.0.md](.agents/logs/PLAN-v0.6.0.md) for upcoming features
   - Chat page applies `data-theme` from `@conversation.theme`; classroom chats continue using `@conversation.classroom.theme`
   - `MessagesLive.Show` handles `{:conversation_updated, _}` to update the theme in real time for all viewers
   - Tests: `MessagesLive.SettingsTest` (6 LiveView tests) + `ChatTest` context tests
-  - Service worker cache bumped to `medoru-v32`
+  - Service worker cache bumped to `medoru-v33`
 
 ### What's In Progress (v0.6.0)
 - **AI Word Enrichment**: Admin word form "Enrich with AI" button calling OpenAI API with editable predefined prompt. Populates meanings (separated by `/`), readings, examples (separated by `/`), translations, frequency, and word type.

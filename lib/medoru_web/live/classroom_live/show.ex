@@ -2000,11 +2000,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                         not is_emoji_msg && not is_me &&
                           "bg-accent/15 text-base-content rounded-bl-md border border-accent/30",
                         if(message.is_deleted,
-                          do: "px-3 py-1.5",
+                          do: "px-2.5 pt-0 pb-2.5",
                           else:
                             if(message.attachment_type in ["voice", "image", "audio", "document"],
-                              do: "px-3 py-2",
-                              else: "px-3 py-1.5"
+                              do: "px-2.5 py-1.5",
+                              else: "px-2.5 pt-0 pb-2.5"
                             )
                         )
                       ]}>
@@ -2164,7 +2164,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               )}
                             </p>
                           <% true -> %>
-                            <p class="text-[15px] leading-snug whitespace-pre-wrap break-words">
+                            <p class="text-[15px] leading-[17px] whitespace-pre-line break-words -mt-1">
                               {render_message_content(
                                 message.content,
                                 @convert_emoticons,
