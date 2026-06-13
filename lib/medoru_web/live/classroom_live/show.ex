@@ -2164,7 +2164,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               )}
                             </p>
                           <% true -> %>
-                            <p class="text-[15px] leading-[17px] whitespace-pre-line break-words -mt-1">
+                            <p class="text-[15px] leading-[17px] whitespace-pre-line break-words -mt-[5px]">
                               {render_message_content(
                                 message.content,
                                 @convert_emoticons,
