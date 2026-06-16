@@ -23,7 +23,8 @@ defmodule Medoru.Learning do
     UserDailyChallenge
   }
 
-  alias Medoru.Content.{GrammarDefinition, Kanji, Lesson, Word, WordKanji}
+  alias Medoru.Content
+  alias Medoru.Content.{GrammarDefinition, Kanji, KanjiRadicals, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
   # ============================================================================
@@ -1007,6 +1008,64 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Generates a daily Radical Hunt challenge for a user.
+
+  Picks a learned kanji, uses its first radical, and ensures the radical has
+  at least 10 related kanji. Falls back to a common radical if needed.
+  Returns a deterministic result for the same user/date.
+
+  Returns `%{radical: String.t(), seed_kanji: Kanji.t() | nil, valid_kanji: [Kanji.t()]}`.
+  """
+  def generate_daily_radical_hunt(user_id) do
+    date = Date.utc_today()
+
+    learned_kanji =
+      user_id
+      |> list_learned_kanji_ids()
+      |> load_kanji_with_radicals()
+
+    candidate_kanji =
+      Enum.sort_by(learned_kanji, fn k ->
+        :erlang.phash2("#{date}-#{user_id}-#{k.character}")
+      end)
+
+    result =
+      Enum.find_value(candidate_kanji, fn kanji ->
+        radical = List.first(kanji.radicals)
+
+        if radical && radical != "" do
+          valid_kanji = Content.list_kanji_by_radical(radical)
+
+          if length(valid_kanji) >= 10 do
+            %{radical: radical, seed_kanji: kanji, valid_kanji: valid_kanji}
+          end
+        end
+      end)
+
+    result || fallback_daily_radical_hunt()
+  end
+
+  defp load_kanji_with_radicals(kanji_ids) do
+    Kanji
+    |> where([k], k.id in ^kanji_ids)
+    |> where([k], not is_nil(k.radicals))
+    |> select([k], map(k, [:id, :character, :radicals]))
+    |> Repo.all()
+    |> Enum.reject(fn k -> k.radicals == [] end)
+  end
+
+  defp fallback_daily_radical_hunt do
+    KanjiRadicals.by_frequency()
+    |> Enum.find_value(fn %{character: radical} ->
+      valid_kanji = Content.list_kanji_by_radical(radical)
+
+      if length(valid_kanji) >= 10 do
+        %{radical: radical, seed_kanji: nil, valid_kanji: valid_kanji}
+      end
+    end)
+  end
+
+  @doc """
   Updates the mastery level for a kanji.
 
   ## Examples
@@ -1714,7 +1773,8 @@ defmodule Medoru.Learning do
       total_challenges: length(challenge_types),
       daily_test_completed: Map.has_key?(challenges, "daily_test"),
       daily_kanji_completed: Map.has_key?(challenges, "daily_kanji"),
-      daily_cards_completed: Map.has_key?(challenges, "daily_cards")
+      daily_cards_completed: Map.has_key?(challenges, "daily_cards"),
+      daily_radical_hunt_completed: Map.has_key?(challenges, "daily_radical_hunt")
     }
   end
 

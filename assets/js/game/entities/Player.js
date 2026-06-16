@@ -2,10 +2,13 @@ import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
 import { splitActions, getMaxActiveActions } from '../data/actions.js'
 import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
-import { generateMap } from '../systems/MapGenerator.js'
+import { generateMap, MAP_TEMPLATES } from '../systems/MapGenerator.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
 const MAP_VERSION = 2
+
+const BASE_STAT_POINTS = 10
+const STAT_POINTS_PER_LEVEL = 1
 
 // Scaling letter multipliers
 const SCALING_MULTIPLIERS = {
@@ -104,9 +107,11 @@ export default class Player extends Character {
     })
 
     this.baseStats = baseStats
+    this.startingBaseStats = { ...baseStats }
     this.level = userData.level || 1
     this.potionUsesLeft = 3
     this.userData = userData
+    const startingStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL
 
     // Equipment
     this.shield = shield
@@ -121,8 +126,9 @@ export default class Player extends Character {
       shieldCharmIds: [],
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
-      statPoints: 10,
+      statPoints: startingStatPoints,
       statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      permanentStatPointBonus: 0,
       gold: 0,
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
@@ -387,9 +393,17 @@ export default class Player extends Character {
       const raw = localStorage.getItem(LOADOUT_KEY)
       if (raw) {
         const loadout = JSON.parse(raw)
-        // Migration: ensure demo has stat points to spend
-        if (typeof loadout.statPoints === 'number' && loadout.statPoints < 10) {
-          loadout.statPoints = 10
+        // Migration: ensure permanent bonus field exists
+        if (typeof loadout.permanentStatPointBonus !== 'number') {
+          loadout.permanentStatPointBonus = 0
+        }
+        // Migration: recalc available stat points based on level + permanent bonus,
+        // preserving points already spent.
+        const expectedTotal = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + loadout.permanentStatPointBonus
+        const spent = Object.values(loadout.statAllocations || {}).reduce((a, b) => a + b, 0)
+        const expectedRemaining = Math.max(0, expectedTotal - spent)
+        if (typeof loadout.statPoints !== 'number' || loadout.statPoints < expectedRemaining) {
+          loadout.statPoints = expectedRemaining
         }
         // Migration: ensure new rogue-like fields exist
         if (!loadout.class) loadout.class = 'warrior'
@@ -603,8 +617,31 @@ export default class Player extends Character {
     if (!ms.maps[ms.currentMapIndex]) {
       ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
     }
+    // Backfill any new template fields (e.g. tile images) added after the map
+    // was first generated, so older saves pick them up without a full reset.
+    const map = ms.maps[ms.currentMapIndex]
+    const template = MAP_TEMPLATES[map.index] || MAP_TEMPLATES[0]
+    if (template.battleTileImage && !map.battleTileImage) {
+      map.battleTileImage = template.battleTileImage
+    }
+    if (template.miniBossTileImage && !map.miniBossTileImage) {
+      map.miniBossTileImage = template.miniBossTileImage
+    }
+    if (template.bossTileImage && !map.bossTileImage) {
+      map.bossTileImage = template.bossTileImage
+    }
+    if (template.chestTileImage && !map.chestTileImage) {
+      map.chestTileImage = template.chestTileImage
+    }
+    if (template.shopTileImage && !map.shopTileImage) {
+      map.shopTileImage = template.shopTileImage
+    }
+    if (template.restTileImage && !map.restTileImage) {
+      map.restTileImage = template.restTileImage
+    }
+
     if (!ms.currentTileId) {
-      ms.currentTileId = ms.maps[ms.currentMapIndex].columns[0][0].id
+      ms.currentTileId = map.columns[0][0].id
     }
     this.saveLoadout()
     return this.loadout.mapState
@@ -657,6 +694,9 @@ export default class Player extends Character {
 
   resetToFreshHero() {
     const starterActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
+    const permanentStatPointBonus = this.loadout?.permanentStatPointBonus || 0
+    const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + permanentStatPointBonus
+
     this.loadout = {
       class: 'warrior',
       activeItemIds: ['health_potion', 'stone'],
@@ -665,8 +705,9 @@ export default class Player extends Character {
       shieldCharmIds: [],
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
-      statPoints: 10,
+      statPoints: totalStatPoints,
       statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      permanentStatPointBonus,
       gold: 0,
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
@@ -674,7 +715,12 @@ export default class Player extends Character {
       mapVersion: MAP_VERSION,
     }
 
-    this.baseStats = { vitality: 20, stamina: 10, skill: 10, strength: 20, mana: 5, luck: 5 }
+    this.activeActionIds = this.loadout.activeActionIds
+
+    this.baseStats = { ...this.startingBaseStats }
+    for (const stat of Object.keys(this.baseStats)) {
+      this[stat] = this.baseStats[stat]
+    }
     this.maxHp = 80 + this.baseStats.vitality * 5
     this.hp = this.maxHp
     this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
@@ -692,6 +738,8 @@ export default class Player extends Character {
     this.parryKanjiQuality = null
     this._charmEffects = null
 
+    this.clearKanjiBonus()
+    this.clearShieldBonus()
     this.refreshActions()
     this.saveLoadout()
   }

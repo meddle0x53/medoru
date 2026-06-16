@@ -25,11 +25,17 @@ const LAYOUT = {
   minSpacing: 60,
 }
 
-const MAP_TEMPLATES = {
+export const MAP_TEMPLATES = {
   0: {
     nameEn: 'Japanese Fields',
     nameJa: '日本の田園風景',
     backgroundImage: 'map_level_1',
+    battleTileImage: 'map0_battle_tile',
+    miniBossTileImage: 'map0_mini_boss_tile',
+    bossTileImage: 'map0_boss_tile',
+    chestTileImage: 'map0_chest_tile',
+    shopTileImage: 'map0_shop_tile',
+    restTileImage: 'map0_rest_tile',
   },
   1: {
     nameEn: 'The Dark Path',
@@ -115,6 +121,12 @@ export function generateMap(mapIndex = 0) {
     nameEn: template.nameEn,
     nameJa: template.nameJa,
     backgroundImage: template.backgroundImage,
+    battleTileImage: template.battleTileImage || null,
+    miniBossTileImage: template.miniBossTileImage || null,
+    bossTileImage: template.bossTileImage || null,
+    chestTileImage: template.chestTileImage || null,
+    shopTileImage: template.shopTileImage || null,
+    restTileImage: template.restTileImage || null,
     columns,
   }
 

@@ -24,6 +24,16 @@ export default class BootScene extends Phaser.Scene {
     // Map backgrounds
     this.load.image('map_level_1', '/images/game/map_level_1.png')
 
+    // Map-specific tile art (Japanese Fields). Falls back to colored circles
+    // until the PNG files are present. The ?v=2 busts the cache after the
+    // recent re-crop.
+    this.load.image('map0_battle_tile', '/images/game/map0_battle_tile.png?v=2')
+    this.load.image('map0_mini_boss_tile', '/images/game/map0_mini_boss_tile.png?v=2')
+    this.load.image('map0_boss_tile', '/images/game/map0_boss_tile.png?v=1')
+    this.load.image('map0_chest_tile', '/images/game/map0_chest_tile.png?v=1')
+    this.load.image('map0_shop_tile', '/images/game/map0_shop_tile.png?v=1')
+    this.load.image('map0_rest_tile', '/images/game/map0_rest_tile.png?v=2')
+
     // Loadout portrait
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 

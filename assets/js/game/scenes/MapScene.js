@@ -17,7 +17,7 @@ import { updateReachability, findTileById, computeLayout, getMapName } from '../
 
 const TILE_RADIUS = 22
 const CURRENT_PULSE_RADIUS = 28
-const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fontStyle: 'bold' }
+const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }
 
 export default class MapScene extends Phaser.Scene {
   constructor() {
@@ -26,6 +26,8 @@ export default class MapScene extends Phaser.Scene {
 
   init(data) {
     this.player = data.player || new Player(getWindowGameData())
+    // Reset transition state when the scene is restarted (e.g. after an event).
+    this.transitioning = false
   }
 
   create() {
@@ -105,6 +107,19 @@ export default class MapScene extends Phaser.Scene {
         color: '#bdc3c7',
       },
     ).setOrigin(0.5)
+
+    // DEV ONLY: reset the current run back to a fresh hero.
+    this.hud.resetBtn = this.add.text(GAME_CONFIG.width - 16, 16, 'DEV: RESET RUN', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#c0392b',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    this.hud.resetBtn.on('pointerdown', () => {
+      this.player.resetToFreshHero()
+      this.scene.start('MapScene', { player: this.player })
+    })
   }
 
   updateHud() {
@@ -187,23 +202,48 @@ export default class MapScene extends Phaser.Scene {
           })
         }
 
-        // Thick black-to-gray border ring
-        const outerRim = this.add.circle(0, 0, TILE_RADIUS + 5, 0x111111)
-        bodyContainer.add(outerRim)
-        const innerRim = this.add.circle(0, 0, TILE_RADIUS + 2, 0x7f8c8d)
-        bodyContainer.add(innerRim)
+        // Optional map-specific tile image (e.g. Japanese Fields).
+        let tileImageKey = null
+        if (this.map.battleTileImage && tile.type === 'battle' && this.textures.exists(this.map.battleTileImage)) {
+          tileImageKey = this.map.battleTileImage
+        } else if (this.map.miniBossTileImage && tile.type === 'mini_boss' && this.textures.exists(this.map.miniBossTileImage)) {
+          tileImageKey = this.map.miniBossTileImage
+        } else if (this.map.bossTileImage && tile.type === 'boss' && this.textures.exists(this.map.bossTileImage)) {
+          tileImageKey = this.map.bossTileImage
+        } else if (this.map.chestTileImage && tile.type === 'chest' && this.textures.exists(this.map.chestTileImage)) {
+          tileImageKey = this.map.chestTileImage
+        } else if (this.map.shopTileImage && tile.type === 'shop' && this.textures.exists(this.map.shopTileImage)) {
+          tileImageKey = this.map.shopTileImage
+        } else if (this.map.restTileImage && tile.type === 'rest_camp' && this.textures.exists(this.map.restTileImage)) {
+          tileImageKey = this.map.restTileImage
+        }
 
-        // Main colored tile
-        const circle = this.add.circle(0, 0, TILE_RADIUS, config.color)
-        bodyContainer.add(circle)
+        if (tileImageKey) {
+          // The image has its own decorative border, so skip the synthetic rim.
+          const img = this.add.image(0, 0, tileImageKey)
+          img.setDisplaySize(TILE_RADIUS * 2, TILE_RADIUS * 2)
+          bodyContainer.add(img)
+        } else {
+          // Thick black-to-gray border ring
+          const outerRim = this.add.circle(0, 0, TILE_RADIUS + 5, 0x111111)
+          bodyContainer.add(outerRim)
+          const innerRim = this.add.circle(0, 0, TILE_RADIUS + 2, 0x7f8c8d)
+          bodyContainer.add(innerRim)
+          const circle = this.add.circle(0, 0, TILE_RADIUS, config.color)
+          bodyContainer.add(circle)
+        }
 
         const label = this.add.text(0, 0, config.label, FONT_LABEL)
         label.setOrigin(0.5)
         container.add(label)
 
+        container.tileId = tile.id
+        container.tileLabel = label
+
         // Reachable tiles are interactive; others are blurred/masked.
         if (tile.reachable && !tile.completed) {
-          container.setInteractive(new Phaser.Geom.Rectangle(-TILE_RADIUS, -TILE_RADIUS, TILE_RADIUS * 2, TILE_RADIUS * 2), Phaser.Geom.Rectangle.Contains)
+          // Use a generous circle hit area so the whole tile (rim included) is clickable.
+          container.setInteractive(new Phaser.Geom.Circle(0, 0, TILE_RADIUS + 8), Phaser.Geom.Circle.Contains)
           container.on('pointerdown', () => this.onTileClick(tile))
 
           this.input.setDefaultCursor('pointer')
@@ -212,10 +252,8 @@ export default class MapScene extends Phaser.Scene {
           bodyContainer.setAlpha(0.55)
           label.setAlpha(0.65)
         } else {
-          if (typeof bodyContainer.enableFilters === 'function') {
-            bodyContainer.enableFilters()
-            bodyContainer.filters.internal.addBlur(0.5, 0, 0, 0.5, 0x000000, 2)
-          }
+          // Unreachable tiles are dimmed but not blurred (blur can clip the
+          // generated circle shapes in some browsers).
           bodyContainer.setAlpha(0.75)
           label.setAlpha(0.9)
         }
@@ -234,12 +272,57 @@ export default class MapScene extends Phaser.Scene {
 
   onTileClick(tile) {
     if (tile.completed || !tile.reachable) return
+    if (this.transitioning) return
 
     // Allow clicking the current tile only if it is a battle tile (so the
     // player can enter a battle they are standing on). Otherwise ignore it.
     const isCurrentTile = tile.id === this.player.loadout.mapState.currentTileId
     if (isCurrentTile && !isBattleTile(tile.type)) return
 
+    this.transitioning = true
+
+    const container = this.tileContainers.find(c => c.tileId === tile.id)
+    if (!container) {
+      this.doTileAction(tile)
+      return
+    }
+
+    // Disable all tile interactions during the transition.
+    for (const c of this.tileContainers) {
+      c.disableInteractive()
+    }
+    if (this.hud.resetBtn) {
+      this.hud.resetBtn.disableInteractive()
+    }
+    this.input.setDefaultCursor('default')
+
+    // Bring the chosen tile to the front and hide its label so it doesn't
+    // become a blurry giant blob during the zoom.
+    container.setDepth(100)
+    if (container.tileLabel) {
+      this.tweens.add({ targets: container.tileLabel, alpha: 0, duration: 300 })
+    }
+
+    // Fade out the other tiles and the HUD.
+    const others = this.tileContainers.filter(c => c !== container)
+    this.tweens.add({ targets: others, alpha: 0, duration: 600 })
+    if (this.hud) {
+      this.tweens.add({ targets: Object.values(this.hud), alpha: 0, duration: 600 })
+    }
+
+    // Zoom the tile to the centre of the screen.
+    this.tweens.add({
+      targets: container,
+      x: GAME_CONFIG.width / 2,
+      y: GAME_CONFIG.height / 2,
+      scale: 4.5,
+      duration: 900,
+      ease: 'Quad.easeInOut',
+      onComplete: () => this.doTileAction(tile),
+    })
+  }
+
+  doTileAction(tile) {
     if (isBattleTile(tile.type)) {
       this.scene.start('LoadoutScene', { player: this.player, tile })
       return
@@ -295,6 +378,7 @@ export default class MapScene extends Phaser.Scene {
 
   showEventOverlay(message, color, onComplete) {
     const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    overlay.setDepth(200)
 
     const bg = this.add.rectangle(0, 0, 400, 180, 0x000000, 0.85)
     bg.setStrokeStyle(2, color)

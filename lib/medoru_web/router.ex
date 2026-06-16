@@ -146,6 +146,7 @@ defmodule MedoruWeb.Router do
       live "/daily-challenges", DailyChallengesLive
       live "/daily-challenges/kanji", DailyKanjiTestLive
       live "/daily-challenges/cards", DailyCardGameLive
+      live "/daily-challenges/radical-hunt", DailyRadicalHuntLive
     end
   end
 

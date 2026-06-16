@@ -1663,6 +1663,9 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.currentChallenge) {
       this.challengeActive = false
       this.executeSkill('success')
+      // Re-enable controls so the player can keep acting or end their turn.
+      this.setSkillButtonsEnabled(true)
+      this.endTurnBtn.setVisible(true)
       return
     }
 

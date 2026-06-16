@@ -59,7 +59,7 @@ defmodule MedoruWeb.DailyChallengesLive do
         </div>
 
         <%!-- Challenges Grid --%>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <%!-- Daily Test --%>
           <div class={[
             "card border transition-all",
@@ -203,6 +203,62 @@ defmodule MedoruWeb.DailyChallengesLive do
                   </button>
                 <% else %>
                   <.link navigate={~p"/daily-challenges/cards"} class="btn btn-primary btn-sm w-full">
+                    <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start")}
+                  </.link>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Daily Radical Hunt --%>
+          <div class={[
+            "card border transition-all",
+            if(@stats.daily_radical_hunt_completed,
+              do: "border-success/30 bg-success/5",
+              else: "border-base-300 bg-base-100"
+            )
+          ]}>
+            <div class="card-body">
+              <div class="flex items-center justify-between mb-4">
+                <div class={[
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  if(@stats.daily_radical_hunt_completed, do: "bg-success/20", else: "bg-warning/10")
+                ]}>
+                  <.icon
+                    name="hero-magnifying-glass"
+                    class={[
+                      "w-6 h-6",
+                      if(@stats.daily_radical_hunt_completed,
+                        do: "text-success",
+                        else: "text-warning"
+                      )
+                    ]}
+                  />
+                </div>
+                <%= if @stats.daily_radical_hunt_completed do %>
+                  <span class="badge badge-success">{gettext("Completed")}</span>
+                <% else %>
+                  <span class="badge badge-ghost">{gettext("Available")}</span>
+                <% end %>
+              </div>
+              <h3 class="card-title text-lg">{gettext("Daily Radical Hunt")}</h3>
+              <p class="text-sm text-secondary mt-2">
+                {gettext("Type kanji containing a chosen radical before time runs out.")}
+              </p>
+              <div class="mt-4 flex items-center gap-2 text-sm text-base-content/70">
+                <.icon name="hero-sparkles" class="w-4 h-4 text-warning" />
+                <span>{gettext("30 XP per kanji + 50 XP")}</span>
+              </div>
+              <div class="card-actions mt-4">
+                <%= if @stats.daily_radical_hunt_completed do %>
+                  <button class="btn btn-success btn-sm w-full" disabled>
+                    <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Done")}
+                  </button>
+                <% else %>
+                  <.link
+                    navigate={~p"/daily-challenges/radical-hunt"}
+                    class="btn btn-primary btn-sm w-full"
+                  >
                     <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start")}
                   </.link>
                 <% end %>

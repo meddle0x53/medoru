@@ -1,0 +1,262 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div
+    id="daily-radical-hunt-game"
+    phx-hook="GameFullscreen"
+    class="min-h-[calc(100vh-4rem)] bg-base-100"
+  >
+    <%= if @already_completed do %>
+      <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <.icon name="hero-check-circle" class="w-16 h-16 text-success mx-auto mb-4" />
+            <h2 class="text-xl font-bold">{gettext("Already Completed!")}</h2>
+            <p class="text-secondary">
+              {gettext("You have already completed today's Radical Hunt challenge.")}
+            </p>
+            <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
+              <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
+                {gettext("Back to Daily Challenges")}
+              </.link>
+              <.link navigate={~p"/dashboard"} class="btn btn-outline">
+                <.icon name="hero-home" class="w-4 h-4 mr-2" /> {gettext("Dashboard")}
+              </.link>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% else %>
+      <%= case @status do %>
+        <% :ready -> %>
+          <%!-- Ready Screen --%>
+          <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+            <div class="mb-6">
+              <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-4">
+                <.icon name="hero-magnifying-glass" class="w-8 h-8 sm:w-10 sm:h-10 text-warning" />
+              </div>
+              <h1 class="text-2xl sm:text-3xl font-bold text-base-content mb-2">
+                {gettext("Daily Radical Hunt")}
+              </h1>
+              <p class="text-secondary">
+                {gettext("Find as many kanji as you can that contain this radical")}
+              </p>
+            </div>
+
+            <%!-- Radical Preview --%>
+            <div class="card bg-base-200 border border-base-300 mb-6 max-w-sm mx-auto">
+              <div class="card-body">
+                <p class="text-sm text-secondary mb-2">{gettext("Hunt for kanji containing")}</p>
+                <div class="text-7xl sm:text-8xl font-bold text-warning mb-2">{@radical}</div>
+                <p class="text-lg text-base-content">
+                  {@radical_meaning}
+                </p>
+                <p class="text-sm text-secondary mt-1">
+                  {@valid_kanji_count} {gettext("possible kanji")} • {@timeout_seconds}s {gettext(
+                    "timeout"
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <%!-- XP Info --%>
+            <div class="badge badge-primary badge-lg mb-6">
+              <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+              {gettext("%{per_kanji} XP per kanji + %{base} XP bonus",
+                per_kanji: 30,
+                base: 50
+              )}
+            </div>
+
+            <%!-- Instructions --%>
+            <div class="text-sm text-secondary mb-8 space-y-1 max-w-md mx-auto">
+              <p>• {gettext("Type a kanji and press Enter or click Submit")}</p>
+              <p>• {gettext("No duplicates — each kanji counts only once")}</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-center gap-3">
+              <button
+                type="button"
+                phx-click="start_game_fullscreen"
+                class="btn btn-primary btn-lg min-h-[56px]"
+              >
+                <.icon name="hero-play" class="w-5 h-5 mr-2" />
+                {gettext("Start Game")}
+              </button>
+              <button
+                type="button"
+                phx-click="start_game"
+                class="btn btn-outline btn-lg min-h-[56px]"
+              >
+                <.icon name="hero-window" class="w-5 h-5 mr-2" />
+                {gettext("Play Windowed")}
+              </button>
+            </div>
+          </div>
+        <% :playing -> %>
+          <%!-- Playing Screen --%>
+          <div class="max-w-2xl mx-auto px-4 py-4">
+            <%!-- Timer & Found Bar --%>
+            <div class="flex items-center justify-between mb-4">
+              <div class={[
+                "text-2xl font-mono font-bold",
+                if(@time_remaining <= 10, do: "text-error", else: "text-base-content")
+              ]}>
+                {format_time(@time_remaining)}
+              </div>
+              <div class="text-sm text-secondary">
+                {length(@found_kanji)} {gettext("found")}
+              </div>
+              <div class="text-lg font-bold text-primary">
+                {current_xp(length(@found_kanji))} {gettext("XP")}
+              </div>
+            </div>
+
+            <%!-- Timer Progress Bar --%>
+            <div class="w-full bg-base-300 rounded-full h-2 mb-6">
+              <div
+                class={[
+                  "h-2 rounded-full transition-all duration-1000",
+                  if(@time_remaining <= 10, do: "bg-error", else: "bg-primary")
+                ]}
+                style={"width: #{trunc(@time_remaining / @timeout_seconds * 100)}%"}
+              >
+              </div>
+            </div>
+
+            <%!-- Radical Display --%>
+            <div class="text-center mb-6">
+              <div class="inline-block bg-warning/10 border-2 border-warning/30 rounded-2xl px-6 sm:px-8 py-4">
+                <p class="text-sm text-secondary mb-1">{gettext("Find kanji with")}</p>
+                <div class="text-5xl sm:text-6xl font-bold text-warning">{@radical}</div>
+              </div>
+            </div>
+
+            <%!-- Input Area --%>
+            <div class="max-w-sm mx-auto mb-4">
+              <form phx-submit="submit_kanji" class="flex gap-2">
+                <input
+                  type="text"
+                  name="kanji"
+                  value={@input_value}
+                  placeholder={gettext("Type a kanji...")}
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  class={[
+                    "flex-1 min-w-0 px-4 py-3 bg-base-100 border rounded-xl text-center text-2xl min-h-[56px]",
+                    "placeholder:text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary",
+                    case @last_result do
+                      :correct -> "border-success text-success"
+                      :incorrect -> "border-error text-error"
+                      :already_found -> "border-warning text-warning"
+                      _ -> "border-base-300 text-base-content"
+                    end
+                  ]}
+                />
+                <button
+                  type="submit"
+                  class="px-5 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-w-[56px]"
+                >
+                  <.icon name="hero-paper-airplane" class="w-5 h-5" />
+                </button>
+              </form>
+
+              <%!-- Feedback --%>
+              <div class="h-6 mt-2 text-center text-sm">
+                <%= case @last_result do %>
+                  <% :correct -> %>
+                    <span class="text-success font-medium">
+                      <.icon name="hero-check-circle" class="w-4 h-4 inline" />
+                      {gettext("Correct!")}
+                    </span>
+                  <% :incorrect -> %>
+                    <span class="text-error font-medium">
+                      <.icon name="hero-x-circle" class="w-4 h-4 inline" />
+                      {gettext("Not a valid kanji with this radical")}
+                    </span>
+                  <% :already_found -> %>
+                    <span class="text-warning font-medium">
+                      <.icon name="hero-exclamation-circle" class="w-4 h-4 inline" />
+                      {gettext("Already found!")}
+                    </span>
+                  <% _ -> %>
+                <% end %>
+              </div>
+            </div>
+
+            <%!-- Found Kanji Grid --%>
+            <%= if @found_kanji != [] do %>
+              <div class="mt-6">
+                <h3 class="text-sm font-medium text-secondary mb-2 text-center">
+                  {gettext("Found Kanji")}
+                </h3>
+                <div class="flex flex-wrap justify-center gap-2">
+                  <%= for kanji <- Enum.reverse(@found_kanji) do %>
+                    <div class="w-11 h-11 sm:w-12 sm:h-12 bg-success/10 border border-success/30 rounded-lg flex items-center justify-center text-lg sm:text-xl font-medium text-success">
+                      {kanji}
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% :game_over -> %>
+          <%!-- Game Over Screen --%>
+          <div class="max-w-2xl mx-auto px-4 py-8">
+            <div class="text-center mb-8">
+              <.icon name="hero-trophy" class="w-16 h-16 text-warning mx-auto mb-4" />
+              <h1 class="text-3xl font-bold text-base-content mb-2">
+                {gettext("Time's Up!")}
+              </h1>
+              <p class="text-secondary">
+                {length(@found_kanji)} {gettext("kanji found")}
+              </p>
+            </div>
+
+            <%!-- XP Breakdown --%>
+            <div class="card bg-base-100 border border-base-300 mb-6 max-w-sm mx-auto">
+              <div class="card-body">
+                <h3 class="font-semibold text-base-content mb-3">
+                  {gettext("XP Breakdown")}
+                </h3>
+                <%= if @found_kanji == [] do %>
+                  <p class="text-secondary text-center py-4">
+                    {gettext("No kanji found this round")}
+                  </p>
+                <% else %>
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                      <span class="text-secondary">
+                        {gettext("%{count} kanji found", count: length(@found_kanji))}
+                      </span>
+                      <span class="font-medium text-success">
+                        +{length(@found_kanji) * 30} {gettext("XP")}
+                      </span>
+                    </div>
+                  </div>
+                <% end %>
+                <div class="border-t border-base-300 pt-2 mt-2 flex justify-between text-sm">
+                  <span class="text-secondary">{gettext("Participation bonus")}</span>
+                  <span class="font-medium text-success">+50 {gettext("XP")}</span>
+                </div>
+                <div class="border-t border-base-300 pt-2 mt-2 flex justify-between font-bold text-lg">
+                  <span>{gettext("Total")}</span>
+                  <span class="text-success">{@xp_awarded} {gettext("XP")}</span>
+                </div>
+              </div>
+            </div>
+
+            <%!-- Actions --%>
+            <div class="flex flex-col sm:flex-row justify-center gap-3">
+              <.link
+                navigate={~p"/daily-challenges"}
+                class="btn btn-primary min-h-[56px]"
+              >
+                <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" />
+                {gettext("Back to Daily Challenges")}
+              </.link>
+            </div>
+          </div>
+      <% end %>
+    <% end %>
+  </div>
+</Layouts.app>

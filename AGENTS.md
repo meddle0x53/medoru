@@ -2,9 +2,9 @@
 
 ## Current State
 
-**Version**: 0.6.0 🔄 IN PROGRESS  
-**Status**: v0.6.0 in progress. Classroom Themes + Per-Chat Theme Settings + Writing Fill In test steps complete. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`.  
-**Tests**: 1375 passing (1 pre-existing flaky assertion in `LessonTestKeyboardTest`)  
+**Version**: 0.7.0 🔄 IN PROGRESS  
+**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`.  
+**Tests**: 1391 passing (1 pre-existing flaky assertion in `LessonTestKeyboardTest`)  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.7.0)
@@ -15,6 +15,8 @@
 - **Mobile Kanji Index search bar fix**: Rebuilt the `/kanji` search bar to match `/words` — plain styled `<input>` and `<button>` elements instead of DaisyUI `.btn`/`.input`, so the mobile CSS that forces a 44px min-width on `.btn` no longer squeezes the search field. Service worker cache bumped to `medoru-v34`.
 - **Word chat preview image crop fix**: Chat word previews (`WordChatPreview`) now use `object-top` so portrait images are anchored at the top instead of being cropped from the center, preventing heads/tops from being cut off.
 - **User English Progress**: Added `user_english_progress` table and `Medoru.Learning.UserEnglishProgress` schema for tracking words learned by users whose `learning_language` is English. Functions: `track_english_word_learned/2`, `untrack_english_word_learned/2`, `english_word_learned?/2`, `count_english_learned_words/1`, `list_english_learned_words/2`.
+- **English-learning word progress wired into UI**: Dashboard and profile learned-word counts, `/words` index/show cards, learned-words list (`/users/:id/words`), and the daily card game word source all use `user_english_progress` for users with `learning_language == "english"`. The `/words` index and show pages swap English meaning and Japanese word/reading for these users.
+- **Daily Radical Hunt challenge**: 4th daily challenge at `/daily-challenges/radical-hunt`. Picks a learned kanji, uses its first radical, ensures the radical has at least 10 related kanji (falls back to a common radical if needed), and runs a 120-second game. Awards 30 XP per found kanji plus a flat 50 XP participation bonus. Added to the daily challenges index and dashboard stats. Mobile input/button sizing uses plain styled markup to avoid DaisyUI mobile overrides.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**
