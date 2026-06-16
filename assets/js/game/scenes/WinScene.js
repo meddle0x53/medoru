@@ -15,6 +15,7 @@ export default class WinScene extends Phaser.Scene {
     const data = this.scene.settings.data || {}
     this.player = data.player
     this.enemy = data.enemy
+    this.tile = data.tile || null
     this.monster = getMonster(this.enemy?.template?.id || 'kasa_obake')
 
     this.challengeSystem = null
@@ -318,8 +319,9 @@ export default class WinScene extends Phaser.Scene {
     this.createButton(GAME_CONFIG.width / 2, 500, 'Continue', () => {
       this.player.loadout.statPoints = (this.player.loadout.statPoints || 0) + this.attributePoints
       this.player.addGold(this.goldReward)
+      if (this.tile) this.player.completeTile(this.tile.id)
       this.player.saveLoadout()
-      this.scene.start('LoadoutScene', { player: this.player })
+      this.scene.start('MapScene', { player: this.player })
     }, 180, 44, 0x27ae60, 0x2ecc71)
   }
 

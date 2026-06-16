@@ -114,6 +114,7 @@ export const ALL_ACTIONS = [
     nameJa: '集中',
     description: 'Raise readiness to maximum.',
     type: 'buff',
+    buffType: 'max_readiness',
     equipmentType: null,
     requiredEquipment: null,
     staminaCost: 2,

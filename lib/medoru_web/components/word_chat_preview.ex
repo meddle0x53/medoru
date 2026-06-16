@@ -34,7 +34,7 @@ defmodule MedoruWeb.WordChatPreview do
             <img
               src={@word.image_path}
               alt={@word.text}
-              class="w-full max-h-24 object-cover rounded-lg border border-base-300"
+              class="w-full max-h-24 object-cover object-top rounded-lg border border-base-300"
               loading="lazy"
             />
           </div>
@@ -87,7 +87,7 @@ defmodule MedoruWeb.WordChatPreview do
 
     image_html =
       if word.image_path do
-        ~s|<div class="mb-1.5"><img src="#{word.image_path}" alt="#{escape(word.text)}" class="w-full max-h-24 object-cover rounded-lg border border-base-300" loading="lazy" /></div>|
+        ~s|<div class="mb-1.5"><img src="#{word.image_path}" alt="#{escape(word.text)}" class="w-full max-h-24 object-cover object-top rounded-lg border border-base-300" loading="lazy" /></div>|
       else
         ""
       end

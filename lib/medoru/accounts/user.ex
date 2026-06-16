@@ -6,6 +6,7 @@ defmodule Medoru.Accounts.User do
   import Ecto.Changeset
 
   @type_values ["student", "teacher", "admin"]
+  @learning_languages ["japanese", "english", "bulgarian"]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -18,6 +19,7 @@ defmodule Medoru.Accounts.User do
     field :type, :string, default: "student"
     field :moderator, :boolean, default: false
     field :is_deleted, :boolean, default: false
+    field :learning_language, :string, default: "japanese"
 
     has_one :profile, Medoru.Accounts.UserProfile
     has_one :stats, Medoru.Accounts.UserStats
@@ -36,13 +38,15 @@ defmodule Medoru.Accounts.User do
       :avatar_url,
       :type,
       :moderator,
-      :is_deleted
+      :is_deleted,
+      :learning_language
     ])
     |> validate_required([:email, :provider, :provider_uid, :moderator])
     |> validate_required([:email, :provider, :provider_uid])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/)
     |> validate_inclusion(:provider, ["google"])
     |> validate_inclusion(:type, @type_values)
+    |> validate_inclusion(:learning_language, @learning_languages)
     |> unique_constraint(:email)
     |> unique_constraint([:provider, :provider_uid],
       name: :users_provider_provider_uid_index,
@@ -120,4 +124,19 @@ defmodule Medoru.Accounts.User do
   Returns list of valid user types.
   """
   def types, do: @type_values
+
+  @doc """
+  Returns list of valid learning languages.
+  """
+  def learning_languages, do: @learning_languages
+
+  @doc """
+  Changeset for updating the user's learning language.
+  """
+  def learning_language_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:learning_language])
+    |> validate_required([:learning_language])
+    |> validate_inclusion(:learning_language, @learning_languages)
+  end
 end

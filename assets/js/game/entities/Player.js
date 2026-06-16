@@ -1,9 +1,11 @@
 import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
-import { ALL_ACTIONS, splitActions, getMaxActiveActions } from '../data/actions.js'
+import { splitActions, getMaxActiveActions } from '../data/actions.js'
 import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
+import { generateMap } from '../systems/MapGenerator.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
+const MAP_VERSION = 2
 
 // Scaling letter multipliers
 const SCALING_MULTIPLIERS = {
@@ -124,6 +126,8 @@ export default class Player extends Character {
       gold: 0,
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
+      mapState: null,
+      mapVersion: MAP_VERSION,
     }
 
     // Apply stat allocations to base stats
@@ -396,6 +400,14 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
         }
+        if (!loadout.mapState || typeof loadout.mapState !== 'object') {
+          loadout.mapState = null
+        }
+        // Reset the map when the generation logic changes so players see the new layout.
+        if (loadout.mapVersion !== MAP_VERSION) {
+          loadout.mapState = null
+          loadout.mapVersion = MAP_VERSION
+        }
         return loadout
       }
     } catch (e) {
@@ -577,6 +589,109 @@ export default class Player extends Character {
     if (activeIdx >= 0) {
       this.loadout.activeActionIds[activeIdx] = newActionId
     }
+    this.refreshActions()
+    this.saveLoadout()
+  }
+
+  // ---------- Map / Rogue-like State ----------
+
+  ensureMapState() {
+    if (!this.loadout.mapState) {
+      this.loadout.mapState = { currentMapIndex: 0, currentTileId: null, maps: [] }
+    }
+    const ms = this.loadout.mapState
+    if (!ms.maps[ms.currentMapIndex]) {
+      ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
+    }
+    if (!ms.currentTileId) {
+      ms.currentTileId = ms.maps[ms.currentMapIndex].columns[0][0].id
+    }
+    this.saveLoadout()
+    return this.loadout.mapState
+  }
+
+  setCurrentMap(map) {
+    if (!this.loadout.mapState) {
+      this.loadout.mapState = { currentMapIndex: 0, currentTileId: null, maps: [] }
+    }
+    this.loadout.mapState.currentMapIndex = map.index
+    this.loadout.mapState.maps[map.index] = map
+    this.loadout.mapState.currentTileId = map.columns[0][0].id
+    this.saveLoadout()
+  }
+
+  getCurrentMap() {
+    if (!this.loadout.mapState) return null
+    return this.loadout.mapState.maps[this.loadout.mapState.currentMapIndex] || null
+  }
+
+  getCurrentTileId() {
+    return this.loadout.mapState?.currentTileId || null
+  }
+
+  completeTile(tileId) {
+    const map = this.getCurrentMap()
+    if (!map) return
+    const tile = map.columns.flat().find(t => t.id === tileId)
+    if (tile) tile.completed = true
+    this.loadout.mapState.currentTileId = tileId
+    this.saveLoadout()
+  }
+
+  advanceMap() {
+    const ms = this.loadout.mapState
+    if (!ms) return
+    ms.currentMapIndex = (ms.currentMapIndex + 1) % 2
+    ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
+    ms.currentTileId = ms.maps[ms.currentMapIndex].columns[0][0].id
+    this.saveLoadout()
+  }
+
+  restartMap() {
+    const ms = this.loadout.mapState
+    if (!ms) return
+    ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
+    ms.currentTileId = ms.maps[ms.currentMapIndex].columns[0][0].id
+    this.saveLoadout()
+  }
+
+  resetToFreshHero() {
+    const starterActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
+    this.loadout = {
+      class: 'warrior',
+      activeItemIds: ['health_potion', 'stone'],
+      heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
+      weaponCharmIds: [],
+      shieldCharmIds: [],
+      selectedActionIds: [...starterActionIds],
+      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
+      statPoints: 10,
+      statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      gold: 0,
+      inventory: { health_potion: 2, stone: 1 },
+      ownedCharmIds: [],
+      mapState: null,
+      mapVersion: MAP_VERSION,
+    }
+
+    this.baseStats = { vitality: 20, stamina: 10, skill: 10, strength: 20, mana: 5, luck: 5 }
+    this.maxHp = 80 + this.baseStats.vitality * 5
+    this.hp = this.maxHp
+    this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
+    this.stamina = this.maxStamina
+
+    this.buffs = []
+    this.activeKanjiBonus = 0
+    this.activeShieldBonus = 0
+    this.setupDefenceUsed = false
+    this.readiness = 0
+    this.reactionMultiplier = 1
+    this.lastReactionCorrect = false
+    this.itemEffectModifier = 0
+    this.parrySetup = false
+    this.parryKanjiQuality = null
+    this._charmEffects = null
+
     this.refreshActions()
     this.saveLoadout()
   }

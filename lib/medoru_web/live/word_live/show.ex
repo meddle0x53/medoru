@@ -44,6 +44,7 @@ defmodule MedoruWeb.WordLive.Show do
     else
       locale = socket.assigns.locale
       localized_meaning = Content.get_localized_meaning(word, locale)
+      page_image = og_image_url(word.image_path)
 
       # Check if user has learned this word (if authenticated)
       word_learned =
@@ -69,7 +70,9 @@ defmodule MedoruWeb.WordLive.Show do
        |> assign(
          :page_title,
          gettext("%{word} - %{meaning}", word: word.text, meaning: localized_meaning)
-       )}
+       )
+       |> assign(:page_description, localized_meaning)
+       |> assign(:page_image, page_image)}
     end
   end
 
@@ -278,6 +281,16 @@ defmodule MedoruWeb.WordLive.Show do
   # Helper for template: get localized word meaning
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
+  end
+
+  defp og_image_url(nil), do: nil
+
+  defp og_image_url(path) when is_binary(path) do
+    cond do
+      String.starts_with?(path, "http://") or String.starts_with?(path, "https://") -> path
+      String.starts_with?(path, "/") -> MedoruWeb.Endpoint.url() <> path
+      true -> MedoruWeb.Endpoint.url() <> "/" <> path
+    end
   end
 
   # Helper for template: build return path with step and practice params

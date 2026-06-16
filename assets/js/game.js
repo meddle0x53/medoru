@@ -4,6 +4,7 @@
  */
 import { GAME_CONFIG } from './game/config.js'
 import BootScene from './game/scenes/BootScene.js'
+import MapScene from './game/scenes/MapScene.js'
 import LoadoutScene from './game/scenes/LoadoutScene.js'
 import BattleScene from './game/scenes/BattleScene.js'
 import WinScene from './game/scenes/WinScene.js'
@@ -33,7 +34,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, LoadoutScene, BattleScene, WinScene],
+    scene: [BootScene, MapScene, LoadoutScene, BattleScene, WinScene],
     physics: {
       default: 'arcade',
       arcade: {

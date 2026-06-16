@@ -16,6 +16,7 @@ defmodule Medoru.Learning do
 
   alias Medoru.Learning.{
     UserProgress,
+    UserEnglishProgress,
     LessonProgress,
     DailyStreak,
     ReviewSchedule,
@@ -678,6 +679,112 @@ defmodule Medoru.Learning do
     |> offset(^offset)
     |> select([up, w], w)
     |> Repo.all()
+  end
+
+  # ============================================================================
+  # User English Progress
+  # ============================================================================
+
+  @doc """
+  Checks if a user has a specific word in their English-learning progress.
+
+  ## Examples
+
+      iex> english_word_learned?(user_id, word_id)
+      true
+
+  """
+  def english_word_learned?(user_id, word_id) do
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id and uep.word_id == ^word_id)
+    |> Repo.exists?()
+  end
+
+  @doc """
+  Tracks a word as learned for an English-learning user.
+
+  Returns `{:ok, %UserEnglishProgress{}}` on success.
+  If the word is already tracked, returns the existing record unchanged.
+
+  ## Examples
+
+      iex> track_english_word_learned(user_id, word_id)
+      {:ok, %UserEnglishProgress{}}
+
+  """
+  def track_english_word_learned(user_id, word_id) do
+    case get_english_word_progress(user_id, word_id) do
+      nil ->
+        %UserEnglishProgress{}
+        |> UserEnglishProgress.changeset(%{user_id: user_id, word_id: word_id})
+        |> Repo.insert()
+
+      progress ->
+        {:ok, progress}
+    end
+  end
+
+  @doc """
+  Removes a word from a user's English-learning progress.
+
+  ## Examples
+
+      iex> untrack_english_word_learned(user_id, word_id)
+      {:ok, %UserEnglishProgress{}}
+
+  """
+  def untrack_english_word_learned(user_id, word_id) do
+    case get_english_word_progress(user_id, word_id) do
+      nil ->
+        {:error, :not_learned}
+
+      progress ->
+        Repo.delete(progress)
+    end
+  end
+
+  @doc """
+  Gets the total number of words a user has learned as an English learner.
+
+  ## Examples
+
+      iex> count_english_learned_words(user_id)
+      42
+
+  """
+  def count_english_learned_words(user_id) do
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Gets the list of words a user has learned as an English learner, with pagination.
+
+  ## Examples
+
+      iex> list_english_learned_words(user_id, limit: 30, offset: 0)
+      [%Word{}, ...]
+
+  """
+  def list_english_learned_words(user_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 30)
+    offset = Keyword.get(opts, :offset, 0)
+
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id)
+    |> join(:inner, [uep], w in Word, on: w.id == uep.word_id)
+    |> order_by([uep, w], desc: uep.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> select([uep, w], w)
+    |> Repo.all()
+  end
+
+  defp get_english_word_progress(user_id, word_id) do
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id and uep.word_id == ^word_id)
+    |> Repo.one()
   end
 
   @doc """

@@ -9,6 +9,70 @@
       </p>
     </div>
 
+    <%!-- Learning Language --%>
+    <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg">
+          <.icon name="hero-language" class="w-5 h-5 text-primary" /> {gettext(
+            "Learning Language"
+          )}
+        </h2>
+        <p class="text-sm text-base-content/60 mb-4">
+          {gettext(
+            "Choose the language you are currently learning. This will be shown on your public profile."
+          )}
+        </p>
+
+        <.form
+          for={@learning_language_form}
+          id="learning-language-form"
+          phx-submit="save_learning_language"
+          class="flex flex-col sm:flex-row gap-3"
+        >
+          <select
+            name={@learning_language_form[:learning_language].name}
+            class={[
+              "select select-bordered flex-1 min-h-[44px] text-base",
+              @learning_language_form[:learning_language].errors != [] && "select-error"
+            ]}
+          >
+            <option
+              value="japanese"
+              selected={
+                to_string(@learning_language_form[:learning_language].value) == "japanese"
+              }
+            >
+              {gettext("Japanese")}
+            </option>
+            <option
+              value="english"
+              selected={to_string(@learning_language_form[:learning_language].value) == "english"}
+            >
+              {gettext("English")}
+            </option>
+            <option
+              value="bulgarian"
+              selected={
+                to_string(@learning_language_form[:learning_language].value) == "bulgarian"
+              }
+            >
+              {gettext("Bulgarian")}
+            </option>
+          </select>
+          <button
+            type="submit"
+            class="btn btn-primary min-h-[48px] touch-target"
+          >
+            <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Save")}
+          </button>
+        </.form>
+
+        <%= for err <- Enum.map(@learning_language_form[:learning_language].errors || [], &elem(&1, 0)) do %>
+          <p class="text-error text-sm mt-2">{err}</p>
+        <% end %>
+      </div>
+    </div>
+
     <%!-- Profile Form --%>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="card-body">

@@ -99,7 +99,11 @@ export default class TurnManager {
         break
       }
       case 'buff': {
-        performer.addBuff({ type: skill.buffType, value: 0 })
+        if (skill.buffType === 'max_readiness') {
+          performer.setReadiness(1)
+        } else {
+          performer.addBuff({ type: skill.buffType, value: 0 })
+        }
         result = { type: 'buff', buffType: skill.buffType, multiplier }
         break
       }

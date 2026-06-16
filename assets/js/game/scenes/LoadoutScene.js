@@ -13,6 +13,10 @@ export default class LoadoutScene extends Phaser.Scene {
     super({ key: 'LoadoutScene' })
   }
 
+  init(data) {
+    this.tile = data.tile || null
+  }
+
   create() {
     const passedPlayer = this.scene.settings.data?.player
     if (passedPlayer) {
@@ -1444,6 +1448,6 @@ export default class LoadoutScene extends Phaser.Scene {
     }
     this.player.saveLoadout()
     this.player.refreshActions()
-    this.scene.start('BattleScene', { player: this.player })
+    this.scene.start('BattleScene', { player: this.player, tile: this.tile })
   }
 }

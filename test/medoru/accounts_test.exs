@@ -77,6 +77,18 @@ defmodule Medoru.AccountsTest do
       assert {:error, %Ecto.Changeset{}} = Accounts.create_user(attrs)
     end
 
+    test "create_user/1 defaults learning_language to japanese" do
+      attrs = %{
+        email: "test@example.com",
+        provider: "google",
+        provider_uid: "123456789",
+        name: "Test User"
+      }
+
+      assert {:ok, %User{} = user} = Accounts.create_user(attrs)
+      assert user.learning_language == "japanese"
+    end
+
     test "update_user/2 with valid data updates the user" do
       user = user_fixture()
       update_attrs = %{name: "Updated Name"}
@@ -89,6 +101,27 @@ defmodule Medoru.AccountsTest do
       user = user_fixture()
       assert {:error, %Ecto.Changeset{}} = Accounts.update_user(user, @invalid_attrs)
       assert user == Accounts.get_user!(user.id)
+    end
+
+    test "update_learning_language/2 updates the user's learning language" do
+      user = user_fixture()
+
+      assert {:ok, %User{} = user} =
+               Accounts.update_learning_language(user, %{learning_language: "english"})
+
+      assert user.learning_language == "english"
+
+      assert {:ok, %User{} = user} =
+               Accounts.update_learning_language(user, %{learning_language: "bulgarian"})
+
+      assert user.learning_language == "bulgarian"
+    end
+
+    test "update_learning_language/2 with invalid language returns error changeset" do
+      user = user_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Accounts.update_learning_language(user, %{learning_language: "french"})
     end
 
     test "delete_user/1 deletes the user" do

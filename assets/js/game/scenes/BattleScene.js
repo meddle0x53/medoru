@@ -7,6 +7,7 @@ import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
+import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
 import { getWindowGameData, sendRunResult } from '../api.js'
 
@@ -15,12 +16,16 @@ export default class BattleScene extends Phaser.Scene {
     super({ key: 'BattleScene' })
   }
 
+  init(data) {
+    this.tile = data.tile || null
+  }
+
   create() {
     const userData = getWindowGameData()
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
-    this.enemy = new Enemy('oni')
+    this.enemy = this.createEnemyForTile()
     this.turnManager = new TurnManager(this.player, this.enemy)
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
 
@@ -84,8 +89,22 @@ export default class BattleScene extends Phaser.Scene {
       window.visualViewport.addEventListener('resize', this._onVisualViewportResize)
     }
 
-    this.addCombatLog('Battle start! Defeat the Kasa-obake!')
+    const enemyName = this.enemy.name || 'the enemy'
+    this.addCombatLog(`Battle start! Defeat ${enemyName}!`)
     this.onTurnChange('player')
+  }
+
+  createEnemyForTile() {
+    const type = this.tile?.type
+    switch (type) {
+      case TILE_TYPES.MINI_BOSS:
+        return new Enemy('mini_boss')
+      case TILE_TYPES.BOSS:
+        return new Enemy('boss')
+      case TILE_TYPES.BATTLE:
+      default:
+        return new Enemy('oni')
+    }
   }
 
   update(time, delta) {
@@ -287,10 +306,13 @@ export default class BattleScene extends Phaser.Scene {
     // Action panel — modern rounded glass panel behind hero sprite
     this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
 
-    // TEMPORARY: Win Battle button for testing the reward loop
+    // TEMPORARY: Win Battle button for testing the reward loop (hidden on boss tiles)
     this.winBattleBtn = this.createButton(120, 140, 'Win Battle', () => {
-      this.scene.start('WinScene', { player: this.player, enemy: this.enemy })
+      this.scene.start('WinScene', { player: this.player, enemy: this.enemy, tile: this.tile })
     }, 160, 36, 0x27ae60, 0x2ecc71)
+    if (this.tile?.type === TILE_TYPES.BOSS) {
+      this.winBattleBtn.setVisible(false)
+    }
 
     this.skillButtons = []
     // All active actions get a button (parry is passive but shown)
@@ -1583,6 +1605,51 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Focus uses kanji drawing for its skill kanji (集)
+    if (skill.id === 'focus') {
+      const kanji = skill.kanji || '集'
+      let strokeData = null
+      const kanjiData = this.player.kanjiList.find(k => k.character === kanji)
+      if (kanjiData?.stroke_data?.strokes?.length > 0) {
+        strokeData = kanjiData.stroke_data
+      }
+
+      if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
+        this.challengeActive = false
+        this.executeSkill('success')
+        return
+      }
+
+      this.challengeActive = true
+      this.setSkillButtonsEnabled(false)
+      this.endTurnBtn.setVisible(false)
+
+      this.kanjiDrawing.start(strokeData, `Focus! Draw ${kanji}:`, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          if (result.completed) {
+            this.addCombatLog(`${kanji} drawn! Focus achieved!`)
+            this.executeSkill('success')
+          } else {
+            this.addCombatLog(`${kanji} failed! Focus lost.`)
+            this.executeSkill('fail')
+          }
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      })
+      return
+    }
+
     // Use Item opens the item menu directly
     if (skill.id === 'use_item') {
       this.challengeActive = false
@@ -2015,11 +2082,19 @@ export default class BattleScene extends Phaser.Scene {
         turnCount: this.turnManager.turnCount,
         timestamp: new Date().toISOString(),
       })
-      this.scene.start('WinScene', { player: this.player, enemy: this.enemy })
+
+      if (this.tile?.type === TILE_TYPES.BOSS) {
+        this.player.completeTile(this.tile.id)
+        this.player.advanceMap()
+        this.scene.start('MapScene', { player: this.player })
+        return
+      }
+
+      this.scene.start('WinScene', { player: this.player, enemy: this.enemy, tile: this.tile })
       return
     }
 
-    // Defeat handling — keep existing static overlay
+    // Defeat handling — return to map and restart current map
     this.setPlayerPose('defeated')
 
     const title = 'DEFEAT...'
@@ -2034,13 +2109,14 @@ export default class BattleScene extends Phaser.Scene {
       color: '#' + color.toString(16).padStart(6, '0'),
     }).setOrigin(0.5).setDepth(200)
 
-    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, 'The Kasa-obake was too strong...', {
+    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, `${this.enemy.name || 'The enemy'} ended your run...`, {
       ...FONTS.default,
       fontSize: '16px',
     }).setOrigin(0.5).setDepth(200)
 
-    const restartBtn = this.createButton(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60, 'Play Again', () => {
-      this.scene.restart()
+    const restartBtn = this.createButton(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60, 'Restart Run', () => {
+      this.player.resetToFreshHero()
+      this.scene.start('MapScene', { player: this.player })
     })
     restartBtn.bg.setDepth(200)
     restartBtn.text.setDepth(200)

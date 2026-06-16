@@ -4,6 +4,8 @@ defmodule MedoruWeb.SettingsLiveTest do
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
 
+  alias Medoru.Accounts
+
   describe "Profile settings page" do
     setup do
       user = user_fixture_with_registration()
@@ -16,6 +18,30 @@ defmodule MedoruWeb.SettingsLiveTest do
       assert has_element?(view, "h1", "Profile Settings")
       assert has_element?(view, "input[name=\"user_profile[display_name]\"]")
       assert has_element?(view, "textarea[name=\"user_profile[bio]\"]")
+    end
+
+    test "renders learning language form", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "h2", "Learning Language")
+      assert has_element?(view, "select[name=\"user[learning_language]\"]")
+      assert has_element?(view, "option[value=\"japanese\"]")
+      assert has_element?(view, "option[value=\"english\"]")
+      assert has_element?(view, "option[value=\"bulgarian\"]")
+    end
+
+    test "updates learning language", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      result =
+        view
+        |> form("#learning-language-form", user: %{learning_language: "english"})
+        |> render_submit()
+
+      assert {:error, {:live_redirect, %{to: "/settings/profile"}}} = result
+
+      updated_user = Accounts.get_user!(user.id)
+      assert updated_user.learning_language == "english"
     end
 
     test "updates profile with valid data", %{conn: conn, user: user} do

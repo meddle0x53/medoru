@@ -398,6 +398,52 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
+  # English learning progress
+  # ============================================================================
+
+  describe "english learning progress" do
+    setup do
+      user = user_fixture()
+      word = word_fixture()
+      %{user: user, word: word}
+    end
+
+    test "track_english_word_learned creates progress", %{user: user, word: word} do
+      assert {:ok, progress} = Learning.track_english_word_learned(user.id, word.id)
+      assert progress.user_id == user.id
+      assert progress.word_id == word.id
+      assert Learning.english_word_learned?(user.id, word.id)
+    end
+
+    test "track_english_word_learned is idempotent", %{user: user, word: word} do
+      assert {:ok, progress1} = Learning.track_english_word_learned(user.id, word.id)
+      assert {:ok, progress2} = Learning.track_english_word_learned(user.id, word.id)
+      assert progress1.id == progress2.id
+      assert Learning.count_english_learned_words(user.id) == 1
+    end
+
+    test "untrack_english_word_learned removes progress", %{user: user, word: word} do
+      Learning.track_english_word_learned(user.id, word.id)
+      assert {:ok, _} = Learning.untrack_english_word_learned(user.id, word.id)
+      refute Learning.english_word_learned?(user.id, word.id)
+    end
+
+    test "untrack_english_word_learned returns error when not learned", %{
+      user: user,
+      word: word
+    } do
+      assert {:error, :not_learned} =
+               Learning.untrack_english_word_learned(user.id, word.id)
+    end
+
+    test "list_english_learned_words returns learned words", %{user: user, word: word} do
+      Learning.track_english_word_learned(user.id, word.id)
+      assert [returned_word] = Learning.list_english_learned_words(user.id)
+      assert returned_word.id == word.id
+    end
+  end
+
+  # ============================================================================
   # Helpers
   # ============================================================================
 

@@ -18,6 +18,26 @@
     <.live_title default="Medoru" suffix=" · Learn Japanese">
       {assigns[:page_title]}
     </.live_title>
+
+    <%!-- Open Graph / social preview --%>
+    <meta property="og:site_name" content="Medoru" />
+    <meta property="og:type" content="website" />
+    <%= if assigns[:page_title] do %>
+      <meta property="og:title" content={assigns[:page_title]} />
+    <% else %>
+      <meta property="og:title" content="Medoru" />
+    <% end %>
+    <%= if assigns[:page_description] do %>
+      <meta property="og:description" content={assigns[:page_description]} />
+    <% else %>
+      <meta property="og:description" content={gettext("Learn Japanese with Medoru")} />
+    <% end %>
+    <%= if assigns[:page_image] do %>
+      <meta property="og:image" content={assigns[:page_image]} />
+      <meta property="og:image:width" content="300" />
+      <meta property="og:image:height" content="300" />
+    <% end %>
+
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href={~p"/images/apple-touch-icon.png"} />
     <link rel="manifest" href="/manifest.json" />

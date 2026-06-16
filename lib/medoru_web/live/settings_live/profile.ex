@@ -35,6 +35,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
       end
 
     changeset = Accounts.change_profile(profile, %{})
+    learning_language_changeset = Accounts.change_learning_language(user, %{})
 
     # Load user badges
     user_badges = Gamification.list_user_badges(user.id)
@@ -57,6 +58,7 @@ defmodule MedoruWeb.SettingsLive.Profile do
      |> assign(:page_title, gettext("Profile Settings"))
      |> assign(:profile, profile)
      |> assign(:form, to_form(changeset))
+     |> assign(:learning_language_form, to_form(learning_language_changeset))
      |> assign(:uploaded_files, [])
      |> assign(:user_badges, user_badges)
      |> assign(:featured_badge, featured_badge)
@@ -171,6 +173,36 @@ defmodule MedoruWeb.SettingsLive.Profile do
 
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("save_learning_language", %{"user" => user_params}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case Accounts.update_learning_language(user, user_params) do
+      {:ok, updated_user} ->
+        refreshed_user = Accounts.get_user_with_profile(updated_user.id)
+        unread_count = Medoru.Notifications.count_unread_notifications(updated_user.id)
+        locale = socket.assigns.current_scope.locale
+
+        {:noreply,
+         socket
+         |> assign(:current_scope, %{
+           current_user: refreshed_user,
+           unread_count: unread_count,
+           locale: locale,
+           theme: refreshed_user.profile && refreshed_user.profile.theme
+         })
+         |> assign(
+           :learning_language_form,
+           to_form(Accounts.change_learning_language(refreshed_user, %{}))
+         )
+         |> put_flash(:info, gettext("Learning language updated successfully."))
+         |> push_navigate(to: ~p"/settings/profile")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :learning_language_form, to_form(changeset))}
     end
   end
 

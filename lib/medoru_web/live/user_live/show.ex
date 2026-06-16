@@ -324,6 +324,21 @@ defmodule MedoruWeb.UserLive.Show do
   defp gender_icon_class(2), do: "text-purple-500"
   defp gender_icon_class(_), do: "text-base-content/50"
 
+  defp learning_language_label("japanese"), do: gettext("Japanese")
+  defp learning_language_label("english"), do: gettext("English")
+  defp learning_language_label("bulgarian"), do: gettext("Bulgarian")
+  defp learning_language_label(_), do: nil
+
+  defp learning_language_text(language) do
+    label = learning_language_label(language)
+
+    if label do
+      gettext("Learning %{language}", language: label)
+    else
+      nil
+    end
+  end
+
   defp get_daily_challenges_status(user_id) do
     challenges = Learning.get_todays_challenges(user_id)
     has_any = map_size(challenges) > 0

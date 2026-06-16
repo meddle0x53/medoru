@@ -180,6 +180,22 @@ defmodule Medoru.Accounts do
     User.changeset(user, attrs)
   end
 
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking learning language changes.
+  """
+  def change_learning_language(%User{} = user, attrs \\ %{}) do
+    User.learning_language_changeset(user, attrs)
+  end
+
+  @doc """
+  Updates a user's learning language.
+  """
+  def update_learning_language(%User{} = user, attrs) do
+    user
+    |> User.learning_language_changeset(attrs)
+    |> Repo.update()
+  end
+
   # Admin User Management
 
   @doc """

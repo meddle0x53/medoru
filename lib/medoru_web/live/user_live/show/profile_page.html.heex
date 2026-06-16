@@ -136,6 +136,16 @@
               </div>
             <% end %>
 
+            <%!-- Learning Language --%>
+            <%= if @user.learning_language do %>
+              <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-base-content/60 justify-center sm:justify-start">
+                <span class="flex items-center gap-1">
+                  <.icon name="hero-language" class="w-4 h-4" />
+                  {learning_language_text(@user.learning_language)}
+                </span>
+              </div>
+            <% end %>
+
             <%!-- Bio --%>
             <%= if @profile && @profile.bio do %>
               <div class="mt-4 text-base-content/80 max-w-xl prose prose-sm dark:prose-invert">

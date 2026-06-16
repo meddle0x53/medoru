@@ -21,6 +21,9 @@ export default class BootScene extends Phaser.Scene {
     // Battle background
     this.load.image('battle_background', '/images/game/battle_background.png')
 
+    // Map backgrounds
+    this.load.image('map_level_1', '/images/game/map_level_1.png')
+
     // Loadout portrait
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 
@@ -46,6 +49,6 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('LoadoutScene')
+    this.scene.start('MapScene')
   }
 }

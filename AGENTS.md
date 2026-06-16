@@ -4,8 +4,17 @@
 
 **Version**: 0.6.0 🔄 IN PROGRESS  
 **Status**: v0.6.0 in progress. Classroom Themes + Per-Chat Theme Settings + Writing Fill In test steps complete. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`.  
-**Tests**: 1353 passing (1 pre-existing flaky distractor assertion in `LessonTestGeneratorTest`)  
+**Tests**: 1375 passing (1 pre-existing flaky assertion in `LessonTestKeyboardTest`)  
 **URL**: https://medoru.net
+
+### What's In Progress (v0.7.0)
+- **Learning Language setting**: `users.learning_language` string column (default `japanese`, options: `english`, `bulgarian`). Editable on `/settings/profile` and displayed (localized) on public profile pages.
+- **Word Open Graph previews**: `/words/:id` pages now include `og:title`, `og:description`, and `og:image` meta tags. If the word has an `image_path`, the word picture is used as the social-preview image.
+- **Kanji stroke path normalization fix**: Added `Medoru.Content.KanjiStrokePathFix` to expand chained SVG path segments (e.g. multiple cubic bezier segments after a single `c`/`C` command) so the client-side stroke parser computes the correct expected endpoints. Run `Medoru.Content.KanjiStrokePathFix.apply()` to backfill the dev/production DB.
+- **Daily Card Game English-learning mode**: For users with `learning_language` set to `english`, the daily card game shows English meanings on cards and asks for the Japanese word or reading on a match. All other users keep the original Japanese-word / meaning-input behavior.
+- **Mobile Kanji Index search bar fix**: Rebuilt the `/kanji` search bar to match `/words` — plain styled `<input>` and `<button>` elements instead of DaisyUI `.btn`/`.input`, so the mobile CSS that forces a 44px min-width on `.btn` no longer squeezes the search field. Service worker cache bumped to `medoru-v34`.
+- **Word chat preview image crop fix**: Chat word previews (`WordChatPreview`) now use `object-top` so portrait images are anchored at the top instead of being cropped from the center, preventing heads/tops from being cut off.
+- **User English Progress**: Added `user_english_progress` table and `Medoru.Learning.UserEnglishProgress` schema for tracking words learned by users whose `learning_language` is English. Functions: `track_english_word_learned/2`, `untrack_english_word_learned/2`, `english_word_learned?/2`, `count_english_learned_words/1`, `list_english_learned_words/2`.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

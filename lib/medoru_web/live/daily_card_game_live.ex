@@ -11,6 +11,7 @@ defmodule MedoruWeb.DailyCardGameLive do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     locale = socket.assigns.current_scope.locale || "en"
+    english_mode? = user.learning_language == "english"
 
     if Learning.daily_challenge_completed?(user.id, "daily_cards") do
       {:ok,
@@ -57,6 +58,7 @@ defmodule MedoruWeb.DailyCardGameLive do
          |> assign(:pair_count, @pair_count)
          |> assign(:streak, get_streak(user.id))
          |> assign(:locale, locale)
+         |> assign(:english_mode, english_mode?)
          |> assign(:show_input_modal, false)
          |> assign(:input_word, nil)
          |> assign(:input_error, nil)
@@ -114,13 +116,23 @@ defmodule MedoruWeb.DailyCardGameLive do
   end
 
   @impl true
-  def handle_event("submit_answer", _params, socket) do
+  def handle_event("submit_answer", params, socket) do
     socket = assign(socket, :input_disabled, true)
     session = socket.assigns.session
     word = socket.assigns.input_word
-    answer = String.trim(socket.assigns.answer_meaning)
 
-    if validate_meaning(answer, word, socket.assigns.locale) do
+    answer =
+      (params["meaning"] || socket.assigns.answer_meaning || "")
+      |> String.trim()
+
+    correct? =
+      if socket.assigns.english_mode do
+        validate_japanese_answer(answer, word)
+      else
+        validate_meaning(answer, word, socket.assigns.locale)
+      end
+
+    if correct? do
       # Correct - collect the flipped cards
       updated_session = collect_flipped_cards(session)
 
@@ -431,6 +443,32 @@ defmodule MedoruWeb.DailyCardGameLive do
     |> Enum.reject(&(&1 == ""))
   end
 
+  defp validate_japanese_answer(answer, _word) when answer == "", do: false
+
+  defp validate_japanese_answer(answer, word) do
+    answer = String.trim(answer)
+
+    valid_answers =
+      [word.text, word.reading]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.flat_map(&split_readings/1)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    Enum.any?(valid_answers, fn valid ->
+      String.downcase(valid) == String.downcase(answer)
+    end)
+  end
+
+  defp split_readings(nil), do: []
+
+  defp split_readings(text) do
+    text
+    |> String.split(~r{[/／]})
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
   defp card_states(session) do
     cards_state = session.cards_state || %{}
     card_positions = cards_state["card_positions"] || []
@@ -451,7 +489,7 @@ defmodule MedoruWeb.DailyCardGameLive do
     card_positions = cards_state["card_positions"] || []
     word_id = Enum.at(card_positions, position)
 
-    Enum.find(words, %{text: "?", reading: ""}, fn w ->
+    Enum.find(words, %{text: "?", reading: "", meaning: "?"}, fn w ->
       w.id == word_id
     end)
   end
@@ -490,7 +528,11 @@ defmodule MedoruWeb.DailyCardGameLive do
         <div>
           <h1 class="text-2xl font-bold text-base-content">{gettext("Daily Card Challenge")}</h1>
           <p class="text-secondary text-sm mt-1">
-            {gettext("Match word pairs and type their meanings to collect them!")}
+            <%= if @english_mode do %>
+              {gettext("Match meaning pairs and type the Japanese word or reading to collect them!")}
+            <% else %>
+              {gettext("Match word pairs and type their meanings to collect them!")}
+            <% end %>
           </p>
         </div>
         <div class="text-right">
@@ -599,10 +641,14 @@ defmodule MedoruWeb.DailyCardGameLive do
                   <% :hidden -> %>
                     <span class="text-xl sm:text-2xl">?</span>
                   <% :flipped -> %>
-                    <span class="font-bold">{word.text}</span>
-                    <span :if={word.reading != ""} class="text-xs text-secondary mt-1">
-                      {word.reading}
-                    </span>
+                    <%= if @english_mode do %>
+                      <span class="font-bold text-center px-1">{word.meaning}</span>
+                    <% else %>
+                      <span class="font-bold">{word.text}</span>
+                      <span :if={word.reading != ""} class="text-xs text-secondary mt-1">
+                        {word.reading}
+                      </span>
+                    <% end %>
                   <% :collected -> %>
                     <.icon name="hero-check" class="w-6 h-6 sm:w-8 sm:h-8" />
                 <% end %>
@@ -619,15 +665,23 @@ defmodule MedoruWeb.DailyCardGameLive do
               {gettext("Match Found!")}
             </h3>
             <p class="text-secondary mb-4">
-              {gettext("Type the meaning to collect these cards.")}
+              <%= if @english_mode do %>
+                {gettext("Type the Japanese word or reading to collect these cards.")}
+              <% else %>
+                {gettext("Type the meaning to collect these cards.")}
+              <% end %>
             </p>
 
             <%!-- Word preview card --%>
             <div class="card bg-primary/10 border border-primary/30 rounded-xl p-4 mb-4 text-center">
-              <p class="text-lg font-bold text-base-content">{@input_word.text}</p>
-              <p :if={@input_word.reading != ""} class="text-sm text-secondary mt-1">
-                {@input_word.reading}
-              </p>
+              <%= if @english_mode do %>
+                <p class="text-lg font-bold text-base-content">{@input_word.meaning}</p>
+              <% else %>
+                <p class="text-lg font-bold text-base-content">{@input_word.text}</p>
+                <p :if={@input_word.reading != ""} class="text-sm text-secondary mt-1">
+                  {@input_word.reading}
+                </p>
+              <% end %>
             </div>
 
             <%!-- Error alert --%>
@@ -642,7 +696,11 @@ defmodule MedoruWeb.DailyCardGameLive do
             <form phx-submit="submit_answer" class="space-y-3 mb-4">
               <div>
                 <label class="block text-sm font-medium text-base-content mb-1">
-                  {gettext("Meaning")}
+                  <%= if @english_mode do %>
+                    {gettext("Japanese word or reading")}
+                  <% else %>
+                    {gettext("Meaning")}
+                  <% end %>
                 </label>
                 <input
                   type="text"
@@ -655,7 +713,13 @@ defmodule MedoruWeb.DailyCardGameLive do
                     "input input-bordered w-full text-base",
                     @input_disabled && "bg-base-200 opacity-60"
                   ]}
-                  placeholder={gettext("Type the meaning...")}
+                  placeholder={
+                    if @english_mode do
+                      gettext("Type the word or reading...")
+                    else
+                      gettext("Type the meaning...")
+                    end
+                  }
                   phx-mounted={!@input_disabled && JS.focus(to: "#meaning-input")}
                 />
               </div>

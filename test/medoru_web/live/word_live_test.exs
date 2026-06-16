@@ -163,6 +163,26 @@ defmodule MedoruWeb.WordLiveTest do
         live(conn, ~p"/words/#{Ecto.UUID.generate()}")
       end
     end
+
+    test "sets og:image meta tag when word has an image", %{conn: conn} do
+      word =
+        word_fixture(%{text: "画像語", reading: "がぞうご", image_path: "/uploads/word_images/test.jpg"})
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~
+               ~r/<meta[^>]*property="og:image"[^>]*content="[^"]*\/uploads\/word_images\/test\.jpg"[^>]*>/
+    end
+
+    test "does not set og:image meta tag when word has no image", %{conn: conn} do
+      word = word_fixture(%{text: "無画像語", reading: "むがぞうご", image_path: nil})
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      refute html =~ ~r/<meta[^>]*property="og:image"[^>]*>/
+      assert html =~ ~r/<meta[^>]*property="og:title"[^>]*>/
+      assert html =~ ~r/<meta[^>]*property="og:description"[^>]*>/
+    end
   end
 
   defp create_word(_) do

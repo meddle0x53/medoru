@@ -23,6 +23,15 @@ defmodule MedoruWeb.UserLiveTest do
       assert html =~ "Profile"
     end
 
+    test "renders learning language on profile", %{conn: conn} do
+      user = user_with_display_name(%{display_name: "LanguageLearner"})
+      {:ok, user} = Accounts.update_user(user, %{learning_language: "bulgarian"})
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{user.id}")
+
+      assert html =~ "Learning Bulgarian"
+    end
+
     test "redirects when viewer is blocked by profile owner", %{conn: conn} do
       blocker = user_with_display_name(%{display_name: "Blocker"})
       viewer = user_with_display_name()
