@@ -1,4 +1,4 @@
-const CACHE_NAME = "medoru-v46";
+const CACHE_NAME = "medoru-v49";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/assets/css/app.css",

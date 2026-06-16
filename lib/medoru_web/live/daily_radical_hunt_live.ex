@@ -56,6 +56,7 @@ defmodule MedoruWeb.DailyRadicalHuntLive do
        |> assign(:found_kanji, [])
        |> assign(:last_result, nil)
        |> assign(:xp_awarded, nil)
+       |> assign(:is_mobile, nil)
        |> assign(:streak, get_streak(user.id))}
     end
   end
@@ -78,6 +79,11 @@ defmodule MedoruWeb.DailyRadicalHuntLive do
          |> assign(:timer_ref, timer_ref)}
       end
     end
+  end
+
+  @impl true
+  def handle_event("device_info", %{"is_mobile" => is_mobile}, socket) do
+    {:noreply, assign(socket, :is_mobile, is_mobile)}
   end
 
   @impl true

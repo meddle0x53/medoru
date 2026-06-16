@@ -40,6 +40,14 @@ defmodule MedoruWeb.DailyRadicalHuntLiveTest do
       assert html =~ "口"
       assert html =~ "30 XP per kanji"
     end
+
+    test "handles device_info hook from GameFullscreen", %{conn: conn, user: user} do
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/daily-challenges/radical-hunt")
+
+      assert render_hook(view, "device_info", %{"is_mobile" => false}) =~ "Daily Radical Hunt"
+    end
   end
 
   describe "gameplay" do
