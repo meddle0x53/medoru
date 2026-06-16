@@ -682,6 +682,60 @@ defmodule Medoru.Learning do
   end
 
   # ============================================================================
+  # User-aware word progress helpers
+  # ============================================================================
+
+  @doc """
+  Returns the number of words learned by a user, respecting their learning language.
+  """
+  def words_learned_count(%{learning_language: "english"} = user),
+    do: count_english_learned_words(user.id)
+
+  def words_learned_count(user), do: count_learned_words(user.id)
+
+  @doc """
+  Returns whether a user has learned a specific word, respecting their learning language.
+  """
+  def word_learned_for_user?(%{learning_language: "english"} = user, word_id),
+    do: english_word_learned?(user.id, word_id)
+
+  def word_learned_for_user?(user, word_id), do: word_learned?(user.id, word_id)
+
+  @doc """
+  Tracks a word as learned for a user, respecting their learning language.
+  """
+  def track_word_learned_for_user(%{learning_language: "english"} = user, word_id),
+    do: track_english_word_learned(user.id, word_id)
+
+  def track_word_learned_for_user(user, word_id), do: track_word_learned(user.id, word_id)
+
+  @doc """
+  Removes a word from a user's learned list, respecting their learning language.
+  """
+  def untrack_word_learned_for_user(%{learning_language: "english"} = user, word_id),
+    do: untrack_english_word_learned(user.id, word_id)
+
+  def untrack_word_learned_for_user(user, word_id), do: unlearn_word(user.id, word_id)
+
+  @doc """
+  Returns the list of learned word IDs for a user, respecting their learning language.
+  """
+  def list_learned_word_ids_for_user(%{learning_language: "english"} = user),
+    do: list_english_learned_word_ids(user.id)
+
+  def list_learned_word_ids_for_user(user), do: list_learned_word_ids(user.id)
+
+  @doc """
+  Returns the list of learned words for a user with pagination, respecting their learning language.
+  """
+  def list_learned_words_for_user(user, opts \\ [])
+
+  def list_learned_words_for_user(%{learning_language: "english"} = user, opts),
+    do: list_english_learned_words(user.id, opts)
+
+  def list_learned_words_for_user(user, opts), do: list_learned_words(user.id, opts)
+
+  # ============================================================================
   # User English Progress
   # ============================================================================
 
@@ -715,9 +769,17 @@ defmodule Medoru.Learning do
   def track_english_word_learned(user_id, word_id) do
     case get_english_word_progress(user_id, word_id) do
       nil ->
-        %UserEnglishProgress{}
-        |> UserEnglishProgress.changeset(%{user_id: user_id, word_id: word_id})
-        |> Repo.insert()
+        result =
+          %UserEnglishProgress{}
+          |> UserEnglishProgress.changeset(%{user_id: user_id, word_id: word_id})
+          |> Repo.insert()
+
+        with {:ok, _} <- result do
+          _ = sync_words_learned_stats(user_id)
+          check_and_award_words_badges(user_id)
+        end
+
+        result
 
       progress ->
         {:ok, progress}
@@ -739,7 +801,13 @@ defmodule Medoru.Learning do
         {:error, :not_learned}
 
       progress ->
-        Repo.delete(progress)
+        result = Repo.delete(progress)
+
+        with {:ok, _} <- result do
+          _ = sync_words_learned_stats(user_id)
+        end
+
+        result
     end
   end
 
@@ -756,6 +824,22 @@ defmodule Medoru.Learning do
     UserEnglishProgress
     |> where([uep], uep.user_id == ^user_id)
     |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Gets the list of already learned word IDs for an English-learning user.
+
+  ## Examples
+
+      iex> list_english_learned_word_ids(user_id)
+      ["word-id-1", "word-id-2"]
+
+  """
+  def list_english_learned_word_ids(user_id) do
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id)
+    |> select([uep], uep.word_id)
+    |> Repo.all()
   end
 
   @doc """
@@ -1229,8 +1313,9 @@ defmodule Medoru.Learning do
 
   """
   def get_user_stats(user_id) do
+    user = Accounts.get_user!(user_id)
     total_kanji_learned = count_learned_kanji(user_id)
-    total_words_learned = count_learned_words(user_id)
+    total_words_learned = words_learned_count(user)
     total_grammar_learned = count_learned_grammar_definitions(user_id)
 
     kanji_by_mastery =
@@ -1333,6 +1418,12 @@ defmodule Medoru.Learning do
     stats = Accounts.get_or_create_user_stats(user_id)
     current = stats.total_words_learned || 0
     Accounts.update_stats(stats, %{total_words_learned: current + 1})
+  end
+
+  defp sync_words_learned_stats(user_id) do
+    stats = Accounts.get_or_create_user_stats(user_id)
+    count = count_english_learned_words(user_id)
+    Accounts.update_stats(stats, %{total_words_learned: count})
   end
 
   defp increment_grammar_learned(user_id) do

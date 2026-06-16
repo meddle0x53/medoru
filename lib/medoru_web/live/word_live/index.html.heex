@@ -258,24 +258,42 @@
               "bg-base-100 border-base-300 hover:border-primary/30"
             end
           ]}>
-            <div class="flex items-baseline justify-between mb-2">
-              <span class={[
-                "text-2xl font-medium transition-colors",
-                if is_learned do
-                  "text-success dark:text-success group-hover:text-success/80 dark:group-hover:text-success/80"
-                else
-                  "text-base-content group-hover:text-primary"
-                end
-              ]}>
-                {word.text}
-              </span>
-              <span class="text-sm text-secondary/70 font-medium">
-                {word.reading}
-              </span>
-            </div>
-            <p class="text-secondary text-sm line-clamp-2 mb-3">
-              {localized_word_meaning(word, @locale)}
-            </p>
+            <%= if @english_mode? do %>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class={[
+                  "text-2xl font-medium transition-colors",
+                  if is_learned do
+                    "text-success dark:text-success group-hover:text-success/80 dark:group-hover:text-success/80"
+                  else
+                    "text-base-content group-hover:text-primary"
+                  end
+                ]}>
+                  {localized_word_meaning(word, @locale)}
+                </span>
+              </div>
+              <p class="text-secondary text-sm line-clamp-2 mb-3">
+                {word.text} · {word.reading}
+              </p>
+            <% else %>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class={[
+                  "text-2xl font-medium transition-colors",
+                  if is_learned do
+                    "text-success dark:text-success group-hover:text-success/80 dark:group-hover:text-success/80"
+                  else
+                    "text-base-content group-hover:text-primary"
+                  end
+                ]}>
+                  {word.text}
+                </span>
+                <span class="text-sm text-secondary/70 font-medium">
+                  {word.reading}
+                </span>
+              </div>
+              <p class="text-secondary text-sm line-clamp-2 mb-3">
+                {localized_word_meaning(word, @locale)}
+              </p>
+            <% end %>
             <%!-- Word Type and Difficulty Badges --%>
             <div class="flex items-center gap-2">
               <%= if is_learned do %>

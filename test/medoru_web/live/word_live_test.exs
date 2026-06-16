@@ -3,6 +3,7 @@ defmodule MedoruWeb.WordLiveTest do
 
   import Phoenix.LiveViewTest
   import Medoru.{AccountsFixtures, ContentFixtures}
+  alias Medoru.Learning
 
   describe "Index" do
     setup [:create_word, :create_user]
@@ -198,5 +199,45 @@ defmodule MedoruWeb.WordLiveTest do
   defp create_user(_) do
     user = user_fixture()
     %{user: user}
+  end
+
+  describe "English-learning mode" do
+    setup [:create_word]
+
+    test "index shows Learned badge from user_english_progress", %{conn: conn, word: word} do
+      user = user_fixture(%{learning_language: "english"})
+      {:ok, _} = Learning.track_english_word_learned(user.id, word.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} = live(conn, ~p"/words")
+
+      assert html =~ "Learned"
+      assert html =~ word.text
+      assert html =~ word.meaning
+    end
+
+    test "show page toggles user_english_progress", %{conn: conn, word: word} do
+      user = user_fixture(%{learning_language: "english"})
+      conn = log_in_user(conn, user)
+
+      {:ok, view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ "Mark as Learned"
+      refute html =~ "Learned (click to unlearn)"
+
+      view
+      |> element("button", "Mark as Learned")
+      |> render_click()
+
+      assert render(view) =~ "Learned (click to unlearn)"
+      assert Learning.english_word_learned?(user.id, word.id)
+
+      view
+      |> element("button", "Learned (click to unlearn)")
+      |> render_click()
+
+      assert render(view) =~ "Mark as Learned"
+      refute Learning.english_word_learned?(user.id, word.id)
+    end
   end
 end

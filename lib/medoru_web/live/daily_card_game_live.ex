@@ -20,7 +20,7 @@ defmodule MedoruWeb.DailyCardGameLive do
        |> assign(:already_completed, true)
        |> assign(:streak, get_streak(user.id))}
     else
-      words = select_words(user.id)
+      words = select_words(user)
 
       if length(words) < @pair_count do
         {:ok,
@@ -383,8 +383,28 @@ defmodule MedoruWeb.DailyCardGameLive do
   # Helpers
   # ============================================================================
 
-  defp select_words(user_id) do
-    learned = Learning.list_learned_words(user_id, limit: 200)
+  defp select_words(%{learning_language: "english"} = user) do
+    learned = Learning.list_english_learned_words(user.id, limit: 200)
+
+    words =
+      if length(learned) >= @pair_count do
+        learned |> Enum.shuffle() |> Enum.take(@pair_count)
+      else
+        # Fallback: fill with N5 words
+        n5_words =
+          Content.list_words_by_difficulty(5)
+          |> Enum.reject(fn w -> w.id in Enum.map(learned, & &1.id) end)
+          |> Enum.shuffle()
+          |> Enum.take(@pair_count - length(learned))
+
+        learned ++ n5_words
+      end
+
+    words
+  end
+
+  defp select_words(user) do
+    learned = Learning.list_learned_words(user.id, limit: 200)
 
     words =
       if length(learned) >= @pair_count do

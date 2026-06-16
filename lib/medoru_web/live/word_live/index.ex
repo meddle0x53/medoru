@@ -14,10 +14,19 @@ defmodule MedoruWeb.WordLive.Index do
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
 
+    current_user =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    english_mode? = current_user && current_user.learning_language == "english"
+
     # Get learned word IDs if user is logged in
     learned_word_ids =
-      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-        Learning.list_learned_word_ids(socket.assigns.current_scope.current_user.id)
+      if current_user do
+        Learning.list_learned_word_ids_for_user(current_user)
       else
         []
       end
@@ -26,6 +35,7 @@ defmodule MedoruWeb.WordLive.Index do
      socket
      |> assign(:difficulty, 5)
      |> assign(:locale, locale)
+     |> assign(:english_mode?, english_mode?)
      |> assign(:learned_word_ids, learned_word_ids)}
   end
 
@@ -67,7 +77,8 @@ defmodule MedoruWeb.WordLive.Index do
         sort_order: sort_order,
         learned_filter: learned_filter,
         user_id: user_id,
-        include_mature: include_mature
+        include_mature: include_mature,
+        learning_language: current_user && current_user.learning_language
       )
 
     {:noreply,

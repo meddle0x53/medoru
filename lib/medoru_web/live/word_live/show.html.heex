@@ -47,14 +47,22 @@
             </div>
           <% end %>
 
-          <div class="inline-block">
-            <h1 class="text-5xl md:text-6xl font-medium text-base-content mb-4">
-              {@word.text}
-            </h1>
-          </div>
-          <div class="text-2xl text-secondary/80 font-medium mb-3">
-            {@word.reading}
-          </div>
+          <%= if @english_mode? do %>
+            <div class="inline-block">
+              <h1 class="text-5xl md:text-6xl font-medium text-base-content mb-4">
+                {@localized_meaning}
+              </h1>
+            </div>
+          <% else %>
+            <div class="inline-block">
+              <h1 class="text-5xl md:text-6xl font-medium text-base-content mb-4">
+                {@word.text}
+              </h1>
+            </div>
+            <div class="text-2xl text-secondary/80 font-medium mb-3">
+              {@word.reading}
+            </div>
+          <% end %>
           <div class="flex items-center justify-center gap-3 flex-wrap">
             <span class="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
               JLPT N{@word.difficulty}
@@ -118,9 +126,15 @@
           <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-2">
             {gettext("Meaning")}
           </h2>
-          <p class="text-xl text-base-content">
-            {@localized_meaning}
-          </p>
+          <%= if @english_mode? do %>
+            <p class="text-xl text-base-content">
+              {@word.text} · {@word.reading}
+            </p>
+          <% else %>
+            <p class="text-xl text-base-content">
+              {@localized_meaning}
+            </p>
+          <% end %>
         </div>
 
         <%!-- Action Buttons - Mobile Responsive --%>

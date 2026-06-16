@@ -37,17 +37,28 @@
         >
           <div class="bg-rose-50/60 dark:bg-rose-900/20 border border-rose-200/60 dark:border-rose-800/40 rounded-xl p-5
                       shadow-sm hover:shadow-md hover:border-rose-300/60 dark:hover:border-rose-700/50 hover:-translate-y-0.5 transition-all duration-200">
-            <div class="flex items-baseline justify-between mb-2">
-              <span class="text-2xl font-medium text-base-content group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
-                {word.text}
-              </span>
-              <span class="text-sm text-secondary/70 font-medium">
-                {word.reading}
-              </span>
-            </div>
-            <p class="text-secondary text-sm line-clamp-2 mb-3">
-              {localized_word_meaning(word, @locale)}
-            </p>
+            <%= if @english_mode? do %>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-2xl font-medium text-base-content group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                  {localized_word_meaning(word, @locale)}
+                </span>
+              </div>
+              <p class="text-secondary text-sm line-clamp-2 mb-3">
+                {word.text} · {word.reading}
+              </p>
+            <% else %>
+              <div class="flex items-baseline justify-between mb-2">
+                <span class="text-2xl font-medium text-base-content group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                  {word.text}
+                </span>
+                <span class="text-sm text-secondary/70 font-medium">
+                  {word.reading}
+                </span>
+              </div>
+              <p class="text-secondary text-sm line-clamp-2 mb-3">
+                {localized_word_meaning(word, @locale)}
+              </p>
+            <% end %>
             <div class="flex items-center gap-2">
               <span class={[
                 "px-2 py-0.5 rounded text-xs font-medium capitalize",

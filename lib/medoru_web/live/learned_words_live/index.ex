@@ -21,13 +21,14 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
   @impl true
   def handle_params(%{"id" => user_id}, _url, socket) do
     user = Accounts.get_user!(user_id)
+    english_mode? = user.learning_language == "english"
 
     # Get all learned word IDs for highlighting
-    learned_word_ids = Learning.list_learned_word_ids(user_id)
+    learned_word_ids = Learning.list_learned_word_ids_for_user(user)
 
     # Get learned words with pagination
     result =
-      list_learned_words_paginated(user_id,
+      list_learned_words_paginated(user,
         page: 1,
         per_page: @per_page
       )
@@ -36,6 +37,7 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
      socket
      |> assign(:user, user)
      |> assign(:page, 1)
+     |> assign(:english_mode?, english_mode?)
      |> assign(:words, result.words)
      |> assign(:learned_word_ids, learned_word_ids)
      |> assign(:total_count, result.total_count)
@@ -46,10 +48,10 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
   @impl true
   def handle_event("change_page", %{"page" => page}, socket) do
     page = parse_page(page)
-    user_id = socket.assigns.user.id
+    user = socket.assigns.user
 
     result =
-      list_learned_words_paginated(user_id,
+      list_learned_words_paginated(user,
         page: page,
         per_page: @per_page
       )
@@ -62,16 +64,16 @@ defmodule MedoruWeb.LearnedWordsLive.Index do
      |> assign(:total_pages, result.total_pages)}
   end
 
-  defp list_learned_words_paginated(user_id, opts) do
+  defp list_learned_words_paginated(user, opts) do
     page = Keyword.get(opts, :page, 1)
     per_page = Keyword.get(opts, :per_page, 30)
 
     # Get total count
-    total_count = Learning.count_learned_words(user_id)
+    total_count = Learning.words_learned_count(user)
 
     # Get paginated words
     words =
-      Learning.list_learned_words(user_id,
+      Learning.list_learned_words_for_user(user,
         limit: per_page,
         offset: (page - 1) * per_page
       )

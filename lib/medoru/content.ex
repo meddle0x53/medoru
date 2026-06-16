@@ -18,7 +18,7 @@ defmodule Medoru.Content do
     CustomLessonWord
   }
 
-  alias Medoru.Learning.UserProgress
+  alias Medoru.Learning.{UserEnglishProgress, UserProgress}
 
   # Kanji Functions
 
@@ -599,6 +599,7 @@ defmodule Medoru.Content do
     learned_filter = Keyword.get(opts, :learned_filter)
     user_id = Keyword.get(opts, :user_id)
     include_mature = Keyword.get(opts, :include_mature, true)
+    learning_language = Keyword.get(opts, :learning_language)
 
     search = if search, do: String.trim(search), else: search
 
@@ -627,9 +628,7 @@ defmodule Medoru.Content do
       words =
         if learned_filter && user_id do
           learned_word_ids =
-            UserProgress
-            |> where([up], up.user_id == ^user_id)
-            |> select([up], up.word_id)
+            learned_word_ids_query(user_id, learning_language)
             |> Repo.all()
             |> MapSet.new()
 
@@ -680,13 +679,24 @@ defmodule Medoru.Content do
       # Apply learned filter if specified and user_id is provided
       query =
         if learned_filter && user_id do
-          case learned_filter do
-            :learned ->
+          case {learned_filter, learning_language} do
+            {:learned, "english"} ->
+              from w in query,
+                join: uep in UserEnglishProgress,
+                on: uep.word_id == w.id and uep.user_id == ^user_id
+
+            {:learned, _} ->
               from w in query,
                 join: up in UserProgress,
                 on: up.word_id == w.id and up.user_id == ^user_id
 
-            :unlearned ->
+            {:unlearned, "english"} ->
+              from w in query,
+                left_join: uep in UserEnglishProgress,
+                on: uep.word_id == w.id and uep.user_id == ^user_id,
+                where: is_nil(uep.id)
+
+            {:unlearned, _} ->
               from w in query,
                 left_join: up in UserProgress,
                 on: up.word_id == w.id and up.user_id == ^user_id,
@@ -720,6 +730,18 @@ defmodule Medoru.Content do
         per_page: per_page
       }
     end
+  end
+
+  defp learned_word_ids_query(user_id, "english") do
+    UserEnglishProgress
+    |> where([uep], uep.user_id == ^user_id)
+    |> select([uep], uep.word_id)
+  end
+
+  defp learned_word_ids_query(user_id, _learning_language) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id)
+    |> select([up], up.word_id)
   end
 
   @doc """

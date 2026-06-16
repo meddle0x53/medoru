@@ -36,6 +36,8 @@ defmodule MedoruWeb.WordLive.Show do
         nil
       end
 
+    english_mode? = current_user && current_user.learning_language == "english"
+
     unless MatureContent.mature_word_visible_to_user?(word, current_user) do
       {:noreply,
        socket
@@ -48,8 +50,8 @@ defmodule MedoruWeb.WordLive.Show do
 
       # Check if user has learned this word (if authenticated)
       word_learned =
-        if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-          Learning.word_learned?(socket.assigns.current_scope.current_user.id, word.id)
+        if current_user do
+          Learning.word_learned_for_user?(current_user, word.id)
         else
           false
         end
@@ -64,6 +66,7 @@ defmodule MedoruWeb.WordLive.Show do
        |> assign(:word, word)
        |> assign(:localized_meaning, localized_meaning)
        |> assign(:word_learned, word_learned)
+       |> assign(:english_mode?, english_mode?)
        |> assign(:return_to, return_to)
        |> assign(:step, step)
        |> assign(:practice, practice)
@@ -90,10 +93,10 @@ defmodule MedoruWeb.WordLive.Show do
   @impl true
   def handle_event("mark_word_learned", _params, socket) do
     if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-      user_id = socket.assigns.current_scope.current_user.id
+      user = socket.assigns.current_scope.current_user
       word = socket.assigns.word
 
-      case Learning.track_word_learned(user_id, word.id) do
+      case Learning.track_word_learned_for_user(user, word.id) do
         {:ok, _} ->
           {:noreply,
            socket
@@ -111,10 +114,10 @@ defmodule MedoruWeb.WordLive.Show do
   @impl true
   def handle_event("unlearn_word", _params, socket) do
     if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
-      user_id = socket.assigns.current_scope.current_user.id
+      user = socket.assigns.current_scope.current_user
       word = socket.assigns.word
 
-      case Learning.unlearn_word(user_id, word.id) do
+      case Learning.untrack_word_learned_for_user(user, word.id) do
         {:ok, _} ->
           {:noreply,
            socket
