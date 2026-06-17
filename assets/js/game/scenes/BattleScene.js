@@ -10,6 +10,9 @@ import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
 import { getWindowGameData, sendRunResult } from '../api.js'
+import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
+import { buildEnemyChallenge } from '../systems/EnemyChallengePicker.js'
+import EnemyAbilityChallengeSystem from '../systems/EnemyAbilityChallengeSystem.js'
 
 export default class BattleScene extends Phaser.Scene {
   constructor() {
@@ -106,17 +109,15 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createEnemiesForTile() {
-    const type = this.tile?.type
-    const enemyKey = type === TILE_TYPES.MINI_BOSS ? 'mini_boss'
-      : type === TILE_TYPES.BOSS ? 'boss'
-      : 'oni'
-
-    const count = this.determineEnemyCount()
+    const count = this.tile?.testFightCount ?? this.determineEnemyCount()
     const multiplier = count === 3 ? 0.5 : count === 2 ? 0.65 : 1.0
 
     const enemies = []
     for (let i = 0; i < count; i++) {
-      const enemy = new Enemy(enemyKey)
+      const definition = this.tile?.enemyId
+        ? getEnemyDefinition(this.tile.enemyId)
+        : pickEnemyForTile(this.tile, this.mapIndex)
+      const enemy = new Enemy(definition)
       if (multiplier !== 1.0) {
         enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * multiplier))
         enemy.hp = enemy.maxHp
@@ -226,19 +227,19 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createEnemyDisplay(enemy, index, total) {
-    const config = this.getEnemySlotConfig(total)
-    const x = config.xs[index]
-    const scale = config.scale
-    // Offset smaller enemies upward so multi-enemy groups don't look sunken.
-    const y = 570 - (0.30 - scale) * 280
+    const layout = enemy.definition.layout[String(total)]?.[index] || { x: 690, y: 570, scale: 0.30 }
+    const { x, y, scale } = layout
 
-    this.textures.get('enemy_kasa_obake').setFilter(Phaser.Textures.FilterMode.LINEAR)
-    this.textures.get('enemy_kasa_obake_attack').setFilter(Phaser.Textures.FilterMode.LINEAR)
-    this.textures.get('enemy_kasa_obake_defend').setFilter(Phaser.Textures.FilterMode.LINEAR)
-    this.textures.get('enemy_kasa_obake_buff').setFilter(Phaser.Textures.FilterMode.LINEAR)
-    this.textures.get('enemy_kasa_obake_defeated').setFilter(Phaser.Textures.FilterMode.LINEAR)
+    // Ensure all of this enemy's sprites are rendered smoothly.
+    const spriteKeys = Object.values(enemy.definition.sprites).filter(Boolean)
+    for (const key of spriteKeys) {
+      if (this.textures.exists(key)) {
+        this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR)
+      }
+    }
 
-    const sprite = this.add.sprite(x, y, 'enemy_kasa_obake')
+    const defaultKey = enemy.definition.sprites.default
+    const sprite = this.add.sprite(x, y, defaultKey)
     sprite.setScale(scale)
     sprite.setOrigin(0.5, 0.99)
     sprite.setInteractive({ useHandCursor: false })
@@ -278,13 +279,16 @@ export default class BattleScene extends Phaser.Scene {
       intentionIcons.push({ bg, icon })
     }
 
-    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, baseScale: scale, x }
-  }
+    // Persistent buff indicator (e.g. queued next-attack bonus)
+    const buffIndicator = this.add.text(x, y - sprite.displayHeight * 0.95, '⬆', {
+      fontFamily: FONTS.default.fontFamily,
+      fontSize: '20px',
+      color: '#f39c12',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(60).setVisible(false)
 
-  getEnemySlotConfig(total) {
-    if (total >= 3) return { xs: [540, 690, 840], scale: 0.16 }
-    if (total === 2) return { xs: [600, 780], scale: 0.22 }
-    return { xs: [690], scale: 0.30 }
+    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, buffIndicator, baseScale: scale, x }
   }
 
   setPlayerPose(poseKey) {
@@ -373,6 +377,10 @@ export default class BattleScene extends Phaser.Scene {
     if (display?.sprite) {
       display.sprite.setTexture(key)
     }
+  }
+
+  getEnemySpriteKey(enemy, pose) {
+    return enemy.definition.sprites[pose] || enemy.definition.sprites.default
   }
 
   onEnemySpriteClick(display) {
@@ -1923,7 +1931,7 @@ export default class BattleScene extends Phaser.Scene {
     this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
 
     display.sprite.disableInteractive()
-    display.sprite.setTexture('enemy_kasa_obake_defeated')
+    display.sprite.setTexture(this.getEnemySpriteKey(enemy, 'death'))
     display.intentionContainer.setVisible(false)
 
     // Fade out the sprite and collapse the UI.
@@ -1947,6 +1955,7 @@ export default class BattleScene extends Phaser.Scene {
       display.hpText,
       display.staminaText,
       display.blockText,
+      display.buffIndicator,
     ]
     for (const el of uiElements) {
       if (el) el.setVisible(false)
@@ -2098,6 +2107,35 @@ export default class BattleScene extends Phaser.Scene {
         if (action.type === 'buff') state.usedBuff = true
         state.actionsTaken++
 
+        // Per-ability challenge: word/kanji quiz to weaken or cancel the ability.
+        // Supports a single `challenge` object or a `challenges` array.
+        const challengeConfigs = action.challenges || (action.challenge ? [action.challenge] : [])
+        let challengeModifier = null
+        let weakestMultiplier = 1
+        for (const config of challengeConfigs) {
+          if (Math.random() >= (config.chance ?? 0)) continue
+          const challenge = buildEnemyChallenge(this.player, config)
+          if (!challenge) continue
+          challenge.abilityName = action.name
+          this.addCombatLog(`${enemy.name || 'The enemy'}'s ${action.name} triggers a ${challenge.type === 'kanji' ? 'kanji' : 'word'} challenge!`)
+          const outcome = await this.runEnemyAbilityChallenge(challenge)
+          if (outcome === 'cancel') {
+            challengeModifier = 'cancel'
+            break
+          }
+          if (outcome === 'weaken') {
+            challengeModifier = 'weaken'
+            weakestMultiplier = Math.min(weakestMultiplier, config.weakenMultiplier || 0.5)
+          }
+        }
+        if (challengeModifier === 'cancel') {
+          enemy.incrementAbilityUses(action)
+          this.addCombatLog(`${enemy.name || 'The enemy'} tries ${action.name}, but you cancel it!`)
+          anyActionTaken = true
+          await this.delay(800)
+          continue
+        }
+
         // Before an attack, check for reaction challenge trigger
         if (action.type === 'attack') {
           const diceRoll = this.roll2d6()
@@ -2125,8 +2163,13 @@ export default class BattleScene extends Phaser.Scene {
           }
         }
 
+        const context = {}
+        if (challengeModifier === 'weaken') {
+          context.damageMultiplier = weakestMultiplier
+        }
+
         if (!parried) {
-          result = enemy.performAction(action, this.player)
+          result = enemy.performAction(action, this.player, context)
         }
 
         // Reset reaction multiplier after the attack resolves
@@ -2142,7 +2185,7 @@ export default class BattleScene extends Phaser.Scene {
 
         switch (result.type) {
           case 'attack': {
-            this.setEnemySprite('enemy_kasa_obake_attack', enemy)
+            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'attack'), enemy)
             if (result.parried) {
               this.setPlayerPose('block_idle')
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
@@ -2150,7 +2193,7 @@ export default class BattleScene extends Phaser.Scene {
               this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
               await this.delay(600)
               this.setPlayerPose('idle')
-              this.setEnemySprite('enemy_kasa_obake', enemy)
+              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
               await this.runCounterAttack()
             } else if (result.missed) {
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
@@ -2158,24 +2201,25 @@ export default class BattleScene extends Phaser.Scene {
               this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
               await this.delay(800)
               this.setPlayerPose('idle')
-              this.setEnemySprite('enemy_kasa_obake', enemy)
+              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
             } else {
               this.setPlayerPose('block_idle')
+              const weakenedText = challengeModifier === 'weaken' ? ' (Weakened!)' : ''
               const critText = result.isCrit ? ' CRITICAL!' : ''
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-              this.addCombatLog(`${enemyName} uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}`)
+              this.addCombatLog(`${enemyName} uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}${weakenedText}`)
               this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
               this.shakeSprite(this.playerSprite)
               await this.delay(800)
               this.setPlayerPose('idle')
-              this.setEnemySprite('enemy_kasa_obake', enemy)
+              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
             }
             break
           }
           case 'buff': {
-            this.setEnemySprite('enemy_kasa_obake_buff', enemy)
+            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'buff'), enemy)
             this.addCombatLog(`${enemyName} uses ${action.name}! Its next attack will be stronger!`)
-            this.time.delayedCall(800, () => this.setEnemySprite('enemy_kasa_obake', enemy))
+            this.time.delayedCall(800, () => this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy))
             break
           }
           case 'recover': {
@@ -2198,6 +2242,20 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.turnManager.battleOver) {
       this.turnManager.endTurn()
     }
+  }
+
+  runEnemyAbilityChallenge(challenge) {
+    return new Promise((resolve) => {
+      const system = new EnemyAbilityChallengeSystem(this)
+      system.start(challenge, ({ success }) => {
+        if (!success) {
+          resolve('full')
+          return
+        }
+        const outcome = challenge.onSuccess || 'weaken'
+        resolve(outcome)
+      })
+    })
   }
 
   async runCounterAttack() {
@@ -2297,6 +2355,14 @@ export default class BattleScene extends Phaser.Scene {
       display.staminaBar.setScale(staminaPct, 1)
       display.hpText.setText(`${e.hp}/${e.maxHp}`)
       display.staminaText.setText(`${e.stamina}/${e.maxStamina}`)
+      this.updateBuffIndicator(display)
+    }
+  }
+
+  updateBuffIndicator(display) {
+    const hasBuff = display.enemy.buffs.some(b => b.type === 'next_attack_bonus')
+    if (display.buffIndicator) {
+      display.buffIndicator.setVisible(hasBuff)
     }
   }
 
@@ -2398,7 +2464,7 @@ export default class BattleScene extends Phaser.Scene {
     if (isWin) {
       for (const display of this.enemyDisplays) {
         if (display.enemy.isAlive()) {
-          display.sprite.setTexture('enemy_kasa_obake_defeated')
+          display.sprite.setTexture(this.getEnemySpriteKey(display.enemy, 'death'))
         }
       }
       // Send result to server before transitioning

@@ -1,0 +1,100 @@
+{
+  "id": "kasa_obake",
+  "name": "Kasa-obake",
+  "nameJa": "傘おばけ",
+  "description": "A possessed umbrella spirit.",
+  "level": 1,
+  "baseGold": 5,
+  "roles": ["battle"],
+  "mapIds": [1, 2],
+  "maxColumn": 10,
+  "sprites": {
+    "default": "enemy_kasa_obake",
+    "attack": "enemy_kasa_obake_attack",
+    "defend": "enemy_kasa_obake_defend",
+    "buff": "enemy_kasa_obake_buff",
+    "death": "enemy_kasa_obake_defeated"
+  },
+  "portrait": null,
+  "icon": null,
+  "layout": {
+    "1": [{ "x": 690, "y": 570, "scale": 0.30 }],
+    "2": [{ "x": 600, "y": 548, "scale": 0.22 }, { "x": 780, "y": 548, "scale": 0.22 }],
+    "3": [{ "x": 540, "y": 531, "scale": 0.16 }, { "x": 690, "y": 531, "scale": 0.16 }, { "x": 840, "y": 531, "scale": 0.16 }]
+  },
+  "stats": {
+    "hp": { "min": 70, "max": 80 },
+    "stamina": { "min": 6, "max": 8 },
+    "strength": { "min": 3, "max": 4 },
+    "skill": { "min": 1, "max": 2 },
+    "mana": { "min": 0, "max": 0 },
+    "luck": { "min": 1, "max": 2 },
+    "defense": { "min": 3, "max": 5 },
+    "armor": { "min": 1, "max": 2 }
+  },
+  "abilities": [
+    {
+      "id": "claw_strike",
+      "name": "Claw Strike",
+      "type": "attack",
+      "staminaCost": 3,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 10,
+      "maxUsesPerTurn": 5,
+      "basePower": 10,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.0,
+      "effects": [],
+      "challenges": [{
+        "chance": 0.25,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": {
+          "knownOnly": true,
+          "jlptLevels": ["N5"],
+          "maxFrequency": 900
+        },
+        "onSuccess": "weaken",
+        "weakenMultiplier": 0.5,
+        "onFail": "full",
+        "timeLimit": 6000
+      }]
+    },
+    {
+      "id": "intimidate",
+      "name": "Intimidate",
+      "type": "buff",
+      "staminaCost": 2,
+      "sprite": "enemy_kasa_obake_buff",
+      "aiWeight": 20,
+      "maxUsesPerTurn": 1,
+      "buffType": "next_attack_bonus",
+      "buffValue": 4,
+      "defenseBonus": 10,
+      "effects": [],
+      "challenges": [{
+        "chance": 0.35,
+        "type": "kanji",
+        "source": "pool",
+        "filters": {
+          "knownOnly": true,
+          "jlptLevels": ["N5"]
+        },
+        "onSuccess": "cancel",
+        "onFail": "full",
+        "timeLimit": 5000
+      }]
+    }
+  ],
+  "deathAbility": null,
+  "drops": {
+    "warrior": [
+      { "type": "item", "id": "health_potion", "chance": 0.10, "rarity": "normal" },
+      { "type": "item", "id": "stone", "chance": 0.20, "rarity": "normal" },
+      { "type": "charm", "id": "tetsu_charm", "chance": 0.02, "rarity": "normal" },
+      { "type": "charm", "id": "kouri_charm", "chance": 0.005, "rarity": "special" }
+    ],
+    "mage": [],
+    "archer": []
+  }
+}

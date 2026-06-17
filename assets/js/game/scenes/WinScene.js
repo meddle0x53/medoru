@@ -2,7 +2,7 @@ import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { ALL_ACTIONS, getActionTypeColor } from '../data/actions.js'
 import { ITEMS } from '../data/items.js'
 import { getCharmById } from '../data/charms.js'
-import { getMonster, rollDrops } from '../data/monsters.js'
+import { rollEnemyDrops } from '../data/enemies/index.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
 
@@ -16,15 +16,15 @@ export default class WinScene extends Phaser.Scene {
     this.player = data.player
     this.enemy = data.enemy
     this.tile = data.tile || null
-    this.monster = getMonster(this.enemy?.template?.id || 'kasa_obake')
+    this.monster = this.enemy?.definition || null
 
     this.challengeSystem = null
     this.replaceDialog = null
     this.abilitySelected = false
 
     // Calculate base rewards
-    this.baseAttributePoints = this.monster.level + (Math.random() < (this.player.luck || 0) / 50 ? 1 : 0)
-    this.baseGold = Math.round(this.monster.baseGold * (1 + (this.player.luck || 0) / 200))
+    this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.luck || 0) / 50 ? 1 : 0)
+    this.baseGold = Math.round((this.monster?.baseGold || 5) * (1 + (this.player.luck || 0) / 200))
     this.attributePoints = this.baseAttributePoints
     this.goldReward = this.baseGold
 
@@ -32,7 +32,7 @@ export default class WinScene extends Phaser.Scene {
     this.challengeMultiplier = 1
 
     // Roll drops immediately
-    this.drops = rollDrops(this.monster, this.player.loadout.class || 'warrior')
+    this.drops = rollEnemyDrops(this.enemy, this.player.loadout.class || 'warrior')
     this.applyDrops()
 
     // Pick ability rewards
@@ -120,7 +120,7 @@ export default class WinScene extends Phaser.Scene {
       color: '#2ecc71',
     }).setOrigin(0.5)
 
-    const enemyName = this.enemy?.name || this.monster.name
+    const enemyName = this.enemy?.name || this.monster?.name || 'Enemy'
     this.add.text(GAME_CONFIG.width / 2, 95, `You defeated the ${enemyName}`, {
       ...FONTS.default,
       fontSize: '16px',

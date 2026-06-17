@@ -1,4 +1,4 @@
-import { DEFAULT_KANJI_POOL } from '../data/enemies.js'
+import { DEFAULT_KANJI_POOL } from '../data/defaultKanjiPool.js'
 
 /**
  * Handles kanji/word challenges before skill execution.

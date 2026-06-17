@@ -3,6 +3,7 @@ import { TILE_TYPES, getTileConfig, isBattleTile } from '../data/tileTypes.js'
 import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
 import { updateReachability, findTileById, computeLayout, getMapName } from '../systems/MapGenerator.js'
+import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
 
 /**
  * MapScene — the rogue-like hub.
@@ -120,6 +121,16 @@ export default class MapScene extends Phaser.Scene {
       this.player.resetToFreshHero()
       this.scene.start('MapScene', { player: this.player })
     })
+
+    // DEV ONLY: start a test fight with a chosen enemy and count.
+    this.hud.testFightBtn = this.add.text(GAME_CONFIG.width - 16, 46, 'DEV: TEST FIGHT', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#2980b9',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    this.hud.testFightBtn.on('pointerdown', () => this.showTestFightDialog())
   }
 
   updateHud() {
@@ -127,6 +138,102 @@ export default class MapScene extends Phaser.Scene {
     this.hud.title.setText(getMapName(this.map, userData?.level) || `Map ${this.map.index + 1}`)
     this.hud.hp.setText(`HP: ${this.player.hp}/${this.player.maxHp}`)
     this.hud.gold.setText(`Gold: ${this.player.loadout.gold || 0}`)
+  }
+
+  showTestFightDialog() {
+    if (this.testFightDialog) return
+
+    this.testFightSelection = { enemyIndex: 0, count: 1 }
+
+    const container = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    container.setDepth(100)
+
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
+    backdrop.setInteractive()
+    container.add(backdrop)
+
+    const panel = this.add.rectangle(0, 0, 360, 260, 0x1a1a2e).setStrokeStyle(2, 0x3498db).setOrigin(0.5)
+    container.add(panel)
+
+    const title = this.add.text(0, -90, 'TEST FIGHT', {
+      fontFamily: 'Arial', fontSize: '20px', color: '#f1c40f', fontStyle: 'bold',
+    }).setOrigin(0.5)
+    container.add(title)
+
+    const createRow = (y, labelText, onClick) => {
+      const bg = this.add.rectangle(0, y, 280, 36, 0x2c3e50).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+      const label = this.add.text(0, y, labelText, {
+        fontFamily: 'Arial', fontSize: '14px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      bg.on('pointerdown', onClick)
+      bg.on('pointerover', () => bg.setFillStyle(0x34495e))
+      bg.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+      container.add(bg)
+      container.add(label)
+      return label
+    }
+
+    this.testFightEnemyLabel = createRow(-30, '', () => {
+      this.testFightSelection.enemyIndex =
+        (this.testFightSelection.enemyIndex + 1) % ENEMY_DEFINITIONS.length
+      this.updateTestFightDialog()
+    })
+
+    this.testFightCountLabel = createRow(20, '', () => {
+      this.testFightSelection.count = this.testFightSelection.count >= 3 ? 1 : this.testFightSelection.count + 1
+      this.updateTestFightDialog()
+    })
+
+    const startBtn = this.add.rectangle(-70, 80, 120, 36, 0x27ae60).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const startText = this.add.text(-70, 80, 'START', { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5)
+    startBtn.on('pointerdown', () => this.startTestFight())
+    startBtn.on('pointerover', () => startBtn.setFillStyle(0x2ecc71))
+    startBtn.on('pointerout', () => startBtn.setFillStyle(0x27ae60))
+    container.add(startBtn)
+    container.add(startText)
+
+    const cancelBtn = this.add.rectangle(70, 80, 120, 36, 0x7f8c8d).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const cancelText = this.add.text(70, 80, 'CANCEL', { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5)
+    cancelBtn.on('pointerdown', () => this.hideTestFightDialog())
+    cancelBtn.on('pointerover', () => cancelBtn.setFillStyle(0x95a5a6))
+    cancelBtn.on('pointerout', () => cancelBtn.setFillStyle(0x7f8c8d))
+    container.add(cancelBtn)
+    container.add(cancelText)
+
+    this.testFightDialog = container
+    this.updateTestFightDialog()
+  }
+
+  updateTestFightDialog() {
+    if (!this.testFightDialog) return
+    const def = ENEMY_DEFINITIONS[this.testFightSelection.enemyIndex]
+    this.testFightEnemyLabel.setText(`Enemy: ${def.name}`)
+    this.testFightCountLabel.setText(`Count: ${this.testFightSelection.count}`)
+  }
+
+  hideTestFightDialog() {
+    if (this.testFightDialog) {
+      this.testFightDialog.destroy()
+      this.testFightDialog = null
+      this.testFightEnemyLabel = null
+      this.testFightCountLabel = null
+    }
+  }
+
+  startTestFight() {
+    const def = ENEMY_DEFINITIONS[this.testFightSelection.enemyIndex]
+    const count = this.testFightSelection.count
+    this.hideTestFightDialog()
+
+    const tile = {
+      type: def.roles[0] || TILE_TYPES.BATTLE,
+      col: 5,
+      mapIndex: this.map.index,
+      enemyId: def.id,
+      testFightCount: count,
+    }
+
+    this.scene.start('BattleScene', { player: this.player, tile, mapIndex: this.map.index })
   }
 
   drawMap() {

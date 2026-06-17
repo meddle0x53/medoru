@@ -1,3 +1,5 @@
+import { ENEMY_DEFINITIONS } from '../data/enemies/index.js'
+
 /**
  * Boot Scene - loads assets and initial data.
  */
@@ -38,12 +40,23 @@ export default class BootScene extends Phaser.Scene {
     // Loadout portrait
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 
-    // Enemy sprites
-    this.load.image('enemy_kasa_obake', '/images/game/enemy_kasa_obake.png')
-    this.load.image('enemy_kasa_obake_attack', '/images/game/enemy_kasa_obake_attack.png')
-    this.load.image('enemy_kasa_obake_defend', '/images/game/enemy_kasa_obake_defend.png')
-    this.load.image('enemy_kasa_obake_buff', '/images/game/enemy_kasa_obake_buff.png')
-    this.load.image('enemy_kasa_obake_defeated', '/images/game/enemy_kasa_obake_defeated.png')
+    // Enemy sprites — loaded dynamically from enemy definitions.
+    const loadedKeys = new Set()
+    for (const def of ENEMY_DEFINITIONS) {
+      for (const key of Object.values(def.sprites)) {
+        if (!key || loadedKeys.has(key)) continue
+        loadedKeys.add(key)
+        this.load.image(key, `/images/game/${key}.png`)
+      }
+      if (def.portrait && !loadedKeys.has(def.portrait)) {
+        loadedKeys.add(def.portrait)
+        this.load.image(def.portrait, `/images/game/${def.portrait}.png`)
+      }
+      if (def.icon && !loadedKeys.has(def.icon)) {
+        loadedKeys.add(def.icon)
+        this.load.image(def.icon, `/images/game/${def.icon}.png`)
+      }
+    }
 
     // Placeholder textures for UI bars
     const graphics = this.make.graphics({ x: 0, y: 0, add: false })

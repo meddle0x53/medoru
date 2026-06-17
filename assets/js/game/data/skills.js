@@ -55,31 +55,3 @@ export const PLAYER_SKILLS = [
     },
   },
 ]
-
-export const ENEMY_SKILLS = [
-  {
-    id: 'claw_strike',
-    name: 'Claw Strike',
-    staminaCost: 3,
-    type: 'attack',
-    basePower: 10,
-    scalingStat: 'strength',
-    scalingMultiplier: 1.0,
-  },
-  {
-    id: 'intimidate',
-    name: 'Intimidate',
-    staminaCost: 2,
-    type: 'buff',
-    buffType: 'next_attack_bonus',
-    buffValue: 4,
-    defenseBonus: 10,
-  },
-  {
-    id: 'wait',
-    name: 'Wait',
-    staminaCost: 1,
-    type: 'recover',
-    staminaRecover: 3,
-  },
-]
