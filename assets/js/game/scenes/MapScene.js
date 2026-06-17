@@ -184,10 +184,6 @@ export default class MapScene extends Phaser.Scene {
         const bodyContainer = this.add.container(0, 0)
         container.add(bodyContainer)
 
-        // Ground shadow for a raised look
-        const shadow = this.add.circle(3, 5, TILE_RADIUS, 0x000000, 0.4)
-        bodyContainer.add(shadow)
-
         // Current tile glow (behind the tile body)
         if (tile.id === this.player.loadout.mapState.currentTileId) {
           const marker = this.add.circle(0, 0, CURRENT_PULSE_RADIUS, 0xf1c40f, 0.3)
@@ -214,16 +210,52 @@ export default class MapScene extends Phaser.Scene {
           tileImageKey = this.map.chestTileImage
         } else if (this.map.shopTileImage && tile.type === 'shop' && this.textures.exists(this.map.shopTileImage)) {
           tileImageKey = this.map.shopTileImage
+        } else if (this.map.memoryTileImage && tile.type === 'memory' && this.textures.exists(this.map.memoryTileImage)) {
+          tileImageKey = this.map.memoryTileImage
+        } else if (this.map.cascadeTileImage && tile.type === 'short_cascade' && this.textures.exists(this.map.cascadeTileImage)) {
+          tileImageKey = this.map.cascadeTileImage
         } else if (this.map.restTileImage && tile.type === 'rest_camp' && this.textures.exists(this.map.restTileImage)) {
           tileImageKey = this.map.restTileImage
         }
 
         if (tileImageKey) {
-          // The image has its own decorative border, so skip the synthetic rim.
+          // Keep the same metal rim the generated tiles use so the map stays
+          // visually consistent even when art is shown.
+          const outerRim = this.add.circle(0, 0, TILE_RADIUS + 5, 0x111111)
+          bodyContainer.add(outerRim)
+          const innerRim = this.add.circle(0, 0, TILE_RADIUS + 2, 0x7f8c8d)
+          bodyContainer.add(innerRim)
+
+          // Don't add the offset shadow for art tiles; it would peek out and
+          // make the tile look off-center.
           const img = this.add.image(0, 0, tileImageKey)
-          img.setDisplaySize(TILE_RADIUS * 2, TILE_RADIUS * 2)
+          const src = this.textures.get(tileImageKey).getSourceImage()
+          const srcW = src.width
+          const srcH = src.height
+
+          if (Math.abs(srcW - srcH) <= 2) {
+            // Square art fills the tile exactly.
+            img.setDisplaySize(TILE_RADIUS * 2, TILE_RADIUS * 2)
+          } else {
+            // Preserve aspect ratio and fit the whole image inside the tile
+            // circle. Portrait/landscape art is masked so its corners don't
+            // spill past the circular tile boundary.
+            const scale = (TILE_RADIUS * 2) / Math.max(srcW, srcH)
+            img.setDisplaySize(srcW * scale, srcH * scale)
+
+            const maskShape = this.add.circle(0, 0, TILE_RADIUS, 0xffffff)
+            maskShape.setOrigin(0.5)
+            maskShape.setVisible(false)
+            bodyContainer.add(maskShape)
+            img.setMask(maskShape.createGeometryMask())
+          }
+
           bodyContainer.add(img)
         } else {
+          // Ground shadow for a raised look (only for generated tiles).
+          const shadow = this.add.circle(3, 5, TILE_RADIUS, 0x000000, 0.4)
+          bodyContainer.add(shadow)
+
           // Thick black-to-gray border ring
           const outerRim = this.add.circle(0, 0, TILE_RADIUS + 5, 0x111111)
           bodyContainer.add(outerRim)
@@ -242,9 +274,12 @@ export default class MapScene extends Phaser.Scene {
 
         // Reachable tiles are interactive; others are blurred/masked.
         if (tile.reachable && !tile.completed) {
-          // Use a generous circle hit area so the whole tile (rim included) is clickable.
-          container.setInteractive(new Phaser.Geom.Circle(0, 0, TILE_RADIUS + 8), Phaser.Geom.Circle.Contains)
-          container.on('pointerdown', () => this.onTileClick(tile))
+          // Add an invisible circle on top that is larger than the visible tile
+          // so the whole circle (rim included) is easy to click/tap.
+          const hitArea = this.add.circle(0, 0, TILE_RADIUS + 12, 0x000000, 0)
+          hitArea.setInteractive({ useHandCursor: true })
+          hitArea.on('pointerdown', () => this.onTileClick(tile))
+          container.add(hitArea)
 
           this.input.setDefaultCursor('pointer')
           container.setAlpha(1)
@@ -324,7 +359,7 @@ export default class MapScene extends Phaser.Scene {
 
   doTileAction(tile) {
     if (isBattleTile(tile.type)) {
-      this.scene.start('LoadoutScene', { player: this.player, tile })
+      this.scene.start('LoadoutScene', { player: this.player, tile, mapIndex: this.map.index })
       return
     }
 

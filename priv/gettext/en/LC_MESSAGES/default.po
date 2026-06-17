@@ -332,6 +332,8 @@ msgstr ""
 
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:125
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:176
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:261
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:345
 #: lib/medoru_web/live/lesson_test_live/show.ex:946
 #: lib/medoru_web/live/word_set_live/test.html.heex:105
 #: lib/medoru_web/live/word_set_live/test.html.heex:186
@@ -353,13 +355,13 @@ msgid "Correct Answer:"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1047
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:376
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:565
 #: lib/medoru_web/live/lesson_test_live/show.ex:1014
 #, elixir-autogen, elixir-format
 msgid "Correct! Well done."
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:122
+#: lib/medoru_web/live/daily_test_live.ex:130
 #, elixir-autogen, elixir-format
 msgid "Could not start daily test"
 msgstr ""
@@ -431,7 +433,7 @@ msgstr ""
 msgid "Daily Goal Completed!"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:51
+#: lib/medoru_web/live/daily_test_live.ex:54
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:36
 #, elixir-autogen, elixir-format
 msgid "Daily Review"
@@ -504,9 +506,11 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:196
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:242
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:272
-#: lib/medoru_web/live/daily_test_live.ex:171
-#: lib/medoru_web/live/daily_test_live.ex:324
-#: lib/medoru_web/live/daily_test_live.ex:353
+#: lib/medoru_web/live/daily_test_live.ex:191
+#: lib/medoru_web/live/daily_test_live.ex:291
+#: lib/medoru_web/live/daily_test_live.ex:331
+#: lib/medoru_web/live/daily_test_live.ex:425
+#: lib/medoru_web/live/daily_test_live.ex:454
 #: lib/medoru_web/live/word_set_live/test.ex:130
 #: lib/medoru_web/live/word_set_live/test.ex:188
 #: lib/medoru_web/live/word_set_live/test.ex:214
@@ -515,7 +519,9 @@ msgstr ""
 msgid "Error recording answer"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:235
+#: lib/medoru_web/live/daily_test_live.ex:255
+#: lib/medoru_web/live/daily_test_live.ex:294
+#: lib/medoru_web/live/daily_test_live.ex:334
 #: lib/medoru_web/live/word_set_live/test.ex:191
 #, elixir-autogen, elixir-format
 msgid "Error: word not found"
@@ -937,14 +943,14 @@ msgstr ""
 msgid "Pick up where you left off with your lessons."
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:184
+#: lib/medoru_web/live/daily_test_live.ex:204
 #: lib/medoru_web/live/lesson_test_live/show.ex:307
 #: lib/medoru_web/live/word_set_live/test.ex:143
 #, elixir-autogen, elixir-format
 msgid "Please enter both meaning and reading"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:150
+#: lib/medoru_web/live/daily_test_live.ex:170
 #: lib/medoru_web/live/lesson_test_live/show.ex:251
 #, elixir-autogen, elixir-format
 msgid "Please select an answer"
@@ -1131,7 +1137,9 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/test.ex:1291
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:117
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:168
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:339
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:253
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:337
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:528
 #: lib/medoru_web/live/lesson_test_live/show.ex:905
 #: lib/medoru_web/live/lesson_test_live/show.ex:936
 #: lib/medoru_web/live/lesson_test_live/show.ex:965
@@ -1141,7 +1149,7 @@ msgstr ""
 msgid "Skip →"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:76
+#: lib/medoru_web/live/daily_test_live.ex:82
 #, elixir-autogen, elixir-format
 msgid "Start a lesson to begin learning Japanese! Your daily review will be available once you've learned some words."
 msgstr ""
@@ -1166,7 +1174,9 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:984
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1030
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:160
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:331
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:245
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:329
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:520
 #: lib/medoru_web/live/lesson_test_live/show.ex:886
 #: lib/medoru_web/live/lesson_test_live/show.ex:917
 #: lib/medoru_web/live/lesson_test_live/show.ex:957
@@ -1183,7 +1193,7 @@ msgid "Test Complete - %{title}"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1066
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:352
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:541
 #: lib/medoru_web/live/lesson_test_live/show.ex:991
 #, elixir-autogen, elixir-format
 msgid "Test Complete!"
@@ -1551,30 +1561,30 @@ msgstr ""
 msgid "Structured Lessons"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:670
+#: lib/medoru_web/live/daily_test_live.ex:812
 #, elixir-autogen, elixir-format
 msgid "%{word} means '%{meaning}' and is read as '%{reading}'"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:529
-#: lib/medoru_web/live/daily_test_live.ex:627
+#: lib/medoru_web/live/daily_test_live.ex:748
 #: lib/medoru_web/live/daily_test_live/complete.ex:224
 #: lib/medoru_web/live/lesson_test_live/show.ex:1055
 #, elixir-autogen, elixir-format
 msgid "How do you read '%{word}'?"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:657
+#: lib/medoru_web/live/daily_test_live.ex:799
 #, elixir-autogen, elixir-format
 msgid "Take your time and think about the word"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:654
+#: lib/medoru_web/live/daily_test_live.ex:793
 #, elixir-autogen, elixir-format
 msgid "Type the English meaning and hiragana reading"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live.ex:633
+#: lib/medoru_web/live/daily_test_live.ex:754
 #: lib/medoru_web/live/daily_test_live/complete.ex:230
 #: lib/medoru_web/live/lesson_test_live/show.ex:1059
 #, elixir-autogen, elixir-format
@@ -1582,7 +1592,7 @@ msgid "Type the meaning and reading for '%{word}'"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:521
-#: lib/medoru_web/live/daily_test_live.ex:621
+#: lib/medoru_web/live/daily_test_live.ex:742
 #: lib/medoru_web/live/daily_test_live/complete.ex:218
 #: lib/medoru_web/live/lesson_test_live/show.ex:1051
 #, elixir-autogen, elixir-format
@@ -2044,7 +2054,7 @@ msgid "Submit"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:555
-#: lib/medoru_web/live/daily_test_live.ex:639
+#: lib/medoru_web/live/daily_test_live.ex:760
 #: lib/medoru_web/live/daily_test_live/complete.ex:236
 #: lib/medoru_web/live/lesson_test_live/show.ex:1039
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:151
@@ -2104,6 +2114,8 @@ msgstr ""
 msgid "Which word means '%{meaning}'?"
 msgstr ""
 
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:192
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:276
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:62
 #, elixir-autogen, elixir-format
 msgid "Hint: Starts with \"%{hint}\""
@@ -2114,7 +2126,8 @@ msgstr ""
 msgid "Meaning (English):"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:197
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:207
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:376
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:76
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Meaning:"
@@ -2135,7 +2148,9 @@ msgstr ""
 msgid "Reading (Hiragana):"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:193
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:211
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:295
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:371
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:81
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reading:"
@@ -2146,6 +2161,7 @@ msgstr ""
 msgid "Tip: Use hiragana. Long vowels can be written as おう or おお, えい or ええ"
 msgstr ""
 
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:225
 #: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:103
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Type the English meaning..."
@@ -2221,7 +2237,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:165
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:169
 #: lib/medoru_web/live/kana_live/show.html.heex:102
 #: lib/medoru_web/live/kana_live/show.html.heex:102
 #: lib/medoru_web/live/kanji_live/show.html.heex:171
@@ -3599,7 +3615,7 @@ msgstr ""
 msgid "Unlimited"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:361
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:550
 #: lib/medoru_web/live/teacher/test_live/index.ex:369
 #, elixir-autogen, elixir-format
 msgid "View Results"
@@ -5487,7 +5503,7 @@ msgid "Not Started"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1057
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:387
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:576
 #, elixir-autogen, elixir-format
 msgid "Not quite. Keep going!"
 msgstr ""
@@ -6072,7 +6088,7 @@ msgstr ""
 msgid "You've already completed your daily review today. Great job keeping up with your studies!"
 msgstr ""
 
-#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:355
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:544
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You've completed all questions in today's daily review."
 msgstr ""
@@ -8580,6 +8596,8 @@ msgid "Please enter a Japanese sentence/word before validating."
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:172
+#: lib/medoru_web/live/daily_test_live.ex:266
+#: lib/medoru_web/live/daily_test_live.ex:305
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please enter an answer"
 msgstr ""
@@ -12408,7 +12426,7 @@ msgstr ""
 msgid "Already added"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:175
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:179
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:150
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:150
 #, elixir-autogen, elixir-format
@@ -12514,7 +12532,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_card_game_live.ex:577
 #: lib/medoru_web/live/daily_card_game_live.ex:605
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:18
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:251
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:255
 #, elixir-autogen, elixir-format
 msgid "Back to Daily Challenges"
 msgstr ""
@@ -13272,7 +13290,7 @@ msgstr ""
 msgid "Followers only"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:186
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:190
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:161
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:161
 #, elixir-autogen, elixir-format
@@ -13771,7 +13789,7 @@ msgstr ""
 msgid "No kanji data available for this radical."
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:219
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:223
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:194
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:194
 #, elixir-autogen, elixir-format, fuzzy
@@ -13813,7 +13831,7 @@ msgstr ""
 msgid "No tests found matching your criteria."
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:170
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:174
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:145
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:145
 #, elixir-autogen, elixir-format
@@ -14417,7 +14435,7 @@ msgstr ""
 msgid "This word set is full (maximum %{max} words)."
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:204
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:208
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:179
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:179
 #, elixir-autogen, elixir-format
@@ -14451,7 +14469,7 @@ msgstr ""
 msgid "Top %{count} Most Frequent Kanji"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:238
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:242
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:208
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:208
 #, elixir-autogen, elixir-format, fuzzy
@@ -14691,9 +14709,9 @@ msgid "Wrong strokes"
 msgstr ""
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:109
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:228
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:235
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:232
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:239
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:243
 #: lib/medoru_web/live/dashboard_live.html.heex:122
 #: lib/medoru_web/live/dashboard_live.html.heex:122
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:99
@@ -14872,7 +14890,7 @@ msgstr ""
 msgid "kanji contain this radical"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:207
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:211
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:182
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:182
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:108
@@ -15959,7 +15977,7 @@ msgstr ""
 msgid "Type the word or reading..."
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:225
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:229
 #, elixir-autogen, elixir-format
 msgid "%{count} kanji found"
 msgstr ""
@@ -15975,14 +15993,14 @@ msgid "30 XP per kanji + 50 XP"
 msgstr ""
 
 #: lib/medoru_web/live/daily_challenges_live.ex:244
-#: lib/medoru_web/live/daily_radical_hunt_live.ex:34
-#: lib/medoru_web/live/daily_radical_hunt_live.ex:43
+#: lib/medoru_web/live/daily_radical_hunt_live.ex:35
+#: lib/medoru_web/live/daily_radical_hunt_live.ex:44
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Daily Radical Hunt"
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:234
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:238
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Participation bonus"
 msgstr ""
@@ -15992,7 +16010,7 @@ msgstr ""
 msgid "Type kanji containing a chosen radical before time runs out."
 msgstr ""
 
-#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:215
+#: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:219
 #, elixir-autogen, elixir-format
 msgid "XP Breakdown"
 msgstr ""
@@ -16000,4 +16018,43 @@ msgstr ""
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:14
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You have already completed today's Radical Hunt challenge."
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live.ex:772
+#: lib/medoru_web/live/daily_test_live/complete.ex:248
+#, elixir-autogen, elixir-format
+msgid "Choose the right picture for '%{meaning}'"
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live.ex:778
+#: lib/medoru_web/live/daily_test_live/complete.ex:254
+#, elixir-autogen, elixir-format
+msgid "Enter the Japanese word for '%{meaning}'"
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live.ex:796
+#, elixir-autogen, elixir-format
+msgid "Enter the Japanese word or its reading"
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:202
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:286
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Not quite. The correct answer is:"
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:309
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Type the Japanese word or reading..."
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live.ex:766
+#: lib/medoru_web/live/daily_test_live/complete.ex:242
+#, elixir-autogen, elixir-format
+msgid "What is the Japanese word for '%{meaning}'?"
+msgstr ""
+
+#: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:291
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Word:"
 msgstr ""

@@ -35,6 +35,8 @@ export const MAP_TEMPLATES = {
     bossTileImage: 'map0_boss_tile',
     chestTileImage: 'map0_chest_tile',
     shopTileImage: 'map0_shop_tile',
+    memoryTileImage: 'map0_memory_tile',
+    cascadeTileImage: 'map0_memory_tile',
     restTileImage: 'map0_rest_tile',
   },
   1: {
@@ -126,6 +128,8 @@ export function generateMap(mapIndex = 0) {
     bossTileImage: template.bossTileImage || null,
     chestTileImage: template.chestTileImage || null,
     shopTileImage: template.shopTileImage || null,
+    memoryTileImage: template.memoryTileImage || null,
+    cascadeTileImage: template.cascadeTileImage || null,
     restTileImage: template.restTileImage || null,
     columns,
   }

@@ -636,6 +636,12 @@ export default class Player extends Character {
     if (template.shopTileImage && !map.shopTileImage) {
       map.shopTileImage = template.shopTileImage
     }
+    if (template.memoryTileImage && !map.memoryTileImage) {
+      map.memoryTileImage = template.memoryTileImage
+    }
+    if (template.cascadeTileImage && !map.cascadeTileImage) {
+      map.cascadeTileImage = template.cascadeTileImage
+    }
     if (template.restTileImage && !map.restTileImage) {
       map.restTileImage = template.restTileImage
     }

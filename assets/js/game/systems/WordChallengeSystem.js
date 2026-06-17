@@ -189,7 +189,10 @@ export default class WordChallengeSystem {
 
     const normalized = this.input.trim().toLowerCase()
     const accepted = this.currentOptions.promptType === 'meaning'
-      ? [(this.word.meaning || '').trim().toLowerCase()]
+      ? String(this.word.meaning || '')
+          .split('/')
+          .map(s => s.trim().toLowerCase())
+          .filter(Boolean)
       : this.getAcceptedReadings(this.word)
 
     const isCorrect = !timedOut && accepted.some(a => a === normalized)

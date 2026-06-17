@@ -299,4 +299,82 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       end)
     end
   end
+
+  describe "generate_english_daily_test/1" do
+    setup do
+      user = user_fixture(%{learning_language: "english"})
+
+      words = [
+        word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"}),
+        word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"}),
+        word_fixture(%{text: "先生", reading: "せんせい", meaning: "teacher"})
+      ]
+
+      Enum.each(words, fn word ->
+        {:ok, _} = Learning.track_english_word_learned(user.id, word.id)
+      end)
+
+      %{user: user, words: words}
+    end
+
+    test "creates an English daily test from English-learned words", %{user: user} do
+      assert {:ok, test} = DailyTestGenerator.generate_english_daily_test(user.id)
+      assert test.test_type == :daily
+      assert test.creator_id == user.id
+      assert test.status == :ready
+      assert length(test.test_steps) > 0
+    end
+
+    test "uses meaning-first question types", %{user: user, words: words} do
+      assert {:ok, test} = DailyTestGenerator.generate_english_daily_test(user.id)
+
+      question_types = Enum.map(test.test_steps, & &1.question_data["type"])
+
+      assert "meaning_to_text" in question_types
+      assert "japanese_to_meaning" in question_types
+      assert "meaning_to_japanese" in question_types or "meaning_to_image" in question_types
+
+      word_ids_in_test = Enum.map(test.test_steps, & &1.word_id) |> Enum.uniq()
+      assert length(word_ids_in_test) == length(words)
+    end
+
+    test "multichoice options include the correct Japanese word", %{user: user, words: _words} do
+      assert {:ok, test} = DailyTestGenerator.generate_english_daily_test(user.id)
+
+      text_step =
+        Enum.find(test.test_steps, &(&1.question_data["type"] == "meaning_to_japanese"))
+
+      assert text_step
+      assert text_step.correct_answer in text_step.options
+    end
+
+    test "returns error when no English-learned words exist" do
+      new_user = user_fixture(%{learning_language: "english"})
+
+      assert {:error, :no_items_available} =
+               DailyTestGenerator.generate_english_daily_test(new_user.id)
+    end
+  end
+
+  describe "get_or_create_daily_test/2 for English learners" do
+    setup do
+      user = user_fixture(%{learning_language: "english"})
+      word = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+      {:ok, _} = Learning.track_english_word_learned(user.id, word.id)
+
+      %{user: user, word: word}
+    end
+
+    test "creates an English test for English-learning users", %{user: user} do
+      assert {:ok, test} = DailyTestGenerator.get_or_create_daily_test(user.id, "english")
+      assert test.metadata[:learning_language] == "english"
+      assert Enum.any?(test.test_steps, &(&1.question_data["type"] == "meaning_to_text"))
+    end
+
+    test "returns existing English test for today", %{user: user} do
+      assert {:ok, test1} = DailyTestGenerator.get_or_create_daily_test(user.id, "english")
+      assert {:ok, test2} = DailyTestGenerator.get_or_create_daily_test(user.id, "english")
+      assert test1.id == test2.id
+    end
+  end
 end

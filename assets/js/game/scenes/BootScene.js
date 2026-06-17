@@ -32,6 +32,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('map0_boss_tile', '/images/game/map0_boss_tile.png?v=1')
     this.load.image('map0_chest_tile', '/images/game/map0_chest_tile.png?v=3')
     this.load.image('map0_shop_tile', '/images/game/map0_shop_tile.png?v=4')
+    this.load.image('map0_memory_tile', '/images/game/map0_memory_tile.png?v=5')
     this.load.image('map0_rest_tile', '/images/game/map0_rest_tile.png?v=2')
 
     // Loadout portrait

@@ -15,6 +15,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
   init(data) {
     this.tile = data.tile || null
+    this.mapIndex = data.mapIndex ?? 0
   }
 
   create() {
@@ -627,6 +628,13 @@ export default class LoadoutScene extends Phaser.Scene {
     thumbHit.on('pointerup', endThumbDrag)
     thumbHit.on('pointerupoutside', endThumbDrag)
 
+    // Row hit areas live above the scroll overlay so Add/Remove clicks register.
+    this.itemListY = listY
+    this.itemListRows.forEach((row, i) => {
+      row.hitArea.setPosition(listX + 230, listY + i * itemHeight + row.rowH / 2)
+      this.tabContent.add(row.hitArea)
+    })
+
     this.updateItemListScrollThumb(listY, listH, thumbH)
     this.setItemListScroll(0)
 
@@ -648,13 +656,21 @@ export default class LoadoutScene extends Phaser.Scene {
     this.itemListScroll = Math.max(0, Math.min(this.itemListMaxScroll, value))
     this.itemListContainer.setY(80 - this.itemListScroll)
 
-    // Visibility culling: hide rows outside the visible area
+    // Visibility culling: hide rows outside the visible area and keep the
+    // overlay hit areas in sync with the scrolled list.
     const visibleH = this.itemListVisibleHeight
     const rowH = this.itemListItemHeight
+    const listY = this.itemListY
+    const listX = 460
     this.itemListRows.forEach((row, i) => {
       const relY = i * rowH - this.itemListScroll
       const visible = relY + rowH > 0 && relY < visibleH
       row.container.setVisible(visible)
+      if (row.hitArea) {
+        row.hitArea.setVisible(visible)
+        row.hitArea.input.enabled = visible
+        row.hitArea.setPosition(listX + 230, listY + i * rowH + row.rowH / 2)
+      }
     })
 
     this.updateItemListScrollThumb()
@@ -717,12 +733,12 @@ export default class LoadoutScene extends Phaser.Scene {
     })
     container.add(toggleBtn.container)
 
-    // Make whole row clickable for toggling
+    // Make whole row clickable for toggling. The hit area is returned so it
+    // can be placed above the scroll overlay, which otherwise swallows clicks.
     const hitArea = this.add.rectangle(230, rowH / 2, 460, rowH, 0x000000, 0).setInteractive({ useHandCursor: true })
     hitArea.on('pointerdown', () => this.toggleActiveItem(item.id))
-    container.add(hitArea)
 
-    return { container, bg, hitArea }
+    return { container, bg, hitArea, rowH }
   }
 
   toggleActiveItem(itemId) {
@@ -1448,6 +1464,6 @@ export default class LoadoutScene extends Phaser.Scene {
     }
     this.player.saveLoadout()
     this.player.refreshActions()
-    this.scene.start('BattleScene', { player: this.player, tile: this.tile })
+    this.scene.start('BattleScene', { player: this.player, tile: this.tile, mapIndex: this.mapIndex })
   }
 }

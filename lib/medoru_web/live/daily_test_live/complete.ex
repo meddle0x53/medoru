@@ -237,6 +237,24 @@ defmodule MedoruWeb.DailyTestLive.Complete do
           _ -> question
         end
 
+      String.starts_with?(question, "__MSG_WHATS_THE_JAPANESE_WORD_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("What is the Japanese word for '%{meaning}'?", meaning: meaning)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_CHOOSE_THE_PICTURE_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("Choose the right picture for '%{meaning}'", meaning: meaning)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_ENTER_THE_JAPANESE_WORD_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("Enter the Japanese word for '%{meaning}'", meaning: meaning)
+          _ -> question
+        end
+
       true ->
         question
     end

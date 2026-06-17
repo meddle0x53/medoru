@@ -2143,12 +2143,12 @@ defmodule Medoru.Learning do
 
   ## Examples
 
-      iex> get_or_create_daily_test(user_id)
+      iex> get_or_create_daily_test(user)
       {:ok, %Test{}}
 
   """
-  def get_or_create_daily_test(user_id) do
-    Medoru.Learning.DailyTestGenerator.get_or_create_daily_test(user_id)
+  def get_or_create_daily_test(%{id: user_id, learning_language: learning_language}) do
+    Medoru.Learning.DailyTestGenerator.get_or_create_daily_test(user_id, learning_language)
   end
 
   @doc """

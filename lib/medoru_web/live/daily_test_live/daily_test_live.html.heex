@@ -177,22 +177,201 @@
                   </button>
                 <% end %>
               </div>
+            <% @current_step.question_type == :fill -> %>
+              <%= if @current_step.question_data["type"] == "japanese_to_meaning" do %>
+                <%!-- English meaning input question --%>
+                <div class="mb-4 sm:mb-6">
+                  <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                    {translate_question(@current_step.question)}
+                  </div>
+                  <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
+                    {@current_step.question_data["word_text"]}
+                  </h2>
+                  <%= if @show_hint do %>
+                    <div class="text-sm text-secondary text-center">
+                      {gettext("Hint: Starts with \"%{hint}\"", hint: meaning_hint(@current_step))}
+                    </div>
+                  <% end %>
+                </div>
+
+                <%= if @feedback == :incorrect && @correct_meaning do %>
+                  <div class="bg-error/10 border border-error/20 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-2 text-error mb-2">
+                      <.icon name="hero-x-circle" class="w-5 h-5" />
+                      <span class="font-medium">
+                        {gettext("Not quite. The correct answer is:")}
+                      </span>
+                    </div>
+                    <div class="pl-7 space-y-1">
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Meaning:")}</span>
+                        <span class="font-medium">{@correct_meaning}</span>
+                      </div>
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Reading:")}</span>
+                        <span class="font-medium">{@correct_reading}</span>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
+                <div class="space-y-4 mb-4 sm:mb-6">
+                  <input
+                    type="text"
+                    id="english_meaning_answer_input"
+                    name="english_meaning_answer"
+                    value={@english_meaning_answer}
+                    phx-keyup="update_english_meaning"
+                    placeholder={gettext("Type the English meaning...")}
+                    disabled={@feedback == :incorrect}
+                    class={[
+                      "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
+                      @feedback == :incorrect && "border-error bg-error/5",
+                      @feedback == :correct && "border-success bg-success/5",
+                      is_nil(@feedback) && "border-base-200 focus:border-primary"
+                    ]}
+                  />
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <%= if @feedback != :incorrect do %>
+                    <button
+                      type="button"
+                      phx-click="submit_english_meaning"
+                      disabled={@english_meaning_answer == ""}
+                      class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+
+                    <button
+                      type="button"
+                      phx-click="skip_question"
+                      class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
+                    >
+                      {gettext("Skip →")}
+                    </button>
+                  <% else %>
+                    <button
+                      type="button"
+                      phx-click="continue_after_correction"
+                      class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                    >
+                      {gettext("Continue →")}
+                    </button>
+                  <% end %>
+                </div>
+              <% else %>
+                <%!-- English text input question --%>
+                <div class="mb-4 sm:mb-6">
+                  <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                    {translate_question(@current_step.question)}
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-3 sm:mb-4">
+                    {localize_question_data_meaning(@current_step.question_data, @locale)}
+                  </h2>
+                  <%= if @show_hint do %>
+                    <div class="text-sm text-secondary text-center">
+                      {gettext("Hint: Starts with \"%{hint}\"", hint: hint_text(@current_step))}
+                    </div>
+                  <% end %>
+                </div>
+
+                <%= if @feedback == :incorrect && @correct_meaning do %>
+                  <div class="bg-error/10 border border-error/20 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-2 text-error mb-2">
+                      <.icon name="hero-x-circle" class="w-5 h-5" />
+                      <span class="font-medium">
+                        {gettext("Not quite. The correct answer is:")}
+                      </span>
+                    </div>
+                    <div class="pl-7 space-y-1">
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Word:")}</span>
+                        <span class="font-medium font-japanese">{@correct_meaning}</span>
+                      </div>
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Reading:")}</span>
+                        <span class="font-medium">{@correct_reading}</span>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
+                <div class="space-y-4 mb-4 sm:mb-6">
+                  <input
+                    type="text"
+                    id="english_text_answer_input"
+                    name="english_text_answer"
+                    value={@english_text_answer}
+                    phx-keyup="update_english_text"
+                    placeholder={gettext("Type the Japanese word or reading...")}
+                    disabled={@feedback == :incorrect}
+                    class={[
+                      "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
+                      @feedback == :incorrect && "border-error bg-error/5",
+                      @feedback == :correct && "border-success bg-success/5",
+                      is_nil(@feedback) && "border-base-200 focus:border-primary"
+                    ]}
+                  />
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <%= if @feedback != :incorrect do %>
+                    <button
+                      type="button"
+                      phx-click="submit_english_text"
+                      disabled={@english_text_answer == ""}
+                      class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+
+                    <button
+                      type="button"
+                      phx-click="skip_question"
+                      class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
+                    >
+                      {gettext("Skip →")}
+                    </button>
+                  <% else %>
+                    <button
+                      type="button"
+                      phx-click="continue_after_correction"
+                      class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                    >
+                      {gettext("Continue →")}
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
             <% true -> %>
               <%!-- Multichoice Question --%>
+              <% english_multichoice? =
+                @current_step.question_data["type"] in ["meaning_to_japanese", "meaning_to_image"] %>
               <%!-- Question --%>
               <div class="mb-4 sm:mb-6">
                 <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
                   {translate_question(@current_step.question)}
                 </div>
-                <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
-                  {@current_step.question_data["word_text"]}
-                </h2>
+                <%= if english_multichoice? do %>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-3 sm:mb-4">
+                    {localize_question_data_meaning(@current_step.question_data, @locale)}
+                  </h2>
+                <% else %>
+                  <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
+                    {@current_step.question_data["word_text"]}
+                  </h2>
+                <% end %>
                 <%!-- Show hint based on question type --%>
                 <%= if @current_step.question_data["type"] == "word_to_meaning" do %>
                   <p class="text-center text-secondary text-sm sm:text-base">
                     {gettext("Reading:")} {@current_step.question_data["word_reading"]}
                   </p>
-                <% else %>
+                <% end %>
+                <%= if @current_step.question_data["type"] in ["word_to_reading", "meaning_to_japanese"] do %>
                   <p class="text-center text-secondary text-sm sm:text-base">
                     {gettext("Meaning:")} {localize_question_data_meaning(
                       @current_step.question_data,
@@ -215,7 +394,7 @@
               <%!-- Answer Options --%>
               <div class={[
                 "mb-4 sm:mb-6",
-                if @current_step.question_data["type"] == "image_to_meaning" do
+                if @current_step.question_data["type"] in ["image_to_meaning", "meaning_to_image"] do
                   "grid grid-cols-2 gap-3 sm:gap-4"
                 else
                   "space-y-2 sm:space-y-3"
@@ -227,19 +406,29 @@
                       @current_step.question_data["type"] == "word_to_meaning" ->
                         localize_option(option, @locale)
 
-                      @current_step.question_data["type"] == "image_to_meaning" ->
+                      @current_step.question_data["type"] in [
+                        "image_to_meaning",
+                        "meaning_to_image"
+                      ] ->
                         option
 
                       true ->
                         option
                     end %>
                   <% image_data =
-                    if @current_step.question_data["type"] == "image_to_meaning" do
+                    if @current_step.question_data["type"] in [
+                         "image_to_meaning",
+                         "meaning_to_image"
+                       ] do
                       @current_step.question_data["image_options"] |> Enum.at(index)
                     else
                       nil
                     end %>
-                  <% is_image_type = @current_step.question_data["type"] == "image_to_meaning" %>
+                  <% is_image_type =
+                    @current_step.question_data["type"] in [
+                      "image_to_meaning",
+                      "meaning_to_image"
+                    ] %>
                   <% is_selected = @selected_answer == option %>
                   <button
                     type="button"

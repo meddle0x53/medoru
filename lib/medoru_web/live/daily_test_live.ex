@@ -31,7 +31,7 @@ defmodule MedoruWeb.DailyTestLive do
     user = socket.assigns.current_scope.current_user
 
     # Get or create daily test
-    case Learning.get_or_create_daily_test(user.id) do
+    case Learning.get_or_create_daily_test(user) do
       {:ok, test} ->
         # Check if already completed
         if Learning.daily_test_completed_today?(user.id) do
@@ -40,16 +40,20 @@ defmodule MedoruWeb.DailyTestLive do
            |> assign(:locale, locale)
            |> assign(:page_title, gettext("Daily Review Complete"))
            |> assign(:already_completed, true)
+           |> assign(:english_mode?, user.learning_language == "english")
            |> assign(:test, test)
            |> assign(:session, nil)
            |> assign(:current_step, nil)
            |> assign(:session_state, nil)}
         else
+          english_mode? = user.learning_language == "english"
+
           {:ok,
            socket
            |> assign(:locale, locale)
            |> assign(:page_title, gettext("Daily Review"))
            |> assign(:already_completed, false)
+           |> assign(:english_mode?, english_mode?)
            |> assign(:test, test)
            |> assign(:session, nil)
            |> assign(:current_step, nil)
@@ -57,6 +61,8 @@ defmodule MedoruWeb.DailyTestLive do
            |> assign(:selected_answer, nil)
            |> assign(:meaning_answer, "")
            |> assign(:reading_answer, "")
+           |> assign(:english_text_answer, "")
+           |> assign(:english_meaning_answer, "")
            |> assign(:feedback, nil)
            |> assign(:show_hint, false)
            |> assign(:error_message, nil)
@@ -106,6 +112,8 @@ defmodule MedoruWeb.DailyTestLive do
             |> assign(:selected_answer, nil)
             |> assign(:meaning_answer, "")
             |> assign(:reading_answer, "")
+            |> assign(:english_text_answer, "")
+            |> assign(:english_meaning_answer, "")
             |> assign(:feedback, nil)
             |> assign(:show_hint, false)
             |> assign(:meaning_error, false)
@@ -140,6 +148,18 @@ defmodule MedoruWeb.DailyTestLive do
   def handle_event("update_reading", params, socket) do
     value = Map.get(params, "reading_answer", params["value"] || "")
     {:noreply, assign(socket, :reading_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_english_text", params, socket) do
+    value = Map.get(params, "english_text_answer", params["value"] || "")
+    {:noreply, assign(socket, :english_text_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_english_meaning", params, socket) do
+    value = Map.get(params, "english_meaning_answer", params["value"] || "")
+    {:noreply, assign(socket, :english_meaning_answer, value)}
   end
 
   @impl true
@@ -238,6 +258,85 @@ defmodule MedoruWeb.DailyTestLive do
   end
 
   @impl true
+  def handle_event("submit_english_text", _params, socket) do
+    step = socket.assigns.current_step
+    answer = String.trim(socket.assigns.english_text_answer)
+
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      session = socket.assigns.session
+      word = if step.word_id, do: Content.get_word!(step.word_id), else: nil
+
+      if word do
+        is_correct = validate_japanese_answer(answer, word)
+
+        attrs = %{
+          answer: answer,
+          time_spent_seconds: 15,
+          step_index: session.current_step_index,
+          is_correct: is_correct,
+          points_earned: if(is_correct, do: step.points, else: 0)
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs) do
+          {:ok, _step_answer} ->
+            if is_correct do
+              handle_correct_answer(socket, step)
+            else
+              handle_incorrect_english_text(socket, step, word)
+            end
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("submit_english_meaning", _params, socket) do
+    step = socket.assigns.current_step
+    answer = String.trim(socket.assigns.english_meaning_answer)
+
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      session = socket.assigns.session
+      word = if step.word_id, do: Content.get_word!(step.word_id), else: nil
+
+      if word do
+        is_correct =
+          Medoru.Tests.ReadingAnswerValidator.validate_meaning(word.meaning, answer)
+
+        attrs = %{
+          answer: answer,
+          time_spent_seconds: 15,
+          step_index: session.current_step_index,
+          is_correct: is_correct,
+          points_earned: if(is_correct, do: step.points, else: 0)
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs) do
+          {:ok, _step_answer} ->
+            if is_correct do
+              handle_correct_answer(socket, step)
+            else
+              handle_incorrect_english_text(socket, step, word)
+            end
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("show_hint", _params, socket) do
     {:noreply, assign(socket, :show_hint, true)}
   end
@@ -277,6 +376,8 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:selected_answer, nil)
         |> assign(:meaning_answer, "")
         |> assign(:reading_answer, "")
+        |> assign(:english_text_answer, "")
+        |> assign(:english_meaning_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, nil)
         |> assign(:meaning_error, false)
@@ -380,6 +481,8 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:selected_answer, nil)
         |> assign(:meaning_answer, "")
         |> assign(:reading_answer, "")
+        |> assign(:english_text_answer, "")
+        |> assign(:english_meaning_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, nil)
         |> assign(:meaning_error, false)
@@ -445,6 +548,8 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:selected_answer, nil)
         |> assign(:meaning_answer, "")
         |> assign(:reading_answer, "")
+        |> assign(:english_text_answer, "")
+        |> assign(:english_meaning_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, :correct)
         |> assign(:meaning_error, false)
@@ -470,6 +575,20 @@ defmodule MedoruWeb.DailyTestLive do
       |> assign(:meaning_error, !validation.meaning_correct)
       |> assign(:reading_error, !validation.reading_correct)
       |> assign(:correct_meaning, Content.get_localized_meaning(word, socket.assigns.locale))
+      |> assign(:correct_reading, word.reading)
+      |> assign(:next_step, next_step)
+
+    {:noreply, socket}
+  end
+
+  defp handle_incorrect_english_text(socket, step, word) do
+    session = socket.assigns.session
+    next_step = get_next_step(session, step)
+
+    socket =
+      socket
+      |> assign(:feedback, :incorrect)
+      |> assign(:correct_meaning, word.text)
       |> assign(:correct_reading, word.reading)
       |> assign(:next_step, next_step)
 
@@ -502,6 +621,8 @@ defmodule MedoruWeb.DailyTestLive do
         |> assign(:current_step, next_step)
         |> assign(:session_state, calculate_session_state(updated_session))
         |> assign(:selected_answer, nil)
+        |> assign(:english_text_answer, "")
+        |> assign(:english_meaning_answer, "")
         |> assign(:show_hint, false)
         |> assign(:feedback, :incorrect)
 
@@ -543,7 +664,7 @@ defmodule MedoruWeb.DailyTestLive do
     _ = Gamification.check_daily_reviews_badges(user.id, daily_count)
 
     # Track learned words from the test
-    track_test_words(user.id, test.id)
+    track_test_words(user, test.id)
 
     # Navigate to completion page
     {:noreply,
@@ -553,7 +674,7 @@ defmodule MedoruWeb.DailyTestLive do
   end
 
   # Track all words from the test as learned
-  defp track_test_words(user_id, test_id) do
+  defp track_test_words(user, test_id) do
     test = Tests.get_test!(test_id)
 
     test.test_steps
@@ -561,14 +682,14 @@ defmodule MedoruWeb.DailyTestLive do
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
     |> Enum.each(fn word_id ->
-      # Track word as learned (will create UserProgress if not exists)
-      Learning.track_word_learned(user_id, word_id)
+      # Track word as learned in the user's learning-language progress table
+      Learning.track_word_learned_for_user(user, word_id)
 
-      # Get or create review schedule
-      progress = Learning.get_word_progress(user_id, word_id)
+      # Get or create review schedule (only for Japanese-learning progress)
+      progress = Learning.get_word_progress(user.id, word_id)
 
       if progress do
-        Learning.get_or_create_review_schedule(user_id, progress.id)
+        Learning.get_or_create_review_schedule(user.id, progress.id)
       end
     end)
   end
@@ -640,6 +761,24 @@ defmodule MedoruWeb.DailyTestLive do
           _ -> question
         end
 
+      String.starts_with?(question, "__MSG_WHATS_THE_JAPANESE_WORD_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("What is the Japanese word for '%{meaning}'?", meaning: meaning)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_CHOOSE_THE_PICTURE_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("Choose the right picture for '%{meaning}'", meaning: meaning)
+          _ -> question
+        end
+
+      String.starts_with?(question, "__MSG_ENTER_THE_JAPANESE_WORD_FOR__|") ->
+        case String.split(question, "|") do
+          [_, meaning] -> gettext("Enter the Japanese word for '%{meaning}'", meaning: meaning)
+          _ -> question
+        end
+
       true ->
         question
     end
@@ -652,6 +791,9 @@ defmodule MedoruWeb.DailyTestLive do
     case hint do
       "__MSG_TYPE_ENGLISH_HIRAGANA__" ->
         gettext("Type the English meaning and hiragana reading")
+
+      "__MSG_ENTER_JAPANESE_WORD_OR_READING__" ->
+        gettext("Enter the Japanese word or its reading")
 
       "Take your time and think about the word" ->
         gettext("Take your time and think about the word")
@@ -702,5 +844,60 @@ defmodule MedoruWeb.DailyTestLive do
 
   def localize_question_data_meaning(question_data, _locale) do
     question_data["word_meaning"]
+  end
+
+  # Generate hint text for English text input questions
+  defp hint_text(step) do
+    reading = step.question_data["word_reading"] || ""
+
+    reading
+    |> String.trim()
+    |> String.first()
+    |> case do
+      nil -> "..."
+      first -> first <> "..."
+    end
+  end
+
+  # Generate hint text for English meaning input questions
+  defp meaning_hint(step) do
+    meaning = step.question_data["word_meaning"] || ""
+
+    meaning
+    |> String.trim()
+    |> String.first()
+    |> case do
+      nil -> "..."
+      first -> first <> "..."
+    end
+  end
+
+  # Validate a Japanese text answer against a word's text and reading.
+  # Allows exact matches (case-insensitive, punctuation stripped) against any
+  # slash-separated reading alternative.
+  defp validate_japanese_answer(answer, _word) when answer == "" or is_nil(answer), do: false
+
+  defp validate_japanese_answer(answer, word) do
+    answer = String.trim(answer)
+
+    valid_answers =
+      [word.text, word.reading]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.flat_map(&split_readings/1)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+
+    Enum.any?(valid_answers, fn valid ->
+      String.downcase(valid) == String.downcase(answer)
+    end)
+  end
+
+  defp split_readings(nil), do: []
+
+  defp split_readings(text) do
+    text
+    |> String.split("/")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
 end

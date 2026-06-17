@@ -2,9 +2,9 @@
  * Manages whose turn it is and stamina consumption.
  */
 export default class TurnManager {
-  constructor(player, enemy) {
+  constructor(player, enemies) {
     this.player = player
-    this.enemy = enemy
+    this.enemies = Array.isArray(enemies) ? enemies : [enemies]
     this.currentTurn = 'player'
     this.turnCount = 1
     this.battleOver = false
@@ -13,12 +13,38 @@ export default class TurnManager {
     this.onBattleEnd = null
   }
 
+  getAliveEnemies() {
+    return this.enemies.filter(e => e.isAlive())
+  }
+
   getActiveCharacter() {
-    return this.currentTurn === 'player' ? this.player : this.enemy
+    return this.currentTurn === 'player' ? this.player : this.enemies[0]
   }
 
   getInactiveCharacter() {
-    return this.currentTurn === 'player' ? this.enemy : this.player
+    return this.currentTurn === 'player' ? this.enemies[0] : this.player
+  }
+
+  checkBattleOver(performer) {
+    if (this.battleOver) return true
+
+    if (performer === this.player) {
+      if (this.getAliveEnemies().length === 0) {
+        this.battleOver = true
+        this.winner = 'player'
+        if (this.onBattleEnd) this.onBattleEnd(this.winner)
+        return true
+      }
+    } else {
+      if (!this.player.isAlive()) {
+        this.battleOver = true
+        this.winner = 'enemy'
+        if (this.onBattleEnd) this.onBattleEnd(this.winner)
+        return true
+      }
+    }
+
+    return false
   }
 
   useSkill(skill, performer, target, challengeResult) {
@@ -142,11 +168,7 @@ export default class TurnManager {
     }
 
     // Check win/lose
-    if (!target.isAlive()) {
-      this.battleOver = true
-      this.winner = performer === this.player ? 'player' : 'enemy'
-      if (this.onBattleEnd) this.onBattleEnd(this.winner)
-    }
+    this.checkBattleOver(performer)
 
     return result
   }
@@ -159,7 +181,9 @@ export default class TurnManager {
     if (this.currentTurn === 'player') {
       this.turnCount++
       this.player.resetForTurn()
-      this.enemy.resetForTurn()
+      for (const enemy of this.enemies) {
+        if (enemy.isAlive()) enemy.resetForTurn()
+      }
     }
 
     if (this.onTurnChange) this.onTurnChange(this.currentTurn)

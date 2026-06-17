@@ -18,6 +18,7 @@ export default class BattleScene extends Phaser.Scene {
 
   init(data) {
     this.tile = data.tile || null
+    this.mapIndex = data.mapIndex ?? 0
   }
 
   create() {
@@ -25,8 +26,10 @@ export default class BattleScene extends Phaser.Scene {
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
-    this.enemy = this.createEnemyForTile()
-    this.turnManager = new TurnManager(this.player, this.enemy)
+    this.enemies = this.createEnemiesForTile()
+    // Backwards-compatible alias for code not yet converted to the array.
+    this.enemy = this.enemies[0]
+    this.turnManager = new TurnManager(this.player, this.enemies)
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
 
     // Kanji drawing for weapon powerups (Forward Slash uses 力)
@@ -42,9 +45,16 @@ export default class BattleScene extends Phaser.Scene {
 
     this.challengeActive = false
     this.selectedSkill = null
+    this.selectedTarget = null
     this.typedInput = ''
     this.currentChallenge = null
     this.particles = []
+
+    this.targetingMode = false
+    this.targetingCallback = null
+    this.targetingPrompt = null
+    this.targetingCancelBtn = null
+    this.targetingHighlights = []
 
     this.createBackground()
     this.createCharacters()
@@ -90,21 +100,56 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     const enemyName = this.enemy.name || 'the enemy'
-    this.addCombatLog(`Battle start! Defeat ${enemyName}!`)
+    const countText = this.enemies.length > 1 ? ` (${this.enemies.length})` : ''
+    this.addCombatLog(`Battle start! Defeat ${enemyName}${countText}!`)
     this.onTurnChange('player')
   }
 
-  createEnemyForTile() {
+  createEnemiesForTile() {
     const type = this.tile?.type
-    switch (type) {
-      case TILE_TYPES.MINI_BOSS:
-        return new Enemy('mini_boss')
-      case TILE_TYPES.BOSS:
-        return new Enemy('boss')
-      case TILE_TYPES.BATTLE:
-      default:
-        return new Enemy('oni')
+    const enemyKey = type === TILE_TYPES.MINI_BOSS ? 'mini_boss'
+      : type === TILE_TYPES.BOSS ? 'boss'
+      : 'oni'
+
+    const count = this.determineEnemyCount()
+    const multiplier = count === 3 ? 0.5 : count === 2 ? 0.65 : 1.0
+
+    const enemies = []
+    for (let i = 0; i < count; i++) {
+      const enemy = new Enemy(enemyKey)
+      if (multiplier !== 1.0) {
+        enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * multiplier))
+        enemy.hp = enemy.maxHp
+      }
+      enemies.push(enemy)
     }
+    return enemies
+  }
+
+  determineEnemyCount() {
+    const col = this.tile?.col ?? 1
+    const mapIndex = this.mapIndex ?? 0
+
+    // Clamp to the encounter columns; col 0 (home) and col 10 (boss) use late weights.
+    const phaseCol = col >= 1 && col <= 9 ? col : 7
+
+    // Map 1 (Japanese Fields) — gentler introduction.
+    const map1 = {
+      three: phaseCol >= 7 ? 0.20 : phaseCol >= 4 ? 0.08 : 0,
+      two:   phaseCol >= 7 ? 0.50 : phaseCol >= 4 ? 0.15 : 0,
+    }
+
+    // Map 2+ — tougher.
+    const map2 = {
+      three: phaseCol >= 7 ? 0.50 : phaseCol >= 4 ? 0.25 : 0.10,
+      two:   phaseCol >= 7 ? 0.75 : phaseCol >= 4 ? 0.50 : 0.20,
+    }
+
+    const chances = mapIndex >= 1 ? map2 : map1
+
+    if (Math.random() < chances.three) return 3
+    if (Math.random() < chances.two) return 2
+    return 1
   }
 
   update(time, delta) {
@@ -174,19 +219,72 @@ export default class BattleScene extends Phaser.Scene {
     // Charm overlays: small luminous kanji floating above the hero's head
     this.createCharmOverlays()
 
-    // Enemy — kasa-obake facing left toward hero
-    this.enemySprite = this.add.sprite(690, 570, 'enemy_kasa_obake')
-    this.enemySprite.setScale(0.30)
-    this.enemySprite.setOrigin(0.5, 0.99)
+    // Enemies rendered in a horizontal row on the right; scale down when there are more.
+    this.enemyDisplays = this.enemies.map((enemy, i) => this.createEnemyDisplay(enemy, i, this.enemies.length))
+    // Backwards-compatible alias for code paths still using the single enemy sprite.
+    this.enemySprite = this.enemyDisplays[0]?.sprite || null
+  }
+
+  createEnemyDisplay(enemy, index, total) {
+    const config = this.getEnemySlotConfig(total)
+    const x = config.xs[index]
+    const scale = config.scale
+    // Offset smaller enemies upward so multi-enemy groups don't look sunken.
+    const y = 570 - (0.30 - scale) * 280
+
     this.textures.get('enemy_kasa_obake').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('enemy_kasa_obake_attack').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('enemy_kasa_obake_defend').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('enemy_kasa_obake_buff').setFilter(Phaser.Textures.FilterMode.LINEAR)
     this.textures.get('enemy_kasa_obake_defeated').setFilter(Phaser.Textures.FilterMode.LINEAR)
 
-    this.drawNameBg(690, 102)
-    this.add.text(690, 95, this.enemy.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
-    this.add.text(690, 110, this.enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+    const sprite = this.add.sprite(x, y, 'enemy_kasa_obake')
+    sprite.setScale(scale)
+    sprite.setOrigin(0.5, 0.99)
+    sprite.setInteractive({ useHandCursor: false })
+    sprite.on('pointerdown', () => this.onEnemySpriteClick(display))
+
+    const nameBg = this.drawNameBg(x, 102)
+    const nameText = this.add.text(x, 95, enemy.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    const jaText = this.add.text(x, 110, enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+
+    // Per-enemy HP/stamina bars
+    const barW = 100
+    const barH = 12
+    const hpY = 500
+    const staminaY = 517
+    const hpBg = this.add.rectangle(x, hpY, barW, barH, 0xe0e0e0).setOrigin(0.5)
+    const hpBar = this.add.rectangle(x - barW / 2, hpY, barW, barH, COLORS.hp).setOrigin(0, 0.5)
+    const staminaBg = this.add.rectangle(x, staminaY, barW, barH, 0xe0e0e0).setOrigin(0.5)
+    const staminaBar = this.add.rectangle(x - barW / 2, staminaY, barW, barH, COLORS.stamina).setOrigin(0, 0.5)
+
+    const hpText = this.add.text(x, hpY, `${enemy.hp}/${enemy.maxHp}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
+    const staminaText = this.add.text(x, staminaY, `${enemy.stamina}/${enemy.maxStamina}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
+    const blockText = this.add.text(x, 485, '', { ...FONTS.default, fontSize: '11px', color: '#3498db' }).setOrigin(0.5)
+
+    // Intention icons above this enemy
+    const intentionContainer = this.add.container(x, 58)
+    intentionContainer.setDepth(50)
+    intentionContainer.setVisible(false)
+    const intentionIcons = []
+    const iconSize = 22
+    const spacing = 28
+    for (let i = 0; i < 3; i++) {
+      const ix = (i - 1) * spacing
+      const bg = this.add.circle(ix, 0, iconSize / 2, 0x2c3e50).setOrigin(0.5)
+      const icon = this.add.text(ix, 0, '', { fontFamily: FONTS.default.fontFamily, fontSize: '14px', color: '#ecf0f1' }).setOrigin(0.5)
+      intentionContainer.add(bg)
+      intentionContainer.add(icon)
+      intentionIcons.push({ bg, icon })
+    }
+
+    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, baseScale: scale, x }
+  }
+
+  getEnemySlotConfig(total) {
+    if (total >= 3) return { xs: [540, 690, 840], scale: 0.16 }
+    if (total === 2) return { xs: [600, 780], scale: 0.22 }
+    return { xs: [690], scale: 0.30 }
   }
 
   setPlayerPose(poseKey) {
@@ -268,8 +366,114 @@ export default class BattleScene extends Phaser.Scene {
     this.createCharmOverlays()
   }
 
-  setEnemySprite(key) {
-    this.enemySprite.setTexture(key)
+  setEnemySprite(key, enemy = null) {
+    const display = enemy
+      ? this.enemyDisplays.find(d => d.enemy === enemy)
+      : this.enemyDisplays[0]
+    if (display?.sprite) {
+      display.sprite.setTexture(key)
+    }
+  }
+
+  onEnemySpriteClick(display) {
+    if (!this.targetingMode) return
+    if (!display.enemy.isAlive()) return
+    const callback = this.targetingCallback
+    this.clearTargetMode()
+    if (callback) callback(display.enemy)
+  }
+
+  enterTargetMode(callback, prompt = 'Select a target') {
+    if (this.targetingMode) return
+    this.targetingMode = true
+    this.targetingCallback = callback
+
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
+
+    this.targetingPrompt = this.add.text(GAME_CONFIG.width / 2, 32, prompt, {
+      ...FONTS.title,
+      fontSize: '16px',
+      color: '#f1c40f',
+    }).setOrigin(0.5).setDepth(60)
+
+    this.targetingCancelBtn = this.createButton(GAME_CONFIG.width / 2, 70, 'Cancel', () => this.clearTargetMode(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    this.targetingCancelBtn.text.setDepth(61)
+    this.targetingCancelBtn.bg.setDepth(61)
+    this.targetingCancelBtn.hitArea.setDepth(61)
+    if (this.targetingCancelBtn.shadow) this.targetingCancelBtn.shadow.setDepth(60)
+
+    this.targetingHighlights = []
+    for (const display of this.enemyDisplays) {
+      if (!display.enemy.isAlive()) continue
+      display.sprite.setInteractive({ useHandCursor: true })
+
+      // Full-enemy clickable target zone so tapping anywhere on the enemy/bars works.
+      const displayHeight = display.sprite.displayHeight || 120
+      const zoneW = 120
+      const zoneH = displayHeight + 70
+      const zoneY = display.sprite.y - zoneH / 2 + 10
+
+      const hitZone = this.add.rectangle(display.x, zoneY, zoneW, zoneH, 0xe74c3c, 0)
+      hitZone.setOrigin(0.5)
+      hitZone.setDepth(99)
+      hitZone.setInteractive({ useHandCursor: true })
+      hitZone.on('pointerdown', () => this.onEnemySpriteClick(display))
+      this.targetingHighlights.push(hitZone)
+
+      // Visible pulsing ring centered on the enemy.
+      const ringY = display.sprite.y - displayHeight * 0.45
+      const ringRadius = Math.max(48, Math.min(70, Math.round(displayHeight * 0.45)))
+      const ring = this.add.circle(display.x, ringY, ringRadius, 0xe74c3c, 0.12)
+      ring.setOrigin(0.5)
+      ring.setStrokeStyle(3, 0xe74c3c)
+      ring.setDepth(100)
+      this.targetingHighlights.push(ring)
+
+      this.tweens.add({
+        targets: ring,
+        alpha: { from: 0.9, to: 0.35 },
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+      })
+    }
+  }
+
+  clearTargetMode() {
+    if (!this.targetingMode) return
+    this.targetingMode = false
+    this.targetingCallback = null
+
+    if (this.targetingPrompt) {
+      this.targetingPrompt.destroy()
+      this.targetingPrompt = null
+    }
+    if (this.targetingCancelBtn) {
+      this.targetingCancelBtn.bg.destroy()
+      this.targetingCancelBtn.text.destroy()
+      this.targetingCancelBtn.hitArea.destroy()
+      if (this.targetingCancelBtn.shadow) this.targetingCancelBtn.shadow.destroy()
+      this.targetingCancelBtn = null
+    }
+
+    for (const ring of this.targetingHighlights) {
+      ring.destroy()
+    }
+    this.targetingHighlights = []
+
+    for (const display of this.enemyDisplays) {
+      if (display.enemy.isAlive()) {
+        display.sprite.setInteractive({ useHandCursor: false })
+      } else {
+        display.sprite.disableInteractive()
+      }
+    }
+
+    if (this.turnManager.currentTurn === 'player' && !this.challengeActive) {
+      this.setSkillButtonsEnabled(true)
+      this.endTurnBtn.setVisible(true)
+    }
   }
 
   flashPlayerSprite() {
@@ -297,22 +501,13 @@ export default class BattleScene extends Phaser.Scene {
     this.playerHpText = this.add.text(300, 500, `${this.player.hp}/${this.player.maxHp}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
     this.playerStaminaText = this.add.text(300, 517, `${this.player.stamina}/${this.player.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
 
-    // Enemy bars (right top)
-    this.createBar(720, 500, 'enemyHp', COLORS.hp, this.enemy.hp, this.enemy.maxHp)
-    this.createBar(720, 517, 'enemyStamina', COLORS.stamina, this.enemy.stamina, this.enemy.maxStamina)
-    this.enemyHpText = this.add.text(720, 500, `${this.enemy.hp}/${this.enemy.maxHp}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
-    this.enemyStaminaText = this.add.text(720, 517, `${this.enemy.stamina}/${this.enemy.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
-
     // Action panel — modern rounded glass panel behind hero sprite
     this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
 
     // TEMPORARY: Win Battle button for testing the reward loop (hidden on boss tiles)
     this.winBattleBtn = this.createButton(120, 140, 'Win Battle', () => {
-      this.scene.start('WinScene', { player: this.player, enemy: this.enemy, tile: this.tile })
+      this.scene.start('WinScene', { player: this.player, enemy: this.enemies[0], tile: this.tile })
     }, 160, 36, 0x27ae60, 0x2ecc71)
-    if (this.tile?.type === TILE_TYPES.BOSS) {
-      this.winBattleBtn.setVisible(false)
-    }
 
     this.skillButtons = []
     // All active actions get a button (parry is passive but shown)
@@ -333,7 +528,6 @@ export default class BattleScene extends Phaser.Scene {
 
     // Block indicators
     this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
-    this.enemyBlockText = this.add.text(720, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
   }
 
   createBar(x, y, key, color, value, max) {
@@ -960,30 +1154,50 @@ export default class BattleScene extends Phaser.Scene {
       this.addCombatLog(`${item.name} -> +${actual} HP!`)
       this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${actual}`, COLORS.success)
     } else if (item.type === 'damage') {
-      const rawDamage = this.player.getItemDamage(item.baseValue)
-      // Apply enemy defense
-      const defense = this.enemy.getDefense()
-      let finalDamage
-      if (defense <= 0) {
-        finalDamage = rawDamage
-      } else {
-        finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + defense))
+      const aliveEnemies = this.turnManager.getAliveEnemies()
+      if (aliveEnemies.length > 1) {
+        // Defer damage until the player picks a target.
+        this.pendingItem = item
+        this.pendingItemKanjiResult = kanjiResult
+        this.enterTargetMode((target) => {
+          this.applyItemDamage(item, kanjiResult, target)
+        }, 'Throw at which enemy?')
+        return
       }
-      finalDamage = Math.max(1, finalDamage - this.enemy.armor)
-      const actual = this.enemy.takeDamage(finalDamage)
-      // Enemy doesn't die from stone? No, takeDamage handles death
-      // Check if enemy died
-      if (!this.enemy.isAlive()) {
-        this.turnManager.battleOver = true
-        this.turnManager.winner = 'player'
-        if (this.turnManager.onBattleEnd) this.turnManager.onBattleEnd('player')
-      }
-      this.setPlayerPose('idle') // placeholder until we have stone throw sprite
-      this.addCombatLog(`${item.name} thrown! -> ${actual} damage!`)
-      this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${actual}`, COLORS.danger)
-      this.shakeSprite(this.enemySprite)
-      this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+      this.applyItemDamage(item, kanjiResult, aliveEnemies[0])
     }
+
+    this.player.clearItemEffectModifier()
+    this.updateBars()
+    this.updateBlockText()
+  }
+
+  applyItemDamage(item, kanjiResult, target) {
+    const rawDamage = this.player.getItemDamage(item.baseValue)
+    const defense = target.getDefense()
+    let finalDamage
+    if (defense <= 0) {
+      finalDamage = rawDamage
+    } else {
+      finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + defense))
+    }
+    finalDamage = Math.max(1, finalDamage - target.armor)
+    const actual = target.takeDamage(finalDamage)
+
+    if (!target.isAlive()) {
+      this.onEnemyDefeated(target)
+    }
+
+    this.turnManager.checkBattleOver(this.player)
+
+    const targetDisplay = this.getDisplayForEnemy(target)
+    this.setPlayerPose('idle') // placeholder until we have stone throw sprite
+    this.addCombatLog(`${item.name} thrown! -> ${actual} damage!`)
+    if (targetDisplay) {
+      this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${actual}`, COLORS.danger)
+      this.shakeSprite(targetDisplay.sprite)
+    }
+    this.time.delayedCall(600, () => this.setPlayerPose('idle'))
 
     this.player.clearItemEffectModifier()
     this.updateBars()
@@ -1221,32 +1435,14 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createIntentionIcons() {
-    // Intention icons above enemy — shows predicted action plan at start of enemy turn
-    this.intentionContainer = this.add.container(690, 58)
-    this.intentionContainer.setDepth(50)
-    this.intentionContainer.setVisible(false)
-
-    this.intentionIcons = []
-    const iconSize = 22
-    const spacing = 28
-
-    for (let i = 0; i < 3; i++) {
-      const x = (i - 1) * spacing
-      const bg = this.add.circle(x, 0, iconSize / 2, 0x2c3e50).setOrigin(0.5)
-      const icon = this.add.text(x, 0, '', {
-        fontFamily: FONTS.default.fontFamily,
-        fontSize: '14px',
-        color: '#ecf0f1',
-      }).setOrigin(0.5)
-      this.intentionContainer.add(bg)
-      this.intentionContainer.add(icon)
-      this.intentionIcons.push({ bg, icon })
-    }
+    // Per-enemy intention containers are already created in createEnemyDisplay().
+    // This method is kept for compatibility with the existing create() flow.
   }
 
-  showIntentionPlan(plan) {
+  showIntentionPlanForEnemy(display) {
+    const plan = display.enemy.computeActionPlan()
     if (!plan || plan.length === 0) {
-      this.intentionContainer.setVisible(false)
+      display.intentionContainer.setVisible(false)
       return
     }
 
@@ -1260,7 +1456,7 @@ export default class BattleScene extends Phaser.Scene {
       debuff: { char: '⬇', color: 0x9b59b6 },    // purple
     }
 
-    this.intentionIcons.forEach((slot, i) => {
+    display.intentionIcons.forEach((slot, i) => {
       if (i < plan.length) {
         const action = plan[i]
         const info = ICON_MAP[action.type] || { char: '?', color: 0x7f8c8d }
@@ -1274,11 +1470,13 @@ export default class BattleScene extends Phaser.Scene {
       }
     })
 
-    this.intentionContainer.setVisible(true)
+    display.intentionContainer.setVisible(true)
+    display.intentionContainer.setScale(1)
+    display.intentionContainer.setAlpha(1)
 
     // Subtle pop-in animation
     this.tweens.add({
-      targets: this.intentionContainer,
+      targets: display.intentionContainer,
       scaleX: { from: 0.6, to: 1 },
       scaleY: { from: 0.6, to: 1 },
       alpha: { from: 0, to: 1 },
@@ -1287,8 +1485,20 @@ export default class BattleScene extends Phaser.Scene {
     })
   }
 
+  showIntentionPlan() {
+    for (const display of this.enemyDisplays) {
+      if (display.enemy.isAlive()) {
+        this.showIntentionPlanForEnemy(display)
+      } else {
+        display.intentionContainer.setVisible(false)
+      }
+    }
+  }
+
   hideIntentionIcons() {
-    this.intentionContainer.setVisible(false)
+    for (const display of this.enemyDisplays) {
+      display.intentionContainer.setVisible(false)
+    }
   }
 
   createCombatLog() {
@@ -1427,7 +1637,23 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     this.selectedSkill = skill
+
+    const aliveEnemies = this.turnManager.getAliveEnemies()
+    if (this.isEnemyTargetedSkill(skill) && aliveEnemies.length > 1) {
+      this.enterTargetMode((target) => {
+        this.selectedTarget = target
+        this.startChallenge(skill)
+      }, 'Select a target')
+      return
+    }
+
+    // Single enemy or self-targeted skill: auto-target the first/only enemy.
+    this.selectedTarget = aliveEnemies[0] || null
     this.startChallenge(skill)
+  }
+
+  isEnemyTargetedSkill(skill) {
+    return ['attack', 'attack_defence', 'debuff', 'curse'].includes(skill?.type)
   }
 
   onEndTurn() {
@@ -1685,11 +1911,56 @@ export default class BattleScene extends Phaser.Scene {
     this.executeSkill(result.result)
   }
 
+  getDisplayForEnemy(enemy) {
+    return this.enemyDisplays.find(d => d.enemy === enemy)
+  }
+
+  onEnemyDefeated(enemy) {
+    const display = this.getDisplayForEnemy(enemy)
+    if (!display || display.defeated) return
+    display.defeated = true
+
+    this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
+
+    display.sprite.disableInteractive()
+    display.sprite.setTexture('enemy_kasa_obake_defeated')
+    display.intentionContainer.setVisible(false)
+
+    // Fade out the sprite and collapse the UI.
+    this.tweens.add({
+      targets: display.sprite,
+      alpha: 0,
+      scale: display.sprite.scale * 0.6,
+      y: display.sprite.y + 30,
+      duration: 700,
+      ease: 'Quad.easeIn',
+    })
+
+    const uiElements = [
+      display.nameBg,
+      display.nameText,
+      display.jaText,
+      display.hpBg,
+      display.hpBar,
+      display.staminaBg,
+      display.staminaBar,
+      display.hpText,
+      display.staminaText,
+      display.blockText,
+    ]
+    for (const el of uiElements) {
+      if (el) el.setVisible(false)
+    }
+  }
+
   executeSkill(challengeResult) {
+    const target = this.selectedTarget || this.turnManager.getAliveEnemies()[0]
+    if (!target) return
+
     const result = this.turnManager.useSkill(
       this.selectedSkill,
       this.player,
-      this.enemy,
+      target,
       challengeResult
     )
 
@@ -1697,6 +1968,12 @@ export default class BattleScene extends Phaser.Scene {
       this.addCombatLog('Skill failed!')
       return
     }
+
+    if (!target.isAlive()) {
+      this.onEnemyDefeated(target)
+    }
+
+    const targetDisplay = this.getDisplayForEnemy(target)
 
     this.updateBars()
     this.updateBlockText()
@@ -1711,11 +1988,13 @@ export default class BattleScene extends Phaser.Scene {
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         const lifestealText = result.lifesteal ? ` (+${result.lifesteal} HP)` : ''
         this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
-        this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
+        if (targetDisplay) {
+          this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
+          this.shakeSprite(targetDisplay.sprite)
+        }
         if (result.lifesteal) {
           this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.lifesteal}`, COLORS.success)
         }
-        this.shakeSprite(this.enemySprite)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
       }
@@ -1731,9 +2010,11 @@ export default class BattleScene extends Phaser.Scene {
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
-        this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${result.damage}`, COLORS.danger)
+        if (targetDisplay) {
+          this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
+          this.shakeSprite(targetDisplay.sprite)
+        }
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
-        this.shakeSprite(this.enemySprite)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
       }
@@ -1754,6 +2035,9 @@ export default class BattleScene extends Phaser.Scene {
         break
       }
     }
+
+    // If the skill killed the last enemy, TurnManager already ends the battle.
+    // Otherwise, let the player continue acting.
   }
 
   // ---------- Enemy AI ----------
@@ -1772,9 +2056,8 @@ export default class BattleScene extends Phaser.Scene {
       this.player.setupDefenceUsed = false
       this.player.clearShieldBonus()
       this.player.resetReadiness()
-      // Show what the enemy will do on its upcoming turn
-      const plan = this.enemy.computeActionPlan()
-      this.showIntentionPlan(plan)
+      // Show what each enemy will do on the upcoming turn
+      this.showIntentionPlan()
     } else {
       this.turnText.setText('ENEMY TURN')
       this.turnText.setColor(COLORS.danger)
@@ -1790,106 +2073,127 @@ export default class BattleScene extends Phaser.Scene {
   async runEnemyTurn() {
     await this.delay(800)
 
-    let usedBuffThisTurn = false
-    let actionsTaken = 0
+    // Per-enemy state for the whole enemy-team turn.
+    const enemyState = new Map()
+    for (const enemy of this.turnManager.enemies) {
+      enemyState.set(enemy, { usedBuff: false, actionsTaken: 0 })
+    }
 
     while (this.turnManager.currentTurn === 'enemy' && !this.turnManager.battleOver) {
-      const action = this.enemy.chooseAction(usedBuffThisTurn)
-      if (!action) break
+      let anyActionTaken = false
 
-      // Reset reaction correctness for this action
-      this.player.lastReactionCorrect = false
+      for (const enemy of this.turnManager.enemies) {
+        if (this.turnManager.battleOver) break
+        if (!enemy.isAlive()) continue
 
-      if (action.type === 'buff') usedBuffThisTurn = true
-      actionsTaken++
+        const state = enemyState.get(enemy)
+        if (!enemy.shouldContinueTurn(state.actionsTaken)) continue
 
-      // Before an attack, check for reaction challenge trigger
-      if (action.type === 'attack') {
-        const diceRoll = this.roll2d6()
-        const triggerChance = (this.player.luck * 0.1 * diceRoll) / 100
-        if (Math.random() < triggerChance) {
-          this.addCombatLog('Reaction opportunity!')
-          await this.runReactionChallenge()
-        }
-      }
+        const action = enemy.chooseAction(state.usedBuff)
+        if (!action) continue
 
-      let result
-      let parried = false
+        this.currentAttackingEnemy = enemy
+        this.player.lastReactionCorrect = false
 
-      // Parry check (only for attacks, after reaction challenge)
-      if (action.type === 'attack' && this.player.hasActiveParry()) {
-        const parryChance = this.player.getParryChance()
-        this.addCombatLog(`Parry chance: ${(parryChance * 100).toFixed(0)}%`)
-        if (Math.random() < parryChance) {
-          parried = true
-          result = { type: 'attack', damage: 0, isCrit: false, missed: false, parried: true }
-          // Parry is already set up and paid for — no additional cost here
-          this.addCombatLog('Parry triggered! Counter-attack incoming!')
-          // Reset reaction multiplier since parry replaces the attack
-          this.player.reactionMultiplier = 1
-        }
-      }
+        if (action.type === 'buff') state.usedBuff = true
+        state.actionsTaken++
 
-      if (!parried) {
-        result = this.enemy.performAction(action, this.player)
-      }
-
-      // Reset reaction multiplier after the attack resolves
-      const reactionMult = this.player.reactionMultiplier
-      this.player.reactionMultiplier = 1
-
-      this.updateBars()
-      this.updateBlockText()
-
-      switch (result.type) {
-        case 'attack': {
-          this.setEnemySprite('enemy_kasa_obake_attack')
-          if (result.parried) {
-            this.setPlayerPose('block_idle')
-            const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
-            this.addCombatLog(`Kasa-obake uses ${action.name}... PARRIED!${reactionText}`)
-            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
-            await this.delay(600)
-            this.setPlayerPose('idle')
-            this.setEnemySprite('enemy_kasa_obake')
-            await this.runCounterAttack()
-          } else if (result.missed) {
-            const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-            this.addCombatLog(`Kasa-obake uses ${action.name}... but missed!${reactionText}`)
-            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
-            await this.delay(800)
-            this.setPlayerPose('idle')
-            this.setEnemySprite('enemy_kasa_obake')
-          } else {
-            this.setPlayerPose('block_idle')
-            const critText = result.isCrit ? ' CRITICAL!' : ''
-            const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-            this.addCombatLog(`Kasa-obake uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}`)
-            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
-            this.shakeSprite(this.playerSprite)
-            await this.delay(800)
-            this.setPlayerPose('idle')
-            this.setEnemySprite('enemy_kasa_obake')
+        // Before an attack, check for reaction challenge trigger
+        if (action.type === 'attack') {
+          const diceRoll = this.roll2d6()
+          const triggerChance = (this.player.luck * 0.1 * diceRoll) / 100
+          if (Math.random() < triggerChance) {
+            this.addCombatLog('Reaction opportunity!')
+            await this.runReactionChallenge()
           }
-          break
         }
-        case 'buff': {
-          this.setEnemySprite('enemy_kasa_obake_buff')
-          this.addCombatLog(`Kasa-obake uses ${action.name}! Its next attack will be stronger!`)
-          this.time.delayedCall(800, () => this.setEnemySprite('enemy_kasa_obake'))
-          break
+
+        let result
+        let parried = false
+
+        // Parry check (only for attacks, after reaction challenge)
+        if (action.type === 'attack' && this.player.hasActiveParry()) {
+          const parryChance = this.player.getParryChance()
+          this.addCombatLog(`Parry chance: ${(parryChance * 100).toFixed(0)}%`)
+          if (Math.random() < parryChance) {
+            parried = true
+            result = { type: 'attack', damage: 0, isCrit: false, missed: false, parried: true }
+            // Parry is already set up and paid for — no additional cost here
+            this.addCombatLog('Parry triggered! Counter-attack incoming!')
+            // Reset reaction multiplier since parry replaces the attack
+            this.player.reactionMultiplier = 1
+          }
         }
-        case 'recover': {
-          this.addCombatLog(`Kasa-obake rests and recovers ${result.stamina} stamina.`)
-          break
+
+        if (!parried) {
+          result = enemy.performAction(action, this.player)
         }
+
+        // Reset reaction multiplier after the attack resolves
+        const reactionMult = this.player.reactionMultiplier
+        this.player.reactionMultiplier = 1
+
+        this.updateBars()
+        this.updateBlockText()
+        if (this.turnManager.checkBattleOver(enemy)) break
+
+        const display = this.getDisplayForEnemy(enemy)
+        const enemyName = enemy.name || 'The enemy'
+
+        switch (result.type) {
+          case 'attack': {
+            this.setEnemySprite('enemy_kasa_obake_attack', enemy)
+            if (result.parried) {
+              this.setPlayerPose('block_idle')
+              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
+              this.addCombatLog(`${enemyName} uses ${action.name}... PARRIED!${reactionText}`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
+              await this.delay(600)
+              this.setPlayerPose('idle')
+              this.setEnemySprite('enemy_kasa_obake', enemy)
+              await this.runCounterAttack()
+            } else if (result.missed) {
+              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+              this.addCombatLog(`${enemyName} uses ${action.name}... but missed!${reactionText}`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
+              await this.delay(800)
+              this.setPlayerPose('idle')
+              this.setEnemySprite('enemy_kasa_obake', enemy)
+            } else {
+              this.setPlayerPose('block_idle')
+              const critText = result.isCrit ? ' CRITICAL!' : ''
+              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+              this.addCombatLog(`${enemyName} uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
+              this.shakeSprite(this.playerSprite)
+              await this.delay(800)
+              this.setPlayerPose('idle')
+              this.setEnemySprite('enemy_kasa_obake', enemy)
+            }
+            break
+          }
+          case 'buff': {
+            this.setEnemySprite('enemy_kasa_obake_buff', enemy)
+            this.addCombatLog(`${enemyName} uses ${action.name}! Its next attack will be stronger!`)
+            this.time.delayedCall(800, () => this.setEnemySprite('enemy_kasa_obake', enemy))
+            break
+          }
+          case 'recover': {
+            this.addCombatLog(`${enemyName} rests and recovers ${result.stamina} stamina.`)
+            break
+          }
+        }
+
+        anyActionTaken = true
+        await this.delay(1000)
+
+        if (this.turnManager.battleOver) break
       }
 
-      await this.delay(1000)
-
-      // Decide if enemy takes another action
-      if (!this.enemy.shouldContinueTurn(actionsTaken)) break
+      if (!anyActionTaken) break
     }
+
+    this.currentAttackingEnemy = null
 
     if (!this.turnManager.battleOver) {
       this.turnManager.endTurn()
@@ -1944,6 +2248,9 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   executeCounterAttack(action, kanjiResult) {
+    const target = this.currentAttackingEnemy || this.turnManager.getAliveEnemies()[0]
+    if (!target) return
+
     let multiplier = 0.5
     if (kanjiResult.completed) {
       if (kanjiResult.wrongStrokes === 0) multiplier = 1.0
@@ -1952,19 +2259,22 @@ export default class BattleScene extends Phaser.Scene {
 
     const baseDmg = this.player.calculateWeaponDamage(action)
     const counterDmg = Math.max(1, Math.floor(baseDmg * multiplier))
-    const actual = this.enemy.takeDamage(counterDmg)
+    const actual = target.takeDamage(counterDmg)
 
-    if (!this.enemy.isAlive()) {
-      this.turnManager.battleOver = true
-      this.turnManager.winner = 'player'
-      if (this.turnManager.onBattleEnd) this.turnManager.onBattleEnd('player')
+    if (!target.isAlive()) {
+      this.onEnemyDefeated(target)
     }
 
+    this.turnManager.checkBattleOver(this.player)
+
+    const targetDisplay = this.getDisplayForEnemy(target)
     this.setPlayerPose('slash_light_01')
     const qualityText = multiplier >= 1.0 ? 'Perfect counter!' : multiplier >= 0.75 ? 'Solid counter!' : 'Weak counter!'
     this.addCombatLog(`${qualityText} ${action.name} -> ${actual} damage!`)
-    this.spawnFloatingText(this.enemySprite.x, this.enemySprite.y - 40, `-${actual}`, COLORS.danger)
-    this.shakeSprite(this.enemySprite)
+    if (targetDisplay) {
+      this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${actual}`, COLORS.danger)
+      this.shakeSprite(targetDisplay.sprite)
+    }
 
     this.time.delayedCall(600, () => this.setPlayerPose('idle'))
   }
@@ -1974,13 +2284,20 @@ export default class BattleScene extends Phaser.Scene {
   updateBars() {
     this.updateBar('playerHp', this.player.hp, this.player.maxHp)
     this.updateBar('playerStamina', this.player.stamina, this.player.maxStamina)
-    this.updateBar('enemyHp', this.enemy.hp, this.enemy.maxHp)
-    this.updateBar('enemyStamina', this.enemy.stamina, this.enemy.maxStamina)
 
     this.playerHpText.setText(`${this.player.hp}/${this.player.maxHp}`)
     this.playerStaminaText.setText(`${this.player.stamina}/${this.player.maxStamina}`)
-    this.enemyHpText.setText(`${this.enemy.hp}/${this.enemy.maxHp}`)
-    this.enemyStaminaText.setText(`${this.enemy.stamina}/${this.enemy.maxStamina}`)
+
+    for (const display of this.enemyDisplays) {
+      const e = display.enemy
+      const hpPct = Math.max(0, e.hp / e.maxHp)
+      display.hpBar.setScale(hpPct, 1)
+      display.hpBar.setFillStyle(hpPct <= 0.25 ? COLORS.danger : COLORS.hp)
+      const staminaPct = Math.max(0, e.stamina / e.maxStamina)
+      display.staminaBar.setScale(staminaPct, 1)
+      display.hpText.setText(`${e.hp}/${e.maxHp}`)
+      display.staminaText.setText(`${e.stamina}/${e.maxStamina}`)
+    }
   }
 
   updateBar(key, value, max) {
@@ -1996,7 +2313,9 @@ export default class BattleScene extends Phaser.Scene {
 
   updateBlockText() {
     this.playerBlockText.setText(this.player.block > 0 ? `Block: ${this.player.block}` : '')
-    this.enemyBlockText.setText(this.enemy.block > 0 ? `Block: ${this.enemy.block}` : '')
+    for (const display of this.enemyDisplays) {
+      display.blockText.setText(display.enemy.block > 0 ? `Block: ${display.enemy.block}` : '')
+    }
   }
 
   setSkillButtonsEnabled(enabled) {
@@ -2074,14 +2393,19 @@ export default class BattleScene extends Phaser.Scene {
     this.challengeOverlay.setVisible(false)
     this.challengeActive = false
 
+    const representativeEnemy = this.enemies[0]
     const isWin = winner === 'player'
     if (isWin) {
-      this.setEnemySprite('enemy_kasa_obake_defeated')
+      for (const display of this.enemyDisplays) {
+        if (display.enemy.isAlive()) {
+          display.sprite.setTexture('enemy_kasa_obake_defeated')
+        }
+      }
       // Send result to server before transitioning
       sendRunResult({
         winner,
         playerHp: this.player.hp,
-        enemyHp: this.enemy.hp,
+        enemyHp: representativeEnemy.hp,
         turnCount: this.turnManager.turnCount,
         timestamp: new Date().toISOString(),
       })
@@ -2093,7 +2417,7 @@ export default class BattleScene extends Phaser.Scene {
         return
       }
 
-      this.scene.start('WinScene', { player: this.player, enemy: this.enemy, tile: this.tile })
+      this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile })
       return
     }
 
@@ -2102,6 +2426,7 @@ export default class BattleScene extends Phaser.Scene {
 
     const title = 'DEFEAT...'
     const color = COLORS.danger
+    const killerName = this.currentAttackingEnemy?.name || representativeEnemy?.name || 'The enemy'
 
     // Overlay
     const overlay = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.6).setDepth(200)
@@ -2112,7 +2437,7 @@ export default class BattleScene extends Phaser.Scene {
       color: '#' + color.toString(16).padStart(6, '0'),
     }).setOrigin(0.5).setDepth(200)
 
-    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, `${this.enemy.name || 'The enemy'} ended your run...`, {
+    const subText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 10, `${killerName} ended your run...`, {
       ...FONTS.default,
       fontSize: '16px',
     }).setOrigin(0.5).setDepth(200)
@@ -2128,7 +2453,7 @@ export default class BattleScene extends Phaser.Scene {
     sendRunResult({
       winner,
       playerHp: this.player.hp,
-      enemyHp: this.enemy.hp,
+      enemyHp: representativeEnemy.hp,
       turnCount: this.turnManager.turnCount,
       timestamp: new Date().toISOString(),
     })

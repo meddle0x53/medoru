@@ -32,13 +32,31 @@ defmodule Medoru.Learning.DailyTestGenerator do
   If the user already has a daily test for today, returns that test.
   Otherwise, generates a new daily test based on due reviews and new words.
 
+  English-learning users get a meaning-first daily test backed by their
+  English-learning word progress instead of the standard Japanese-first test.
+
   ## Examples
 
       iex> get_or_create_daily_test(user_id)
       {:ok, %Test{}}
 
   """
-  def get_or_create_daily_test(user_id) do
+  def get_or_create_daily_test(user_id, learning_language \\ "japanese")
+
+  def get_or_create_daily_test(user_id, "english") do
+    # Check for existing daily test from today
+    case get_todays_daily_test(user_id) do
+      nil ->
+        generate_english_daily_test(user_id)
+
+      existing_test ->
+        # Ensure test_steps are loaded
+        existing_test = Repo.preload(existing_test, :test_steps)
+        {:ok, existing_test}
+    end
+  end
+
+  def get_or_create_daily_test(user_id, _learning_language) do
     # Check for existing daily test from today
     case get_todays_daily_test(user_id) do
       nil ->
@@ -94,6 +112,32 @@ defmodule Medoru.Learning.DailyTestGenerator do
       {:error, :no_items_available}
     else
       create_daily_test(user_id, test_items)
+    end
+  end
+
+  @doc """
+  Generates a new English-learning daily test for a user.
+
+  English-learning users see meaning-first questions:
+  - "What is the Japanese word for <English meaning>?" (multichoice)
+  - "Choose the right picture for <English meaning>" (picture multichoice)
+  - "Enter the Japanese word for <English meaning>" (text input)
+
+  Words are sourced from the user's English-learning progress pool.
+  """
+  def generate_english_daily_test(user_id) do
+    # Calculate dynamic daily goal based on user's English-learned words
+    learned_count = Learning.count_english_learned_words(user_id)
+    daily_goal = calculate_daily_goal(learned_count)
+
+    # Get words for the test
+    test_words = get_english_test_words(user_id, daily_goal)
+
+    if test_words == [] do
+      {:error, :no_items_available}
+    else
+      test_items = build_english_test_items(test_words)
+      create_english_daily_test(user_id, test_items)
     end
   end
 
@@ -333,6 +377,232 @@ defmodule Medoru.Learning.DailyTestGenerator do
           # Preload test_steps before returning
           {:ok, Repo.preload(ready_test, :test_steps)}
         end
+      end
+    end
+  end
+
+  # ============================================================================
+  # English daily test generation
+  # ============================================================================
+
+  defp create_english_daily_test(user_id, test_items) do
+    # Validate test_items is not empty
+    if test_items == [] do
+      {:error, :no_items_available}
+    else
+      # Archive old daily tests first
+      archive_old_daily_tests(user_id)
+
+      # Create the test
+      test_attrs = %{
+        title: "Daily English Review - #{Date.utc_today()}",
+        description: "Daily English review with #{length(test_items)} words",
+        test_type: :daily,
+        status: :published,
+        is_system: true,
+        creator_id: user_id,
+        metadata: %{
+          daily_test_date: Date.to_iso8601(Date.utc_today()),
+          learning_language: "english"
+        }
+      }
+
+      with {:ok, test} <- Tests.create_test(test_attrs),
+           {:ok, _steps} <- create_english_test_steps(test, test_items, user_id),
+           {:ok, ready_test} <- Tests.ready_test(test) do
+        # Preload test_steps before returning
+        {:ok, Repo.preload(ready_test, :test_steps)}
+      end
+    end
+  end
+
+  defp create_english_test_steps(test, test_items, user_id) do
+    steps =
+      test_items
+      |> Enum.flat_map(&build_english_word_steps(&1, user_id))
+      |> Enum.shuffle()
+      |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
+
+    if steps == [] do
+      {:error, :no_questions_generated}
+    else
+      Tests.create_test_steps(test, steps)
+    end
+  end
+
+  defp get_english_test_words(user_id, count) do
+    learned = Learning.list_english_learned_words(user_id, limit: 200)
+
+    if learned == [] do
+      []
+    else
+      learned |> Enum.shuffle() |> Enum.take(min(count, length(learned)))
+    end
+  end
+
+  defp build_english_test_items(words) do
+    Enum.with_index(words, fn word, index ->
+      %{
+        word: word,
+        is_new: false,
+        question_types: english_question_types_for_word(word, index)
+      }
+    end)
+  end
+
+  defp english_question_types_for_word(word, index) do
+    has_image? = not is_nil(word.image_path)
+
+    second_type =
+      case rem(index, 3) do
+        0 -> :meaning_to_japanese
+        1 -> :japanese_to_meaning
+        2 -> if has_image?, do: :meaning_to_image, else: :japanese_to_meaning
+      end
+
+    [:meaning_to_text, second_type]
+  end
+
+  defp build_english_word_steps(%{word: word, question_types: question_types}, user_id) do
+    base_attrs = %{
+      word_id: word.id,
+      step_type: :vocabulary,
+      hints: ["Take your time and think about the word"]
+    }
+
+    question_types
+    |> Enum.map(fn
+      :meaning_to_japanese ->
+        Map.merge(base_attrs, %{
+          question_type: :multichoice,
+          question: "__MSG_WHATS_THE_JAPANESE_WORD_FOR__|#{word.meaning}",
+          correct_answer: word.text,
+          points: 1,
+          options: fetch_japanese_word_options(word, user_id),
+          question_data: %{
+            word_text: word.text,
+            word_reading: word.reading,
+            word_meaning: word.meaning,
+            type: "meaning_to_japanese"
+          }
+        })
+
+      :meaning_to_image ->
+        case fetch_english_image_options(word, user_id) do
+          {:ok, options} ->
+            option_texts = Enum.map(options, & &1.text)
+            option_word_ids = Enum.map(options, & &1.id)
+
+            Map.merge(base_attrs, %{
+              question_type: :multichoice,
+              question: "__MSG_CHOOSE_THE_PICTURE_FOR__|#{word.meaning}",
+              correct_answer: word.text,
+              points: 1,
+              options: option_texts,
+              question_data: %{
+                word_text: word.text,
+                word_reading: word.reading,
+                word_meaning: word.meaning,
+                type: "meaning_to_image",
+                option_word_ids: option_word_ids,
+                image_options: Enum.map(options, &%{text: &1.text, image_path: &1.image_path})
+              }
+            })
+
+          {:error, :not_enough_images} ->
+            # Fallback to text-based Japanese word question
+            Map.merge(base_attrs, %{
+              question_type: :multichoice,
+              question: "__MSG_WHATS_THE_JAPANESE_WORD_FOR__|#{word.meaning}",
+              correct_answer: word.text,
+              points: 1,
+              options: fetch_japanese_word_options(word, user_id),
+              question_data: %{
+                word_text: word.text,
+                word_reading: word.reading,
+                word_meaning: word.meaning,
+                type: "meaning_to_japanese",
+                fallback_from_image: true
+              }
+            })
+        end
+
+      :meaning_to_text ->
+        Map.merge(base_attrs, %{
+          question_type: :fill,
+          question: "__MSG_ENTER_THE_JAPANESE_WORD_FOR__|#{word.meaning}",
+          correct_answer: word.text,
+          points: 2,
+          options: [],
+          hints: ["__MSG_ENTER_JAPANESE_WORD_OR_READING__"],
+          explanation: "__MSG_WORD_MEANS_READING__|#{word.text}|#{word.meaning}|#{word.reading}",
+          question_data: %{
+            type: "meaning_to_text",
+            word_text: word.text,
+            word_reading: word.reading,
+            word_meaning: word.meaning,
+            alt_correct_answers: [word.reading]
+          }
+        })
+
+      :japanese_to_meaning ->
+        Map.merge(base_attrs, %{
+          question_type: :fill,
+          question: "__MSG_WHAT_DOES_WORD_MEAN__|#{word.text}",
+          correct_answer: word.meaning,
+          points: 2,
+          options: [],
+          hints: ["__MSG_TYPE_ENGLISH_MEANING__"],
+          explanation: "__MSG_WORD_MEANS_READING__|#{word.text}|#{word.meaning}|#{word.reading}",
+          question_data: %{
+            type: "japanese_to_meaning",
+            word_text: word.text,
+            word_reading: word.reading,
+            word_meaning: word.meaning
+          }
+        })
+    end)
+  end
+
+  defp fetch_japanese_word_options(word, user_id) do
+    distractors =
+      Word
+      |> join(:inner, [w], uep in Learning.UserEnglishProgress,
+        on: uep.word_id == w.id and uep.user_id == ^user_id
+      )
+      |> where([w], w.id != ^word.id)
+      |> order_by(fragment("RANDOM()"))
+      |> limit(@distractor_count)
+      |> select([w], w.text)
+      |> Repo.all()
+
+    options = [word.text | distractors]
+    options |> Enum.uniq() |> Enum.shuffle()
+  end
+
+  defp fetch_english_image_options(word, user_id) do
+    target_word = Word |> where([w], w.id == ^word.id and not is_nil(w.image_path)) |> Repo.one()
+
+    if is_nil(target_word) do
+      {:error, :not_enough_images}
+    else
+      distractors =
+        Word
+        |> join(:inner, [w], uep in Learning.UserEnglishProgress,
+          on: uep.word_id == w.id and uep.user_id == ^user_id
+        )
+        |> where([w], w.id != ^word.id)
+        |> where([w], not is_nil(w.image_path))
+        |> order_by(fragment("RANDOM()"))
+        |> limit(@distractor_count)
+        |> select([w], %{id: w.id, text: w.text, image_path: w.image_path})
+        |> Repo.all()
+
+      if length(distractors) < @distractor_count do
+        {:error, :not_enough_images}
+      else
+        options = [%{id: word.id, text: word.text, image_path: word.image_path} | distractors]
+        {:ok, options |> Enum.uniq_by(& &1.id) |> Enum.shuffle()}
       end
     end
   end

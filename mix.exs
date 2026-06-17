@@ -4,7 +4,7 @@ defmodule Medoru.MixProject do
   def project do
     [
       app: :medoru,
-      version: "0.7.0",
+      version: "0.7.1",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -91,7 +91,7 @@ defmodule Medoru.MixProject do
   def releases do
     [
       medoru: [
-        version: "0.7.0",
+        version: "0.7.1",
         applications: [medoru: :permanent],
         overlays: ["rel/overlays"],
         include_erts: false,

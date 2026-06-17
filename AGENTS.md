@@ -3,8 +3,8 @@
 ## Current State
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
-**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`.  
-**Tests**: 1391 passing (1 pre-existing flaky assertion in `LessonTestKeyboardTest`)  
+**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火.  
+**Tests**: 1402 passing  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.7.0)
@@ -17,6 +17,8 @@
 - **User English Progress**: Added `user_english_progress` table and `Medoru.Learning.UserEnglishProgress` schema for tracking words learned by users whose `learning_language` is English. Functions: `track_english_word_learned/2`, `untrack_english_word_learned/2`, `english_word_learned?/2`, `count_english_learned_words/1`, `list_english_learned_words/2`.
 - **English-learning word progress wired into UI**: Dashboard and profile learned-word counts, `/words` index/show cards, learned-words list (`/users/:id/words`), and the daily card game word source all use `user_english_progress` for users with `learning_language == "english"`. The `/words` index and show pages swap English meaning and Japanese word/reading for these users.
 - **Daily Radical Hunt challenge**: 4th daily challenge at `/daily-challenges/radical-hunt`. Picks a learned kanji, uses its first radical, ensures the radical has at least 10 related kanji (falls back to a common radical if needed), and runs a 120-second game. Awards 30 XP per found kanji plus a flat 50 XP participation bonus. Added to the daily challenges index and dashboard stats. Mobile input/button sizing uses plain styled markup to avoid DaisyUI mobile overrides.
+- **English-learning Daily Test**: The standard `/daily-test` now generates a meaning-first daily test for users with `learning_language == "english"`. It sources words from `user_english_progress` and serves four question types: "What is the Japanese word for `<meaning>`?" (4 Japanese word options), "Choose the right picture for `<meaning>`" (4 image options when available), "Enter the Japanese word for `<meaning>`" (text input accepting the word or its reading), and "What does `<japanese word>` mean?" (text input for the English meaning). Questions are fully gettext-localized. Backend generator is `DailyTestGenerator.generate_english_daily_test/1`; LiveView branches in `DailyTestLive`. Completion tracks words in `user_english_progress` via `Learning.track_word_learned_for_user/2`.
+- **Kanji radical data bug fix**: Corrected 沢 (`d4ecc622-f6d7-4986-a7f3-b4090d368f58`) from radical 火 to 水 in `KanjiRadicalFixes` and moved it from the 火 to the 水 group in `KanjiRadicals.frequency_and_kanji`. Ran `Medoru.Content.KanjiRadicalFixes.apply!/0` to backfill the local dev DB; production/QA still need the same backfill.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**
