@@ -1,4 +1,5 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
+import { getEffect, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
 import Player from '../entities/Player.js'
 import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
@@ -29,10 +30,13 @@ export default class BattleScene extends Phaser.Scene {
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
+    this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.enemies = this.createEnemiesForTile()
     // Backwards-compatible alias for code not yet converted to the array.
     this.enemy = this.enemies[0]
-    this.turnManager = new TurnManager(this.player, this.enemies)
+    this.turnManager = new TurnManager(this.player, this.enemies, {
+      onCombatLog: (msg) => this.addCombatLog(msg),
+    })
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
 
     // Kanji drawing for weapon powerups (Forward Slash uses 力)
@@ -279,16 +283,12 @@ export default class BattleScene extends Phaser.Scene {
       intentionIcons.push({ bg, icon })
     }
 
-    // Persistent buff indicator (e.g. queued next-attack bonus)
-    const buffIndicator = this.add.text(x, y - sprite.displayHeight * 0.95, '⬆', {
-      fontFamily: FONTS.default.fontFamily,
-      fontSize: '20px',
-      color: '#f39c12',
-      stroke: '#000000',
-      strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(60).setVisible(false)
+    // Status effect icons above this enemy
+    const statusContainer = this.add.container(x, y - sprite.displayHeight * 0.95)
+    statusContainer.setDepth(60)
+    statusContainer.setVisible(false)
 
-    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, buffIndicator, baseScale: scale, x }
+    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, statusContainer, baseScale: scale, x }
   }
 
   setPlayerPose(poseKey) {
@@ -536,6 +536,10 @@ export default class BattleScene extends Phaser.Scene {
 
     // Block indicators
     this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
+
+    // Player status effect icons
+    this.playerStatusContainer = this.add.container(300, 470)
+    this.playerStatusContainer.setDepth(60)
   }
 
   createBar(x, y, key, color, value, max) {
@@ -1955,7 +1959,7 @@ export default class BattleScene extends Phaser.Scene {
       display.hpText,
       display.staminaText,
       display.blockText,
-      display.buffIndicator,
+      display.statusContainer,
     ]
     for (const el of uiElements) {
       if (el) el.setVisible(false)
@@ -2169,7 +2173,7 @@ export default class BattleScene extends Phaser.Scene {
         }
 
         if (!parried) {
-          result = enemy.performAction(action, this.player, context)
+          result = enemy.performAction(action, this.player, context, (msg) => this.addCombatLog(msg))
         }
 
         // Reset reaction multiplier after the attack resolves
@@ -2199,6 +2203,13 @@ export default class BattleScene extends Phaser.Scene {
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
               this.addCombatLog(`${enemyName} uses ${action.name}... but missed!${reactionText}`)
               this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
+              await this.delay(800)
+              this.setPlayerPose('idle')
+              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+            } else if (result.blocked) {
+              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+              this.addCombatLog(`${enemyName} uses ${action.name}... BLOCKED by your guard!${reactionText}`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'BLOCKED!', 0x3498db)
               await this.delay(800)
               this.setPlayerPose('idle')
               this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
@@ -2345,6 +2356,7 @@ export default class BattleScene extends Phaser.Scene {
 
     this.playerHpText.setText(`${this.player.hp}/${this.player.maxHp}`)
     this.playerStaminaText.setText(`${this.player.stamina}/${this.player.maxStamina}`)
+    this.updatePlayerStatusIcons()
 
     for (const display of this.enemyDisplays) {
       const e = display.enemy
@@ -2355,15 +2367,76 @@ export default class BattleScene extends Phaser.Scene {
       display.staminaBar.setScale(staminaPct, 1)
       display.hpText.setText(`${e.hp}/${e.maxHp}`)
       display.staminaText.setText(`${e.stamina}/${e.maxStamina}`)
-      this.updateBuffIndicator(display)
+      this.updateStatusIcons(display)
     }
   }
 
-  updateBuffIndicator(display) {
-    const hasBuff = display.enemy.buffs.some(b => b.type === 'next_attack_bonus')
-    if (display.buffIndicator) {
-      display.buffIndicator.setVisible(hasBuff)
+  updateStatusIcons(display) {
+    if (!display.statusContainer) return
+    display.statusContainer.removeAll(true)
+
+    const effects = display.enemy.activeEffects
+    if (effects.length === 0) {
+      display.statusContainer.setVisible(false)
+      return
     }
+
+    const iconWidth = 34
+    const totalWidth = effects.length * iconWidth
+    let offsetX = -totalWidth / 2 + iconWidth / 2
+
+    for (const entry of effects) {
+      const effect = getEffect(entry.effectId)
+      const label = effect ? effect.name.slice(0, 4) : entry.effectId.slice(0, 4)
+      const color = effect?.category === EFFECT_CATEGORIES.DEBUFF ? '#e74c3c'
+        : effect?.category === EFFECT_CATEGORIES.BUFF ? '#2ecc71'
+        : '#f39c12'
+      const text = this.add.text(offsetX, 0, label, {
+        fontFamily: FONTS.default.fontFamily,
+        fontSize: '10px',
+        color,
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(0.5)
+      display.statusContainer.add(text)
+      offsetX += iconWidth
+    }
+
+    display.statusContainer.setVisible(true)
+  }
+
+  updatePlayerStatusIcons() {
+    if (!this.playerStatusContainer) return
+    this.playerStatusContainer.removeAll(true)
+
+    const effects = this.player.activeEffects
+    if (effects.length === 0) {
+      this.playerStatusContainer.setVisible(false)
+      return
+    }
+
+    const iconWidth = 34
+    const totalWidth = effects.length * iconWidth
+    let offsetX = -totalWidth / 2 + iconWidth / 2
+
+    for (const entry of effects) {
+      const effect = getEffect(entry.effectId)
+      const label = effect ? effect.name.slice(0, 4) : entry.effectId.slice(0, 4)
+      const color = effect?.category === EFFECT_CATEGORIES.DEBUFF ? '#e74c3c'
+        : effect?.category === EFFECT_CATEGORIES.BUFF ? '#2ecc71'
+        : '#f39c12'
+      const text = this.add.text(offsetX, 0, label, {
+        fontFamily: FONTS.default.fontFamily,
+        fontSize: '10px',
+        color,
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(0.5)
+      this.playerStatusContainer.add(text)
+      offsetX += iconWidth
+    }
+
+    this.playerStatusContainer.setVisible(true)
   }
 
   updateBar(key, value, max) {

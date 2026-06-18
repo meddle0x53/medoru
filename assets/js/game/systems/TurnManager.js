@@ -1,8 +1,11 @@
+import { getEffect, resolveElementVsDefence } from './EffectRegistry.js'
+import { applyAbilityEffects } from './StatusEffectSystem.js'
+
 /**
  * Manages whose turn it is and stamina consumption.
  */
 export default class TurnManager {
-  constructor(player, enemies) {
+  constructor(player, enemies, options = {}) {
     this.player = player
     this.enemies = Array.isArray(enemies) ? enemies : [enemies]
     this.currentTurn = 'player'
@@ -11,6 +14,7 @@ export default class TurnManager {
     this.winner = null
     this.onTurnChange = null
     this.onBattleEnd = null
+    this.onCombatLog = options.onCombatLog || null
   }
 
   getAliveEnemies() {
@@ -23,6 +27,10 @@ export default class TurnManager {
 
   getInactiveCharacter() {
     return this.currentTurn === 'player' ? this.enemies[0] : this.player
+  }
+
+  log(msg) {
+    if (this.onCombatLog) this.onCombatLog(msg)
   }
 
   checkBattleOver(performer) {
@@ -45,6 +53,37 @@ export default class TurnManager {
     }
 
     return false
+  }
+
+  _decrementDurations(character) {
+    const expired = character.decrementEffectDurations()
+    for (const event of expired) {
+      const effect = getEffect(event.effectId)
+      if (effect) {
+        this.log(`${character.name || 'The enemy'}'s ${effect.name} wore off.`)
+      }
+    }
+  }
+
+  _tickEffects(character) {
+    const ticks = character.tickEffectsAtTurnStart()
+    for (const event of ticks) {
+      const effect = getEffect(event.effectId)
+      if (!effect) continue
+      const actual = event.target.takeDamage(event.damage)
+      this.log(`${event.target.name || 'The enemy'} takes ${actual} ${effect.name.toLowerCase()} damage.`)
+      this.checkBattleOver(event.target)
+    }
+  }
+
+  _resetSideForTurn(side) {
+    if (side === 'player') {
+      this.player.resetForTurn()
+    } else {
+      for (const enemy of this.getAliveEnemies()) {
+        enemy.resetForTurn()
+      }
+    }
   }
 
   useSkill(skill, performer, target, challengeResult) {
@@ -88,6 +127,21 @@ export default class TurnManager {
           rawDamage += bonus
         }
 
+        // Status-effect outgoing damage multiplier (weak / power_up)
+        rawDamage = Math.floor(rawDamage * performer.getOutgoingDamageMultiplier())
+
+        // Element-vs-defence resolution
+        if (skill.element) {
+          const interaction = resolveElementVsDefence(skill.element, target.getActiveEffectIds())
+          if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
+          if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
+          if (interaction.blocked) {
+            this.log(`${target.name || 'The enemy'} nullifies the ${skill.element} attack!`)
+            this.checkBattleOver(performer)
+            return { type: 'attack', damage: 0, isCrit, multiplier, blocked: true }
+          }
+        }
+
         // Dark Souls-like damage formula: atk * atk / (atk + def)
         let finalDamage
         if (effectiveDefense <= 0) {
@@ -95,6 +149,9 @@ export default class TurnManager {
         } else {
           finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
         }
+
+        // Status-effect incoming damage multiplier (frost / vulnerability)
+        finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
 
         const actual = target.takeDamage(finalDamage)
 
@@ -108,6 +165,12 @@ export default class TurnManager {
         }
 
         result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal }
+
+        if (skill.element) {
+          const consecutiveHits = target.incrementElementStreak(skill.element)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits)
+          if (applied.length > 0) target.resetElementStreak(skill.element)
+        }
         break
       }
       case 'defence': {
@@ -142,17 +205,32 @@ export default class TurnManager {
           total = base * multiplier
         }
         const isCrit = Math.random() < performer.getCritChance()
-        const rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        rawDamage = Math.floor(rawDamage * performer.getOutgoingDamageMultiplier())
+
         let effectiveDefense = target.getDefense()
         if (performer.lastKanjiWrongStrokes === 0) {
           effectiveDefense = Math.floor(effectiveDefense * 0.2)
         }
+
+        if (skill.element) {
+          const interaction = resolveElementVsDefence(skill.element, target.getActiveEffectIds())
+          if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
+          if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
+          if (interaction.blocked) {
+            this.log(`${target.name || 'The enemy'} nullifies the ${skill.element} attack!`)
+            this.checkBattleOver(performer)
+            return { type: 'attack_defence', damage: 0, block: 0, isCrit, multiplier, blocked: true }
+          }
+        }
+
         let finalDamage
         if (effectiveDefense <= 0) {
           finalDamage = rawDamage
         } else {
           finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
         }
+        finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
         const actual = target.takeDamage(finalDamage)
 
         // Add partial block
@@ -161,6 +239,12 @@ export default class TurnManager {
         if (blockTotal > 0) performer.addBlock(blockTotal)
 
         result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
+
+        if (skill.element) {
+          const consecutiveHits = target.incrementElementStreak(skill.element)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits)
+          if (applied.length > 0) target.resetElementStreak(skill.element)
+        }
         break
       }
       default:
@@ -176,14 +260,34 @@ export default class TurnManager {
   endTurn() {
     if (this.battleOver) return
 
+    // 1. Expire effects for the side whose turn just ended.
+    if (this.currentTurn === 'player') {
+      this._decrementDurations(this.player)
+    } else {
+      for (const enemy of this.getAliveEnemies()) {
+        this._decrementDurations(enemy)
+      }
+    }
+
+    // 2. Switch turn.
     this.currentTurn = this.currentTurn === 'player' ? 'enemy' : 'player'
 
+    // 3. Tick effects and reset stamina for the side whose turn is starting.
     if (this.currentTurn === 'player') {
       this.turnCount++
-      this.player.resetForTurn()
-      for (const enemy of this.enemies) {
-        if (enemy.isAlive()) enemy.resetForTurn()
+      this._tickEffects(this.player)
+      if (this.battleOver) return
+      this._resetSideForTurn('player')
+      // Refill enemy stamina so the intention plan and next enemy turn use full stamina.
+      for (const enemy of this.getAliveEnemies()) {
+        enemy.resetForTurn()
       }
+    } else {
+      for (const enemy of this.getAliveEnemies()) {
+        this._tickEffects(enemy)
+        if (this.battleOver) return
+      }
+      this._resetSideForTurn('enemy')
     }
 
     if (this.onTurnChange) this.onTurnChange(this.currentTurn)

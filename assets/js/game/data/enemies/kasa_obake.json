@@ -37,6 +37,7 @@
       "id": "claw_strike",
       "name": "Claw Strike",
       "type": "attack",
+      "element": "physical",
       "staminaCost": 3,
       "sprite": "enemy_kasa_obake_attack",
       "aiWeight": 10,
@@ -84,6 +85,33 @@
         "onFail": "full",
         "timeLimit": 5000
       }]
+    },
+    {
+      "id": "ember_breath",
+      "name": "Ember Breath",
+      "type": "attack",
+      "element": "fire",
+      "staminaCost": 4,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 5,
+      "maxUsesPerTurn": 2,
+      "basePower": 6,
+      "scalingStat": "strength",
+      "scalingMultiplier": 0.8,
+      "effects": [
+        {
+          "effectId": "burn",
+          "target": "enemy",
+          "chance": { "base": 0.25, "step": 0, "cap": 0.25 },
+          "duration": { "min": 3, "max": 5 }
+        },
+        {
+          "effectId": "weak",
+          "target": "self",
+          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "duration": { "min": 2, "max": 2 }
+        }
+      ]
     }
   ],
   "deathAbility": null,

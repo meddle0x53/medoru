@@ -1,5 +1,7 @@
 import Character from './Character.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
+import { resolveElementVsDefence } from '../systems/EffectRegistry.js'
+import { applyAbilityEffects } from '../systems/StatusEffectSystem.js'
 
 const AI_PHASE_PRIORITY = {
   buff: 0,
@@ -142,7 +144,7 @@ export default class Enemy extends Character {
     return plan
   }
 
-  performAction(ability, target, context = {}) {
+  performAction(ability, target, context = {}, log = () => {}) {
     this.useStamina(ability.staminaCost)
     this.incrementAbilityUses(ability)
 
@@ -164,10 +166,27 @@ export default class Enemy extends Character {
 
         const isCrit = Math.random() < this.getCritChance()
         let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
+
+        if (ability.element) {
+          const interaction = resolveElementVsDefence(ability.element, target.getActiveEffectIds())
+          if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
+          if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
+          if (interaction.blocked) {
+            return { type: 'attack', damage: 0, isCrit, missed: false, blocked: true }
+          }
+        }
+
+        finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
         if (context.damageMultiplier != null) {
           finalDamage = Math.floor(finalDamage * context.damageMultiplier)
         }
         const actual = target.takeDamage(finalDamage)
+        if (ability.effects && ability.effects.length > 0) {
+          const consecutiveHits = ability.element ? target.incrementElementStreak(ability.element) : 1
+          const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits)
+          if (applied.length > 0 && ability.element) target.resetElementStreak(ability.element)
+        }
         return { type: 'attack', damage: actual, isCrit, missed: false }
       }
       case 'buff':
@@ -178,6 +197,9 @@ export default class Enemy extends Character {
           this.addDefense(ability.defenseBonus)
         }
         this.addBuff({ type: ability.buffType, value: ability.buffValue || 0 })
+        if (ability.effects && ability.effects.length > 0) {
+          applyAbilityEffects(ability, this, target, {}, log)
+        }
         return { type: 'buff', buffType: ability.buffType, value: ability.buffValue || 0 }
       case 'recover':
         const recovered = ability.staminaRecover || 0

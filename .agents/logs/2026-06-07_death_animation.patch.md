@@ -305,3 +305,176 @@ This makes it obvious when an enemy has queued a buff, even after the brief buff
 
 ## Note
 The Kasa-obake `intimidate` ability is correctly configured with a `kanji` challenge in `kasa_obake.json`. If you were seeing a word challenge after the buff icon, it was likely the *attack's* word challenge (or a reaction challenge) on the following action. The new title and combat log should make that clear.
+
+---
+
+# Patch: Wire Status Effects into Combat
+
+## Changed Files
+- `assets/js/game/entities/Character.js`
+- `assets/js/game/entities/Enemy.js`
+- `assets/js/game/systems/TurnManager.js`
+- `assets/js/game/systems/StatusEffectSystem.js` (new)
+- `assets/js/game/scenes/BattleScene.js`
+- `assets/js/game/data/enemies/kasa_obake.json`
+- `assets/js/game/data/enemies/kasa_obake_elite.json`
+- `assets/js/game/data/enemies/kasa_obake_tyrant.json`
+- `assets/js/game/data/abilities/warrior.json`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### Character.js
+- Added structured `activeEffects` runtime with `applyEffect`, `removeEffect`, stack rules (`replace`/`refresh`), durations, and snapshots.
+- Added `tickEffectsAtTurnStart()` for DoT damage and `decrementEffectDurations()` for cleanup.
+- Added `getOutgoingDamageMultiplier()`, `getIncomingDamageMultiplier()`, and `getStaminaMultiplier()`.
+- `resetForTurn()` now respects stamina multipliers (e.g. `frost`).
+
+### TurnManager.js
+- Added turn-boundary effect lifecycle:
+  - Expire effects for the side whose turn just ended.
+  - Tick DoT effects for the side whose turn is starting.
+  - Reset stamina after ticks (with multiplier applied).
+- Applied `outgoingDamageMultiplier` to player attacks and `incomingDamageMultiplier` before damage.
+- Added elemental guard resolution via `resolveElementVsDefence()`: blocks attacks, removes guards, and cures effects like burn.
+- Called `applyAbilityEffects()` after skills resolve.
+- Added optional `onCombatLog` callback for internal logging.
+
+### Enemy.js
+- Imported `resolveElementVsDefence` and `applyAbilityEffects`.
+- Enemy attacks now apply outgoing/incoming multipliers and elemental guard resolution.
+- Buffs and attacks trigger ability effects and log them.
+
+### StatusEffectSystem.js (new)
+- Helper `applyAbilityEffects(ability, performer, target, ctx, log)` rolls effect chances, snapshots initial damage for DoTs, and applies effects to the correct recipient.
+
+### BattleScene.js
+- Added status effect icon rows above enemies and near the player bars.
+- Icons are colored by category: red debuff, green buff, orange one-off.
+- Defeated enemies hide their status containers.
+
+### Data
+- Enemy `claw_strike` now has `"element": "physical"` in all three Kasa definitions.
+- Added `ember_breath` fire attack to base `kasa_obake.json` that applies `burn` to the player and `weak` to itself.
+- Player `heavy_slash` has a 30% chance to grant self `power_up` for 1–2 turns.
+
+### Version Bumps
+- Game bundle: `game.js?v=172` → `game.js?v=173`
+- Service worker cache: `medoru-v71` → `medoru-v72`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+- All modified JSON files parse correctly.
+
+## Notes
+- `bleed`, `blunt`, `madness`, `ember`, and `element_infuse` are still defined in `EffectRegistry.js` but not yet wired into combat; they can be added once the core lifecycle is verified.
+- Elemental consecutive-hit progressive chances use the base value for this first pass.
+
+---
+
+# Patch: Consecutive-Hit Progressive Effect Chances
+
+## Changed Files
+- `assets/js/game/entities/Character.js`
+- `assets/js/game/systems/StatusEffectSystem.js`
+- `assets/js/game/systems/TurnManager.js`
+- `assets/js/game/entities/Enemy.js`
+- `assets/js/game/scenes/BattleScene.js`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### Character.js
+- Added `elementStreaks` tracking per element.
+- `getElementStreak(element)` — current consecutive hit count.
+- `incrementElementStreak(element)` — resets other elements, increments the hit element, returns new count.
+- `resetElementStreak(element)` — clears the streak.
+
+### StatusEffectSystem.js
+- `applyAbilityEffects()` now accepts a `consecutiveHits` parameter.
+- Rolls effect chance with `rollChance(config, consecutiveHits)`, so `step` and `cap` are now used.
+
+### TurnManager.js
+- Player `attack` and `attack_defence` abilities now:
+  1. Increment the target's element streak on a successful hit.
+  2. Apply ability effects using the streak count.
+  3. Reset the streak if any effect actually triggers.
+
+### Enemy.js
+- Enemy attacks follow the same streak increment → apply effects → reset-on-trigger flow.
+
+### BattleScene.js
+- Enemy attacks that are blocked by an elemental guard now show "BLOCKED!" floating text and a combat log line.
+
+### Version Bumps
+- Game bundle: `game.js?v=173` → `game.js?v=174`
+- Service worker cache: `medoru-v72` → `medoru-v73`
+
+## Example
+
+For `ember_breath` with:
+
+```json
+"chance": { "base": 0.10, "step": 0.05, "cap": 0.35 }
+```
+
+- 1st fire hit: 10% burn chance
+- 2nd fire hit in a row: 15%
+- 3rd: 20%
+- caps at 35%
+
+Once burn triggers, the streak resets.
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+---
+
+# Patch: Refill Enemy Stamina Before Intention Plan
+
+## Changed Files
+- `assets/js/game/systems/TurnManager.js`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### TurnManager.js
+- When the turn switches to the player, all alive enemies now have `resetForTurn()` called immediately.
+- This refills their stamina before `BattleScene` computes and displays the intention icons, so the plan reflects full stamina instead of leftover stamina from the previous enemy turn.
+
+### Version Bumps
+- Game bundle: `game.js?v=174` → `game.js?v=175`
+- Service worker cache: `medoru-v73` → `medoru-v74`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+---
+
+# Patch: Hero Starts Battle at Full Stamina
+
+## Changed Files
+- `assets/js/game/scenes/BattleScene.js`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### BattleScene.js
+- At the start of `create()`, after clearing lingering buffs, the player now calls `resetForTurn()`.
+- This refills stamina and clears per-turn flags (parry, temp defence) so the hero always begins a fresh battle at full stamina.
+- Active status effects are intentionally left alone so future between-battle sickness/persistent effects can still work.
+
+### Version Bumps
+- Game bundle: `game.js?v=175` → `game.js?v=176`
+- Service worker cache: `medoru-v74` → `medoru-v75`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.

@@ -37,6 +37,7 @@
       "id": "claw_strike",
       "name": "Claw Strike",
       "type": "attack",
+      "element": "physical",
       "staminaCost": 3,
       "sprite": "enemy_kasa_obake_attack",
       "aiWeight": 10,
