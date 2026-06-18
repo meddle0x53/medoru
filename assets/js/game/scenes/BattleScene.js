@@ -31,7 +31,11 @@ export default class BattleScene extends Phaser.Scene {
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
+    this.player.onCombatLog = (msg) => this.addCombatLog(msg)
     this.enemies = this.createEnemiesForTile()
+    for (const enemy of this.enemies) {
+      enemy.onCombatLog = (msg) => this.addCombatLog(msg)
+    }
     // Backwards-compatible alias for code not yet converted to the array.
     this.enemy = this.enemies[0]
     this.turnManager = new TurnManager(this.player, this.enemies, {
@@ -249,9 +253,11 @@ export default class BattleScene extends Phaser.Scene {
     sprite.setInteractive({ useHandCursor: false })
     sprite.on('pointerdown', () => this.onEnemySpriteClick(display))
 
-    const nameBg = this.drawNameBg(x, 102)
-    const nameText = this.add.text(x, 95, enemy.name, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
-    const jaText = this.add.text(x, 110, enemy.nameJa, { ...FONTS.kanji, fontSize: '14px' }).setOrigin(0.5)
+    const nameTagWidth = total === 3 ? 130 : total === 2 ? 150 : 180
+    const nameFontSize = total === 3 ? '12px' : '14px'
+    const nameBg = this.drawNameBg(x, 102, nameTagWidth)
+    const nameText = this.add.text(x, 95, enemy.name, { ...FONTS.default, fontSize: nameFontSize }).setOrigin(0.5)
+    const jaText = this.add.text(x, 110, enemy.nameJa, { ...FONTS.kanji, fontSize: nameFontSize }).setOrigin(0.5)
 
     // Per-enemy HP/stamina bars
     const barW = 100
@@ -554,8 +560,7 @@ export default class BattleScene extends Phaser.Scene {
     this[key + 'X'] = x - w / 2
   }
 
-  drawNameBg(x, y) {
-    const w = 180
+  drawNameBg(x, y, w = 180) {
     const h = 44
     const radius = 22
     const g = this.add.graphics()

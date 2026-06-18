@@ -383,6 +383,10 @@ defmodule MedoruWeb.Router do
 
       live "/game", GameLive
     end
+
+    # Non-LiveView admin actions
+    post "/users/:id/impersonate", UserController, :impersonate
+    post "/users/stop-impersonation", UserController, :stop_impersonation
   end
 
   # Push notification subscription API

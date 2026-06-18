@@ -10,6 +10,12 @@ defmodule MedoruWeb.Plugs.Admin do
   @doc """
   Plug for requiring admin access.
   """
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    require_admin(conn, [])
+  end
+
   def require_admin(conn, _opts) do
     user = conn.assigns[:current_scope][:current_user]
 

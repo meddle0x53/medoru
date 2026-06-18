@@ -3,8 +3,8 @@
 ## Current State
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
-**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火.  
-**Tests**: 1402 passing  
+**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added.  
+**Tests**: 1408 passing  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.7.0)
@@ -19,6 +19,7 @@
 - **Daily Radical Hunt challenge**: 4th daily challenge at `/daily-challenges/radical-hunt`. Picks a learned kanji, uses its first radical, ensures the radical has at least 10 related kanji (falls back to a common radical if needed), and runs a 120-second game. Awards 30 XP per found kanji plus a flat 50 XP participation bonus. Added to the daily challenges index and dashboard stats. Mobile input/button sizing uses plain styled markup to avoid DaisyUI mobile overrides.
 - **English-learning Daily Test**: The standard `/daily-test` now generates a meaning-first daily test for users with `learning_language == "english"`. It sources words from `user_english_progress` and serves four question types: "What is the Japanese word for `<meaning>`?" (4 Japanese word options), "Choose the right picture for `<meaning>`" (4 image options when available), "Enter the Japanese word for `<meaning>`" (text input accepting the word or its reading), and "What does `<japanese word>` mean?" (text input for the English meaning). Questions are fully gettext-localized. Backend generator is `DailyTestGenerator.generate_english_daily_test/1`; LiveView branches in `DailyTestLive`. Completion tracks words in `user_english_progress` via `Learning.track_word_learned_for_user/2`.
 - **Kanji radical data bug fix**: Corrected 沢 (`d4ecc622-f6d7-4986-a7f3-b4090d368f58`) from radical 火 to 水 in `KanjiRadicalFixes` and moved it from the 火 to the 水 group in `KanjiRadicals.frequency_and_kanji`. Ran `Medoru.Content.KanjiRadicalFixes.apply!/0` to backfill the local dev DB; production/QA still need the same backfill.
+- **Admin user impersonation ("Login as")**: Admins can click "Login as" from `/admin/users` or `/admin/users/:id/edit` to view the site as any non-admin user. The session stores the real admin ID under `:impersonator_user_id` while `:user_id` becomes the target user, so all existing auth code works unchanged. A persistent banner shows who is being impersonated with an "Exit impersonation" button that restores the admin session. Routes: `POST /admin/users/:id/impersonate` and `POST /admin/users/stop-impersonation`. Tests in `test/medoru_web/controllers/admin/user_controller_test.exs`.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

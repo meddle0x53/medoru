@@ -14,12 +14,15 @@ function shuffle(array) {
 function matchesWordFilters(word, filters = {}) {
   if (!word || !word.meaning) return false
 
-  if (filters.jlptLevels && filters.jlptLevels.length > 0) {
+  // Words do not have a JLPT level field; only apply this filter if present.
+  if (filters.jlptLevels && filters.jlptLevels.length > 0 && word.jlpt_level != null) {
     if (!filters.jlptLevels.includes(word.jlpt_level)) return false
   }
 
-  if (filters.maxFrequency != null && word.frequency != null) {
-    if (word.frequency > filters.maxFrequency) return false
+  // Frequency can come from either a direct frequency field or the word's core rank.
+  if (filters.maxFrequency != null) {
+    const freq = word.frequency ?? word.core_rank
+    if (freq != null && freq > filters.maxFrequency) return false
   }
 
   return true
@@ -39,13 +42,16 @@ function matchesKanjiFilters(kanji, filters = {}) {
   return true
 }
 
+const MIN_FILTERED_WORD_POOL = 20
+
 export function pickWordForChallenge(player, filters = {}) {
   const pool = player?.wordList || []
   const candidates = pool.length > 0
     ? pool.filter(w => matchesWordFilters(w, filters))
     : []
 
-  const source = candidates.length > 0 ? candidates : pool
+  // If the filtered pool is too small, use the full known-word pool so challenges stay varied.
+  const source = candidates.length >= MIN_FILTERED_WORD_POOL ? candidates : pool
   if (source.length === 0) return null
 
   const shuffled = shuffle(source)

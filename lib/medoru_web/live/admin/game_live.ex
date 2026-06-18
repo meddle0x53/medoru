@@ -50,9 +50,16 @@ defmodule MedoruWeb.Admin.GameLive do
 
     word_list =
       user.id
-      |> Learning.list_learned_words(limit: 30)
+      |> Learning.list_learned_words(limit: 1000)
       |> Enum.map(fn w ->
-        %{word: w.text, reading: w.reading, meaning: w.meaning}
+        %{
+          word: w.text,
+          reading: w.reading,
+          meaning: w.meaning,
+          core_rank: w.core_rank,
+          usage_frequency: w.usage_frequency,
+          difficulty: w.difficulty
+        }
       end)
 
     user_level =

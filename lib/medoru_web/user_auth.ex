@@ -28,6 +28,7 @@ defmodule MedoruWeb.UserAuth do
         # User ID no longer exists in DB (e.g., cleaned), clear session
         conn
         |> delete_session(:user_id)
+        |> delete_session(:impersonator_user_id)
         |> assign(:current_user, nil)
         |> assign(:current_scope, %{
           current_user: nil,
@@ -40,11 +41,13 @@ defmodule MedoruWeb.UserAuth do
       unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
       locale = conn.assigns[:locale] || "en"
       theme = if user && user.profile, do: user.profile.theme, else: "system"
+      impersonator_user = get_impersonator_user(conn)
 
       conn
       |> assign(:current_user, user)
       |> assign(:current_scope, %{
         current_user: user,
+        impersonator_user: impersonator_user,
         unread_count: unread_count,
         locale: locale,
         theme: theme
@@ -146,11 +149,13 @@ defmodule MedoruWeb.UserAuth do
           {:ok, user} ->
             unread_count = if user, do: Notifications.count_unread_notifications(user.id), else: 0
             theme = if user && user.profile, do: user.profile.theme, else: "system"
+            impersonator_user = get_impersonator_user_from_session(session)
 
             {:cont,
              Phoenix.Component.assign(socket,
                current_scope: %{
                  current_user: user,
+                 impersonator_user: impersonator_user,
                  unread_count: unread_count,
                  locale: locale,
                  theme: theme
@@ -161,7 +166,7 @@ defmodule MedoruWeb.UserAuth do
       %{} ->
         {:cont,
          Phoenix.Component.assign(socket,
-           current_scope: %{current_user: nil, unread_count: 0, locale: locale, theme: "system"}
+           current_scope: %{current_user: nil, impersonator_user: nil, unread_count: 0, locale: locale, theme: "system"}
          )}
     end
   end
@@ -178,6 +183,45 @@ defmodule MedoruWeb.UserAuth do
       user ->
         {:ok, user}
     end
+  end
+
+  @doc """
+  Returns true if the current session is impersonating another user.
+  """
+  def impersonating?(conn) do
+    not is_nil(get_session(conn, :impersonator_user_id))
+  end
+
+  @doc """
+  Returns the impersonator user if the current session is impersonating.
+  """
+  def impersonator_user(conn) do
+    get_impersonator_user(conn)
+  end
+
+  @doc """
+  Returns a conn that stops impersonation and restores the original admin user.
+  """
+  def stop_impersonation(conn) do
+    case get_session(conn, :impersonator_user_id) do
+      nil ->
+        conn
+
+      impersonator_user_id ->
+        conn
+        |> put_session(:user_id, impersonator_user_id)
+        |> delete_session(:impersonator_user_id)
+    end
+  end
+
+  defp get_impersonator_user(conn) do
+    impersonator_user_id = get_session(conn, :impersonator_user_id)
+    impersonator_user_id && Accounts.get_user(impersonator_user_id)
+  end
+
+  defp get_impersonator_user_from_session(session) do
+    impersonator_user_id = session["impersonator_user_id"]
+    impersonator_user_id && Accounts.get_user(impersonator_user_id)
   end
 
   # Plug callbacks for pipeline usage

@@ -1,4 +1,4 @@
-import { getEffect, rollDuration } from '../systems/EffectRegistry.js'
+import { getEffect, rollDuration, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
 
 /**
  * Base Character class for Player and Enemy.
@@ -28,6 +28,9 @@ export default class Character {
 
     // Consecutive same-element hits received (for progressive effect chances)
     this.elementStreaks = {}
+
+    // Optional combat log callback for status-effect messages
+    this.onCombatLog = null
 
     this.equippedSkills = config.equippedSkills || []
     this.weapon = config.weapon || null
@@ -71,8 +74,47 @@ export default class Character {
     }
     // Armor reduces remaining damage
     damage = Math.max(1, damage - this.armor)
+
+    // Trigger effects that respond to incoming damage (e.g. bleed, blunt)
+    const { bleedBonus, bluntMultiplier } = this.onIncomingDamage(rawAttack)
+    damage = Math.floor(damage * bluntMultiplier) + bleedBonus
+
     this.hp = Math.max(0, this.hp - damage)
     return damage
+  }
+
+  log(msg) {
+    if (this.onCombatLog) this.onCombatLog(msg)
+  }
+
+  onIncomingDamage(rawAttack) {
+    if (rawAttack <= 0) return { bleedBonus: 0, bluntMultiplier: 1 }
+
+    let bleedBonus = 0
+    let bluntMultiplier = 1
+
+    const bleed = this.activeEffects.find(e => e.effectId === 'bleed')
+    if (bleed) {
+      const effect = getEffect('bleed')
+      const multiplier = effect?.trigger?.damage?.multiplier ?? 0.10
+      const bonus = Math.floor(this.maxHp * multiplier)
+      if (bonus > 0) {
+        this.removeEffect('bleed')
+        this.log(`${this.name || 'The enemy'}'s Bleed triggers for ${bonus} bonus damage!`)
+        bleedBonus = bonus
+      }
+    }
+
+    const blunt = this.activeEffects.find(e => e.effectId === 'blunt')
+    if (blunt) {
+      const effect = getEffect('blunt')
+      const multiplier = effect?.incomingDamageMultiplier ?? 2.0
+      this.removeEffect('blunt')
+      this.log(`${this.name || 'The enemy'}'s Blunt doubles the damage!`)
+      bluntMultiplier = multiplier
+    }
+
+    return { bleedBonus, bluntMultiplier }
   }
 
   heal(amount) {
@@ -174,12 +216,19 @@ export default class Character {
   decrementEffectDurations() {
     const expired = []
     for (const entry of this.activeEffects) {
+      const effect = getEffect(entry.effectId)
+      // One-off effects persist until triggered; they do not expire by time.
+      if (effect?.category === EFFECT_CATEGORIES.ONE_OFF) continue
       entry.remainingTurns -= 1
       if (entry.remainingTurns <= 0) {
         expired.push({ effectId: entry.effectId })
       }
     }
-    this.activeEffects = this.activeEffects.filter(e => e.remainingTurns > 0)
+    this.activeEffects = this.activeEffects.filter(e => {
+      const effect = getEffect(e.effectId)
+      if (effect?.category === EFFECT_CATEGORIES.ONE_OFF) return true
+      return e.remainingTurns > 0
+    })
     return expired
   }
 
@@ -198,6 +247,8 @@ export default class Character {
     let multiplier = 1
     for (const entry of this.activeEffects) {
       const effect = getEffect(entry.effectId)
+      // One-off effects like blunt are handled in takeDamage() and consumed there.
+      if (effect?.category === EFFECT_CATEGORIES.ONE_OFF) continue
       if (effect && effect.incomingDamageMultiplier != null) {
         multiplier *= effect.incomingDamageMultiplier
       }

@@ -478,3 +478,199 @@ Once burn triggers, the streak resets.
 ## Testing
 - `mix compile` passes.
 - `mix assets.build` passes.
+
+---
+
+# Patch: Fix Overlapping Enemy Name Tags
+
+## Changed Files
+- `assets/js/game/scenes/BattleScene.js`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### BattleScene.js
+- `createEnemyDisplay()` now scales the name tag based on how many enemies are in the encounter:
+  - 1 enemy: 180 px wide, 14 px font
+  - 2 enemies: 150 px wide, 14 px font
+  - 3 enemies: 130 px wide, 12 px font
+- `drawNameBg()` accepts an optional width parameter.
+
+This prevents the 180 px name tags from overlapping in 3-enemy fights.
+
+### Version Bumps
+- Game bundle: `game.js?v=176` → `game.js?v=177`
+- Service worker cache: `medoru-v75` → `medoru-v76`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+---
+
+# Patch: Implement `bleed` Effect
+
+## Changed Files
+- `assets/js/game/entities/Character.js`
+- `assets/js/game/scenes/BattleScene.js`
+- `assets/js/game/data/enemies/kasa_obake.json`
+- `assets/js/game/data/abilities/warrior.json`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### Character.js
+- Added `onCombatLog` callback hook on characters.
+- Added `log()` helper.
+- Added `onIncomingDamage(rawAttack)`:
+  - If the character has `bleed` and the incoming damage is > 0, it removes `bleed`.
+  - Deals bonus damage equal to 10% of max HP directly to HP (ignores block/armor).
+  - Logs the trigger.
+- `takeDamage()` now calls `onIncomingDamage()` and returns total damage including the bleed bonus.
+
+### BattleScene.js
+- Sets `onCombatLog` on the player and every enemy so bleed trigger messages appear in the combat log.
+
+### Data
+- Added enemy wind ability `gale_claw` to `kasa_obake.json` with a ramping `bleed` chance.
+- Added `bleed` effect to player `quick_stab` in `warrior.json`.
+
+### Version Bumps
+- Game bundle: `game.js?v=177` → `game.js?v=178`
+- Service worker cache: `medoru-v76` → `medoru-v77`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+- JSON files parse correctly.
+
+## Notes
+- Bleed triggers on the next damage instance that reaches `takeDamage()`, including attacks, counter-attacks, and DoT ticks.
+- The bonus damage ignores block and armor.
+
+---
+
+# Patch: Implement `blunt` Effect
+
+## Changed Files
+- `assets/js/game/entities/Character.js`
+- `assets/js/game/data/enemies/kasa_obake.json`
+- `assets/js/game/data/abilities/warrior.json`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### Character.js
+- `getIncomingDamageMultiplier()` now skips one-off effects; they are handled and consumed inside `takeDamage()` instead.
+- `onIncomingDamage()` returns both `bleedBonus` and `bluntMultiplier`.
+- `takeDamage()` applies the blunt multiplier to normal damage and then adds bleed bonus.
+- `decrementEffectDurations()` no longer expires one-off effects passively; they last until triggered.
+
+### Data
+- Added enemy earth ability `stone_smash` to `kasa_obake.json` with a ramping `blunt` chance.
+- Added `blunt` effect to player `heavy_slash` in `warrior.json`.
+
+### Version Bumps
+- Game bundle: `game.js?v=178` → `game.js?v=179`
+- Service worker cache: `medoru-v77` → `medoru-v78`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+- JSON files parse correctly.
+
+## Notes
+- If both `blunt` and `bleed` are present, blunt doubles the normal damage and bleed adds its bonus on top.
+- Blunt is consumed immediately on the next damage instance that reaches `takeDamage()`.
+
+---
+
+# Patch: Add Bleed Chance to Forward Slash
+
+## Changed Files
+- `assets/js/game/data/abilities/warrior.json`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### warrior.json
+- Added a `bleed` effect to `forward_slash`:
+  - 10% base chance, +3% per consecutive physical hit, capped at 20%.
+
+### Version Bumps
+- Game bundle: `game.js?v=179` → `game.js?v=180`
+- Service worker cache: `medoru-v78` → `medoru-v79`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+---
+
+# Patch: Widen Enemy Word Challenge Pool
+
+## Changed Files
+- `assets/js/game/systems/EnemyChallengePicker.js`
+- `assets/js/game/data/enemies/kasa_obake.json`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### EnemyChallengePicker.js
+- Added a `MIN_FILTERED_WORD_POOL` threshold (20).
+- If the filtered candidate pool is smaller than 20 words, the picker falls back to the player's full known-word list.
+- This prevents the same small subset of words from repeating when filters are restrictive.
+
+### kasa_obake.json
+- Widened `claw_strike` word challenge filters:
+  - JLPT levels: `N5`, `N4`, `N3`
+  - Max frequency: `2000`
+
+### Version Bumps
+- Game bundle: `game.js?v=180` → `game.js?v=181`
+- Service worker cache: `medoru-v79` → `medoru-v80`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+---
+
+# Patch: Fix Word Challenge Pool Size and Filtering
+
+## Changed Files
+- `assets/js/game/systems/EnemyChallengePicker.js`
+- `lib/medoru_web/live/admin/game_live.ex`
+- `lib/medoru_web/controllers/game_api_controller.ex`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+### EnemyChallengePicker.js
+- `matchesWordFilters()` now:
+  - Skips the JLPT filter when the word has no `jlpt_level` field (words in this app do not have JLPT data).
+  - Falls back to `word.core_rank` when `word.frequency` is missing.
+
+### Backend
+- `Admin.GameLive` and `GameApiController` now load up to **1000** learned words instead of 30.
+- The serialized word list now includes `core_rank`, `usage_frequency`, and `difficulty` so filters can use them.
+
+### Version Bumps
+- Game bundle: `game.js?v=181` → `game.js?v=182`
+- Service worker cache: `medoru-v80` → `medoru-v81`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+## Notes
+- The original ~10-word feeling came from two issues:
+  1. The backend only sent 30 learned words.
+  2. Words have no `jlpt_level`, so the N5 filter excluded every word, forcing a fallback to the small pool.
+- With these fixes, challenges now pull from the full learned-word list and respect the frequency/core_rank filter.

@@ -41,6 +41,36 @@ defmodule MedoruWeb.Layouts do
 
   def app(assigns) do
     ~H"""
+    <%= if @current_scope && @current_scope[:impersonator_user] do %>
+      <div class="bg-accent text-accent-content px-4 py-2 text-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-eye" class="w-5 h-5" />
+            <span>
+              {gettext("Impersonating %{name}",
+                name: @current_scope.current_user.name || @current_scope.current_user.email
+              )}
+            </span>
+            <span class="text-accent-content/70">
+              {gettext("(admin: %{name})",
+                name: @current_scope.impersonator_user.name || @current_scope.impersonator_user.email
+              )}
+            </span>
+          </div>
+          <.form
+            for={%{}}
+            action={~p"/admin/users/stop-impersonation"}
+            method="post"
+            class="inline"
+          >
+            <button type="submit" class="btn btn-xs btn-ghost text-accent-content hover:bg-accent-content/10">
+              <.icon name="hero-arrow-left-on-rectangle" class="w-4 h-4" />
+              {gettext("Exit impersonation")}
+            </button>
+          </.form>
+        </div>
+      </div>
+    <% end %>
     <header class="navbar px-3 sm:px-4 lg:px-8 bg-base-100 border-b border-base-300 sticky top-0 z-40 h-16">
       <div class="flex-1 flex items-center gap-2">
         <%!-- Mobile Menu Toggle --%>

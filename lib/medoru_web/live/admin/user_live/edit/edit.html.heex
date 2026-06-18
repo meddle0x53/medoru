@@ -51,6 +51,32 @@
       </div>
     </div>
 
+    <%!-- Impersonate Card --%>
+    <%= if @user.type != "admin" do %>
+      <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+        <div class="card-body">
+          <h2 class="card-title text-lg mb-4">{gettext("Impersonate User")}</h2>
+          <p class="text-secondary mb-6">
+            {gettext(
+              "Log in as this user to see the site exactly as they see it. A banner will remind you that you are impersonating someone."
+            )}
+          </p>
+
+          <.form
+            for={%{}}
+            action={~p"/admin/users/#{@user.id}/impersonate"}
+            method="post"
+            class="inline"
+          >
+            <button type="submit" class="btn btn-accent w-full sm:w-auto">
+              <.icon name="hero-arrow-right-on-rectangle" class="w-5 h-5 mr-2" />
+              {gettext("Login as %{name}", name: @user.name || @user.email)}
+            </button>
+          </.form>
+        </div>
+      </div>
+    <% end %>
+
     <%!-- Change Type Card --%>
     <div class="card bg-base-100 shadow-sm border border-base-300">
       <div class="card-body">

@@ -190,6 +190,18 @@
                   >
                     <.icon name="hero-pencil-square" class="w-4 h-4" /> {gettext("Edit")}
                   </.link>
+                  <%= if user.type != "admin" do %>
+                    <.form
+                      for={%{}}
+                      action={~p"/admin/users/#{user.id}/impersonate"}
+                      method="post"
+                      class="inline"
+                    >
+                      <button type="submit" class="btn btn-sm btn-ghost btn-accent">
+                        <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" /> {gettext("Login as")}
+                      </button>
+                    </.form>
+                  <% end %>
                 </td>
               </tr>
             <% end %>
@@ -263,6 +275,22 @@
                 >
                   <.icon name="hero-pencil-square" class="w-4 h-4" />
                 </.link>
+                <%= if user.type != "admin" do %>
+                  <.form
+                    for={%{}}
+                    action={~p"/admin/users/#{user.id}/impersonate"}
+                    method="post"
+                    class="inline"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-ghost btn-xs btn-accent"
+                      title={gettext("Login as")}
+                    >
+                      <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" />
+                    </button>
+                  </.form>
+                <% end %>
               </div>
             </div>
           </div>
