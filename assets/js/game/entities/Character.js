@@ -1,4 +1,4 @@
-import { getEffect, rollDuration, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
+import { getEffect, rollDuration, rollMadnessOutcome, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
 
 /**
  * Base Character class for Player and Enemy.
@@ -25,6 +25,9 @@ export default class Character {
 
     // Structured status effects (burn, poison, weak, guards, etc.)
     this.activeEffects = []
+
+    // Ability infusions applied this battle: abilityId -> { value, mana }
+    this.infusedAbilities = new Map()
 
     // Consecutive same-element hits received (for progressive effect chances)
     this.elementStreaks = {}
@@ -141,6 +144,24 @@ export default class Character {
     return null
   }
 
+  // ---------- Ability Infusions ----------
+
+  setAbilityInfusion(abilityId, value, mana, potency = 1) {
+    this.infusedAbilities.set(abilityId, { value, mana, potency })
+  }
+
+  getAbilityInfusion(abilityId) {
+    return this.infusedAbilities.get(abilityId) || null
+  }
+
+  clearAbilityInfusion(abilityId) {
+    this.infusedAbilities.delete(abilityId)
+  }
+
+  clearAllAbilityInfusions() {
+    this.infusedAbilities.clear()
+  }
+
   // ---------- Status Effects ----------
 
   applyEffect(effectId, options = {}) {
@@ -168,7 +189,27 @@ export default class Character {
       remainingTurns: duration,
       snapshot: options.snapshot ?? null,
     }
+
+    if (effect.tick && effect.tick.damage && effect.tick.damage.spread && entry.snapshot) {
+      const total = Math.floor(entry.snapshot * (effect.tick.damage.multiplier ?? 1))
+      entry.spreadPerTurn = Math.max(1, Math.floor(total / Math.max(1, duration)))
+    }
+
     this.activeEffects.push(entry)
+
+    if (effect.onApply === 'rollMadnessOutcome') {
+      const outcome = rollMadnessOutcome()
+      if (outcome.type === 'effect') {
+        const applied = this.applyEffect(outcome.effectId, { duration: rollDuration(getEffect(outcome.effectId)) })
+        if (applied) {
+          this.log(`${this.name || 'The enemy'} is driven mad by ${getEffect(outcome.effectId)?.name || outcome.effectId}!`)
+        }
+      } else if (outcome.type === 'stamina_halved') {
+        this.applyEffect('stamina_crash', { duration: 1 })
+        this.log(`${this.name || 'The enemy'}'s stamina crashes from madness!`)
+      }
+    }
+
     return entry
   }
 
@@ -201,7 +242,9 @@ export default class Character {
 
       const multiplier = effect.tick.damage.multiplier ?? 1
       let damage = 0
-      if (effect.tick.damage.source === 'snapshot') {
+      if (effect.tick.damage.spread) {
+        damage = entry.spreadPerTurn || Math.max(1, Math.floor((entry.snapshot || 0) * multiplier / Math.max(1, entry.remainingTurns)))
+      } else if (effect.tick.damage.source === 'snapshot') {
         damage = Math.floor((entry.snapshot || 0) * multiplier)
       } else if (effect.tick.damage.source === 'targetMaxHp') {
         damage = Math.floor(this.maxHp * multiplier)

@@ -115,6 +115,16 @@ export const STATUS_EFFECTS = {
     description: 'Triggers a random bad effect or halves stamina next turn.',
   },
 
+  stamina_crash: {
+    id: 'stamina_crash',
+    name: 'Stamina Crash',
+    category: EFFECT_CATEGORIES.DEBUFF,
+    stackRule: 'refresh',
+    duration: { min: 1, max: 1 },
+    staminaMultiplier: 0.5,
+    description: 'Stamina is halved next turn.',
+  },
+
   ember: {
     id: 'ember',
     name: 'Ember',

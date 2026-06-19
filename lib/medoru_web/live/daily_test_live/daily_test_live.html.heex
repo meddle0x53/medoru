@@ -366,7 +366,7 @@
                   </h2>
                 <% end %>
                 <%!-- Show hint based on question type --%>
-                <%= if @current_step.question_data["type"] == "word_to_meaning" do %>
+                <%= if @current_step.question_data["type"] in ["word_to_meaning", "image_to_meaning"] do %>
                   <p class="text-center text-secondary text-sm sm:text-base">
                     {gettext("Reading:")} {@current_step.question_data["word_reading"]}
                   </p>

@@ -674,3 +674,38 @@ This prevents the 180 px name tags from overlapping in 3-enemy fights.
   1. The backend only sent 30 learned words.
   2. Words have no `jlpt_level`, so the N5 filter excluded every word, forcing a fallback to the small pool.
 - With these fixes, challenges now pull from the full learned-word list and respect the frequency/core_rank filter.
+
+---
+
+# Patch: Support Hiragana/Kana Input in Reading Challenges
+
+## Changed Files
+- `assets/js/game/systems/EnemyAbilityChallengeSystem.js`
+- `assets/js/game/systems/WordChallengeSystem.js`
+- `lib/medoru_web/live/admin/game_live/game.html.heex`
+- `priv/static/service-worker.js`
+
+## What Changed
+
+Both challenge systems now listen to the hidden `<input>` element's native `input` event and sync `this.input` from the element's real value.
+
+This lets IME-composed characters (hiragana, katakana, etc.) appear correctly, instead of relying only on `keydown` events which don't always capture composed input.
+
+### EnemyAbilityChallengeSystem.js
+- Added `input` event handler in `createHiddenInput()`.
+- Removed handler in `removeHandlers()`.
+
+### WordChallengeSystem.js
+- Same change in `createHiddenInput()` and `removeInputHandlers()`.
+
+### Version Bumps
+- Game bundle: `game.js?v=182` → `game.js?v=183`
+- Service worker cache: `medoru-v81` → `medoru-v82`
+
+## Testing
+- `mix compile` passes.
+- `mix assets.build` passes.
+
+## Notes
+- Existing `keydown` handling for Enter, Backspace, and direct Latin keys remains in place.
+- The `input` event overwrites `this.input` with the browser's composed value, so normal typing and IME typing converge on the same result.

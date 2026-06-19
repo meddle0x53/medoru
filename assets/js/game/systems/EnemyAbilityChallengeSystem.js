@@ -182,6 +182,12 @@ export default class EnemyAbilityChallengeSystem {
     this.inputEl.style.height = '1px'
     document.body.appendChild(this.inputEl)
     this.inputEl.focus()
+
+    this.inputHandler = () => {
+      this.input = this.inputEl.value
+      this.updateInputDisplay()
+    }
+    this.inputEl.addEventListener('input', this.inputHandler)
   }
 
   updateInputDisplay() {
@@ -266,6 +272,10 @@ export default class EnemyAbilityChallengeSystem {
     if (this.keyboardHandler) {
       this.scene.input.keyboard.off('keydown', this.keyboardHandler)
       this.keyboardHandler = null
+    }
+    if (this.inputHandler && this.inputEl) {
+      this.inputEl.removeEventListener('input', this.inputHandler)
+      this.inputHandler = null
     }
     if (this.inputEl && this.inputEl.parentNode) {
       this.inputEl.parentNode.removeChild(this.inputEl)

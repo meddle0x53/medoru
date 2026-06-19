@@ -117,7 +117,11 @@ export default class Player extends Character {
     this.shield = shield
 
     // Loadout: persistent battle preparation state
-    const starterActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
+    const starterActionIds = [
+      'forward_slash', 'setup_defence', 'shield_parry', 'use_item',
+      'infuse_fire', 'infuse_water', 'infuse_wind', 'infuse_earth',
+      'infuse_void', 'infuse_frost', 'infuse_bleed', 'infuse_poison',
+    ]
     this.loadout = this.loadLoadout() || {
       class: 'warrior',
       activeItemIds: ['health_potion', 'stone'],
@@ -743,6 +747,7 @@ export default class Player extends Character {
     this.parrySetup = false
     this.parryKanjiQuality = null
     this._charmEffects = null
+    this.clearAllAbilityInfusions()
 
     this.clearKanjiBonus()
     this.clearShieldBonus()

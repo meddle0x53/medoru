@@ -18,6 +18,7 @@
       "kanji": "力",
       "rarity": "normal",
       "moveHint": { "en": "Make a POWERFUL swing.", "ja": "強力な一振りを。" },
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage"] },
       "effects": [
         {
@@ -44,6 +45,7 @@
       "kanji": "斬",
       "rarity": "normal",
       "moveHint": { "en": "Unleash a DEVASTATING blow!", "ja": "壊滅的な一撃を放て！" },
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage"] },
       "effects": [
         {
@@ -75,6 +77,7 @@
       "kanji": "盾",
       "rarity": "normal",
       "moveHint": { "en": "Raise your GUARD.", "ja": "盾を構えろ。" },
+      "infusableWith": ["fire", "water", "wind", "earth", "void"],
       "lifecycle": { "onUse": ["gainBlock"] },
       "effects": []
     },
@@ -124,6 +127,7 @@
       "scalingMultiplier": 0.9,
       "kanji": "突",
       "rarity": "normal",
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage"] },
       "effects": [
         {
@@ -150,6 +154,7 @@
       "kanji": "破",
       "rarity": "normal",
       "config": { "ignoreDefense": true },
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage"] },
       "effects": []
     },
@@ -215,6 +220,7 @@
       "scalingMultiplier": 1.2,
       "kanji": "両",
       "rarity": "normal",
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage"] },
       "effects": []
     },
@@ -252,6 +258,7 @@
       "scalingBlockMultiplier": 0.4,
       "kanji": "打",
       "rarity": "normal",
+      "infusableWith": ["fire", "water", "wind", "earth", "void", "frost", "bleed", "poison"],
       "lifecycle": { "onUse": ["dealDamage", "gainBlock"] },
       "effects": []
     },
@@ -269,6 +276,174 @@
       "rarity": "normal",
       "config": { "buffType": "berserk_lifesteal" },
       "lifecycle": { "onUse": ["applyBuff"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_fire",
+      "name": "Infuse Fire",
+      "nameJa": "火纏い",
+      "description": "Infuse an ability with fire.",
+      "type": "infuse",
+      "element": "fire",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "火",
+      "rarity": "normal",
+      "infusionValue": "fire",
+      "infusionKanjiPools": {
+        "0": ["火", "炎"],
+        "10": ["焔", "灯"],
+        "20": ["灼", "焦", "燃"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_water",
+      "name": "Infuse Water",
+      "nameJa": "水纏い",
+      "description": "Infuse an ability with water.",
+      "type": "infuse",
+      "element": "water",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "水",
+      "rarity": "normal",
+      "infusionValue": "water",
+      "infusionKanjiPools": {
+        "0": ["水", "川"],
+        "10": ["海", "河"],
+        "20": ["湖", "泉", "波"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_wind",
+      "name": "Infuse Wind",
+      "nameJa": "風纏い",
+      "description": "Infuse an ability with wind.",
+      "type": "infuse",
+      "element": "wind",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "風",
+      "rarity": "normal",
+      "infusionValue": "wind",
+      "infusionKanjiPools": {
+        "0": ["風", "空"],
+        "10": ["気", "雲"],
+        "20": ["嵐", "吹", "暴"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_earth",
+      "name": "Infuse Earth",
+      "nameJa": "土纏い",
+      "description": "Infuse an ability with earth.",
+      "type": "infuse",
+      "element": "earth",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "土",
+      "rarity": "normal",
+      "infusionValue": "earth",
+      "infusionKanjiPools": {
+        "0": ["土", "地"],
+        "10": ["山", "岩"],
+        "20": ["石", "砂", "崖"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_void",
+      "name": "Infuse Void",
+      "nameJa": "虚纏い",
+      "description": "Infuse an ability with void.",
+      "type": "infuse",
+      "element": "void",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "虚",
+      "rarity": "normal",
+      "infusionValue": "void",
+      "infusionKanjiPools": {
+        "0": ["虚", "無"],
+        "10": ["空", "闇"],
+        "20": ["冥", "暗", "滅"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_frost",
+      "name": "Infuse Ice",
+      "nameJa": "氷纏い",
+      "description": "Infuse an ability with ice ( potent frost ).",
+      "type": "infuse",
+      "element": "water",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "氷",
+      "rarity": "normal",
+      "infusionValue": "frost",
+      "infusionKanjiPools": {
+        "0": ["氷", "冷"],
+        "10": ["雪", "冬"],
+        "20": ["涼", "霜", "凍"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_bleed",
+      "name": "Infuse Bleed",
+      "nameJa": "血纏い",
+      "description": "Infuse an ability with bleed.",
+      "type": "infuse",
+      "element": "physical",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "血",
+      "rarity": "normal",
+      "infusionValue": "bleed",
+      "infusionKanjiPools": {
+        "0": ["血", "刀"],
+        "10": ["刃", "傷"],
+        "20": ["剣", "矢", "槍"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
+      "effects": []
+    },
+    {
+      "id": "infuse_poison",
+      "name": "Infuse Poison",
+      "nameJa": "毒纏い",
+      "description": "Infuse an ability with poison.",
+      "type": "infuse",
+      "element": "poison",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 2,
+      "kanji": "毒",
+      "rarity": "normal",
+      "infusionValue": "poison",
+      "infusionKanjiPools": {
+        "0": ["毒", "虫"],
+        "10": ["薬", "蛇"],
+        "20": ["菌", "疫", "藻"]
+      },
+      "lifecycle": { "onUse": ["infuseAbility"] },
       "effects": []
     }
   ]

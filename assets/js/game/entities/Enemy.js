@@ -1,6 +1,6 @@
 import Character from './Character.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
-import { resolveElementVsDefence } from '../systems/EffectRegistry.js'
+import { getEffect, resolveElementVsDefence, rollDuration } from '../systems/EffectRegistry.js'
 import { applyAbilityEffects } from '../systems/StatusEffectSystem.js'
 
 const AI_PHASE_PRIORITY = {
@@ -182,6 +182,14 @@ export default class Enemy extends Character {
           finalDamage = Math.floor(finalDamage * context.damageMultiplier)
         }
         const actual = target.takeDamage(finalDamage)
+
+        if (ability.element === 'fire' && actual > 0) {
+          const emberEffect = getEffect('ember')
+          const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
+          this.applyEffect('ember', { snapshot: actual, duration: emberDuration })
+          log(`${this.name || 'The enemy'} suffers ember recoil!`)
+        }
+
         if (ability.effects && ability.effects.length > 0) {
           const consecutiveHits = ability.element ? target.incrementElementStreak(ability.element) : 1
           const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits)

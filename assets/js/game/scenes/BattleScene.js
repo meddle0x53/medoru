@@ -10,6 +10,18 @@ import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
+
+const INFUSION_ICONS = {
+  fire: '🔥',
+  water: '💧',
+  wind: '🌪',
+  earth: '🪨',
+  void: '🌑',
+  frost: '❄️',
+  bleed: '🩸',
+  poison: '☠️',
+}
+
 import { getWindowGameData, sendRunResult } from '../api.js'
 import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
 import { buildEnemyChallenge } from '../systems/EnemyChallengePicker.js'
@@ -31,6 +43,7 @@ export default class BattleScene extends Phaser.Scene {
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
+    this.player.clearAllAbilityInfusions() // infusions last for one battle only
     this.player.onCombatLog = (msg) => this.addCombatLog(msg)
     this.enemies = this.createEnemiesForTile()
     for (const enemy of this.enemies) {
@@ -48,7 +61,8 @@ export default class BattleScene extends Phaser.Scene {
       this,
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
-      320
+      320,
+      { offsetXPercent: -0.038 }
     )
 
     this.turnManager.onTurnChange = (turn) => this.onTurnChange(turn)
@@ -66,6 +80,10 @@ export default class BattleScene extends Phaser.Scene {
     this.targetingPrompt = null
     this.targetingCancelBtn = null
     this.targetingHighlights = []
+
+    this.pendingInfusion = null
+    this.infusionPrompt = null
+    this.infusionCancelBtn = null
 
     this.createBackground()
     this.createCharacters()
@@ -529,7 +547,8 @@ export default class BattleScene extends Phaser.Scene {
     clickableActions.forEach((action, i) => {
       const y = 195 + i * 52
       const colors = getActionTypeColor(action.type)
-      const btn = this.createButton(120, y, `${action.name} (${action.staminaCost})`, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      const label = this.getSkillButtonLabel(action)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
     })
 
@@ -1046,7 +1065,8 @@ export default class BattleScene extends Phaser.Scene {
     clickableActions.forEach((action, i) => {
       const y = 195 + i * 52
       const colors = getActionTypeColor(action.type)
-      const btn = this.createButton(120, y, `${action.name} (${action.staminaCost})`, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      const label = this.getSkillButtonLabel(action)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
     })
 
@@ -1551,6 +1571,215 @@ export default class BattleScene extends Phaser.Scene {
 
   // ---------- Interaction ----------
 
+  getSkillButtonLabel(action) {
+    const infusion = this.player.getAbilityInfusion(action.id)
+    const badge = infusion ? (INFUSION_ICONS[infusion.value] || '✦') : ''
+    return `${badge}${badge ? ' ' : ''}${action.name} (${action.staminaCost})`
+  }
+
+  updateSkillButtonLabels() {
+    for (const { btn, skill } of this.skillButtons) {
+      if (!btn || !btn.text) continue
+      btn.text.setText(this.getSkillButtonLabel(skill))
+    }
+  }
+
+  enterInfusionMode(infuseSkill) {
+    if (this.pendingInfusion) this.clearInfusionMode()
+    this.pendingInfusion = { skill: infuseSkill, value: infuseSkill.infusionValue }
+    this.addCombatLog(`Select an ability to infuse with ${infuseSkill.infusionValue}.`)
+
+    this.infusionPrompt = this.add.text(GAME_CONFIG.width / 2, 32, `Infuse with ${infuseSkill.infusionValue}`, {
+      ...FONTS.title,
+      fontSize: '16px',
+      color: '#f1c40f',
+    }).setOrigin(0.5).setDepth(60)
+
+    this.infusionCancelBtn = this.createButton(GAME_CONFIG.width / 2, 70, 'Cancel', () => this.clearInfusionMode(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    this.infusionCancelBtn.text.setDepth(61)
+    this.infusionCancelBtn.bg.setDepth(61)
+    this.infusionCancelBtn.hitArea.setDepth(61)
+    if (this.infusionCancelBtn.shadow) this.infusionCancelBtn.shadow.setDepth(60)
+
+    this.endTurnBtn.setVisible(false)
+    this.switchActionBtn.setVisible(false)
+
+    this.renderInfusionMode()
+  }
+
+  clearInfusionMode() {
+    this.pendingInfusion = null
+    if (this.infusionPrompt) {
+      this.infusionPrompt.destroy()
+      this.infusionPrompt = null
+    }
+    if (this.infusionCancelBtn) {
+      this.infusionCancelBtn.bg.destroy()
+      this.infusionCancelBtn.text.destroy()
+      this.infusionCancelBtn.hitArea.destroy()
+      if (this.infusionCancelBtn.shadow) this.infusionCancelBtn.shadow.destroy()
+      this.infusionCancelBtn = null
+    }
+    this.setSkillButtonsEnabled(true)
+    this.updateSkillButtonLabels()
+    if (this.turnManager.currentTurn === 'player' && !this.challengeActive) {
+      this.endTurnBtn.setVisible(true)
+      this.switchActionBtn.setVisible(true)
+    }
+  }
+
+  renderInfusionMode() {
+    // Ensure buttons are interactive so the player can pick a target ability.
+    this.setSkillButtonsEnabled(true)
+
+    for (const { btn, skill } of this.skillButtons) {
+      if (!btn || !btn.text) continue
+      btn.text.setText(this.getSkillButtonLabel(skill))
+
+      if (skill.id === this.pendingInfusion.skill.id) {
+        btn.redraw(0xf1c40f)
+      } else if (skill.infusableWith?.includes(this.pendingInfusion.value)) {
+        btn.redraw(0x27ae60)
+      } else {
+        btn.redraw(0x5a5a6a)
+        btn.text.setAlpha(0.6)
+      }
+    }
+  }
+
+  getInfusionKanjiTier(kanji, pools) {
+    if (!pools || !kanji) return 0
+    const levels = Object.entries(pools)
+      .filter(([, chars]) => chars.includes(kanji))
+      .map(([lvl]) => Number(lvl))
+      .sort((a, b) => b - a)
+    return levels[0] || 0
+  }
+
+  computeInfusionPotency(kanji, tier = 0) {
+    const kanjiData = this.player.kanjiList.find(k => k.character === kanji)
+    const strokeCount = kanjiData?.stroke_count || 1
+    return Math.min(2.0, 1 + tier * 0.01 + strokeCount * 0.015)
+  }
+
+  pickInfusionChallengeKanji(infuseSkill) {
+    const userLevel = getWindowGameData()?.level || 1
+    const pools = infuseSkill.infusionKanjiPools
+
+    if (pools) {
+      const effectivePool = Object.entries(pools)
+        .filter(([min]) => Number(min) <= userLevel)
+        .flatMap(([, chars]) => chars)
+      const learned = effectivePool
+        .map(c => ({ char: c, data: this.player.kanjiList.find(k => k.character === c) }))
+        .filter(item => item.data?.stroke_data?.strokes?.length > 0)
+      if (learned.length > 0) {
+        const pick = learned[Math.floor(Math.random() * learned.length)]
+        return { kanji: pick.char, data: pick.data, strokeData: pick.data.stroke_data, tier: this.getInfusionKanjiTier(pick.char, pools) }
+      }
+    }
+
+    const learnedList = this.player.kanjiList.filter(k => k.stroke_data?.strokes?.length > 0)
+    if (learnedList.length > 0) {
+      const pick = learnedList[Math.floor(Math.random() * learnedList.length)]
+      return { kanji: pick.character, data: pick, strokeData: pick.stroke_data, tier: 0 }
+    }
+
+    return null
+  }
+
+  startInfusionChallenge(targetSkill) {
+    const infuseSkill = this.pendingInfusion.skill
+    const value = this.pendingInfusion.value
+    this.clearInfusionMode()
+
+    this.pendingInfusionTarget = { targetSkill, infuseSkill, value }
+
+    const pick = this.pickInfusionChallengeKanji(infuseSkill)
+    if (!pick) {
+      this.addCombatLog(`No learned kanji available — infusing without challenge.`)
+      this.finishInfusionAttempt(this.pendingInfusionTarget, null, 1)
+      return
+    }
+
+    this.pendingInfusionTarget.kanji = pick.kanji
+    this.pendingInfusionTarget.tier = pick.tier
+
+    const meaning = pick.data?.meanings?.[0]
+    const on = pick.data?.on_readings?.[0]
+    const kun = pick.data?.kun_readings?.[0]
+    const hintParts = []
+    if (meaning) hintParts.push(`Meaning: ${meaning}`)
+    if (on) hintParts.push(`On: ${on}`)
+    if (kun) hintParts.push(`Kun: ${kun}`)
+    const hint = `Infuse ${value}! ${hintParts.join(' | ')}`
+
+    this.challengeActive = true
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
+    this.switchActionBtn.setVisible(false)
+
+    this.kanjiDrawing.start(pick.strokeData, hint, {
+      onComplete: (result) => {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.switchActionBtn.setVisible(true)
+        this.finishInfusionAttempt(this.pendingInfusionTarget, result)
+        this.pendingInfusionTarget = null
+      },
+      onWrongStroke: ({ count }) => {
+        this.spawnFloatingText(
+          GAME_CONFIG.width / 2,
+          GAME_CONFIG.height / 2 - 180,
+          `Wrong stroke! (${count})`,
+          COLORS.danger
+        )
+      },
+    })
+  }
+
+  finishInfusionAttempt(pending, kanjiResult) {
+    const { targetSkill, infuseSkill, value, kanji, tier } = pending
+
+    if (!this.player.canUseSkill(infuseSkill)) {
+      this.addCombatLog('Not enough stamina to infuse!')
+      return
+    }
+
+    this.player.useStamina(infuseSkill.staminaCost)
+
+    const mana = this.player.mana || 0
+    let failureChance = Math.max(0.1, 0.8 - mana * 0.02)
+    let challengeBonus = 0
+
+    if (kanjiResult) {
+      if (kanjiResult.completed) {
+        if (kanjiResult.wrongStrokes === 0) challengeBonus = 0.35
+        else if (kanjiResult.wrongStrokes <= 2) challengeBonus = 0.20
+        else challengeBonus = 0.10
+        this.addCombatLog(`${kanji} drawn! Infusion chance improved.`)
+      } else {
+        this.addCombatLog(`${kanji} failed! No infusion bonus.`)
+      }
+    }
+
+    failureChance = Math.max(0, failureChance - challengeBonus)
+    const failed = Math.random() < failureChance
+
+    if (failed) {
+      this.addCombatLog(`The ${value} infusion fizzles... (mana ${mana})`)
+    } else {
+      const potency = kanji ? this.computeInfusionPotency(kanji, tier || 0) : 1
+      this.player.setAbilityInfusion(targetSkill.id, value, mana, potency)
+      const icon = INFUSION_ICONS[value] || '✦'
+      this.addCombatLog(`${icon} ${targetSkill.name} is infused with ${value}! (potency ${potency.toFixed(2)})`)
+    }
+
+    this.updateBars()
+    this.updateSkillButtonLabels()
+  }
+
   handleKeyInput(event) {
     if (!this.challengeActive) return
 
@@ -1576,6 +1805,29 @@ export default class BattleScene extends Phaser.Scene {
   onSkillClick(skill) {
     if (this.challengeActive) return
     if (this.turnManager.currentTurn !== 'player') return
+
+    // Infuse ability selection / target handling
+    if (skill.type === 'infuse') {
+      if (this.pendingInfusion && this.pendingInfusion.skill.id === skill.id) {
+        this.clearInfusionMode()
+        return
+      }
+      this.enterInfusionMode(skill)
+      return
+    }
+
+    if (this.pendingInfusion) {
+      if (skill.id === this.pendingInfusion.skill.id) {
+        this.clearInfusionMode()
+        return
+      }
+      if (skill.infusableWith?.includes(this.pendingInfusion.value)) {
+        this.startInfusionChallenge(skill)
+      } else {
+        this.addCombatLog(`${skill.name} cannot be infused with ${this.pendingInfusion.value}.`)
+      }
+      return
+    }
 
     // Parry must be set up during player turn (kanji drawing + stamina cost)
     if (skill.type === 'parry') {
@@ -1676,6 +1928,7 @@ export default class BattleScene extends Phaser.Scene {
   onEndTurn() {
     if (this.challengeActive) return
     if (this.turnManager.currentTurn !== 'player') return
+    if (this.pendingInfusion) this.clearInfusionMode()
 
     // Start readiness word challenge before ending turn
     this.startReadinessChallenge()
@@ -1995,6 +2248,7 @@ export default class BattleScene extends Phaser.Scene {
 
     this.updateBars()
     this.updateBlockText()
+    this.updateSkillButtonLabels()
     this.player.clearKanjiBonus()
 
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
@@ -2005,7 +2259,9 @@ export default class BattleScene extends Phaser.Scene {
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         const lifestealText = result.lifesteal ? ` (+${result.lifesteal} HP)` : ''
-        this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
+        const infusedIcon = result.infusion ? (INFUSION_ICONS[result.infusion.value] || '✦') : ''
+        const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
+        this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
         if (targetDisplay) {
           this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
           this.shakeSprite(targetDisplay.sprite)
@@ -2018,7 +2274,9 @@ export default class BattleScene extends Phaser.Scene {
       }
       case 'defence': {
         this.setPlayerPose('block_idle')
-        this.addCombatLog(`${quality} ${this.selectedSkill.name} -> +${result.block} block!`)
+        const infusedIcon = result.infusion ? (INFUSION_ICONS[result.infusion.value] || '✦') : ''
+        const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
+        this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name} -> +${result.block} block!`)
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
         break
@@ -2027,7 +2285,9 @@ export default class BattleScene extends Phaser.Scene {
         this.setPlayerPose('block_idle')
         const critText = result.isCrit ? ' CRITICAL!' : ''
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
-        this.addCombatLog(`${quality} ${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
+        const infusedIcon = result.infusion ? (INFUSION_ICONS[result.infusion.value] || '✦') : ''
+        const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
+        this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
         if (targetDisplay) {
           this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
           this.shakeSprite(targetDisplay.sprite)
@@ -2070,6 +2330,7 @@ export default class BattleScene extends Phaser.Scene {
       this.animateTurnChange()
       this.setSkillButtonsEnabled(true)
       this.endTurnBtn.setVisible(true)
+      this.updateSkillButtonLabels()
       // Reset per-turn flags
       this.player.setupDefenceUsed = false
       this.player.clearShieldBonus()
@@ -2077,6 +2338,7 @@ export default class BattleScene extends Phaser.Scene {
       // Show what each enemy will do on the upcoming turn
       this.showIntentionPlan()
     } else {
+      if (this.pendingInfusion) this.clearInfusionMode()
       this.turnText.setText('ENEMY TURN')
       this.turnText.setColor(COLORS.danger)
       this.animateTurnChange()

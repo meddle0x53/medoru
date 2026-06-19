@@ -10,7 +10,7 @@ import { getEffect, rollChance, rollDuration } from './EffectRegistry.js'
  * @param {function} log - combat log callback
  * @returns {object[]} list of applied effect events
  */
-export function applyAbilityEffects(ability, performer, target, ctx = {}, log = () => {}, consecutiveHits = 1) {
+export function applyAbilityEffects(ability, performer, target, ctx = {}, log = () => {}, consecutiveHits = 1, chanceMultiplier = 1) {
   const effects = ability?.effects
   if (!effects || effects.length === 0) return []
 
@@ -21,7 +21,8 @@ export function applyAbilityEffects(ability, performer, target, ctx = {}, log = 
     if (!effect) continue
 
     const chanceConfig = effectConfig.chance
-    const chance = chanceConfig ? rollChance(chanceConfig, consecutiveHits) : 1
+    const rawChance = chanceConfig ? rollChance(chanceConfig, consecutiveHits) : 1
+    const chance = Math.min(1, rawChance * (chanceMultiplier || 1))
     if (Math.random() >= chance) continue
 
     const recipient = effectConfig.target === 'self' ? performer : target

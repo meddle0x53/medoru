@@ -936,7 +936,6 @@ defmodule Medoru.Content.KanjiRadicals do
          {"決", "b49097a1-4a83-4fdd-9964-25ed95245018", 71},
          {"法", "b898f234-fdfa-43d7-8179-b8cd2d76776f", 100},
          {"治", "d0517177-4939-4fc6-99ba-c625f031cef8", 109},
-         {"気", "e793c55a-41f0-4ed6-8075-a791cebefe7d", 113},
          {"派", "cb57f35f-d263-492b-9fec-a887a2a85758", 164},
          {"活", "39d4b3b0-efd7-4cab-b7ab-aa9aad161ded", 171},
          {"海", "24849dec-21c5-408d-9795-d5033453d589", 200},
@@ -7455,6 +7454,7 @@ defmodule Medoru.Content.KanjiRadicals do
     "气" =>
       {4,
        [
+         {"気", "e793c55a-41f0-4ed6-8075-a791cebefe7d", 113},
          {"汽", "29d71c6d-baab-46e2-821c-cffa6720d8d1", 2020},
          {"氤", "765eca68-72d2-4d83-ab32-4ad8a1b9bf15", nil},
          {"氛", "3a87743e-6d8d-41db-be4d-fa8197f41eac", nil},

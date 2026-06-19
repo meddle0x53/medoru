@@ -11,7 +11,7 @@ defmodule Medoru.Content.KanjiRadicalFixes do
   @fixes %{
     "偲" => ["人"],
     "雑" => ["雨"],
-    "気" => ["水"],
+    "気" => ["气"],
     "蔵" => ["虍"],
     "売" => ["士"],
     "摂" => ["手"],
@@ -280,6 +280,46 @@ defmodule Medoru.Content.KanjiRadicalFixes do
               |> Repo.update!()
 
               count + 1
+          end
+      end
+
+    IO.puts("Fixed #{fixed} kanji radicals")
+    fixed
+  end
+
+  @doc """
+  Apply radical fixes for a specific kanji character or list of characters.
+  Useful when you want to backfill just one or a few kanji in production.
+
+  Examples:
+
+      KanjiRadicalFixes.apply_for("気")
+      KanjiRadicalFixes.apply_for(["気", "沢"])
+  """
+  def apply_for(characters) when is_binary(characters) do
+    apply_for([characters])
+  end
+
+  def apply_for(characters) when is_list(characters) do
+    fixed =
+      for char <- characters, reduce: 0 do
+        count ->
+          case Map.fetch(@fixes, char) do
+            :error ->
+              count
+
+            {:ok, radicals} ->
+              case Repo.get_by(Kanji, character: char) do
+                nil ->
+                  count
+
+                kanji ->
+                  kanji
+                  |> Ecto.Changeset.change(radicals: radicals)
+                  |> Repo.update!()
+
+                  count + 1
+              end
           end
       end
 

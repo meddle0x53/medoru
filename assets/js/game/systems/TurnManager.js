@@ -1,5 +1,13 @@
-import { getEffect, resolveElementVsDefence } from './EffectRegistry.js'
+import { getEffect, resolveElementVsDefence, ELEMENTS, effectExists, rollDuration } from './EffectRegistry.js'
 import { applyAbilityEffects } from './StatusEffectSystem.js'
+
+const GUARD_FOR_ELEMENT = {
+  [ELEMENTS.FIRE]: 'fire_guard',
+  [ELEMENTS.WATER]: 'water_guard',
+  [ELEMENTS.WIND]: 'wind_guard',
+  [ELEMENTS.EARTH]: 'earth_guard',
+  [ELEMENTS.VOID]: 'void_guard',
+}
 
 /**
  * Manages whose turn it is and stamina consumption.
@@ -96,6 +104,24 @@ export default class TurnManager {
     // Challenge multiplier: perfect=1.25, success=1.0, fail=0.5
     const multiplier = challengeResult === 'perfect' ? 1.25 : challengeResult === 'success' ? 1.0 : 0.5
 
+    // Resolve any pending infusion for this ability.
+    const infusion = performer.getAbilityInfusion?.(skill.id)
+    if (infusion) {
+      performer.clearAbilityInfusion(skill.id)
+    }
+
+    const STATUS_INFUSIONS = ['frost', 'bleed', 'poison']
+    const isEffectInfusion = infusion && STATUS_INFUSIONS.includes(infusion.value)
+    const isElementInfusion = infusion && !isEffectInfusion && Object.values(ELEMENTS).includes(infusion.value)
+    const infusedElement = isElementInfusion ? infusion.value : skill.element
+    const potency = infusion?.potency || 1
+    const infusedDamageMultiplier = isElementInfusion
+      ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1))
+      : 1.0
+    const infusedEffectChanceMultiplier = isElementInfusion
+      ? Math.min(2.0, 1 + (infusion.mana || 0) / 40 + (potency - 1))
+      : 1.0
+
     let result = null
 
     switch (skill.type) {
@@ -130,15 +156,18 @@ export default class TurnManager {
         // Status-effect outgoing damage multiplier (weak / power_up)
         rawDamage = Math.floor(rawDamage * performer.getOutgoingDamageMultiplier())
 
+        // Infused element damage bonus
+        rawDamage = Math.floor(rawDamage * infusedDamageMultiplier)
+
         // Element-vs-defence resolution
-        if (skill.element) {
-          const interaction = resolveElementVsDefence(skill.element, target.getActiveEffectIds())
+        if (infusedElement) {
+          const interaction = resolveElementVsDefence(infusedElement, target.getActiveEffectIds())
           if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
           if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
           if (interaction.blocked) {
-            this.log(`${target.name || 'The enemy'} nullifies the ${skill.element} attack!`)
+            this.log(`${target.name || 'The enemy'} nullifies the ${infusedElement} attack!`)
             this.checkBattleOver(performer)
-            return { type: 'attack', damage: 0, isCrit, multiplier, blocked: true }
+            return { type: 'attack', damage: 0, isCrit, multiplier, blocked: true, infusion: infusion ? { value: infusion.value } : undefined }
           }
         }
 
@@ -165,11 +194,22 @@ export default class TurnManager {
         }
 
         result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal }
+        if (infusion) result.infusion = { value: infusion.value, potency }
 
-        if (skill.element) {
-          const consecutiveHits = target.incrementElementStreak(skill.element)
-          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits)
-          if (applied.length > 0) target.resetElementStreak(skill.element)
+        if (infusedElement === 'fire' && actual > 0) {
+          const emberEffect = getEffect('ember')
+          const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
+          performer.applyEffect('ember', { snapshot: actual, duration: emberDuration })
+          this.log(`${performer.name || 'The attacker'} suffers ember recoil!`)
+        }
+
+        if (infusedElement) {
+          const consecutiveHits = target.incrementElementStreak(infusedElement)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, infusedEffectChanceMultiplier)
+          if (applied.length > 0) target.resetElementStreak(infusedElement)
+        }
+        if (isEffectInfusion) {
+          this.applyInfusedEffect(infusion, target, actual)
         }
         break
       }
@@ -179,6 +219,16 @@ export default class TurnManager {
         const total = Math.floor((base + shieldBonus) * multiplier)
         performer.addBlock(total)
         result = { type: 'defence', block: total, multiplier }
+        if (isElementInfusion) {
+          const guardId = GUARD_FOR_ELEMENT[infusion.value]
+          if (guardId) {
+            const guardEffect = getEffect(guardId)
+            const duration = guardEffect ? rollDuration(guardEffect) : 2
+            performer.applyEffect(guardId, { duration })
+            this.log(`${performer.name || 'You'} gain ${guardEffect?.name || guardId}!`)
+          }
+          result.infusion = { value: infusion.value }
+        }
         break
       }
       case 'heal': {
@@ -196,6 +246,11 @@ export default class TurnManager {
         result = { type: 'buff', buffType: skill.buffType, multiplier }
         break
       }
+      case 'infuse': {
+        // Infuse abilities are resolved by the UI before reaching TurnManager.
+        result = { type: 'infuse', multiplier }
+        break
+      }
       case 'attack_defence': {
         let total
         if (performer.calculateWeaponDamage) {
@@ -208,19 +263,22 @@ export default class TurnManager {
         let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
         rawDamage = Math.floor(rawDamage * performer.getOutgoingDamageMultiplier())
 
+        // Infused element damage bonus
+        rawDamage = Math.floor(rawDamage * infusedDamageMultiplier)
+
         let effectiveDefense = target.getDefense()
         if (performer.lastKanjiWrongStrokes === 0) {
           effectiveDefense = Math.floor(effectiveDefense * 0.2)
         }
 
-        if (skill.element) {
-          const interaction = resolveElementVsDefence(skill.element, target.getActiveEffectIds())
+        if (infusedElement) {
+          const interaction = resolveElementVsDefence(infusedElement, target.getActiveEffectIds())
           if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
           if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
           if (interaction.blocked) {
-            this.log(`${target.name || 'The enemy'} nullifies the ${skill.element} attack!`)
+            this.log(`${target.name || 'The enemy'} nullifies the ${infusedElement} attack!`)
             this.checkBattleOver(performer)
-            return { type: 'attack_defence', damage: 0, block: 0, isCrit, multiplier, blocked: true }
+            return { type: 'attack_defence', damage: 0, block: 0, isCrit, multiplier, blocked: true, infusion: infusion ? { value: infusion.value } : undefined }
           }
         }
 
@@ -239,11 +297,22 @@ export default class TurnManager {
         if (blockTotal > 0) performer.addBlock(blockTotal)
 
         result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
+        if (infusion) result.infusion = { value: infusion.value, potency }
 
-        if (skill.element) {
-          const consecutiveHits = target.incrementElementStreak(skill.element)
-          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits)
-          if (applied.length > 0) target.resetElementStreak(skill.element)
+        if (infusedElement === 'fire' && actual > 0) {
+          const emberEffect = getEffect('ember')
+          const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
+          performer.applyEffect('ember', { snapshot: actual, duration: emberDuration })
+          this.log(`${performer.name || 'The attacker'} suffers ember recoil!`)
+        }
+
+        if (infusedElement) {
+          const consecutiveHits = target.incrementElementStreak(infusedElement)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, infusedEffectChanceMultiplier)
+          if (applied.length > 0) target.resetElementStreak(infusedElement)
+        }
+        if (isEffectInfusion) {
+          this.applyInfusedEffect(infusion, target, actual)
         }
         break
       }
@@ -255,6 +324,24 @@ export default class TurnManager {
     this.checkBattleOver(performer)
 
     return result
+  }
+
+  applyInfusedEffect(infusion, target, initialDamage) {
+    const effect = getEffect(infusion.value)
+    if (!effect) return
+    const potency = infusion?.potency || 1
+    const chance = Math.min(0.95, 0.25 + (infusion.mana || 0) * 0.015 + (potency - 1) * 0.2)
+    if (Math.random() >= chance) return
+    const options = {}
+    if (effect.tick && effect.tick.damage && effect.tick.damage.source === 'snapshot') {
+      options.snapshot = initialDamage
+    }
+    const duration = rollDuration(effect)
+    if (duration) options.duration = duration
+    const entry = target.applyEffect(infusion.value, options)
+    if (entry) {
+      this.log(`${target.name || 'The enemy'} is ${effect.name} (${entry.remainingTurns} turns).`)
+    }
   }
 
   endTurn() {
