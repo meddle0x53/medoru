@@ -347,25 +347,29 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                       <label class="label">
                         <span class="label-text">{gettext("Title")}</span>
                       </label>
-                      <input
-                        type="text"
-                        class="input input-bordered w-full"
-                        value={@lesson_title}
-                        phx-change="update_title"
-                        phx-debounce="300"
-                      />
+                      <form phx-change="update_title">
+                        <input
+                          type="text"
+                          name="title"
+                          class="input input-bordered w-full"
+                          value={@lesson_title}
+                          phx-debounce="300"
+                        />
+                      </form>
                     </div>
                     <div>
                       <label class="label">
                         <span class="label-text">{gettext("Description")}</span>
                       </label>
-                      <input
-                        type="text"
-                        class="input input-bordered w-full"
-                        value={@lesson_description}
-                        phx-change="update_description"
-                        phx-debounce="300"
-                      />
+                      <form phx-change="update_description">
+                        <input
+                          type="text"
+                          name="description"
+                          class="input input-bordered w-full"
+                          value={@lesson_description}
+                          phx-debounce="300"
+                        />
+                      </form>
                     </div>
                   </div>
                 </div>
@@ -426,15 +430,17 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                               </span>
                               <span class="text-sm text-secondary">#{section["number"]}</span>
                             </div>
-                            <input
-                              type="text"
-                              class="input input-bordered input-sm w-full font-medium"
-                              value={section["title"]}
-                              phx-change="update_section"
-                              phx-value-index={index}
-                              phx-value-field="title"
-                              phx-debounce="300"
-                            />
+                            <form phx-change="update_section" class="contents">
+                              <input type="hidden" name="index" value={index} />
+                              <input type="hidden" name="field" value="title" />
+                              <input
+                                type="text"
+                                name="value"
+                                class="input input-bordered input-sm w-full font-medium"
+                                value={section["title"]}
+                                phx-debounce="300"
+                              />
+                            </form>
                           </div>
 
                           <%!-- Description --%>
@@ -442,14 +448,16 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                             <label class="label text-xs py-0">
                               <span class="label-text">{gettext("Description")}</span>
                             </label>
-                            <textarea
-                              class="textarea textarea-bordered textarea-sm w-full"
-                              rows={4}
-                              phx-change="update_section"
-                              phx-value-index={index}
-                              phx-value-field="description"
-                              phx-debounce="300"
-                            ><%= section["description"] %></textarea>
+                            <form phx-change="update_section" class="contents">
+                              <input type="hidden" name="index" value={index} />
+                              <input type="hidden" name="field" value="description" />
+                              <textarea
+                                name="value"
+                                class="textarea textarea-bordered textarea-sm w-full"
+                                rows={4}
+                                phx-debounce="300"
+                              ><%= section["description"] %></textarea>
+                            </form>
                           </div>
 
                           <%!-- Examples (grammar steps only) --%>
@@ -461,39 +469,45 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.FromImage do
                               <div class="space-y-2">
                                 <%= for {example, ex_idx} <- Enum.with_index(section["examples"] || []) do %>
                                   <div class="bg-base-200 rounded-lg p-3 space-y-2">
-                                    <input
-                                      type="text"
-                                      class="input input-bordered input-sm w-full font-jp"
-                                      value={example["sentence"]}
-                                      placeholder={gettext("Sentence")}
-                                      phx-change="update_example"
-                                      phx-value-section-index={index}
-                                      phx-value-example-index={ex_idx}
-                                      phx-value-field="sentence"
-                                      phx-debounce="300"
-                                    />
-                                    <input
-                                      type="text"
-                                      class="input input-bordered input-sm w-full"
-                                      value={example["reading"]}
-                                      placeholder={gettext("Reading")}
-                                      phx-change="update_example"
-                                      phx-value-section-index={index}
-                                      phx-value-example-index={ex_idx}
-                                      phx-value-field="reading"
-                                      phx-debounce="300"
-                                    />
-                                    <input
-                                      type="text"
-                                      class="input input-bordered input-sm w-full"
-                                      value={example["meaning"]}
-                                      placeholder={gettext("Meaning")}
-                                      phx-change="update_example"
-                                      phx-value-section-index={index}
-                                      phx-value-example-index={ex_idx}
-                                      phx-value-field="meaning"
-                                      phx-debounce="300"
-                                    />
+                                    <form phx-change="update_example" class="contents">
+                                      <input type="hidden" name="section_index" value={index} />
+                                      <input type="hidden" name="example_index" value={ex_idx} />
+                                      <input type="hidden" name="field" value="sentence" />
+                                      <input
+                                        type="text"
+                                        name="value"
+                                        class="input input-bordered input-sm w-full font-jp"
+                                        value={example["sentence"]}
+                                        placeholder={gettext("Sentence")}
+                                        phx-debounce="300"
+                                      />
+                                    </form>
+                                    <form phx-change="update_example" class="contents">
+                                      <input type="hidden" name="section_index" value={index} />
+                                      <input type="hidden" name="example_index" value={ex_idx} />
+                                      <input type="hidden" name="field" value="reading" />
+                                      <input
+                                        type="text"
+                                        name="value"
+                                        class="input input-bordered input-sm w-full"
+                                        value={example["reading"]}
+                                        placeholder={gettext("Reading")}
+                                        phx-debounce="300"
+                                      />
+                                    </form>
+                                    <form phx-change="update_example" class="contents">
+                                      <input type="hidden" name="section_index" value={index} />
+                                      <input type="hidden" name="example_index" value={ex_idx} />
+                                      <input type="hidden" name="field" value="meaning" />
+                                      <input
+                                        type="text"
+                                        name="value"
+                                        class="input input-bordered input-sm w-full"
+                                        value={example["meaning"]}
+                                        placeholder={gettext("Meaning")}
+                                        phx-debounce="300"
+                                      />
+                                    </form>
                                   </div>
                                 <% end %>
                               </div>

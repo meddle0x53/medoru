@@ -166,7 +166,13 @@ defmodule MedoruWeb.UserAuth do
       %{} ->
         {:cont,
          Phoenix.Component.assign(socket,
-           current_scope: %{current_user: nil, impersonator_user: nil, unread_count: 0, locale: locale, theme: "system"}
+           current_scope: %{
+             current_user: nil,
+             impersonator_user: nil,
+             unread_count: 0,
+             locale: locale,
+             theme: "system"
+           }
          )}
     end
   end

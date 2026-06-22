@@ -85,6 +85,34 @@
         "onFail": "full",
         "timeLimit": 5000
       }]
+    },
+    {
+      "id": "blaze_swipe",
+      "name": "Blaze Swipe",
+      "type": "attack",
+      "element": "blaze",
+      "staminaCost": 5,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 8,
+      "maxUsesPerTurn": 2,
+      "basePower": 12,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.1,
+      "effects": []
+    },
+    {
+      "id": "dust_strike",
+      "name": "Dust Strike",
+      "type": "attack",
+      "element": "dust",
+      "staminaCost": 4,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 6,
+      "maxUsesPerTurn": 2,
+      "basePower": 10,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.0,
+      "effects": []
     }
   ],
   "deathAbility": null,

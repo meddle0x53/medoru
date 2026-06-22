@@ -7,6 +7,8 @@ defmodule Medoru.AI.ImageVocabulary do
   with dictionary forms, readings, meanings, and verb group information.
   """
 
+  alias Medoru.Content.Word
+
   @openai_chat_url "https://api.openai.com/v1/chat/completions"
 
   @extraction_prompt """
@@ -172,7 +174,7 @@ defmodule Medoru.AI.ImageVocabulary do
     %{
       "text" => word["text"] || "",
       "image_text" => image_text,
-      "reading" => word["reading"] || "",
+      "reading" => Word.normalize_reading(word["reading"]),
       "meaning" => word["meaning"] || "",
       "word_type" => normalize_word_type(word["word_type"]),
       "verb_group" => verb_group,

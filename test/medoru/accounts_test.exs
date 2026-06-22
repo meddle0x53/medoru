@@ -103,6 +103,17 @@ defmodule Medoru.AccountsTest do
       assert user == Accounts.get_user!(user.id)
     end
 
+    test "update_last_login/1 updates the user's last login timestamp" do
+      user = user_fixture()
+      assert is_nil(user.last_login)
+
+      assert {:ok, %User{} = updated_user} = Accounts.update_last_login(user)
+      assert updated_user.last_login
+
+      fetched_user = Accounts.get_user!(user.id)
+      assert fetched_user.last_login == updated_user.last_login
+    end
+
     test "update_learning_language/2 updates the user's learning language" do
       user = user_fixture()
 

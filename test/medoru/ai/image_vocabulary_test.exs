@@ -311,6 +311,47 @@ defmodule Medoru.AI.ImageVocabularyTest do
       end)
     end
 
+    test "normalizes readings by removing punctuation" do
+      with_mock_response(fn ->
+        Req.Test.stub(ImageVocabulary, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "あれ",
+                        "reading" => "あれ？",
+                        "meaning" => "huh",
+                        "word_type" => "expression"
+                      },
+                      %{
+                        "text" => "テスト",
+                        "reading" => "てすと 、てすと",
+                        "meaning" => "test",
+                        "word_type" => "noun"
+                      }
+                    ]),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, [first, second]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
+        assert first["reading"] == "あれ"
+        assert second["reading"] == "てすと/てすと"
+      end)
+    end
+
     test "detects PNG image type" do
       png = <<0x89, 0x50, 0x4E, 0x47>> <> String.duplicate(<<0>>, 100)
 

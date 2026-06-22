@@ -12,6 +12,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
   require Logger
 
   alias Medoru.Content
+  alias Medoru.Content.Word
   @default_title "Vocabulary lesson from image — change the name"
 
   @doc """
@@ -86,7 +87,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
 
   defp add_single_word(lesson_id, word_data, position) do
     text = word_data["text"]
-    reading = word_data["reading"]
+    reading = Word.normalize_reading(word_data["reading"])
     meaning = word_data["meaning"]
     word_type = word_data["word_type"]
     image_text = word_data["image_text"]
@@ -115,8 +116,8 @@ defmodule Medoru.Content.ImageLessonBuilder do
         end
       end
 
-    # Build custom_meaning from image form + notes
-    custom_meaning = build_custom_meaning(image_text, notes)
+    # Build examples from image form + notes so the lesson uses the DB word meaning
+    examples = build_examples(image_text, notes)
 
     # Try to find existing word by text
     existing_word = Content.get_word_by_text(text)
@@ -177,7 +178,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
     if is_binary(word_id) do
       lesson_word_attrs = %{
         position: position,
-        custom_meaning: custom_meaning
+        examples: examples
       }
 
       Content.add_word_to_lesson(lesson_id, word_id, lesson_word_attrs)
@@ -186,15 +187,15 @@ defmodule Medoru.Content.ImageLessonBuilder do
     end
   end
 
-  defp build_custom_meaning(image_text, notes) do
+  defp build_examples(image_text, notes) do
     image_text = String.trim(image_text)
     notes = String.trim(notes)
 
-    cond do
-      image_text == "" and notes == "" -> nil
-      image_text == "" -> notes
-      notes == "" -> image_text
-      true -> "#{image_text} (#{notes})"
+    case {image_text, notes} do
+      {"", ""} -> []
+      {_, ""} -> [image_text]
+      {"", _} -> [notes]
+      {_, _} -> ["#{image_text} (#{notes})"]
     end
   end
 

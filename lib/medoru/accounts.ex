@@ -199,6 +199,15 @@ defmodule Medoru.Accounts do
   # Admin User Management
 
   @doc """
+  Updates the user's last login timestamp to the current UTC time.
+  """
+  def update_last_login(%User{} = user) do
+    user
+    |> User.changeset(%{last_login: DateTime.utc_now() |> DateTime.truncate(:second)})
+    |> Repo.update()
+  end
+
+  @doc """
   Returns a paginated list of users for admin.
   Supports filtering by type and searching by email/name.
   Returns {users, total_count} tuple.

@@ -63,7 +63,10 @@ defmodule MedoruWeb.Layouts do
             method="post"
             class="inline"
           >
-            <button type="submit" class="btn btn-xs btn-ghost text-accent-content hover:bg-accent-content/10">
+            <button
+              type="submit"
+              class="btn btn-xs btn-ghost text-accent-content hover:bg-accent-content/10"
+            >
               <.icon name="hero-arrow-left-on-rectangle" class="w-4 h-4" />
               {gettext("Exit impersonation")}
             </button>

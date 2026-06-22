@@ -20,6 +20,7 @@ defmodule Medoru.Accounts.User do
     field :moderator, :boolean, default: false
     field :is_deleted, :boolean, default: false
     field :learning_language, :string, default: "japanese"
+    field :last_login, :utc_datetime
 
     has_one :profile, Medoru.Accounts.UserProfile
     has_one :stats, Medoru.Accounts.UserStats
@@ -39,7 +40,8 @@ defmodule Medoru.Accounts.User do
       :type,
       :moderator,
       :is_deleted,
-      :learning_language
+      :learning_language,
+      :last_login
     ])
     |> validate_required([:email, :provider, :provider_uid, :moderator])
     |> validate_required([:email, :provider, :provider_uid])

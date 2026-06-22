@@ -150,7 +150,7 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
       refute lesson_word.word_id == kana_word.id
     end
 
-    test "stores image form and notes as custom_meaning", %{teacher: teacher} do
+    test "stores image form and notes as examples and uses DB meaning", %{teacher: teacher} do
       extracted_words = [
         %{
           "text" => "消す",
@@ -171,7 +171,9 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
                )
 
       [lesson_word] = Content.list_lesson_words(lesson.id)
-      assert lesson_word.custom_meaning == "消します (Group I verb)"
+      assert lesson_word.custom_meaning == nil
+      assert lesson_word.examples == ["消します (Group I verb)"]
+      assert lesson_word.word.meaning == "turn off"
     end
 
     test "returns error when no words are provided", %{teacher: teacher} do
@@ -200,6 +202,40 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
                )
 
       assert lesson.title == "Vocabulary lesson from image — change the name"
+    end
+
+    test "normalizes readings with punctuation and whitespace", %{teacher: teacher} do
+      extracted_words = [
+        %{
+          "text" => "あれ",
+          "image_text" => "あれ？",
+          "reading" => "あれ？",
+          "meaning" => "huh",
+          "word_type" => "expression",
+          "verb_group" => nil,
+          "notes" => ""
+        },
+        %{
+          "text" => "テスト",
+          "image_text" => "テスト",
+          "reading" => "てすと 、てすと",
+          "meaning" => "test",
+          "word_type" => "noun",
+          "verb_group" => nil,
+          "notes" => ""
+        }
+      ]
+
+      assert {:ok, lesson} =
+               ImageLessonBuilder.build_lesson_from_extracted_words(
+                 extracted_words,
+                 %{},
+                 teacher.id
+               )
+
+      [first, second] = Content.list_lesson_words(lesson.id)
+      assert first.word.reading == "あれ"
+      assert second.word.reading == "てすと/てすと"
     end
   end
 end

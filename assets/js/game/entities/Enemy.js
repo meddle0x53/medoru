@@ -2,6 +2,7 @@ import Character from './Character.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
 import { getEffect, resolveElementVsDefence, rollDuration } from '../systems/EffectRegistry.js'
 import { applyAbilityEffects } from '../systems/StatusEffectSystem.js'
+import { getInfusionBaseEffect, getElementForInfusion } from '../data/infusionReactions.js'
 
 const AI_PHASE_PRIORITY = {
   buff: 0,
@@ -150,6 +151,9 @@ export default class Enemy extends Character {
 
     switch (ability.type) {
       case 'attack': {
+        const declaredElement = ability.element
+        const effectiveElement = getElementForInfusion(declaredElement) || declaredElement
+
         const base = ability.basePower + this.getStatValue(ability.scalingStat) * ability.scalingMultiplier
         // Consume the queued next-attack bonus, if any.
         this.consumeBuff('next_attack_bonus')
@@ -168,8 +172,8 @@ export default class Enemy extends Character {
         let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
         finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
 
-        if (ability.element) {
-          const interaction = resolveElementVsDefence(ability.element, target.getActiveEffectIds())
+        if (effectiveElement) {
+          const interaction = resolveElementVsDefence(effectiveElement, target.getActiveEffectIds())
           if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
           if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
           if (interaction.blocked) {
@@ -183,7 +187,7 @@ export default class Enemy extends Character {
         }
         const actual = target.takeDamage(finalDamage)
 
-        if (ability.element === 'fire' && actual > 0) {
+        if (effectiveElement === 'fire' && actual > 0) {
           const emberEffect = getEffect('ember')
           const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
           this.applyEffect('ember', { snapshot: actual, duration: emberDuration })
@@ -191,9 +195,29 @@ export default class Enemy extends Character {
         }
 
         if (ability.effects && ability.effects.length > 0) {
-          const consecutiveHits = ability.element ? target.incrementElementStreak(ability.element) : 1
+          const consecutiveHits = effectiveElement ? target.incrementElementStreak(effectiveElement) : 1
           const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits)
-          if (applied.length > 0 && ability.element) target.resetElementStreak(ability.element)
+          if (applied.length > 0 && effectiveElement) target.resetElementStreak(effectiveElement)
+        }
+
+        if (declaredElement) {
+          const baseEffect = getInfusionBaseEffect(declaredElement)
+          if (baseEffect) {
+            const effects = baseEffect.effects || [{ effectId: baseEffect.effectId, chance: baseEffect.chance }]
+            for (const fx of effects) {
+              const effect = getEffect(fx.effectId)
+              if (!effect) continue
+              if (Math.random() >= (fx.chance || 0.5)) continue
+              const options = {}
+              if (effect.tick && effect.tick.damage && effect.tick.damage.source === 'snapshot') {
+                options.snapshot = actual
+              }
+              const duration = rollDuration(effect)
+              if (duration) options.duration = duration
+              const entry = target.applyEffect(fx.effectId, options)
+              if (entry) log(`${target.name || 'You'} is ${effect.name} (${entry.remainingTurns} turns).`)
+            }
+          }
         }
         return { type: 'attack', damage: actual, isCrit, missed: false }
       }

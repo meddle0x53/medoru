@@ -146,8 +146,8 @@ export default class Character {
 
   // ---------- Ability Infusions ----------
 
-  setAbilityInfusion(abilityId, value, mana, potency = 1) {
-    this.infusedAbilities.set(abilityId, { value, mana, potency })
+  setAbilityInfusion(abilityId, value, mana, potency = 1, extraEffects = []) {
+    this.infusedAbilities.set(abilityId, { value, mana, potency, extraEffects: extraEffects || [] })
   }
 
   getAbilityInfusion(abilityId) {

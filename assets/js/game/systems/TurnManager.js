@@ -1,13 +1,6 @@
-import { getEffect, resolveElementVsDefence, ELEMENTS, effectExists, rollDuration } from './EffectRegistry.js'
+import { getEffect, resolveElementVsDefence, rollDuration } from './EffectRegistry.js'
 import { applyAbilityEffects } from './StatusEffectSystem.js'
-
-const GUARD_FOR_ELEMENT = {
-  [ELEMENTS.FIRE]: 'fire_guard',
-  [ELEMENTS.WATER]: 'water_guard',
-  [ELEMENTS.WIND]: 'wind_guard',
-  [ELEMENTS.EARTH]: 'earth_guard',
-  [ELEMENTS.VOID]: 'void_guard',
-}
+import { getInfusionBaseEffect, getElementForInfusion, getGuardForInfusion } from '../data/infusionReactions.js'
 
 /**
  * Manages whose turn it is and stamina consumption.
@@ -110,13 +103,14 @@ export default class TurnManager {
       performer.clearAbilityInfusion(skill.id)
     }
 
-    const STATUS_INFUSIONS = ['frost', 'bleed', 'poison']
-    const isEffectInfusion = infusion && STATUS_INFUSIONS.includes(infusion.value)
-    const isElementInfusion = infusion && !isEffectInfusion && Object.values(ELEMENTS).includes(infusion.value)
-    const infusedElement = isElementInfusion ? infusion.value : skill.element
+    const isEffectInfusion = infusion && !getElementForInfusion(infusion.value) && getEffect(infusion.value)
+    const isElementInfusion = infusion && !isEffectInfusion
+    const infusedElement = isElementInfusion ? getElementForInfusion(infusion.value) : skill.element
     const potency = infusion?.potency || 1
+    const baseEffect = isElementInfusion ? getInfusionBaseEffect(infusion.value) : null
+    const comboDamageMultiplier = baseEffect?.damageMultiplier || 0
     const infusedDamageMultiplier = isElementInfusion
-      ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1))
+      ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1) + comboDamageMultiplier)
       : 1.0
     const infusedEffectChanceMultiplier = isElementInfusion
       ? Math.min(2.0, 1 + (infusion.mana || 0) / 40 + (potency - 1))
@@ -211,6 +205,18 @@ export default class TurnManager {
         if (isEffectInfusion) {
           this.applyInfusedEffect(infusion, target, actual)
         }
+        if (baseEffect) {
+          this.applyInfusedBaseEffects(baseEffect, target, actual, potency)
+        }
+        if (infusion?.extraEffects?.length) {
+          for (const extra of infusion.extraEffects) {
+            this.applyInfusedEffect({ value: extra, mana: infusion.mana, potency: infusion.potency || 1 }, target, actual)
+          }
+        }
+        if (!infusion && infusedElement) {
+          const baseEffect = getInfusionBaseEffect(infusedElement)
+          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1)
+        }
         break
       }
       case 'defence': {
@@ -220,7 +226,7 @@ export default class TurnManager {
         performer.addBlock(total)
         result = { type: 'defence', block: total, multiplier }
         if (isElementInfusion) {
-          const guardId = GUARD_FOR_ELEMENT[infusion.value]
+          const guardId = getGuardForInfusion(infusion.value)
           if (guardId) {
             const guardEffect = getEffect(guardId)
             const duration = guardEffect ? rollDuration(guardEffect) : 2
@@ -314,6 +320,18 @@ export default class TurnManager {
         if (isEffectInfusion) {
           this.applyInfusedEffect(infusion, target, actual)
         }
+        if (baseEffect) {
+          this.applyInfusedBaseEffects(baseEffect, target, actual, potency)
+        }
+        if (infusion?.extraEffects?.length) {
+          for (const extra of infusion.extraEffects) {
+            this.applyInfusedEffect({ value: extra, mana: infusion.mana, potency: infusion.potency || 1 }, target, actual)
+          }
+        }
+        if (!infusion && infusedElement) {
+          const baseEffect = getInfusionBaseEffect(infusedElement)
+          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1)
+        }
         break
       }
       default:
@@ -341,6 +359,26 @@ export default class TurnManager {
     const entry = target.applyEffect(infusion.value, options)
     if (entry) {
       this.log(`${target.name || 'The enemy'} is ${effect.name} (${entry.remainingTurns} turns).`)
+    }
+  }
+
+  applyInfusedBaseEffects(baseEffect, target, initialDamage, potency = 1) {
+    const effects = baseEffect.effects || [{ effectId: baseEffect.effectId, chance: baseEffect.chance }]
+    for (const fx of effects) {
+      const effect = getEffect(fx.effectId)
+      if (!effect) continue
+      const chance = Math.min(1, (fx.chance || 0.5) * Math.min(1.5, potency))
+      if (Math.random() >= chance) continue
+      const options = {}
+      if (effect.tick && effect.tick.damage && effect.tick.damage.source === 'snapshot') {
+        options.snapshot = initialDamage
+      }
+      const duration = rollDuration(effect)
+      if (duration) options.duration = duration
+      const entry = target.applyEffect(fx.effectId, options)
+      if (entry) {
+        this.log(`${target.name || 'The enemy'} is ${effect.name} (${entry.remainingTurns} turns).`)
+      }
     }
   }
 

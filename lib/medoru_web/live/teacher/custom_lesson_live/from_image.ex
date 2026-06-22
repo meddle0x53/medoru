@@ -304,25 +304,29 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.FromImage do
                       <label class="label">
                         <span class="label-text">{gettext("Title")}</span>
                       </label>
-                      <input
-                        type="text"
-                        class="input input-bordered w-full"
-                        value={@lesson_title}
-                        phx-change="update_title"
-                        phx-debounce="300"
-                      />
+                      <form phx-change="update_title">
+                        <input
+                          type="text"
+                          name="title"
+                          class="input input-bordered w-full"
+                          value={@lesson_title}
+                          phx-debounce="300"
+                        />
+                      </form>
                     </div>
                     <div>
                       <label class="label">
                         <span class="label-text">{gettext("Description")}</span>
                       </label>
-                      <input
-                        type="text"
-                        class="input input-bordered w-full"
-                        value={@lesson_description}
-                        phx-change="update_description"
-                        phx-debounce="300"
-                      />
+                      <form phx-change="update_description">
+                        <input
+                          type="text"
+                          name="description"
+                          class="input input-bordered w-full"
+                          value={@lesson_description}
+                          phx-debounce="300"
+                        />
+                      </form>
                     </div>
                   </div>
                 </div>
@@ -382,37 +386,43 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.FromImage do
                               />
                             </td>
                             <td>
-                              <input
-                                type="text"
-                                class="input input-bordered input-sm w-full min-w-[120px]"
-                                value={word["text"]}
-                                phx-change="update_word"
-                                phx-value-index={index}
-                                phx-value-field="text"
-                                phx-debounce="300"
-                              />
+                              <form phx-change="update_word" class="contents">
+                                <input type="hidden" name="index" value={index} />
+                                <input type="hidden" name="field" value="text" />
+                                <input
+                                  type="text"
+                                  name="value"
+                                  class="input input-bordered input-sm w-full min-w-[120px]"
+                                  value={word["text"]}
+                                  phx-debounce="300"
+                                />
+                              </form>
                             </td>
                             <td>
-                              <input
-                                type="text"
-                                class="input input-bordered input-sm w-full min-w-[120px]"
-                                value={word["reading"]}
-                                phx-change="update_word"
-                                phx-value-index={index}
-                                phx-value-field="reading"
-                                phx-debounce="300"
-                              />
+                              <form phx-change="update_word" class="contents">
+                                <input type="hidden" name="index" value={index} />
+                                <input type="hidden" name="field" value="reading" />
+                                <input
+                                  type="text"
+                                  name="value"
+                                  class="input input-bordered input-sm w-full min-w-[120px]"
+                                  value={word["reading"]}
+                                  phx-debounce="300"
+                                />
+                              </form>
                             </td>
                             <td>
-                              <input
-                                type="text"
-                                class="input input-bordered input-sm w-full min-w-[150px]"
-                                value={word["meaning"]}
-                                phx-change="update_word"
-                                phx-value-index={index}
-                                phx-value-field="meaning"
-                                phx-debounce="300"
-                              />
+                              <form phx-change="update_word" class="contents">
+                                <input type="hidden" name="index" value={index} />
+                                <input type="hidden" name="field" value="meaning" />
+                                <input
+                                  type="text"
+                                  name="value"
+                                  class="input input-bordered input-sm w-full min-w-[150px]"
+                                  value={word["meaning"]}
+                                  phx-debounce="300"
+                                />
+                              </form>
                             </td>
                             <td>
                               <span class="badge badge-sm badge-ghost">

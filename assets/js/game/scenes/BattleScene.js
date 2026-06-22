@@ -11,16 +11,7 @@ import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
 
-const INFUSION_ICONS = {
-  fire: '🔥',
-  water: '💧',
-  wind: '🌪',
-  earth: '🪨',
-  void: '🌑',
-  frost: '❄️',
-  bleed: '🩸',
-  poison: '☠️',
-}
+import { INFUSION_ICONS, resolveInfusionReaction, getElementForInfusion } from '../data/infusionReactions.js'
 
 import { getWindowGameData, sendRunResult } from '../api.js'
 import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
@@ -1539,13 +1530,24 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createCombatLog() {
+    this.combatLogHistory = []
     this.combatLogBg = this.add.graphics()
-    this.combatLogText = this.add.text(GAME_CONFIG.width / 2, 180, '', {
+    this.combatLogText = this.add.text(20, 32, '', {
       ...FONTS.default,
-      fontSize: '14px',
-      align: 'center',
-      wordWrap: { width: 500 },
-    }).setOrigin(0.5)
+      fontSize: '16px',
+      align: 'left',
+      wordWrap: { width: 360 },
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0, 0.5).setDepth(50)
+    this.combatLogBg.setDepth(49)
+
+    this.combatLogText.setInteractive({ useHandCursor: true })
+    this.combatLogText.on('pointerdown', () => this.showCombatLogHistory())
+    this.combatLogBg.setInteractive({ useHandCursor: true })
+    this.combatLogBg.on('pointerdown', () => this.showCombatLogHistory())
+
+    this.createCombatLogHistoryPanel()
   }
 
   drawCombatLogBg() {
@@ -1555,18 +1557,74 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
     const metrics = this.combatLogText.getBounds()
-    const padX = 16
-    const padY = 10
-    const w = Math.max(metrics.width + padX * 2, 200)
+    const padX = 12
+    const padY = 8
+    const w = Math.max(metrics.width + padX * 2, 160)
     const h = metrics.height + padY * 2
-    const x = GAME_CONFIG.width / 2
-    const y = 180
-    const radius = 12
+    const x = metrics.x - padX
+    const y = metrics.y - padY
+    const radius = 10
     this.combatLogBg.clear()
-    this.combatLogBg.fillStyle(0x2c3e50, 0.75)
-    this.combatLogBg.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
-    this.combatLogBg.lineStyle(1.5, 0x7f8c8d, 0.4)
-    this.combatLogBg.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
+    // Drop shadow
+    this.combatLogBg.fillStyle(0x000000, 0.5)
+    this.combatLogBg.fillRoundedRect(x + 3, y + 4, w, h, radius)
+    // Main background
+    this.combatLogBg.fillStyle(0x1a1a2e, 0.92)
+    this.combatLogBg.fillRoundedRect(x, y, w, h, radius)
+    this.combatLogBg.lineStyle(2, 0x5dade2, 0.8)
+    this.combatLogBg.strokeRoundedRect(x, y, w, h, radius)
+  }
+
+  createCombatLogHistoryPanel() {
+    this.combatLogHistoryPanel = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    this.combatLogHistoryPanel.setDepth(200)
+    this.combatLogHistoryPanel.setVisible(false)
+
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
+    backdrop.on('pointerdown', () => this.hideCombatLogHistory())
+    this.combatLogHistoryPanel.add(backdrop)
+    this.combatLogHistoryPanel.backdrop = backdrop
+
+    const panelW = 520
+    const panelH = 380
+    const panel = this.add.rectangle(0, 0, panelW, panelH, 0x1a1a2e).setStrokeStyle(2, 0x5dade2).setOrigin(0.5)
+    this.combatLogHistoryPanel.add(panel)
+
+    const title = this.add.text(0, -panelH / 2 + 24, 'Battle Log', {
+      ...FONTS.title,
+      fontSize: '22px',
+      color: '#5dade2',
+    }).setOrigin(0.5)
+    this.combatLogHistoryPanel.add(title)
+
+    this.combatLogHistoryText = this.add.text(0, -panelH / 2 + 60, '', {
+      ...FONTS.default,
+      fontSize: '14px',
+      align: 'left',
+      wordWrap: { width: panelW - 48 },
+      lineSpacing: 6,
+    }).setOrigin(0.5, 0)
+    this.combatLogHistoryPanel.add(this.combatLogHistoryText)
+
+    const closeBtn = this.createButton(0, panelH / 2 - 32, 'Close', () => this.hideCombatLogHistory(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    this.combatLogHistoryPanel.add([closeBtn.bg, closeBtn.shadow, closeBtn.hitArea, closeBtn.text])
+    this.combatLogHistoryPanel.closeBtn = closeBtn
+  }
+
+  showCombatLogHistory() {
+    if (!this.combatLogHistoryPanel) return
+    const lines = this.combatLogHistory.map(entry => `Turn ${entry.turn}: ${entry.message}`)
+    this.combatLogHistoryText.setText(lines.join('\n'))
+    this.combatLogHistoryPanel.backdrop.setInteractive()
+    this.combatLogHistoryPanel.closeBtn.hitArea.setInteractive({ useHandCursor: true })
+    this.combatLogHistoryPanel.setVisible(true)
+  }
+
+  hideCombatLogHistory() {
+    if (!this.combatLogHistoryPanel) return
+    this.combatLogHistoryPanel.setVisible(false)
+    this.combatLogHistoryPanel.backdrop.disableInteractive()
+    this.combatLogHistoryPanel.closeBtn.hitArea.disableInteractive()
   }
 
   // ---------- Interaction ----------
@@ -1742,8 +1800,15 @@ export default class BattleScene extends Phaser.Scene {
   finishInfusionAttempt(pending, kanjiResult) {
     const { targetSkill, infuseSkill, value, kanji, tier } = pending
 
+    const refreshUI = () => {
+      this.updateBars()
+      this.updateSkillButtonLabels()
+      this.setSkillButtonsEnabled(true)
+    }
+
     if (!this.player.canUseSkill(infuseSkill)) {
       this.addCombatLog('Not enough stamina to infuse!')
+      refreshUI()
       return
     }
 
@@ -1770,14 +1835,43 @@ export default class BattleScene extends Phaser.Scene {
     if (failed) {
       this.addCombatLog(`The ${value} infusion fizzles... (mana ${mana})`)
     } else {
-      const potency = kanji ? this.computeInfusionPotency(kanji, tier || 0) : 1
-      this.player.setAbilityInfusion(targetSkill.id, value, mana, potency)
-      const icon = INFUSION_ICONS[value] || '✦'
-      this.addCombatLog(`${icon} ${targetSkill.name} is infused with ${value}! (potency ${potency.toFixed(2)})`)
+      let potency = kanji ? this.computeInfusionPotency(kanji, tier || 0) : 1
+      let finalValue = value
+      let extraEffects = []
+      let reactionMsg = null
+
+      const existing = this.player.getAbilityInfusion(targetSkill.id)
+      if (existing) {
+        const reaction = resolveInfusionReaction(existing.value, value, existing)
+        reactionMsg = reaction.message
+        if (reaction.type === 'cancel') {
+          this.player.clearAbilityInfusion(targetSkill.id)
+          this.player.recoverStamina(infuseSkill.staminaCost)
+          const icon = INFUSION_ICONS[value] || '✦'
+          this.addCombatLog(`${icon} ${targetSkill.name}: ${reactionMsg}`)
+          this.flashScreen(0xecf0f1, 100)
+          this.shakeScreen(0.005, 120)
+          refreshUI()
+          return
+        }
+        finalValue = reaction.value
+        extraEffects = reaction.extraEffects || []
+        potency = Math.max(existing.potency || 1, potency) + reaction.potencyDelta
+      }
+
+      const infusedMana = existing ? Math.max(existing.mana || 0, mana) : mana
+      this.player.setAbilityInfusion(targetSkill.id, finalValue, infusedMana, potency, extraEffects)
+      const icon = INFUSION_ICONS[finalValue] || '✦'
+      const reactionText = reactionMsg ? ` ${reactionMsg}` : ''
+      this.addCombatLog(`${icon} ${targetSkill.name} is infused with ${finalValue}! (potency ${potency.toFixed(2)})${reactionText}`)
+      if (this.isComboElement(finalValue)) {
+        const fxColor = this.getElementColor(getElementForInfusion(finalValue) || finalValue)
+        this.flashScreen(fxColor, 120)
+        this.shakeScreen(0.008, 150)
+      }
     }
 
-    this.updateBars()
-    this.updateSkillButtonLabels()
+    refreshUI()
   }
 
   handleKeyInput(event) {
@@ -2263,8 +2357,17 @@ export default class BattleScene extends Phaser.Scene {
         const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
         this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
         if (targetDisplay) {
-          this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
-          this.shakeSprite(targetDisplay.sprite)
+          if (result.blocked) {
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 50, 'NULLIFIED!', 0x3498db)
+          } else {
+            const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
+            this.shakeSprite(targetDisplay.sprite)
+            if (result.infusion && this.isComboElement(result.infusion.value)) {
+              this.flashScreen(dmgColor, 120)
+              this.shakeScreen(0.01, 180)
+            }
+          }
         }
         if (result.lifesteal) {
           this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.lifesteal}`, COLORS.success)
@@ -2289,8 +2392,17 @@ export default class BattleScene extends Phaser.Scene {
         const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
         this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
         if (targetDisplay) {
-          this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, COLORS.danger)
-          this.shakeSprite(targetDisplay.sprite)
+          if (result.blocked) {
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 50, 'NULLIFIED!', 0x3498db)
+          } else {
+            const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
+            this.shakeSprite(targetDisplay.sprite)
+            if (result.infusion && this.isComboElement(result.infusion.value)) {
+              this.flashScreen(dmgColor, 120)
+              this.shakeScreen(0.01, 180)
+            }
+          }
         }
         this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${result.block} Block`, 0x3498db)
         this.time.delayedCall(600, () => this.setPlayerPose('idle'))
@@ -2486,8 +2598,13 @@ export default class BattleScene extends Phaser.Scene {
               const critText = result.isCrit ? ' CRITICAL!' : ''
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
               this.addCombatLog(`${enemyName} uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}${weakenedText}`)
-              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, COLORS.danger)
+              const dmgColor = this.getDamageColor(result, action.element, 'enemy')
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
               this.shakeSprite(this.playerSprite)
+              if (action.element && this.isComboElement(action.element)) {
+                this.flashScreen(dmgColor, 120)
+                this.shakeScreen(0.01, 180)
+              }
               await this.delay(800)
               this.setPlayerPose('idle')
               this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
@@ -2757,15 +2874,19 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   addCombatLog(msg) {
+    this.combatLogHistory.unshift({ turn: this.turnManager?.turnCount ?? 0, message: msg })
+    if (this.combatLogHistory.length > 40) this.combatLogHistory.pop()
+
     this.combatLogText.setText(msg)
     this.drawCombatLogBg()
     // Reset alpha animation
     this.combatLogText.setAlpha(1)
     this.combatLogBg.setAlpha(1)
+    this.tweens.killTweensOf([this.combatLogText, this.combatLogBg])
     this.tweens.add({
       targets: [this.combatLogText, this.combatLogBg],
-      alpha: 0.6,
-      duration: 2000,
+      alpha: 0.75,
+      duration: 2500,
       ease: 'Linear',
     })
   }
@@ -2789,6 +2910,59 @@ export default class BattleScene extends Phaser.Scene {
       yoyo: true,
       repeat: 3,
     })
+  }
+
+  shakeScreen(intensity = 0.008, duration = 200) {
+    if (this.cameras.main && typeof this.cameras.main.shake === 'function') {
+      this.cameras.main.shake(duration, intensity)
+    }
+  }
+
+  flashScreen(color = 0xffffff, duration = 150) {
+    if (!this.flashOverlay) {
+      this.flashOverlay = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, GAME_CONFIG.width, GAME_CONFIG.height, color, 0).setOrigin(0.5).setDepth(250)
+    } else {
+      this.flashOverlay.setFillStyle(color, 0)
+      this.flashOverlay.setAlpha(1)
+    }
+    this.tweens.killTweensOf(this.flashOverlay)
+    this.flashOverlay.setFillStyle(color, 0.35)
+    this.tweens.add({
+      targets: this.flashOverlay,
+      alpha: 0,
+      duration,
+      ease: 'Linear',
+    })
+  }
+
+  getElementColor(element) {
+    const map = {
+      fire: 0xe74c3c,
+      water: 0x3498db,
+      wind: 0x2ecc71,
+      earth: 0xa0522d,
+      void: 0x9b59b6,
+      poison: 0x2ecc71,
+      physical: 0xcccccc,
+    }
+    return map[element] || COLORS.danger
+  }
+
+  getDamageColor(result, fallbackElement, source = 'player') {
+    if (result.infusion) {
+      const effective = getElementForInfusion(result.infusion.value) || result.infusion.value
+      return this.getElementColor(effective)
+    }
+    if (source === 'enemy' && result.element) {
+      const effective = getElementForInfusion(result.element) || result.element
+      return this.getElementColor(effective)
+    }
+    if (fallbackElement) return this.getElementColor(getElementForInfusion(fallbackElement) || fallbackElement)
+    return COLORS.danger
+  }
+
+  isComboElement(value) {
+    return value && getElementForInfusion(value) && getElementForInfusion(value) !== value
   }
 
   // ---------- Battle End ----------

@@ -120,6 +120,7 @@
               <th class="text-base-content/70">{gettext("Type")}</th>
               <th class="text-base-content/70">{gettext("Kanji")}</th>
               <th class="text-base-content/70">{gettext("Joined")}</th>
+              <th class="text-base-content/70">{gettext("Last Login")}</th>
               <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
             </tr>
           </thead>
@@ -177,6 +178,11 @@
                 <td class="text-base-content/70">
                   {Calendar.strftime(user.inserted_at, "%b %d, %Y")}
                 </td>
+                <td class="text-base-content/70">
+                  {if user.last_login,
+                    do: Calendar.strftime(user.last_login, "%b %d, %Y %H:%M"),
+                    else: gettext("Never")}
+                </td>
                 <td class="text-right">
                   <.link
                     navigate={~p"/users/#{user.id}"}
@@ -198,7 +204,9 @@
                       class="inline"
                     >
                       <button type="submit" class="btn btn-sm btn-ghost btn-accent">
-                        <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" /> {gettext("Login as")}
+                        <.icon name="hero-arrow-right-on-rectangle" class="w-4 h-4" /> {gettext(
+                          "Login as"
+                        )}
                       </button>
                     </.form>
                   <% end %>
@@ -258,6 +266,12 @@
                     <.icon name="hero-calendar" class="w-4 h-4" />
                     <span>{Calendar.strftime(user.inserted_at, "%b %d, %Y")}</span>
                   </div>
+                  <%= if user.last_login do %>
+                    <div class="flex items-center gap-1">
+                      <.icon name="hero-clock" class="w-4 h-4" />
+                      <span>{Calendar.strftime(user.last_login, "%b %d, %Y %H:%M")}</span>
+                    </div>
+                  <% end %>
                 </div>
               </div>
               <div class="flex-shrink-0 flex gap-1">

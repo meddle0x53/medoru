@@ -127,4 +127,28 @@ defmodule Medoru.Content.Word do
         cp == 0x002F
     end)
   end
+
+  @doc """
+  Normalizes a reading string so it passes the word schema validation.
+
+  Keeps only hiragana, katakana, prolonged sound mark (ー) and slash (/).
+  Common separators such as spaces, commas and Japanese commas are converted
+  to "/". This is useful when cleaning readings returned by AI.
+  """
+  def normalize_reading(reading) when is_binary(reading) do
+    reading
+    |> String.replace(~r/[\s、，；;]+/u, "/")
+    |> String.to_charlist()
+    |> Enum.filter(fn cp ->
+      (cp >= 0x3040 and cp <= 0x309F) or
+        (cp >= 0x30A0 and cp <= 0x30FF) or
+        cp == 0x30FC or
+        cp == 0x002F
+    end)
+    |> to_string()
+    |> String.replace(~r/\/+/u, "/")
+    |> String.trim("/")
+  end
+
+  def normalize_reading(_), do: ""
 end

@@ -85,6 +85,34 @@
         "onFail": "full",
         "timeLimit": 5000
       }]
+    },
+    {
+      "id": "magma_slam",
+      "name": "Magma Slam",
+      "type": "attack",
+      "element": "magma",
+      "staminaCost": 6,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 8,
+      "maxUsesPerTurn": 2,
+      "basePower": 16,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.2,
+      "effects": []
+    },
+    {
+      "id": "chaos_breath",
+      "name": "Chaos Breath",
+      "type": "attack",
+      "element": "chaos",
+      "staminaCost": 5,
+      "sprite": "enemy_kasa_obake_attack",
+      "aiWeight": 5,
+      "maxUsesPerTurn": 1,
+      "basePower": 14,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.0,
+      "effects": []
     }
   ],
   "deathAbility": null,
