@@ -1596,6 +1596,9 @@ export default class BattleScene extends Phaser.Scene {
     this.combatLogHistoryPanel = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
     this.combatLogHistoryPanel.setDepth(200)
     this.combatLogHistoryPanel.setVisible(false)
+    this.combatLogHistoryLinesPerPage = 12
+    this.combatLogHistoryPage = 0
+    this.combatLogHistoryPagedLines = []
 
     const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
     backdrop.on('pointerdown', () => this.hideCombatLogHistory())
@@ -1604,6 +1607,7 @@ export default class BattleScene extends Phaser.Scene {
 
     const panelW = 520
     const panelH = 380
+    this.combatLogHistoryPanel.panelH = panelH
     const panel = this.add.rectangle(0, 0, panelW, panelH, 0x1a1a2e).setStrokeStyle(2, 0x5dade2).setOrigin(0.5)
     this.combatLogHistoryPanel.add(panel)
 
@@ -1623,16 +1627,67 @@ export default class BattleScene extends Phaser.Scene {
     }).setOrigin(0.5, 0)
     this.combatLogHistoryPanel.add(this.combatLogHistoryText)
 
-    const closeBtn = this.createButton(0, panelH / 2 - 32, 'Close', () => this.hideCombatLogHistory(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    this.combatLogHistoryPageText = this.add.text(0, panelH / 2 - 32, '', {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+    this.combatLogHistoryPanel.add(this.combatLogHistoryPageText)
+
+    const closeBtn = this.createButton(140, panelH / 2 - 32, 'Close', () => this.hideCombatLogHistory(), 100, 34, 0x7f8c8d, 0x95a5a6)
     this.combatLogHistoryPanel.add([closeBtn.bg, closeBtn.shadow, closeBtn.hitArea, closeBtn.text])
     closeBtn.hitArea.disableInteractive()
     this.combatLogHistoryPanel.closeBtn = closeBtn
+
+    const prevBtn = this.createButton(-140, panelH / 2 - 32, 'Prev', () => this.changeCombatLogHistoryPage(-1), 80, 34, 0x2980b9, 0x3498db)
+    this.combatLogHistoryPanel.add([prevBtn.bg, prevBtn.shadow, prevBtn.hitArea, prevBtn.text])
+    prevBtn.hitArea.disableInteractive()
+    this.combatLogHistoryPanel.prevBtn = prevBtn
+
+    const nextBtn = this.createButton(-50, panelH / 2 - 32, 'Next', () => this.changeCombatLogHistoryPage(1), 80, 34, 0x2980b9, 0x3498db)
+    this.combatLogHistoryPanel.add([nextBtn.bg, nextBtn.shadow, nextBtn.hitArea, nextBtn.text])
+    nextBtn.hitArea.disableInteractive()
+    this.combatLogHistoryPanel.nextBtn = nextBtn
+  }
+
+  changeCombatLogHistoryPage(delta) {
+    const maxPage = Math.max(0, Math.ceil(this.combatLogHistoryPagedLines.length / this.combatLogHistoryLinesPerPage) - 1)
+    this.combatLogHistoryPage = Math.max(0, Math.min(maxPage, this.combatLogHistoryPage + delta))
+    this.renderCombatLogHistoryPage()
+  }
+
+  renderCombatLogHistoryPage() {
+    const perPage = this.combatLogHistoryLinesPerPage
+    const start = this.combatLogHistoryPage * perPage
+    const pageLines = this.combatLogHistoryPagedLines.slice(start, start + perPage)
+    this.combatLogHistoryText.setText(pageLines.join('\n'))
+    const totalPages = Math.max(1, Math.ceil(this.combatLogHistoryPagedLines.length / perPage))
+    this.combatLogHistoryPageText.setText(`${this.combatLogHistoryPage + 1} / ${totalPages}`)
+
+    const hasPrev = this.combatLogHistoryPage > 0
+    const hasNext = this.combatLogHistoryPage < totalPages - 1
+    this.setHistoryNavButtonEnabled(this.combatLogHistoryPanel.prevBtn, hasPrev)
+    this.setHistoryNavButtonEnabled(this.combatLogHistoryPanel.nextBtn, hasNext)
+  }
+
+  setHistoryNavButtonEnabled(btn, enabled) {
+    if (!btn) return
+    if (enabled) {
+      btn.hitArea.setInteractive({ useHandCursor: true })
+      btn.text.setAlpha(1)
+      btn.bg.setAlpha(1)
+    } else {
+      btn.hitArea.disableInteractive()
+      btn.text.setAlpha(0.4)
+      btn.bg.setAlpha(0.4)
+    }
   }
 
   showCombatLogHistory() {
     if (!this.combatLogHistoryPanel) return
-    const lines = this.combatLogHistory.map(entry => `Turn ${entry.turn}: ${entry.message}`)
-    this.combatLogHistoryText.setText(lines.join('\n'))
+    this.combatLogHistoryPagedLines = this.combatLogHistory.map(entry => `Turn ${entry.turn}: ${entry.message}`)
+    this.combatLogHistoryPage = 0
+    this.renderCombatLogHistoryPage()
     this.combatLogHistoryPanel.backdrop.setInteractive()
     this.combatLogHistoryPanel.closeBtn.hitArea.setInteractive({ useHandCursor: true })
     this.combatLogHistoryPanel.setVisible(true)
@@ -1643,6 +1698,8 @@ export default class BattleScene extends Phaser.Scene {
     this.combatLogHistoryPanel.setVisible(false)
     this.combatLogHistoryPanel.backdrop.disableInteractive()
     this.combatLogHistoryPanel.closeBtn.hitArea.disableInteractive()
+    this.combatLogHistoryPanel.prevBtn.hitArea.disableInteractive()
+    this.combatLogHistoryPanel.nextBtn.hitArea.disableInteractive()
   }
 
   // ---------- Interaction ----------

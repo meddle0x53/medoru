@@ -3,7 +3,7 @@
 ## Current State
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
-**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp. Presentation mode bug fixes: fullscreen background fills width on first entry, content scrolls to prevent kanji breakdown cut-off, vocabulary audio updates per slide.  
+**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp. Presentation mode bug fixes: fullscreen background fills width on first entry, content scrolls to prevent kanji breakdown cut-off, vocabulary audio updates per slide. White board/stream posts and comments support copy-paste image uploads. Command parsers strip spaces around expressions.  
 **Tests**: 1408 passing  
 **URL**: https://medoru.net
 
@@ -24,6 +24,8 @@
 - **Kanji radical data fix (気)**: Corrected 気 (`e793c55a-41f0-4ed6-8075-a791cebefe7d`) from radical 水 to 气 in `KanjiRadicalFixes` and moved it from the 水 to the 气 group in `KanjiRadicals.frequency_and_kanji`. Added `apply_for/1` to `KanjiRadicalFixes` so single characters or small lists can be backfilled without running the full map. Ran `Medoru.Content.KanjiRadicalFixes.apply_for("気")` to backfill the local dev DB.
 - **Admin last login timestamp**: Added `last_login :utc_datetime` (nullable) to `users`. `Accounts.update_last_login/1` records the current UTC time on OAuth login and admin impersonation. The `/admin/users` table shows a "Last Login" column (desktop and mobile), with "Never" for users who haven't logged in since the field was added.
 - **Presentation mode bug fixes**: `.presentation-active` now fills the fullscreen viewport width immediately (`width: 100%`, `max-width: none`) and allows vertical scrolling so tall content (e.g. kanji breakdown) isn't cut off. Vocabulary lesson audio elements now use a per-word `src` and unique `id`, forcing LiveView to re-mount the player on each slide so the pronunciation matches the current word.
+- **White board / stream image paste**: Posts (`BoardInput` hook) and comments (`CommentInput` hook) on the white board and dashboard stream now support pasting images from the clipboard. Pasted images are uploaded via `/api/chat/uploads` and inserted as markdown image tags. Existing file-attachment button behavior is unchanged.
+- **Command parser spacing fix**: `/word`, `/w`, `/grammar`, `/g`, `/kanji`, `/k` and their backslash variants now strip leading/trailing spaces around the expression in messages, classroom chat, and white board posts/comments. `/w   食べる   ` and `/grammar   te-form   ` now resolve correctly.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**
@@ -1894,3 +1896,25 @@ mix usage_rules.search_docs "Enum.zip" --query-by title
 
 <!-- usage_rules:otp-end -->
 <!-- usage-rules-end -->
+
+
+## Future Battle Refinement Ideas (Paused)
+
+The ability/infusion work is feature-complete for v0.x. Next focus: **map events**.
+
+Future refinement ideas for the battle system, recorded for later:
+
+- **Dynamic enemy infusions**: Give enemy AI `infuse_*` abilities and let it combine elements mid-fight (e.g. infuse fire → wind slash = blaze), using the same reaction table as the player.
+- **More enemy variety**: Add water/void/poison themed enemies with distinct sprites and ability sets.
+- **Infusions for mage/archer**: Extend `infusableWith` tags and level-banded kanji pools to mage/archer weapon/shield abilities.
+- **Balance & tuning pass**: Adjust combo damage multipliers, base effect proc chances, enemy HP/stamina scaling, and gold drops after play-testing.
+- **Sound & music**: Add elemental hit SFX, combo reaction sounds, and battle music.
+- **Advanced VFX**: Particle bursts for statuses, element-specific attack animations.
+
+Current battle system state:
+- Infusion reactions, combo elements, and base elemental hit effects implemented.
+- Enemy combo-element attacks added (blaze, magma, chaos, dust).
+- Combat log history, pagination, elemental damage colors, screen flash/shake.
+- Status effect icons with turn counters.
+- Ember recoil scales down with mana / kanji quality.
+- Enemy word/kanji challenges now reveal the correct answer on failure.

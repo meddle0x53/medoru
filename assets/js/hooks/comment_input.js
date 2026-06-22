@@ -30,6 +30,35 @@ export default {
         this.handleFileSelect(e)
       })
     }
+
+    this.textInput.addEventListener("paste", (e) => this.handlePaste(e))
+  },
+
+  handlePaste(e) {
+    const files = this.extractPastedFiles(e)
+    if (files.length === 0) return
+
+    e.preventDefault()
+    files.forEach((file) => this.processFile(file))
+  },
+
+  extractPastedFiles(e) {
+    const files = []
+
+    if (e.clipboardData.files && e.clipboardData.files.length > 0) {
+      for (const file of e.clipboardData.files) {
+        if (file.type.startsWith("image/")) files.push(file)
+      }
+    } else if (e.clipboardData.items && e.clipboardData.items.length > 0) {
+      for (const item of e.clipboardData.items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile()
+          if (file) files.push(file)
+        }
+      }
+    }
+
+    return files
   },
 
   handleFileSelect(e) {

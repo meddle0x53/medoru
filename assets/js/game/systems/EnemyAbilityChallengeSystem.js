@@ -246,19 +246,29 @@ export default class EnemyAbilityChallengeSystem {
     const isCorrect = !timedOut && this.evaluate()
     this.active = false
 
+    let correctAnswer = ''
+    if (this.challenge.type === 'word') {
+      correctAnswer = this.challenge.promptType === 'meaning'
+        ? (this.challenge.word.meaning || '')
+        : (this.challenge.word.reading || this.challenge.word.word || '')
+    } else if (this.challenge.type === 'kanji') {
+      correctAnswer = (this.challenge.readings || []).join(', ')
+    }
+
     if (isCorrect) {
       this.inputText.setColor('#2ecc71')
       this.feedbackText.setText('Correct! Ability weakened/cancelled.')
       this.feedbackText.setColor('#2ecc71')
     } else {
       this.inputText.setColor('#e74c3c')
-      this.feedbackText.setText(timedOut ? "Time's up!" : 'Wrong! Ability resolves fully.')
+      const baseMsg = timedOut ? "Time's up!" : 'Wrong!'
+      this.feedbackText.setText(`${baseMsg} Answer: ${correctAnswer || '?'}`)
       this.feedbackText.setColor('#e74c3c')
     }
 
     this.removeHandlers()
 
-    this.scene.time.delayedCall(1200, () => {
+    this.scene.time.delayedCall(1800, () => {
       this.destroy()
       if (this.onComplete) this.onComplete({ success: isCorrect, timedOut })
     })

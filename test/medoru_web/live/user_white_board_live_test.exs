@@ -87,6 +87,16 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
 
       refute html =~ "phx-submit=\"create_post\""
     end
+
+    test "post form has BoardInput hook and image file input for paste", %{conn: conn} do
+      owner = owner_fixture()
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "phx-hook=\"BoardInput\""
+      assert html =~ "data-board-file-input"
+      assert html =~ "accept=\"image/*"
+    end
   end
 
   describe "grammar commands in posts" do
@@ -291,6 +301,18 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
         |> render_submit()
 
       assert html =~ "Nice post!"
+    end
+
+    test "comment form has CommentInput hook and image file input for paste", %{conn: conn} do
+      owner = owner_fixture()
+      commenter = owner_fixture()
+      post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, _view, html} =
+        conn |> log_in_user(commenter) |> live(~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "phx-hook=\"CommentInput\""
+      assert html =~ "data-comment-file-input"
     end
 
     test "logged-in user can reply to a comment", %{conn: conn} do

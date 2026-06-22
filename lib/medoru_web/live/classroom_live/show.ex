@@ -2886,21 +2886,17 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp parse_kanji_command(text) do
     case text do
-      "/kanji " <> rest ->
-        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-
-      "/k " <> rest ->
-        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-
-      "\\kanji " <> rest ->
-        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-
-      "\\k " <> rest ->
-        if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
-
-      _ ->
-        :error
+      "/kanji " <> rest -> parse_kanji_rest(rest)
+      "/k " <> rest -> parse_kanji_rest(rest)
+      "\\kanji " <> rest -> parse_kanji_rest(rest)
+      "\\k " <> rest -> parse_kanji_rest(rest)
+      _ -> :error
     end
+  end
+
+  defp parse_kanji_rest(rest) do
+    rest = String.trim(rest)
+    if valid_kanji_command?(rest), do: {:ok, rest}, else: :error
   end
 
   defp valid_kanji_command?(<<char::utf8>>) when char in 0x4E00..0x9FFF, do: true
@@ -2909,40 +2905,27 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp parse_grammar_command(text) do
     case text do
-      "/grammar " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "/g " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "\\grammar " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "\\g " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      _ ->
-        :error
+      "/grammar " <> rest -> parse_command_rest(rest)
+      "/g " <> rest -> parse_command_rest(rest)
+      "\\grammar " <> rest -> parse_command_rest(rest)
+      "\\g " <> rest -> parse_command_rest(rest)
+      _ -> :error
     end
   end
 
   defp parse_word_command(text) do
     case text do
-      "/word " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "/w " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "\\word " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      "\\w " <> rest ->
-        if rest != "", do: {:ok, rest}, else: :error
-
-      _ ->
-        :error
+      "/word " <> rest -> parse_command_rest(rest)
+      "/w " <> rest -> parse_command_rest(rest)
+      "\\word " <> rest -> parse_command_rest(rest)
+      "\\w " <> rest -> parse_command_rest(rest)
+      _ -> :error
     end
+  end
+
+  defp parse_command_rest(rest) do
+    rest = String.trim(rest)
+    if rest != "", do: {:ok, rest}, else: :error
   end
 
   defp get_game_status(nil), do: :not_started
