@@ -13,6 +13,24 @@ import { getCharmById } from '../data/charms.js'
 
 import { INFUSION_ICONS, resolveInfusionReaction, getElementForInfusion } from '../data/infusionReactions.js'
 
+const STATUS_EFFECT_ICONS = {
+  burn: '🔥',
+  poison: '☠️',
+  weak: '🌀',
+  bleed: '🩸',
+  blunt: '🪨',
+  frost: '❄️',
+  madness: '👁️',
+  stamina_crash: '⚡',
+  ember: '♨️',
+  power_up: '💪',
+  fire_guard: '🛡️🔥',
+  water_guard: '🛡️💧',
+  wind_guard: '🛡️🌪',
+  earth_guard: '🛡️🪨',
+  void_guard: '🛡️🌑',
+}
+
 import { getWindowGameData, sendRunResult } from '../api.js'
 import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
 import { buildEnemyChallenge } from '../systems/EnemyChallengePicker.js'
@@ -33,6 +51,7 @@ export default class BattleScene extends Phaser.Scene {
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
+    this.player.clearActiveEffects() // clear status effects from previous fight
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.player.clearAllAbilityInfusions() // infusions last for one battle only
     this.player.onCombatLog = (msg) => this.addCombatLog(msg)
@@ -2754,6 +2773,23 @@ export default class BattleScene extends Phaser.Scene {
     }
   }
 
+  createStatusIcon(entry, x, y) {
+    const effect = getEffect(entry.effectId)
+    const icon = STATUS_EFFECT_ICONS[entry.effectId] || (effect ? effect.name.charAt(0).toUpperCase() : '?')
+    const iconText = this.add.text(x, y - 2, icon, {
+      fontFamily: FONTS.default.fontFamily,
+      fontSize: '18px',
+    }).setOrigin(0.5)
+    const turnsText = this.add.text(x + 9, y + 9, `${entry.remainingTurns}`, {
+      fontFamily: FONTS.default.fontFamily,
+      fontSize: '10px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 2,
+    }).setOrigin(0.5)
+    return [iconText, turnsText]
+  }
+
   updateStatusIcons(display) {
     if (!display.statusContainer) return
     display.statusContainer.removeAll(true)
@@ -2764,24 +2800,12 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    const iconWidth = 34
+    const iconWidth = 30
     const totalWidth = effects.length * iconWidth
     let offsetX = -totalWidth / 2 + iconWidth / 2
 
     for (const entry of effects) {
-      const effect = getEffect(entry.effectId)
-      const label = effect ? effect.name.slice(0, 4) : entry.effectId.slice(0, 4)
-      const color = effect?.category === EFFECT_CATEGORIES.DEBUFF ? '#e74c3c'
-        : effect?.category === EFFECT_CATEGORIES.BUFF ? '#2ecc71'
-        : '#f39c12'
-      const text = this.add.text(offsetX, 0, label, {
-        fontFamily: FONTS.default.fontFamily,
-        fontSize: '10px',
-        color,
-        stroke: '#000000',
-        strokeThickness: 2,
-      }).setOrigin(0.5)
-      display.statusContainer.add(text)
+      display.statusContainer.add(this.createStatusIcon(entry, offsetX, 0))
       offsetX += iconWidth
     }
 
@@ -2798,24 +2822,12 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    const iconWidth = 34
+    const iconWidth = 30
     const totalWidth = effects.length * iconWidth
     let offsetX = -totalWidth / 2 + iconWidth / 2
 
     for (const entry of effects) {
-      const effect = getEffect(entry.effectId)
-      const label = effect ? effect.name.slice(0, 4) : entry.effectId.slice(0, 4)
-      const color = effect?.category === EFFECT_CATEGORIES.DEBUFF ? '#e74c3c'
-        : effect?.category === EFFECT_CATEGORIES.BUFF ? '#2ecc71'
-        : '#f39c12'
-      const text = this.add.text(offsetX, 0, label, {
-        fontFamily: FONTS.default.fontFamily,
-        fontSize: '10px',
-        color,
-        stroke: '#000000',
-        strokeThickness: 2,
-      }).setOrigin(0.5)
-      this.playerStatusContainer.add(text)
+      this.playerStatusContainer.add(this.createStatusIcon(entry, offsetX, 0))
       offsetX += iconWidth
     }
 

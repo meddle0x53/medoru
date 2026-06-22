@@ -702,7 +702,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       <div
         id="lesson-container"
         phx-hook="LessonPlayer"
-        class="max-w-3xl mx-auto px-4 py-8"
+        class={["max-w-3xl mx-auto px-4 py-8", @presentation_mode && "presentation-active"]}
         data-theme={@classroom.theme}
       >
         <%!-- Preview Banner --%>

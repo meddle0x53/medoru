@@ -112,9 +112,11 @@ export default class TurnManager {
     const infusedDamageMultiplier = isElementInfusion
       ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1) + comboDamageMultiplier)
       : 1.0
-    const infusedEffectChanceMultiplier = isElementInfusion
+    const elementalEffectChanceMultiplier = isElementInfusion
       ? Math.min(2.0, 1 + (infusion.mana || 0) / 40 + (potency - 1))
-      : 1.0
+      : infusedElement
+        ? Math.min(2.0, 1 + (performer.mana || 0) / 40)
+        : 1.0
 
     let result = null
 
@@ -191,22 +193,19 @@ export default class TurnManager {
         if (infusion) result.infusion = { value: infusion.value, potency }
 
         if (infusedElement === 'fire' && actual > 0) {
-          const emberEffect = getEffect('ember')
-          const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
-          performer.applyEffect('ember', { snapshot: actual, duration: emberDuration })
-          this.log(`${performer.name || 'The attacker'} suffers ember recoil!`)
+          this.applyEmberRecoil(performer, actual, challengeResult)
         }
 
         if (infusedElement) {
           const consecutiveHits = target.incrementElementStreak(infusedElement)
-          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, infusedEffectChanceMultiplier)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
           if (applied.length > 0) target.resetElementStreak(infusedElement)
         }
         if (isEffectInfusion) {
           this.applyInfusedEffect(infusion, target, actual)
         }
         if (baseEffect) {
-          this.applyInfusedBaseEffects(baseEffect, target, actual, potency)
+          this.applyInfusedBaseEffects(baseEffect, target, actual, potency, elementalEffectChanceMultiplier)
         }
         if (infusion?.extraEffects?.length) {
           for (const extra of infusion.extraEffects) {
@@ -215,7 +214,7 @@ export default class TurnManager {
         }
         if (!infusion && infusedElement) {
           const baseEffect = getInfusionBaseEffect(infusedElement)
-          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1)
+          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1, elementalEffectChanceMultiplier)
         }
         break
       }
@@ -306,22 +305,19 @@ export default class TurnManager {
         if (infusion) result.infusion = { value: infusion.value, potency }
 
         if (infusedElement === 'fire' && actual > 0) {
-          const emberEffect = getEffect('ember')
-          const emberDuration = emberEffect ? rollDuration(emberEffect) : 3
-          performer.applyEffect('ember', { snapshot: actual, duration: emberDuration })
-          this.log(`${performer.name || 'The attacker'} suffers ember recoil!`)
+          this.applyEmberRecoil(performer, actual, challengeResult)
         }
 
         if (infusedElement) {
           const consecutiveHits = target.incrementElementStreak(infusedElement)
-          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, infusedEffectChanceMultiplier)
+          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
           if (applied.length > 0) target.resetElementStreak(infusedElement)
         }
         if (isEffectInfusion) {
           this.applyInfusedEffect(infusion, target, actual)
         }
         if (baseEffect) {
-          this.applyInfusedBaseEffects(baseEffect, target, actual, potency)
+          this.applyInfusedBaseEffects(baseEffect, target, actual, potency, elementalEffectChanceMultiplier)
         }
         if (infusion?.extraEffects?.length) {
           for (const extra of infusion.extraEffects) {
@@ -330,7 +326,7 @@ export default class TurnManager {
         }
         if (!infusion && infusedElement) {
           const baseEffect = getInfusionBaseEffect(infusedElement)
-          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1)
+          if (baseEffect) this.applyInfusedBaseEffects(baseEffect, target, actual, 1, elementalEffectChanceMultiplier)
         }
         break
       }
@@ -362,12 +358,12 @@ export default class TurnManager {
     }
   }
 
-  applyInfusedBaseEffects(baseEffect, target, initialDamage, potency = 1) {
+  applyInfusedBaseEffects(baseEffect, target, initialDamage, potency = 1, chanceMultiplier = 1) {
     const effects = baseEffect.effects || [{ effectId: baseEffect.effectId, chance: baseEffect.chance }]
     for (const fx of effects) {
       const effect = getEffect(fx.effectId)
       if (!effect) continue
-      const chance = Math.min(1, (fx.chance || 0.5) * Math.min(1.5, potency))
+      const chance = Math.min(1, (fx.chance || 0.5) * Math.min(1.5, potency) * (chanceMultiplier || 1))
       if (Math.random() >= chance) continue
       const options = {}
       if (effect.tick && effect.tick.damage && effect.tick.damage.source === 'snapshot') {
@@ -380,6 +376,24 @@ export default class TurnManager {
         this.log(`${target.name || 'The enemy'} is ${effect.name} (${entry.remainingTurns} turns).`)
       }
     }
+  }
+
+  applyEmberRecoil(performer, initialDamage, challengeResult) {
+    const mana = performer.mana || 0
+    let chance = 0.6 - mana * 0.03
+    if (challengeResult === 'perfect') chance -= 0.3
+    else if (challengeResult === 'success') chance -= 0.1
+    chance = Math.max(0.05, chance)
+
+    if (Math.random() >= chance) {
+      this.log(`${performer.name || 'The attacker'} channels the fire safely.`)
+      return
+    }
+
+    const emberEffect = getEffect('ember')
+    const duration = emberEffect ? rollDuration(emberEffect) : 3
+    performer.applyEffect('ember', { snapshot: initialDamage, duration })
+    this.log(`${performer.name || 'The attacker'} suffers ember recoil!`)
   }
 
   endTurn() {

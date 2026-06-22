@@ -732,7 +732,9 @@ body:has(.classroom-chat-tab) footer {
 }
 
 /* Presentation mode styles */
-.presentation-active {
+.presentation-active,
+#lesson-container:fullscreen,
+#lesson-container:-webkit-full-screen {
   background-color: hsl(var(--b1));
   padding: 2rem;
   display: flex;
@@ -748,15 +750,28 @@ body:has(.classroom-chat-tab) footer {
 }
 
 .presentation-active .lesson-header,
-.presentation-active .lesson-nav {
+.presentation-active .lesson-nav,
+#lesson-container:fullscreen .lesson-header,
+#lesson-container:fullscreen .lesson-nav,
+#lesson-container:-webkit-full-screen .lesson-header,
+#lesson-container:-webkit-full-screen .lesson-nav {
   display: none;
 }
 
-.presentation-active .lesson-content {
+.presentation-active .lesson-content,
+#lesson-container:fullscreen .lesson-content,
+#lesson-container:-webkit-full-screen .lesson-content {
   max-width: 900px;
   margin: 0 auto;
   font-size: 1.5rem;
   line-height: 1.8;
+}
+
+.presentation-active .card,
+#lesson-container:fullscreen .card,
+#lesson-container:-webkit-full-screen .card {
+  overflow: visible;
+  max-height: none;
 }
 
 .presentation-active .lesson-content h2 {

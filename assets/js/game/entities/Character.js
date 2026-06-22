@@ -226,6 +226,10 @@ export default class Character {
     return this.activeEffects.length < before
   }
 
+  clearActiveEffects() {
+    this.activeEffects = []
+  }
+
   getActiveEffectIds() {
     return this.activeEffects.map(e => e.effectId)
   }
