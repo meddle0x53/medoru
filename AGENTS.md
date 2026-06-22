@@ -3,7 +3,7 @@
 ## Current State
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
-**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp.  
+**Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp. Presentation mode bug fixes: fullscreen background fills width on first entry, content scrolls to prevent kanji breakdown cut-off, vocabulary audio updates per slide.  
 **Tests**: 1408 passing  
 **URL**: https://medoru.net
 
@@ -23,6 +23,7 @@
 - **Daily Test image question reading**: For `image_to_meaning` questions (picture options for a Japanese word), the prompt now displays the word's reading below the Japanese text, matching the behavior of `word_to_meaning` questions.
 - **Kanji radical data fix (気)**: Corrected 気 (`e793c55a-41f0-4ed6-8075-a791cebefe7d`) from radical 水 to 气 in `KanjiRadicalFixes` and moved it from the 水 to the 气 group in `KanjiRadicals.frequency_and_kanji`. Added `apply_for/1` to `KanjiRadicalFixes` so single characters or small lists can be backfilled without running the full map. Ran `Medoru.Content.KanjiRadicalFixes.apply_for("気")` to backfill the local dev DB.
 - **Admin last login timestamp**: Added `last_login :utc_datetime` (nullable) to `users`. `Accounts.update_last_login/1` records the current UTC time on OAuth login and admin impersonation. The `/admin/users` table shows a "Last Login" column (desktop and mobile), with "Never" for users who haven't logged in since the field was added.
+- **Presentation mode bug fixes**: `.presentation-active` now fills the fullscreen viewport width immediately (`width: 100%`, `max-width: none`) and allows vertical scrolling so tall content (e.g. kanji breakdown) isn't cut off. Vocabulary lesson audio elements now use a per-word `src` and unique `id`, forcing LiveView to re-mount the player on each slide so the pronunciation matches the current word.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

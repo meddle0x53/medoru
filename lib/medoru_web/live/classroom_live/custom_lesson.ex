@@ -799,8 +799,12 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <%!-- Pronunciation Audio --%>
           <%= if @lesson.show_sounds && @current_word.word.pronunciation_path do %>
             <div class="mb-6 max-w-[300px] mx-auto">
-              <audio controls class="w-full">
-                <source src={@current_word.word.pronunciation_path} />
+              <audio
+                controls
+                class="w-full"
+                src={@current_word.word.pronunciation_path}
+                id={"word-audio-#{@current_word.word.id}"}
+              >
                 {gettext("Your browser does not support the audio element.")}
               </audio>
             </div>

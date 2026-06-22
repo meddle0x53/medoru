@@ -13,6 +13,76 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
     Repo.preload(classroom, [:teacher, memberships: :user])
   end
 
+  describe "vocabulary lesson audio" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      word1 = word_fixture(%{text: "たべる", pronunciation_path: "/audio/word1.mp3"})
+      word2 = word_fixture(%{text: "のむ", pronunciation_path: "/audio/word2.mp3"})
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "vocabulary",
+          title: "Vocabulary Lesson",
+          status: "published"
+        })
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      %{
+        conn: conn,
+        student: student,
+        classroom: classroom,
+        lesson: lesson,
+        word1: word1,
+        word2: word2
+      }
+    end
+
+    test "audio element has src and unique id matching current word", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson,
+      word1: word1
+    } do
+      conn = log_in_user(conn, student)
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      assert html =~ "word-audio-#{word1.id}"
+      assert html =~ word1.pronunciation_path
+    end
+
+    test "navigating to next word updates audio id and src", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson,
+      word1: word1,
+      word2: word2
+    } do
+      conn = log_in_user(conn, student)
+      {:ok, view, _html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      html =
+        view
+        |> element("button", "Next")
+        |> render_click()
+
+      refute html =~ "word-audio-#{word1.id}"
+      assert html =~ "word-audio-#{word2.id}"
+      assert html =~ word2.pronunciation_path
+    end
+  end
+
   describe "copy to grammar button" do
     setup %{conn: conn} do
       teacher = user_fixture(%{type: "teacher"})

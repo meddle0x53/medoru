@@ -1544,8 +1544,6 @@ export default class BattleScene extends Phaser.Scene {
 
     this.combatLogText.setInteractive({ useHandCursor: true })
     this.combatLogText.on('pointerdown', () => this.showCombatLogHistory())
-    this.combatLogBg.setInteractive({ useHandCursor: true })
-    this.combatLogBg.on('pointerdown', () => this.showCombatLogHistory())
 
     this.createCombatLogHistoryPanel()
   }
@@ -1608,6 +1606,7 @@ export default class BattleScene extends Phaser.Scene {
 
     const closeBtn = this.createButton(0, panelH / 2 - 32, 'Close', () => this.hideCombatLogHistory(), 120, 36, 0x7f8c8d, 0x95a5a6)
     this.combatLogHistoryPanel.add([closeBtn.bg, closeBtn.shadow, closeBtn.hitArea, closeBtn.text])
+    closeBtn.hitArea.disableInteractive()
     this.combatLogHistoryPanel.closeBtn = closeBtn
   }
 
