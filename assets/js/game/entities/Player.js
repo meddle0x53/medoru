@@ -20,6 +20,56 @@ const SCALING_MULTIPLIERS = {
   E: 0.15,
 }
 
+const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'E']
+
+function createDefaultWeapon() {
+  return {
+    name: 'Long Sword',
+    nameJa: '長剣',
+    baseDamage: 20,
+    level: 0,
+    maxLevel: 10,
+    scaling: {
+      strength: 'C', // 0.50
+      skill: 'D',    // 0.30
+    },
+    kanjiPowerups: [
+      { kanji: '力', name: 'chikara', learned: true, effect: 'flat_bonus', hint: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' } },
+    ],
+    moveHints: {
+      forward_slash: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' },
+    },
+  }
+}
+
+function createDefaultShield() {
+  return {
+    name: 'Wooden Shield',
+    nameJa: '木盾',
+    baseDefense: 5,
+    level: 0,
+    maxLevel: 10,
+    scaling: {
+      strength: 'D', // 0.30
+    },
+    kanjiPowerup: { kanji: '盾', name: 'tate', learned: true, effect: 'flat_defense', bonus: 3, hint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' } },
+    moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
+  }
+}
+
+export function getUpgradeCost(level) {
+  if (level >= 9) return 500
+  if (level >= 6) return 200
+  if (level >= 3) return 100
+  return 50
+}
+
+function improveGrade(grade) {
+  const idx = GRADE_ORDER.indexOf(grade)
+  if (idx > 0) return GRADE_ORDER[idx - 1]
+  return grade
+}
+
 // Soft-cap stat factor: returns 0.0–1.0 based on stat value
 function getStatFactor(stat) {
   if (stat <= 0) return 0
@@ -48,40 +98,8 @@ export default class Player extends Character {
       luck: 5,
     }
 
-    // Long Sword: base damage 20, STR C, SKL D
-    const weapon = {
-      name: 'Long Sword',
-      nameJa: '長剣',
-      baseDamage: 20,
-      level: 0,
-      maxLevel: 10,
-      scaling: {
-        strength: 'C', // 0.50
-        skill: 'D',    // 0.30
-      },
-      // Kanji powerups this weapon can learn
-      kanjiPowerups: [
-        { kanji: '力', name: 'chikara', learned: true, effect: 'flat_bonus', hint: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' } },
-      ],
-      // Move hints (language depends on user level)
-      moveHints: {
-        forward_slash: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' },
-      },
-    }
-
-    // Wooden Shield: base defense 5, STR D scaling
-    const shield = {
-      name: 'Wooden Shield',
-      nameJa: '木盾',
-      baseDefense: 5,
-      level: 0,
-      maxLevel: 10,
-      scaling: {
-        strength: 'D', // 0.30
-      },
-      kanjiPowerup: { kanji: '盾', name: 'tate', learned: true, effect: 'flat_defense', bonus: 3, hint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' } },
-      moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
-    }
+    const weapon = createDefaultWeapon()
+    const shield = createDefaultShield()
 
     // Calculate max HP from vitality
     const maxHp = 80 + baseStats.vitality * 5
@@ -139,6 +157,12 @@ export default class Player extends Character {
       mapState: null,
       mapVersion: MAP_VERSION,
     }
+
+    // Load persisted equipment or fall back to defaults.
+    this.weapon = this.loadout.weapon || weapon
+    this.shield = this.loadout.shield || shield
+    this.loadout.weapon = this.weapon
+    this.loadout.shield = this.shield
 
     // Apply stat allocations to base stats
     for (const [stat, points] of Object.entries(this.loadout.statAllocations)) {
@@ -421,6 +445,13 @@ export default class Player extends Character {
         if (!loadout.mapState || typeof loadout.mapState !== 'object') {
           loadout.mapState = null
         }
+        // Migration: persisted weapon/shield support.
+        if (!loadout.weapon || typeof loadout.weapon !== 'object') {
+          loadout.weapon = createDefaultWeapon()
+        }
+        if (!loadout.shield || typeof loadout.shield !== 'object') {
+          loadout.shield = createDefaultShield()
+        }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
           loadout.mapState = null
@@ -436,6 +467,8 @@ export default class Player extends Character {
 
   saveLoadout() {
     try {
+      this.loadout.weapon = this.weapon
+      this.loadout.shield = this.shield
       localStorage.setItem(LOADOUT_KEY, JSON.stringify(this.loadout))
     } catch (e) {
       console.warn('[Player] Failed to save loadout:', e)
@@ -602,6 +635,44 @@ export default class Player extends Character {
     return { owned: true, equipped }
   }
 
+  // ---------- Equipment Upgrades ----------
+
+  upgradeWeapon() {
+    return this.upgradeEquipment(this.weapon, 'baseDamage')
+  }
+
+  upgradeShield() {
+    return this.upgradeEquipment(this.shield, 'baseDefense')
+  }
+
+  upgradeEquipment(item, baseStatKey) {
+    if (!item) return { ok: false, reason: 'No equipment.' }
+    if (item.level >= item.maxLevel) return { ok: false, reason: 'Already at max level.' }
+
+    const cost = getUpgradeCost(item.level)
+    if ((this.loadout.gold || 0) < cost) {
+      return { ok: false, reason: `Need ${cost} gold.` }
+    }
+
+    this.loadout.gold -= cost
+    item.level += 1
+
+    if (baseStatKey === 'baseDamage') {
+      item.baseDamage += 2
+    } else if (baseStatKey === 'baseDefense') {
+      item.baseDefense += 1
+    }
+
+    if ([3, 6, 9].includes(item.level) && item.scaling) {
+      for (const stat of Object.keys(item.scaling)) {
+        item.scaling[stat] = improveGrade(item.scaling[stat])
+      }
+    }
+
+    this.saveLoadout()
+    return { ok: true, cost, level: item.level, maxLevel: item.maxLevel }
+  }
+
   // ---------- Ability Learning ----------
 
   hasAbility(actionId) {
@@ -749,7 +820,12 @@ export default class Player extends Character {
       ownedCharmIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
+      weapon: createDefaultWeapon(),
+      shield: createDefaultShield(),
     }
+
+    this.weapon = this.loadout.weapon
+    this.shield = this.loadout.shield
 
     this.activeActionIds = this.loadout.activeActionIds
 

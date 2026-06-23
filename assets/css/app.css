@@ -736,17 +736,16 @@ body:has(.classroom-chat-tab) footer {
 #lesson-container:fullscreen,
 #lesson-container:-webkit-full-screen {
   background-color: hsl(var(--b1));
-  padding: 2rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+  justify-content: space-between;
+  height: 100vh;
   width: 100% !important;
   max-width: none !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .presentation-active .lesson-header,
@@ -761,8 +760,8 @@ body:has(.classroom-chat-tab) footer {
 .presentation-active .lesson-content,
 #lesson-container:fullscreen .lesson-content,
 #lesson-container:-webkit-full-screen .lesson-content {
-  max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
   font-size: 1.5rem;
   line-height: 1.8;
 }
@@ -770,8 +769,15 @@ body:has(.classroom-chat-tab) footer {
 .presentation-active .card,
 #lesson-container:fullscreen .card,
 #lesson-container:-webkit-full-screen .card {
-  overflow: visible;
-  max-height: none;
+  width: 100%;
+  overflow: hidden;
+}
+
+.presentation-active .card-body,
+#lesson-container:fullscreen .card-body,
+#lesson-container:-webkit-full-screen .card-body {
+  overflow-y: auto;
+  justify-content: flex-start;
 }
 
 .presentation-active .lesson-content h2 {

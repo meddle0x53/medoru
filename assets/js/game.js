@@ -8,6 +8,8 @@ import MapScene from './game/scenes/MapScene.js'
 import LoadoutScene from './game/scenes/LoadoutScene.js'
 import BattleScene from './game/scenes/BattleScene.js'
 import MemoryScene from './game/scenes/MemoryScene.js'
+import ShopScene from './game/scenes/ShopScene.js'
+import RestScene from './game/scenes/RestScene.js'
 import WinScene from './game/scenes/WinScene.js'
 
 function startGame() {
@@ -35,7 +37,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, MapScene, LoadoutScene, BattleScene, MemoryScene, WinScene],
+    scene: [BootScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, WinScene],
     physics: {
       default: 'arcade',
       arcade: {

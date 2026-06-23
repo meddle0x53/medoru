@@ -475,6 +475,16 @@ export default class MapScene extends Phaser.Scene {
       return
     }
 
+    if (tile.type === TILE_TYPES.SHOP) {
+      this.scene.start('ShopScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
+    if (tile.type === TILE_TYPES.REST_CAMP) {
+      this.scene.start('RestScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
     this.runPlaceholderEvent(tile)
   }
 

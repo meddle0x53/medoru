@@ -702,7 +702,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
       <div
         id="lesson-container"
         phx-hook="LessonPlayer"
-        class={["max-w-3xl mx-auto px-4 py-8", @presentation_mode && "presentation-active"]}
+        class={[
+          "max-w-3xl mx-auto px-4 py-8 flex flex-col min-h-[calc(100vh-4rem)]",
+          @presentation_mode && "presentation-active"
+        ]}
         data-theme={@classroom.theme}
       >
         <%!-- Preview Banner --%>
@@ -765,7 +768,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           />
         </div>
 
-        <div class="lesson-content">
+        <div class="lesson-content flex flex-col flex-1 min-h-0">
           <%= case @lesson_type do %>
             <% :vocabulary -> %>
               <.vocabulary_content {assigns} />
@@ -782,8 +785,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp vocabulary_content(assigns) do
     ~H"""
     <%= if @current_word do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
-        <div class="card-body text-center py-12">
+      <div class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full" phx-no-format>
+        <div class="card-body text-center py-12 flex-1 flex flex-col">
           <%!-- Word Picture --%>
           <%= if @lesson.show_pictures && @current_word.word.image_path do %>
             <div class="mb-6">
@@ -945,8 +948,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp grammar_content(assigns) do
     ~H"""
     <%= if @current_step do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg" phx-no-format>
-        <div class="card-body">
+      <div class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full" phx-no-format>
+        <div class="card-body flex-1 flex flex-col">
           <%!-- Step Title --%>
           <div class="mb-4 flex items-start justify-between gap-4">
             <h2 class="text-xl font-semibold">{@current_step.title}</h2>
