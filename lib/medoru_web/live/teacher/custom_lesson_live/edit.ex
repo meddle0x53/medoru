@@ -524,7 +524,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
               <div
                 class="space-y-3"
                 id="lesson-words"
-                phx-hook="StepSorter"
+                phx-hook="WordSorter"
                 data-target="lesson-words"
               >
                 <%= for {lesson_word, index} <- Enum.with_index(@lesson_words) do %>

@@ -243,5 +243,39 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       published = Content.get_custom_lesson!(lesson.id)
       assert published.status == "published"
     end
+
+    test "teacher can reorder lesson words", %{conn: conn, teacher: teacher} do
+      word1 = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
+      word2 = word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"})
+
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Reorder Lesson",
+          creator_id: teacher.id,
+          status: "draft"
+        })
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/custom-lessons/#{lesson.id}/edit")
+
+      # Verify initial order
+      initial_html = render(view)
+      assert initial_html =~ ~r/日本.*学校/s
+
+      # Send reorder event (simulating the WordSorter hook)
+      render_hook(view, "reorder", %{word_ids: [word2.id, word1.id]})
+
+      # Verify order flipped in the database
+      lesson_words = Content.list_lesson_words(lesson.id)
+      assert Enum.map(lesson_words, & &1.word_id) == [word2.id, word1.id]
+      assert Enum.map(lesson_words, & &1.position) == [0, 1]
+
+      # Verify the UI reflects the new order
+      updated_html = render(view)
+      assert updated_html =~ ~r/学校.*日本/s
+    end
   end
 end

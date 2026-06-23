@@ -29,6 +29,7 @@ import FreeDraw from "./hooks/free_draw"
 import CanvasPlayer from "./hooks/canvas_player"
 import BoardInput from "./hooks/board_input"
 import StepSorter from "./hooks/step_sorter"
+import WordSorter from "./hooks/word_sorter"
 import OptionInput from "./hooks/option_input"
 import Timer from "./hooks/timer"
 import AutoDismiss from "./hooks/auto_dismiss"
@@ -64,7 +65,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, FreeDraw, CanvasPlayer, BoardInput, StepSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay, CopyToClipboard, CommentInput},
+  hooks: {...colocatedHooks, KanjiWriting, FreeDraw, CanvasPlayer, BoardInput, StepSorter, WordSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay, CopyToClipboard, CommentInput},
 })
 
 // Show progress bar on live navigation and form submits
