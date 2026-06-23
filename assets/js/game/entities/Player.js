@@ -576,6 +576,32 @@ export default class Player extends Character {
     return true
   }
 
+  addCharm(charmId) {
+    const charm = getCharmById(charmId)
+    if (!charm) return false
+
+    if (!this.loadout.ownedCharmIds) this.loadout.ownedCharmIds = []
+    if (!this.loadout.ownedCharmIds.includes(charmId)) {
+      this.loadout.ownedCharmIds.push(charmId)
+    }
+
+    let equipped = false
+    if (charm.type === 'hero' && this.loadout.heroCharmIds.length < this.getHeroCharmSlots()) {
+      this.loadout.heroCharmIds.push(charmId)
+      equipped = true
+    } else if (charm.type === 'weapon' && this.loadout.weaponCharmIds.length < this.getWeaponCharmSlots()) {
+      this.loadout.weaponCharmIds.push(charmId)
+      equipped = true
+    } else if (charm.type === 'shield' && this.loadout.shieldCharmIds.length < this.getShieldCharmSlots()) {
+      this.loadout.shieldCharmIds.push(charmId)
+      equipped = true
+    }
+
+    if (equipped) this._charmEffects = null
+    this.saveLoadout()
+    return { owned: true, equipped }
+  }
+
   // ---------- Ability Learning ----------
 
   hasAbility(actionId) {

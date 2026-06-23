@@ -25,6 +25,7 @@ export default class WordChallengeSystem {
       timeLimit: 10000,
       hangOnWrong: 5000,
       hangOnCorrect: 0,
+      showCorrectAnswer: true,
       ...options,
     }
 
@@ -69,6 +70,7 @@ export default class WordChallengeSystem {
       timeLimit: this.options.timeLimit,
       hangOnWrong: this.options.hangOnWrong,
       hangOnCorrect: this.options.hangOnCorrect,
+      showCorrectAnswer: this.options.showCorrectAnswer,
       onStart: null,
       onResult: null,
       onComplete: null,
@@ -128,7 +130,7 @@ export default class WordChallengeSystem {
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
     this.overlay.add(backdrop)
 
-    const panel = this.scene.add.rectangle(0, 0, 460, 340, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
+    const panel = this.scene.add.rectangle(0, 0, 460, 380, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
     this.overlay.add(panel)
 
     this.titleText = this.scene.add.text(0, -120, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
@@ -157,10 +159,10 @@ export default class WordChallengeSystem {
     this.timerText = this.scene.add.text(0, 115, `${(this.currentOptions.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.timerText)
 
-    this.feedbackText = this.scene.add.text(0, 140, 'Press Enter to submit', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.feedbackText = this.scene.add.text(0, 138, 'Press Enter to submit', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.feedbackText)
 
-    this.answerText = this.scene.add.text(0, 165, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71' }).setOrigin(0.5)
+    this.answerText = this.scene.add.text(0, 165, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71', align: 'center', wordWrap: { width: 420 } }).setOrigin(0.5)
     this.overlay.add(this.answerText)
   }
 
@@ -212,18 +214,18 @@ export default class WordChallengeSystem {
         this.feedbackText.setText('Correct!')
         this.feedbackText.setColor('#2ecc71')
       }
-      if (this.answerText) {
+      if (this.answerText && this.currentOptions.showCorrectAnswer !== false) {
         this.answerText.setText(`Answer: ${correctAnswer}`)
         this.answerText.setColor('#2ecc71')
       }
     } else {
-      // Wrong answer: show correct answer and hang
+      // Wrong answer: optionally show correct answer and hang
       this.inputText.setColor('#e74c3c')
       if (this.feedbackText) {
         this.feedbackText.setText(timedOut ? "Time's up!" : 'Wrong answer')
         this.feedbackText.setColor('#e74c3c')
       }
-      if (this.answerText) {
+      if (this.answerText && this.currentOptions.showCorrectAnswer !== false) {
         this.answerText.setText(`Correct: ${correctAnswer}`)
         this.answerText.setColor('#2ecc71')
       }

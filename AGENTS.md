@@ -1,5 +1,7 @@
 # AGENTS.md - Medoru Japanese Learning Platform
 
+> **⚠️ Multi-agent workspace rule for all agents:** This project uses multiple concurrent agents. The working directory is shared state. **Never revert, delete, or overwrite files you did not create or were not explicitly asked to modify.** Uncommitted changes likely belong to another active agent. If you are unsure whether a change is yours, check with the user before touching it.
+
 ## Current State
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
@@ -26,6 +28,8 @@
 - **Presentation mode bug fixes**: `.presentation-active` now fills the fullscreen viewport width immediately (`width: 100%`, `max-width: none`) and allows vertical scrolling so tall content (e.g. kanji breakdown) isn't cut off. Vocabulary lesson audio elements now use a per-word `src` and unique `id`, forcing LiveView to re-mount the player on each slide so the pronunciation matches the current word.
 - **White board / stream image paste**: Posts (`BoardInput` hook) and comments (`CommentInput` hook) on the white board and dashboard stream now support pasting images from the clipboard. Pasted images are uploaded via `/api/chat/uploads` and inserted as markdown image tags. Existing file-attachment button behavior is unchanged.
 - **Command parser spacing fix**: `/word`, `/w`, `/grammar`, `/g`, `/kanji`, `/k` and their backslash variants now strip leading/trailing spaces around the expression in messages, classroom chat, and white board posts/comments. `/w   食べる   ` and `/grammar   te-form   ` now resolve correctly.
+- **Daily test size consistency**: The Japanese-learning daily test now targets a stable `daily_goal` word count (10/15/20/25 words based on learned vocabulary) by filling any shortfall with unreviewed learned words instead of capping new words at 5. This eliminates the yo-yo between large review-heavy tests and tiny 9-word tests. `Learning.get_daily_review_stats/1` now returns the real scaled goal instead of a hardcoded 10.
+- **Memories! map event**: New `MemoryScene` for `TILE_TYPES.MEMORY` tiles. 5×4 grid (20 cards / 10 pairs) built from the player's learned words. The player flips cards to find matching pairs, then must type the word's meaning to claim them. Wrong attempts count both mismatched pairs and failed meaning challenges, with the maximum based on the player's Luck stat (5 base, scaling up to 15 at 100+ Luck). Rewards are based on the matched word's part of speech: verbs grant a new weapon/class ability, nouns grant 1–3 random items, adjectives grant a weapon socket charm (20% chance to be a hero charm), and other word types roll a rarity-weighted reward (gold plus a chance for an item, charm, or ability). Gold (10–30) is always awarded. Routes from `MapScene` when a memory tile is clicked.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

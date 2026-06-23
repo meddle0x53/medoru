@@ -182,13 +182,16 @@ defmodule Medoru.Tests.LessonTestGenerator do
     Tests.create_test_steps(test, all_steps)
   end
 
-  # Build a prioritized distractor pool:
-  # Priority 1: Words from the same lesson (most confusing)
-  # Priority 2: Words from previous lessons (already learned)
-  # We NEVER use words from future lessons (unlearned) as distractors
-  defp build_distractor_pool(nil, _words), do: []
+  @doc """
+  Builds a prioritized distractor pool for a lesson test.
 
-  defp build_distractor_pool(lesson_id, current_words) do
+  Priority 1: Words from the same lesson (most confusing)
+  Priority 2: Words from previous lessons (already learned)
+  We NEVER use words from future lessons (unlearned) as distractors.
+  """
+  def build_distractor_pool(nil, _words), do: []
+
+  def build_distractor_pool(lesson_id, current_words) do
     current_word_ids = Enum.map(current_words, & &1.id)
 
     # Get current lesson info

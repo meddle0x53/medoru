@@ -28,6 +28,7 @@ defmodule MedoruWeb.GameApiController do
           word: w.text,
           reading: w.reading,
           meaning: w.meaning,
+          word_type: w.word_type,
           core_rank: w.core_rank,
           usage_frequency: w.usage_frequency,
           difficulty: w.difficulty

@@ -23,7 +23,6 @@ defmodule Medoru.Learning.DailyTestGenerator do
   # Base daily goal - will scale with user's learned words
   @base_daily_goal 10
   @max_daily_goal 25
-  @new_word_limit 5
   @distractor_count 3
 
   @doc """
@@ -31,6 +30,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   If the user already has a daily test for today, returns that test.
   Otherwise, generates a new daily test based on due reviews and new words.
+  The test aims for the user's daily goal words, filling any shortfall with
+  unreviewed learned words so the size stays consistent day-to-day.
 
   English-learning users get a meaning-first daily test backed by their
   English-learning word progress instead of the standard Japanese-first test.
@@ -72,8 +73,10 @@ defmodule Medoru.Learning.DailyTestGenerator do
   @doc """
   Generates a new daily test for a user.
 
-  Combines SRS due reviews with new words to create a comprehensive
-  daily review test.
+  Combines SRS due reviews with unreviewed learned words to create a
+  comprehensive daily review test. The total number of words targets the
+  user's daily goal, so the test size stays consistent even when few
+  reviews are due.
 
   ## Examples
 
@@ -92,12 +95,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
     # Get unique word IDs from due reviews to exclude from new words
     due_word_ids = Enum.map(due_reviews, & &1.word_id)
 
-    # Calculate how many new words to add
+    # Calculate how many new words to add to reach the daily goal
     due_count = length(due_reviews)
     new_words_needed = max(0, daily_goal - due_count)
-    new_words_needed = min(new_words_needed, @new_word_limit)
 
-    # Get new words for learning (excluding words already in due reviews)
+    # Get unreviewed learned words to fill the remaining slots
+    # (excluding words already in due reviews)
     new_words =
       if new_words_needed > 0 do
         get_eligible_new_words(user_id, limit: new_words_needed, exclude_word_ids: due_word_ids)
@@ -277,9 +280,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
     Learning.count_learned_words(user_id)
   end
 
-  # Calculate daily goal based on learned words count
-  # Scales from @base_daily_goal to @max_daily_goal
-  defp calculate_daily_goal(learned_count) do
+  @doc """
+  Calculates the daily goal based on the number of words a user has learned.
+
+  Scales from @base_daily_goal up to @max_daily_goal as the user's vocabulary grows.
+  """
+  def calculate_daily_goal(learned_count) do
     cond do
       learned_count < 20 -> @base_daily_goal
       learned_count < 50 -> 15

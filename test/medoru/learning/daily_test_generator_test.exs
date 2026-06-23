@@ -377,4 +377,132 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert test1.id == test2.id
     end
   end
+
+  describe "daily test size consistency by learned word count" do
+    test "user with 20 learned words gets a 15-word daily test" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 20)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      assert length(word_ids_in_test) == 15
+      assert DailyTestGenerator.calculate_daily_goal(20) == 15
+    end
+
+    test "user with 50 learned words gets a 20-word daily test" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 50)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      assert length(word_ids_in_test) == 20
+      assert DailyTestGenerator.calculate_daily_goal(50) == 20
+    end
+
+    test "user with 100 learned words gets a 25-word daily test" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 100)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      assert length(word_ids_in_test) == 25
+      assert DailyTestGenerator.calculate_daily_goal(100) == 25
+    end
+
+    test "user with 200 learned words still gets a 25-word daily test" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 200)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      assert length(word_ids_in_test) == 25
+      assert DailyTestGenerator.calculate_daily_goal(200) == 25
+    end
+
+    test "user with 300 learned words still gets a 25-word daily test" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 300)
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      assert length(word_ids_in_test) == 25
+      assert DailyTestGenerator.calculate_daily_goal(300) == 25
+    end
+
+    test "fills up to daily goal with unreviewed words when no reviews are due" do
+      user = user_fixture()
+      _learned_words = create_learned_words(user.id, 50)
+
+      # No review schedules are created, so nothing is "due"
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      word_ids_in_test =
+        test.test_steps
+        |> Enum.map(& &1.word_id)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      # Should still hit the daily goal (20 for 50 learned words)
+      assert length(word_ids_in_test) == 20
+    end
+
+    test "get_daily_review_stats returns the scaled daily goal" do
+      user = user_fixture()
+      create_learned_words(user.id, 50)
+
+      stats = Learning.get_daily_review_stats(user.id)
+      assert stats.daily_goal == 20
+    end
+  end
+
+  # Helper to create N valid Japanese words and mark them learned for a user.
+  defp create_learned_words(user_id, count) do
+    Enum.map(1..count, fn i ->
+      word =
+        word_fixture(%{
+          meaning: "word #{i}",
+          reading: unique_kana_reading(i)
+        })
+
+      {:ok, _} = Learning.track_word_learned(user_id, word.id)
+      word
+    end)
+  end
+
+  defp unique_kana_reading(i) do
+    kana = ~w(あ い う え お か き く け こ さ し す せ そ た ち つ て と な に ぬ ね の は ひ ふ へ ほ ま み む め も や ゆ よ ら り る れ ろ わ を ん)
+    a = Enum.at(kana, rem(i, length(kana)))
+    b = Enum.at(kana, rem(div(i, length(kana)), length(kana)))
+    "た#{a}#{b}"
+  end
 end

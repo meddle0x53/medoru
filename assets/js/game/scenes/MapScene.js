@@ -470,6 +470,11 @@ export default class MapScene extends Phaser.Scene {
       return
     }
 
+    if (tile.type === TILE_TYPES.MEMORY) {
+      this.scene.start('MemoryScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
     this.runPlaceholderEvent(tile)
   }
 

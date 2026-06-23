@@ -20,7 +20,8 @@ defmodule Medoru.Learning do
     LessonProgress,
     DailyStreak,
     ReviewSchedule,
-    UserDailyChallenge
+    UserDailyChallenge,
+    DailyTestGenerator
   }
 
   alias Medoru.Content
@@ -2053,6 +2054,9 @@ defmodule Medoru.Learning do
     due_count = count_due_reviews(user_id)
     new_available = count_new_words_available(user_id)
     studied_today = studied_today?(user_id)
+    user = Accounts.get_user!(user_id)
+    learned_count = words_learned_count(user)
+    daily_goal = DailyTestGenerator.calculate_daily_goal(learned_count)
 
     %{
       due_count: due_count,
@@ -2060,7 +2064,7 @@ defmodule Medoru.Learning do
       studied_today: studied_today,
       current_streak: if(streak, do: streak.current_streak, else: 0),
       longest_streak: if(streak, do: streak.longest_streak, else: 0),
-      daily_goal: 10
+      daily_goal: daily_goal
     }
   end
 

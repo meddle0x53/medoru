@@ -190,38 +190,46 @@ defmodule Medoru.Tests.LessonTestGeneratorTest do
     end
 
     test "includes words from previous lessons in distractor pool", %{
+      lesson1: _lesson1,
       lesson2: lesson2,
       lesson1_words: lesson1_words,
       lesson2_words: lesson2_words
     } do
-      # Generate test for lesson 2 (which has lesson 1 as previous)
-      {:ok, test} = LessonTestGenerator.generate_lesson_test(lesson2.id)
-      steps = Medoru.Tests.list_test_steps(test.id)
-
-      multichoice_steps = Enum.filter(steps, &(&1.question_type == :multichoice))
-
-      # Get all distractor texts used (excluding correct answers)
-      all_options = Enum.flat_map(multichoice_steps, & &1.options)
+      # Verify the distractor pool directly so the test is deterministic
+      # regardless of which random step types happen to be generated.
+      distractor_pool = LessonTestGenerator.build_distractor_pool(lesson2.id, lesson2_words)
+      distractor_texts = Enum.map(distractor_pool, & &1.text)
 
       lesson1_texts = Enum.map(lesson1_words, & &1.text)
       lesson2_texts = Enum.map(lesson2_words, & &1.text)
-
-      # Verify distractors include words from previous lesson (lesson 1)
-      # This is the key requirement: distractors should come from learned words
-      assert Enum.any?(all_options, fn opt -> opt in lesson1_texts end),
-             "Should include distractors from previous lesson (lesson 1)"
-
-      # Also verify that all distractors come from learned words (lesson 1 or 2)
-      # and not from outside the curriculum
       all_lesson_texts = lesson1_texts ++ lesson2_texts
 
-      # Get unique distractor texts (may include readings/meanings which are not word texts)
-      # We check that any word-like distractor (single character) is from our lessons
-      word_distractors = Enum.filter(all_options, &(&1 in all_lesson_texts))
+      # Distractors should include words from the previous lesson (lesson 1)
+      assert Enum.any?(distractor_texts, fn text -> text in lesson1_texts end),
+             "Should include distractors from previous lesson (lesson 1)"
 
-      # All word distractors should come from lesson 1 or 2
-      assert Enum.all?(word_distractors, &(&1 in all_lesson_texts)),
-             "All word distractors should come from learned words (lessons 1-2)"
+      # All distractors should come from learned words (lesson 1 or 2)
+      assert Enum.all?(distractor_texts, fn text -> text in all_lesson_texts end),
+             "All distractors should come from learned words (lessons 1-2)"
+
+      # Same-lesson words should appear before previous-lesson words in the pool
+      same_lesson_texts = MapSet.new(lesson2_texts)
+      previous_lesson_texts = MapSet.new(lesson1_texts)
+
+      first_previous_index =
+        Enum.find_index(distractor_texts, fn text -> text in previous_lesson_texts end)
+
+      last_same_index_reversed =
+        Enum.find_index(Enum.reverse(distractor_texts), fn text ->
+          text in same_lesson_texts
+        end)
+
+      if first_previous_index && last_same_index_reversed do
+        last_same_index = length(distractor_texts) - 1 - last_same_index_reversed
+
+        assert first_previous_index > last_same_index,
+               "Same-lesson words should be prioritized before previous-lesson words"
+      end
     end
   end
 
