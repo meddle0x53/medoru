@@ -1,5 +1,5 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
-import { ALL_ACTIONS, getActionTypeColor } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getMaxOverallAbilities, getMaxBattlePoolActions } from '../data/actions.js'
 import { ITEMS } from '../data/items.js'
 import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
@@ -208,7 +208,7 @@ export default class WinScene extends Phaser.Scene {
       this.player.shield?.name
     )
     const count = this.rewardAbilities.length
-    this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.selectedActionIds)
+    this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
     this.createAbilityRewards()
   }
 
@@ -335,14 +335,27 @@ export default class WinScene extends Phaser.Scene {
       return
     }
 
-    const combatCount = this.player.countCombatAbilities()
-    if (combatCount >= 10) {
+    const capacity = this.player.capacity || 3
+    const knownCount = this.player.countCombatAbilities()
+    const maxOverall = getMaxOverallAbilities(capacity)
+
+    if (knownCount >= maxOverall) {
       this.showReplaceDialog(action)
       return
     }
 
-    this.player.learnAbility(action.id)
-    this.showToast(`${action.name} learned!`)
+    const result = this.player.learnAbility(action.id)
+    if (!result.ok) {
+      this.showToast(result.reason)
+      return
+    }
+
+    const inBattle = this.player.loadout.selectedActionIds.includes(action.id)
+    if (inBattle) {
+      this.showToast(`${action.name} learned!`)
+    } else {
+      this.showToast(`${action.name} learned (added to reserve)`)
+    }
     this.markAbilitySelected(action.name)
   }
 
@@ -355,8 +368,8 @@ export default class WinScene extends Phaser.Scene {
     dialog.add(this.add.text(0, -220, 'Ability Cap Reached', { ...FONTS.title, fontSize: '18px', color: '#e74c3c' }).setOrigin(0.5))
     dialog.add(this.add.text(0, -185, `Choose an ability to replace with ${newAction.name}:`, { ...FONTS.default, fontSize: '13px', color: '#ecf0f1' }).setOrigin(0.5))
 
-    const combatIds = this.player.loadout.selectedActionIds.filter(id => id !== 'use_item')
-    combatIds.forEach((id, i) => {
+    const knownIds = this.player.loadout.knownActionIds || []
+    knownIds.forEach((id, i) => {
       const action = ALL_ACTIONS.find(a => a.id === id)
       if (!action) return
       const rowY = -145 + i * 38

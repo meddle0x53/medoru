@@ -1330,10 +1330,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     </div>
 
                     <div class="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm">
-                      <span class="badge badge-outline badge-sm">
-                        <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
-                        {lesson.word_count} {gettext("words")}
-                      </span>
+                      <%= if lesson.lesson_subtype != "grammar" do %>
+                        <span class="badge badge-outline badge-sm">
+                          <.icon name="hero-bookmark" class="w-3 h-3 mr-1" />
+                          {lesson.word_count} {gettext("words")}
+                        </span>
+                      <% end %>
 
                       <span class={[
                         "px-2 py-0.5 rounded-full border text-xs font-medium",
@@ -1370,17 +1372,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
                   <div class="sm:ml-4 self-start sm:self-auto">
                     <div class="flex items-center gap-2">
-                      <%!-- Copy to Word Set button --%>
-                      <button
-                        type="button"
-                        phx-click="open_copy_modal"
-                        phx-value-lesson_id={lesson.id}
-                        phx-value-lesson_title={lesson.title}
-                        class="btn btn-ghost btn-sm"
-                        title={gettext("Copy words to word set")}
-                      >
-                        <.icon name="hero-document-plus" class="w-4 h-4" />
-                      </button>
+                      <%= if lesson.lesson_subtype != "grammar" do %>
+                        <%!-- Copy to Word Set button --%>
+                        <button
+                          type="button"
+                          phx-click="open_copy_modal"
+                          phx-value-lesson_id={lesson.id}
+                          phx-value-lesson_title={lesson.title}
+                          class="btn btn-ghost btn-sm"
+                          title={gettext("Copy words to word set")}
+                        >
+                          <.icon name="hero-document-plus" class="w-4 h-4" />
+                        </button>
+                      <% end %>
 
                       <%= case progress_status do %>
                         <% "completed" -> %>

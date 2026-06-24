@@ -8,8 +8,10 @@
 | 2026-05-14 | v0.1.8 Kana Cascade Polish | COMPLETED | 2026-05-14 |
 | 2026-05-15 | v0.1.8 Anonymous Access | COMPLETED | 2026-05-15 |
 | 2026-06-24 | v0.7.0 Grammar from Image Fixes | COMPLETED | 2026-06-24 |
+| 2026-06-24 | v0.7.0 Vocabulary from Image Fixes | COMPLETED | 2026-06-24 |
+| 2026-06-24 | v0.7.0 Remove Copy-to-Wordset for Grammar Lessons | COMPLETED | 2026-06-24 |
 
 ## Current State
 
-- Last completed: Iteration 2026-06-24 — Grammar from Image Fixes
+- Last completed: Iteration 2026-06-24 — Remove Copy-to-Wordset for Grammar Lessons
 - Next: remaining v0.7.0 fixes

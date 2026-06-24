@@ -14,13 +14,34 @@ export const ALL_ACTIONS = ALL_ABILITIES
 
 /**
  * Calculate max active action slots from capacity stat.
- * capacity  3 → 3 slots (minimum)
- * capacity 10 → 3 slots
- * capacity 20 → 4 slots
- * capacity 35 → 5 slots (maximum)
  */
 export function getMaxActiveActions(capacity) {
-  return Math.min(5, Math.max(3, 2 + Math.floor(capacity / 10)))
+  if (capacity >= 60) return 6
+  if (capacity >= 35) return 5
+  if (capacity >= 15) return 4
+  return 3
+}
+
+/**
+ * Max combat abilities available in the battle pool (selectedActionIds, excluding use_item).
+ */
+export function getMaxBattlePoolActions(capacity) {
+  if (capacity >= 60) return 20
+  if (capacity >= 40) return 15
+  if (capacity >= 30) return 14
+  if (capacity >= 20) return 12
+  return 10
+}
+
+/**
+ * Max total learned combat abilities (knownActionIds, excluding use_item).
+ */
+export function getMaxOverallAbilities(capacity) {
+  if (capacity >= 60) return 30
+  if (capacity >= 45) return 22
+  if (capacity >= 25) return 20
+  if (capacity >= 20) return 18
+  return 15
 }
 
 /**

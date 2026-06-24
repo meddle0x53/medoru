@@ -1,7 +1,7 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
-import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities } from '../data/actions.js'
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
@@ -40,11 +40,14 @@ export default class LoadoutScene extends Phaser.Scene {
 
     this.createReadyButton()
 
-    // Global trackpad / wheel scrolling for the item list
+    // Global trackpad / wheel scrolling for scrollable lists
     this._wheelHandler = (e) => {
       if (this.currentTab === 'items' && this.itemListContainer) {
         e.preventDefault()
         this.scrollItemList(e.deltaY * 0.8)
+      } else if (this.currentTab === 'abilities' && this.abilityListContainer) {
+        e.preventDefault()
+        this.setAbilityListScroll(this.abilityListScroll + e.deltaY * 0.8)
       }
     }
     this.game.canvas.addEventListener('wheel', this._wheelHandler, { passive: false })
@@ -351,10 +354,13 @@ export default class LoadoutScene extends Phaser.Scene {
       this.showToast('Already active')
       return
     }
-    // Ensure ability is in selected pool first
+    // Ensure ability is in the battle pool first
     if (!this.player.loadout.selectedActionIds.includes(actionId)) {
-      // Add to selected pool, auto-discard oldest non-use_item if needed
-      this.addToSelectedPool(actionId)
+      const res = this.player.addToBattlePool(actionId)
+      if (!res.ok) {
+        this.showToast(res.reason)
+        return
+      }
     }
     this.player.loadout.activeActionIds.push(actionId)
     this.player.saveLoadout()
@@ -366,35 +372,8 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   addToSelectedPool(actionId) {
-    // Use Item is always allowed and doesn't count toward the 10
-    const action = ALL_ACTIONS.find(a => a.id === actionId)
-    if (action?.id === 'use_item') {
-      if (!this.player.loadout.selectedActionIds.includes('use_item')) {
-        this.player.loadout.selectedActionIds.push('use_item')
-      }
-      return
-    }
-
-    // Count combat abilities (exclude use_item)
-    const combatCount = this.player.loadout.selectedActionIds.filter(id => id !== 'use_item').length
-    if (combatCount >= 10) {
-      // Auto-discard first non-use_item ability to make room
-      const discardIdx = this.player.loadout.selectedActionIds.findIndex(id => id !== 'use_item')
-      if (discardIdx >= 0) {
-        const discardedId = this.player.loadout.selectedActionIds[discardIdx]
-        this.player.loadout.selectedActionIds.splice(discardIdx, 1)
-        // Also remove from active if it was active
-        const activeIdx = this.player.loadout.activeActionIds.indexOf(discardedId)
-        if (activeIdx >= 0) {
-          this.player.loadout.activeActionIds.splice(activeIdx, 1)
-        }
-        const discarded = ALL_ACTIONS.find(a => a.id === discardedId)
-        this.showToast(`${discarded ? discarded.name : 'Ability'} discarded for new one`)
-      }
-    }
-    if (!this.player.loadout.selectedActionIds.includes(actionId)) {
-      this.player.loadout.selectedActionIds.push(actionId)
-    }
+    // Deprecated: use Player.addToBattlePool directly
+    this.player.addToBattlePool(actionId)
   }
 
   refreshCharmGlows() {
@@ -514,6 +493,7 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   showTab(tabName) {
+    this.closeAbilityDialog()
     this.currentTab = tabName
 
     // Update tab button colors
@@ -1137,106 +1117,124 @@ export default class LoadoutScene extends Phaser.Scene {
   // ---------- Abilities Tab ----------
 
   createAbilitiesTab() {
-    // Ensure Use Item is always in selected pool
+    // Ensure Use Item is always in the battle pool
     if (!this.player.loadout.selectedActionIds.includes('use_item')) {
       this.player.loadout.selectedActionIds.push('use_item')
       this.player.saveLoadout()
     }
 
-    const selectedIds = this.player.loadout.selectedActionIds
+    const capacity = this.player.capacity || 3
+    const maxActive = getMaxActiveActions(capacity)
+    const maxBattle = getMaxBattlePoolActions(capacity)
+    const maxOverall = getMaxOverallAbilities(capacity)
     const activeIds = this.player.loadout.activeActionIds
-    const maxActive = getMaxActiveActions(this.player.capacity || 3)
-    const combatSelected = selectedIds.filter(id => id !== 'use_item')
+    const selectedIds = this.player.loadout.selectedActionIds
+    const knownIds = this.player.loadout.knownActionIds || []
 
-    // Label: Known Abilities
+    // Header
     this.tabContent.add(
-      this.add.text(460, 72, 'Known Abilities', {
+      this.add.text(690, 72, 'Known Abilities', {
         ...FONTS.default,
         fontSize: '14px',
         color: '#3498db',
-      })
+      }).setOrigin(0.5)
     )
 
-    // Selected action slots (up to 10 combat + Use Item)
-    const selectedStartY = 92
-    const selectedCols = 4
-    const selectedCellW = 118
-    const selectedCellH = 58
+    const listX = 460
+    const listY = 95
+    const listW = 460
+    const listH = 360
+    const rowH = 56
 
-    // Show Use Item first, then combat abilities
-    const useItemAction = ALL_ACTIONS.find(a => a.id === 'use_item')
-    const combatActions = combatSelected
+    const actions = knownIds
       .map(id => ALL_ACTIONS.find(a => a.id === id))
       .filter(Boolean)
-    const selectedActions = useItemAction ? [useItemAction, ...combatActions] : combatActions
 
-    selectedActions.forEach((action, i) => {
-      const col = i % selectedCols
-      const row = Math.floor(i / selectedCols)
-      const x = 470 + col * selectedCellW
-      const y = selectedStartY + row * selectedCellH
-      const isActive = activeIds.includes(action.id)
-      const card = this.createAbilityCard(x, y, action, isActive, maxActive, true)
-      this.tabContent.add(card.container)
+    // Scrollable container
+    this.abilityListContainer = this.add.container(listX, listY)
+    this.tabContent.add(this.abilityListContainer)
+
+    this.abilityListMaxScroll = Math.max(0, actions.length * rowH - listH)
+    this.abilityListScroll = 0
+    this.abilityListY = listY
+    this.abilityListX = listX
+
+    // Invisible scroll/drag area behind the row hit areas.
+    // It is added to tabContent first so row hit areas sit on top and receive clicks.
+    const scrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW, listH, 0x000000, 0.01)
+      .setInteractive({ useHandCursor: false })
+    this.tabContent.add(scrollHitArea)
+
+    let dragStartY = 0
+    let dragStartScroll = 0
+    scrollHitArea.on('pointerdown', (pointer) => {
+      dragStartY = pointer.y
+      dragStartScroll = this.abilityListScroll
+    })
+    scrollHitArea.on('pointermove', (pointer) => {
+      if (pointer.isDown) {
+        this.setAbilityListScroll(dragStartScroll - (pointer.y - dragStartY))
+      }
     })
 
-    // Empty slots
-    for (let i = selectedActions.length; i < 11; i++) {
-      const col = i % selectedCols
-      const row = Math.floor(i / selectedCols)
-      const x = 470 + col * selectedCellW
-      const y = selectedStartY + row * selectedCellH
-      const empty = this.createEmptyAbilitySlot(x, y)
-      this.tabContent.add(empty)
-    }
-
-    // Available actions (exclude Use Item, it's always in pool)
-    const availableStartY = 275
-    const available = ALL_ACTIONS.filter(a => !selectedIds.includes(a.id) && a.id !== 'use_item')
-    const availCols = 4
-    const availCellW = 118
-    const availCellH = 58
-
-    available.forEach((action, i) => {
-      const col = i % availCols
-      const row = Math.floor(i / availCols)
-      const x = 470 + col * availCellW
-      const y = availableStartY + row * availCellH
-      const card = this.createAbilityCard(x, y, action, false, maxActive, false)
-      this.tabContent.add(card.container)
+    this.abilityListRows = []
+    actions.forEach((action, i) => {
+      const y = i * rowH
+      const row = this.createAbilityRow(0, y, action, rowH)
+      this.abilityListContainer.add(row.container)
+      this.abilityListRows.push(row)
+      this.tabContent.add(row.hitArea)
     })
 
-    // Info
-    const combatCount = combatSelected.length
-    const color = combatCount > 10 ? '#e74c3c' : '#7f8c8d'
+    // Mask to clip rows
+    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false })
+    maskGraphics.fillStyle(0xffffff)
+    maskGraphics.fillRect(listX, listY, listW, listH)
+    const mask = maskGraphics.createGeometryMask()
+    this.abilityListContainer.setMask(mask)
+
+    // Simple scrollbar track + thumb
+    const trackX = listX + listW + 10
+    this.tabContent.add(this.add.rectangle(trackX, listY + listH / 2, 6, listH, 0x2c3e50, 0.5))
+    const thumbH = this.abilityListMaxScroll > 0 ? Math.max(30, listH * (listH / (actions.length * rowH))) : listH
+    this.abilityListThumb = this.add.rectangle(trackX, listY + thumbH / 2, 6, thumbH, 0x3498db, 0.9)
+    this.tabContent.add(this.abilityListThumb)
+
+    this.setAbilityListScroll(0)
+
+    // Info footer
+    const combatSelected = selectedIds.filter(id => id !== 'use_item').length
+    const color = knownIds.length > maxOverall ? '#e74c3c' : '#7f8c8d'
     this.tabContent.add(
-      this.add.text(690, 470, `${combatCount}/10 Combat · ${activeIds.length}/${maxActive} Active`, {
+      this.add.text(690, 470, `${knownIds.length}/${maxOverall} Known · ${combatSelected}/${maxBattle} Battle · ${activeIds.length}/${maxActive} Active`, {
         ...FONTS.default,
-        fontSize: '13px',
+        fontSize: '12px',
         color,
       }).setOrigin(0.5)
     )
   }
 
-  createAbilityCard(x, y, action, isActive, maxActive, inSelectedPool) {
+  createAbilityRow(x, y, action, rowH) {
     const container = this.add.container(x, y)
     const colors = getActionTypeColor(action.type)
-    const cardW = 110
-    const cardH = 52
+    const rowW = 460
+    const isInBattle = this.player.loadout.selectedActionIds.includes(action.id)
+    const isActive = this.player.loadout.activeActionIds.includes(action.id)
 
     const bg = this.add.graphics()
-    bg.fillStyle(isActive ? colors.main : 0x16213e, 0.9)
-    bg.fillRoundedRect(0, 0, cardW, cardH, 6)
-    bg.lineStyle(1.5, colors.main, isActive ? 0.9 : 0.4)
-    bg.strokeRoundedRect(0, 0, cardW, cardH, 6)
+    const fillColor = isActive ? colors.main : isInBattle ? 0x1a2a3a : 0x16213e
+    bg.fillStyle(fillColor, 0.9)
+    bg.fillRoundedRect(0, 0, rowW, rowH - 4, 6)
+    bg.lineStyle(2, colors.main, isActive ? 0.9 : 0.4)
+    bg.strokeRoundedRect(0, 0, rowW, rowH - 4, 6)
     container.add(bg)
 
     // Kanji
     if (action.kanji) {
       container.add(
-        this.add.text(18, 26, action.kanji, {
+        this.add.text(30, rowH / 2 - 2, action.kanji, {
           fontFamily: FONTS.kanji.fontFamily,
-          fontSize: '20px',
+          fontSize: '24px',
           color: '#ffffff',
         }).setOrigin(0.5)
       )
@@ -1244,35 +1242,35 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Name
     container.add(
-      this.add.text(58, 18, action.name, {
+      this.add.text(70, 16, action.name, {
+        ...FONTS.default,
+        fontSize: '13px',
+        color: '#ecf0f1',
+      })
+    )
+
+    // Type + STA cost
+    container.add(
+      this.add.text(70, 36, `${action.type.toUpperCase()} · ${action.staminaCost} STA`, {
         ...FONTS.default,
         fontSize: '11px',
-        color: '#ecf0f1',
-      }).setOrigin(0.5)
+        color: '#7f8c8d',
+      })
     )
 
-    // STA cost
+    // Status badge
+    const badgeText = isActive ? 'ACTIVE' : isInBattle ? 'BATTLE' : 'RESERVE'
+    const badgeColor = isActive ? '#f1c40f' : isInBattle ? '#3498db' : '#7f8c8d'
     container.add(
-      this.add.text(58, 36, `${action.staminaCost}`, {
+      this.add.text(rowW - 52, rowH / 2 - 2, badgeText, {
         ...FONTS.default,
-        fontSize: '10px',
-        color: '#f1c40f',
+        fontSize: '11px',
+        color: badgeColor,
       }).setOrigin(0.5)
     )
 
-    // Star icon for active
-    if (isActive) {
-      container.add(
-        this.add.text(98, 10, '★', {
-          fontSize: '12px',
-          color: '#f1c40f',
-        }).setOrigin(0.5)
-      )
-    }
-
-    // Drag to active slot
-    const hitW = inSelectedPool ? 90 : cardW
-    const hitArea = this.add.rectangle(cardW / 2, cardH / 2, hitW, cardH, 0x000000, 0)
+    // Hit area is separate so it can live above the scroll overlay
+    const hitArea = this.add.rectangle(0, 0, rowW, rowH, 0x000000, 0)
       .setInteractive({ useHandCursor: true, draggable: true })
 
     hitArea.on('dragstart', (pointer) => {
@@ -1286,104 +1284,194 @@ export default class LoadoutScene extends Phaser.Scene {
     hitArea.on('dragend', (pointer) => {
       this.endAbilityDrag(action, pointer)
     })
-
-    // Click vs drag: use pointerup with distance check so showTab() doesn't destroy
-    // the hitArea before dragend can fire.
     hitArea.on('pointerup', (pointer) => {
       const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
-
-      // Real drag: dragend will handle the drop and cleanup
-      if (moveDist >= 8) return
-
-      // It was a click — clean up any stray clone that dragstart may have created,
-      // then run the click logic.
-      if (this.abilityDragClone) {
-        this.abilityDragClone.destroy()
-        this.abilityDragClone = null
-        this.abilityDragAction = null
-      }
-
-      if (inSelectedPool) {
-        const idx = this.player.loadout.activeActionIds.indexOf(action.id)
-        if (idx >= 0) {
-          this.deactivateAbility(action.id)
-        } else {
-          this.activateAbility(action.id)
+      if (moveDist < 8) {
+        // Clean up any stray drag clone
+        if (this.abilityDragClone) {
+          this.abilityDragClone.destroy()
+          this.abilityDragClone = null
+          this.abilityDragAction = null
         }
-      } else {
-        this.addToSelectedPool(action.id)
-        const maxActive = getMaxActiveActions(this.player.capacity || 3)
-        if (this.player.loadout.activeActionIds.length < maxActive) {
-          this.player.loadout.activeActionIds.push(action.id)
-        }
-        this.player.saveLoadout()
-        this.showTab('abilities')
-        this.refreshActionSlots()
+        this.showAbilityDetailDialog(action)
       }
     })
 
-    container.add(hitArea)
+    return { container, hitArea, rowH }
+  }
 
-    // Remove button (×) for selected pool items (except Use Item)
-    // Added after the drag hit area so it receives clicks on top.
-    if (inSelectedPool && action.id !== 'use_item') {
-      const removeBtn = this.add.text(98, 40, '×', {
-        fontSize: '14px',
-        color: '#e74c3c',
+  setAbilityListScroll(value) {
+    if (!this.abilityListContainer) return
+    this.abilityListScroll = Math.max(0, Math.min(this.abilityListMaxScroll, value))
+    this.abilityListContainer.setY(this.abilityListY - this.abilityListScroll)
+
+    const listH = 360
+    const rowH = 56
+    this.abilityListRows.forEach((row, i) => {
+      const relY = i * rowH - this.abilityListScroll
+      const visible = relY + rowH > 0 && relY < listH
+      row.container.setVisible(visible)
+      row.hitArea.setVisible(visible)
+      if (row.hitArea.input) row.hitArea.input.enabled = visible
+      row.hitArea.setPosition(this.abilityListX + 230, this.abilityListY + i * rowH + rowH / 2)
+    })
+
+    if (this.abilityListThumb && this.abilityListMaxScroll > 0) {
+      const thumbH = this.abilityListThumb.height
+      const pct = this.abilityListScroll / this.abilityListMaxScroll
+      const thumbY = this.abilityListY + thumbH / 2 + pct * (listH - thumbH)
+      this.abilityListThumb.setY(thumbY)
+    }
+  }
+
+  formatAbilityRequirements(action) {
+    const parts = []
+    if (action.requiredClass) parts.push(`Class: ${action.requiredClass}`)
+    if (action.requiredEquipment) parts.push(`${action.equipmentType || 'Equipment'}: ${action.requiredEquipment}`)
+    if (action.requiredSocketCharm) parts.push(`Socket charm: ${action.requiredSocketCharm}`)
+    if (action.requiredCharmFamily) parts.push(`Charm family: ${action.requiredCharmFamily}`)
+    return parts.join(' · ') || 'None'
+  }
+
+  showAbilityDetailDialog(action) {
+    if (this.abilityDialog) this.abilityDialog.destroy()
+
+    const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(2000)
+
+    // Dark backdrop
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.85).setOrigin(0.5)
+    backdrop.setInteractive()
+    overlay.add(backdrop)
+
+    // Panel
+    const panel = this.add.rectangle(0, 0, 440, 460, 0x1a1a2e).setStrokeStyle(2, 0xf39c12).setOrigin(0.5)
+    overlay.add(panel)
+
+    // Kanji
+    overlay.add(
+      this.add.text(0, -190, action.kanji || '', {
+        fontFamily: FONTS.kanji.fontFamily,
+        fontSize: '48px',
+        color: '#ffffff',
       }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', (pointer) => {
-          pointer.event.stopPropagation()
+    )
 
-          // Prevent removing the last known attack
-          const actionObj = ALL_ACTIONS.find(a => a.id === action.id)
-          if (actionObj?.type === 'attack') {
-            const remainingKnownAttacks = this.player.loadout.selectedActionIds
-              .filter(id => id !== action.id)
-              .map(id => ALL_ACTIONS.find(a => a.id === id))
-              .filter(a => a?.type === 'attack')
-            if (remainingKnownAttacks.length === 0) {
-              this.showToast('At least one attack must be known')
-              return
-            }
-          }
+    // Name
+    overlay.add(
+      this.add.text(0, -135, action.name, {
+        ...FONTS.default,
+        fontSize: '18px',
+        color: '#ecf0f1',
+        fontStyle: 'bold',
+      }).setOrigin(0.5)
+    )
 
-          // Remove from selected pool
-          const selIdx = this.player.loadout.selectedActionIds.indexOf(action.id)
-          if (selIdx >= 0) this.player.loadout.selectedActionIds.splice(selIdx, 1)
-          // Also remove from active if present
-          const actIdx = this.player.loadout.activeActionIds.indexOf(action.id)
-          if (actIdx >= 0) this.player.loadout.activeActionIds.splice(actIdx, 1)
-          // Ensure at least one attack remains active
-          const remainingActive = this.player.loadout.activeActionIds
+    // Type & cost
+    overlay.add(
+      this.add.text(0, -105, `${action.type.toUpperCase()} · ${action.staminaCost} STA`, {
+        ...FONTS.default,
+        fontSize: '13px',
+        color: '#7f8c8d',
+      }).setOrigin(0.5)
+    )
+
+    // Requirements
+    const reqs = this.formatAbilityRequirements(action)
+    overlay.add(
+      this.add.text(0, -70, `Requirements: ${reqs}`, {
+        ...FONTS.default,
+        fontSize: '12px',
+        color: '#bdc3c7',
+        align: 'center',
+        wordWrap: { width: 400 },
+      }).setOrigin(0.5)
+    )
+
+    // Description
+    overlay.add(
+      this.add.text(0, 10, action.description || '', {
+        ...FONTS.default,
+        fontSize: '13px',
+        color: '#ecf0f1',
+        align: 'center',
+        wordWrap: { width: 380 },
+      }).setOrigin(0.5)
+    )
+
+    const inBattle = this.player.loadout.selectedActionIds.includes(action.id)
+    const isActive = this.player.loadout.activeActionIds.includes(action.id)
+    const maxActive = getMaxActiveActions(this.player.capacity || 3)
+    const maxBattle = getMaxBattlePoolActions(this.player.capacity || 3)
+
+    let btnY = 115
+    const addDialogBtn = (label, color, onClick) => {
+      const btn = this.createMiniButton(0, btnY, label, color, onClick)
+      overlay.add(btn.container)
+      btnY += 42
+    }
+
+    if (!inBattle) {
+      const combatSelected = this.player.loadout.selectedActionIds.filter(id => id !== 'use_item').length
+      const battleFull = combatSelected >= maxBattle
+      addDialogBtn(battleFull ? 'Battle Pool Full' : 'Equip for Battle', battleFull ? 0x555555 : 0x27ae60, () => {
+        if (battleFull) return
+        const res = this.player.addToBattlePool(action.id)
+        if (!res.ok) {
+          this.showToast(res.reason)
+          return
+        }
+        this.closeAbilityDialog()
+        this.showTab('abilities')
+        this.refreshActionSlots()
+      })
+    } else {
+      addDialogBtn('Unequip from Battle', 0xe74c3c, () => {
+        const actionObj = ALL_ACTIONS.find(a => a.id === action.id)
+        if (actionObj?.type === 'attack') {
+          const remainingKnownAttacks = this.player.loadout.knownActionIds
+            .filter(id => id !== action.id)
             .map(id => ALL_ACTIONS.find(a => a.id === id))
-            .filter(Boolean)
-          if (!remainingActive.some(a => a.type === 'attack')) {
-            const firstAttack = this.player.loadout.selectedActionIds
-              .map(id => ALL_ACTIONS.find(a => a.id === id))
-              .find(a => a?.type === 'attack')
-            if (firstAttack) {
-              this.player.loadout.activeActionIds.push(firstAttack.id)
-            }
+            .filter(a => a?.type === 'attack')
+          if (remainingKnownAttacks.length === 0) {
+            this.showToast('At least one attack must be known')
+            return
           }
-          this.player.saveLoadout()
-          this.player.refreshActions()
+        }
+        this.player.removeFromBattlePool(action.id)
+        this.closeAbilityDialog()
+        this.showTab('abilities')
+        this.refreshActionSlots()
+      })
+
+      if (isActive) {
+        addDialogBtn('Deactivate', 0xf39c12, () => {
+          this.deactivateAbility(action.id)
+          this.closeAbilityDialog()
           this.showTab('abilities')
           this.refreshActionSlots()
         })
-      container.add(removeBtn)
+      } else {
+        const activeFull = this.player.loadout.activeActionIds.length >= maxActive
+        addDialogBtn(activeFull ? 'Active Slots Full' : 'Activate', activeFull ? 0x555555 : 0x3498db, () => {
+          if (activeFull) return
+          this.activateAbility(action.id)
+          this.closeAbilityDialog()
+          this.showTab('abilities')
+          this.refreshActionSlots()
+        })
+      }
     }
 
-    return { container }
+    addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
+
+    this.abilityDialog = overlay
   }
 
-  createEmptyAbilitySlot(x, y) {
-    const g = this.add.graphics()
-    g.lineStyle(1.5, 0x2c3e50, 0.3)
-    g.strokeRoundedRect(x, y, 110, 52, 6)
-    g.fillStyle(0x000000, 0.1)
-    g.fillRoundedRect(x, y, 110, 52, 6)
-    return g
+  closeAbilityDialog() {
+    if (this.abilityDialog) {
+      this.abilityDialog.destroy()
+      this.abilityDialog = null
+    }
   }
 
   refreshActionSlots() {
@@ -1398,9 +1486,11 @@ export default class LoadoutScene extends Phaser.Scene {
   // ---------- Stats Tab ----------
 
   createStatsTab() {
+    const capacity = this.player.capacity || 3
     const stats = [
       { key: 'vitality', label: 'Vitality', derived: `HP: ${this.player.maxHp}` },
       { key: 'stamina', label: 'Stamina', derived: `Max STA: ${this.player.maxStamina}` },
+      { key: 'capacity', label: 'Capacity', derived: `A:${getMaxActiveActions(capacity)} / B:${getMaxBattlePoolActions(capacity)} / O:${getMaxOverallAbilities(capacity)}` },
       { key: 'skill', label: 'Skill', derived: `Crit: ${Math.round(this.player.getCritChance() * 100)}%` },
       { key: 'strength', label: 'Strength', derived: `Dmg: ${this.player.calculateWeaponDamage()}` },
       { key: 'mana', label: 'Mana', derived: '—' },
@@ -1539,20 +1629,23 @@ export default class LoadoutScene extends Phaser.Scene {
 
   createMiniButton(x, y, label, color, onClick) {
     const container = this.add.container(x, y)
-    const w = label === '+' ? 40 : 68
     const h = 32
 
-    const bg = this.add.graphics()
-    bg.fillStyle(color, 0.9)
-    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 4)
-    container.add(bg)
-
+    // Measure label first so the button can expand to fit longer text.
     const text = this.add.text(0, 0, label, {
       ...FONTS.default,
       fontSize: '14px',
       color: '#ffffff',
     }).setOrigin(0.5)
-    container.add(text)
+
+    const minW = label === '+' ? 40 : 68
+    let w = Math.max(minW, text.width + 24)
+    if (w > 360) w = 360 // keep inside narrow dialogs
+
+    const bg = this.add.graphics()
+    bg.fillStyle(color, 0.9)
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 4)
+    container.add([bg, text])
 
     const hitArea = this.add.rectangle(0, 0, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
     hitArea.on('pointerdown', onClick)

@@ -135,6 +135,60 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
     end
   end
 
+  describe "Classroom Show - Copy Lesson to Word Set hidden for grammar lessons" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      teacher = user_fixture(%{email: "grammar-teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Grammar Test Classroom",
+          description: "A test classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, user.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Grammar Lesson",
+          description: "A grammar lesson",
+          difficulty: 5,
+          lesson_type: "reading",
+          lesson_subtype: "grammar",
+          status: "published",
+          creator_id: teacher.id,
+          word_count: 0
+        })
+
+      Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      %{conn: conn, classroom: classroom, lesson: lesson}
+    end
+
+    test "does not show copy to word set button for grammar lessons", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      {:ok, view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=lessons")
+
+      refute html =~ "Copy words to word set"
+      refute has_element?(view, "button[phx-click='open_copy_modal']")
+    end
+
+    test "does not show word count badge for grammar lessons", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=lessons")
+
+      refute html =~ "0 words"
+    end
+  end
+
   describe "Classroom Show - Chat Tab" do
     setup %{conn: conn} do
       user = user_fixture()

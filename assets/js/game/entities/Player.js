@@ -1,6 +1,6 @@
 import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
-import { splitActions, getMaxActiveActions } from '../data/actions.js'
+import { splitActions, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities } from '../data/actions.js'
 import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
 import { gradeForSchedule, getSocketCharmById } from '../data/socketCharms.js'
 import { generateMap, MAP_TEMPLATES } from '../systems/MapGenerator.js'
@@ -128,6 +128,7 @@ export default class Player extends Character {
     const baseStats = {
       vitality: 20,
       stamina: 10,
+      capacity: 3,
       skill: 10,
       strength: 20,
       mana: 5,
@@ -151,7 +152,7 @@ export default class Player extends Character {
       skill: baseStats.skill,
       mana: baseStats.mana,
       luck: baseStats.luck,
-      capacity: 3,
+      capacity: baseStats.capacity,
       armor: 1,
       equippedSkills: [],
       weapon,
@@ -183,10 +184,11 @@ export default class Player extends Character {
       heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
       weaponCharmIds: [],
       shieldCharmIds: [],
+      knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
       statPoints: startingStatPoints,
-      statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       permanentStatPointBonus: 0,
       gold: startingGold,
       inventory: { health_potion: 2, stone: 1 },
@@ -483,6 +485,9 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedSocketCharmIds)) {
           loadout.ownedSocketCharmIds = ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield']
         }
+        if (!Array.isArray(loadout.knownActionIds)) {
+          loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
+        }
         if (!loadout.mapState || typeof loadout.mapState !== 'object') {
           loadout.mapState = null
         }
@@ -512,6 +517,12 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.shield.socketCharmIds)) {
           loadout.shield.socketCharmIds = [null, null, null, null]
+        }
+        if (!loadout.statAllocations) {
+          loadout.statAllocations = {}
+        }
+        if (loadout.statAllocations.capacity === undefined) {
+          loadout.statAllocations.capacity = 0
         }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
@@ -801,31 +812,92 @@ export default class Player extends Character {
 
   // ---------- Ability Learning ----------
 
-  hasAbility(actionId) {
-    return this.loadout.selectedActionIds.includes(actionId)
-  }
-
-  countCombatAbilities() {
-    return this.loadout.selectedActionIds.filter(id => id !== 'use_item').length
-  }
-
-  learnAbility(actionId) {
+  addToSelectedPool(actionId) {
+    if (actionId === 'use_item') {
+      if (!this.loadout.selectedActionIds.includes('use_item')) {
+        this.loadout.selectedActionIds.push('use_item')
+      }
+      return
+    }
     if (!this.loadout.selectedActionIds.includes(actionId)) {
       this.loadout.selectedActionIds.push(actionId)
     }
-    // If it's an attack, make sure at least one attack stays active
+  }
+
+  hasAbility(actionId) {
+    if (actionId === 'use_item') return true
+    return (this.loadout.knownActionIds || []).includes(actionId)
+  }
+
+  countCombatAbilities() {
+    return (this.loadout.knownActionIds || []).length
+  }
+
+  addToBattlePool(actionId) {
+    if (actionId === 'use_item') return { ok: true }
+    if (!this.hasAbility(actionId)) return { ok: false, reason: 'Ability not known.' }
+    if (this.loadout.selectedActionIds.includes(actionId)) return { ok: true }
+
+    const maxBattle = getMaxBattlePoolActions(this.capacity || 3)
+    const combatSelected = this.loadout.selectedActionIds.filter(id => id !== 'use_item')
+    if (combatSelected.length >= maxBattle) {
+      return { ok: false, reason: 'Battle pool is full.' }
+    }
+
+    this.loadout.selectedActionIds.push(actionId)
     this.refreshActions()
     this.saveLoadout()
+    return { ok: true }
+  }
+
+  removeFromBattlePool(actionId) {
+    if (actionId === 'use_item') return { ok: false, reason: 'Cannot remove Use Item.' }
+    const selIdx = this.loadout.selectedActionIds.indexOf(actionId)
+    if (selIdx >= 0) this.loadout.selectedActionIds.splice(selIdx, 1)
+    const activeIdx = this.loadout.activeActionIds.indexOf(actionId)
+    if (activeIdx >= 0) this.loadout.activeActionIds.splice(activeIdx, 1)
+    this.refreshActions()
+    this.saveLoadout()
+    return { ok: true }
+  }
+
+  learnAbility(actionId) {
+    if (actionId === 'use_item') return { ok: true, added: false }
+    if (!this.loadout.knownActionIds) this.loadout.knownActionIds = []
+    if (this.loadout.knownActionIds.includes(actionId)) return { ok: true, added: false }
+
+    const maxOverall = getMaxOverallAbilities(this.capacity || 3)
+    if (this.loadout.knownActionIds.length >= maxOverall) {
+      return { ok: false, reason: 'Overall ability cap reached.' }
+    }
+
+    this.loadout.knownActionIds.push(actionId)
+
+    // Auto-add to battle pool if there is room
+    const maxBattle = getMaxBattlePoolActions(this.capacity || 3)
+    const combatSelected = this.loadout.selectedActionIds.filter(id => id !== 'use_item')
+    if (combatSelected.length < maxBattle) {
+      this.addToSelectedPool(actionId)
+    }
+
+    this.refreshActions()
+    this.saveLoadout()
+    return { ok: true, added: true }
   }
 
   replaceAbility(oldActionId, newActionId) {
-    const idx = this.loadout.selectedActionIds.indexOf(oldActionId)
-    if (idx >= 0) {
-      this.loadout.selectedActionIds[idx] = newActionId
-    } else {
-      this.loadout.selectedActionIds.push(newActionId)
+    const knownIdx = this.loadout.knownActionIds.indexOf(oldActionId)
+    if (knownIdx >= 0) {
+      this.loadout.knownActionIds[knownIdx] = newActionId
+    } else if (!this.loadout.knownActionIds.includes(newActionId)) {
+      this.loadout.knownActionIds.push(newActionId)
     }
-    // Replace in active list too if present
+
+    const selIdx = this.loadout.selectedActionIds.indexOf(oldActionId)
+    if (selIdx >= 0) {
+      this.loadout.selectedActionIds[selIdx] = newActionId
+    }
+
     const activeIdx = this.loadout.activeActionIds.indexOf(oldActionId)
     if (activeIdx >= 0) {
       this.loadout.activeActionIds[activeIdx] = newActionId
@@ -936,10 +1008,11 @@ export default class Player extends Character {
       heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
       weaponCharmIds: [],
       shieldCharmIds: [],
+      knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
       statPoints: totalStatPoints,
-      statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       permanentStatPointBonus,
       gold: 10 * (this.level || 1),
       inventory: { health_potion: 2, stone: 1 },

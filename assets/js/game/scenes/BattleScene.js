@@ -544,7 +544,7 @@ export default class BattleScene extends Phaser.Scene {
     this.playerStaminaText = this.add.text(300, 517, `${this.player.stamina}/${this.player.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
 
     // Action panel — modern rounded glass panel behind hero sprite
-    this.actionPanel = this.createModernPanel(120, 273, 180, 240, 16)
+    this.actionPanel = this.createModernPanel(120, 320, 180, 360, 16)
 
     // TEMPORARY: Win Battle button for testing the reward loop (hidden on boss tiles)
     this.winBattleBtn = this.createButton(120, 140, 'Win Battle', () => {
@@ -555,19 +555,19 @@ export default class BattleScene extends Phaser.Scene {
     // All active actions get a button (parry is passive but shown)
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
-      const y = 195 + i * 52
+      const y = 170 + i * 44
       const colors = getActionTypeColor(action.type)
       const label = this.getSkillButtonLabel(action)
-      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
     })
 
     // Switch Action button
-    const switchY = 195 + clickableActions.length * 52
-    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 44, 0x2980b9, 0x3498db)
+    const switchY = 170 + clickableActions.length * 44 + 8
+    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 40, 0x2980b9, 0x3498db)
 
-    // End turn button
-    this.endTurnBtn = this.createButton(120, 475, 'End Turn', () => this.onEndTurn(), 160, 44, 0xe67e22, 0xf39c12)
+    // End turn button — fixed at the bottom of the action panel
+    this.endTurnBtn = this.createButton(120, 505, 'End Turn', () => this.onEndTurn(), 160, 40, 0xe67e22, 0xf39c12)
 
     // Block indicators
     this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
@@ -845,48 +845,45 @@ export default class BattleScene extends Phaser.Scene {
     this.switchDialogOverlay.add(backdrop)
 
     // Panel
-    const panel = this.add.rectangle(0, 0, 460, 380, COLORS.panelBg).setStrokeStyle(2, 0x3498db)
+    const panel = this.add.rectangle(0, 0, 460, 520, COLORS.panelBg).setStrokeStyle(2, 0x3498db)
     this.switchDialogOverlay.add(panel)
 
     // Title
-    this.switchDialogTitle = this.add.text(0, -165, 'Switch Actions', { ...FONTS.title, fontSize: '20px', color: '#3498db' }).setOrigin(0.5)
+    this.switchDialogTitle = this.add.text(0, -240, 'Switch Actions', { ...FONTS.title, fontSize: '20px', color: '#3498db' }).setOrigin(0.5)
     this.switchDialogOverlay.add(this.switchDialogTitle)
 
     // Active section label
-    this.switchDialogActiveLabel = this.add.text(-200, -130, 'ACTIVE', { ...FONTS.default, fontSize: '13px', color: '#2ecc71' }).setOrigin(0, 0)
+    this.switchDialogActiveLabel = this.add.text(-200, -205, 'ACTIVE', { ...FONTS.default, fontSize: '13px', color: '#2ecc71' }).setOrigin(0, 0)
     this.switchDialogOverlay.add(this.switchDialogActiveLabel)
 
     // Inactive section label
-    this.switchDialogInactiveLabel = this.add.text(-200, 20, 'INACTIVE', { ...FONTS.default, fontSize: '13px', color: '#7f8c8d' }).setOrigin(0, 0)
+    this.switchDialogInactiveLabel = this.add.text(-200, 70, 'INACTIVE', { ...FONTS.default, fontSize: '13px', color: '#7f8c8d' }).setOrigin(0, 0)
     this.switchDialogOverlay.add(this.switchDialogInactiveLabel)
 
     // Action card rows
     this.switchDialogActiveRows = []
     this.switchDialogInactiveRows = []
 
-    for (let i = 0; i < 5; i++) {
-      // Active rows (top, up to 3)
-      if (i < 3) {
-        const y = -100 + i * 52
-        const row = this._createActionCard(0, y)
-        this.switchDialogActiveRows.push(row)
-        this.switchDialogOverlay.add(row.container)
-      }
-      // Inactive rows (bottom, up to 2)
-      if (i < 2) {
-        const y = 50 + i * 52
-        const row = this._createActionCard(0, y)
-        this.switchDialogInactiveRows.push(row)
-        this.switchDialogOverlay.add(row.container)
-      }
+    for (let i = 0; i < 6; i++) {
+      // Active rows (top, up to 6)
+      const activeY = -175 + i * 40
+      const activeRow = this._createActionCard(0, activeY)
+      this.switchDialogActiveRows.push(activeRow)
+      this.switchDialogOverlay.add(activeRow.container)
+
+      // Inactive rows (bottom, up to 6)
+      const inactiveY = 100 + i * 40
+      const inactiveRow = this._createActionCard(0, inactiveY)
+      this.switchDialogInactiveRows.push(inactiveRow)
+      this.switchDialogOverlay.add(inactiveRow.container)
     }
 
     // Hint text
-    this.switchDialogHint = this.add.text(0, 160, 'Click an inactive action, then an active one to swap.', { ...FONTS.default, fontSize: '11px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.switchDialogHint = this.add.text(0, 245, 'Click an inactive action, then an active one to swap.', { ...FONTS.default, fontSize: '11px', color: '#7f8c8d' }).setOrigin(0.5)
     this.switchDialogOverlay.add(this.switchDialogHint)
 
     // Close button
-    const closeBtn = this.createButton(0, 170, 'Close', () => this.hideSwitchActionDialog(), 120, 36, 0x7f8c8d, 0x95a5a6)
+    const closeBtn = this.createButton(0, 260, 'Close', () => this.hideSwitchActionDialog(), 120, 36, 0x7f8c8d, 0x95a5a6)
     this.switchDialogCloseBtn = closeBtn
     this.switchDialogOverlay.add(closeBtn.bg)
     this.switchDialogOverlay.add(closeBtn.shadow)
@@ -1073,20 +1070,20 @@ export default class BattleScene extends Phaser.Scene {
     // Recreate from active actions
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
-      const y = 195 + i * 52
+      const y = 170 + i * 44
       const colors = getActionTypeColor(action.type)
       const label = this.getSkillButtonLabel(action)
-      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 44, colors.main, colors.hover)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
     })
 
     // Reposition switch button
-    const switchY = 195 + clickableActions.length * 52
+    const switchY = 170 + clickableActions.length * 44 + 8
     this.switchActionBtn.bg.destroy()
     this.switchActionBtn.shadow.destroy()
     this.switchActionBtn.hitArea.destroy()
     this.switchActionBtn.text.destroy()
-    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 44, 0x2980b9, 0x3498db)
+    this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 40, 0x2980b9, 0x3498db)
   }
 
   onSwitchActionClick() {
