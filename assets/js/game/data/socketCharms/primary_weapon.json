@@ -1,0 +1,267 @@
+{
+  "equipmentType": "primary_weapon",
+  "charms": [
+    {
+      "id": "sharp_charm_sword",
+      "name": "Sharp Charm",
+      "nameJa": "\u92ed\u3055\u306e\u8b77\u7b26",
+      "kanji": "\u92ed",
+      "slot": 1,
+      "color": "#cccccc",
+      "description": "A keen edge. Favours skill and unlocks bleed abilities.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "milestones": {
+            "1": "C",
+            "5": "B",
+            "9": "A"
+          }
+        }
+      },
+      "abilityFamily": "bleed",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "heavy_charm_sword",
+      "name": "Heavy Charm",
+      "nameJa": "\u91cd\u3055\u306e\u8b77\u7b26",
+      "kanji": "\u91cd",
+      "slot": 1,
+      "color": "#8b4513",
+      "description": "A weighty blade. Favours raw strength.",
+      "scaling": {
+        "strength": {
+          "milestones": {
+            "1": "B",
+            "6": "A",
+            "10": "S"
+          }
+        }
+      },
+      "abilityFamily": "heavy",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "fire_charm_sword",
+      "name": "Fire Charm",
+      "nameJa": "\u706b\u306e\u8b77\u7b26",
+      "kanji": "\u706b",
+      "slot": 1,
+      "color": "#ff6600",
+      "description": "Infuses the blade with flame. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "fire",
+      "element": "fire",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "water_charm_sword",
+      "name": "Water Charm",
+      "nameJa": "\u6c34\u306e\u8b77\u7b26",
+      "kanji": "\u6c34",
+      "slot": 1,
+      "color": "#00ccff",
+      "description": "Infuses the blade with frost. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "water",
+      "element": "water",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "wind_charm_sword",
+      "name": "Wind Charm",
+      "nameJa": "\u98a8\u306e\u8b77\u7b26",
+      "kanji": "\u98a8",
+      "slot": 1,
+      "color": "#ccffcc",
+      "description": "A whistling edge. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "wind",
+      "element": "wind",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "earth_charm_sword",
+      "name": "Earth Charm",
+      "nameJa": "\u571f\u306e\u8b77\u7b26",
+      "kanji": "\u571f",
+      "slot": 1,
+      "color": "#8b4513",
+      "description": "A grounded blade. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "earth",
+      "element": "earth",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "poison_charm_sword",
+      "name": "Poison Charm",
+      "nameJa": "\u6bd2\u306e\u8b77\u7b26",
+      "kanji": "\u6bd2",
+      "slot": 1,
+      "color": "#9932cc",
+      "description": "A toxic edge. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "poison",
+      "element": "poison",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "dark_charm_sword",
+      "name": "Dark Charm",
+      "nameJa": "\u95c7\u306e\u8b77\u7b26",
+      "kanji": "\u95c7",
+      "slot": 1,
+      "color": "#4b0082",
+      "description": "A shadowed blade. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "dark",
+      "element": "void",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "light_charm_sword",
+      "name": "Light Charm",
+      "nameJa": "\u5149\u306e\u8b77\u7b26",
+      "kanji": "\u5149",
+      "slot": 1,
+      "color": "#ffd700",
+      "description": "A radiant blade. Adds arcane scaling.",
+      "scaling": {
+        "strength": {
+          "fixed": "D"
+        },
+        "skill": {
+          "fixed": "D"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "light",
+      "element": "light",
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "lucky_charm_sword",
+      "name": "Lucky Charm",
+      "nameJa": "\u904b\u306e\u8b77\u7b26",
+      "kanji": "\u904b",
+      "slot": 1,
+      "color": "#ffd700",
+      "description": "A fortune-seeking blade. Scales with luck.",
+      "scaling": {
+        "strength": null,
+        "skill": null,
+        "luck": {
+          "milestones": {
+            "1": "C",
+            "5": "B",
+            "9": "A",
+            "10": "S"
+          }
+        }
+      },
+      "abilityFamily": "luck",
+      "equipmentType": "primary_weapon"
+    }
+  ]
+}

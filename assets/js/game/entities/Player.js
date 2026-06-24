@@ -482,7 +482,7 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
         }
-        if (!Array.isArray(loadout.ownedSocketCharmIds)) {
+        if (!Array.isArray(loadout.ownedSocketCharmIds) || loadout.ownedSocketCharmIds.length === 0) {
           loadout.ownedSocketCharmIds = ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield']
         }
         if (!Array.isArray(loadout.knownActionIds)) {
@@ -998,7 +998,11 @@ export default class Player extends Character {
   }
 
   resetToFreshHero() {
-    const starterActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
+    const starterActionIds = [
+      'forward_slash', 'setup_defence', 'shield_parry', 'use_item',
+      'infuse_fire', 'infuse_water', 'infuse_wind', 'infuse_earth',
+      'infuse_void', 'infuse_frost', 'infuse_bleed', 'infuse_poison',
+    ]
     const permanentStatPointBonus = this.loadout?.permanentStatPointBonus || 0
     const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + permanentStatPointBonus
 

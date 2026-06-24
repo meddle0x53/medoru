@@ -1,0 +1,71 @@
+{
+  "equipmentType": "secondary_weapon",
+  "charms": [
+    {
+      "id": "sturdy_charm_shield",
+      "name": "Sturdy Charm",
+      "nameJa": "\u9811\u4e08\u306e\u8b77\u7b26",
+      "kanji": "\u56fa",
+      "slot": 1,
+      "color": "#999999",
+      "description": "Reinforces the shield for raw defense.",
+      "scaling": {
+        "strength": {
+          "milestones": {
+            "1": "C",
+            "6": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "sturdy",
+      "equipmentType": "secondary_weapon"
+    },
+    {
+      "id": "elemental_charm_shield",
+      "name": "Warding Charm",
+      "nameJa": "\u9632\u9b54\u306e\u8b77\u7b26",
+      "kanji": "\u9632",
+      "slot": 1,
+      "color": "#66ccff",
+      "description": "Channels mana into elemental guard.",
+      "scaling": {
+        "strength": {
+          "fixed": "E"
+        },
+        "mana": {
+          "milestones": {
+            "1": "D",
+            "4": "C",
+            "8": "B",
+            "10": "A"
+          }
+        }
+      },
+      "abilityFamily": "warding",
+      "equipmentType": "secondary_weapon"
+    },
+    {
+      "id": "lucky_charm_shield",
+      "name": "Lucky Shield Charm",
+      "nameJa": "\u5e78\u904b\u306e\u76fe\u8b77\u7b26",
+      "kanji": "\u904b",
+      "slot": 1,
+      "color": "#ffd700",
+      "description": "Dodge and parry by sheer luck.",
+      "scaling": {
+        "strength": null,
+        "luck": {
+          "milestones": {
+            "1": "C",
+            "5": "B",
+            "9": "A",
+            "10": "S"
+          }
+        }
+      },
+      "abilityFamily": "luck_guard",
+      "equipmentType": "secondary_weapon"
+    }
+  ]
+}

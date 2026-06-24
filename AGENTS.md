@@ -6,7 +6,7 @@
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
 **Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp. Presentation mode bug fixes: fullscreen background fills width on first entry, content scrolls to prevent kanji breakdown cut-off, vocabulary audio updates per slide. White board/stream posts and comments support copy-paste image uploads. Command parsers strip spaces around expressions. Grammar lesson from image now preserves examples in the description for both grammar and text steps and slices lesson title/description to fit validation limits. Vocabulary lesson from image now falls back to reading when AI omits text, strips optional brackets from expressions while preserving the bracketed form in notes, and prompts the AI to include katakana words, expressions, and phrases. Copy-to-wordset button and word-count badge removed from grammar lessons in classroom lesson lists. Grammar index page now highlights learned grammar points with a green border and "Learned" badge for logged-in users.  
-**Tests**: 1459 passing  
+**Tests**: 1463 passing  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.7.0)
@@ -39,6 +39,7 @@
 - **Classroom grammar lesson copy-to-wordset removed**: The "Copy words to word set" button and the `{word_count} words` badge are no longer rendered for grammar lessons on the classroom lesson list (`ClassroomLive.Show`). Vocabulary lessons still show both, and the existing copy-to-wordset behavior is unchanged.
 - **Grammar index learned indicator**: `/grammars` now loads the current user's learned grammar IDs and marks learned cards with a green border/title and a "Learned" badge, matching the visual treatment used for words and kanji.
 - **Writing fill-in image extraction**: Multi-line question text is no longer dropped when creating writing fill-in test steps from an image. `Medoru.AI.ImageTestSteps.single_line/1` now trims each line, drops blank lines, and joins the remaining text with single spaces so all content is preserved on one line.
+- **Teacher test details editing**: Teachers can now edit the title and description of an existing test from the test show page (`/teacher/tests/:id`) using the new inline "Edit title and description" form.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

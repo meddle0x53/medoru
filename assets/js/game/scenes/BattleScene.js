@@ -544,10 +544,10 @@ export default class BattleScene extends Phaser.Scene {
     this.playerStaminaText = this.add.text(300, 517, `${this.player.stamina}/${this.player.maxStamina}`, { ...FONTS.default, fontSize: '12px', color: '#1a1a2e' }).setOrigin(0.5)
 
     // Action panel — modern rounded glass panel behind hero sprite
-    this.actionPanel = this.createModernPanel(120, 320, 180, 360, 16)
+    this.actionPanel = this.createModernPanel(120, 305, 180, 360, 16)
 
     // TEMPORARY: Win Battle button for testing the reward loop (hidden on boss tiles)
-    this.winBattleBtn = this.createButton(120, 140, 'Win Battle', () => {
+    this.winBattleBtn = this.createButton(120, 95, 'Win Battle', () => {
       this.scene.start('WinScene', { player: this.player, enemy: this.enemies[0], tile: this.tile })
     }, 160, 36, 0x27ae60, 0x2ecc71)
 
@@ -555,7 +555,7 @@ export default class BattleScene extends Phaser.Scene {
     // All active actions get a button (parry is passive but shown)
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
-      const y = 170 + i * 44
+      const y = 155 + i * 44
       const colors = getActionTypeColor(action.type)
       const label = this.getSkillButtonLabel(action)
       const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
@@ -563,11 +563,11 @@ export default class BattleScene extends Phaser.Scene {
     })
 
     // Switch Action button
-    const switchY = 170 + clickableActions.length * 44 + 8
+    const switchY = 155 + clickableActions.length * 44 + 8
     this.switchActionBtn = this.createButton(120, switchY, 'Switch Action (1)', () => this.onSwitchActionClick(), 160, 40, 0x2980b9, 0x3498db)
 
     // End turn button — fixed at the bottom of the action panel
-    this.endTurnBtn = this.createButton(120, 505, 'End Turn', () => this.onEndTurn(), 160, 40, 0xe67e22, 0xf39c12)
+    this.endTurnBtn = this.createButton(120, 513, 'End Turn', () => this.onEndTurn(), 160, 40, 0xe67e22, 0xf39c12)
 
     // Block indicators
     this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
@@ -1070,7 +1070,7 @@ export default class BattleScene extends Phaser.Scene {
     // Recreate from active actions
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
-      const y = 170 + i * 44
+      const y = 155 + i * 44
       const colors = getActionTypeColor(action.type)
       const label = this.getSkillButtonLabel(action)
       const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
@@ -1078,7 +1078,7 @@ export default class BattleScene extends Phaser.Scene {
     })
 
     // Reposition switch button
-    const switchY = 170 + clickableActions.length * 44 + 8
+    const switchY = 155 + clickableActions.length * 44 + 8
     this.switchActionBtn.bg.destroy()
     this.switchActionBtn.shadow.destroy()
     this.switchActionBtn.hitArea.destroy()
@@ -1971,6 +1971,12 @@ export default class BattleScene extends Phaser.Scene {
   onSkillClick(skill) {
     if (this.challengeActive) return
     if (this.turnManager.currentTurn !== 'player') return
+
+    // Use Item is a special action that opens the item menu.
+    if (skill.type === 'item') {
+      this.onUseItemClick()
+      return
+    }
 
     // Infuse ability selection / target handling
     if (skill.type === 'infuse') {

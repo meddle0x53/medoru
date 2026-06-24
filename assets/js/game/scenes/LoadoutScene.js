@@ -1146,9 +1146,15 @@ export default class LoadoutScene extends Phaser.Scene {
     const listH = 360
     const rowH = 56
 
-    const actions = knownIds
+    let actions = knownIds
       .map(id => ALL_ACTIONS.find(a => a.id === id))
       .filter(Boolean)
+
+    // Use Item is always available but not part of the known pool.
+    const useItemAction = ALL_ACTIONS.find(a => a.id === 'use_item')
+    if (useItemAction && !actions.some(a => a.id === 'use_item')) {
+      actions = [useItemAction, ...actions]
+    }
 
     // Scrollable container
     this.abilityListContainer = this.add.container(listX, listY)
@@ -1408,6 +1414,31 @@ export default class LoadoutScene extends Phaser.Scene {
       const btn = this.createMiniButton(0, btnY, label, color, onClick)
       overlay.add(btn.container)
       btnY += 42
+    }
+
+    // Use Item is always available in the battle pool, but it still needs to be
+    // activated to appear as a combat button.
+    if (action.id === 'use_item') {
+      if (isActive) {
+        addDialogBtn('Deactivate', 0xf39c12, () => {
+          this.deactivateAbility(action.id)
+          this.closeAbilityDialog()
+          this.showTab('abilities')
+          this.refreshActionSlots()
+        })
+      } else {
+        const activeFull = this.player.loadout.activeActionIds.length >= maxActive
+        addDialogBtn(activeFull ? 'Active Slots Full' : 'Activate', activeFull ? 0x555555 : 0x3498db, () => {
+          if (activeFull) return
+          this.activateAbility(action.id)
+          this.closeAbilityDialog()
+          this.showTab('abilities')
+          this.refreshActionSlots()
+        })
+      }
+      addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
+      this.abilityDialog = overlay
+      return
     }
 
     if (!inBattle) {

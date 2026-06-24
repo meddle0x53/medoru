@@ -29,7 +29,56 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
        |> assign(:test, test)
        |> assign(:step_count, step_count)
        |> assign(:published_classrooms, published_classrooms)
-       |> assign(:current_user, user)}
+       |> assign(:current_user, user)
+       |> assign(:editing_details, false)
+       |> assign(:details_form, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("edit_details", _params, socket) do
+    changeset = Tests.change_teacher_test(socket.assigns.test)
+
+    {:noreply,
+     socket
+     |> assign(:editing_details, true)
+     |> assign(:details_form, to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("cancel_edit_details", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:editing_details, false)
+     |> assign(:details_form, nil)}
+  end
+
+  @impl true
+  def handle_event("validate_details", %{"test" => test_params}, socket) do
+    changeset =
+      socket.assigns.test
+      |> Tests.change_teacher_test(test_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign(socket, :details_form, to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("save_details", %{"test" => test_params}, socket) do
+    test = socket.assigns.test
+
+    case Tests.update_test(test, test_params) do
+      {:ok, updated_test} ->
+        {:noreply,
+         socket
+         |> assign(:test, updated_test)
+         |> assign(:page_title, updated_test.title)
+         |> assign(:editing_details, false)
+         |> assign(:details_form, nil)
+         |> put_flash(:info, gettext("Test details updated."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, :details_form, to_form(changeset))}
     end
   end
 
@@ -95,48 +144,117 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to My Tests")}
           </.link>
 
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-3xl font-bold text-base-content">{@test.title}</h1>
-                <.setup_state_badge state={@test.setup_state} />
-              </div>
-              <p class="text-secondary max-w-xl">
-                {@test.description || gettext("No description")}
-              </p>
-            </div>
+          <%= if @editing_details do %>
+            <div class="card bg-base-100 border border-base-300 shadow-sm">
+              <div class="card-body">
+                <.form
+                  for={@details_form}
+                  id="test-details-form"
+                  phx-change="validate_details"
+                  phx-submit="save_details"
+                  class="space-y-4"
+                >
+                  <div>
+                    <label class="label" for={@details_form[:title].id}>
+                      <span class="label-text">{gettext("Test Title")}</span>
+                    </label>
+                    <.input
+                      field={@details_form[:title]}
+                      type="text"
+                      placeholder={gettext("e.g., N5 Vocabulary Quiz")}
+                      class="input input-bordered w-full"
+                      phx-debounce="300"
+                    />
+                  </div>
 
-            <%!-- Actions based on state --%>
-            <div class="flex gap-2">
-              <%= case @test.setup_state do %>
-                <% "in_progress" -> %>
-                  <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary">
-                    <.icon name="hero-pencil" class="w-4 h-4 mr-2" /> Edit Test
-                  </.link>
-                <% "ready" -> %>
-                  <.link navigate={~p"/teacher/tests/#{@test.id}/publish"} class="btn btn-success">
-                    <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Publish
-                  </.link>
-                  <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-ghost">
-                    <.icon name="hero-pencil" class="w-4 h-4" />
-                  </.link>
-                <% "published" -> %>
-                  <button
-                    phx-click="archive"
-                    class="btn btn-warning"
-                    data-confirm={
-                      gettext("Archive this test? It won't be available to students anymore.")
-                    }
-                  >
-                    <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> Archive
-                  </button>
-                <% "archived" -> %>
-                  <button phx-click="publish" class="btn btn-success">
-                    <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Republish
-                  </button>
-              <% end %>
+                  <div>
+                    <label class="label" for={@details_form[:description].id}>
+                      <span class="label-text">
+                        {gettext("Description")}
+                        <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
+                      </span>
+                    </label>
+                    <.input
+                      field={@details_form[:description]}
+                      type="textarea"
+                      placeholder={gettext("Describe what this test covers...")}
+                      rows="3"
+                      class="textarea textarea-bordered w-full"
+                      phx-debounce="300"
+                    />
+                  </div>
+
+                  <div class="flex justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      phx-click="cancel_edit_details"
+                      class="btn btn-ghost btn-sm"
+                    >
+                      {gettext("Cancel")}
+                    </button>
+                    <button
+                      type="submit"
+                      class="btn btn-primary btn-sm"
+                      disabled={!@details_form.source.valid?}
+                    >
+                      {gettext("Save")}
+                    </button>
+                  </div>
+                </.form>
+              </div>
             </div>
-          </div>
+          <% else %>
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-3 mb-2">
+                  <h1 class="text-3xl font-bold text-base-content">{@test.title}</h1>
+                  <.setup_state_badge state={@test.setup_state} />
+                </div>
+                <p class="text-secondary max-w-xl">
+                  {@test.description || gettext("No description")}
+                </p>
+              </div>
+
+              <%!-- Actions based on state --%>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  phx-click="edit_details"
+                  class="btn btn-ghost btn-sm"
+                  title={gettext("Edit title and description")}
+                >
+                  <.icon name="hero-pencil" class="w-4 h-4" />
+                </button>
+                <%= case @test.setup_state do %>
+                  <% "in_progress" -> %>
+                    <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-primary">
+                      <.icon name="hero-pencil" class="w-4 h-4 mr-2" /> Edit Test
+                    </.link>
+                  <% "ready" -> %>
+                    <.link navigate={~p"/teacher/tests/#{@test.id}/publish"} class="btn btn-success">
+                      <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Publish
+                    </.link>
+                    <.link navigate={~p"/teacher/tests/#{@test.id}/edit"} class="btn btn-ghost">
+                      <.icon name="hero-pencil" class="w-4 h-4" />
+                    </.link>
+                  <% "published" -> %>
+                    <button
+                      phx-click="archive"
+                      class="btn btn-warning"
+                      data-confirm={
+                        gettext("Archive this test? It won't be available to students anymore.")
+                      }
+                    >
+                      <.icon name="hero-archive-box" class="w-4 h-4 mr-2" /> Archive
+                    </button>
+                  <% "archived" -> %>
+                    <button phx-click="publish" class="btn btn-success">
+                      <.icon name="hero-rocket-launch" class="w-4 h-4 mr-2" /> Republish
+                    </button>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
