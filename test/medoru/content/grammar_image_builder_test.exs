@@ -59,7 +59,10 @@ defmodule Medoru.Content.GrammarImageBuilderTest do
       [grammar_step, text_step] = steps
       assert grammar_step.step_type == "grammar"
       assert grammar_step.title == "V て-form"
-      assert grammar_step.explanation == "The te-form of verbs."
+      assert grammar_step.explanation =~ "The te-form of verbs."
+      assert grammar_step.explanation =~ "Example 1:"
+      assert grammar_step.explanation =~ "食べて"
+      assert grammar_step.explanation =~ "eat (te-form)"
       assert length(grammar_step.examples) == 1
       example = hd(grammar_step.examples)
       assert example["sentence"] == "食べて"
@@ -139,6 +142,84 @@ defmodule Medoru.Content.GrammarImageBuilderTest do
                GrammarImageBuilder.build_lesson_from_extracted_grammar(data, %{}, user.id)
 
       assert lesson.title == "Grammar lesson from image — change the name"
+    end
+
+    test "embeds examples into text step description sections", %{user: user} do
+      data = %{
+        "title" => "Test",
+        "sections" => [
+          %{
+            "number" => 1,
+            "title" => "Introduction",
+            "description" => "This is an intro.",
+            "examples" => [
+              %{"sentence" => "hello", "reading" => "hello", "meaning" => "greeting"}
+            ],
+            "step_type" => "text"
+          }
+        ]
+      }
+
+      assert {:ok, lesson} =
+               GrammarImageBuilder.build_lesson_from_extracted_grammar(data, %{}, user.id)
+
+      steps = Content.list_grammar_lesson_steps(lesson.id)
+      step = hd(steps)
+
+      assert step.step_type == "text"
+      assert step.explanation_sections != []
+      joined = Enum.join(step.explanation_sections, " ")
+      assert joined =~ "This is an intro."
+      assert joined =~ "Example 1:"
+      assert joined =~ "hello"
+      assert joined =~ "greeting"
+    end
+
+    test "handles long descriptions without truncation errors", %{user: user} do
+      long_description = String.duplicate("This is a long sentence. ", 50)
+
+      data = %{
+        "title" => "Test",
+        "sections" => [
+          %{
+            "number" => 1,
+            "title" => "V て-form",
+            "description" => long_description,
+            "examples" => [
+              %{"sentence" => "食べて", "reading" => "たべて", "meaning" => "eat"}
+            ],
+            "step_type" => "grammar"
+          }
+        ]
+      }
+
+      assert {:ok, _lesson} =
+               GrammarImageBuilder.build_lesson_from_extracted_grammar(data, %{}, user.id)
+    end
+
+    test "slices lesson title and description to fit validation limits", %{user: user} do
+      data = %{
+        "title" => String.duplicate("A", 200),
+        "sections" => [
+          %{
+            "number" => 1,
+            "title" => "Section",
+            "description" => "desc",
+            "examples" => [],
+            "step_type" => "text"
+          }
+        ]
+      }
+
+      assert {:ok, lesson} =
+               GrammarImageBuilder.build_lesson_from_extracted_grammar(
+                 data,
+                 %{description: String.duplicate("B", 600)},
+                 user.id
+               )
+
+      assert String.length(lesson.title) == 100
+      assert String.length(lesson.description) == 500
     end
 
     test "handles up to 5 examples per grammar step", %{user: user} do

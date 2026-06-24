@@ -28,6 +28,13 @@ export function getMaxActiveActions(capacity) {
  */
 export function getAvailableActions(player) {
   return ALL_ACTIONS.filter(a => {
+    if (a.requiredSocketCharm) {
+      if (!player.hasSocketCharmEquipped(a.requiredSocketCharm)) return false
+    }
+    if (a.requiredCharmFamily) {
+      const type = a.equipmentType || 'weapon'
+      if (player.getSocketCharmFamily(type) !== a.requiredCharmFamily) return false
+    }
     if (!a.requiredEquipment) return true
     if (a.equipmentType === 'weapon') return player.weapon?.name === a.requiredEquipment
     if (a.equipmentType === 'shield') return player.shield?.name === a.requiredEquipment

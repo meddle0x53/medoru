@@ -2,11 +2,12 @@ import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
 import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions } from '../data/actions.js'
-import { getCharmById, getCharmsByType, CHARM_TYPES, getWeaponCharmSlots, getShieldCharmSlots } from '../data/charms.js'
+import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
+import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
 
-const TAB_NAMES = ['items', 'heroCharms', 'weaponCharms', 'abilities', 'stats']
-const TAB_LABELS = ['Items', 'Hero', 'Weapon', 'Abilities', 'Stats']
+const TAB_NAMES = ['items', 'heroCharms', 'weapons', 'abilities', 'stats']
+const TAB_LABELS = ['Items', 'Hero', 'Weapons', 'Abilities', 'Stats']
 
 export default class LoadoutScene extends Phaser.Scene {
   constructor() {
@@ -109,6 +110,28 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Equipped charm glows (reuse BattleScene logic)
     this.refreshCharmGlows()
+
+    // Socket charms buttons above weapon and shield charm columns.
+    this.createSocketButton(70, 266)
+    this.createSocketButton(370, 266)
+  }
+
+  createSocketButton(x, y) {
+    const size = 36
+    const bg = this.add.rectangle(x, y, size, size, 0x2c3e50)
+      .setStrokeStyle(2, 0xf39c12)
+      .setInteractive({ useHandCursor: true })
+      .setOrigin(0.5)
+    const text = this.add.text(x, y, '穴', {
+      fontFamily: FONTS.kanji.fontFamily,
+      fontSize: '18px',
+      color: '#f39c12',
+    }).setOrigin(0.5)
+    this.leftPanel.add([bg, text])
+
+    bg.on('pointerdown', () => this.scene.start('SocketScene', { player: this.player }))
+    bg.on('pointerover', () => bg.setFillStyle(0x34495e))
+    bg.on('pointerout', () => bg.setFillStyle(0x2c3e50))
   }
 
   createCharmSlots() {
@@ -131,26 +154,24 @@ export default class LoadoutScene extends Phaser.Scene {
       this.charmSlots.push(this.createSlot(pos.x, pos.y, 'hero', i, unlocked, slotRadius))
     }
 
-    // Weapon charm slots: left side of body
-    const weaponSlotCount = this.player.getWeaponCharmSlots()
+    // Primary weapon socket slots: left side of body
     for (let i = 0; i < 4; i++) {
       const x = cx - 150
       const y = cy - 50 + i * 44
-      const unlocked = i < weaponSlotCount
-      this.charmSlots.push(this.createSlot(x, y, 'weapon', i, unlocked, slotRadius))
+      const unlocked = i < this.player.getWeaponCharmSlots()
+      this.charmSlots.push(this.createSlot(x, y, 'primary_weapon', i, unlocked, slotRadius, this.player.weapon))
     }
 
-    // Shield charm slots: right side of body
-    const shieldSlotCount = this.player.getShieldCharmSlots()
+    // Secondary weapon socket slots: right side of body
     for (let i = 0; i < 4; i++) {
       const x = cx + 150
       const y = cy - 50 + i * 44
-      const unlocked = i < shieldSlotCount
-      this.charmSlots.push(this.createSlot(x, y, 'shield', i, unlocked, slotRadius))
+      const unlocked = i < this.player.getShieldCharmSlots()
+      this.charmSlots.push(this.createSlot(x, y, 'secondary_weapon', i, unlocked, slotRadius, this.player.shield))
     }
   }
 
-  createSlot(x, y, type, index, unlocked = true, radius = 18) {
+  createSlot(x, y, type, index, unlocked = true, radius = 18, equipment = null) {
     const g = this.add.graphics()
     if (unlocked) {
       g.lineStyle(2, 0x3498db, 0.5)
@@ -178,11 +199,18 @@ export default class LoadoutScene extends Phaser.Scene {
       hitArea: null,
       charmId: null,
       glowContainer: null,
+      equipment: equipment || null,
+      socket: !!equipment,
     }
 
     // Populate from loadout
-    const loadoutKey = type === 'hero' ? 'heroCharmIds' : type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
-    const equipped = this.player.loadout[loadoutKey][index]
+    let equipped = null
+    if (equipment) {
+      equipped = equipment.socketCharmIds?.[index] || null
+    } else {
+      const loadoutKey = type === 'hero' ? 'heroCharmIds' : type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+      equipped = this.player.loadout[loadoutKey][index] || null
+    }
     if (equipped) {
       slot.charmId = equipped
     }
@@ -206,8 +234,12 @@ export default class LoadoutScene extends Phaser.Scene {
 
   syncSlotCharmIds() {
     this.charmSlots.forEach(slot => {
-      const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
-      slot.charmId = this.player.loadout[loadoutKey][slot.index] || null
+      if (slot.equipment) {
+        slot.charmId = slot.equipment.socketCharmIds?.[slot.index] || null
+      } else {
+        const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+        slot.charmId = this.player.loadout[loadoutKey][slot.index] || null
+      }
     })
   }
 
@@ -377,7 +409,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
     this.charmSlots.forEach(slot => {
       if (!slot.charmId || !slot.unlocked) return
-      const charm = getCharmById(slot.charmId)
+      const charm = slot.equipment ? getSocketCharmById(slot.charmId) : getCharmById(slot.charmId)
       if (!charm) return
 
       const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
@@ -413,11 +445,15 @@ export default class LoadoutScene extends Phaser.Scene {
 
   unequipCharmFromSlot(slot) {
     if (!slot.charmId) return
-    const charm = getCharmById(slot.charmId)
-    const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
-    this.player.loadout[loadoutKey][slot.index] = null
-    this.player._charmEffects = null
-    this.player.saveLoadout()
+    const charm = slot.equipment ? getSocketCharmById(slot.charmId) : getCharmById(slot.charmId)
+    if (slot.equipment) {
+      this.player.unequipSocketCharm(slot.equipment, slot.index)
+    } else {
+      const loadoutKey = slot.type === 'hero' ? 'heroCharmIds' : slot.type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
+      this.player.loadout[loadoutKey][slot.index] = null
+      this.player._charmEffects = null
+      this.player.saveLoadout()
+    }
     this.syncSlotCharmIds()
     this.refreshCharmGlows()
     this.showTab(this.currentTab)
@@ -438,12 +474,12 @@ export default class LoadoutScene extends Phaser.Scene {
 
   createTabs() {
     this.tabButtons = []
-    const tabWidth = 98
-    const startX = 460 + tabWidth / 2
+    this.tabWidth = 500 / TAB_NAMES.length
+    const startX = 460 + this.tabWidth / 2
     const y = 48
 
     TAB_NAMES.forEach((key, i) => {
-      const x = startX + i * tabWidth
+      const x = startX + i * this.tabWidth
       const text = this.add.text(x, y, TAB_LABELS[i], {
         fontFamily: FONTS.default.fontFamily,
         fontSize: '14px',
@@ -451,7 +487,7 @@ export default class LoadoutScene extends Phaser.Scene {
       }).setOrigin(0.5)
 
       // Larger invisible hit area for mobile
-      const hitArea = this.add.rectangle(x, y, tabWidth - 4, 36, 0x000000, 0)
+      const hitArea = this.add.rectangle(x, y, this.tabWidth - 4, 36, 0x000000, 0)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.showTab(key))
       this.rightPanel.add(hitArea)
@@ -473,7 +509,8 @@ export default class LoadoutScene extends Phaser.Scene {
     const x = activeBtn.text.x
     const y = activeBtn.text.y + 16
     this.tabIndicator.fillStyle(0x3498db, 1)
-    this.tabIndicator.fillRect(x - 42, y, 84, 3)
+    const width = this.tabWidth - 14
+    this.tabIndicator.fillRect(x - width / 2, y, width, 3)
   }
 
   showTab(tabName) {
@@ -495,7 +532,7 @@ export default class LoadoutScene extends Phaser.Scene {
     switch (tabName) {
       case 'items': this.createItemsTab(); break
       case 'heroCharms': this.createCharmsTab(CHARM_TYPES.HERO); break
-      case 'weaponCharms': this.createCharmsTab(CHARM_TYPES.WEAPON); break
+      case 'weapons': this.createWeaponsTab(); break
       case 'abilities': this.createAbilitiesTab(); break
       case 'stats': this.createStatsTab(); break
     }
@@ -759,13 +796,22 @@ export default class LoadoutScene extends Phaser.Scene {
 
   // ---------- Charms Tabs ----------
 
-  createCharmsTab(charmType) {
-    const charms = getCharmsByType(charmType)
+  createCharmsTab(charmType, options = {}) {
+    const { startY = 80, container = this.tabContent } = options
+    const isSocketTab = charmType === 'primary_weapon' || charmType === 'secondary_weapon'
+    let charms
+    if (isSocketTab) {
+      const equipmentType = charmType
+      charms = (this.player.loadout.ownedSocketCharmIds || [])
+        .map(id => getSocketCharmById(id))
+        .filter(c => c && c.equipmentType === equipmentType)
+    } else {
+      charms = getCharmsByType(charmType)
+    }
     const cols = 2
     const cellW = 230
     const cellH = 90
     const startX = 470
-    const startY = 80
 
     charms.forEach((charm, i) => {
       const col = i % cols
@@ -773,28 +819,78 @@ export default class LoadoutScene extends Phaser.Scene {
       const x = startX + col * cellW
       const y = startY + row * cellH
       const card = this.createCharmCard(x, y, charm, charmType)
-      this.tabContent.add(card.container)
+      container.add(card.container)
     })
 
     // Slot info text
     const slotInfo = charmType === CHARM_TYPES.HERO
       ? `Slots: ${this.player.loadout.heroCharmIds.filter(Boolean).length}/${this.player.getHeroCharmSlots()}`
-      : charmType === CHARM_TYPES.WEAPON
-        ? `Slots: ${this.player.loadout.weaponCharmIds.filter(Boolean).length}/${this.player.getWeaponCharmSlots()}`
-        : `Slots: ${this.player.loadout.shieldCharmIds.filter(Boolean).length}/${this.player.getShieldCharmSlots()}`
+      : charmType === 'primary_weapon'
+        ? `Sockets: ${(this.player.weapon?.socketCharmIds || []).filter(Boolean).length}/${this.player.getWeaponCharmSlots()}`
+        : `Sockets: ${(this.player.shield?.socketCharmIds || []).filter(Boolean).length}/${this.player.getShieldCharmSlots()}`
 
     const infoText = this.add.text(690, 470, slotInfo, {
       ...FONTS.default,
       fontSize: '14px',
       color: '#7f8c8d',
     }).setOrigin(0.5)
-    this.tabContent.add(infoText)
+    container.add(infoText)
+  }
+
+  createWeaponsTab() {
+    this.weaponsSubTab = this.weaponsSubTab || 'primary_weapon'
+
+    const subTabY = 80
+    const subTabW = 100
+    const startX = 710 - subTabW / 2 - 70
+
+    const createSubTabBtn = (key, label, x) => {
+      const text = this.add.text(x, subTabY, label, {
+        ...FONTS.default,
+        fontSize: '14px',
+        color: key === this.weaponsSubTab ? '#f39c12' : '#7f8c8d',
+      }).setOrigin(0.5)
+      const hitArea = this.add.rectangle(x, subTabY, subTabW, 32, 0x000000, 0)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.showWeaponsSubTab(key))
+      this.tabContent.add([text, hitArea])
+      return { key, text }
+    }
+
+    this.weaponsSubTabButtons = [
+      createSubTabBtn('primary_weapon', 'Primary', startX),
+      createSubTabBtn('secondary_weapon', 'Secondary', startX + subTabW + 20),
+    ]
+
+    this.weaponsContent = this.add.container(0, 0)
+    this.tabContent.add(this.weaponsContent)
+
+    this.showWeaponsSubTab(this.weaponsSubTab)
+  }
+
+  showWeaponsSubTab(subType) {
+    this.weaponsSubTab = subType
+
+    if (this.weaponsSubTabButtons) {
+      this.weaponsSubTabButtons.forEach(({ key, text }) => {
+        text.setColor(key === subType ? '#f39c12' : '#7f8c8d')
+      })
+    }
+
+    if (this.weaponsContent) {
+      this.weaponsContent.removeAll(true)
+    }
+
+    this.createCharmsTab(subType, { startY: 120, container: this.weaponsContent })
   }
 
   createCharmCard(x, y, charm, targetType) {
     const container = this.add.container(x, y)
     const colorHex = '#' + charm.color.toString(16).padStart(6, '0')
-    const isEquipped = this.player.getEquippedCharms().some(c => c.id === charm.id)
+    const isSocketCharm = !!charm.equipmentType
+    const isEquipped = isSocketCharm
+      ? this.player.hasSocketCharmEquipped(charm.id)
+      : this.player.getEquippedCharms().some(c => c.id === charm.id)
     const cardW = 220
     const cardH = 80
 
@@ -824,12 +920,18 @@ export default class LoadoutScene extends Phaser.Scene {
     })
     container.add(name)
 
-    // Effect
-    const effectText = charm.effect.stat + ' +' + charm.effect.value
+    // Effect / description
+    let effectText = ''
+    if (charm.effect) {
+      effectText = charm.effect.stat + ' +' + charm.effect.value
+    } else if (charm.description) {
+      effectText = charm.description
+    }
     const effect = this.add.text(80, 44, effectText, {
       ...FONTS.default,
       fontSize: '11px',
       color: '#7f8c8d',
+      wordWrap: { width: 130 },
     })
     container.add(effect)
 
@@ -906,7 +1008,34 @@ export default class LoadoutScene extends Phaser.Scene {
     // Ensure slot state is fresh before looking for empty slots
     this.syncSlotCharmIds()
 
-    // Find first empty unlocked slot of the correct type
+    // Socket charms (weapon/shield)
+    if (charm.equipmentType) {
+      const maxSlots = targetType === 'primary_weapon'
+        ? this.player.getWeaponCharmSlots()
+        : this.player.getShieldCharmSlots()
+      const emptySlot = this.charmSlots.find(slot =>
+        slot.type === targetType && slot.unlocked && slot.index < maxSlots && !slot.charmId
+      )
+      if (emptySlot) {
+        this.equipCharmToSlot(charm, targetType, emptySlot)
+      } else {
+        const firstSlot = this.charmSlots.find(slot =>
+          slot.type === targetType && slot.unlocked && slot.index < maxSlots
+        )
+        if (firstSlot) {
+          this.equipCharmToSlot(charm, targetType, firstSlot)
+        } else {
+          this.showToast('No free charm slots')
+          return
+        }
+      }
+      this.syncSlotCharmIds()
+      this.refreshCharmGlows()
+      this.showTab(this.currentTab)
+      return
+    }
+
+    // Legacy hero/weapon/shield charms
     const emptySlot = this.charmSlots.find(slot =>
       slot.type === targetType && slot.unlocked && !slot.charmId
     )
@@ -945,6 +1074,27 @@ export default class LoadoutScene extends Phaser.Scene {
 
   equipCharmToSlot(charm, targetType, slot) {
     this.unequipCharmIfEquipped(charm.id)
+
+    // Socket charms on weapon/shield equipment
+    if (slot.equipment) {
+      if (charm.equipmentType !== slot.type) {
+        this.showToast('That charm does not fit there.')
+        return
+      }
+      if (charm.slot && charm.slot !== slot.index + 1) {
+        this.showToast('That charm fits a different socket.')
+        return
+      }
+      const result = this.player.equipSocketCharm(slot.equipment, slot.index, charm.id)
+      if (!result.ok) {
+        this.showToast(result.reason)
+        return
+      }
+      this.showToast(`${charm.name} equipped`)
+      return
+    }
+
+    // Legacy hero/weapon/shield charm slots
     const loadoutKey = targetType === 'hero' ? 'heroCharmIds' : targetType === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
     const arr = this.player.loadout[loadoutKey]
     const oldIdx = arr.indexOf(charm.id)
@@ -956,12 +1106,27 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   unequipCharmIfEquipped(charmId) {
+    // Socket charms on weapon/shield
+    for (const equipment of [this.player.weapon, this.player.shield]) {
+      const ids = equipment?.socketCharmIds
+      if (!ids) continue
+      const idx = ids.indexOf(charmId)
+      if (idx >= 0) {
+        ids[idx] = null
+        this.player.saveLoadout()
+        this.syncSlotCharmIds()
+        return
+      }
+    }
+
+    // Legacy hero/weapon/shield charms
     for (const type of ['hero', 'weapon', 'shield']) {
       const key = type === 'hero' ? 'heroCharmIds' : type === 'weapon' ? 'weaponCharmIds' : 'shieldCharmIds'
       const arr = this.player.loadout[key]
       const idx = arr.indexOf(charmId)
       if (idx >= 0) {
         arr[idx] = null
+        this.player._charmEffects = null
         this.player.saveLoadout()
         this.syncSlotCharmIds()
         return

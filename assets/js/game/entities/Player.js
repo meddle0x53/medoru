@@ -2,6 +2,7 @@ import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
 import { splitActions, getMaxActiveActions } from '../data/actions.js'
 import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
+import { gradeForSchedule, getSocketCharmById } from '../data/socketCharms.js'
 import { generateMap, MAP_TEMPLATES } from '../systems/MapGenerator.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
@@ -29,10 +30,11 @@ function createDefaultWeapon() {
     baseDamage: 20,
     level: 0,
     maxLevel: 10,
-    scaling: {
-      strength: 'C', // 0.50
-      skill: 'D',    // 0.30
+    scalingSchedule: {
+      strength: { 0: 'C', 3: 'B', 9: 'A' },
+      skill: { 0: 'D', 5: 'C' },
     },
+    socketCharmIds: [null, null, null, null],
     kanjiPowerups: [
       { kanji: '力', name: 'chikara', learned: true, effect: 'flat_bonus', hint: { en: 'Make a POWERFUL swing.', ja: '強力な一振りを。' } },
     ],
@@ -49,9 +51,10 @@ function createDefaultShield() {
     baseDefense: 5,
     level: 0,
     maxLevel: 10,
-    scaling: {
-      strength: 'D', // 0.30
+    scalingSchedule: {
+      strength: { 0: 'D', 5: 'C', 9: 'B' },
     },
+    socketCharmIds: [null, null, null, null],
     kanjiPowerup: { kanji: '盾', name: 'tate', learned: true, effect: 'flat_defense', bonus: 3, hint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' } },
     moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
   }
@@ -64,10 +67,43 @@ export function getUpgradeCost(level) {
   return 50
 }
 
-function improveGrade(grade) {
-  const idx = GRADE_ORDER.indexOf(grade)
-  if (idx > 0) return GRADE_ORDER[idx - 1]
-  return grade
+function getBaseScaling(equipment) {
+  if (!equipment || !equipment.scalingSchedule) return {}
+  const level = equipment.level || 0
+  const scaling = {}
+  for (const [stat, schedule] of Object.entries(equipment.scalingSchedule)) {
+    scaling[stat] = gradeForSchedule(schedule, level)
+  }
+  return scaling
+}
+
+function applySocketScaling(baseScaling, equipment) {
+  const sockets = equipment?.socketCharmIds || []
+  for (let i = 0; i < sockets.length; i++) {
+    const charmId = sockets[i]
+    if (!charmId) continue
+    const charm = getSocketCharmById(charmId)
+    if (!charm || !charm.scaling) continue
+    // Only socket 1 overrides scaling for now.
+    if (i !== 0) continue
+    for (const [stat, rule] of Object.entries(charm.scaling)) {
+      if (rule === null) {
+        delete baseScaling[stat]
+      } else if (typeof rule === 'string') {
+        baseScaling[stat] = rule
+      } else if (rule.fixed) {
+        baseScaling[stat] = rule.fixed
+      } else if (rule.milestones) {
+        baseScaling[stat] = gradeForSchedule(rule.milestones, equipment.level || 0)
+      }
+    }
+  }
+  return baseScaling
+}
+
+export function getEffectiveScaling(equipment) {
+  const base = getBaseScaling(equipment)
+  return applySocketScaling(base, equipment)
 }
 
 // Soft-cap stat factor: returns 0.0–1.0 based on stat value
@@ -140,6 +176,7 @@ export default class Player extends Character {
       'infuse_fire', 'infuse_water', 'infuse_wind', 'infuse_earth',
       'infuse_void', 'infuse_frost', 'infuse_bleed', 'infuse_poison',
     ]
+    const startingGold = 10 * (this.level || 1)
     this.loadout = this.loadLoadout() || {
       class: 'warrior',
       activeItemIds: ['health_potion', 'stone'],
@@ -151,9 +188,10 @@ export default class Player extends Character {
       statPoints: startingStatPoints,
       statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       permanentStatPointBonus: 0,
-      gold: 0,
+      gold: startingGold,
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
+      ownedSocketCharmIds: ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield'],
       mapState: null,
       mapVersion: MAP_VERSION,
     }
@@ -233,8 +271,8 @@ export default class Player extends Character {
     const base = w.baseDamage
     let bonus = 0
 
-    // Apply scaling for each stat
-    for (const [stat, grade] of Object.entries(w.scaling)) {
+    // Apply effective scaling (base + socket charm overrides)
+    for (const [stat, grade] of Object.entries(getEffectiveScaling(w))) {
       const multiplier = SCALING_MULTIPLIERS[grade] || 0
       const statValue = this.getStatValue(stat)
       const factor = getStatFactor(statValue)
@@ -303,8 +341,8 @@ export default class Player extends Character {
     const base = s.baseDefense
     let bonus = 0
 
-    // Apply scaling for each stat
-    for (const [stat, grade] of Object.entries(s.scaling)) {
+    // Apply effective scaling (base + socket charm overrides)
+    for (const [stat, grade] of Object.entries(getEffectiveScaling(s))) {
       const multiplier = SCALING_MULTIPLIERS[grade] || 0
       const statValue = this.getStatValue(stat)
       const factor = getStatFactor(statValue)
@@ -442,6 +480,9 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
         }
+        if (!Array.isArray(loadout.ownedSocketCharmIds)) {
+          loadout.ownedSocketCharmIds = ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield']
+        }
         if (!loadout.mapState || typeof loadout.mapState !== 'object') {
           loadout.mapState = null
         }
@@ -451,6 +492,26 @@ export default class Player extends Character {
         }
         if (!loadout.shield || typeof loadout.shield !== 'object') {
           loadout.shield = createDefaultShield()
+        }
+        // Migration: move old flat `scaling` field to `scalingSchedule`.
+        if (loadout.weapon.scaling && !loadout.weapon.scalingSchedule) {
+          loadout.weapon.scalingSchedule = {
+            strength: { 0: 'C', 3: 'B', 9: 'A' },
+            skill: { 0: 'D', 5: 'C' },
+          }
+          delete loadout.weapon.scaling
+        }
+        if (loadout.shield.scaling && !loadout.shield.scalingSchedule) {
+          loadout.shield.scalingSchedule = {
+            strength: { 0: 'D', 5: 'C', 9: 'B' },
+          }
+          delete loadout.shield.scaling
+        }
+        if (!Array.isArray(loadout.weapon.socketCharmIds)) {
+          loadout.weapon.socketCharmIds = [null, null, null, null]
+        }
+        if (!Array.isArray(loadout.shield.socketCharmIds)) {
+          loadout.shield.socketCharmIds = [null, null, null, null]
         }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
@@ -482,11 +543,21 @@ export default class Player extends Character {
   }
 
   getWeaponCharmSlots() {
-    return Math.min(3, Math.floor((this.weapon?.level || 0) / 3))
+    const level = this.weapon?.level || 0
+    if (level >= 7) return 4
+    if (level >= 6) return 3
+    if (level >= 3) return 2
+    if (level >= 1) return 1
+    return 0
   }
 
   getShieldCharmSlots() {
-    return Math.min(3, Math.floor((this.shield?.level || 0) / 3))
+    const level = this.shield?.level || 0
+    if (level >= 7) return 4
+    if (level >= 6) return 3
+    if (level >= 3) return 2
+    if (level >= 1) return 1
+    return 0
   }
 
   getEquippedCharms() {
@@ -663,14 +734,69 @@ export default class Player extends Character {
       item.baseDefense += 1
     }
 
-    if ([3, 6, 9].includes(item.level) && item.scaling) {
-      for (const stat of Object.keys(item.scaling)) {
-        item.scaling[stat] = improveGrade(item.scaling[stat])
-      }
-    }
+    // Base scaling is now derived from scalingSchedule at runtime, so no
+    // per-grade mutation is needed here.
 
     this.saveLoadout()
     return { ok: true, cost, level: item.level, maxLevel: item.maxLevel }
+  }
+
+  equipSocketCharm(equipment, slotIndex, charmId) {
+    if (!equipment) return { ok: false, reason: 'No equipment.' }
+    const maxSlots = equipment === this.weapon ? this.getWeaponCharmSlots() : this.getShieldCharmSlots()
+    if (slotIndex < 0 || slotIndex >= maxSlots) {
+      return { ok: false, reason: 'Socket not unlocked yet.' }
+    }
+    if (charmId) {
+      const charm = getSocketCharmById(charmId)
+      if (!charm) return { ok: false, reason: 'Unknown charm.' }
+      const type = equipment === this.weapon ? 'primary_weapon' : equipment === this.shield ? 'secondary_weapon' : null
+      if (charm.equipmentType !== type) {
+        return { ok: false, reason: 'Charm does not fit this equipment.' }
+      }
+    }
+    if (!equipment.socketCharmIds) equipment.socketCharmIds = [null, null, null, null]
+    equipment.socketCharmIds[slotIndex] = charmId || null
+    this._charmEffects = null
+    this.saveLoadout()
+    return { ok: true }
+  }
+
+  unequipSocketCharm(equipment, slotIndex) {
+    return this.equipSocketCharm(equipment, slotIndex, null)
+  }
+
+  getSocketCharmInSlot(equipment, slotIndex) {
+    const id = equipment?.socketCharmIds?.[slotIndex]
+    return id ? getSocketCharmById(id) : null
+  }
+
+  getEquipmentScaling(equipment) {
+    return getEffectiveScaling(equipment)
+  }
+
+  hasSocketCharmEquipped(charmId) {
+    const weaponIds = this.weapon?.socketCharmIds || []
+    const shieldIds = this.shield?.socketCharmIds || []
+    return [...weaponIds, ...shieldIds].filter(Boolean).includes(charmId)
+  }
+
+  getSocketCharmFamily(equipmentType) {
+    const normalized = equipmentType === 'shield' || equipmentType === 'secondary_weapon'
+      ? 'secondary_weapon'
+      : 'primary_weapon'
+    const equipment = normalized === 'secondary_weapon' ? this.shield : this.weapon
+    const charmId = equipment?.socketCharmIds?.[0]
+    return charmId ? getSocketCharmById(charmId)?.abilityFamily || null : null
+  }
+
+  getEquippedSocketCharmFamilies() {
+    const families = []
+    const weaponFamily = this.getSocketCharmFamily('weapon')
+    if (weaponFamily) families.push(weaponFamily)
+    const shieldFamily = this.getSocketCharmFamily('shield')
+    if (shieldFamily) families.push(shieldFamily)
+    return families
   }
 
   // ---------- Ability Learning ----------
@@ -815,9 +941,10 @@ export default class Player extends Character {
       statPoints: totalStatPoints,
       statAllocations: { vitality: 0, stamina: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       permanentStatPointBonus,
-      gold: 0,
+      gold: 10 * (this.level || 1),
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
+      ownedSocketCharmIds: ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield'],
       mapState: null,
       mapVersion: MAP_VERSION,
       weapon: createDefaultWeapon(),

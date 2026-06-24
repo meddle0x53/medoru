@@ -67,7 +67,7 @@ defmodule Medoru.AI.GrammarParserTest do
       assert step2["step_type"] == "grammar"
     end
 
-    test "text steps have no examples even if AI provided them" do
+    test "text steps keep examples so they can be embedded into the description" do
       data = %{
         "title" => "Test",
         "sections" => [
@@ -86,7 +86,7 @@ defmodule Medoru.AI.GrammarParserTest do
       result = GrammarParser.parse_extracted_grammar(data)
       step = hd(result["sections"])
       assert step["step_type"] == "text"
-      assert step["examples"] == []
+      assert length(step["examples"]) == 1
     end
 
     test "limits examples to 5" do

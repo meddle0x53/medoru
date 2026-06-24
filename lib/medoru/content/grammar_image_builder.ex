@@ -41,8 +41,13 @@ defmodule Medoru.Content.GrammarImageBuilder do
     if sections == [] do
       return_error("No grammar sections found")
     else
-      lesson_title = lesson_attrs[:title] || extracted_data["title"] || @default_title
-      lesson_description = lesson_attrs[:description] || ""
+      lesson_title =
+        (lesson_attrs[:title] || extracted_data["title"] || @default_title)
+        |> String.slice(0, 100)
+
+      lesson_description =
+        (lesson_attrs[:description] || "")
+        |> String.slice(0, 500)
 
       lesson_attrs = %{
         title: lesson_title,
@@ -95,6 +100,7 @@ defmodule Medoru.Content.GrammarImageBuilder do
     title = (section["title"] || "") |> String.slice(0, 100)
     description = section["description"] || ""
     examples = (section["examples"] || []) |> Enum.take(5)
+    full_description = build_full_description(description, examples)
 
     attrs =
       case step_type do
@@ -104,7 +110,7 @@ defmodule Medoru.Content.GrammarImageBuilder do
             custom_lesson_id: lesson_id,
             step_type: "grammar",
             title: title,
-            explanation: String.slice(description, 0, 10_000),
+            explanation: String.slice(full_description, 0, 10_000),
             explanation_sections: [],
             pattern_elements: @placeholder_pattern,
             examples: examples,
@@ -121,7 +127,7 @@ defmodule Medoru.Content.GrammarImageBuilder do
             step_type: "text",
             title: title,
             explanation: "",
-            explanation_sections: split_description(description),
+            explanation_sections: split_description(full_description),
             pattern_elements: [],
             examples: [],
             word_colors: [],
@@ -145,6 +151,37 @@ defmodule Medoru.Content.GrammarImageBuilder do
 
         Logger.error("[GrammarImageBuilder] Step error: #{error_msg}")
         return_error(error_msg)
+    end
+  end
+
+  defp build_full_description(description, examples) do
+    description = String.trim(description)
+
+    example_lines =
+      examples
+      |> Enum.with_index(1)
+      |> Enum.reject(fn {ex, _} -> String.trim(ex["sentence"] || "") == "" end)
+      |> Enum.map(fn {ex, index} ->
+        sentence = String.trim(ex["sentence"] || "")
+        reading = String.trim(ex["reading"] || "")
+        meaning = String.trim(ex["meaning"] || "")
+
+        line = "**Example #{index}:** #{sentence}"
+        line = if reading != "", do: line <> "（#{reading}）", else: line
+        line = if meaning != "", do: line <> " — #{meaning}", else: line
+        line
+      end)
+
+    if example_lines == [] do
+      description
+    else
+      formatted = Enum.join(example_lines, "\n\n")
+
+      if description == "" do
+        formatted
+      else
+        description <> "\n\n" <> formatted
+      end
     end
   end
 

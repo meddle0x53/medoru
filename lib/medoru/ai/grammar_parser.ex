@@ -59,9 +59,6 @@ defmodule Medoru.AI.GrammarParser do
 
     step_type = if is_grammar, do: "grammar", else: "text"
 
-    # For text steps, discard examples (they go in description only)
-    examples = if step_type == "text", do: [], else: examples
-
     %{
       "number" => section["number"] || 0,
       "title" => String.trim(title),

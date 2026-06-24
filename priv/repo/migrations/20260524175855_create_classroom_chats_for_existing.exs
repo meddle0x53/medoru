@@ -5,41 +5,51 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
 
   alias Medoru.Repo
   alias Medoru.Chat.{Conversation, ConversationParticipant}
-  alias Medoru.Classrooms.{Classroom, ClassroomMembership}
+  alias Medoru.Classrooms.ClassroomMembership
 
   def up do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    # Find all classrooms without a linked conversation
+    # Find all classrooms without a linked conversation.
+    # Select only columns that exist at this point in time so adding later
+    # columns (e.g. classrooms.theme) does not break this migration.
     classrooms_without_chat =
       Repo.all(
-        from(c in Classroom,
-          left_join: conv in Conversation,
+        from(c in "classrooms",
+          left_join: conv in "conversations",
           on: conv.classroom_id == c.id,
           where: is_nil(conv.id),
-          select: c
+          select: %{
+            id: c.id,
+            name: c.name,
+            teacher_id: c.teacher_id,
+            inserted_at: c.inserted_at
+          }
         )
       )
 
     for classroom <- classrooms_without_chat do
-      # Create the conversation
-      {:ok, conversation} =
-        %Conversation{}
-        |> Ecto.Changeset.change(%{
+      # Create the conversation using insert_all with the schema module so UUIDs
+      # are encoded properly, but pass only the columns that exist now.
+      conversation_id = Ecto.UUID.generate()
+
+      Repo.insert_all(Conversation, [
+        %{
+          id: conversation_id,
           title: classroom.name,
           is_group: true,
           classroom_id: classroom.id,
-          started_at: classroom.inserted_at || now
-        })
-        |> Repo.insert()
+          started_at: classroom.inserted_at || now,
+          inserted_at: now,
+          updated_at: now
+        }
+      ])
 
       # Add teacher as participant
-      # Use insert_all with schema module (not raw table name) so UUIDs are encoded properly,
-      # but we only pass the columns that exist at this point in time.
       Repo.insert_all(ConversationParticipant, [
         %{
           id: Ecto.UUID.generate(),
-          conversation_id: conversation.id,
+          conversation_id: conversation_id,
           user_id: classroom.teacher_id,
           joined_at: classroom.inserted_at || now,
           has_left: false,
@@ -54,7 +64,11 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         Repo.all(
           from(m in ClassroomMembership,
             where: m.classroom_id == ^classroom.id and m.status == :approved,
-            select: m
+            select: %{
+              user_id: m.user_id,
+              joined_at: m.joined_at,
+              inserted_at: m.inserted_at
+            }
           )
         )
 
@@ -62,7 +76,7 @@ defmodule Medoru.Repo.Migrations.CreateClassroomChatsForExisting do
         Repo.insert_all(ConversationParticipant, [
           %{
             id: Ecto.UUID.generate(),
-            conversation_id: conversation.id,
+            conversation_id: conversation_id,
             user_id: member.user_id,
             joined_at: member.joined_at || member.inserted_at || now,
             has_left: false,

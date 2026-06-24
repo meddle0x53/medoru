@@ -2,7 +2,7 @@ import { GAME_CONFIG, FONTS } from '../config.js'
 import Player, { getUpgradeCost } from '../entities/Player.js'
 
 /**
- * Rest Camp scene — recover HP or spend gold to upgrade equipment.
+ * Rest Camp scene — recover HP or spend gold to upgrade one piece of equipment.
  */
 export default class RestScene extends Phaser.Scene {
   constructor() {
@@ -16,6 +16,7 @@ export default class RestScene extends Phaser.Scene {
   }
 
   create() {
+    this.actionTaken = false
     this.createBackground()
     this.createHeader()
     this.createInfoPanel()
@@ -41,14 +42,7 @@ export default class RestScene extends Phaser.Scene {
   }
 
   createInfoPanel() {
-    const w = this.player.weapon
-    const cost = w && w.level < w.maxLevel ? getUpgradeCost(w.level) : 'MAX'
-    const info = [
-      `HP: ${this.player.hp}/${this.player.maxHp}`,
-      `${w?.name || 'Weapon'} +${w?.level || 0} · Upgrade: ${cost}G`,
-    ].join('\n')
-
-    this.infoText = this.add.text(GAME_CONFIG.width / 2, 100, info, {
+    this.infoText = this.add.text(GAME_CONFIG.width / 2, 100, this.buildInfoText(), {
       ...FONTS.default,
       fontSize: '15px',
       color: '#ecf0f1',
@@ -56,84 +50,110 @@ export default class RestScene extends Phaser.Scene {
     }).setOrigin(0.5)
   }
 
+  buildInfoText() {
+    const w = this.player.weapon
+    const s = this.player.shield
+    const wCost = w && w.level < w.maxLevel ? getUpgradeCost(w.level) : 'MAX'
+    const sCost = s && s.level < s.maxLevel ? getUpgradeCost(s.level) : 'MAX'
+    return [
+      `HP: ${this.player.hp}/${this.player.maxHp}`,
+      `${w?.name || 'Weapon'} +${w?.level || 0} · Upgrade: ${wCost}G`,
+      `${s?.name || 'Shield'} +${s?.level || 0} · Upgrade: ${sCost}G`,
+    ].join('\n')
+  }
+
   createButtons() {
-    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 200, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
-    this.upgradeBtn = this.createButton(GAME_CONFIG.width / 2, 270, 'Sharpen Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
-    this.leaveBtn = this.createButton(GAME_CONFIG.width / 2, 360, 'Leave', () => this.completeTile(), 0x7f8c8d)
-    this.updateButtonStates()
+    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 190, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
+    this.weaponBtn = this.createButton(GAME_CONFIG.width / 2, 250, 'Upgrade Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
+    this.shieldBtn = this.createButton(GAME_CONFIG.width / 2, 310, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
+    this.createButton(GAME_CONFIG.width / 2, 390, 'Leave', () => this.completeTile(), 0x7f8c8d)
   }
 
   createButton(x, y, label, onClick, color = 0x2980b9) {
     const container = this.add.container(x, y)
-    const bg = this.add.rectangle(0, 0, 220, 44, color).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const bg = this.add.rectangle(0, 0, 220, 40, color).setInteractive({ useHandCursor: true }).setOrigin(0.5)
     const text = this.add.text(0, 0, label, {
       ...FONTS.default,
-      fontSize: '16px',
+      fontSize: '15px',
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5)
     container.add([bg, text])
 
-    bg.on('pointerdown', () => {
-      if (bg.input.enabled) onClick()
+    const hover = () => bg.setFillStyle(lighten(color))
+    const out = () => bg.setFillStyle(color)
+    bg.on('pointerdown', onClick)
+    bg.on('pointerover', hover)
+    bg.on('pointerout', out)
+
+    return { bg, text, color, hover, out }
+  }
+
+  disableActionButtons() {
+    if (this.actionTaken) return
+    this.actionTaken = true
+    ;[this.restBtn, this.weaponBtn, this.shieldBtn].forEach((btn) => {
+      if (!btn) return
+      btn.bg.removeInteractive()
+      btn.bg.setFillStyle(0x555555)
     })
-    bg.on('pointerover', () => { if (bg.input.enabled) bg.setFillStyle(lighten(color)) })
-    bg.on('pointerout', () => { if (bg.input.enabled) bg.setFillStyle(color) })
-
-    return { container, bg, text, color }
-  }
-
-  updateButtonStates() {
-    this.setButtonEnabled(this.restBtn, this.player.hp < this.player.maxHp)
-    this.setButtonEnabled(this.upgradeBtn, this.canUpgradeWeapon())
-  }
-
-  canUpgradeWeapon() {
-    const w = this.player.weapon
-    if (!w) return false
-    if (w.level >= w.maxLevel) return false
-    return (this.player.loadout.gold || 0) >= getUpgradeCost(w.level)
-  }
-
-  setButtonEnabled(btn, enabled) {
-    btn.bg.input.enabled = enabled
-    btn.bg.setFillStyle(enabled ? btn.color : 0x555555)
-    btn.text.setColor(enabled ? '#ffffff' : '#aaaaaa')
   }
 
   onRest() {
+    if (this.player.hp >= this.player.maxHp) {
+      this.showToast('You are already fully rested.')
+      return
+    }
     const heal = Math.floor(this.player.maxHp * 0.4)
     this.player.hp = Math.min(this.player.maxHp, this.player.hp + heal)
     this.player.saveLoadout()
     this.showToast(`Recovered ${heal} HP`)
     this.updateInfo()
+    this.disableActionButtons()
     this.time.delayedCall(800, () => this.completeTile())
   }
 
   onUpgradeWeapon() {
-    const result = this.player.upgradeWeapon()
+    this.tryUpgrade(this.player.weapon, 'baseDamage')
+  }
+
+  onUpgradeShield() {
+    this.tryUpgrade(this.player.shield, 'baseDefense')
+  }
+
+  tryUpgrade(item, baseStatKey) {
+    if (!item) {
+      this.showToast('No equipment.')
+      return
+    }
+    if (item.level >= item.maxLevel) {
+      this.showToast('Already at max level.')
+      return
+    }
+    const cost = getUpgradeCost(item.level)
+    if ((this.player.loadout.gold || 0) < cost) {
+      this.showToast(`Need ${cost} gold.`)
+      return
+    }
+    const method = baseStatKey === 'baseDamage' ? 'upgradeWeapon' : 'upgradeShield'
+    const result = this.player[method]()
     if (result.ok) {
-      this.showToast(`Weapon upgraded to +${result.level}!`)
+      this.showToast(`${item.name} upgraded to +${result.level}!`)
+      this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
+      this.updateInfo()
+      this.disableActionButtons()
     } else {
       this.showToast(result.reason)
     }
-    this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
-    this.updateInfo()
-    this.updateButtonStates()
   }
 
   updateInfo() {
-    const w = this.player.weapon
-    const cost = w && w.level < w.maxLevel ? getUpgradeCost(w.level) : 'MAX'
-    this.infoText.setText([
-      `HP: ${this.player.hp}/${this.player.maxHp}`,
-      `${w?.name || 'Weapon'} +${w?.level || 0} · Upgrade: ${cost}G`,
-    ].join('\n'))
+    this.infoText.setText(this.buildInfoText())
   }
 
   showToast(message) {
     if (this.toast) this.toast.destroy()
-    this.toast = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 80)
+    this.toast = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 100)
     const bg = this.add.rectangle(0, 0, 320, 40, 0x000000, 0.85).setStrokeStyle(1, 0xf39c12).setOrigin(0.5)
     const text = this.add.text(0, 0, message, { ...FONTS.default, fontSize: '14px', color: '#f39c12' }).setOrigin(0.5)
     this.toast.add([bg, text])
