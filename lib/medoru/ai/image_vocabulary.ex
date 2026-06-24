@@ -134,10 +134,10 @@ defmodule Medoru.AI.ImageVocabulary do
 
         case Jason.decode(json_text) do
           {:ok, %{"words" => words}} when is_list(words) ->
-            {:ok, Enum.map(words, &normalize_word/1)}
+            {:ok, words |> Enum.map(&normalize_word/1) |> Enum.reject(&is_nil/1)}
 
           {:ok, words} when is_list(words) ->
-            {:ok, Enum.map(words, &normalize_word/1)}
+            {:ok, words |> Enum.map(&normalize_word/1) |> Enum.reject(&is_nil/1)}
 
           {:ok, _} ->
             {:error, "OpenAI returned unexpected JSON structure"}
@@ -192,15 +192,19 @@ defmodule Medoru.AI.ImageVocabulary do
     # The bracketed original is preserved in notes.
     {text, image_text, notes} = clean_text_and_notes(text, image_text, notes)
 
-    %{
-      "text" => text,
-      "image_text" => image_text,
-      "reading" => reading,
-      "meaning" => word["meaning"] || "",
-      "word_type" => normalize_word_type(word["word_type"]),
-      "verb_group" => verb_group,
-      "notes" => notes
-    }
+    # Skip entries whose text or reading are not valid Japanese (e.g. Latin
+    # words like "CD" that the AI sometimes returns from textbook images).
+    if valid_word_text?(text) and valid_kana_only?(reading) do
+      %{
+        "text" => text,
+        "image_text" => image_text,
+        "reading" => reading,
+        "meaning" => word["meaning"] || "",
+        "word_type" => normalize_word_type(word["word_type"]),
+        "verb_group" => verb_group,
+        "notes" => notes
+      }
+    end
   end
 
   defp clean_text_and_notes(text, image_text, notes) do
@@ -215,6 +219,34 @@ defmodule Medoru.AI.ImageVocabulary do
       {text, image_text, notes}
     end
   end
+
+  # Mirrors Word.valid_japanese_text?/1.
+  defp valid_word_text?(text) when is_binary(text) do
+    String.to_charlist(text)
+    |> Enum.all?(fn cp ->
+      (cp >= 0x4E00 and cp <= 0x9FFF) or
+        (cp >= 0x3400 and cp <= 0x4DBF) or
+        (cp >= 0x3040 and cp <= 0x309F) or
+        (cp >= 0x30A0 and cp <= 0x30FF) or
+        (cp >= 0x3000 and cp <= 0x303F) or
+        cp == 0x30FC
+    end)
+  end
+
+  defp valid_word_text?(_), do: false
+
+  # Mirrors Word.valid_kana_only?/1 (allows slash for multiple readings).
+  defp valid_kana_only?(text) when is_binary(text) do
+    String.to_charlist(text)
+    |> Enum.all?(fn cp ->
+      (cp >= 0x3040 and cp <= 0x309F) or
+        (cp >= 0x30A0 and cp <= 0x30FF) or
+        cp == 0x30FC or
+        cp == 0x002F
+    end)
+  end
+
+  defp valid_kana_only?(_), do: false
 
   defp normalize_word_type(nil), do: "other"
 

@@ -426,6 +426,38 @@ defmodule Medoru.AI.ImageVocabularyTest do
       end)
     end
 
+    test "skips words with non-Japanese text like Latin loanwords" do
+      with_mock_response(fn ->
+        Req.Test.stub(ImageVocabulary, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "CD",
+                        "reading" => "シーディー",
+                        "meaning" => "compact disc",
+                        "word_type" => "noun"
+                      }
+                    ]),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, []} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+      end)
+    end
+
     test "detects PNG image type" do
       png = <<0x89, 0x50, 0x4E, 0x47>> <> String.duplicate(<<0>>, 100)
 
