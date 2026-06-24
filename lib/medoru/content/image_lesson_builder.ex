@@ -13,7 +13,10 @@ defmodule Medoru.Content.ImageLessonBuilder do
 
   alias Medoru.Content
   alias Medoru.Content.Word
+
   @default_title "Vocabulary lesson from image — change the name"
+  @max_title_length 100
+  @max_description_length 500
 
   @doc """
   Builds a custom lesson from extracted vocabulary words.
@@ -34,8 +37,11 @@ defmodule Medoru.Content.ImageLessonBuilder do
   end
 
   def build_lesson_from_extracted_words(extracted_words, lesson_attrs, creator_id) do
-    lesson_title = lesson_attrs[:title] || @default_title
-    lesson_description = lesson_attrs[:description] || ""
+    lesson_title =
+      String.slice(lesson_attrs[:title] || @default_title, 0, @max_title_length)
+
+    lesson_description =
+      String.slice(lesson_attrs[:description] || "", 0, @max_description_length)
 
     # Create the lesson first
     lesson_attrs = %{

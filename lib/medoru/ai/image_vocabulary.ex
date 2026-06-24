@@ -14,17 +14,25 @@ defmodule Medoru.AI.ImageVocabulary do
   @extraction_prompt """
   Extract all Japanese vocabulary from this image.
 
-  For each word, return a JSON array of objects with these fields:
+  Include ALL of the following:
+  - Single words (nouns, verbs, adjectives, adverbs, particles, pronouns, counters)
+  - Katakana words and loanwords (e.g. アイスクリーム, カレー). For these, "text" and "reading" will usually be the same kana.
+  - Expressions, set phrases, greetings, and interjections (e.g. おはようございます, どうぞよろしく[おねがいします]).
+  - Multi-word phrases that appear as vocabulary items.
+
+  For each item, return a JSON array of objects with these fields:
   - "text": the MAIN form of the word, WITH kanji when present.
     - For verbs: convert the ます-form to dictionary form, but KEEP any kanji.
       Example: if image shows "消します", text should be "消す" (not "けす").
       Example: if image shows "開けます", text should be "開ける" (not "あける").
       Example: if image shows "話します", text should be "話す" (not "はなす").
     - For nouns/adjectives: use the kanji form shown in the image.
+    - For katakana or hiragana-only items with no kanji, set "text" to the kana form shown (same as "reading").
+    - If an expression shows optional parts in brackets like [どうぞ]よろしく[ございます], include the brackets in "text".
   - "reading": ONLY hiragana/katakana (no kanji). This is the pronunciation.
     Example: for text "消す", reading should be "けす".
     Example: for text "電気", reading should be "でんき".
-  - "image_text": the exact form as shown in the image (may include ます, kanji, etc.)
+  - "image_text": the exact form as shown in the image (may include ます, kanji, brackets, etc.)
   - "meaning": English meaning
   - "word_type": noun, verb, adjective, adverb, particle, pronoun, counter, expression, or other
   - "verb_group": for verbs only — "I", "II", or "III". Null for non-verbs.
@@ -155,7 +163,9 @@ defmodule Medoru.AI.ImageVocabulary do
 
   defp normalize_word(word) when is_map(word) do
     verb_group = word["verb_group"]
-    image_text = word["image_text"] || word["text"] || ""
+    raw_text = word["text"] || ""
+    reading = Word.normalize_reading(word["reading"])
+    image_text = word["image_text"] || raw_text
 
     notes =
       case verb_group do
@@ -171,15 +181,39 @@ defmodule Medoru.AI.ImageVocabulary do
         notes
       end
 
+    # If the AI omitted the text (common for katakana-only words), fall back to reading.
+    text = if raw_text in [nil, ""], do: reading, else: raw_text
+    reading = if reading in [nil, ""], do: text, else: reading
+
+    # If no separate image form was provided, use the (possibly recovered) text.
+    image_text = if image_text in [nil, ""], do: text, else: image_text
+
+    # Clean bracketed expressions like [どうぞ]よろしく[ございます].
+    # The bracketed original is preserved in notes.
+    {text, image_text, notes} = clean_text_and_notes(text, image_text, notes)
+
     %{
-      "text" => word["text"] || "",
+      "text" => text,
       "image_text" => image_text,
-      "reading" => Word.normalize_reading(word["reading"]),
+      "reading" => reading,
       "meaning" => word["meaning"] || "",
       "word_type" => normalize_word_type(word["word_type"]),
       "verb_group" => verb_group,
       "notes" => notes
     }
+  end
+
+  defp clean_text_and_notes(text, image_text, notes) do
+    text = String.trim(text)
+
+    if String.contains?(text, "[") or String.contains?(text, "]") do
+      original = text
+      cleaned = String.replace(text, ~r/[\[\]]/u, "")
+      new_notes = if notes in [nil, ""], do: original, else: "#{notes} (#{original})"
+      {cleaned, cleaned, new_notes}
+    else
+      {text, image_text, notes}
+    end
   end
 
   defp normalize_word_type(nil), do: "other"

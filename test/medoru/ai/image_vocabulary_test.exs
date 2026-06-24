@@ -352,6 +352,80 @@ defmodule Medoru.AI.ImageVocabularyTest do
       end)
     end
 
+    test "falls back to reading when text is missing" do
+      with_mock_response(fn ->
+        Req.Test.stub(ImageVocabulary, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => nil,
+                        "reading" => "アイスクリーム",
+                        "meaning" => "ice cream",
+                        "word_type" => "noun"
+                      }
+                    ]),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
+        assert word["text"] == "アイスクリーム"
+        assert word["reading"] == "アイスクリーム"
+        assert word["image_text"] == "アイスクリーム"
+        assert word["notes"] == ""
+      end)
+    end
+
+    test "strips brackets from expressions and preserves original in notes" do
+      with_mock_response(fn ->
+        Req.Test.stub(ImageVocabulary, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!([
+                      %{
+                        "text" => "[どうぞ]よろしく[ございます]",
+                        "reading" => "どうぞよろしくございます",
+                        "meaning" => "please be kind to me",
+                        "word_type" => "expression"
+                      }
+                    ]),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, [word]} =
+                 ImageVocabulary.extract_vocabulary(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageVocabulary}]
+                 )
+
+        assert word["text"] == "どうぞよろしくございます"
+        assert word["reading"] == "どうぞよろしくございます"
+        assert word["image_text"] == "どうぞよろしくございます"
+        assert word["notes"] == "[どうぞ]よろしく[ございます]"
+      end)
+    end
+
     test "detects PNG image type" do
       png = <<0x89, 0x50, 0x4E, 0x47>> <> String.duplicate(<<0>>, 100)
 

@@ -204,6 +204,76 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
       assert lesson.title == "Vocabulary lesson from image — change the name"
     end
 
+    test "creates katakana and expression words not present in DB", %{teacher: teacher} do
+      extracted_words = [
+        %{
+          "text" => "アイスクリーム",
+          "image_text" => "アイスクリーム",
+          "reading" => "アイスクリーム",
+          "meaning" => "ice cream",
+          "word_type" => "noun",
+          "verb_group" => nil,
+          "notes" => ""
+        },
+        %{
+          "text" => "どうぞよろしくございます",
+          "image_text" => "どうぞよろしくございます",
+          "reading" => "どうぞよろしくございます",
+          "meaning" => "please be kind to me",
+          "word_type" => "expression",
+          "verb_group" => nil,
+          "notes" => "[どうぞ]よろしく[ございます]"
+        }
+      ]
+
+      assert {:ok, lesson} =
+               ImageLessonBuilder.build_lesson_from_extracted_words(
+                 extracted_words,
+                 %{},
+                 teacher.id
+               )
+
+      lesson_words = Content.list_lesson_words(lesson.id)
+      assert length(lesson_words) == 2
+
+      assert Content.get_word_by_text("アイスクリーム") != nil
+      expression_word = Content.get_word_by_text("どうぞよろしくございます")
+      assert expression_word != nil
+      assert expression_word.word_type == :expression
+
+      expression_lesson_word = Enum.find(lesson_words, &(&1.word_id == expression_word.id))
+      assert expression_lesson_word.examples == [
+               "どうぞよろしくございます ([どうぞ]よろしく[ございます])"
+             ]
+    end
+
+    test "slices lesson title and description to safe lengths", %{teacher: teacher} do
+      long_title = String.duplicate("あ", 150)
+      long_description = String.duplicate("い", 600)
+
+      extracted_words = [
+        %{
+          "text" => "テスト",
+          "image_text" => "テスト",
+          "reading" => "てすと",
+          "meaning" => "test",
+          "word_type" => "noun",
+          "verb_group" => nil,
+          "notes" => ""
+        }
+      ]
+
+      assert {:ok, lesson} =
+               ImageLessonBuilder.build_lesson_from_extracted_words(
+                 extracted_words,
+                 %{title: long_title, description: long_description},
+                 teacher.id
+               )
+
+      assert String.length(lesson.title) == 100
+      assert String.length(lesson.description) == 500
+    end
+
     test "normalizes readings with punctuation and whitespace", %{teacher: teacher} do
       extracted_words = [
         %{
