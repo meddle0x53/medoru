@@ -646,6 +646,16 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Returns the list of learned grammar definition IDs for a user.
+  """
+  def list_learned_grammar_definition_ids_for_user(user_id) do
+    UserProgress
+    |> where([up], up.user_id == ^user_id and not is_nil(up.grammar_definition_id))
+    |> select([up], up.grammar_definition_id)
+    |> Repo.all()
+  end
+
+  @doc """
   Counts the total number of kanji learned by a user.
 
   ## Examples

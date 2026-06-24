@@ -2,7 +2,10 @@ defmodule MedoruWeb.GrammarDefinitionLiveTest do
   use MedoruWeb.ConnCase
 
   import Phoenix.LiveViewTest
+  import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
+
+  alias Medoru.Learning
 
   describe "Index" do
     test "lists all grammar definitions", %{conn: conn} do
@@ -69,6 +72,30 @@ defmodule MedoruWeb.GrammarDefinitionLiveTest do
       {:ok, _view, html} = live(conn, ~p"/grammars")
 
       assert html =~ "Grammar"
+    end
+
+    test "shows learned badge for learned grammar definitions", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+      grammar = grammar_definition_fixture(%{title: "Learned Grammar", jlpt_level: 5})
+
+      assert {:ok, _} = Learning.track_grammar_learned(user.id, grammar.id)
+
+      {:ok, view, _html} = live(conn, ~p"/grammars")
+
+      assert has_element?(view, "span.badge.badge-success", "Learned")
+      assert render(view) =~ "Learned Grammar"
+    end
+
+    test "does not show learned badge for grammar definitions not learned", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+      grammar_definition_fixture(%{title: "Unlearned Grammar", jlpt_level: 5})
+
+      {:ok, view, _html} = live(conn, ~p"/grammars")
+
+      assert render(view) =~ "Unlearned Grammar"
+      refute has_element?(view, "span.badge.badge-success", "Learned")
     end
   end
 

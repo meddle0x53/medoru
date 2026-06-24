@@ -2,6 +2,7 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
   use MedoruWeb, :live_view
 
   alias Medoru.Content
+  alias Medoru.Learning
 
   embed_templates "index.html"
 
@@ -11,10 +12,25 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
 
+    current_user =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    learned_grammar_ids =
+      if current_user do
+        Learning.list_learned_grammar_definition_ids_for_user(current_user.id)
+      else
+        []
+      end
+
     {:ok,
      socket
      |> assign(:locale, locale)
-     |> assign(:page_title, gettext("Grammar"))}
+     |> assign(:page_title, gettext("Grammar"))
+     |> assign(:learned_grammar_ids, learned_grammar_ids)}
   end
 
   @impl true

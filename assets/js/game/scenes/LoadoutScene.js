@@ -453,7 +453,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
   createTabs() {
     this.tabButtons = []
-    this.tabWidth = 500 / TAB_NAMES.length
+    this.tabWidth = 500 / TAB_NAMES.length - 5
     const startX = 460 + this.tabWidth / 2
     const y = 48
 
@@ -488,7 +488,7 @@ export default class LoadoutScene extends Phaser.Scene {
     const x = activeBtn.text.x
     const y = activeBtn.text.y + 16
     this.tabIndicator.fillStyle(0x3498db, 1)
-    const width = this.tabWidth - 14
+    const width = this.tabWidth - 40
     this.tabIndicator.fillRect(x - width / 2, y, width, 3)
   }
 
@@ -1492,9 +1492,9 @@ export default class LoadoutScene extends Phaser.Scene {
       { key: 'stamina', label: 'Stamina', derived: `Max STA: ${this.player.maxStamina}` },
       { key: 'capacity', label: 'Capacity', derived: `A:${getMaxActiveActions(capacity)} / B:${getMaxBattlePoolActions(capacity)} / O:${getMaxOverallAbilities(capacity)}` },
       { key: 'skill', label: 'Skill', derived: `Crit: ${Math.round(this.player.getCritChance() * 100)}%` },
-      { key: 'strength', label: 'Strength', derived: `Dmg: ${this.player.calculateWeaponDamage()}` },
-      { key: 'mana', label: 'Mana', derived: '—' },
-      { key: 'luck', label: 'Luck', derived: `Crit+: ${Math.round((this.player.luck || 0) * 0.05 * 100)}%` },
+      { key: 'strength', label: 'Strength', derived: `Phys Def: ${this.player.getPhysicalDefense()}` },
+      { key: 'mana', label: 'Mana', derived: `Elem Def: ${this.player.getElementalDefense()}` },
+      { key: 'luck', label: 'Luck', derived: `Infusion+: ${Math.round(this.player.getInfusionChance() * 100)}%` },
     ]
 
     const startY = 80
@@ -1571,7 +1571,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Stat points remaining
     this.tabContent.add(
-      this.add.text(690, 470, `Stat Points: ${this.player.loadout.statPoints}`, {
+      this.add.text(690, 500, `Stat Points: ${this.player.loadout.statPoints}`, {
         ...FONTS.default,
         fontSize: '16px',
         color: this.player.loadout.statPoints > 0 ? '#f1c40f' : '#7f8c8d',

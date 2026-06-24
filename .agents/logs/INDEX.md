@@ -10,8 +10,9 @@
 | 2026-06-24 | v0.7.0 Grammar from Image Fixes | COMPLETED | 2026-06-24 |
 | 2026-06-24 | v0.7.0 Vocabulary from Image Fixes | COMPLETED | 2026-06-24 |
 | 2026-06-24 | v0.7.0 Remove Copy-to-Wordset for Grammar Lessons | COMPLETED | 2026-06-24 |
+| 2026-06-24 | v0.7.0 Grammar Index Learned Indicator | IN_PROGRESS | 2026-06-24 |
 
 ## Current State
 
-- Last completed: Iteration 2026-06-24 — Remove Copy-to-Wordset for Grammar Lessons
+- Last completed: Iteration 2026-06-24 — Grammar Index Learned Indicator (pending user approval)
 - Next: remaining v0.7.0 fixes
