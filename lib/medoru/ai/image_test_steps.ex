@@ -203,8 +203,10 @@ defmodule Medoru.AI.ImageTestSteps do
 
   defp single_line(text) when is_binary(text) do
     text
-    |> String.replace(~r/\s+/u, " ")
-    |> String.trim()
+    |> String.split(~r/\r\n?|\n/)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join(" ")
   end
 
   defp single_line(text), do: text
@@ -360,9 +362,9 @@ defmodule Medoru.AI.ImageTestSteps do
     You are an AI assistant helping extract Japanese writing fill-in exercises from an image.
 
     The image shows an example sentence with a filled blank, followed by numbered questions.
-    Each question has:
-    - A sentence template with one or more blanks
-    - A correct answer that is the full sentence with blanks filled in
+    Each numbered question usually has TWO parts:
+    1. A sentence template with one or more blanks (e.g. "あなたは（ ）ですか。").
+    2. A short answer/response line directly below it (e.g. "……はい、ミラーです。" or "……いいえ、アメリカ人じゃ ありません。 イギリス人です。").
 
     Return ONLY a valid JSON object in this exact format:
 
@@ -371,7 +373,7 @@ defmodule Medoru.AI.ImageTestSteps do
       "steps": [
         {
           "number": 1,
-          "template": "-sentence with ___ for each blank-",
+          "template": "-question line plus the answer/response line below it, with ___ for each blank-",
           "correct_answer": "-complete sentence with blanks filled in-",
           "alt_correct_answers": ["-alternative full sentence 1-"]
         }
@@ -380,9 +382,9 @@ defmodule Medoru.AI.ImageTestSteps do
 
     Rules:
     - In `template`, replace every blank with `___` (three underscores).
-    - `template` must contain the entire sentence from the image, including all text before and after each blank, even if the image wraps it across multiple lines. Output it as one continuous line with no line breaks.
+    - `template` must contain ALL text for the numbered item: the question line with the blank AND the answer/response line below it. Join them into one continuous line separated by a single space. Do NOT drop the second line.
+    - `correct_answer` must be the complete sentence with the blank filled in, NOT the response line by itself. For example, if the template is "あなたは（___）ですか。 ……はい、ミラーです。", the correct_answer should be "あなたは（ミラー）ですか。".
     - `correct_answer`, each `example`, and each item in `alt_correct_answers` must also be a single line. Do not split any sentence across multiple lines.
-    - `correct_answer` must be the complete sentence, not just the missing words.
     - If there are alternative valid full sentences (different particles, kanji vs kana, etc.), include them in `alt_correct_answers`.
     - Return ALL example sentences from the image in the `examples` array.
     - If there is no example, return an empty array for `examples`.

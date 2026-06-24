@@ -228,5 +228,146 @@ defmodule Medoru.AI.ImageTestStepsTest do
         Application.put_env(:medoru, :openai_api_key, original)
       end
     end
+
+    test "preserves all lines of multi-line questions joined with spaces" do
+      original = Application.get_env(:medoru, :openai_api_key)
+      Application.put_env(:medoru, :openai_api_key, "test-key")
+
+      try do
+        Req.Test.stub(ImageTestSteps, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!(%{
+                      "examples" => [
+                        "例：\nあなたは（学生）ですか。"
+                      ],
+                      "steps" => [
+                        %{
+                          "number" => 1,
+                          "template" => "これは\n（___）\nですか。",
+                          "correct_answer" => "これは\n（学生）\nですか。",
+                          "alt_correct_answers" => [
+                            "これは\n学生\nですか。"
+                          ]
+                        }
+                      ]
+                    }),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, data} =
+                 ImageTestSteps.extract_writing_fill_in_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        assert data["examples"] == ["例： あなたは（学生）ですか。"]
+
+        [step] = data["steps"]
+        assert step["template"] == "これは （___） ですか。"
+        assert step["correct_answer"] == "これは （学生） ですか。"
+        assert step["alt_correct_answers"] == ["これは 学生 ですか。"]
+      after
+        Application.put_env(:medoru, :openai_api_key, original)
+      end
+    end
+
+    test "falls back to question field and joins multi-line text" do
+      original = Application.get_env(:medoru, :openai_api_key)
+      Application.put_env(:medoru, :openai_api_key, "test-key")
+
+      try do
+        Req.Test.stub(ImageTestSteps, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!(%{
+                      "examples" => [],
+                      "steps" => [
+                        %{
+                          "number" => 1,
+                          "question" => "これは\n（___）\nですか。",
+                          "correct_answer" => "これは\n（学生）\nですか。"
+                        }
+                      ]
+                    }),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, data} =
+                 ImageTestSteps.extract_writing_fill_in_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        [step] = data["steps"]
+        assert step["template"] == "これは （___） ですか。"
+        assert step["correct_answer"] == "これは （学生） ですか。"
+      after
+        Application.put_env(:medoru, :openai_api_key, original)
+      end
+    end
+
+    test "keeps the answer line together with the question line in the template" do
+      original = Application.get_env(:medoru, :openai_api_key)
+      Application.put_env(:medoru, :openai_api_key, "test-key")
+
+      try do
+        Req.Test.stub(ImageTestSteps, fn conn ->
+          response = %{
+            "choices" => [
+              %{
+                "message" => %{
+                  "content" =>
+                    Jason.encode!(%{
+                      "examples" => [
+                        "あなたは（学生）ですか。\n……はい、学生です。"
+                      ],
+                      "steps" => [
+                        %{
+                          "number" => 1,
+                          "template" => "あなたは（ ）ですか。\n……はい、ミラーです。",
+                          "correct_answer" => "あなたは（ミラー）ですか。"
+                        }
+                      ]
+                    }),
+                  "refusal" => nil
+                }
+              }
+            ]
+          }
+
+          Req.Test.json(conn, response)
+        end)
+
+        assert {:ok, data} =
+                 ImageTestSteps.extract_writing_fill_in_steps(@dummy_png,
+                   req_opts: [plug: {Req.Test, ImageTestSteps}]
+                 )
+
+        assert data["examples"] == ["あなたは（学生）ですか。 ……はい、学生です。"]
+
+        [step] = data["steps"]
+        assert step["template"] == "あなたは（___）ですか。 ……はい、ミラーです。"
+        assert step["correct_answer"] == "あなたは（ミラー）ですか。"
+      after
+        Application.put_env(:medoru, :openai_api_key, original)
+      end
+    end
   end
 end
