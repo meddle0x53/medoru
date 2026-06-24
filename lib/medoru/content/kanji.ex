@@ -27,7 +27,7 @@ defmodule Medoru.Content.Kanji do
 
   @doc false
   def changeset(kanji, attrs) do
-    attrs = parse_meanings(attrs)
+    attrs = parse_form_fields(attrs)
 
     kanji
     |> cast(attrs, [
@@ -50,15 +50,17 @@ defmodule Medoru.Content.Kanji do
     |> unique_constraint(:character)
   end
 
-  # Parse comma-separated meanings string into a list
-  defp parse_meanings(attrs) when is_map(attrs) do
+  # Parse form string values into the shapes expected by the schema.
+  defp parse_form_fields(attrs) when is_map(attrs) do
     attrs
     |> parse_field_meanings("meanings")
+    |> parse_field_meanings("radicals")
     |> parse_translation_meanings("bg")
     |> parse_translation_meanings("ja")
+    |> parse_stroke_data()
   end
 
-  defp parse_meanings(attrs), do: attrs
+  defp parse_form_fields(attrs), do: attrs
 
   defp parse_field_meanings(attrs, field) do
     case Map.get(attrs, field) do
@@ -68,7 +70,7 @@ defmodule Medoru.Content.Kanji do
       meanings when is_binary(meanings) ->
         parsed =
           meanings
-          |> String.split(",")
+          |> String.split(~r/[，,、]/u)
           |> Enum.map(&String.trim/1)
           |> Enum.reject(&(&1 == ""))
 
@@ -87,11 +89,36 @@ defmodule Medoru.Content.Kanji do
       meanings when is_binary(meanings) ->
         parsed =
           meanings
-          |> String.split(",")
+          |> String.split(~r/[，,、]/u)
           |> Enum.map(&String.trim/1)
           |> Enum.reject(&(&1 == ""))
 
         put_in(attrs, ["translations", locale, "meanings"], parsed)
+
+      _ ->
+        attrs
+    end
+  end
+
+  defp parse_stroke_data(attrs) when is_map(attrs) do
+    case Map.get(attrs, "stroke_data") do
+      nil ->
+        attrs
+
+      data when is_map(data) ->
+        attrs
+
+      "" ->
+        Map.put(attrs, "stroke_data", %{})
+
+      json when is_binary(json) ->
+        case Jason.decode(json) do
+          {:ok, decoded} when is_map(decoded) ->
+            Map.put(attrs, "stroke_data", decoded)
+
+          _ ->
+            attrs
+        end
 
       _ ->
         attrs

@@ -36,6 +36,15 @@
               <%= for error <- @form[:character].errors do %>
                 <p class="text-error text-sm mt-1">{format_error(error)}</p>
               <% end %>
+              <button
+                type="button"
+                phx-click="open_enrich_modal"
+                phx-value-mode="main"
+                class="btn btn-sm btn-outline btn-secondary mt-2"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                {gettext("Enrich with AI")}
+              </button>
             </div>
 
             <div>
@@ -107,6 +116,43 @@
             </div>
           </div>
 
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+              <label class="label" for={@form[:radicals].id}>
+                <span class="label-text">{gettext("Radicals (comma-separated)")}</span>
+              </label>
+              <.input
+                field={@form[:radicals]}
+                type="text"
+                value={format_meanings(@form[:radicals].value)}
+                placeholder={gettext("e.g., 水")}
+              />
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("Separate multiple radicals with commas")}
+              </p>
+            </div>
+
+            <div>
+              <label class="label" for={@form[:school_level].id}>
+                <span class="label-text">{gettext("School Level (optional)")}</span>
+              </label>
+              <.input
+                field={@form[:school_level]}
+                type="select"
+                options={[
+                  {gettext("Grade 1"), 1},
+                  {gettext("Grade 2"), 2},
+                  {gettext("Grade 3"), 3},
+                  {gettext("Grade 4"), 4},
+                  {gettext("Grade 5"), 5},
+                  {gettext("Grade 6"), 6},
+                  {gettext("Junior High"), 7}
+                ]}
+                prompt={gettext("Select grade")}
+              />
+            </div>
+          </div>
+
           <%!-- Translations Section --%>
           <div class="border-t border-base-300 pt-6">
             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -153,6 +199,35 @@
             </div>
           </div>
 
+          <%!-- Stroke Data Section --%>
+          <div class="border-t border-base-300 pt-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h3 class="text-lg font-semibold flex items-center gap-2">
+                <.icon name="hero-paint-brush" class="w-5 h-5" />
+                {gettext("Stroke Data")}
+              </h3>
+              <button
+                type="button"
+                phx-click="open_enrich_modal"
+                phx-value-mode="stroke"
+                class="btn btn-sm btn-outline btn-secondary w-full sm:w-auto"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                {gettext("Enrich Stroke Data")}
+              </button>
+            </div>
+            <.input
+              field={@form[:stroke_data]}
+              type="textarea"
+              value={format_stroke_data(@form[:stroke_data].value)}
+              rows="6"
+              placeholder={gettext("Paste stroke data JSON here...")}
+            />
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("JSON object with bounds and a strokes array")}
+            </p>
+          </div>
+
           <%!-- Actions --%>
           <div class="border-t border-base-300 pt-6 flex flex-col sm:flex-row sm:items-center justify-end gap-3">
             <.link navigate={~p"/admin/kanji"} class="btn btn-ghost w-full sm:w-auto">
@@ -184,17 +259,68 @@
                   ({length(@kanji.kanji_readings || [])} {gettext("total")})
                 </span>
               </h3>
-              <button
-                type="button"
-                phx-click="show_new_reading"
-                class="btn btn-sm btn-primary w-full sm:w-auto"
-                disabled={@new_reading != nil}
-              >
-                <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Reading")}
-              </button>
+              <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  phx-click="open_enrich_modal"
+                  phx-value-mode="readings"
+                  class="btn btn-sm btn-outline btn-secondary w-full sm:w-auto"
+                >
+                  <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                  {gettext("Enrich Readings")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="show_new_reading"
+                  class="btn btn-sm btn-primary w-full sm:w-auto"
+                  disabled={@new_reading != nil}
+                >
+                  <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Add Reading")}
+                </button>
+              </div>
             </div>
 
-            <%!-- New Reading Form --%>
+            <%!-- Suggested Readings from AI --%>
+            <%= if @suggested_readings != [] do %>
+              <div class="p-4 bg-info/10 border border-info/30 rounded-lg mb-4">
+                <h4 class="font-medium mb-2 flex items-center gap-2">
+                  <.icon name="hero-sparkles" class="w-4 h-4 text-info" />
+                  {gettext("Suggested Readings")}
+                </h4>
+                <ul class="space-y-1 mb-3">
+                  <%= for reading <- @suggested_readings do %>
+                    <li class="text-sm text-base-content">
+                      <span class="badge badge-sm badge-primary">
+                        {String.upcase(reading["reading_type"] || "on")}
+                      </span>
+                      <span class="font-medium">{reading["reading"]}</span>
+                      <%= if reading["romaji"] not in [nil, ""] do %>
+                        <span class="text-base-content/60">({reading["romaji"]})</span>
+                      <% end %>
+                    </li>
+                  <% end %>
+                </ul>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    phx-click="apply_suggested_readings"
+                    class="btn btn-sm btn-primary"
+                  >
+                    <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                    {gettext("Add All Suggested")}
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="clear_suggested_readings"
+                    class="btn btn-sm btn-ghost"
+                  >
+                    {gettext("Clear")}
+                  </button>
+                </div>
+              </div>
+            <% end %>
+
+            <%!-- New Reading Form -->
             <%= if @new_reading do %>
               <div class="p-4 bg-base-200/50 rounded-lg mb-4 border-2 border-primary/30">
                 <h4 class="font-medium mb-3">{gettext("Add New Reading")}</h4>
@@ -409,6 +535,74 @@
                 "On readings (音読み) are Chinese-origin pronunciations used in compound words. Kun readings (訓読み) are Japanese-native pronunciations used as standalone words."
               )}
             </p>
+          </div>
+        <% end %>
+
+        <%!-- AI Enrichment Modal --%>
+        <%= if @show_enrich_modal do %>
+          <div class="modal modal-open">
+            <div class="modal-box max-w-2xl">
+              <h3 class="font-bold text-lg mb-4">
+                <%= case @enrich_mode do %>
+                  <% :main -> %>
+                    {gettext("Enrich Kanji with AI")}
+                  <% :readings -> %>
+                    {gettext("Enrich Readings with AI")}
+                  <% :stroke -> %>
+                    {gettext("Enrich Stroke Data")}
+                <% end %>
+              </h3>
+
+              <p class="text-sm text-secondary mb-4">
+                {gettext("Character")}:
+                <span class="font-jp text-lg ml-1">{@form[:character].value}</span>
+              </p>
+
+              <%= if @enrich_error do %>
+                <div class="alert alert-error alert-soft mb-4">
+                  <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+                  <span>{@enrich_error}</span>
+                </div>
+              <% end %>
+
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text">{gettext("Prompt")}</span>
+                </label>
+                <textarea
+                  name="prompt"
+                  phx-change="update_enrich_prompt"
+                  phx-debounce="300"
+                  class="textarea textarea-bordered w-full font-mono text-sm"
+                  rows="6"
+                ><%= @enrich_prompt %></textarea>
+              </div>
+
+              <div class="modal-action">
+                <button
+                  type="button"
+                  phx-click="close_enrich_modal"
+                  class="btn btn-ghost"
+                  disabled={@enrich_loading}
+                >
+                  {gettext("Cancel")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="enrich_kanji"
+                  class="btn btn-primary"
+                  disabled={@enrich_loading}
+                >
+                  <%= if @enrich_loading do %>
+                    <span class="loading loading-spinner loading-sm mr-2"></span>
+                    {gettext("Generating...")}
+                  <% else %>
+                    <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
+                    {gettext("Generate")}
+                  <% end %>
+                </button>
+              </div>
+            </div>
           </div>
         <% end %>
       </div>

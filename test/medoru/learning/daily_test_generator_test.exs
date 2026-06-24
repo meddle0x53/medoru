@@ -500,7 +500,9 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
   end
 
   defp unique_kana_reading(i) do
-    kana = ~w(あ い う え お か き く け こ さ し す せ そ た ち つ て と な に ぬ ね の は ひ ふ へ ほ ま み む め も や ゆ よ ら り る れ ろ わ を ん)
+    kana =
+      ~w(あ い う え お か き く け こ さ し す せ そ た ち つ て と な に ぬ ね の は ひ ふ へ ほ ま み む め も や ゆ よ ら り る れ ろ わ を ん)
+
     a = Enum.at(kana, rem(i, length(kana)))
     b = Enum.at(kana, rem(div(i, length(kana)), length(kana)))
     "た#{a}#{b}"

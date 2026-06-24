@@ -171,7 +171,9 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                     <label class="label" for={@details_form[:description].id}>
                       <span class="label-text">
                         {gettext("Description")}
-                        <span class="text-secondary text-sm font-normal">({gettext("optional")})</span>
+                        <span class="text-secondary text-sm font-normal">
+                          ({gettext("optional")})
+                        </span>
                       </span>
                     </label>
                     <.input

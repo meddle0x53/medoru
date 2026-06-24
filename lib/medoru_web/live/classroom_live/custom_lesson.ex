@@ -785,7 +785,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp vocabulary_content(assigns) do
     ~H"""
     <%= if @current_word do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full" phx-no-format>
+      <div
+        class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full"
+        phx-no-format
+      >
         <div class="card-body text-center py-12 flex-1 flex flex-col">
           <%!-- Word Picture --%>
           <%= if @lesson.show_pictures && @current_word.word.image_path do %>
@@ -948,7 +951,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp grammar_content(assigns) do
     ~H"""
     <%= if @current_step do %>
-      <div class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full" phx-no-format>
+      <div
+        class="card bg-base-100 border border-base-300 shadow-lg flex-1 flex flex-col w-full"
+        phx-no-format
+      >
         <div class="card-body flex-1 flex flex-col">
           <%!-- Step Title --%>
           <div class="mb-4 flex items-start justify-between gap-4">

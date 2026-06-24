@@ -69,6 +69,9 @@ config :phoenix, :json_library, Jason
 # Default uploads directory (override in runtime.exs for production)
 config :medoru, :uploads_dir, Path.join(File.cwd!(), "priv/static/uploads")
 
+# Directory containing raw data sources such as KanjiVG and makemeahanzi
+config :medoru, :raw_data_dir, Path.expand("raw")
+
 # Configure Ueberauth
 config :ueberauth, Ueberauth,
   providers: [

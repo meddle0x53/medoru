@@ -242,6 +242,7 @@ defmodule Medoru.Content.ImageLessonBuilderTest do
       assert expression_word.word_type == :expression
 
       expression_lesson_word = Enum.find(lesson_words, &(&1.word_id == expression_word.id))
+
       assert expression_lesson_word.examples == [
                "どうぞよろしくございます ([どうぞ]よろしく[ございます])"
              ]
