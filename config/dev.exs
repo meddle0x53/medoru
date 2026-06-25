@@ -1,16 +1,39 @@
 import Config
 
+database_socket_dir = System.get_env("DATABASE_SOCKET_DIR", "/var/run/postgresql")
+
+database_host =
+  System.get_env("DATABASE_HOST") ||
+    if File.exists?(Path.join(database_socket_dir, ".s.PGSQL.5432")) do
+      nil
+    else
+      "localhost"
+    end
+
+database_config =
+  [
+    username: System.get_env("DATABASE_USER", "meddle"),
+    password: System.get_env("DATABASE_PASSWORD"),
+    database: System.get_env("DATABASE_NAME", "medoru_dev"),
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: 10
+  ]
+
+database_config =
+  if database_host do
+    Keyword.merge(database_config,
+      hostname: database_host,
+      port: String.to_integer(System.get_env("DATABASE_PORT", "5432"))
+    )
+  else
+    Keyword.put(database_config, :socket_dir, database_socket_dir)
+  end
+
 # Configure your database
-# Using Unix socket for peer authentication
-config :medoru, Medoru.Repo,
-  username: "meddle",
-  password: nil,
-  hostname: nil,
-  socket_dir: "/var/run/postgresql",
-  database: "medoru_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+# Uses DATABASE_HOST when set. Otherwise, it uses the local Unix socket if it
+# exists, falling back to localhost for the Docker Compose Postgres container.
+config :medoru, Medoru.Repo, database_config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
