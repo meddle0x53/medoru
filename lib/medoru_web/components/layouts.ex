@@ -931,9 +931,9 @@ defmodule MedoruWeb.Layouts do
     </main>
 
     <%!-- Footer with Attribution --%>
-    <footer class="bg-base-100 border-t border-base-300 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-3">
+    <footer class="bg-base-100 border-t border-base-300 min-h-14 flex items-center pb-[env(safe-area-inset-bottom)]">
+      <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3">
           <div class="text-sm text-secondary flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1 text-center md:text-left">
             <span>© 2025 Medoru</span>
             <span aria-hidden="true">·</span>
