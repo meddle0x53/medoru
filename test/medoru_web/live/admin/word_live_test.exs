@@ -274,5 +274,88 @@ defmodule MedoruWeb.Admin.WordLiveTest do
       assert html =~ "Generate Pronunciation"
       assert html =~ "ほん"
     end
+
+    test "renders kanji checkboxes and remove selected button", %{conn: conn} do
+      word = word_with_kanji_fixture()
+      [kanji1, kanji2] = Enum.map(word.word_kanjis, & &1.kanji)
+
+      {:ok, _view, html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      assert html =~ kanji1.character
+      assert html =~ kanji2.character
+      assert html =~ "Remove selected"
+      assert html =~ "extract_kanji"
+    end
+
+    test "removes a single selected kanji association", %{conn: conn} do
+      word = word_with_kanji_fixture()
+      [word_kanji1, word_kanji2] = Enum.sort_by(word.word_kanjis, & &1.position)
+      kanji1 = word_kanji1.kanji
+      kanji2 = word_kanji2.kanji
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      # Select the first kanji
+      view
+      |> element(
+        "input[phx-click='toggle_kanji_selection'][phx-value-word_kanji_id='#{word_kanji1.id}']"
+      )
+      |> render_click()
+
+      # Click remove selected
+      view
+      |> element("button[phx-click='remove_selected_kanjis']")
+      |> render_click()
+
+      flash_html = render(view)
+      assert flash_html =~ "1 kanji removed"
+
+      associations_html =
+        view
+        |> element("#kanji-associations")
+        |> render()
+
+      assert associations_html =~ kanji2.character
+      refute associations_html =~ kanji1.character
+    end
+
+    test "removes multiple selected kanji associations", %{conn: conn} do
+      word = word_with_kanji_fixture()
+      [word_kanji1, word_kanji2] = Enum.sort_by(word.word_kanjis, & &1.position)
+      kanji1 = word_kanji1.kanji
+      kanji2 = word_kanji2.kanji
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      # Select both kanji
+      view
+      |> element(
+        "input[phx-click='toggle_kanji_selection'][phx-value-word_kanji_id='#{word_kanji1.id}']"
+      )
+      |> render_click()
+
+      view
+      |> element(
+        "input[phx-click='toggle_kanji_selection'][phx-value-word_kanji_id='#{word_kanji2.id}']"
+      )
+      |> render_click()
+
+      # Click remove selected
+      view
+      |> element("button[phx-click='remove_selected_kanjis']")
+      |> render_click()
+
+      flash_html = render(view)
+      assert flash_html =~ "2 kanji removed"
+
+      associations_html =
+        view
+        |> element("#kanji-associations")
+        |> render()
+
+      refute associations_html =~ kanji1.character
+      refute associations_html =~ kanji2.character
+      assert associations_html =~ "No kanji associated with this word yet"
+    end
   end
 end

@@ -291,8 +291,10 @@ export default class MapScene extends Phaser.Scene {
         const bodyContainer = this.add.container(0, 0)
         container.add(bodyContainer)
 
-        // Current tile glow (behind the tile body)
-        if (tile.id === this.player.loadout.mapState.currentTileId) {
+        // Current tile glow (behind the tile body). Completed tiles keep the
+        // saved currentTileId so their outgoing paths stay reachable, but we
+        // don't draw the active marker on them — the hero has moved on.
+        if (tile.id === this.player.loadout.mapState.currentTileId && !tile.completed) {
           const marker = this.add.circle(0, 0, CURRENT_PULSE_RADIUS, 0xf1c40f, 0.3)
           bodyContainer.add(marker)
           this.tweens.add({
@@ -393,6 +395,15 @@ export default class MapScene extends Phaser.Scene {
         } else if (tile.completed) {
           bodyContainer.setAlpha(0.55)
           label.setAlpha(0.65)
+
+          // Add a small completion checkmark so finished tiles are unambiguous.
+          const check = this.add.text(0, TILE_RADIUS + 8, '✓', {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            color: '#2ecc71',
+            fontStyle: 'bold',
+          }).setOrigin(0.5)
+          container.add(check)
         } else {
           // Unreachable tiles are dimmed but not blurred (blur can clip the
           // generated circle shapes in some browsers).
@@ -465,6 +476,9 @@ export default class MapScene extends Phaser.Scene {
   }
 
   doTileAction(tile) {
+    // Defensive: never re-enter a completed tile (prevents repeated rewards).
+    if (tile.completed) return
+
     if (isBattleTile(tile.type)) {
       this.scene.start('LoadoutScene', { player: this.player, tile, mapIndex: this.map.index })
       return

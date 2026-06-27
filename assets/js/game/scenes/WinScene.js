@@ -319,7 +319,7 @@ export default class WinScene extends Phaser.Scene {
     this.createButton(GAME_CONFIG.width / 2, 500, 'Continue', () => {
       this.player.loadout.statPoints = (this.player.loadout.statPoints || 0) + this.attributePoints
       this.player.addGold(this.goldReward)
-      if (this.tile) this.player.completeTile(this.tile.id)
+      if (this.tile?.id) this.player.completeTile(this.tile.id)
       this.player.saveLoadout()
       this.scene.start('MapScene', { player: this.player })
     }, 180, 44, 0x27ae60, 0x2ecc71)

@@ -44,7 +44,8 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
        accept: ~w(.mp3 .wav .webm),
        max_entries: 1,
        max_file_size: 2_000_000
-     )}
+     )
+     |> assign(:selected_kanji_ids, MapSet.new())}
   end
 
   @impl true
@@ -60,6 +61,7 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
     |> assign(:word, %Word{})
     |> assign(:form, to_form(changeset))
     |> assign(:word_kanjis_with_readings, [])
+    |> assign(:selected_kanji_ids, MapSet.new())
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -81,6 +83,7 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
     |> assign(:word, word)
     |> assign(:form, to_form(changeset))
     |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
+    |> assign(:selected_kanji_ids, MapSet.new())
   end
 
   @impl true
@@ -188,6 +191,61 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
     else
       {:noreply,
        put_flash(socket, :error, gettext("Save the word first before extracting kanji"))}
+    end
+  end
+
+  @impl true
+  def handle_event("toggle_kanji_selection", %{"word_kanji_id" => word_kanji_id}, socket) do
+    selected = socket.assigns.selected_kanji_ids
+
+    selected =
+      if MapSet.member?(selected, word_kanji_id) do
+        MapSet.delete(selected, word_kanji_id)
+      else
+        MapSet.put(selected, word_kanji_id)
+      end
+
+    {:noreply, assign(socket, :selected_kanji_ids, selected)}
+  end
+
+  @impl true
+  def handle_event("remove_selected_kanjis", _params, socket) do
+    if socket.assigns.live_action == :edit do
+      selected = socket.assigns.selected_kanji_ids
+
+      if MapSet.size(selected) == 0 do
+        {:noreply, put_flash(socket, :error, gettext("No kanji selected"))}
+      else
+        word = socket.assigns.word
+
+        {:ok, count} = Content.delete_word_kanjis(word.id, MapSet.to_list(selected))
+
+        word = Content.get_word_with_kanji!(word.id)
+
+        word_kanjis_with_readings =
+          word.word_kanjis
+          |> Enum.sort_by(& &1.position)
+          |> Enum.map(fn wk ->
+            kanji = wk.kanji
+            readings = Content.list_readings_for_kanji(kanji.id)
+            {wk, readings}
+          end)
+
+        message =
+          case count do
+            1 -> gettext("1 kanji removed")
+            n -> gettext("%{count} kanji removed", count: n)
+          end
+
+        {:noreply,
+         socket
+         |> assign(:word, word)
+         |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
+         |> assign(:selected_kanji_ids, MapSet.new())
+         |> put_flash(:info, message)}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Save the word first before removing kanji"))}
     end
   end
 

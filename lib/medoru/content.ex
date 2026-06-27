@@ -1363,6 +1363,26 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Deletes multiple word kanji associations for a given word.
+
+  Returns `{:ok, count}` with the number of deleted records.
+
+  ## Examples
+
+      iex> delete_word_kanjis(word_id, [word_kanji_id1, word_kanji_id2])
+      {:ok, 2}
+
+  """
+  def delete_word_kanjis(word_id, word_kanji_ids) when is_list(word_kanji_ids) do
+    {count, _} =
+      WordKanji
+      |> where([wk], wk.word_id == ^word_id and wk.id in ^word_kanji_ids)
+      |> Repo.delete_all()
+
+    {:ok, count}
+  end
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking word kanji changes.
 
   ## Examples

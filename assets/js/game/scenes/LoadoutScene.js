@@ -1,7 +1,7 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
-import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions } from '../data/actions.js'
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
@@ -1183,10 +1183,13 @@ export default class LoadoutScene extends Phaser.Scene {
       }
     })
 
+    const availableIds = new Set(getAvailableActions(this.player).map(a => a.id))
+
     this.abilityListRows = []
     actions.forEach((action, i) => {
       const y = i * rowH
-      const row = this.createAbilityRow(0, y, action, rowH)
+      const isAvailable = availableIds.has(action.id)
+      const row = this.createAbilityRow(0, y, action, rowH, isAvailable)
       this.abilityListContainer.add(row.container)
       this.abilityListRows.push(row)
       this.tabContent.add(row.hitArea)
@@ -1220,7 +1223,7 @@ export default class LoadoutScene extends Phaser.Scene {
     )
   }
 
-  createAbilityRow(x, y, action, rowH) {
+  createAbilityRow(x, y, action, rowH, isAvailable = true) {
     const container = this.add.container(x, y)
     const colors = getActionTypeColor(action.type)
     const rowW = 460
@@ -1228,10 +1231,16 @@ export default class LoadoutScene extends Phaser.Scene {
     const isActive = this.player.loadout.activeActionIds.includes(action.id)
 
     const bg = this.add.graphics()
-    const fillColor = isActive ? colors.main : isInBattle ? 0x1a2a3a : 0x16213e
+    const fillColor = !isAvailable
+      ? 0x1a1a1e
+      : isActive
+        ? colors.main
+        : isInBattle
+          ? 0x1a2a3a
+          : 0x16213e
     bg.fillStyle(fillColor, 0.9)
     bg.fillRoundedRect(0, 0, rowW, rowH - 4, 6)
-    bg.lineStyle(2, colors.main, isActive ? 0.9 : 0.4)
+    bg.lineStyle(2, isAvailable ? colors.main : 0x555555, isActive ? 0.9 : 0.4)
     bg.strokeRoundedRect(0, 0, rowW, rowH - 4, 6)
     container.add(bg)
 
@@ -1241,7 +1250,7 @@ export default class LoadoutScene extends Phaser.Scene {
         this.add.text(30, rowH / 2 - 2, action.kanji, {
           fontFamily: FONTS.kanji.fontFamily,
           fontSize: '24px',
-          color: '#ffffff',
+          color: isAvailable ? '#ffffff' : '#7f8c8d',
         }).setOrigin(0.5)
       )
     }
@@ -1251,7 +1260,7 @@ export default class LoadoutScene extends Phaser.Scene {
       this.add.text(70, 16, action.name, {
         ...FONTS.default,
         fontSize: '13px',
-        color: '#ecf0f1',
+        color: isAvailable ? '#ecf0f1' : '#7f8c8d',
       })
     )
 
@@ -1265,8 +1274,12 @@ export default class LoadoutScene extends Phaser.Scene {
     )
 
     // Status badge
-    const badgeText = isActive ? 'ACTIVE' : isInBattle ? 'BATTLE' : 'RESERVE'
-    const badgeColor = isActive ? '#f1c40f' : isInBattle ? '#3498db' : '#7f8c8d'
+    let badgeText = isActive ? 'ACTIVE' : isInBattle ? 'BATTLE' : 'RESERVE'
+    let badgeColor = isActive ? '#f1c40f' : isInBattle ? '#3498db' : '#7f8c8d'
+    if (!isAvailable) {
+      badgeText = 'LOCKED'
+      badgeColor = '#e74c3c'
+    }
     container.add(
       this.add.text(rowW - 52, rowH / 2 - 2, badgeText, {
         ...FONTS.default,
@@ -1277,19 +1290,21 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Hit area is separate so it can live above the scroll overlay
     const hitArea = this.add.rectangle(0, 0, rowW, rowH, 0x000000, 0)
-      .setInteractive({ useHandCursor: true, draggable: true })
+      .setInteractive({ useHandCursor: true, draggable: isAvailable })
 
-    hitArea.on('dragstart', (pointer) => {
-      this.startAbilityDrag(action, container, pointer.x, pointer.y)
-    })
-    hitArea.on('drag', (pointer) => {
-      if (this.abilityDragClone) {
-        this.abilityDragClone.setPosition(pointer.x, pointer.y)
-      }
-    })
-    hitArea.on('dragend', (pointer) => {
-      this.endAbilityDrag(action, pointer)
-    })
+    if (isAvailable) {
+      hitArea.on('dragstart', (pointer) => {
+        this.startAbilityDrag(action, container, pointer.x, pointer.y)
+      })
+      hitArea.on('drag', (pointer) => {
+        if (this.abilityDragClone) {
+          this.abilityDragClone.setPosition(pointer.x, pointer.y)
+        }
+      })
+      hitArea.on('dragend', (pointer) => {
+        this.endAbilityDrag(action, pointer)
+      })
+    }
     hitArea.on('pointerup', (pointer) => {
       const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
       if (moveDist < 8) {
@@ -1299,7 +1314,7 @@ export default class LoadoutScene extends Phaser.Scene {
           this.abilityDragClone = null
           this.abilityDragAction = null
         }
-        this.showAbilityDetailDialog(action)
+        this.showAbilityDetailDialog(action, isAvailable)
       }
     })
 
@@ -1339,7 +1354,7 @@ export default class LoadoutScene extends Phaser.Scene {
     return parts.join(' · ') || 'None'
   }
 
-  showAbilityDetailDialog(action) {
+  showAbilityDetailDialog(action, isAvailable = true) {
     if (this.abilityDialog) this.abilityDialog.destroy()
 
     const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(2000)
@@ -1414,6 +1429,20 @@ export default class LoadoutScene extends Phaser.Scene {
       const btn = this.createMiniButton(0, btnY, label, color, onClick)
       overlay.add(btn.container)
       btnY += 42
+    }
+
+    // Family-locked or otherwise unavailable abilities cannot be equipped.
+    if (!isAvailable) {
+      overlay.add(
+        this.add.text(0, 80, 'Requirements not met', {
+          ...FONTS.default,
+          fontSize: '13px',
+          color: '#e74c3c',
+        }).setOrigin(0.5)
+      )
+      addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
+      this.abilityDialog = overlay
+      return
     }
 
     // Use Item is always available in the battle pool, but it still needs to be

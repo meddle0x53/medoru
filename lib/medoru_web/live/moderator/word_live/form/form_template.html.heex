@@ -432,21 +432,32 @@
 
     <%!-- Kanji Readings Section (Edit only) - Outside main form --%>
     <%= if @live_action == :edit do %>
-      <div class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div id="kanji-associations" class="card bg-base-100 shadow-sm border border-base-300 mt-6">
         <div class="card-body">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold flex items-center gap-2">
               <.icon name="hero-language" class="w-5 h-5" />
               {gettext("Kanji Associations")}
             </h3>
-            <button
-              type="button"
-              phx-click="extract_kanji"
-              class="btn btn-sm btn-outline btn-primary"
-            >
-              <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
-              {gettext("Extract Kanji")}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click="remove_selected_kanjis"
+                class="btn btn-sm btn-outline btn-error"
+                disabled={MapSet.size(@selected_kanji_ids) == 0}
+              >
+                <.icon name="hero-trash" class="w-4 h-4 mr-1" />
+                {gettext("Remove selected")} ({MapSet.size(@selected_kanji_ids)})
+              </button>
+              <button
+                type="button"
+                phx-click="extract_kanji"
+                class="btn btn-sm btn-outline btn-primary"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                {gettext("Extract Kanji")}
+              </button>
+            </div>
           </div>
 
           <%= if @word_kanjis_with_readings == [] do %>
@@ -462,6 +473,16 @@
               <%= for {word_kanji, readings} <- @word_kanjis_with_readings do %>
                 <div class="p-4 bg-base-200/50 rounded-lg">
                   <div class="flex items-center gap-3 mb-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        class="checkbox checkbox-sm"
+                        phx-click="toggle_kanji_selection"
+                        phx-value-word_kanji_id={word_kanji.id}
+                        checked={MapSet.member?(@selected_kanji_ids, word_kanji.id)}
+                      />
+                      <span class="text-sm text-secondary">{gettext("Select")}</span>
+                    </label>
                     <span class="text-3xl font-medium text-primary">
                       {word_kanji.kanji.character}
                     </span>
