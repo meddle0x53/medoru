@@ -175,7 +175,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   defp preview_lesson(socket, lesson, classroom, _user, locale, step) do
     # Preview mode: show lesson as student would see it, without progress tracking
-    classroom = classroom || %{id: nil, name: gettext("Preview")}
+    classroom = classroom || %{id: nil, name: gettext("Preview"), theme: nil}
 
     if lesson.lesson_subtype == "grammar" do
       load_grammar_lesson(socket, classroom, lesson, nil, false, false, locale, step)
@@ -240,7 +240,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     # Ensure step is within valid range
     current_index = min(max(step, 0), max(total_items - 1, 0))
     current_step = Enum.at(grammar_steps, current_index)
-    current_step = %{current_step | explanation: String.trim(current_step.explanation || "")}
+
+    current_step =
+      if current_step do
+        %{current_step | explanation: String.trim(current_step.explanation || "")}
+      else
+        nil
+      end
 
     # Load word classes for pattern display
     word_classes =
@@ -404,65 +410,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
   @impl true
   def handle_event("complete", _params, socket) do
-    classroom_id = socket.assigns.classroom.id
-    user = socket.assigns.current_scope.current_user
-    lesson_id = socket.assigns.lesson.id
-    lesson = socket.assigns.lesson
-    practice = socket.assigns.practice
-    is_anonymous = is_nil(user)
-
-    # In practice mode, just show completion without awarding points
-    if practice do
-      {:noreply,
-       socket
-       |> push_navigate(
-         to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?practice=true"
-       )}
+    # Preview mode has no classroom context; completing is a no-op
+    if socket.assigns.is_preview do
+      {:noreply, socket}
     else
-      # Check if test is required
-      if lesson.requires_test and lesson.test_id do
-        if is_anonymous do
-          # Anonymous user - skip test, go to completion with prompt to sign in
-          {:noreply,
-           socket
-           |> push_navigate(
-             to:
-               ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?anonymous=true"
-           )}
-        else
-          # Check if test is already completed
-          case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
-            nil ->
-              # Redirect to test
-              {:noreply,
-               socket
-               |> push_navigate(
-                 to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test"
-               )}
-
-            _session ->
-              # Test already completed, show already completed message
-              {:noreply,
-               socket
-               |> put_flash(
-                 :info,
-                 gettext("You've already completed this lesson. Use Practice Mode to review.")
-               )
-               |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
-          end
-        end
-      else
-        # No test required, mark lesson complete (skip DB for anonymous)
-        if is_anonymous do
-          {:noreply,
-           socket
-           |> push_navigate(
-             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete"
-           )}
-        else
-          complete_lesson(socket, classroom_id, user.id, lesson_id)
-        end
-      end
+      do_complete(socket)
     end
   end
 
@@ -590,6 +542,70 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     else
       {:noreply,
        put_flash(socket, :error, gettext("Only admins can copy to grammar definitions."))}
+    end
+  end
+
+  # Private implementation of complete/2 to keep handle_event clauses grouped
+  defp do_complete(socket) do
+    classroom_id = socket.assigns.classroom.id
+    user = socket.assigns.current_scope.current_user
+    lesson_id = socket.assigns.lesson.id
+    lesson = socket.assigns.lesson
+    practice = socket.assigns.practice
+    is_anonymous = is_nil(user)
+
+    # In practice mode, just show completion without awarding points
+    if practice do
+      {:noreply,
+       socket
+       |> push_navigate(
+         to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?practice=true"
+       )}
+    else
+      # Check if test is required
+      if lesson.requires_test and lesson.test_id do
+        if is_anonymous do
+          # Anonymous user - skip test, go to completion with prompt to sign in
+          {:noreply,
+           socket
+           |> push_navigate(
+             to:
+               ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete?anonymous=true"
+           )}
+        else
+          # Check if test is already completed
+          case Medoru.Tests.get_completed_test_session(user.id, lesson.test_id) do
+            nil ->
+              # Redirect to test
+              {:noreply,
+               socket
+               |> push_navigate(
+                 to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/test"
+               )}
+
+            _session ->
+              # Test already completed, show already completed message
+              {:noreply,
+               socket
+               |> put_flash(
+                 :info,
+                 gettext("You've already completed this lesson. Use Practice Mode to review.")
+               )
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=lessons")}
+          end
+        end
+      else
+        # No test required, mark lesson complete (skip DB for anonymous)
+        if is_anonymous do
+          {:noreply,
+           socket
+           |> push_navigate(
+             to: ~p"/classrooms/#{classroom_id}/custom-lessons/#{lesson_id}/complete"
+           )}
+        else
+          complete_lesson(socket, classroom_id, user.id, lesson_id)
+        end
+      end
     end
   end
 
@@ -730,12 +746,25 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
 
         <%!-- Header --%>
         <div class="mb-6 lesson-header">
-          <.link
-            navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
-            class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
-          >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
-          </.link>
+          <%= if @is_preview do %>
+            <% edit_path =
+              if @lesson.lesson_subtype == "grammar",
+                do: ~p"/teacher/grammar-lessons/#{@lesson.id}/edit",
+                else: ~p"/teacher/custom-lessons/#{@lesson.id}/edit" %>
+            <.link
+              navigate={edit_path}
+              class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Editor")}
+            </.link>
+          <% else %>
+            <.link
+              navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
+              class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
+            >
+              <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}
+            </.link>
+          <% end %>
           <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-base-content">
               {Content.get_localized_lesson_title(@lesson, @locale)}
@@ -817,23 +846,32 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <% end %>
 
           <%!-- Japanese Text --%>
-          <a
-            href={
-              word_detail_path(
-                @classroom.id,
-                @lesson.id,
-                @current_word.word.id,
-                @current_index,
-                @practice
-              )
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-6xl font-jp mb-4 hover:text-primary transition-colors inline-block"
-            title={gettext("View word details")}
-          >
-            {@current_word.word.text}
-          </a>
+          <%= if @is_preview do %>
+            <span
+              class="text-6xl font-jp mb-4 inline-block"
+              title={gettext("Preview mode")}
+            >
+              {@current_word.word.text}
+            </span>
+          <% else %>
+            <a
+              href={
+                word_detail_path(
+                  @classroom.id,
+                  @lesson.id,
+                  @current_word.word.id,
+                  @current_index,
+                  @practice
+                )
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-6xl font-jp mb-4 hover:text-primary transition-colors inline-block"
+              title={gettext("View word details")}
+            >
+              {@current_word.word.text}
+            </a>
+          <% end %>
 
           <%!-- Reading --%>
           <div class="text-xl text-secondary mb-6">{@current_word.word.reading}</div>
@@ -897,6 +935,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           </button>
         <% else %>
           <%= cond do %>
+            <% @is_preview -> %>
+              <%!-- Preview mode: no classroom context, just back to editor --%>
+              <% edit_path =
+                if @lesson.lesson_subtype == "grammar",
+                  do: ~p"/teacher/grammar-lessons/#{@lesson.id}/edit",
+                  else: ~p"/teacher/custom-lessons/#{@lesson.id}/edit" %>
+              <.link
+                navigate={edit_path}
+                class="btn btn-primary"
+              >
+                <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> {gettext("Back to Editor")}
+              </.link>
             <% @practice -> %>
               <%!-- Practice mode: show review complete button --%>
               <button
@@ -1093,6 +1143,18 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           </button>
         <% else %>
           <%= cond do %>
+            <% @is_preview -> %>
+              <%!-- Preview mode: no classroom context, just back to editor --%>
+              <% edit_path =
+                if @lesson.lesson_subtype == "grammar",
+                  do: ~p"/teacher/grammar-lessons/#{@lesson.id}/edit",
+                  else: ~p"/teacher/custom-lessons/#{@lesson.id}/edit" %>
+              <.link
+                navigate={edit_path}
+                class="btn btn-primary"
+              >
+                <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> {gettext("Back to Editor")}
+              </.link>
             <% @practice -> %>
               <%!-- Practice mode: show review complete button --%>
               <button
@@ -1144,6 +1206,8 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   end
 
   # Build merged word colors for a step (step overrides lesson-level)
+  defp build_step_word_colors(_lesson, nil), do: []
+
   defp build_step_word_colors(lesson, current_step) do
     lesson_colors = lesson.word_colors || []
     step_colors = current_step.word_colors || []

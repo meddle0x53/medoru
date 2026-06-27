@@ -42,6 +42,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Global trackpad / wheel scrolling for scrollable lists
     this._wheelHandler = (e) => {
+      if (this.abilityDialogOpen) return
       if (this.currentTab === 'items' && this.itemListContainer) {
         e.preventDefault()
         this.scrollItemList(e.deltaY * 0.8)
@@ -249,33 +250,38 @@ export default class LoadoutScene extends Phaser.Scene {
   createActiveActionSlots() {
     this.actionSlots = []
     const maxSlots = getMaxActiveActions(this.player.capacity || 3)
-    const startX = 220 - ((maxSlots - 1) * 45) / 2
+    const activeIds = this.player.loadout.activeActionIds
+    const combatActiveIds = activeIds.filter(id => id !== 'use_item')
+    const useItemActive = activeIds.includes('use_item')
+    const startX = 220 - ((maxSlots - 1) * 40) / 2
     const y = 380
     const size = 36
 
     this.leftPanel.add(
-      this.add.text(220, y - 42, `Active for Battle (${maxSlots} max)`, {
+      this.add.text(220, y - 42, `Active for Battle (${maxSlots})`, {
         ...FONTS.default,
         fontSize: '12px',
         color: '#f1c40f',
       }).setOrigin(0.5)
     )
 
-    for (let i = 0; i < maxSlots; i++) {
-      const x = startX + i * 40
+    const createSlot = (x, actionId, options = {}) => {
+      const { isItemSlot = false } = options
       const g = this.add.graphics()
-      g.lineStyle(2, 0xf1c40f, 0.5)
+      const borderColor = isItemSlot ? 0x1abc9c : 0xf1c40f
+      g.lineStyle(2, borderColor, 0.5)
       g.strokeRoundedRect(x - size / 2, y - size / 2, size, size, 6)
-      g.fillStyle(0xf1c40f, 0.1)
+      g.fillStyle(borderColor, 0.1)
       g.fillRoundedRect(x - size / 2, y - size / 2, size, size, 6)
       this.leftPanel.add(g)
 
-      const actionId = this.player.loadout.activeActionIds[i]
       let label = ''
       let action = null
       if (actionId) {
         action = ALL_ACTIONS.find(a => a.id === actionId)
-        label = action ? action.kanji : '?'
+        label = action ? (action.kanji || action.name.slice(0, 2)) : '?'
+      } else if (isItemSlot) {
+        label = '🎒'
       }
 
       const text = this.add.text(x, y, label, {
@@ -285,27 +291,38 @@ export default class LoadoutScene extends Phaser.Scene {
       }).setOrigin(0.5)
       this.leftPanel.add(text)
 
-      // Invisible hit area for click-to-remove and drop-target
+      // Invisible hit area for click-to-remove/toggle and drop-target
       const hitArea = this.add.rectangle(x, y, size + 8, size + 8, 0x000000, 0)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
-          if (actionId) {
+          if (isItemSlot) {
+            if (useItemActive) this.deactivateAbility('use_item')
+            else this.activateAbility('use_item')
+          } else if (actionId) {
             this.deactivateAbility(actionId)
           }
         })
       this.leftPanel.add(hitArea)
 
-      const slot = {
+      return {
         x, y, size,
-        index: i,
+        index: isItemSlot ? 'item' : options.index,
         actionId,
         action,
         text,
         graphics: g,
         hitArea,
       }
-      this.actionSlots.push(slot)
     }
+
+    for (let i = 0; i < maxSlots; i++) {
+      const x = startX + i * 40
+      this.actionSlots.push(createSlot(x, combatActiveIds[i], { index: i }))
+    }
+
+    // Dedicated Use Item slot to the right of combat slots
+    const itemX = startX + maxSlots * 40 + 16
+    this.actionSlots.push(createSlot(itemX, useItemActive ? 'use_item' : null, { isItemSlot: true }))
   }
 
   deactivateAbility(actionId, { force = false } = {}) {
@@ -345,9 +362,23 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   activateAbility(actionId) {
+    // Use Item occupies its own dedicated slot and never blocks combat abilities.
+    if (actionId === 'use_item') {
+      if (!this.player.loadout.activeActionIds.includes('use_item')) {
+        this.player.loadout.activeActionIds.push('use_item')
+        this.player.saveLoadout()
+      }
+      this.player.refreshActions()
+      this.refreshActionSlots()
+      this.showTab('abilities')
+      this.showToast('Use Item activated')
+      return
+    }
+
     const maxSlots = getMaxActiveActions(this.player.capacity || 3)
-    if (this.player.loadout.activeActionIds.length >= maxSlots) {
-      this.showToast(`Max ${maxSlots} active actions`)
+    const combatActiveCount = this.player.loadout.activeActionIds.filter(id => id !== 'use_item').length
+    if (combatActiveCount >= maxSlots) {
+      this.showToast(`Max ${maxSlots} active abilities`)
       return
     }
     if (this.player.loadout.activeActionIds.includes(actionId)) {
@@ -686,7 +717,7 @@ export default class LoadoutScene extends Phaser.Scene {
       if (row.hitArea) {
         row.hitArea.setVisible(visible)
         row.hitArea.input.enabled = visible
-        row.hitArea.setPosition(listX + 230, listY + i * rowH + row.rowH / 2)
+        row.hitArea.setPosition(listX + 230, listY - this.itemListScroll + i * rowH + row.rowH / 2)
       }
     })
 
@@ -1130,6 +1161,7 @@ export default class LoadoutScene extends Phaser.Scene {
     const activeIds = this.player.loadout.activeActionIds
     const selectedIds = this.player.loadout.selectedActionIds
     const knownIds = this.player.loadout.knownActionIds || []
+    const useItemActive = activeIds.includes('use_item')
 
     // Header
     this.tabContent.add(
@@ -1167,17 +1199,17 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Invisible scroll/drag area behind the row hit areas.
     // It is added to tabContent first so row hit areas sit on top and receive clicks.
-    const scrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW, listH, 0x000000, 0.01)
+    this.abilityScrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW, listH, 0x000000, 0.01)
       .setInteractive({ useHandCursor: false })
-    this.tabContent.add(scrollHitArea)
+    this.tabContent.add(this.abilityScrollHitArea)
 
     let dragStartY = 0
     let dragStartScroll = 0
-    scrollHitArea.on('pointerdown', (pointer) => {
+    this.abilityScrollHitArea.on('pointerdown', (pointer) => {
       dragStartY = pointer.y
       dragStartScroll = this.abilityListScroll
     })
-    scrollHitArea.on('pointermove', (pointer) => {
+    this.abilityScrollHitArea.on('pointermove', (pointer) => {
       if (pointer.isDown) {
         this.setAbilityListScroll(dragStartScroll - (pointer.y - dragStartY))
       }
@@ -1213,9 +1245,10 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Info footer
     const combatSelected = selectedIds.filter(id => id !== 'use_item').length
+    const combatActiveCount = activeIds.filter(id => id !== 'use_item').length
     const color = knownIds.length > maxOverall ? '#e74c3c' : '#7f8c8d'
     this.tabContent.add(
-      this.add.text(690, 470, `${knownIds.length}/${maxOverall} Known · ${combatSelected}/${maxBattle} Battle · ${activeIds.length}/${maxActive} Active`, {
+      this.add.text(690, 470, `${knownIds.length}/${maxOverall} Known · ${combatSelected}/${maxBattle} Battle · ${combatActiveCount}/${maxActive} Active · Item ${useItemActive ? 'ON' : 'OFF'}`, {
         ...FONTS.default,
         fontSize: '12px',
         color,
@@ -1334,7 +1367,7 @@ export default class LoadoutScene extends Phaser.Scene {
       row.container.setVisible(visible)
       row.hitArea.setVisible(visible)
       if (row.hitArea.input) row.hitArea.input.enabled = visible
-      row.hitArea.setPosition(this.abilityListX + 230, this.abilityListY + i * rowH + rowH / 2)
+      row.hitArea.setPosition(this.abilityListX + 230, this.abilityListY - this.abilityListScroll + i * rowH + rowH / 2)
     })
 
     if (this.abilityListThumb && this.abilityListMaxScroll > 0) {
@@ -1356,6 +1389,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
   showAbilityDetailDialog(action, isAvailable = true) {
     if (this.abilityDialog) this.abilityDialog.destroy()
+    this.disableAbilityRowsForDialog(true)
 
     const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(2000)
 
@@ -1442,11 +1476,11 @@ export default class LoadoutScene extends Phaser.Scene {
       )
       addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
       this.abilityDialog = overlay
+      this.disableAbilityRowsForDialog(true)
       return
     }
 
-    // Use Item is always available in the battle pool, but it still needs to be
-    // activated to appear as a combat button.
+    // Use Item is always available in the battle pool and occupies its own slot.
     if (action.id === 'use_item') {
       if (isActive) {
         addDialogBtn('Deactivate', 0xf39c12, () => {
@@ -1456,9 +1490,7 @@ export default class LoadoutScene extends Phaser.Scene {
           this.refreshActionSlots()
         })
       } else {
-        const activeFull = this.player.loadout.activeActionIds.length >= maxActive
-        addDialogBtn(activeFull ? 'Active Slots Full' : 'Activate', activeFull ? 0x555555 : 0x3498db, () => {
-          if (activeFull) return
+        addDialogBtn('Activate', 0x3498db, () => {
           this.activateAbility(action.id)
           this.closeAbilityDialog()
           this.showTab('abilities')
@@ -1467,6 +1499,7 @@ export default class LoadoutScene extends Phaser.Scene {
       }
       addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
       this.abilityDialog = overlay
+      this.disableAbilityRowsForDialog(true)
       return
     }
 
@@ -1511,7 +1544,8 @@ export default class LoadoutScene extends Phaser.Scene {
           this.refreshActionSlots()
         })
       } else {
-        const activeFull = this.player.loadout.activeActionIds.length >= maxActive
+        const combatActiveCount = this.player.loadout.activeActionIds.filter(id => id !== 'use_item').length
+        const activeFull = combatActiveCount >= maxActive
         addDialogBtn(activeFull ? 'Active Slots Full' : 'Activate', activeFull ? 0x555555 : 0x3498db, () => {
           if (activeFull) return
           this.activateAbility(action.id)
@@ -1525,12 +1559,29 @@ export default class LoadoutScene extends Phaser.Scene {
     addDialogBtn('Close', 0x7f8c8d, () => this.closeAbilityDialog())
 
     this.abilityDialog = overlay
+    this.disableAbilityRowsForDialog(true)
+  }
+
+  disableAbilityRowsForDialog(disabled) {
+    this.abilityDialogOpen = disabled
+    if (this.abilityListRows) {
+      this.abilityListRows.forEach(row => {
+        if (row.hitArea && row.hitArea.input) row.hitArea.input.enabled = !disabled
+      })
+    }
+    if (this.abilityScrollHitArea && this.abilityScrollHitArea.input) {
+      this.abilityScrollHitArea.input.enabled = !disabled
+    }
   }
 
   closeAbilityDialog() {
     if (this.abilityDialog) {
       this.abilityDialog.destroy()
       this.abilityDialog = null
+    }
+    this.disableAbilityRowsForDialog(false)
+    if (this.abilityListContainer && this.abilityListContainer.scene) {
+      this.setAbilityListScroll(this.abilityListScroll || 0)
     }
   }
 
@@ -1539,7 +1590,9 @@ export default class LoadoutScene extends Phaser.Scene {
     this.actionSlots.forEach(slot => {
       slot.text.destroy()
       slot.graphics.destroy()
+      if (slot.hitArea) slot.hitArea.destroy()
     })
+    this.actionSlots = []
     this.createActiveActionSlots()
   }
 
@@ -1772,7 +1825,39 @@ export default class LoadoutScene extends Phaser.Scene {
     })
   }
 
+  fillActiveActionSlots() {
+    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    const activeIds = this.player.loadout.activeActionIds
+    const useItemActive = activeIds.includes('use_item')
+
+    const selected = this.player.loadout.selectedActionIds.filter(id => id !== 'use_item')
+    const available = new Set(getAvailableActions(this.player).map(a => a.id))
+
+    // Start from current combat active abilities, keeping only valid ones.
+    let combatActive = activeIds
+      .filter(id => id !== 'use_item')
+      .filter((id, idx, arr) => arr.indexOf(id) === idx)
+      .filter(id => selected.includes(id) && available.has(id))
+
+    // Fill remaining slots from the selected pool, preferring attacks.
+    const addable = selected.filter(id => available.has(id) && !combatActive.includes(id))
+    while (combatActive.length < maxSlots && addable.length > 0) {
+      const nextAttackIdx = addable.findIndex(id => {
+        const a = ALL_ACTIONS.find(act => act.id === id)
+        return a && a.type === 'attack'
+      })
+      const idx = nextAttackIdx >= 0 ? nextAttackIdx : 0
+      combatActive.push(addable[idx])
+      addable.splice(idx, 1)
+    }
+
+    combatActive = combatActive.slice(0, maxSlots)
+    this.player.loadout.activeActionIds = useItemActive ? [...combatActive, 'use_item'] : combatActive
+  }
+
   startBattle() {
+    this.fillActiveActionSlots()
+
     const hasActiveAttack = this.player.loadout.activeActionIds
       .map(id => ALL_ACTIONS.find(a => a.id === id))
       .some(a => a?.type === 'attack')

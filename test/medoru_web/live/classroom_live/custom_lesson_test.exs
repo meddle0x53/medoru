@@ -260,4 +260,56 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       refute render(view) =~ "Copy To Grammar"
     end
   end
+
+  describe "preview draft lesson without classroom" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{type: "teacher"})
+
+      %{
+        conn: conn,
+        teacher: teacher
+      }
+    end
+
+    test "renders vocabulary preview without crashing", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "vocabulary",
+          title: "Draft Vocabulary Lesson",
+          status: "draft"
+        })
+
+      word = word_fixture(%{text: "たべる"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
+
+      conn = log_in_user(conn, teacher)
+      {:ok, _view, html} = live(conn, ~p"/teacher/custom-lessons/#{lesson.id}/preview")
+
+      assert html =~ "Preview Mode"
+      assert html =~ word.text
+    end
+
+    test "renders grammar preview without crashing when no steps exist", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "grammar",
+          title: "Draft Grammar Lesson",
+          status: "draft"
+        })
+
+      conn = log_in_user(conn, teacher)
+      {:ok, _view, html} = live(conn, ~p"/teacher/custom-lessons/#{lesson.id}/preview")
+
+      assert html =~ "Preview Mode"
+      assert html =~ lesson.title
+    end
+  end
 end

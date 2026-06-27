@@ -64,7 +64,7 @@ export default class WinScene extends Phaser.Scene {
       this.player.shield?.name
     )
     const count = 3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0)
-    return pickRewardAbilities(pool, count, this.player.loadout.selectedActionIds)
+    return pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
   }
 
   applyDrops() {

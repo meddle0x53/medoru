@@ -942,7 +942,8 @@ export default class BattleScene extends Phaser.Scene {
 
   renderSwitchDialog() {
     const maxActive = this.player.maxActiveSlots
-    const activeCount = this.player.activeActions.length
+    const combatActive = this.player.activeActions.filter(a => a.id !== 'use_item')
+    const activeCount = combatActive.length
     this.switchDialogTitle.setText(`Switch Actions (${activeCount}/${maxActive})`)
 
     const TYPE_ICONS = {
@@ -953,9 +954,10 @@ export default class BattleScene extends Phaser.Scene {
       item: '🎒',
     }
 
-    // Render active rows
+    // Render active rows (Use Item is always available and not swappable)
+    const combatInactive = this.player.inactiveActions.filter(a => a.id !== 'use_item')
     this.switchDialogActiveRows.forEach((row, i) => {
-      const action = this.player.activeActions[i]
+      const action = combatActive[i]
       if (action) {
         row.container.setVisible(true)
         row.typeIcon.setText(TYPE_ICONS[action.type] || '?')
@@ -981,7 +983,7 @@ export default class BattleScene extends Phaser.Scene {
 
     // Render inactive rows
     this.switchDialogInactiveRows.forEach((row, i) => {
-      const action = this.player.inactiveActions[i]
+      const action = combatInactive[i]
       if (action) {
         row.container.setVisible(true)
         row.typeIcon.setText(TYPE_ICONS[action.type] || '?')

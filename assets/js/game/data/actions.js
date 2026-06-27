@@ -69,11 +69,12 @@ export function getAvailableActions(player) {
  * Returns { active, inactive }
  */
 export function splitActions(player) {
-  // Determine the action pool: loadout.selectedActionIds if available, otherwise all actions
+  // Determine the action pool: loadout.selectedActionIds if available, otherwise all actions.
+  // Use Item is handled separately and never consumes a combat active slot.
   const poolIds = player.loadout?.selectedActionIds
   const universe = poolIds && poolIds.length > 0
-    ? ALL_ACTIONS.filter(a => poolIds.includes(a.id))
-    : ALL_ACTIONS
+    ? ALL_ACTIONS.filter(a => poolIds.includes(a.id) && a.id !== 'use_item')
+    : ALL_ACTIONS.filter(a => a.id !== 'use_item')
 
   const available = getAvailableActions(player)
   // Intersect available gear with selected pool
@@ -83,10 +84,17 @@ export function splitActions(player) {
 
   // Use loadout.activeActionIds if present, otherwise fall back to direct property
   const activeIds = player.loadout?.activeActionIds || player.activeActionIds || []
+  const useItemActive = activeIds.includes('use_item')
 
   if (activeIds.length > 0) {
-    const active = pool.filter(a => activeIds.includes(a.id))
-    const inactive = pool.filter(a => !activeIds.includes(a.id))
+    const active = []
+    for (const id of activeIds) {
+      if (id === 'use_item') continue
+      const action = pool.find(a => a.id === id)
+      if (action) active.push(action)
+    }
+    const inactive = pool.filter(a => !active.some(act => act.id === a.id))
+
     // Ensure we have at least one attack in active
     if (!active.some(a => a.type === 'attack')) {
       const firstAttack = inactive.find(a => a.type === 'attack')
@@ -95,7 +103,8 @@ export function splitActions(player) {
         active.push(firstAttack)
       }
     }
-    // Trim to maxActive
+
+    // Trim combat active abilities to maxActive (Use Item is added afterwards).
     while (active.length > maxActive) {
       const nonAttack = active.findLast(a => a.type !== 'attack')
       if (nonAttack) {
@@ -105,6 +114,12 @@ export function splitActions(player) {
         break
       }
     }
+
+    if (useItemActive) {
+      const useItemAction = ALL_ACTIONS.find(a => a.id === 'use_item')
+      if (useItemAction) active.push(useItemAction)
+    }
+
     return { active, inactive }
   }
 
@@ -116,6 +131,11 @@ export function splitActions(player) {
   if (firstAttack) {
     inactive.splice(inactive.indexOf(firstAttack), 1)
     active.push(firstAttack)
+  }
+
+  if (useItemActive) {
+    const useItemAction = ALL_ACTIONS.find(a => a.id === 'use_item')
+    if (useItemAction) active.push(useItemAction)
   }
 
   return { active, inactive }
