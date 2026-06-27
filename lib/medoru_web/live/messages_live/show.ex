@@ -16,8 +16,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.Notifications
   alias MedoruWeb.GrammarChatPreview
   alias MedoruWeb.KanjiChatPreview
+  alias MedoruWeb.LinkPreviewCard
+  alias MedoruWeb.LinkPreviewSubscribers
   alias MedoruWeb.WordChatPreview
   alias MedoruWeb.Presence
+  alias Medoru.LinkPreviews
 
   @per_page 20
 
@@ -184,33 +187,42 @@ defmodule MedoruWeb.MessagesLive.Show do
               gettext("Chat with %{name}", name: participant_name(other))
             end
 
-          {:ok,
-           socket
-           |> assign(:locale, locale)
-           |> assign(:conversation, conversation)
-           |> assign(:other_participants, other_participants)
-           |> assign(:participant_public_keys, participant_public_keys)
-           |> assign(:participant_public_keys_v2, participant_public_keys_v2)
-           |> assign(:encrypted_key, encrypted_key)
-           |> assign(:encrypted_keys_v2, encrypted_keys_v2)
-           |> assign(:messages, messages)
-           |> assign(:has_more_messages, has_more)
-           |> assign(:message_offset, 0)
-           |> assign(:message_reactions, message_reactions)
-           |> assign(:reply_to, nil)
-           |> assign(:preview_message, nil)
-           |> assign(:editing_message, nil)
-           |> assign(:reaction_picker_message_id, nil)
-           |> assign(:page_title, page_title)
-           |> assign(:typing_users, [])
-           |> assign(:is_blocked, is_blocked)
-           |> assign(:missing_keys, missing_keys)
-           |> assign(:key_mismatch, key_mismatch)
-           |> assign(:last_registered_key, last_registered_key)
-           |> assign(:chat_enter_sends, chat_enter_sends)
-           |> assign(:convert_emoticons, convert_emoticons)
-           |> assign(:online_user_ids, online_user_ids)
-           |> push_event("scroll_to_bottom", %{})}
+          socket =
+            socket
+            |> assign(:locale, locale)
+            |> assign(:conversation, conversation)
+            |> assign(:other_participants, other_participants)
+            |> assign(:participant_public_keys, participant_public_keys)
+            |> assign(:participant_public_keys_v2, participant_public_keys_v2)
+            |> assign(:encrypted_key, encrypted_key)
+            |> assign(:encrypted_keys_v2, encrypted_keys_v2)
+            |> assign(:messages, messages)
+            |> assign(:has_more_messages, has_more)
+            |> assign(:message_offset, 0)
+            |> assign(:message_reactions, message_reactions)
+            |> assign(:reply_to, nil)
+            |> assign(:preview_message, nil)
+            |> assign(:editing_message, nil)
+            |> assign(:reaction_picker_message_id, nil)
+            |> assign(:page_title, page_title)
+            |> assign(:typing_users, [])
+            |> assign(:is_blocked, is_blocked)
+            |> assign(:missing_keys, missing_keys)
+            |> assign(:key_mismatch, key_mismatch)
+            |> assign(:last_registered_key, last_registered_key)
+            |> assign(:chat_enter_sends, chat_enter_sends)
+            |> assign(:convert_emoticons, convert_emoticons)
+            |> assign(:online_user_ids, online_user_ids)
+            |> push_event("scroll_to_bottom", %{})
+
+          socket =
+            if connected?(socket) do
+              LinkPreviewSubscribers.subscribe_for_texts(socket, Enum.map(messages, & &1.content))
+            else
+              socket
+            end
+
+          {:ok, socket}
         end
       else
         {:ok, push_navigate(socket, to: ~p"/messages")}
@@ -746,12 +758,19 @@ defmodule MedoruWeb.MessagesLive.Show do
     # Prepend older messages so the list stays in chronological order
     # (oldest first, newest last). list_messages returns each batch in
     # oldest-to-newest order, so older_messages belongs before messages.
-    {:noreply,
-     socket
-     |> assign(:messages, older_messages ++ socket.assigns.messages)
-     |> assign(:has_more_messages, has_more)
-     |> assign(:message_offset, new_offset)
-     |> assign(:message_reactions, Map.merge(socket.assigns.message_reactions, older_reactions))}
+    all_messages = older_messages ++ socket.assigns.messages
+
+    socket =
+      socket
+      |> assign(:messages, all_messages)
+      |> assign(:has_more_messages, has_more)
+      |> assign(:message_offset, new_offset)
+      |> assign(:message_reactions, Map.merge(socket.assigns.message_reactions, older_reactions))
+
+    socket =
+      LinkPreviewSubscribers.subscribe_for_texts(socket, Enum.map(all_messages, & &1.content))
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -1128,6 +1147,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_info({:link_preview_ready, _preview}, socket) do
+    {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
+  end
+
+  @impl true
   def handle_info({:new_message, message}, socket) do
     current_user = socket.assigns.current_scope.current_user
     conversation = socket.assigns.conversation
@@ -1149,9 +1173,11 @@ defmodule MedoruWeb.MessagesLive.Show do
     # For classroom chats, skip messages from deleted or removed users
     if is_nil(conversation.classroom_id) ||
          Chat.sender_visible_in_classroom?(message, conversation) do
+      messages = socket.assigns.messages ++ [message]
+
       socket =
         socket
-        |> assign(:messages, socket.assigns.messages ++ [message])
+        |> assign(:messages, messages)
         |> then(fn s ->
           if message.sender_id == current_user.id do
             push_event(s, "scroll_to_bottom", %{})
@@ -1159,6 +1185,9 @@ defmodule MedoruWeb.MessagesLive.Show do
             s
           end
         end)
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(socket, Enum.map(messages, & &1.content))
 
       # Only decrypt if this is an encrypted message (not a classroom chat)
       socket =
@@ -1401,51 +1430,55 @@ defmodule MedoruWeb.MessagesLive.Show do
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
-      render_text_segment(text, convert_emoticons)
+      rendered = render_text_segment(text, convert_emoticons)
+      append_link_preview(rendered, text)
     else
       segments = build_tagged_segments(text, matches, 0, [])
 
-      Enum.flat_map(segments, fn
-        {:text, segment_text} ->
-          render_text_segment(segment_text, convert_emoticons)
+      rendered =
+        Enum.flat_map(segments, fn
+          {:text, segment_text} ->
+            render_text_segment(segment_text, convert_emoticons)
 
-        {:word, word_text} ->
-          case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-            nil ->
-              [Phoenix.HTML.html_escape(word_text)]
+          {:word, word_text} ->
+            case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
+              nil ->
+                [Phoenix.HTML.html_escape(word_text)]
 
-            word ->
-              if MatureContent.mature_word_visible_to_user?(word, viewer) do
-                word_path = ~p"/words/#{word.id}"
-                {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+              word ->
+                if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                  word_path = ~p"/words/#{word.id}"
+                  {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+
+                  [
+                    {:safe,
+                     ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                  ]
+                else
+                  [
+                    {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
+                  ]
+                end
+            end
+
+          {:grammar, grammar_text} ->
+            case Content.get_grammar_definition_by_title(grammar_text) do
+              nil ->
+                {:safe, escaped} = Phoenix.HTML.html_escape("\\#{grammar_text}/")
+                [escaped]
+
+              grammar ->
+                grammar_path = ~p"/grammars/#{grammar.slug}"
+                {:safe, escaped} = Phoenix.HTML.html_escape(grammar_text)
 
                 [
                   {:safe,
-                   ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                   ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
                 ]
-              else
-                [
-                  {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
-                ]
-              end
-          end
+            end
+        end)
 
-        {:grammar, grammar_text} ->
-          case Content.get_grammar_definition_by_title(grammar_text) do
-            nil ->
-              {:safe, escaped} = Phoenix.HTML.html_escape("\\#{grammar_text}/")
-              [escaped]
-
-            grammar ->
-              grammar_path = ~p"/grammars/#{grammar.slug}"
-              {:safe, escaped} = Phoenix.HTML.html_escape(grammar_text)
-
-              [
-                {:safe,
-                 ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
-              ]
-          end
-      end)
+      append_link_preview(rendered, text)
     end
   end
 
@@ -1520,6 +1553,23 @@ defmodule MedoruWeb.MessagesLive.Show do
             end
         end)
     end)
+  end
+
+  defp append_link_preview(rendered, text) when is_list(rendered) do
+    case LinkPreviews.cached_preview_for_text(text) do
+      nil ->
+        rendered
+
+      preview ->
+        assigns = %{preview: preview, __changed__: %{}}
+
+        card_html =
+          LinkPreviewCard.link_preview_card(assigns)
+          |> Phoenix.HTML.Safe.to_iodata()
+          |> IO.iodata_to_binary()
+
+        rendered ++ [{:safe, ~s|<div class="mt-2">#{card_html}</div>|}]
+    end
   end
 
   defp parse_kanji_command(text) do

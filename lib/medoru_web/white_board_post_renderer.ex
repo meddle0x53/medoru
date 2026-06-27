@@ -4,9 +4,12 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   Used by both UserWhiteBoardLive and UserWhiteBoardPostLive.
   """
 
+  require Logger
+
   alias Medoru.Content
   alias Medoru.Content.MatureContent
-  alias MedoruWeb.{GrammarChatPreview, KanjiChatPreview, WordChatPreview}
+  alias Medoru.LinkPreviews
+  alias MedoruWeb.{GrammarChatPreview, KanjiChatPreview, LinkPreviewCard, WordChatPreview}
 
   def render_post_content(text_or_nil, post_id, viewer \\ nil)
 
@@ -93,22 +96,30 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   def render_comment_content(nil, _viewer), do: ""
 
   defp render_post_body(text, post_id, viewer) do
-    text
-    |> render_inline_word_links(viewer)
-    |> autolink_urls()
-    |> render_markdown()
-    |> unwrap_photo_only_html()
-    |> render_audio_players(post_id)
-    |> render_video_players(post_id)
-    |> render_images(post_id)
+    body =
+      text
+      |> render_inline_word_links(viewer)
+      |> autolink_urls()
+      |> pad_line_leading_links()
+      |> render_markdown()
+      |> unwrap_photo_only_html()
+      |> render_audio_players(post_id)
+      |> render_video_players(post_id)
+      |> render_images(post_id)
+
+    append_link_preview(body, text)
   end
 
   defp render_comment_body(text, viewer) do
-    text
-    |> render_inline_word_links(viewer)
-    |> autolink_urls()
-    |> render_markdown()
-    |> render_video_players("comment")
+    body =
+      text
+      |> render_inline_word_links(viewer)
+      |> autolink_urls()
+      |> pad_line_leading_links()
+      |> render_markdown()
+      |> render_video_players("comment")
+
+    append_link_preview(body, text)
   end
 
   defp match_word_command?(text) do
@@ -299,13 +310,19 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> Enum.map(fn segment ->
       cond do
         Regex.match?(url_regex, segment) ->
-          case MedoruWeb.YoutubeEmbed.video_id(segment) do
-            {:ok, video_id} ->
-              MedoruWeb.YoutubeEmbed.embed_html(video_id)
+          {url_text, trailing} = split_trailing_punctuation(segment)
+          clean_url = Medoru.LinkPreviews.Fetcher.normalize_url(url_text)
 
-            :error ->
-              "<a href=\"#{segment}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{segment}</a>"
-          end
+          link_html =
+            case MedoruWeb.YoutubeEmbed.video_id(clean_url) do
+              {:ok, video_id} ->
+                MedoruWeb.YoutubeEmbed.embed_html(video_id)
+
+              :error ->
+                "<a href=\"#{clean_url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{url_text}</a>"
+            end
+
+          link_html <> trailing
 
         true ->
           segment
@@ -314,9 +331,48 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> Enum.join("")
   end
 
+  # Earmark treats a line-leading <a> as an HTML block and drops the text that
+  # follows it on the same line. Insert a zero-width space to keep it inline.
+  defp pad_line_leading_links(html) when is_binary(html) do
+    String.replace(html, ~r/(^|\n)(<a\b)/, "\\1\u200B\\2")
+  end
+
+  defp split_trailing_punctuation(segment) do
+    punctuation = ~r/[.,;:!?\)\]\}'"]+$/u
+
+    case Regex.run(punctuation, segment, return: :index) do
+      [{start, _}] ->
+        {String.slice(segment, 0, start), String.slice(segment, start..-1//1)}
+
+      _ ->
+        {segment, ""}
+    end
+  end
+
   defp render_markdown(text) when is_binary(text) do
-    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
+    {:ok, html, _} =
+      Earmark.as_html(text, escape: false, smartypants: false, pure_links: false)
+
     html
+  end
+
+  defp append_link_preview(html, text) when is_binary(html) do
+    case LinkPreviews.cached_preview_for_text(text) do
+      nil ->
+        html
+
+      preview ->
+        Logger.debug("WhiteBoardPostRenderer: appending preview #{preview.id} for text: #{String.slice(text, 0, 80)}")
+
+        assigns = %{preview: preview, __changed__: %{}}
+
+        card_html =
+          LinkPreviewCard.link_preview_card(assigns)
+          |> Phoenix.HTML.Safe.to_iodata()
+          |> IO.iodata_to_binary()
+
+        html <> ~s|<div class="mt-2">#{card_html}</div>|
+    end
   end
 
   defp render_audio_players(html, post_id) when is_binary(html) do

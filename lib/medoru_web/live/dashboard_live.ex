@@ -9,7 +9,7 @@ defmodule MedoruWeb.DashboardLive do
 
   alias Medoru.{Accounts, Learning, Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.BoardComment
-  alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
+  alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
@@ -64,24 +64,36 @@ defmodule MedoruWeb.DashboardLive do
     stream_reactions = WhiteBoard.list_reactions_for_posts(stream_post_ids, viewer_id)
     stream_comments = load_stream_comments(stream_posts, viewer_id)
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Dashboard")
-     |> assign(:user, user)
-     |> assign(:stats, stats)
-     |> assign(:profile, user.profile)
-     |> assign(:daily_stats, daily_stats)
-     |> assign(:challenge_stats, challenge_stats)
-     |> assign(:xp_progress, xp_progress)
-     |> assign(:user_stats, user_stats)
-     # Board Stream assigns
-     |> assign(:stream_posts, stream_posts)
-     |> assign(:stream_count, stream_count)
-     |> assign(:stream_has_more, stream_has_more)
-     |> assign(:stream_page, 1)
-     |> assign(:stream_reactions, stream_reactions)
-     |> assign(:stream_comments, stream_comments)
-     |> assign(:stream_replying_to, %{})}
+    socket =
+      socket
+      |> assign(:page_title, "Dashboard")
+      |> assign(:user, user)
+      |> assign(:stats, stats)
+      |> assign(:profile, user.profile)
+      |> assign(:daily_stats, daily_stats)
+      |> assign(:challenge_stats, challenge_stats)
+      |> assign(:xp_progress, xp_progress)
+      |> assign(:user_stats, user_stats)
+      # Board Stream assigns
+      |> assign(:stream_posts, stream_posts)
+      |> assign(:stream_count, stream_count)
+      |> assign(:stream_has_more, stream_has_more)
+      |> assign(:stream_page, 1)
+      |> assign(:stream_reactions, stream_reactions)
+      |> assign(:stream_comments, stream_comments)
+      |> assign(:stream_replying_to, %{})
+
+    socket =
+      if connected?(socket) do
+        LinkPreviewSubscribers.subscribe_for_texts(
+          socket,
+          stream_link_preview_texts(stream_posts, stream_comments)
+        )
+      else
+        socket
+      end
+
+    {:ok, socket}
   end
 
   # ============================================================================
@@ -139,10 +151,18 @@ defmodule MedoruWeb.DashboardLive do
               existing ++ [comment]
             end)
 
-          {:noreply,
-           socket
-           |> assign(:stream_comments, comments)
-           |> assign(:stream_replying_to, Map.delete(socket.assigns.stream_replying_to, post_id))}
+          socket =
+            socket
+            |> assign(:stream_comments, comments)
+            |> assign(:stream_replying_to, Map.delete(socket.assigns.stream_replying_to, post_id))
+
+          socket =
+            LinkPreviewSubscribers.subscribe_for_texts(
+              socket,
+              stream_link_preview_texts(socket.assigns.stream_posts, comments)
+            )
+
+          {:noreply, socket}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Could not add comment."))}
@@ -201,18 +221,43 @@ defmodule MedoruWeb.DashboardLive do
     reactions = Map.merge(socket.assigns.stream_reactions, new_reactions)
     comments = Map.merge(socket.assigns.stream_comments, new_comments)
 
-    {:noreply,
-     socket
-     |> assign(:stream_posts, all_posts)
-     |> assign(:stream_page, page)
-     |> assign(:stream_has_more, has_more)
-     |> assign(:stream_reactions, reactions)
-     |> assign(:stream_comments, comments)}
+    socket =
+      socket
+      |> assign(:stream_posts, all_posts)
+      |> assign(:stream_page, page)
+      |> assign(:stream_has_more, has_more)
+      |> assign(:stream_reactions, reactions)
+      |> assign(:stream_comments, comments)
+
+    socket =
+      LinkPreviewSubscribers.subscribe_for_texts(
+        socket,
+        stream_link_preview_texts(all_posts, comments)
+      )
+
+    {:noreply, socket}
   end
 
   # ============================================================================
   # Board Stream Helpers
   # ============================================================================
+
+  @impl true
+  def handle_info({:link_preview_ready, _preview}, socket) do
+    {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
+  end
+
+  defp stream_link_preview_texts(posts, comments) do
+    post_texts = Enum.map(posts, & &1.content)
+
+    comment_texts =
+      comments
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.map(& &1.content)
+
+    post_texts ++ comment_texts
+  end
 
   defp load_stream_comments(posts, viewer_id) do
     post_ids = Enum.map(posts, & &1.id)

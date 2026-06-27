@@ -249,6 +249,7 @@ export const CryptoState = {
 const ChatCrypto = {
   async mounted() {
     this._decryptedCache = new Map() // msgId -> { ciphertext, text }
+    this._linkPreviewCache = new Map() // url -> preview data
     this.convId = this.el.dataset.conversationId
     this.convertEmoticons = this.el.dataset.convertEmoticons !== "false"
 
@@ -696,6 +697,7 @@ const ChatCrypto = {
     const emojiRegex = /(:medoru:|:ouroboros:)/
     const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g
     const parts = text.split(emojiRegex)
+    let firstPreviewUrl = null
 
     parts.forEach((part) => {
       if (part === ":medoru:") {
@@ -717,22 +719,32 @@ const ChatCrypto = {
           const converted = this.convertEmoticons ? this.replaceEmoticons(segment) : segment
           if (segment) el.appendChild(document.createTextNode(converted))
           if (i < urls.length) {
-            const videoId = this.youtubeVideoId(urls[i])
+            const url = urls[i]
+            const videoId = this.youtubeVideoId(url)
             if (videoId) {
               el.appendChild(this.youtubeEmbed(videoId))
             } else {
               const a = document.createElement("a")
-              a.href = urls[i]
+              a.href = url
               a.target = "_blank"
               a.rel = "noopener noreferrer"
               a.className = "underline break-all text-blue-300 hover:text-blue-200"
-              a.textContent = urls[i]
+              a.textContent = url
               el.appendChild(a)
+              if (!firstPreviewUrl) firstPreviewUrl = url
             }
           }
         })
       }
     })
+
+    if (firstPreviewUrl) {
+      this.fetchLinkPreview(firstPreviewUrl).then((data) => {
+        if (data && data.status === "fetched") {
+          el.appendChild(this.renderLinkPreview(data))
+        }
+      })
+    }
   },
 
   youtubeVideoId(url) {
@@ -761,6 +773,79 @@ const ChatCrypto = {
     iframe.loading = "lazy"
     span.appendChild(iframe)
     return span
+  },
+
+  async fetchLinkPreview(url) {
+    if (this._linkPreviewCache.has(url)) {
+      return this._linkPreviewCache.get(url)
+    }
+
+    try {
+      const resp = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`)
+      if (!resp.ok) return null
+      const data = await resp.json()
+      this._linkPreviewCache.set(url, data)
+      return data
+    } catch (e) {
+      console.error("[ChatCrypto] Failed to fetch link preview:", e)
+      return null
+    }
+  },
+
+  renderLinkPreview(data) {
+    const wrapper = document.createElement("a")
+    wrapper.href = data.url
+    wrapper.target = "_blank"
+    wrapper.rel = "noopener noreferrer"
+    wrapper.className = "block max-w-[320px] border border-base-300 rounded-xl overflow-hidden shadow-sm bg-base-100 hover:shadow-md hover:border-primary/30 transition-all mt-2"
+
+    if (data.image_url) {
+      const img = document.createElement("img")
+      img.src = data.image_url
+      img.alt = ""
+      img.className = "w-full h-32 object-cover"
+      img.loading = "lazy"
+      img.referrerPolicy = "no-referrer"
+      wrapper.appendChild(img)
+    }
+
+    const body = document.createElement("div")
+    body.className = "p-3"
+
+    const header = document.createElement("div")
+    header.className = "flex items-center gap-2 mb-1 min-w-0"
+
+    if (data.favicon_url) {
+      const favicon = document.createElement("img")
+      favicon.src = data.favicon_url
+      favicon.alt = ""
+      favicon.className = "w-4 h-4 shrink-0"
+      favicon.referrerPolicy = "no-referrer"
+      header.appendChild(favicon)
+    }
+
+    const host = document.createElement("span")
+    host.className = "text-xs text-base-content/60 truncate"
+    host.textContent = data.site_name || new URL(data.url).hostname
+    header.appendChild(host)
+    body.appendChild(header)
+
+    if (data.title) {
+      const title = document.createElement("h4")
+      title.className = "font-semibold text-sm text-base-content line-clamp-2"
+      title.textContent = data.title
+      body.appendChild(title)
+    }
+
+    if (data.description) {
+      const desc = document.createElement("p")
+      desc.className = "text-xs text-secondary mt-1 line-clamp-2"
+      desc.textContent = data.description
+      body.appendChild(desc)
+    }
+
+    wrapper.appendChild(body)
+    return wrapper
   },
 
   renderTextWithLinks(el, text, matches) {

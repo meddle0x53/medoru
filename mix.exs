@@ -4,7 +4,7 @@ defmodule Medoru.MixProject do
   def project do
     [
       app: :medoru,
-      version: "0.7.3",
+      version: "0.8.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -66,6 +66,7 @@ defmodule Medoru.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:earmark, "~> 1.4"},
+      {:floki, "~> 0.36"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:zoneinfo, "~> 0.1"},
@@ -91,7 +92,7 @@ defmodule Medoru.MixProject do
   def releases do
     [
       medoru: [
-        version: "0.7.3",
+        version: "0.8.0",
         applications: [medoru: :permanent],
         overlays: ["rel/overlays"],
         include_erts: false,

@@ -4,11 +4,13 @@ defmodule MedoruWeb.UserWhiteBoardLive do
   """
   use MedoruWeb, :live_view
 
+  require Logger
+
   import Ecto.Query, warn: false
 
   alias Medoru.{Accounts, Notifications, Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.BoardComment
-  alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
+  alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
@@ -750,29 +752,41 @@ defmodule MedoruWeb.UserWhiteBoardLive do
           WhiteBoard.subscribe_to_board(user.id)
         end
 
-        {:ok,
-         socket
-         |> assign(
-           :page_title,
-           gettext("%{name}'s White Board",
-             name: (user.profile && user.profile.display_name) || user.name
-           )
-         )
-         |> assign(:user, user)
-         |> assign(:profile, user.profile)
-         |> assign(:is_owner, is_owner)
-         |> assign(:posts, posts)
-         |> assign(:post_count, post_count)
-         |> assign(:reactions, reactions)
-         |> assign(:comments, comments)
-         |> assign(:page, 1)
-         |> assign(:has_more, has_more)
-         |> assign(:post_form, %{title: nil, content: nil})
-         |> assign(:show_canvas_modal, false)
-         |> assign(:canvas_title, "")
-         |> assign(:canvas_description, "")
-         |> assign(:editing_post_id, nil)
-         |> assign(:replying_to, %{})}
+        socket =
+          socket
+          |> assign(
+            :page_title,
+            gettext("%{name}'s White Board",
+              name: (user.profile && user.profile.display_name) || user.name
+            )
+          )
+          |> assign(:user, user)
+          |> assign(:profile, user.profile)
+          |> assign(:is_owner, is_owner)
+          |> assign(:posts, posts)
+          |> assign(:post_count, post_count)
+          |> assign(:reactions, reactions)
+          |> assign(:comments, comments)
+          |> assign(:page, 1)
+          |> assign(:has_more, has_more)
+          |> assign(:post_form, %{title: nil, content: nil})
+          |> assign(:show_canvas_modal, false)
+          |> assign(:canvas_title, "")
+          |> assign(:canvas_description, "")
+          |> assign(:editing_post_id, nil)
+          |> assign(:replying_to, %{})
+
+        socket =
+          if connected?(socket) do
+            LinkPreviewSubscribers.subscribe_for_texts(
+              socket,
+              link_preview_texts(posts, comments)
+            )
+          else
+            socket
+          end
+
+        {:ok, socket}
 
       :error ->
         {:ok,
@@ -801,6 +815,24 @@ defmodule MedoruWeb.UserWhiteBoardLive do
     case WhiteBoard.create_post(attrs) do
       {:ok, post} ->
         post = Repo.preload(post, user: [:profile])
+
+        # Add the post locally and subscribe to its link-preview topic before
+        # broadcasting. This avoids a race where the async fetch completes and
+        # broadcasts before the :post_created PubSub message is handled.
+        Logger.debug("UserWhiteBoardLive: create_post subscribing for content: #{inspect(post.content)}")
+
+        socket =
+          socket
+          |> assign(:posts, [post | socket.assigns.posts])
+          |> assign(:post_count, socket.assigns.post_count + 1)
+
+        socket =
+          if connected?(socket) do
+            LinkPreviewSubscribers.subscribe_for_texts(socket, [post.content])
+          else
+            socket
+          end
+
         WhiteBoard.broadcast_post_created(socket.assigns.user.id, post)
 
         # Notify followers
@@ -1010,6 +1042,16 @@ defmodule MedoruWeb.UserWhiteBoardLive do
       case WhiteBoard.create_comment(attrs) do
         {:ok, comment} ->
           comment = Repo.preload(comment, user: [:profile], parent_comment: [user: [:profile]])
+
+          # Subscribe to link-preview updates for this comment before broadcasting,
+          # so the async fetch result is not missed if it completes quickly.
+          socket =
+            if connected?(socket) do
+              LinkPreviewSubscribers.subscribe_for_texts(socket, [comment.content])
+            else
+              socket
+            end
+
           WhiteBoard.broadcast_comment(socket.assigns.user.id, comment, self())
 
           # Notify post author and other commenters
@@ -1089,13 +1131,18 @@ defmodule MedoruWeb.UserWhiteBoardLive do
     reactions = Map.merge(socket.assigns.reactions, new_reactions)
     comments = Map.merge(socket.assigns.comments, new_comments)
 
-    {:noreply,
-     socket
-     |> assign(:posts, all_posts)
-     |> assign(:page, page)
-     |> assign(:has_more, has_more)
-     |> assign(:reactions, reactions)
-     |> assign(:comments, comments)}
+    socket =
+      socket
+      |> assign(:posts, all_posts)
+      |> assign(:page, page)
+      |> assign(:has_more, has_more)
+      |> assign(:reactions, reactions)
+      |> assign(:comments, comments)
+
+    socket =
+      LinkPreviewSubscribers.subscribe_for_texts(socket, link_preview_texts(all_posts, comments))
+
+    {:noreply, socket}
   end
 
   # ============================================================================
@@ -1104,10 +1151,26 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
   @impl true
   def handle_info({:post_created, post}, socket) do
+    Logger.debug("UserWhiteBoardLive: received :post_created for post #{post.id}")
+
     if post.user_id == socket.assigns.user.id do
-      posts = [post | socket.assigns.posts]
-      post_count = socket.assigns.post_count + 1
-      {:noreply, assign(socket, posts: posts, post_count: post_count)}
+      # Avoid duplicating the post if we already added it optimistically.
+      socket =
+        if Enum.any?(socket.assigns.posts, &(&1.id == post.id)) do
+          socket
+        else
+          posts = [post | socket.assigns.posts]
+          post_count = socket.assigns.post_count + 1
+          assign(socket, posts: posts, post_count: post_count)
+        end
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(
+          socket,
+          link_preview_texts(socket.assigns.posts, socket.assigns.comments)
+        )
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
@@ -1165,8 +1228,22 @@ defmodule MedoruWeb.UserWhiteBoardLive do
           existing ++ [comment]
         end)
 
-      {:noreply, assign(socket, :comments, comments)}
+      socket = assign(socket, :comments, comments)
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(
+          socket,
+          link_preview_texts(socket.assigns.posts, comments)
+        )
+
+      {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:link_preview_ready, preview}, socket) do
+    Logger.debug("UserWhiteBoardLive: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})")
+    {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 
   # ============================================================================
@@ -1364,5 +1441,17 @@ defmodule MedoruWeb.UserWhiteBoardLive do
       timeout: :infinity
     )
     |> Stream.run()
+  end
+
+  defp link_preview_texts(posts, comments) do
+    post_texts = Enum.map(posts, & &1.content)
+
+    comment_texts =
+      comments
+      |> Map.values()
+      |> List.flatten()
+      |> Enum.map(& &1.content)
+
+    post_texts ++ comment_texts
   end
 end

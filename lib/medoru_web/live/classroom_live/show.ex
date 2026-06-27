@@ -16,8 +16,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias Medoru.Notifications
   alias MedoruWeb.GrammarChatPreview
   alias MedoruWeb.KanjiChatPreview
+  alias MedoruWeb.LinkPreviewCard
+  alias MedoruWeb.LinkPreviewSubscribers
   alias MedoruWeb.WordChatPreview
   alias MedoruWeb.Presence
+  alias Medoru.LinkPreviews
 
   @chat_message_limit 20
 
@@ -266,11 +269,21 @@ defmodule MedoruWeb.ClassroomLive.Show do
       message_ids = Enum.map(visible_messages, & &1.id)
       message_reactions = Chat.list_reactions_for_messages(message_ids, current_user.id)
 
-      socket
-      |> assign(:chat_messages, visible_messages)
-      |> assign(:chat_has_more, has_more)
-      |> assign(:chat_offset, 0)
-      |> assign(:message_reactions, message_reactions)
+      socket =
+        socket
+        |> assign(:chat_messages, visible_messages)
+        |> assign(:chat_has_more, has_more)
+        |> assign(:chat_offset, 0)
+        |> assign(:message_reactions, message_reactions)
+
+      if connected?(socket) do
+        LinkPreviewSubscribers.subscribe_for_texts(
+          socket,
+          Enum.map(visible_messages, & &1.content)
+        )
+      else
+        socket
+      end
     else
       socket
     end
@@ -777,15 +790,30 @@ defmodule MedoruWeb.ClassroomLive.Show do
       # Prepend older messages so the list stays in chronological order
       # (oldest first, newest last). list_messages returns each batch in
       # oldest-to-newest order, so older_messages belongs before existing messages.
-      {:noreply,
-       socket
-       |> assign(:chat_messages, older_messages ++ socket.assigns.chat_messages)
-       |> assign(:chat_has_more, has_more)
-       |> assign(:chat_offset, new_offset)
-       |> assign(:message_reactions, Map.merge(socket.assigns.message_reactions, older_reactions))}
+      all_messages = older_messages ++ socket.assigns.chat_messages
+
+      socket =
+        socket
+        |> assign(:chat_messages, all_messages)
+        |> assign(:chat_has_more, has_more)
+        |> assign(:chat_offset, new_offset)
+        |> assign(
+          :message_reactions,
+          Map.merge(socket.assigns.message_reactions, older_reactions)
+        )
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(socket, Enum.map(all_messages, & &1.content))
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:link_preview_ready, _preview}, socket) do
+    {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 
   @impl true
@@ -811,9 +839,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
     if Chat.sender_visible_in_classroom?(message, conversation) do
       is_sender = message.sender_id == current_user.id
 
+      messages = socket.assigns.chat_messages ++ [message]
+
       socket =
         socket
-        |> assign(:chat_messages, socket.assigns.chat_messages ++ [message])
+        |> assign(:chat_messages, messages)
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(socket, Enum.map(messages, & &1.content))
 
       socket =
         if is_sender do
@@ -2767,51 +2800,72 @@ defmodule MedoruWeb.ClassroomLive.Show do
       |> Enum.sort_by(fn {_, [{match_start, _}, _]} -> match_start end)
 
     if matches == [] do
-      render_text_segment(text, convert_emoticons)
+      rendered = render_text_segment(text, convert_emoticons)
+      append_link_preview(rendered, text)
     else
       segments = build_tagged_segments(text, matches, 0, [])
 
-      Enum.flat_map(segments, fn
-        {:text, segment_text} ->
-          render_text_segment(segment_text, convert_emoticons)
+      rendered =
+        Enum.flat_map(segments, fn
+          {:text, segment_text} ->
+            render_text_segment(segment_text, convert_emoticons)
 
-        {:word, word_text} ->
-          case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
-            nil ->
-              [Phoenix.HTML.html_escape(word_text)]
+          {:word, word_text} ->
+            case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
+              nil ->
+                [Phoenix.HTML.html_escape(word_text)]
 
-            word ->
-              if MatureContent.mature_word_visible_to_user?(word, viewer) do
-                word_path = ~p"/words/#{word.id}"
-                {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+              word ->
+                if MatureContent.mature_word_visible_to_user?(word, viewer) do
+                  word_path = ~p"/words/#{word.id}"
+                  {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
+
+                  [
+                    {:safe,
+                     ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                  ]
+                else
+                  [
+                    {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
+                  ]
+                end
+            end
+
+          {:grammar, grammar_text} ->
+            case Content.get_grammar_definition_by_title(grammar_text) do
+              nil ->
+                {:safe, escaped} = Phoenix.HTML.html_escape("\\#{grammar_text}/")
+                [escaped]
+
+              grammar ->
+                grammar_path = ~p"/grammars/#{grammar.slug}"
+                {:safe, escaped} = Phoenix.HTML.html_escape(grammar_text)
 
                 [
                   {:safe,
-                   ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
+                   ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
                 ]
-              else
-                [
-                  {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
-                ]
-              end
-          end
+            end
+        end)
 
-        {:grammar, grammar_text} ->
-          case Content.get_grammar_definition_by_title(grammar_text) do
-            nil ->
-              {:safe, escaped} = Phoenix.HTML.html_escape("\\#{grammar_text}/")
-              [escaped]
+      append_link_preview(rendered, text)
+    end
+  end
 
-            grammar ->
-              grammar_path = ~p"/grammars/#{grammar.slug}"
-              {:safe, escaped} = Phoenix.HTML.html_escape(grammar_text)
+  defp append_link_preview(rendered, text) when is_list(rendered) do
+    case LinkPreviews.cached_preview_for_text(text) do
+      nil ->
+        rendered
 
-              [
-                {:safe,
-                 ~s|<a href="#{grammar_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
-              ]
-          end
-      end)
+      preview ->
+        assigns = %{preview: preview, __changed__: %{}}
+
+        card_html =
+          LinkPreviewCard.link_preview_card(assigns)
+          |> Phoenix.HTML.Safe.to_iodata()
+          |> IO.iodata_to_binary()
+
+        rendered ++ [{:safe, ~s|<div class="mt-2">#{card_html}</div>|}]
     end
   end
 

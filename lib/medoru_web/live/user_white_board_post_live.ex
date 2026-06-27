@@ -7,7 +7,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
   use MedoruWeb, :live_view
 
   alias Medoru.{Repo, WhiteBoard}
-  alias MedoruWeb.{Components.Helpers, WhiteBoardPostRenderer}
+  alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
@@ -284,12 +284,24 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
             WhiteBoard.subscribe_to_board(post.user_id)
           end
 
-          {:ok,
-           socket
-           |> assign(:page_title, gettext("Post"))
-           |> assign(:post, post)
-           |> assign(:comments, comments)
-           |> assign(:reactions, reactions)}
+          socket =
+            socket
+            |> assign(:page_title, gettext("Post"))
+            |> assign(:post, post)
+            |> assign(:comments, comments)
+            |> assign(:reactions, reactions)
+
+          socket =
+            if connected?(socket) do
+              LinkPreviewSubscribers.subscribe_for_texts(
+                socket,
+                link_preview_texts(post, comments)
+              )
+            else
+              socket
+            end
+
+          {:ok, socket}
         rescue
           Ecto.NoResultsError ->
             {:ok,
@@ -390,10 +402,27 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
     unless Medoru.Social.blocked_by?(current_user_id, comment.user_id) do
       comments = socket.assigns.comments ++ [comment]
-      {:noreply, assign(socket, :comments, comments)}
+      socket = assign(socket, :comments, comments)
+
+      socket =
+        LinkPreviewSubscribers.subscribe_for_texts(
+          socket,
+          link_preview_texts(socket.assigns.post, comments)
+        )
+
+      {:noreply, socket}
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_info({:link_preview_ready, _preview}, socket) do
+    {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
+  end
+
+  defp link_preview_texts(post, comments) do
+    [post.content | Enum.map(comments, & &1.content)]
   end
 
   defp all_emojis do

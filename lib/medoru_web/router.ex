@@ -397,6 +397,7 @@ defmodule MedoruWeb.Router do
     get "/kanji-preview/:character", KanjiPreviewController, :show
     get "/word-preview/:text", WordPreviewController, :show
     get "/grammar-preview/:text", GrammarPreviewController, :show
+    get "/link-preview", LinkPreviewController, :show
     post "/chat/uploads", ChatUploadController, :create
     get "/game/user-data", GameApiController, :user_data
     post "/game/run-result", GameApiController, :run_result

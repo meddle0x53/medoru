@@ -68,6 +68,103 @@ defmodule MedoruWeb.WhiteBoardPostRendererTest do
     end
   end
 
+  describe "link previews" do
+    test "renders preview card for cached url in post content" do
+      url = "https://example.com/article"
+
+      {:ok, _preview} =
+        Medoru.LinkPreviews.create_preview(url, %{
+          status: "fetched",
+          title: "Article Title",
+          description: "Article description",
+          site_name: "example.com"
+        })
+
+      html = WhiteBoardPostRenderer.render_post_content("Read this: #{url}", "post-1", nil)
+
+      assert html =~ "Article Title"
+      assert html =~ "Article description"
+      assert html =~ "example.com"
+    end
+
+    test "renders preview card for cached url in comment content" do
+      url = "https://example.com/comment-link"
+
+      {:ok, _preview} =
+        Medoru.LinkPreviews.create_preview(url, %{
+          status: "fetched",
+          title: "Comment Link",
+          site_name: "example.com"
+        })
+
+      html = WhiteBoardPostRenderer.render_comment_content("See #{url}", nil)
+
+      assert html =~ "Comment Link"
+    end
+
+    test "does not render preview card when no cached preview exists" do
+      url = "https://example.com/unknown"
+      html = WhiteBoardPostRenderer.render_post_content("Check #{url}", "post-1", nil)
+
+      refute html =~ "link-preview-card"
+      assert html =~ url
+    end
+
+    test "preserves text after the link" do
+      url = "https://example.com/article"
+
+      {:ok, _preview} =
+        Medoru.LinkPreviews.create_preview(url, %{
+          status: "fetched",
+          title: "Article Title",
+          fetched_at: DateTime.utc_now()
+        })
+
+      html =
+        WhiteBoardPostRenderer.render_post_content(
+          "Before #{url} and after text",
+          "post-1",
+          nil
+        )
+
+      assert html =~ "Before"
+      assert html =~ "and after text"
+      assert html =~ "Article Title"
+    end
+
+    test "strips trailing punctuation from autolinked urls" do
+      url = "https://example.com/article"
+
+      html =
+        WhiteBoardPostRenderer.render_post_content(
+          "See #{url}, and #{url}).",
+          "post-1",
+          nil
+        )
+
+      assert html =~ ~s|href="#{url}"|
+      refute html =~ ~s|href="#{url}."|
+      refute html =~ ~s|href="#{url})"|
+      assert html =~ "See"
+      assert html =~ ", and"
+      assert html =~ ")."
+    end
+
+    test "preserves text after a link that starts the line" do
+      url = "https://example.com/article"
+
+      html =
+        WhiteBoardPostRenderer.render_post_content(
+          "#{url} some text after",
+          "post-1",
+          nil
+        )
+
+      assert html =~ url
+      assert html =~ "some text after"
+    end
+  end
+
   describe "command spacing" do
     test "/w with extra spaces around expression renders word preview" do
       word = word_fixture(%{text: "たべる", reading: "たべる"})

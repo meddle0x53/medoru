@@ -54,6 +54,82 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
     end
   end
 
+  describe "link previews" do
+    test "renders preview card for post with cached url", %{conn: conn} do
+      owner = owner_fixture()
+      url = "https://example.com/white-board-link"
+
+      {:ok, _preview} =
+        Medoru.LinkPreviews.create_preview(url, %{
+          status: "fetched",
+          title: "White Board Link",
+          description: "A preview",
+          site_name: "example.com",
+          fetched_at: DateTime.utc_now()
+        })
+
+      post_fixture(%{user: owner, content: "Check this out: #{url}"})
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board")
+
+      assert html =~ "White Board Link"
+      assert html =~ "A preview"
+    end
+
+    test "renders preview card after creating a post with a cached url", %{conn: conn} do
+      owner = owner_fixture()
+      url = "https://example.com/new-white-board-link"
+
+      {:ok, _preview} =
+        Medoru.LinkPreviews.create_preview(url, %{
+          status: "fetched",
+          title: "New White Board Link",
+          description: "A new preview",
+          site_name: "example.com",
+          fetched_at: DateTime.utc_now()
+        })
+
+      {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board")
+
+      view
+      |> form("form[phx-submit='create_post']", %{content: "Check this out: #{url}"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "New White Board Link"
+      assert html =~ "A new preview"
+    end
+
+    @tag :network
+    test "renders preview card after creating a post with a new url", %{conn: conn} do
+      owner = owner_fixture()
+      # Use a stable URL with Open Graph metadata.
+      url = "https://elixir-lang.org"
+
+      # Ensure no stale cached preview exists.
+      normalized = Medoru.LinkPreviews.Fetcher.normalize_url(url)
+
+      Medoru.LinkPreviews.LinkPreview
+      |> Medoru.Repo.get_by(url: normalized)
+      |> case do
+        nil -> :ok
+        preview -> Medoru.Repo.delete!(preview)
+      end
+
+      {:ok, view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board")
+
+      view
+      |> form("form[phx-submit='create_post']", %{content: "Check this out: #{url}"})
+      |> render_submit()
+
+      # In test mode the fetch runs synchronously, so the card is already there.
+      html = render(view)
+      assert html =~ "The Elixir programming language"
+    end
+
+
+  end
+
   describe "create post" do
     test "owner can create a text post", %{conn: conn} do
       owner = owner_fixture()
