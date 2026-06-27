@@ -63,16 +63,64 @@ export default class MapScene extends Phaser.Scene {
     computeLayout(this.map)
     updateReachability(this.map, this.player.loadout.mapState.currentTileId)
 
-    // Safety reset: if the saved state points to a missing or completed
-    // dead-end tile (e.g. a finished boss), advance to the next map so the
-    // player is never soft-locked.
-    const currentTile = this.map.columns.flat().find(t => t.id === this.player.loadout.mapState.currentTileId)
-    if (!currentTile || (currentTile.completed && currentTile.connections.length === 0)) {
+    // Safety reset: a missing cursor means the save is corrupted, so roll to a
+    // fresh map. A completed cursor is normally a decision point (the outgoing
+    // edges are the choices), so we only move it if the tile has no uncompleted
+    // connections left — which happens when the boss is defeated or an old save
+    // is stuck past a fully-cleared branch.
+    let currentTile = this.map.columns.flat().find(t => t.id === this.player.loadout.mapState.currentTileId)
+    if (!currentTile) {
       this.player.advanceMap()
       this.map = this.player.getCurrentMap()
       computeLayout(this.map)
       updateReachability(this.map, this.player.loadout.mapState.currentTileId)
+    } else if (currentTile.completed) {
+      const isBoss = currentTile.type === TILE_TYPES.BOSS
+      const hasOpenConnection = currentTile.connections.some(id => {
+        const next = findTileById(this.map, id)
+        return next && !next.completed
+      })
+
+      if (isBoss || !hasOpenConnection) {
+        const recoveredId = isBoss ? null : this.findFirstUncompletedTile(currentTile.id)
+
+        if (recoveredId) {
+          this.player.loadout.mapState.currentTileId = recoveredId
+          this.player.saveLoadout()
+        } else {
+          this.player.advanceMap()
+        }
+
+        this.map = this.player.getCurrentMap()
+        computeLayout(this.map)
+        updateReachability(this.map, this.player.loadout.mapState.currentTileId)
+      }
     }
+  }
+
+  findFirstUncompletedTile(startId, visited = new Set()) {
+    const tile = findTileById(this.map, startId)
+    if (!tile || visited.has(startId)) return null
+    visited.add(startId)
+    if (!tile.completed) return startId
+    for (const nextId of tile.connections) {
+      const found = this.findFirstUncompletedTile(nextId, visited)
+      if (found) return found
+    }
+    return null
+  }
+
+  buildPathToCurrent(currentTile) {
+    const path = [currentTile]
+    let tile = currentTile
+    while (tile.col > 0) {
+      const prevColumn = this.map.columns[tile.col - 1]
+      const prev = prevColumn.find(t => t.connections.includes(tile.id) && t.completed)
+      if (!prev) break
+      path.unshift(prev)
+      tile = prev
+    }
+    return path
   }
 
   createHud() {
@@ -244,6 +292,35 @@ export default class MapScene extends Phaser.Scene {
   drawConnections() {
     const baseGraphics = this.add.graphics()
     const reachGraphics = this.add.graphics()
+    const pathGraphics = this.add.graphics()
+
+    const currentTile = findTileById(this.map, this.player.loadout.mapState.currentTileId)
+    const path = currentTile ? this.buildPathToCurrent(currentTile) : []
+
+    // Edges that are part of the travelled path and whose both ends are
+    // completed are drawn in green.
+    const passedEdges = new Set()
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i]
+      const b = path[i + 1]
+      if (a.completed && b.completed) {
+        passedEdges.add(`${a.id}->${b.id}`)
+      }
+    }
+
+    // The "current" decision node is the last completed tile. If the glowing
+    // tile itself is completed (branching decision point), use it; otherwise
+    // use the completed predecessor it was reached from.
+    const decisionNode = currentTile?.completed
+      ? currentTile
+      : path[path.length - 2] || currentTile
+
+    const choiceEdges = new Set()
+    if (decisionNode) {
+      for (const nextId of decisionNode.connections) {
+        choiceEdges.add(`${decisionNode.id}->${nextId}`)
+      }
+    }
 
     for (const column of this.map.columns) {
       for (const tile of column) {
@@ -252,25 +329,36 @@ export default class MapScene extends Phaser.Scene {
           const next = findTileById(this.map, nextId)
           if (!next) continue
           const end = this.getTilePosition(next)
-          const isReachable = tile.reachable && next.reachable
+          const edgeKey = `${tile.id}->${next.id}`
+          const isPassed = passedEdges.has(edgeKey)
+          const isChoice = choiceEdges.has(edgeKey)
 
           // Draw a thick shadow line behind the visible path.
-          baseGraphics.lineStyle(isReachable ? 7 : 5, 0x000000, 0.5)
+          baseGraphics.lineStyle(isPassed || isChoice ? 7 : 5, 0x000000, 0.5)
           baseGraphics.beginPath()
           baseGraphics.moveTo(start.x, start.y)
           baseGraphics.lineTo(end.x, end.y)
           baseGraphics.strokePath()
 
-          const graphics = isReachable ? reachGraphics : baseGraphics
-          const color = isReachable ? 0xaed6f1 : 0x5d6d7e
-          const alpha = isReachable ? 0.95 : 0.5
-          const thickness = isReachable ? 5 : 4
-
-          graphics.lineStyle(thickness, color, alpha)
-          graphics.beginPath()
-          graphics.moveTo(start.x, start.y)
-          graphics.lineTo(end.x, end.y)
-          graphics.strokePath()
+          if (isPassed) {
+            pathGraphics.lineStyle(5, 0x2ecc71, 0.95)
+            pathGraphics.beginPath()
+            pathGraphics.moveTo(start.x, start.y)
+            pathGraphics.lineTo(end.x, end.y)
+            pathGraphics.strokePath()
+          } else if (isChoice) {
+            reachGraphics.lineStyle(5, 0xaed6f1, 0.95)
+            reachGraphics.beginPath()
+            reachGraphics.moveTo(start.x, start.y)
+            reachGraphics.lineTo(end.x, end.y)
+            reachGraphics.strokePath()
+          } else {
+            baseGraphics.lineStyle(4, 0x5d6d7e, 0.5)
+            baseGraphics.beginPath()
+            baseGraphics.moveTo(start.x, start.y)
+            baseGraphics.lineTo(end.x, end.y)
+            baseGraphics.strokePath()
+          }
         }
       }
     }
@@ -427,10 +515,20 @@ export default class MapScene extends Phaser.Scene {
     if (tile.completed || !tile.reachable) return
     if (this.transitioning) return
 
-    // Allow clicking the current tile only if it is a battle tile (so the
-    // player can enter a battle they are standing on). Otherwise ignore it.
-    const isCurrentTile = tile.id === this.player.loadout.mapState.currentTileId
-    if (isCurrentTile && !isBattleTile(tile.type)) return
+    // Only the current tile can be entered until it is finished. Once the
+    // current tile is completed (branching decision point), its forward
+    // connections become valid choices. This prevents accidentally skipping
+    // tiles, which made the map edges look like they pointed too far ahead.
+    const currentTileId = this.player.loadout.mapState.currentTileId
+    const currentTile = findTileById(this.map, currentTileId)
+    const isCurrent = tile.id === currentTileId
+    if (currentTile && !currentTile.completed && !isCurrent) return
+
+    // The clicked tile becomes the active cursor. This keeps the map cursor in
+    // sync with the tile the player is actually entering, so completeTile() can
+    // reliably advance from it even if the player clicked a forward connection.
+    this.player.loadout.mapState.currentTileId = tile.id
+    this.player.saveLoadout()
 
     this.transitioning = true
 

@@ -37,10 +37,9 @@ export default class WinChallengeSystem {
   // ---------- Content selection ----------
 
   pickKanji() {
-    const list = this.player.kanjiList || []
+    const list = (this.player.kanjiList || []).filter((k) => k?.stroke_data?.strokes?.length > 0)
     if (list.length === 0) return null
-    const sorted = [...list].sort((a, b) => (a.stroke_count || 999) - (b.stroke_count || 999))
-    return sorted[0]
+    return list[Math.floor(Math.random() * list.length)]
   }
 
   pickWord() {

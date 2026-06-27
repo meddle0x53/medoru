@@ -4,6 +4,8 @@
  * All rewards are currently rarity 'normal'.
  */
 
+import ABILITY_FAMILIES from './abilityFamilies.json'
+
 export const ABILITY_REWARDS = {
   warrior: {
     // Long Sword weapon skills
@@ -12,13 +14,6 @@ export const ABILITY_REWARDS = {
     shield_Wooden_Shield: ['shield_parry', 'setup_defence', 'shield_bash'],
     // Generic warrior class skills
     class: ['focus', 'taunt', 'dash'],
-    // Socket-1 charm family abilities. These are added to the relevant equipment
-    // pool only when the matching family is equipped.
-    family: {
-      bleed: ['gutting_slash'],
-      heavy: ['seismic_slam'],
-      fire: ['flame_arc'],
-    },
   },
   // Placeholders for future classes
   mage: {
@@ -56,14 +51,17 @@ export function getRewardPool(playerOrClass = 'warrior', weaponName, shieldName)
   const classPool = classTable.class ? [...classTable.class] : []
 
   // Inject family-locked abilities based on the equipped socket-1 charm families.
+  // The family -> ability mapping lives in abilityFamilies.json so it can be
+  // edited without touching JavaScript.
+  const familyTable = ABILITY_FAMILIES[playerClass] || {}
   if (player && typeof player.getSocketCharmFamily === 'function') {
     const weaponFamily = player.getSocketCharmFamily('primary_weapon')
-    if (weaponFamily && classTable.family?.[weaponFamily]) {
-      weapon.push(...classTable.family[weaponFamily])
+    if (weaponFamily && familyTable[weaponFamily]) {
+      weapon.push(...familyTable[weaponFamily])
     }
     const shieldFamily = player.getSocketCharmFamily('secondary_weapon')
-    if (shieldFamily && classTable.family?.[shieldFamily]) {
-      shield.push(...classTable.family[shieldFamily])
+    if (shieldFamily && familyTable[shieldFamily]) {
+      shield.push(...familyTable[shieldFamily])
     }
   }
 

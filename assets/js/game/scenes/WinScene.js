@@ -53,6 +53,7 @@ export default class WinScene extends Phaser.Scene {
       this.challengeSystem.destroy()
       this.challengeSystem = null
     }
+    this.closeReplaceDialog()
   }
 
   // ---------- Reward generation ----------
@@ -351,32 +352,88 @@ export default class WinScene extends Phaser.Scene {
     this.markAbilitySelected(action.name)
   }
 
+  closeReplaceDialog() {
+    if (this.replaceDialog) {
+      this.replaceDialog.destroy()
+      this.replaceDialog = null
+    }
+    if (this.replaceWheelHandler) {
+      this.game.canvas.removeEventListener('wheel', this.replaceWheelHandler)
+      this.replaceWheelHandler = null
+    }
+  }
+
   showReplaceDialog(newAction) {
-    if (this.replaceDialog) this.replaceDialog.destroy()
+    this.closeReplaceDialog()
 
     const dialog = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(300)
-    dialog.add(this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5))
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5).setInteractive()
+    backdrop.on('pointerdown', () => {}) // swallow clicks behind the dialog
+    dialog.add(backdrop)
     dialog.add(this.add.rectangle(0, 0, 480, 500, 0x1a1a2e).setStrokeStyle(2, 0xe74c3c).setOrigin(0.5))
     dialog.add(this.add.text(0, -220, 'Ability Cap Reached', { ...FONTS.title, fontSize: '18px', color: '#e74c3c' }).setOrigin(0.5))
     dialog.add(this.add.text(0, -185, `Choose an ability to replace with ${newAction.name}:`, { ...FONTS.default, fontSize: '13px', color: '#ecf0f1' }).setOrigin(0.5))
 
+    const listY = -160
+    const listW = 440
+    const listH = 330
+    const rowH = 32
+
+    const listContainer = this.add.container(0, listY)
+    dialog.add(listContainer)
+
+    // Clip rows to the visible list area
+    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false })
+    maskGraphics.fillStyle(0xffffff)
+    maskGraphics.fillRect(
+      GAME_CONFIG.width / 2 - listW / 2,
+      GAME_CONFIG.height / 2 + listY,
+      listW,
+      listH
+    )
+    listContainer.setMask(maskGraphics.createGeometryMask())
+
     const knownIds = this.player.loadout.knownActionIds || []
+    const rowButtons = []
     knownIds.forEach((id, i) => {
       const action = ALL_ACTIONS.find(a => a.id === id)
       if (!action) return
-      const rowY = -145 + i * 38
-      this.createDialogButton(dialog, 0, rowY, 420, 32, `${action.kanji} ${action.name}`, 0x2c3e50, () => {
+      const btn = this.createDialogButton(listContainer, 0, i * rowH, listW - 20, rowH - 4, `${action.kanji} ${action.name}`, 0x2c3e50, () => {
         this.player.replaceAbility(id, newAction.id)
         this.showToast(`${newAction.name} learned!`)
-        dialog.destroy()
-        this.replaceDialog = null
+        this.closeReplaceDialog()
         this.markAbilitySelected(newAction.name)
       })
+      rowButtons.push(btn)
     })
 
+    // Invisible bounds for the scrollable list (visual reference only)
+    const scrollHitArea = this.add.rectangle(0, listY + listH / 2, listW, listH, 0x000000, 0)
+    dialog.add(scrollHitArea)
+
+    let scroll = 0
+    const maxScroll = Math.max(0, knownIds.length * rowH - listH)
+    const updateScroll = (delta) => {
+      scroll = Math.max(0, Math.min(maxScroll, scroll + delta))
+      listContainer.setY(listY - scroll)
+      rowButtons.forEach(({ container, hitArea }) => {
+        const relY = container.y - scroll
+        const visible = relY + rowH > 0 && relY < listH
+        container.setVisible(visible)
+        if (hitArea.input) hitArea.input.enabled = visible
+      })
+    }
+
+    this.replaceWheelHandler = (e) => {
+      e.preventDefault()
+      updateScroll(e.deltaY * 0.8)
+    }
+    this.game.canvas.addEventListener('wheel', this.replaceWheelHandler, { passive: false })
+
+    updateScroll(0)
+
     this.createDialogButton(dialog, 0, 210, 120, 36, 'Cancel', 0x7f8c8d, () => {
-      dialog.destroy()
-      this.replaceDialog = null
+      this.closeReplaceDialog()
     })
 
     this.replaceDialog = dialog
@@ -400,6 +457,7 @@ export default class WinScene extends Phaser.Scene {
     const btnContainer = this.add.container(x, y)
     btnContainer.add([bg, text, hitArea])
     container.add(btnContainer)
+    return { container: btnContainer, bg, text, hitArea }
   }
 
   startChallenge() {

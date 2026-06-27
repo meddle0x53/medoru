@@ -1010,15 +1010,13 @@ export default class Player extends Character {
     const tile = map.columns.flat().find(t => t.id === tileId)
     if (tile) tile.completed = true
 
-    // Advance the map cursor when there is only one uncompleted path forward.
-    // When there are multiple branches, stay on the completed node so the
-    // player can pick the next tile themselves.
-    const nextIds = (tile?.connections || [])
-      .map(id => map.columns.flat().find(t => t.id === id))
-      .filter(next => next && !next.completed)
-      .map(next => next.id)
-
-    this.loadout.mapState.currentTileId = nextIds.length === 1 ? nextIds[0] : tileId
+    // Keep the cursor on the completed tile. The outgoing connections of the
+    // current (finished) tile are the valid choices, so the map must stay here
+    // until the player picks the next branch. This also makes the call
+    // idempotent when multiple scenes call it for the same tile.
+    if (this.loadout.mapState.currentTileId === tileId) {
+      this.loadout.mapState.currentTileId = tileId
+    }
     this.saveLoadout()
   }
 

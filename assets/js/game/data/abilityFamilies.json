@@ -1,0 +1,7 @@
+{
+  "warrior": {
+    "bleed": ["gutting_slash"],
+    "heavy": ["seismic_slam"],
+    "fire": ["flame_arc"]
+  }
+}
