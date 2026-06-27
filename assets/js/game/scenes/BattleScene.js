@@ -3,6 +3,7 @@ import { getEffect, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
 import Player from '../entities/Player.js'
 import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
+import SocketProcSystem from '../systems/SocketProcSystem.js'
 import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
@@ -64,6 +65,7 @@ export default class BattleScene extends Phaser.Scene {
     this.turnManager = new TurnManager(this.player, this.enemies, {
       onCombatLog: (msg) => this.addCombatLog(msg),
     })
+    this.socketProcSystem = new SocketProcSystem(this.player)
     this.challengeSystem = new ChallengeSystem(userData?.kanji_list)
 
     // Kanji drawing for weapon powerups (Forward Slash uses 力)
@@ -141,6 +143,7 @@ export default class BattleScene extends Phaser.Scene {
     const enemyName = this.enemy.name || 'the enemy'
     const countText = this.enemies.length > 1 ? ` (${this.enemies.length})` : ''
     this.addCombatLog(`Battle start! Defeat ${enemyName}${countText}!`)
+    this.socketProcSystem.trigger('on_battle_start', { scene: this })
     this.onTurnChange('player')
   }
 
@@ -2504,6 +2507,12 @@ export default class BattleScene extends Phaser.Scene {
       }
     }
 
+    // Trigger socket hit procs for attacks that dealt damage.
+    if ((result.type === 'attack' || result.type === 'attack_defence') && result.damage > 0) {
+      this.socketProcSystem.trigger('on_hit', { scene: this, target, result })
+      this.updateBars()
+    }
+
     // If the skill killed the last enemy, TurnManager already ends the battle.
     // Otherwise, let the player continue acting.
   }
@@ -2525,6 +2534,9 @@ export default class BattleScene extends Phaser.Scene {
       this.player.setupDefenceUsed = false
       this.player.clearShieldBonus()
       this.player.resetReadiness()
+      // Trigger socket start-of-turn procs
+      this.socketProcSystem.trigger('on_turn_start', { scene: this })
+      this.updateBars()
       // Show what each enemy will do on the upcoming turn
       this.showIntentionPlan()
     } else {
@@ -2683,6 +2695,9 @@ export default class BattleScene extends Phaser.Scene {
                 this.flashScreen(dmgColor, 120)
                 this.shakeScreen(0.01, 180)
               }
+              // Trigger socket defend procs now that damage has been taken.
+              this.socketProcSystem.trigger('on_defend', { scene: this, source: enemy, result })
+              this.updateBars()
               await this.delay(800)
               this.setPlayerPose('idle')
               this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)

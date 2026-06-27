@@ -1,7 +1,8 @@
 defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
   @moduledoc """
   LiveView for selecting kanji to practice.
-  Shows all learned kanji with checkboxes. User can select up to 20.
+  Shows learned kanji with checkboxes, paginated so users can select from any page.
+  User can select up to 20.
   """
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
@@ -10,6 +11,7 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
   alias Medoru.Learning
 
   @max_selection 20
+  @per_page 30
 
   embed_templates "practice_form.html"
 
@@ -22,20 +24,45 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
        locale: locale,
        selected_ids: [],
        max_selection: @max_selection,
-       snap_correct: true
+       snap_correct: true,
+       page: 1,
+       total_count: 0,
+       total_pages: 1
      )}
   end
 
   @impl true
   def handle_params(%{"id" => user_id}, _url, socket) do
     user = Accounts.get_user!(user_id)
-    kanji = Learning.list_learned_kanji(user_id)
+    result = list_learned_kanji_paginated(user_id, page: 1, per_page: @per_page)
 
     {:noreply,
      socket
      |> assign(:user, user)
-     |> assign(:kanji, kanji)
+     |> assign(:kanji, result.kanji)
+     |> assign(:page, 1)
+     |> assign(:total_count, result.total_count)
+     |> assign(:total_pages, result.total_pages)
      |> assign(:page_title, gettext("Practice Kanji"))}
+  end
+
+  @impl true
+  def handle_event("change_page", %{"page" => page}, socket) do
+    page = parse_page(page)
+    user_id = socket.assigns.user.id
+
+    result =
+      list_learned_kanji_paginated(user_id,
+        page: page,
+        per_page: @per_page
+      )
+
+    {:noreply,
+     socket
+     |> assign(:page, page)
+     |> assign(:kanji, result.kanji)
+     |> assign(:total_count, result.total_count)
+     |> assign(:total_pages, result.total_pages)}
   end
 
   @impl true
@@ -79,4 +106,35 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeForm do
        )}
     end
   end
+
+  defp list_learned_kanji_paginated(user_id, opts) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, @per_page)
+
+    total_count = Learning.count_learned_kanji(user_id)
+
+    kanji =
+      Learning.list_learned_kanji(user_id,
+        limit: per_page,
+        offset: (page - 1) * per_page
+      )
+
+    total_pages = ceil(total_count / per_page)
+
+    %{
+      kanji: kanji,
+      total_count: total_count,
+      total_pages: max(1, total_pages)
+    }
+  end
+
+  defp parse_page(page) when is_binary(page) do
+    case Integer.parse(page) do
+      {n, _} when n > 0 -> n
+      _ -> 1
+    end
+  end
+
+  defp parse_page(page) when is_integer(page) and page > 0, do: page
+  defp parse_page(_), do: 1
 end

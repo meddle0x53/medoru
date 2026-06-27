@@ -84,8 +84,6 @@ function applySocketScaling(baseScaling, equipment) {
     if (!charmId) continue
     const charm = getSocketCharmById(charmId)
     if (!charm || !charm.scaling) continue
-    // Only socket 1 overrides scaling for now.
-    if (i !== 0) continue
     for (const [stat, rule] of Object.entries(charm.scaling)) {
       if (rule === null) {
         delete baseScaling[stat]
@@ -193,7 +191,11 @@ export default class Player extends Character {
       gold: startingGold,
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
-      ownedSocketCharmIds: ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield'],
+      ownedSocketCharmIds: [
+        'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
+        'life_dew_charm_sword', 'wind_spirit_charm_sword',
+        'thorn_shell_charm_shield', 'steady_guard_charm_shield',
+      ],
       mapState: null,
       mapVersion: MAP_VERSION,
     }
@@ -482,8 +484,19 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
         }
-        if (!Array.isArray(loadout.ownedSocketCharmIds) || loadout.ownedSocketCharmIds.length === 0) {
-          loadout.ownedSocketCharmIds = ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield']
+        const starterSocketCharmIds = [
+          'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
+          'life_dew_charm_sword', 'wind_spirit_charm_sword',
+          'thorn_shell_charm_shield', 'steady_guard_charm_shield',
+        ]
+        if (!Array.isArray(loadout.ownedSocketCharmIds)) {
+          loadout.ownedSocketCharmIds = starterSocketCharmIds
+        } else {
+          for (const id of starterSocketCharmIds) {
+            if (!loadout.ownedSocketCharmIds.includes(id)) {
+              loadout.ownedSocketCharmIds.push(id)
+            }
+          }
         }
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
@@ -648,12 +661,32 @@ export default class Player extends Character {
     this.saveLoadout()
   }
 
+  getEquippedSocketCharms() {
+    const charms = []
+    for (const equipment of [this.weapon, this.shield]) {
+      if (!equipment) continue
+      for (const charmId of equipment.socketCharmIds || []) {
+        if (!charmId) continue
+        const charm = getSocketCharmById(charmId)
+        if (charm) charms.push(charm)
+      }
+    }
+    return charms
+  }
+
   // Returns a plain object of accumulated charm effects, e.g.
   // { strength: 2, skill: 2, critChance: 0.05, damageBonus: 0.18 }
   getCharmEffects() {
     if (this._charmEffects) return this._charmEffects
     const effects = {}
     for (const charm of this.getEquippedCharms()) {
+      const { stat, value } = charm.effect || {}
+      if (!stat || value === undefined) continue
+      if (typeof value === 'number') {
+        effects[stat] = (effects[stat] || 0) + value
+      }
+    }
+    for (const charm of this.getEquippedSocketCharms()) {
       const { stat, value } = charm.effect || {}
       if (!stat || value === undefined) continue
       if (typeof value === 'number') {
@@ -1021,7 +1054,11 @@ export default class Player extends Character {
       gold: 10 * (this.level || 1),
       inventory: { health_potion: 2, stone: 1 },
       ownedCharmIds: [],
-      ownedSocketCharmIds: ['sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield'],
+      ownedSocketCharmIds: [
+        'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
+        'life_dew_charm_sword', 'wind_spirit_charm_sword',
+        'thorn_shell_charm_shield', 'steady_guard_charm_shield',
+      ],
       mapState: null,
       mapVersion: MAP_VERSION,
       weapon: createDefaultWeapon(),

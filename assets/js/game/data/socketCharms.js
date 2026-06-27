@@ -9,6 +9,19 @@
  *   { fixed: 'D' }                  -> always this grade
  *   { milestones: {1:'C',5:'B'} }   -> grade based on equipment level
  *   null                            -> remove this stat from scaling
+ *
+ * Passive proc format:
+ *   {
+ *     trigger: 'on_hit' | 'on_defend' | 'on_turn_start' | 'on_battle_start',
+ *     chance: 0.15,
+ *     effects: [
+ *       { type: 'heal', value: 2 },
+ *       { type: 'damage', value: 3 },
+ *       { type: 'inflict_status', effectId: 'poison' },
+ *       { type: 'regen_stamina', value: 1 },
+ *       { type: 'thorns', value: 3 }
+ *     ]
+ *   }
  */
 
 import primaryWeaponData from './socketCharms/primary_weapon.json'
@@ -35,31 +48,30 @@ function normalizeCharm(charm) {
   }
 }
 
-// First-socket sword charms.
-export const WEAPON_SOCKET_1_CHARMS = (primaryWeaponData.charms || [])
+const ALL_WEAPON_CHARMS = (primaryWeaponData.charms || [])
   .map(normalizeCharm)
-  .filter((c) => c.slot === 1)
 
-// First-socket shield charms.
-export const SHIELD_SOCKET_1_CHARMS = (secondaryWeaponData.charms || [])
+const ALL_SHIELD_CHARMS = (secondaryWeaponData.charms || [])
   .map(normalizeCharm)
-  .filter((c) => c.slot === 1)
 
+export const ALL_SOCKET_CHARMS = [...ALL_WEAPON_CHARMS, ...ALL_SHIELD_CHARMS]
+
+export const WEAPON_SOCKET_1_CHARMS = ALL_WEAPON_CHARMS.filter((c) => c.slot === 1)
+export const SHIELD_SOCKET_1_CHARMS = ALL_SHIELD_CHARMS.filter((c) => c.slot === 1)
 export const SOCKET_1_CHARMS = [...WEAPON_SOCKET_1_CHARMS, ...SHIELD_SOCKET_1_CHARMS]
 
 export function getSocketCharmById(id) {
-  return SOCKET_1_CHARMS.find((c) => c.id === id) || null
+  return ALL_SOCKET_CHARMS.find((c) => c.id === id) || null
 }
 
 export function getSocketCharmsForSlot(slot, equipmentType) {
-  if (slot !== 1) return []
   const normalized = equipmentType === 'shield'
     ? 'secondary_weapon'
     : equipmentType === 'weapon'
       ? 'primary_weapon'
       : equipmentType
-  const pool = normalized === 'secondary_weapon' ? SHIELD_SOCKET_1_CHARMS : WEAPON_SOCKET_1_CHARMS
-  return pool
+  const pool = normalized === 'secondary_weapon' ? ALL_SHIELD_CHARMS : ALL_WEAPON_CHARMS
+  return pool.filter((c) => c.slot === slot)
 }
 
 /**

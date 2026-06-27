@@ -27,6 +27,9 @@
         <span class="bg-base-200 px-3 py-1.5 rounded-full text-sm text-secondary">
           {length(@selected_ids)} / {@max_selection} {gettext("selected")}
         </span>
+        <span class="bg-base-200 px-3 py-1.5 rounded-full text-sm text-secondary">
+          {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
+        </span>
         <%= if length(@selected_ids) == @max_selection do %>
           <span class="text-sm text-warning">
             {gettext("Maximum reached")}
@@ -131,6 +134,58 @@
         </div>
       <% end %>
     </div>
+
+    <%= if @total_pages > 1 do %>
+      <div class="mt-8 flex justify-center">
+        <div class="flex items-center gap-2">
+          <%= if @page > 1 do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page - 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              ← {gettext("Prev")}
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              ← {gettext("Prev")}
+            </span>
+          <% end %>
+
+          <div class="flex items-center gap-1">
+            <%= for p <- max(1, @page - 2)..min(@total_pages, @page + 2) do %>
+              <%= if p == @page do %>
+                <span class="px-3 py-2 bg-primary text-primary-content rounded-lg font-medium">
+                  {p}
+                </span>
+              <% else %>
+                <button
+                  phx-click="change_page"
+                  phx-value-page={p}
+                  class="px-3 py-2 text-secondary hover:bg-base-200 rounded-lg transition-colors"
+                >
+                  {p}
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <%= if @page < @total_pages do %>
+            <button
+              phx-click="change_page"
+              phx-value-page={@page + 1}
+              class="px-4 py-2 bg-base-200 text-secondary rounded-lg hover:bg-base-300 transition-colors"
+            >
+              {gettext("Next")} →
+            </button>
+          <% else %>
+            <span class="px-4 py-2 bg-base-200/50 text-secondary/40 rounded-lg cursor-not-allowed">
+              {gettext("Next")} →
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
 
     <%= if @kanji == [] do %>
       <div class="text-center py-16">

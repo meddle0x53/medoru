@@ -12,8 +12,9 @@
 | 2026-06-24 | v0.7.0 Remove Copy-to-Wordset for Grammar Lessons | COMPLETED | 2026-06-24 |
 | 2026-06-24 | v0.7.0 Grammar Index Learned Indicator | COMPLETED | 2026-06-24 |
 | 2026-06-27 | v0.8.0 Admin Remove Word Kanji | COMPLETED | 2026-06-27 |
+| 2026-06-27 | v0.8.0 Learned Kanji Practice Pagination | COMPLETED | 2026-06-27 |
 
 ## Current State
 
-- Last completed: Iteration 2026-06-27 — Admin Remove Word Kanji
+- Last completed: Iteration 2026-06-27 — Learned Kanji Practice Pagination
 - Next: remaining v0.8.0 tasks

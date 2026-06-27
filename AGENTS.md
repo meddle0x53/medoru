@@ -6,7 +6,7 @@
 
 **Version**: 0.7.0 🔄 IN PROGRESS  
 **Status**: v0.7.0 in progress. English-learning UI wiring complete. Daily Radical Hunt challenge complete and mobile-friendly. AI Word Enrichment remaining. Mature word content filtering complete. Gender dropdown in profile settings no longer resets when toggling checkboxes. Push notifications for classroom chats now open `/classrooms/<id>?tab=chat`. Kanji radical data bug fixed: 沢 now maps to 水 instead of 火. Admin user impersonation ("Login as") added. Admin user list shows last login timestamp. Presentation mode bug fixes: fullscreen background fills width on first entry, content scrolls to prevent kanji breakdown cut-off, vocabulary audio updates per slide. White board/stream posts and comments support copy-paste image uploads. Command parsers strip spaces around expressions. Grammar lesson from image now preserves examples in the description for both grammar and text steps and slices lesson title/description to fit validation limits. Vocabulary lesson from image now falls back to reading when AI omits text, strips optional brackets from expressions while preserving the bracketed form in notes, and prompts the AI to include katakana words, expressions, and phrases. Copy-to-wordset button and word-count badge removed from grammar lessons in classroom lesson lists. Grammar index page now highlights learned grammar points with a green border and "Learned" badge for logged-in users. Admin kanji form supports AI enrichment for metadata, readings, and stroke data, with local KanjiVG fallback for strokes.  
-**Tests**: 1477 passing  
+**Tests**: 1480 passing  
 **URL**: https://medoru.net
 
 ### What's In Progress (v0.7.0)
@@ -41,9 +41,11 @@
 - **Writing fill-in image extraction**: Multi-line question text is no longer dropped when creating writing fill-in test steps from an image. `Medoru.AI.ImageTestSteps.single_line/1` now trims each line, drops blank lines, and joins the remaining text with single spaces so all content is preserved on one line.
 - **Teacher test details editing**: Teachers can now edit the title and description of an existing test from the test show page (`/teacher/tests/:id`) using the new inline "Edit title and description" form.
 - **Game map progression fix**: Completed battle tiles are no longer highlighted with the active current-tile pulse; they show a green checkmark and cannot be re-entered. `WinScene` explicitly marks the battle tile `completed` (via `player.completeTile`) before returning to `MapScene`, and `MapScene.doTileAction` defensively rejects completed tiles. Service worker cache bumped to `medoru-v141`; game bundle bumped to `game.js?v=241`.
+- **Socket 2 passive procs**: Weapon/shield socket charms in slot 2 now trigger passive effects in battle (`on_hit`, `on_defend`, `on_turn_start`, `on_battle_start`). Added `SocketProcSystem` to resolve chances and apply heals, damage, thorns, status infliction, and stamina regen. Added example charms: Life Dew, Venom Edge, Wind Spirit (sword slot 2); Thorn Shell, Steady Guard (shield slot 2). Socket charm loader now aggregates charms for all slots, and `Player.getCharmEffects` includes always-on `effect` bonuses from socket charms. Service worker cache bumped to `medoru-v142`; game bundle bumped to `game.js?v=242`.
 
 ### What's In Progress (v0.8.0)
 - **Admin word kanji de-association**: The admin/moderator word edit page (`/admin/words/:id/edit`, `/moderator/words/:id/edit`) now lets users remove one or multiple kanji associations from a word. Each kanji card has a "Select" checkbox, and a "Remove selected" button deletes the checked `word_kanjis` rows via `Content.delete_word_kanjis/2`.
+- **Learned kanji practice pagination**: The `/users/:id/kanji/practice` page now paginates learned kanji at 30 per page (matching `/users/:id/kanji`). Selection state is preserved across pages, so users can choose kanji from any page for drawing practice.
 
 ### What's Complete (v0.2.0) — Social, XP System, Level Badges
 **Phase 1: Database & Admin Infrastructure ✅ COMPLETE**

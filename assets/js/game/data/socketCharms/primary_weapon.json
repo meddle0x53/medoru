@@ -262,6 +262,57 @@
       },
       "abilityFamily": "luck",
       "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "life_dew_charm_sword",
+      "name": "Life Dew Charm",
+      "nameJa": "\u3044\u306e\u3061\u306e\u8b77\u7b26",
+      "kanji": "\u6d3b",
+      "slot": 2,
+      "color": "#2ecc71",
+      "description": "Chance to recover a small amount of HP on each hit.",
+      "passiveProcs": [
+        {
+          "trigger": "on_hit",
+          "chance": 0.15,
+          "effects": [{ "type": "heal", "value": 2 }]
+        }
+      ],
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "venom_edge_charm_sword",
+      "name": "Venom Edge Charm",
+      "nameJa": "\u6bd2\u5203\u306e\u8b77\u7b26",
+      "kanji": "\u6bd2",
+      "slot": 2,
+      "color": "#9932cc",
+      "description": "Chance to poison the target on hit.",
+      "passiveProcs": [
+        {
+          "trigger": "on_hit",
+          "chance": 0.12,
+          "effects": [{ "type": "inflict_status", "effectId": "poison", "snapshot": 5 }]
+        }
+      ],
+      "equipmentType": "primary_weapon"
+    },
+    {
+      "id": "wind_spirit_charm_sword",
+      "name": "Wind Spirit Charm",
+      "nameJa": "\u98a8\u970a\u306e\u8b77\u7b26",
+      "kanji": "\u98a8",
+      "slot": 2,
+      "color": "#ccffcc",
+      "description": "Chance to regain a little stamina at the start of your turn.",
+      "passiveProcs": [
+        {
+          "trigger": "on_turn_start",
+          "chance": 0.5,
+          "effects": [{ "type": "regen_stamina", "value": 1 }]
+        }
+      ],
+      "equipmentType": "primary_weapon"
     }
   ]
 }

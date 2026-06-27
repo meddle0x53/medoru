@@ -66,6 +66,34 @@
       },
       "abilityFamily": "luck_guard",
       "equipmentType": "secondary_weapon"
+    },
+    {
+      "id": "thorn_shell_charm_shield",
+      "name": "Thorn Shell Charm",
+      "nameJa": "\u30c8\u30b2\u306e\u8c9d\u306e\u8b77\u7b26",
+      "kanji": "\u8c9d",
+      "slot": 2,
+      "color": "#8fbc8f",
+      "description": "Chance to reflect damage back at attackers when hit.",
+      "passiveProcs": [
+        {
+          "trigger": "on_defend",
+          "chance": 0.2,
+          "effects": [{ "type": "thorns", "value": 3 }]
+        }
+      ],
+      "equipmentType": "secondary_weapon"
+    },
+    {
+      "id": "steady_guard_charm_shield",
+      "name": "Steady Guard Charm",
+      "nameJa": "\u5b89\u925b\u306e\u8b77\u7b26",
+      "kanji": "\u5b89",
+      "slot": 2,
+      "color": "#95a5a6",
+      "description": "A solid guard that slightly raises defense while equipped.",
+      "effect": { "defense": 2 },
+      "equipmentType": "secondary_weapon"
     }
   ]
 }
