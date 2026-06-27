@@ -335,5 +335,59 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
 
       refute html =~ "Add from Grammar Definition"
     end
+
+    test "changing lesson word color apply_to does not crash", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      view
+      |> element("button[phx-click='add_lesson_word_color']")
+      |> render_click()
+
+      # The select is wired to the WordColorApplyTo hook, which pushes the event
+      # with index, field, and apply_to metadata.
+      html =
+        render_hook(view, "update_lesson_word_color", %{
+          index: "0",
+          field: "apply_to",
+          apply_to: "examples"
+        })
+
+      assert html =~ "Examples only"
+    end
+
+    test "changing step word color apply_to does not crash", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      view
+      |> element("button[phx-click='add_step'][phx-value-type='grammar']", "Grammar")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='add_step_word_color']")
+      |> render_click()
+
+      html =
+        render_hook(view, "update_step_word_color", %{
+          index: "0",
+          field: "apply_to",
+          apply_to: "explanation"
+        })
+
+      assert html =~ "Explanation only"
+    end
   end
 end

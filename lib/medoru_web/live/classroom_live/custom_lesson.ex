@@ -1313,6 +1313,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         {:colored, word, classes} -> ~s(<span class="#{classes}">#{word}</span>)
       end)
 
+    # Prevent Earmark from treating a leading <span> as an HTML block,
+    # which would drop the text that follows it on the same line.
+    markdown_text = String.replace(markdown_text, ~r/(^|\n)(<span)/, "\\1\u200B\\2")
+
     render_markdown(markdown_text)
   end
 

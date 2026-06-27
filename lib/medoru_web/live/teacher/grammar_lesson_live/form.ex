@@ -1053,10 +1053,11 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
             <% end %>
           </div>
           <select
+            id={"word-color-apply-to-#{@update_event}-#{idx}"}
             name="apply_to"
-            phx-change={@update_event}
-            phx-value-index={idx}
-            phx-value-field="apply_to"
+            phx-hook="WordColorApplyTo"
+            data-event={@update_event}
+            data-index={idx}
             class="select select-bordered select-sm w-full"
           >
             <option value="both" selected={color["apply_to"] == "both"}>{gettext("Both")}</option>

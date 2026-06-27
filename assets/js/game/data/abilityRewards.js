@@ -12,33 +12,62 @@ export const ABILITY_REWARDS = {
     shield_Wooden_Shield: ['shield_parry', 'setup_defence', 'shield_bash'],
     // Generic warrior class skills
     class: ['focus', 'taunt', 'dash'],
+    // Socket-1 charm family abilities. These are added to the relevant equipment
+    // pool only when the matching family is equipped.
+    family: {
+      bleed: ['gutting_slash'],
+      heavy: ['seismic_slam'],
+      fire: ['flame_arc'],
+    },
   },
   // Placeholders for future classes
   mage: {
     weapon_Staff: [],
     class: [],
+    family: {},
   },
   archer: {
     weapon_Bow: [],
     class: [],
+    family: {},
   },
 }
 
 /**
  * Build a reward pool for the player, grouped by source category.
+ * Accepts either a Player object or the old (playerClass, weaponName, shieldName)
+ * signature for backward compatibility.
  * Returns { weapon, shield, class } arrays.
  */
-export function getRewardPool(playerClass = 'warrior', weaponName, shieldName) {
+export function getRewardPool(playerOrClass = 'warrior', weaponName, shieldName) {
+  const isPlayer = playerOrClass && typeof playerOrClass === 'object' && playerOrClass.loadout
+  const player = isPlayer ? playerOrClass : null
+  const playerClass = player?.loadout?.class || (typeof playerOrClass === 'string' ? playerOrClass : 'warrior')
   const classTable = ABILITY_REWARDS[playerClass] || ABILITY_REWARDS.warrior
 
-  const weaponKey = weaponName ? `weapon_${weaponName.replace(/\s+/g, '_')}` : null
-  const shieldKey = shieldName ? `shield_${shieldName.replace(/\s+/g, '_')}` : null
+  const weaponNameResolved = player?.weapon?.name || weaponName
+  const shieldNameResolved = player?.shield?.name || shieldName
 
-  return {
-    weapon: weaponKey && classTable[weaponKey] ? [...classTable[weaponKey]] : [],
-    shield: shieldKey && classTable[shieldKey] ? [...classTable[shieldKey]] : [],
-    class: classTable.class ? [...classTable.class] : [],
+  const weaponKey = weaponNameResolved ? `weapon_${weaponNameResolved.replace(/\s+/g, '_')}` : null
+  const shieldKey = shieldNameResolved ? `shield_${shieldNameResolved.replace(/\s+/g, '_')}` : null
+
+  const weapon = weaponKey && classTable[weaponKey] ? [...classTable[weaponKey]] : []
+  const shield = shieldKey && classTable[shieldKey] ? [...classTable[shieldKey]] : []
+  const classPool = classTable.class ? [...classTable.class] : []
+
+  // Inject family-locked abilities based on the equipped socket-1 charm families.
+  if (player && typeof player.getSocketCharmFamily === 'function') {
+    const weaponFamily = player.getSocketCharmFamily('primary_weapon')
+    if (weaponFamily && classTable.family?.[weaponFamily]) {
+      weapon.push(...classTable.family[weaponFamily])
+    }
+    const shieldFamily = player.getSocketCharmFamily('secondary_weapon')
+    if (shieldFamily && classTable.family?.[shieldFamily]) {
+      shield.push(...classTable.family[shieldFamily])
+    }
   }
+
+  return { weapon, shield, class: classPool }
 }
 
 /**

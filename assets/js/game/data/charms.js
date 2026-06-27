@@ -148,16 +148,28 @@ export function getCharmsByType(type) {
 }
 
 // How many charm slots equipment gets based on its upgrade level.
-// Level 0-2 → 0 slots
-// Level 3-5 → 1 slot
-// Level 6-8 → 2 slots
-// Level 9-10 → 3 slots
+// Matches the weapon/shield socket unlock schedule:
+// Level 0 → 0 slots
+// Level +1 → 1 slot
+// Level +3 → 2 slots
+// Level +6 → 3 slots
+// Level +7 → 4 slots
 export function getWeaponCharmSlots(weaponLevel) {
-  return Math.min(3, Math.floor((weaponLevel || 0) / 3))
+  const level = weaponLevel || 0
+  if (level >= 7) return 4
+  if (level >= 6) return 3
+  if (level >= 3) return 2
+  if (level >= 1) return 1
+  return 0
 }
 
 export function getShieldCharmSlots(shieldLevel) {
-  return Math.min(3, Math.floor((shieldLevel || 0) / 3))
+  const level = shieldLevel || 0
+  if (level >= 7) return 4
+  if (level >= 6) return 3
+  if (level >= 3) return 2
+  if (level >= 1) return 1
+  return 0
 }
 
 // Validate an equip attempt.

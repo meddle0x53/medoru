@@ -58,11 +58,7 @@ export default class WinScene extends Phaser.Scene {
   // ---------- Reward generation ----------
 
   generateAbilityRewards() {
-    const pool = getRewardPool(
-      this.player.loadout.class || 'warrior',
-      this.player.weapon?.name,
-      this.player.shield?.name
-    )
+    const pool = getRewardPool(this.player)
     const count = 3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0)
     return pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
   }
@@ -202,11 +198,7 @@ export default class WinScene extends Phaser.Scene {
   refreshAbilityRewards() {
     // Re-roll reward picks from the remaining unknown pool so the same
     // learned ability doesn't keep showing up.
-    const pool = getRewardPool(
-      this.player.loadout.class || 'warrior',
-      this.player.weapon?.name,
-      this.player.shield?.name
-    )
+    const pool = getRewardPool(this.player)
     const count = this.rewardAbilities.length
     this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
     this.createAbilityRewards()

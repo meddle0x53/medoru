@@ -70,7 +70,7 @@ export default class ShopScene extends Phaser.Scene {
     const sockets = item.name === 'Long Sword'
       ? this.player.getWeaponCharmSlots()
       : this.player.getShieldCharmSlots()
-    return `${item.name} +${level}\nBase ${baseStatKey === 'baseDamage' ? 'ATK' : 'DEF'}: ${base}\nScaling: ${scaling}\nSockets: ${sockets}/3\nUpgrade: ${cost}G`
+    return `${item.name} +${level}\nBase ${baseStatKey === 'baseDamage' ? 'ATK' : 'DEF'}: ${base}\nScaling: ${scaling}\nSockets: ${sockets}/4\nUpgrade: ${cost}G`
   }
 
   createButtons() {

@@ -173,7 +173,6 @@ defmodule MedoruWeb.Router do
     live_session :public_profiles,
       on_mount: [{MedoruWeb.UserAuth, :default}] do
       live "/:id", UserLive.Show
-      live "/:id/white-board", UserWhiteBoardLive
       live "/:id/followers", UserLive.Followers
       live "/:id/following", UserLive.Following
     end

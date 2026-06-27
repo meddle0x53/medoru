@@ -311,5 +311,35 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       assert html =~ "Preview Mode"
       assert html =~ lesson.title
     end
+
+    test "preserves text after colored word in preview", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "grammar",
+          title: "Colored Grammar Lesson",
+          status: "draft"
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        title: "Introduction",
+        position: 0,
+        step_type: "text",
+        explanation_sections: ["食べる means to eat"],
+        word_colors: [
+          %{"word" => "食べる", "color_index" => 0, "apply_to" => "explanation"}
+        ]
+      })
+
+      conn = log_in_user(conn, teacher)
+      {:ok, _view, html} = live(conn, ~p"/teacher/custom-lessons/#{lesson.id}/preview")
+
+      assert html =~ "食べる"
+      assert html =~ "means to eat"
+    end
   end
 end
