@@ -3083,6 +3083,9 @@ export default class BattleScene extends Phaser.Scene {
         return
       }
 
+      // Mark the tile completed immediately so the map state is correct even if
+      // the player gambles/closes the WinScene before clicking Continue.
+      if (this.tile?.id) this.player.completeTile(this.tile.id)
       this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile })
       return
     }
