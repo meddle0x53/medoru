@@ -3,8 +3,10 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
 
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
 
   alias Medoru.Classrooms
+  alias Medoru.Content
 
   describe "Teacher classroom management" do
     setup do
@@ -385,6 +387,258 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       |> render_click()
 
       assert_patch(view, ~p"/teacher/classrooms/#{classroom.id}?tab=students")
+    end
+
+    test "teacher sees generate vocabulary test button when vocabulary lessons exist", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word = word_fixture()
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, _view, html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      assert html =~ "Generate Vocabulary Test"
+    end
+
+    test "teacher can generate a vocabulary test", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert render(view) =~ "Generate Vocabulary Test"
+      assert render(view) =~ word1.text
+      assert render(view) =~ word2.text
+
+      view
+      |> element("form#generate-vocab-test-form")
+      |> render_submit()
+
+      assert_redirected(view, ~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert length(published_tests) == 1
+      assert hd(published_tests).test.title =~ "Vocabulary Test"
+    end
+
+    test "excluded words are not included in generated test", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      view
+      |> element("form#generate-vocab-test-form")
+      |> render_submit(%{
+        "word_ids" => [word1.id],
+        "total_questions" => "1"
+      })
+
+      assert_redirected(view, ~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert length(published_tests) == 1
+
+      test = hd(published_tests).test |> Medoru.Repo.preload(:test_steps)
+      step_word_ids = Enum.map(test.test_steps, & &1.word_id)
+      assert word1.id in step_word_ids
+      refute word2.id in step_word_ids
+    end
+
+    test "max times per word slider updates pool size", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      html = render(view)
+      assert html =~ "Maximum possible: 2"
+
+      html =
+        view
+        |> element("input[name='max_times_per_word']")
+        |> render_change(%{"max_times_per_word" => "3"})
+
+      assert html =~ "Maximum possible: 6"
+    end
+
+    test "deselecting a word updates pool size", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert render(view) =~ "Maximum possible: 2"
+
+      html =
+        view
+        |> element("input[phx-click='toggle_word'][phx-value-word_id='#{word1.id}']")
+        |> render_click()
+
+      assert html =~ "Maximum possible: 1"
+    end
+
+    test "max times per word is validated to 1-3", %{conn: conn, teacher: teacher} do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      html =
+        view
+        |> element("input[name='max_times_per_word']")
+        |> render_change(%{"max_times_per_word" => "5"})
+
+      assert html =~ "Max times per word must be between 1 and 3"
+    end
+
+    test "number of questions is validated against selected words times max times", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      html =
+        view
+        |> element("input[name='total_questions']")
+        |> render_change(%{"total_questions" => "10"})
+
+      assert html =~ "Number of questions cannot exceed 2"
+    end
+
+    test "non-owner teacher cannot access generate vocabulary test page", %{conn: conn} do
+      teacher1 = user_fixture(%{type: "teacher"})
+      teacher2 = user_fixture(%{type: "teacher"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher1.id
+        })
+
+      {:error, {:live_redirect, %{to: "/teacher/classrooms", flash: flash}}} =
+        conn
+        |> log_in_user(teacher2)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert flash["error"] == "You don't have permission to access this classroom."
+    end
+
+    test "teacher is redirected from generate page when no vocabulary lessons exist", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      {:error, {:live_redirect, %{to: path, flash: flash}}} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert path == "/teacher/classrooms/#{classroom.id}?tab=tests"
+      assert flash["error"] == "This classroom has no vocabulary lessons to generate a test from."
     end
   end
 end

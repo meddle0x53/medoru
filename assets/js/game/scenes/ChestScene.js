@@ -10,6 +10,8 @@ export default class ChestScene extends Phaser.Scene {
     this.player = data.player
     this.tile = data.tile
     this.mapIndex = data.mapIndex
+    this.returnScene = data.returnScene || 'MapScene'
+    this.skipCompleteTile = data.skipCompleteTile || false
     this.pendingRewards = []
     this.pendingUpgradeOptions = []
     this.selectedUpgrade = null
@@ -241,10 +243,10 @@ export default class ChestScene extends Phaser.Scene {
   }
 
   completeTile() {
-    if (this.tile?.id) {
+    if (this.tile?.id && !this.skipCompleteTile) {
       this.player.completeTile(this.tile.id)
     }
     this.player.saveLoadout()
-    this.scene.start('MapScene', { player: this.player })
+    this.scene.start(this.returnScene, { player: this.player })
   }
 }

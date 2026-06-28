@@ -1,0 +1,15 @@
+{
+  "socketCharms": {
+    "locked": [
+      { "id": "sharp_charm_sword", "cost": 5, "unlockOrder": 1 },
+      { "id": "heavy_charm_sword", "cost": 5, "unlockOrder": 2 }
+    ]
+  },
+  "heroCharms": {
+    "locked": []
+  },
+  "abilities": {
+    "locked": [],
+    "eventLocked": []
+  }
+}

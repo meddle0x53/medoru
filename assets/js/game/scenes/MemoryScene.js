@@ -71,6 +71,8 @@ export default class MemoryScene extends Phaser.Scene {
     this.player = data.player
     this.tile = data.tile
     this.mapIndex = data.mapIndex
+    this.returnScene = data.returnScene || 'MapScene'
+    this.skipCompleteTile = data.skipCompleteTile || false
 
     this.cards = []
     this.flippedCards = []
@@ -574,11 +576,11 @@ export default class MemoryScene extends Phaser.Scene {
   }
 
   completeTile() {
-    if (this.tile?.id) {
+    if (this.tile?.id && !this.skipCompleteTile) {
       this.player.completeTile(this.tile.id)
     }
     this.player.saveLoadout()
-    this.scene.start('MapScene', { player: this.player })
+    this.scene.start(this.returnScene, { player: this.player })
   }
 
   shutdown() {

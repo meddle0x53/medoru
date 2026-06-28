@@ -17,6 +17,8 @@ export default class LoadoutScene extends Phaser.Scene {
   init(data) {
     this.tile = data.tile || null
     this.mapIndex = data.mapIndex ?? 0
+    this.mode = data.mode || 'battle'
+    this.returnScene = data.returnScene || 'BattleScene'
   }
 
   create() {
@@ -93,8 +95,9 @@ export default class LoadoutScene extends Phaser.Scene {
     this.leftPanel.add(frame)
 
     // Title
+    const titleText = this.mode === 'map' ? 'Prepare for Journey' : 'Prepare for Battle'
     this.leftPanel.add(
-      this.add.text(220, 44, 'Prepare for Battle', {
+      this.add.text(220, 44, titleText, {
         ...FONTS.title,
         fontSize: '20px',
       }).setOrigin(0.5)
@@ -567,7 +570,8 @@ export default class LoadoutScene extends Phaser.Scene {
 
     // Add rows to the scrollable container
     this.itemListRows = []
-    ITEMS.forEach((item, i) => {
+    const ownedItems = ITEMS.filter(item => (this.player.loadout.inventory?.[item.id] || 0) > 0)
+    ownedItems.forEach((item, i) => {
       const y = i * itemHeight
       const isActive = activeItemIds.includes(item.id)
       const row = this.createItemRow(0, y, item, isActive)
@@ -575,8 +579,17 @@ export default class LoadoutScene extends Phaser.Scene {
       this.itemListRows.push(row)
     })
 
+    if (ownedItems.length === 0) {
+      this.itemListContainer.add(this.add.text(listW / 2, listH / 2, 'No items yet.\nWin items from battles and events.', {
+        ...FONTS.default,
+        fontSize: '14px',
+        color: '#7f8c8d',
+        align: 'center',
+      }).setOrigin(0.5))
+    }
+
     // Scroll state
-    this.itemListMaxScroll = Math.max(0, ITEMS.length * itemHeight - listH)
+    this.itemListMaxScroll = Math.max(0, ownedItems.length * itemHeight - listH)
     this.itemListScroll = 0
     this.itemListVisibleHeight = listH
     this.itemListItemHeight = itemHeight
@@ -817,7 +830,8 @@ export default class LoadoutScene extends Phaser.Scene {
         .map(id => getSocketCharmById(id))
         .filter(c => c && c.equipmentType === equipmentType)
     } else {
-      charms = getCharmsByType(charmType)
+      const ownedIds = new Set(this.player.loadout.ownedCharmIds || [])
+      charms = getCharmsByType(charmType).filter(c => ownedIds.has(c.id))
     }
     const cols = 2
     const cellW = 230
@@ -1777,7 +1791,8 @@ export default class LoadoutScene extends Phaser.Scene {
     bg.strokeRoundedRect(-80, -20, 160, 40, 8)
     btn.add(bg)
 
-    const text = this.add.text(0, 0, 'Ready for Battle', {
+    const buttonText = this.mode === 'map' ? 'Enter Map' : 'Ready for Battle'
+    const text = this.add.text(0, 0, buttonText, {
       ...FONTS.default,
       fontSize: '16px',
       fontStyle: 'bold',
@@ -1862,11 +1877,16 @@ export default class LoadoutScene extends Phaser.Scene {
       .map(id => ALL_ACTIONS.find(a => a.id === id))
       .some(a => a?.type === 'attack')
     if (!hasActiveAttack) {
-      this.showToast('At least one attack must be active to battle')
+      this.showToast('At least one attack must be active')
       return
     }
     this.player.saveLoadout()
     this.player.refreshActions()
-    this.scene.start('BattleScene', { player: this.player, tile: this.tile, mapIndex: this.mapIndex })
+
+    if (this.mode === 'map') {
+      this.scene.start('MapScene', { player: this.player })
+    } else {
+      this.scene.start('BattleScene', { player: this.player, tile: this.tile, mapIndex: this.mapIndex })
+    }
   }
 }

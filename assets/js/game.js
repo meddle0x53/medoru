@@ -4,6 +4,8 @@
  */
 import { GAME_CONFIG } from './game/config.js'
 import BootScene from './game/scenes/BootScene.js'
+import HeroSelectScene from './game/scenes/HeroSelectScene.js'
+import HomeShopScene from './game/scenes/HomeShopScene.js'
 import MapScene from './game/scenes/MapScene.js'
 import LoadoutScene from './game/scenes/LoadoutScene.js'
 import BattleScene from './game/scenes/BattleScene.js'
@@ -40,7 +42,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, CascadeScene, ChestScene],
+    scene: [BootScene, HeroSelectScene, HomeShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, CascadeScene, ChestScene],
     physics: {
       default: 'arcade',
       arcade: {

@@ -776,7 +776,10 @@ export default class BattleScene extends Phaser.Scene {
 
   showItemMenu() {
     const activeItemIds = this.player.loadout?.activeItemIds || []
-    const items = (this.player.inventory || []).filter(item => activeItemIds.includes(item.id))
+    const inventory = this.player.loadout?.inventory || {}
+    const items = (this.player.inventory || []).filter(
+      item => activeItemIds.includes(item.id) && (inventory[item.id] || 0) > 0,
+    )
     if (items.length === 0) {
       this.addCombatLog('No active items equipped!')
       return
@@ -3079,9 +3082,8 @@ export default class BattleScene extends Phaser.Scene {
       })
 
       if (this.tile?.type === TILE_TYPES.BOSS) {
-        this.player.completeTile(this.tile.id)
-        this.player.advanceMap()
-        this.scene.start('MapScene', { player: this.player })
+        this.player.endRun(true)
+        this.scene.start('HeroSelectScene', { player: this.player })
         return
       }
 
@@ -3113,10 +3115,10 @@ export default class BattleScene extends Phaser.Scene {
       fontSize: '16px',
     }).setOrigin(0.5).setDepth(200)
 
-    const restartBtn = this.createButton(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60, 'Restart Run', () => {
-      this.player.resetToFreshHero()
-      this.scene.start('MapScene', { player: this.player })
-    })
+    const restartBtn = this.createButton(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60, 'Return to Hero Select', () => {
+      this.player.endRun(false)
+      this.scene.start('HeroSelectScene', { player: this.player })
+    }, 240, 44)
     restartBtn.bg.setDepth(200)
     restartBtn.text.setDepth(200)
 

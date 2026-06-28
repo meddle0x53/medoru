@@ -48,7 +48,10 @@ export function getMaxOverallAbilities(capacity) {
  * Get all actions available to the player based on equipped gear.
  */
 export function getAvailableActions(player) {
+  const unlockedIds = new Set(player.loadout?.unlockedAbilityIds || [])
   return ALL_ACTIONS.filter(a => {
+    if (a.id === 'use_item') return true
+    if (!unlockedIds.has(a.id)) return false
     if (a.requiredSocketCharm) {
       if (!player.hasSocketCharmEquipped(a.requiredSocketCharm)) return false
     }

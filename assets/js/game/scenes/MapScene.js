@@ -168,7 +168,7 @@ export default class MapScene extends Phaser.Scene {
       },
     ).setOrigin(0.5)
 
-    // DEV ONLY: reset the current run back to a fresh hero.
+    // DEV ONLY: reset the current run back to hero select.
     this.hud.resetBtn = this.add.text(GAME_CONFIG.width - 16, 16, 'DEV: RESET RUN', {
       fontFamily: 'Arial',
       fontSize: '12px',
@@ -178,11 +178,24 @@ export default class MapScene extends Phaser.Scene {
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     this.hud.resetBtn.on('pointerdown', () => {
       this.player.resetToFreshHero()
-      this.scene.start('MapScene', { player: this.player })
+      this.scene.start('HeroSelectScene', { player: this.player })
+    })
+
+    // DEV ONLY: wipe all meta-progression and return to hero select.
+    this.hud.hardResetBtn = this.add.text(GAME_CONFIG.width - 16, 46, 'DEV: HARD RESET', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#8e44ad',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    this.hud.hardResetBtn.on('pointerdown', () => {
+      this.player.hardReset()
+      this.scene.start('HeroSelectScene', { player: this.player })
     })
 
     // DEV ONLY: start a test fight with a chosen enemy and count.
-    this.hud.testFightBtn = this.add.text(GAME_CONFIG.width - 16, 46, 'DEV: TEST FIGHT', {
+    this.hud.testFightBtn = this.add.text(GAME_CONFIG.width - 16, 76, 'DEV: TEST FIGHT', {
       fontFamily: 'Arial',
       fontSize: '12px',
       color: '#ffffff',
@@ -541,6 +554,9 @@ export default class MapScene extends Phaser.Scene {
     if (this.hud.resetBtn) {
       this.hud.resetBtn.disableInteractive()
     }
+    if (this.hud.hardResetBtn) {
+      this.hud.hardResetBtn.disableInteractive()
+    }
     this.input.setDefaultCursor('default')
 
     // Bring the chosen tile to the front and hide its label so it doesn't
@@ -600,6 +616,11 @@ export default class MapScene extends Phaser.Scene {
 
     if (tile.type === TILE_TYPES.CHEST) {
       this.scene.start('ChestScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
+    if (tile.type === TILE_TYPES.HOME) {
+      this.scene.start('HomeShopScene', { player: this.player, tile, mapIndex: this.map.index })
       return
     }
 

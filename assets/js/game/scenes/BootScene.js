@@ -80,6 +80,20 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('MapScene')
+    // If the player has an active run, resume on the map instead of making
+    // them go through hero select again after every refresh.
+    const raw = localStorage.getItem('medoru_loadout_v1')
+    let hasActiveRun = false
+    if (raw) {
+      try {
+        const loadout = JSON.parse(raw)
+        const map = loadout.mapState?.maps?.[loadout.mapState?.currentMapIndex]
+        hasActiveRun = !!map
+      } catch (e) {
+        // Ignore corrupted saves; fall through to hero select.
+      }
+    }
+
+    this.scene.start(hasActiveRun ? 'MapScene' : 'HeroSelectScene')
   }
 }

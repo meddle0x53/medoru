@@ -609,6 +609,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               />
             <% "tests" -> %>
               <.tests_tab
+                classroom={@classroom}
                 published_tests={@published_tests}
                 test_attempts={@test_attempts}
                 current_scope={@current_scope}
@@ -1105,6 +1106,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     """
   end
 
+  attr :classroom, :map, required: true
   attr :published_tests, :list, required: true
   attr :test_attempts, :list, required: true
   attr :current_scope, :map, required: true
@@ -1121,10 +1123,33 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
 
           <%= if @published_tests == [] do %>
             <p class="text-secondary">{gettext("No tests published to this classroom yet.")}</p>
-            <.link navigate={~p"/teacher/tests"} class="btn btn-primary btn-sm mt-4">
-              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Publish a Test")}
-            </.link>
+            <div class="flex flex-wrap gap-2 mt-4">
+              <.link
+                navigate={~p"/teacher/classrooms/#{@classroom.id}/generate-vocabulary-test"}
+                class="btn btn-primary btn-sm"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" /> {gettext(
+                  "Generate Vocabulary Test"
+                )}
+              </.link>
+              <.link navigate={~p"/teacher/tests"} class="btn btn-outline btn-sm">
+                <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Publish a Test")}
+              </.link>
+            </div>
           <% else %>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <.link
+                navigate={~p"/teacher/classrooms/#{@classroom.id}/generate-vocabulary-test"}
+                class="btn btn-primary btn-sm"
+              >
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-1" /> {gettext(
+                  "Generate Vocabulary Test"
+                )}
+              </.link>
+              <.link navigate={~p"/teacher/tests"} class="btn btn-outline btn-sm">
+                <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Publish a Test")}
+              </.link>
+            </div>
             <div class="space-y-3">
               <%= for classroom_test <- @published_tests do %>
                 <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">

@@ -228,6 +228,7 @@ defmodule MedoruWeb.Router do
            :edit
 
       live "/classrooms/:classroom_id/radical-hunt-games/:id", RadicalHuntGameLive.Show
+      live "/classrooms/:id/generate-vocabulary-test", ClassroomLive.GenerateVocabularyTest
 
       live "/tests", TestLive.Index
       live "/tests/new", TestLive.New

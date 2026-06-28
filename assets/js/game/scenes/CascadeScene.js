@@ -41,6 +41,8 @@ export default class CascadeScene extends Phaser.Scene {
     this.player = data.player
     this.tile = data.tile
     this.mapIndex = data.mapIndex
+    this.returnScene = data.returnScene || 'MapScene'
+    this.skipCompleteTile = data.skipCompleteTile || false
   }
 
   create() {
@@ -705,9 +707,9 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   completeTile() {
-    if (this.tile?.id) {
+    if (this.tile?.id && !this.skipCompleteTile) {
       this.player.completeTile(this.tile.id)
     }
-    this.scene.start('MapScene', { player: this.player })
+    this.scene.start(this.returnScene, { player: this.player })
   }
 }

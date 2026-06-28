@@ -1,16 +1,17 @@
 import Character from './Character.js'
 import { ITEMS } from '../data/items.js'
-import { splitActions, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities } from '../data/actions.js'
-import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
-import { gradeForSchedule, getSocketCharmById } from '../data/socketCharms.js'
+import { splitActions, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, ALL_ACTIONS } from '../data/actions.js'
+import { getCharmById, canEquipCharm, CHARM_TYPES, CHARMS } from '../data/charms.js'
+import { gradeForSchedule, getSocketCharmById, ALL_SOCKET_CHARMS } from '../data/socketCharms.js'
+import metaUnlocks from '../data/metaUnlocks.json'
 import { generateMap } from '../systems/MapGenerator.js'
 import { getMapDefinition } from '../data/maps/index.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
-const MAP_VERSION = 3
+const MAP_VERSION = 4
 
-const BASE_STAT_POINTS = 10
-const STAT_POINTS_PER_LEVEL = 1
+const BASE_STAT_POINTS = 0
+const STAT_POINTS_PER_LEVEL = 0
 
 // Scaling letter multipliers
 const SCALING_MULTIPLIERS = {
@@ -24,12 +25,13 @@ const SCALING_MULTIPLIERS = {
 
 const GRADE_ORDER = ['S', 'A', 'B', 'C', 'D', 'E']
 
-function createDefaultWeapon() {
+function createDefaultWeapon(permanentLevel = 0) {
+  const level = Math.min(10, permanentLevel)
   return {
     name: 'Long Sword',
     nameJa: '長剣',
-    baseDamage: 20,
-    level: 0,
+    baseDamage: 20 + level * 2,
+    level,
     maxLevel: 10,
     scalingSchedule: {
       strength: { 0: 'C', 3: 'B', 9: 'A' },
@@ -45,12 +47,13 @@ function createDefaultWeapon() {
   }
 }
 
-function createDefaultShield() {
+function createDefaultShield(permanentLevel = 0) {
+  const level = Math.min(10, permanentLevel)
   return {
     name: 'Wooden Shield',
     nameJa: '木盾',
-    baseDefense: 5,
-    level: 0,
+    baseDefense: 5 + level * 1,
+    level,
     maxLevel: 10,
     scalingSchedule: {
       strength: { 0: 'D', 5: 'C', 9: 'B' },
@@ -59,6 +62,29 @@ function createDefaultShield() {
     kanjiPowerup: { kanji: '盾', name: 'tate', learned: true, effect: 'flat_defense', bonus: 3, hint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' } },
     moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
   }
+}
+
+function getLockedIds(category) {
+  const list = metaUnlocks[category]?.locked || []
+  return new Set(list.map(entry => (typeof entry === 'string' ? entry : entry.id)).filter(Boolean))
+}
+
+function getDefaultUnlockedSocketCharmIds() {
+  const locked = getLockedIds('socketCharms')
+  return ALL_SOCKET_CHARMS.filter(c => !locked.has(c.id)).map(c => c.id)
+}
+
+function getDefaultUnlockedHeroCharmIds() {
+  const locked = getLockedIds('heroCharms')
+  return CHARMS.filter(c => c.type === CHARM_TYPES.HERO && !locked.has(c.id)).map(c => c.id)
+}
+
+function getDefaultUnlockedAbilityIds() {
+  const locked = new Set([
+    ...Array.from(getLockedIds('abilities')),
+    ...Array.from(getLockedIds('eventLocked')),
+  ])
+  return ALL_ACTIONS.filter(a => a.id !== 'use_item' && !locked.has(a.id)).map(a => a.id)
 }
 
 export function getUpgradeCost(level) {
@@ -127,9 +153,9 @@ export default class Player extends Character {
     const baseStats = {
       vitality: 20,
       stamina: 10,
-      capacity: 3,
+      capacity: 5,
       skill: 10,
-      strength: 20,
+      strength: 15,
       mana: 5,
       luck: 5,
     }
@@ -173,14 +199,21 @@ export default class Player extends Character {
     // Loadout: persistent battle preparation state
     const starterActionIds = [
       'forward_slash', 'setup_defence', 'shield_parry', 'use_item',
-      'infuse_fire', 'infuse_water', 'infuse_wind', 'infuse_earth',
-      'infuse_void', 'infuse_frost', 'infuse_bleed', 'infuse_poison',
     ]
-    const startingGold = 10 * (this.level || 1)
     this.loadout = this.loadLoadout() || {
       class: 'warrior',
-      activeItemIds: ['health_potion', 'stone'],
-      heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
+      // Meta-currency and permanent unlocks
+      gameTokens: this.level,
+      rareGameTokens: 0,
+      unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
+      unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
+      unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
+      permanentWeaponLevel: 0,
+      permanentShieldLevel: 0,
+      permanentStatPointBonus: 0,
+      // Run-scoped state (reset every run)
+      activeItemIds: [],
+      heroCharmIds: [],
       weaponCharmIds: [],
       shieldCharmIds: [],
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
@@ -188,15 +221,10 @@ export default class Player extends Character {
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
       statPoints: startingStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
-      permanentStatPointBonus: 0,
-      gold: startingGold,
-      inventory: { health_potion: 2, stone: 1 },
+      gold: 0,
+      inventory: {},
       ownedCharmIds: [],
-      ownedSocketCharmIds: [
-        'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
-        'life_dew_charm_sword', 'wind_spirit_charm_sword',
-        'thorn_shell_charm_shield', 'steady_guard_charm_shield',
-      ],
+      ownedSocketCharmIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
     }
@@ -537,6 +565,28 @@ export default class Player extends Character {
         }
         if (loadout.statAllocations.capacity === undefined) {
           loadout.statAllocations.capacity = 0
+        }
+        // Migration: meta-currency and permanent unlocks.
+        if (typeof loadout.gameTokens !== 'number') {
+          loadout.gameTokens = this.level
+        }
+        if (typeof loadout.rareGameTokens !== 'number') {
+          loadout.rareGameTokens = 0
+        }
+        if (!Array.isArray(loadout.unlockedSocketCharmIds)) {
+          loadout.unlockedSocketCharmIds = getDefaultUnlockedSocketCharmIds()
+        }
+        if (!Array.isArray(loadout.unlockedHeroCharmIds)) {
+          loadout.unlockedHeroCharmIds = getDefaultUnlockedHeroCharmIds()
+        }
+        if (!Array.isArray(loadout.unlockedAbilityIds)) {
+          loadout.unlockedAbilityIds = getDefaultUnlockedAbilityIds()
+        }
+        if (typeof loadout.permanentWeaponLevel !== 'number') {
+          loadout.permanentWeaponLevel = 0
+        }
+        if (typeof loadout.permanentShieldLevel !== 'number') {
+          loadout.permanentShieldLevel = 0
         }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
@@ -1034,16 +1084,28 @@ export default class Player extends Character {
   resetToFreshHero() {
     const starterActionIds = [
       'forward_slash', 'setup_defence', 'shield_parry', 'use_item',
-      'infuse_fire', 'infuse_water', 'infuse_wind', 'infuse_earth',
-      'infuse_void', 'infuse_frost', 'infuse_bleed', 'infuse_poison',
     ]
-    const permanentStatPointBonus = this.loadout?.permanentStatPointBonus || 0
-    const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + permanentStatPointBonus
+
+    // Preserve meta-progression.
+    const meta = {
+      gameTokens: this.loadout?.gameTokens ?? this.level,
+      rareGameTokens: this.loadout?.rareGameTokens ?? 0,
+      unlockedSocketCharmIds: this.loadout?.unlockedSocketCharmIds ?? getDefaultUnlockedSocketCharmIds(),
+      unlockedHeroCharmIds: this.loadout?.unlockedHeroCharmIds ?? getDefaultUnlockedHeroCharmIds(),
+      unlockedAbilityIds: this.loadout?.unlockedAbilityIds ?? getDefaultUnlockedAbilityIds(),
+      permanentWeaponLevel: this.loadout?.permanentWeaponLevel ?? 0,
+      permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
+      permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
+    }
+
+    const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + meta.permanentStatPointBonus
 
     this.loadout = {
       class: 'warrior',
-      activeItemIds: ['health_potion', 'stone'],
-      heroCharmIds: ['chikara_charm', 'tate_charm', 'hayai_charm', 'un_charm'],
+      ...meta,
+      // Run-scoped state is reset below.
+      activeItemIds: [],
+      heroCharmIds: [],
       weaponCharmIds: [],
       shieldCharmIds: [],
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
@@ -1051,19 +1113,14 @@ export default class Player extends Character {
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
       statPoints: totalStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
-      permanentStatPointBonus,
-      gold: 10 * (this.level || 1),
-      inventory: { health_potion: 2, stone: 1 },
+      gold: 0,
+      inventory: {},
       ownedCharmIds: [],
-      ownedSocketCharmIds: [
-        'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
-        'life_dew_charm_sword', 'wind_spirit_charm_sword',
-        'thorn_shell_charm_shield', 'steady_guard_charm_shield',
-      ],
+      ownedSocketCharmIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
-      weapon: createDefaultWeapon(),
-      shield: createDefaultShield(),
+      weapon: createDefaultWeapon(meta.permanentWeaponLevel),
+      shield: createDefaultShield(meta.permanentShieldLevel),
     }
 
     this.weapon = this.loadout.weapon
@@ -1090,6 +1147,7 @@ export default class Player extends Character {
     this.itemEffectModifier = 0
     this.parrySetup = false
     this.parryKanjiQuality = null
+    this.potionUsesLeft = 3
     this._charmEffects = null
     this.clearAllAbilityInfusions()
 
@@ -1097,5 +1155,76 @@ export default class Player extends Character {
     this.clearShieldBonus()
     this.refreshActions()
     this.saveLoadout()
+  }
+
+  hardReset() {
+    this.loadout = {
+      ...this.loadout,
+      gameTokens: this.level,
+      rareGameTokens: 0,
+      unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
+      unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
+      unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
+      permanentWeaponLevel: 0,
+      permanentShieldLevel: 0,
+      permanentStatPointBonus: 0,
+    }
+    this.resetToFreshHero()
+  }
+
+  endRun(victory = true) {
+    if (victory) {
+      this.loadout.gameTokens = (this.loadout.gameTokens || 0) + 1
+      if (Math.random() < 0.05) {
+        this.loadout.rareGameTokens = (this.loadout.rareGameTokens || 0) + 1
+      }
+      this.unlockNextLockedItems()
+    }
+    this.resetToFreshHero()
+  }
+
+  addGameTokens(amount) {
+    this.loadout.gameTokens = (this.loadout.gameTokens || 0) + amount
+    this.saveLoadout()
+  }
+
+  spendGameTokens(amount) {
+    if ((this.loadout.gameTokens || 0) < amount) return false
+    this.loadout.gameTokens -= amount
+    this.saveLoadout()
+    return true
+  }
+
+  addRareGameTokens(amount) {
+    this.loadout.rareGameTokens = (this.loadout.rareGameTokens || 0) + amount
+    this.saveLoadout()
+  }
+
+  spendRareGameTokens(amount) {
+    if ((this.loadout.rareGameTokens || 0) < amount) return false
+    this.loadout.rareGameTokens -= amount
+    this.saveLoadout()
+    return true
+  }
+
+  unlockNextLockedItems() {
+    this.unlockNextInCategory('socketCharms', 'unlockedSocketCharmIds', ALL_SOCKET_CHARMS)
+    this.unlockNextInCategory('heroCharms', 'unlockedHeroCharmIds', CHARMS.filter(c => c.type === CHARM_TYPES.HERO))
+    this.unlockNextInCategory('abilities', 'unlockedAbilityIds', ALL_ACTIONS.filter(a => a.id !== 'use_item'))
+  }
+
+  unlockNextInCategory(category, loadoutKey, fullPool) {
+    const lockedList = metaUnlocks[category]?.locked || []
+    const unlocked = new Set(this.loadout[loadoutKey] || [])
+    const fullIds = new Set(fullPool.map(item => item.id))
+
+    for (const entry of lockedList) {
+      const id = typeof entry === 'string' ? entry : entry.id
+      if (!id || unlocked.has(id)) continue
+      if (!fullIds.has(id)) continue
+      unlocked.add(id)
+      this.loadout[loadoutKey] = Array.from(unlocked)
+      break
+    }
   }
 }

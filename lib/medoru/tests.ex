@@ -35,6 +35,7 @@ defmodule Medoru.Tests do
   require Logger
 
   alias Medoru.Accounts
+  alias Medoru.Classrooms.ClassroomTest
   alias Medoru.Repo
   alias Medoru.Tests.{Test, TestStep, TestSession, TestStepAnswer}
   alias Medoru.Learning
@@ -371,9 +372,20 @@ defmodule Medoru.Tests do
 
   """
   def archive_teacher_test(%Test{} = test) do
-    test
-    |> Test.archive_teacher_changeset()
-    |> Repo.update()
+    Repo.transaction(fn ->
+      with {:ok, test} <-
+             test
+             |> Test.archive_teacher_changeset()
+             |> Repo.update(),
+           {_, _} <-
+             ClassroomTest
+             |> where([ct], ct.test_id == ^test.id)
+             |> Repo.update_all(set: [status: "archived"]) do
+        test
+      else
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """

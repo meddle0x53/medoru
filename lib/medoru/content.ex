@@ -2558,6 +2558,22 @@ defmodule Medoru.Content do
     |> Repo.aggregate(:count, :id)
   end
 
+  @doc """
+  Returns all vocabulary custom lessons published to a classroom, preloaded with their words.
+
+  Each lesson has `custom_lesson_words` ordered by position, and each word has
+  `word_kanjis` preloaded so writing steps can be generated.
+  """
+  def list_classroom_vocabulary_lessons_with_words(classroom_id) do
+    CustomLesson
+    |> join(:inner, [cl], ccl in ClassroomCustomLesson, on: ccl.custom_lesson_id == cl.id)
+    |> where([cl, ccl], ccl.classroom_id == ^classroom_id and ccl.status == "active")
+    |> where([cl], cl.lesson_subtype == "vocabulary" and cl.status != "archived")
+    |> order_by([cl], asc: cl.title)
+    |> preload(custom_lesson_words: [word: [word_kanjis: :kanji]])
+    |> Repo.all()
+  end
+
   # ============================================================================
   # Localization Functions (Iteration 24B)
   # ============================================================================

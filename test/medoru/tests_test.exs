@@ -1,6 +1,9 @@
 defmodule Medoru.TestsTest do
   use Medoru.DataCase
 
+  alias Medoru.Classrooms
+  alias Medoru.Classrooms.ClassroomTest
+  alias Medoru.Repo
   alias Medoru.Tests
   alias Medoru.Tests.{Test, TestStep, TestSession, TestStepAnswer}
 
@@ -126,6 +129,79 @@ defmodule Medoru.TestsTest do
     test "archive_test/1 archives a test" do
       test = test_fixture()
       assert {:ok, %Test{status: :archived}} = Tests.archive_test(test)
+    end
+
+    test "archive_teacher_test/1 archives the test and associated classroom tests" do
+      teacher = user_fixture(%{type: "teacher"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      test =
+        test_fixture(%{
+          test_type: :teacher,
+          setup_state: "published",
+          creator_id: teacher.id
+        })
+
+      {:ok, %ClassroomTest{}} =
+        Classrooms.publish_test_to_classroom(classroom.id, test.id, teacher.id)
+
+      assert {:ok, %Test{setup_state: "archived"}} = Tests.archive_teacher_test(test)
+
+      classroom_test = Classrooms.get_classroom_test(classroom.id, test.id)
+      assert classroom_test.status == :archived
+    end
+
+    test "delete_test/1 deletes a test with classroom test attempts" do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+
+      test =
+        test_fixture(%{
+          test_type: :teacher,
+          setup_state: "archived",
+          creator_id: teacher.id
+        })
+
+      {:ok, %ClassroomTest{}} =
+        Classrooms.publish_test_to_classroom(classroom.id, test.id, teacher.id)
+
+      {:ok, _} =
+        Medoru.Classrooms.ClassroomTestAttempt.create_changeset(
+          %Medoru.Classrooms.ClassroomTestAttempt{},
+          %{
+            classroom_id: classroom.id,
+            user_id: student.id,
+            test_id: test.id,
+            time_limit_seconds: 3600,
+            max_score: 10,
+            status: "in_progress",
+            started_at: DateTime.utc_now()
+          }
+        )
+        |> Medoru.Repo.insert()
+
+      assert {:ok, %Test{}} = Tests.delete_test(test)
+      assert_raise Ecto.NoResultsError, fn -> Tests.get_test!(test.id) end
+
+      attempts =
+        Medoru.Classrooms.ClassroomTestAttempt
+        |> where([a], a.test_id == ^test.id)
+        |> Repo.all()
+
+      assert attempts == []
+    end
+
+    defp classroom_fixture(attrs) do
+      teacher_id = attrs[:teacher_id] || user_fixture(%{type: "teacher"}).id
+
+      {:ok, classroom} =
+        Medoru.Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          teacher_id: teacher_id
+        })
+
+      classroom
     end
   end
 
@@ -274,7 +350,7 @@ defmodule Medoru.TestsTest do
       %{test_record: test_record, user: user}
     end
 
-    defp user_fixture do
+    defp user_fixture(attrs \\ %{}) do
       email = "test#{System.unique_integer()}@example.com"
 
       {:ok, user} =
@@ -284,7 +360,15 @@ defmodule Medoru.TestsTest do
           provider_uid: "uid_#{System.unique_integer()}"
         })
 
-      user
+      case attrs do
+        %{type: type} ->
+          user
+          |> Ecto.Changeset.change(type: type)
+          |> Medoru.Repo.update!()
+
+        _ ->
+          user
+      end
     end
 
     test "list_test_sessions/1 returns all sessions for a user", %{
