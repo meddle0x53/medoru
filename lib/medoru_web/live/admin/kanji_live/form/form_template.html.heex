@@ -280,47 +280,44 @@
               </div>
             </div>
 
-            <%!-- Suggested Readings from AI --%>
-            <%= if @suggested_readings != [] do %>
-              <div class="p-4 bg-info/10 border border-info/30 rounded-lg mb-4">
-                <h4 class="font-medium mb-2 flex items-center gap-2">
-                  <.icon name="hero-sparkles" class="w-4 h-4 text-info" />
-                  {gettext("Suggested Readings")}
-                </h4>
-                <ul class="space-y-1 mb-3">
-                  <%= for reading <- @suggested_readings do %>
-                    <li class="text-sm text-base-content">
-                      <span class="badge badge-sm badge-primary">
-                        {String.upcase(reading["reading_type"] || "on")}
-                      </span>
-                      <span class="font-medium">{reading["reading"]}</span>
-                      <%= if reading["romaji"] not in [nil, ""] do %>
-                        <span class="text-base-content/60">({reading["romaji"]})</span>
-                      <% end %>
-                    </li>
-                  <% end %>
-                </ul>
-                <div class="flex gap-2">
-                  <button
-                    type="button"
-                    phx-click="apply_suggested_readings"
-                    class="btn btn-sm btn-primary"
-                  >
-                    <.icon name="hero-check" class="w-4 h-4 mr-1" />
-                    {gettext("Add All Suggested")}
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="clear_suggested_readings"
-                    class="btn btn-sm btn-ghost"
-                  >
-                    {gettext("Clear")}
-                  </button>
-                </div>
+            <div :if={@suggested_readings != []} class="p-4 bg-info/10 border border-info/30 rounded-lg mb-4">
+              <h4 class="font-medium mb-2 flex items-center gap-2">
+                <.icon name="hero-sparkles" class="w-4 h-4 text-info" />
+                {gettext("Suggested Readings")}
+              </h4>
+              <ul class="space-y-1 mb-3">
+                <%= for reading <- @suggested_readings do %>
+                  <li class="text-sm text-base-content">
+                    <span class="badge badge-sm badge-primary">
+                      {String.upcase(reading["reading_type"] || "on")}
+                    </span>
+                    <span class="font-medium">{reading["reading"]}</span>
+                    <%= if reading["romaji"] not in [nil, ""] do %>
+                      <span class="text-base-content/60">({reading["romaji"]})</span>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  phx-click="apply_suggested_readings"
+                  class="btn btn-sm btn-primary"
+                >
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                  {gettext("Add All Suggested")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="clear_suggested_readings"
+                  class="btn btn-sm btn-ghost"
+                >
+                  {gettext("Clear")}
+                </button>
               </div>
-            <% end %>
+            </div>
 
-            <%!-- New Reading Form -->
+            <%!-- New Reading Form --%>
             <%= if @new_reading do %>
               <div class="p-4 bg-base-200/50 rounded-lg mb-4 border-2 border-primary/30">
                 <h4 class="font-medium mb-3">{gettext("Add New Reading")}</h4>

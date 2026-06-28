@@ -20,11 +20,23 @@ export function getEnemyDefinition(id) {
 }
 
 export function pickEnemyForTile(tile, mapIndex) {
-  const mapId = (mapIndex ?? 0) + 1
-  const col = tile?.col ?? 1
   const role = tile?.type === 'mini_boss' ? 'mini_boss'
              : tile?.type === 'boss' ? 'boss'
              : 'battle'
+
+  // If the map JSON supplied an explicit enemy pool for this tile, use it.
+  if (tile?.enemyPool?.length > 0) {
+    const pool = tile.enemyPool
+      .map(id => getEnemyDefinition(id))
+      .filter(Boolean)
+    if (pool.length > 0) {
+      return pool[Math.floor(Math.random() * pool.length)]
+    }
+  }
+
+  // Fallback to the enemy JSON's own role/map/column restrictions.
+  const mapId = (mapIndex ?? 0) + 1
+  const col = tile?.col ?? 1
 
   const pool = ENEMY_DEFINITIONS.filter(def =>
     def.roles.includes(role) &&

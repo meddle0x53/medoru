@@ -1,4 +1,5 @@
 import { ENEMY_DEFINITIONS } from '../data/enemies/index.js'
+import { MAP_DEFINITIONS } from '../data/maps/index.js'
 
 /**
  * Boot Scene - loads assets and initial data.
@@ -23,19 +24,25 @@ export default class BootScene extends Phaser.Scene {
     // Battle background
     this.load.image('battle_background', '/images/game/battle_background.png')
 
-    // Map backgrounds
-    this.load.image('map_level_1', '/images/game/map_level_1.png')
+    // Map backgrounds and tile art, loaded dynamically from the map registry.
+    // This keeps new maps data-driven: add a map JSON and its images are loaded
+    // automatically. Falls back to colored circles until the PNG files exist.
+    const loadedImageKeys = new Set()
+    for (const mapDef of MAP_DEFINITIONS) {
+      const bgKey = mapDef.background?.image
+      if (bgKey && !loadedImageKeys.has(bgKey)) {
+        loadedImageKeys.add(bgKey)
+        this.load.image(bgKey, `/images/game/${bgKey}.png`)
+      }
 
-    // Map-specific tile art (Japanese Fields). Falls back to colored circles
-    // until the PNG files are present. The ?v=2 busts the cache after the
-    // recent re-crop.
-    this.load.image('map0_battle_tile', '/images/game/map0_battle_tile.png?v=2')
-    this.load.image('map0_mini_boss_tile', '/images/game/map0_mini_boss_tile.png?v=2')
-    this.load.image('map0_boss_tile', '/images/game/map0_boss_tile.png?v=1')
-    this.load.image('map0_chest_tile', '/images/game/map0_chest_tile.png?v=3')
-    this.load.image('map0_shop_tile', '/images/game/map0_shop_tile.png?v=4')
-    this.load.image('map0_memory_tile', '/images/game/map0_memory_tile.png?v=5')
-    this.load.image('map0_rest_tile', '/images/game/map0_rest_tile.png?v=2')
+      for (const cfg of Object.values(mapDef.tileImages || {})) {
+        const key = cfg?.image
+        if (key && !loadedImageKeys.has(key)) {
+          loadedImageKeys.add(key)
+          this.load.image(key, `/images/game/${key}.png`)
+        }
+      }
+    }
 
     // Loadout portrait
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')

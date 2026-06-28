@@ -1,0 +1,148 @@
+{
+  "id": "japanese_fields",
+  "level": 1,
+  "names": {
+    "en": "Japanese Fields",
+    "ja": "日本の田園風景"
+  },
+  "constants": {
+    "columnCount": 11,
+    "homeColumn": 0,
+    "restColumn": 9,
+    "bossColumn": 10,
+    "maxConnectionsPerTile": 3
+  },
+  "layout": {
+    "column1TileCount": { "min": 2, "max": 3 },
+    "defaultTileCount": { "min": 2, "max": 5 }
+  },
+  "background": {
+    "image": "map_level_1",
+    "offset": { "top": 0, "left": 0 },
+    "scale": 1.0
+  },
+  "columns": [
+    { "index": 0, "fixedType": "home" },
+    {
+      "index": 1,
+      "weights": {
+        "battle": 0.5225,
+        "event": 0.1425,
+        "chest": 0.1425,
+        "rest_camp": 0.1425,
+        "short_cascade": 0.05
+      },
+      "enemyPools": { "battle": ["kasa_obake"] }
+    },
+    {
+      "index": 2,
+      "weights": {
+        "battle": 0.495,
+        "event": 0.135,
+        "chest": 0.135,
+        "rest_camp": 0.135,
+        "short_cascade": 0.10
+      },
+      "enemyPools": { "battle": ["kasa_obake"] }
+    },
+    {
+      "index": 3,
+      "weights": {
+        "battle": 0.4675,
+        "event": 0.1275,
+        "chest": 0.1275,
+        "rest_camp": 0.1275,
+        "short_cascade": 0.15
+      },
+      "enemyPools": { "battle": ["kasa_obake"] }
+    },
+    {
+      "index": 4,
+      "weights": {
+        "battle": 0.3111,
+        "memory": 0.1333,
+        "event": 0.0889,
+        "shop": 0.0889,
+        "chest": 0.0889,
+        "rest_camp": 0.0889,
+        "short_cascade": 0.20
+      },
+      "enemyPools": { "battle": ["kasa_obake"] }
+    },
+    {
+      "index": 5,
+      "weights": {
+        "battle": 0.2917,
+        "memory": 0.125,
+        "event": 0.0833,
+        "shop": 0.0833,
+        "chest": 0.0833,
+        "rest_camp": 0.0833,
+        "short_cascade": 0.25
+      },
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+    },
+    {
+      "index": 6,
+      "weights": {
+        "battle": 0.2917,
+        "memory": 0.125,
+        "event": 0.0833,
+        "shop": 0.0833,
+        "chest": 0.0833,
+        "rest_camp": 0.0833,
+        "short_cascade": 0.25
+      },
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+    },
+    {
+      "index": 7,
+      "weights": {
+        "battle": 0.2083,
+        "mini_boss": 0.1667,
+        "memory": 0.0833,
+        "event": 0.0833,
+        "shop": 0.0833,
+        "chest": 0.0417,
+        "rest_camp": 0.0833,
+        "short_cascade": 0.25
+      },
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+    },
+    {
+      "index": 8,
+      "weights": {
+        "battle": 0.2083,
+        "mini_boss": 0.1667,
+        "memory": 0.0833,
+        "event": 0.0833,
+        "shop": 0.0833,
+        "chest": 0.0417,
+        "rest_camp": 0.0833,
+        "short_cascade": 0.25
+      },
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+    },
+    { "index": 9, "fixedType": "rest_camp" },
+    {
+      "index": 10,
+      "fixedType": "boss",
+      "enemyPools": { "boss": ["kasa_obake_tyrant"] }
+    }
+  ],
+  "defaultEnemyPools": {
+    "battle": ["kasa_obake"],
+    "mini_boss": ["kasa_obake_elite"],
+    "boss": ["kasa_obake_tyrant"]
+  },
+  "tileImages": {
+    "battle": { "image": "map0_battle_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "mini_boss": { "image": "map0_mini_boss_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "boss": { "image": "map0_boss_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "chest": { "image": "map0_chest_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "shop": { "image": "map0_shop_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "memory": { "image": "map0_memory_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "short_cascade": { "image": "map0_memory_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 },
+    "rest_camp": { "image": "map0_rest_tile", "offset": { "top": 0, "left": 0 }, "scale": 1.0 }
+  }
+}

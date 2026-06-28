@@ -150,6 +150,22 @@ defmodule MedoruWeb.Admin.KanjiLiveTest do
   end
 
   describe "Edit kanji form" do
+    test "shows the manual add reading form when Add Reading is clicked", %{conn: conn} do
+      kanji = kanji_fixture(%{character: "日"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/kanji/#{kanji.id}/edit")
+
+      refute render(view) =~ "Add New Reading"
+
+      html =
+        view
+        |> element("button[phx-click='show_new_reading']")
+        |> render_click()
+
+      assert html =~ "Add New Reading"
+      assert html =~ "name=\"reading[reading]\""
+    end
+
     test "enriches readings and lets the admin approve them", %{conn: conn} do
       kanji = kanji_fixture(%{character: "日"})
 

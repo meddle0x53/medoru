@@ -1,8 +1,13 @@
 import { GAME_CONFIG } from '../config.js'
-import { TILE_TYPES } from '../data/tileTypes.js'
+import { TILE_TYPES, isBattleTile } from '../data/tileTypes.js'
+import { getMapDefinition } from '../data/maps/index.js'
 
 /**
  * Generate a planar layered graph for the rogue-like map.
+ *
+ * Map configuration (weights, images, constants, enemy pools) is read from the
+ * map registry in assets/js/game/data/maps. This function still produces the
+ * same map object shape as before so existing scenes and saves stay compatible.
  *
  * Structure:
  *   - 11 columns (0 = home, 1-9 = intermediate, 10 = boss)
@@ -13,37 +18,16 @@ import { TILE_TYPES } from '../data/tileTypes.js'
  *     has 1-3 outgoing paths to the next column.
  */
 
-const COLUMN_COUNT = 11
-const HOME_COLUMN = 0
-const BOSS_COLUMN = 10
-const MAX_CONNECTIONS_PER_TILE = 3
+const DEFAULT_COLUMN_COUNT = 11
+const DEFAULT_HOME_COLUMN = 0
+const DEFAULT_BOSS_COLUMN = 10
+const DEFAULT_MAX_CONNECTIONS_PER_TILE = 3
 
 const LAYOUT = {
   paddingX: 70,
   minY: 100,
   maxY: 440,
   minSpacing: 60,
-}
-
-export const MAP_TEMPLATES = {
-  0: {
-    nameEn: 'Japanese Fields',
-    nameJa: '日本の田園風景',
-    backgroundImage: 'map_level_1',
-    battleTileImage: 'map0_battle_tile',
-    miniBossTileImage: 'map0_mini_boss_tile',
-    bossTileImage: 'map0_boss_tile',
-    chestTileImage: 'map0_chest_tile',
-    shopTileImage: 'map0_shop_tile',
-    memoryTileImage: 'map0_memory_tile',
-    cascadeTileImage: 'map0_memory_tile',
-    restTileImage: 'map0_rest_tile',
-  },
-  1: {
-    nameEn: 'The Dark Path',
-    nameJa: '暗黒の道',
-    backgroundImage: null,
-  },
 }
 
 export function getMapName(map, userLevel = 1) {
@@ -53,96 +37,114 @@ export function getMapName(map, userLevel = 1) {
   return localized || map.name || ''
 }
 
-const TYPE_WEIGHTS = {
-  early: {
-    [TILE_TYPES.BATTLE]: 0.55,
-    [TILE_TYPES.EVENT]: 0.15,
-    [TILE_TYPES.CHEST]: 0.15,
-    [TILE_TYPES.REST_CAMP]: 0.15,
-  },
-  mid: {
-    [TILE_TYPES.BATTLE]: 0.35,
-    [TILE_TYPES.MEMORY]: 0.15,
-    [TILE_TYPES.EVENT]: 0.1,
-    [TILE_TYPES.SHOP]: 0.1,
-    [TILE_TYPES.SHORT_CASCADE]: 0.1,
-    [TILE_TYPES.CHEST]: 0.1,
-    [TILE_TYPES.REST_CAMP]: 0.1,
-  },
-  late: {
-    [TILE_TYPES.BATTLE]: 0.25,
-    [TILE_TYPES.MINI_BOSS]: 0.2,
-    [TILE_TYPES.MEMORY]: 0.1,
-    [TILE_TYPES.EVENT]: 0.1,
-    [TILE_TYPES.SHOP]: 0.1,
-    [TILE_TYPES.SHORT_CASCADE]: 0.1,
-    [TILE_TYPES.CHEST]: 0.05,
-    [TILE_TYPES.REST_CAMP]: 0.1,
-  },
-}
+export function generateMap(mapIndexOrId = 0) {
+  const definition = getMapDefinition(mapIndexOrId)
+  const constants = definition.constants || {}
+  const columnCount = constants.columnCount || DEFAULT_COLUMN_COUNT
+  const homeColumn = constants.homeColumn ?? DEFAULT_HOME_COLUMN
+  const bossColumn = constants.bossColumn ?? DEFAULT_BOSS_COLUMN
+  const maxConnections = constants.maxConnectionsPerTile || DEFAULT_MAX_CONNECTIONS_PER_TILE
+  const columnConfigs = definition.columns || []
 
-export function generateMap(mapIndex = 0) {
   const columns = []
   let tileCounter = 0
 
-  for (let col = 0; col < COLUMN_COUNT; col++) {
-    const tileCount = getTileCountForColumn(col)
+  for (let col = 0; col < columnCount; col++) {
+    const colConfig = columnConfigs[col] || {}
+    const tileCount = getTileCountForColumn(col, definition)
     const column = []
-    const typePool = getTypePool(col)
+    const typePool = getTypePool(col, definition)
 
     for (let row = 0; row < tileCount; row++) {
-      const type = col === HOME_COLUMN
+      const type = col === homeColumn
         ? TILE_TYPES.HOME
-        : col === BOSS_COLUMN
+        : col === bossColumn
           ? TILE_TYPES.BOSS
-          : pickWeightedType(typePool)
+          : colConfig.fixedType || pickWeightedType(typePool)
 
-      column.push({
-        id: `map-${mapIndex}-tile-${tileCounter++}`,
+      const tile = {
+        id: `map-${definition.index}-tile-${tileCounter++}`,
         col,
         row,
         type,
         completed: false,
-        reachable: col === HOME_COLUMN,
+        reachable: col === homeColumn,
         connections: [],
-      })
+      }
+
+      attachEnemyPool(tile, definition, colConfig)
+      column.push(tile)
     }
 
     columns.push(column)
   }
 
   // Connect columns with non-crossing, capped intervals
-  for (let col = 0; col < COLUMN_COUNT - 1; col++) {
-    connectColumns(columns[col], columns[col + 1])
+  for (let col = 0; col < columnCount - 1; col++) {
+    connectColumns(columns[col], columns[col + 1], maxConnections)
   }
 
-  const template = MAP_TEMPLATES[mapIndex] || MAP_TEMPLATES[0]
-  const map = {
-    id: `map-${mapIndex}`,
-    index: mapIndex,
-    nameEn: template.nameEn,
-    nameJa: template.nameJa,
-    backgroundImage: template.backgroundImage,
-    battleTileImage: template.battleTileImage || null,
-    miniBossTileImage: template.miniBossTileImage || null,
-    bossTileImage: template.bossTileImage || null,
-    chestTileImage: template.chestTileImage || null,
-    shopTileImage: template.shopTileImage || null,
-    memoryTileImage: template.memoryTileImage || null,
-    cascadeTileImage: template.cascadeTileImage || null,
-    restTileImage: template.restTileImage || null,
-    columns,
-  }
-
+  const map = buildMapObject(definition, columns)
   computeLayout(map)
   return map
 }
 
-function connectColumns(sourceColumn, targetColumn) {
+function buildMapObject(definition, columns) {
+  const names = definition.names || {}
+  const bg = definition.background || {}
+  const tileImages = definition.tileImages || {}
+
+  const map = {
+    id: `map-${definition.index}`,
+    index: definition.index,
+    nameEn: names.en,
+    nameJa: names.ja,
+    backgroundImage: bg.image || null,
+    background: bg,
+    tileImages,
+    columns,
+  }
+
+  // Backwards-compatible per-type image keys used by older MapScene code and
+  // older saves. New code should prefer map.tileImages[type].
+  const typeToField = {
+    [TILE_TYPES.BATTLE]: 'battleTileImage',
+    [TILE_TYPES.MINI_BOSS]: 'miniBossTileImage',
+    [TILE_TYPES.BOSS]: 'bossTileImage',
+    [TILE_TYPES.CHEST]: 'chestTileImage',
+    [TILE_TYPES.SHOP]: 'shopTileImage',
+    [TILE_TYPES.MEMORY]: 'memoryTileImage',
+    [TILE_TYPES.SHORT_CASCADE]: 'cascadeTileImage',
+    [TILE_TYPES.REST_CAMP]: 'restTileImage',
+  }
+  for (const [type, field] of Object.entries(typeToField)) {
+    map[field] = tileImages[type]?.image || null
+  }
+
+  return map
+}
+
+function attachEnemyPool(tile, definition, colConfig) {
+  if (!isBattleTile(tile.type)) return
+
+  const role = tile.type === TILE_TYPES.MINI_BOSS
+    ? 'mini_boss'
+    : tile.type === TILE_TYPES.BOSS
+      ? 'boss'
+      : 'battle'
+
+  const mapDefaults = definition.defaultEnemyPools || {}
+  const pool = colConfig.enemyPools?.[role] || mapDefaults[role] || null
+  if (pool && pool.length > 0) {
+    tile.enemyPool = pool
+  }
+}
+
+function connectColumns(sourceColumn, targetColumn, maxConnections) {
   const intervals = buildNonCrossingIntervals(
     sourceColumn.length,
     targetColumn.length,
-    MAX_CONNECTIONS_PER_TILE,
+    maxConnections,
   )
 
   for (let i = 0; i < sourceColumn.length; i++) {
@@ -315,48 +317,64 @@ function placeNodes(desiredYs, minSpacing, minY, maxY) {
   return ys
 }
 
-function getTileCountForColumn(col) {
-  if (col === HOME_COLUMN || col === BOSS_COLUMN) return 1
-  // Column 1 is fed only by the home tile, which is capped at 3 paths.
-  if (col === 1) return randomInt(2, 3)
-  return randomInt(2, 5)
-}
+function getTileCountForColumn(col, definition) {
+  const constants = definition.constants || {}
+  const homeColumn = constants.homeColumn ?? DEFAULT_HOME_COLUMN
+  const bossColumn = constants.bossColumn ?? DEFAULT_BOSS_COLUMN
+  if (col === homeColumn || col === bossColumn) return 1
 
-// Chance that a tile in a given column becomes a SHORT_CASCADE game.
-const CASCADE_CHANCES = {
-  1: 0.05,
-  2: 0.10,
-  3: 0.15,
-  4: 0.20,
-  5: 0.25,
-  6: 0.25,
-  7: 0.25,
-  8: 0.25,
-}
+  const layout = definition.layout || {}
+  const colConfig = (definition.columns || [])[col] || {}
 
-function getTypePool(col) {
-  // Column 9 is always a rest camp (the calm before the boss).
-  if (col === 9) return { [TILE_TYPES.REST_CAMP]: 1 }
-
-  const base = col <= 3 ? TYPE_WEIGHTS.early : col <= 6 ? TYPE_WEIGHTS.mid : TYPE_WEIGHTS.late
-  const cascadeChance = CASCADE_CHANCES[col] ?? 0.1
-
-  // Replace the base cascade weight with the column-specific chance and
-  // rescale the remaining weights so the pool still sums to 1.
-  const pool = { ...base, [TILE_TYPES.SHORT_CASCADE]: cascadeChance }
-  const otherTotal = Object.entries(pool).reduce(
-    (sum, [type, weight]) => (type === TILE_TYPES.SHORT_CASCADE ? sum : sum + weight),
-    0,
-  )
-  if (otherTotal > 0) {
-    const scale = (1 - cascadeChance) / otherTotal
-    for (const type of Object.keys(pool)) {
-      if (type !== TILE_TYPES.SHORT_CASCADE) {
-        pool[type] *= scale
-      }
-    }
+  if (colConfig.tileCount) {
+    return randomInt(colConfig.tileCount.min, colConfig.tileCount.max)
   }
-  return pool
+
+  // Column 1 is fed only by the home tile, which is capped at 3 paths.
+  if (col === 1 && layout.column1TileCount) {
+    return randomInt(layout.column1TileCount.min, layout.column1TileCount.max)
+  }
+
+  const defaultCount = layout.defaultTileCount || { min: 2, max: 5 }
+  return randomInt(defaultCount.min, defaultCount.max)
+}
+
+function getTypePool(col, definition) {
+  const constants = definition.constants || {}
+  const homeColumn = constants.homeColumn ?? DEFAULT_HOME_COLUMN
+  const bossColumn = constants.bossColumn ?? DEFAULT_BOSS_COLUMN
+  const restColumn = constants.restColumn
+
+  if (col === homeColumn || col === bossColumn) return null
+
+  const colConfig = (definition.columns || [])[col] || {}
+
+  // Explicit fixed type wins over everything else.
+  if (colConfig.fixedType) {
+    return { [colConfig.fixedType]: 1 }
+  }
+
+  // Backwards-compatible rest column forcing if the JSON omits fixedType.
+  if (col === restColumn) {
+    return { [TILE_TYPES.REST_CAMP]: 1 }
+  }
+
+  if (colConfig.weights) {
+    return normalizeWeights(colConfig.weights)
+  }
+
+  return { [TILE_TYPES.BATTLE]: 1 }
+}
+
+function normalizeWeights(weights) {
+  const total = Object.values(weights).reduce((sum, w) => sum + w, 0)
+  if (total <= 0) return weights
+
+  const normalized = {}
+  for (const [type, weight] of Object.entries(weights)) {
+    normalized[type] = weight / total
+  }
+  return normalized
 }
 
 function pickWeightedType(pool) {

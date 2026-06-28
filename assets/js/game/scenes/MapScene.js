@@ -40,11 +40,22 @@ export default class MapScene extends Phaser.Scene {
   }
 
   createBackground() {
-    if (this.map.backgroundImage && this.textures.exists(this.map.backgroundImage)) {
-      // Scale the image to exactly fill the canvas. The art is 16:9, same as
-      // the canvas, so this shows the whole picture without cutting it off.
-      const bg = this.add.image(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, this.map.backgroundImage)
-      bg.setDisplaySize(GAME_CONFIG.width, GAME_CONFIG.height)
+    const bgCfg = this.map.background
+    if (bgCfg?.image && this.textures.exists(bgCfg.image)) {
+      const src = this.textures.get(bgCfg.image).getSourceImage()
+      // Base scale fills the canvas; the JSON scale acts as a zoom multiplier.
+      const baseScaleX = GAME_CONFIG.width / (src.width || GAME_CONFIG.width)
+      const baseScaleY = GAME_CONFIG.height / (src.height || GAME_CONFIG.height)
+      const scale = bgCfg.scale ?? 1
+      const offsetLeft = bgCfg.offset?.left || 0
+      const offsetTop = bgCfg.offset?.top || 0
+
+      const bg = this.add.image(
+        GAME_CONFIG.width / 2 + offsetLeft,
+        GAME_CONFIG.height / 2 + offsetTop,
+        bgCfg.image,
+      )
+      bg.setScale(baseScaleX * scale, baseScaleY * scale)
     } else {
       this.add.rectangle(
         GAME_CONFIG.width / 2,
@@ -396,26 +407,10 @@ export default class MapScene extends Phaser.Scene {
         }
 
         // Optional map-specific tile image (e.g. Japanese Fields).
-        let tileImageKey = null
-        if (this.map.battleTileImage && tile.type === 'battle' && this.textures.exists(this.map.battleTileImage)) {
-          tileImageKey = this.map.battleTileImage
-        } else if (this.map.miniBossTileImage && tile.type === 'mini_boss' && this.textures.exists(this.map.miniBossTileImage)) {
-          tileImageKey = this.map.miniBossTileImage
-        } else if (this.map.bossTileImage && tile.type === 'boss' && this.textures.exists(this.map.bossTileImage)) {
-          tileImageKey = this.map.bossTileImage
-        } else if (this.map.chestTileImage && tile.type === 'chest' && this.textures.exists(this.map.chestTileImage)) {
-          tileImageKey = this.map.chestTileImage
-        } else if (this.map.shopTileImage && tile.type === 'shop' && this.textures.exists(this.map.shopTileImage)) {
-          tileImageKey = this.map.shopTileImage
-        } else if (this.map.memoryTileImage && tile.type === 'memory' && this.textures.exists(this.map.memoryTileImage)) {
-          tileImageKey = this.map.memoryTileImage
-        } else if (this.map.cascadeTileImage && tile.type === 'short_cascade' && this.textures.exists(this.map.cascadeTileImage)) {
-          tileImageKey = this.map.cascadeTileImage
-        } else if (this.map.restTileImage && tile.type === 'rest_camp' && this.textures.exists(this.map.restTileImage)) {
-          tileImageKey = this.map.restTileImage
-        }
+        const tileImageConfig = this.map.tileImages?.[tile.type]
+        const tileImageKey = tileImageConfig?.image
 
-        if (tileImageKey) {
+        if (tileImageKey && this.textures.exists(tileImageKey)) {
           // Keep the same metal rim the generated tiles use so the map stays
           // visually consistent even when art is shown.
           const outerRim = this.add.circle(0, 0, TILE_RADIUS + 5, 0x111111)
@@ -425,21 +420,22 @@ export default class MapScene extends Phaser.Scene {
 
           // Don't add the offset shadow for art tiles; it would peek out and
           // make the tile look off-center.
-          const img = this.add.image(0, 0, tileImageKey)
+          const offsetLeft = tileImageConfig.offset?.left || 0
+          const offsetTop = tileImageConfig.offset?.top || 0
+          const img = this.add.image(offsetLeft, offsetTop, tileImageKey)
           const src = this.textures.get(tileImageKey).getSourceImage()
           const srcW = src.width
           const srcH = src.height
 
-          if (Math.abs(srcW - srcH) <= 2) {
-            // Square art fills the tile exactly.
-            img.setDisplaySize(TILE_RADIUS * 2, TILE_RADIUS * 2)
-          } else {
-            // Preserve aspect ratio and fit the whole image inside the tile
-            // circle. Portrait/landscape art is masked so its corners don't
-            // spill past the circular tile boundary.
-            const scale = (TILE_RADIUS * 2) / Math.max(srcW, srcH)
-            img.setDisplaySize(srcW * scale, srcH * scale)
+          // Base scale fits the image inside the tile circle. The JSON scale is
+          // a multiplier on top of that, so 1.0 reproduces the current behavior.
+          const baseScale = (TILE_RADIUS * 2) / Math.max(srcW, srcH)
+          const configScale = tileImageConfig.scale ?? 1
+          img.setScale(baseScale * configScale)
 
+          if (Math.abs(srcW - srcH) > 2) {
+            // Portrait/landscape art is masked so its corners don't spill past
+            // the circular tile boundary.
             const maskShape = this.add.circle(0, 0, TILE_RADIUS, 0xffffff)
             maskShape.setOrigin(0.5)
             maskShape.setVisible(false)
@@ -599,6 +595,11 @@ export default class MapScene extends Phaser.Scene {
 
     if (tile.type === TILE_TYPES.SHORT_CASCADE) {
       this.scene.start('CascadeScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
+    if (tile.type === TILE_TYPES.CHEST) {
+      this.scene.start('ChestScene', { player: this.player, tile, mapIndex: this.map.index })
       return
     }
 

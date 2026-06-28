@@ -3,6 +3,7 @@ defmodule MedoruWeb.ModeratorLiveTest do
 
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
 
   describe "Moderator dashboard" do
     test "moderator can access dashboard", %{conn: conn} do
@@ -45,6 +46,24 @@ defmodule MedoruWeb.ModeratorLiveTest do
 
       {:ok, _view, html} = conn |> log_in_user(user) |> live(~p"/moderator/kanji")
       assert html =~ "Kanji"
+    end
+
+    test "moderator kanji edit shows add reading form", %{conn: conn} do
+      user = user_fixture_with_registration()
+      {:ok, user} = Medoru.Accounts.update_user_moderator(user, true)
+      kanji = kanji_fixture(%{character: "日"})
+
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/moderator/kanji/#{kanji.id}/edit")
+
+      refute render(view) =~ "Add New Reading"
+
+      html =
+        view
+        |> element("button[phx-click='show_new_reading']")
+        |> render_click()
+
+      assert html =~ "Add New Reading"
+      assert html =~ "name=\"reading[reading]\""
     end
 
     test "non-moderator is redirected from /moderator/words", %{conn: conn} do

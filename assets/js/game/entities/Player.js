@@ -3,10 +3,11 @@ import { ITEMS } from '../data/items.js'
 import { splitActions, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities } from '../data/actions.js'
 import { getCharmById, canEquipCharm, CHARM_TYPES } from '../data/charms.js'
 import { gradeForSchedule, getSocketCharmById } from '../data/socketCharms.js'
-import { generateMap, MAP_TEMPLATES } from '../systems/MapGenerator.js'
+import { generateMap } from '../systems/MapGenerator.js'
+import { getMapDefinition } from '../data/maps/index.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
-const MAP_VERSION = 2
+const MAP_VERSION = 3
 
 const BASE_STAT_POINTS = 10
 const STAT_POINTS_PER_LEVEL = 1
@@ -949,33 +950,26 @@ export default class Player extends Character {
     if (!ms.maps[ms.currentMapIndex]) {
       ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
     }
-    // Backfill any new template fields (e.g. tile images) added after the map
-    // was first generated, so older saves pick them up without a full reset.
+    // Backfill any new tile image fields added after the map was first
+    // generated, so older saves pick them up without a full reset.
     const map = ms.maps[ms.currentMapIndex]
-    const template = MAP_TEMPLATES[map.index] || MAP_TEMPLATES[0]
-    if (template.battleTileImage && !map.battleTileImage) {
-      map.battleTileImage = template.battleTileImage
+    const definition = getMapDefinition(map.index)
+    const tileImages = definition.tileImages || {}
+    const typeToField = {
+      battle: 'battleTileImage',
+      mini_boss: 'miniBossTileImage',
+      boss: 'bossTileImage',
+      chest: 'chestTileImage',
+      shop: 'shopTileImage',
+      memory: 'memoryTileImage',
+      short_cascade: 'cascadeTileImage',
+      rest_camp: 'restTileImage',
     }
-    if (template.miniBossTileImage && !map.miniBossTileImage) {
-      map.miniBossTileImage = template.miniBossTileImage
-    }
-    if (template.bossTileImage && !map.bossTileImage) {
-      map.bossTileImage = template.bossTileImage
-    }
-    if (template.chestTileImage && !map.chestTileImage) {
-      map.chestTileImage = template.chestTileImage
-    }
-    if (template.shopTileImage && !map.shopTileImage) {
-      map.shopTileImage = template.shopTileImage
-    }
-    if (template.memoryTileImage && !map.memoryTileImage) {
-      map.memoryTileImage = template.memoryTileImage
-    }
-    if (template.cascadeTileImage && !map.cascadeTileImage) {
-      map.cascadeTileImage = template.cascadeTileImage
-    }
-    if (template.restTileImage && !map.restTileImage) {
-      map.restTileImage = template.restTileImage
+    for (const [type, field] of Object.entries(typeToField)) {
+      const image = tileImages[type]?.image
+      if (image && !map[field]) {
+        map[field] = image
+      }
     }
 
     if (!ms.currentTileId) {
