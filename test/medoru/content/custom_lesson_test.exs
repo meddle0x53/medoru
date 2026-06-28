@@ -167,10 +167,12 @@ defmodule Medoru.Content.CustomLessonTest do
 
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
-      {:ok, lesson} = Content.publish_custom_lesson(lesson)
 
       {:ok, _} =
         Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      lesson = Content.get_custom_lesson!(lesson.id)
+      assert lesson.status == "published"
 
       # Points should be: 2 words * 1 + 1 = 3
       assert {:ok, progress} =
@@ -195,7 +197,30 @@ defmodule Medoru.Content.CustomLessonTest do
       assert archived.status == "archived"
     end
 
-    test "unarchive_custom_lesson/1 restores an archived lesson to published", %{teacher: teacher} do
+    test "unarchive_custom_lesson/1 restores an archived lesson to published when published to a classroom", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Lesson to Unarchive",
+          creator_id: teacher.id
+        })
+
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      # First archive it
+      assert {:ok, archived} = Content.archive_custom_lesson(lesson)
+      assert archived.status == "archived"
+
+      # Then unarchive it
+      assert {:ok, restored} = Content.unarchive_custom_lesson(archived)
+      assert restored.status == "published"
+    end
+
+    test "unarchive_custom_lesson/1 restores an archived lesson to draft when not published to any classroom", %{
+      teacher: teacher
+    } do
       {:ok, lesson} =
         Content.create_custom_lesson(%{
           title: "Lesson to Unarchive",
@@ -208,7 +233,7 @@ defmodule Medoru.Content.CustomLessonTest do
 
       # Then unarchive it
       assert {:ok, restored} = Content.unarchive_custom_lesson(archived)
-      assert restored.status == "published"
+      assert restored.status == "draft"
     end
 
     test "list_classroom_custom_lessons/1 excludes archived custom lessons by default", %{

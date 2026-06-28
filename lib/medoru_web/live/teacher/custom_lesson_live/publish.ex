@@ -29,7 +29,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
            |> put_flash(:error, gettext("You can only publish your own lessons."))
            |> push_navigate(to: ~p"/teacher/custom-lessons")}
 
-        lesson.status != "published" ->
+        lesson.status == "archived" ->
           edit_path =
             if lesson.lesson_subtype == "grammar",
               do: ~p"/teacher/grammar-lessons/#{lesson.id}/edit",
@@ -37,7 +37,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Publish do
 
           {:ok,
            socket
-           |> put_flash(:error, gettext("Lesson must be published first."))
+           |> put_flash(:error, gettext("Archived lessons cannot be published."))
            |> push_navigate(to: edit_path)}
 
         true ->

@@ -425,17 +425,10 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
             # Reload lesson to get updated test_id
             lesson = Content.get_custom_lesson!(lesson.id)
 
-            # Mark as published
-            case Content.publish_custom_lesson(lesson) do
-              {:ok, lesson} ->
-                {:noreply,
-                 socket
-                 |> assign(:lesson, lesson)
-                 |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
-
-              {:error, _} ->
-                {:noreply, put_flash(socket, :error, gettext("Failed to publish lesson."))}
-            end
+            {:noreply,
+             socket
+             |> assign(:lesson, lesson)
+             |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/publish")}
 
           {:error, reason} ->
             {:noreply,

@@ -48,6 +48,7 @@ export default class CascadeScene extends Phaser.Scene {
     this.speedLevel = Math.min(10, this.tile?.col || 1)
     this.baseSpeedLevel = this.speedLevel
     this.wordsDestroyed = 0
+    this.wordIndex = 0
     this.lives = LIVES
     this.goldEarned = 0
     this.itemsEarned = []
@@ -182,7 +183,7 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   createInputDisplay() {
-    this.inputText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 160, '', {
+    this.inputText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 190, '', {
       ...FONTS.default,
       fontSize: '22px',
       color: '#a9cce3',
@@ -200,6 +201,7 @@ export default class CascadeScene extends Phaser.Scene {
         key === 'Backspace' ||
         key === 'Enter' ||
         key === ' ' ||
+        key === 'ArrowDown' ||
         /^[a-zA-Z]$/.test(key)
 
       if (isGameKey) {
@@ -212,6 +214,8 @@ export default class CascadeScene extends Phaser.Scene {
         this.handleKey('ENTER')
       } else if (key === ' ') {
         this.handleKey('SPACE')
+      } else if (key === 'ArrowDown') {
+        this.skipWord()
       } else if (/^[a-zA-Z]$/.test(key)) {
         this.handleKey(key.toUpperCase())
       }
@@ -224,29 +228,29 @@ export default class CascadeScene extends Phaser.Scene {
 
     const keySize = 36
     const keyGap = 6
-    const startY = GAME_CONFIG.height - 150
+    this.keyboardStartY = GAME_CONFIG.height - 158
 
     KEYBOARD_ROWS.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
       const startX = (GAME_CONFIG.width - rowWidth) / 2 + keySize / 2
       row.forEach((char, colIndex) => {
         const x = startX + colIndex * (keySize + keyGap)
-        const y = startY + rowIndex * (keySize + keyGap)
-        this.createKey(char, x, y, keySize)
+        const y = this.keyboardStartY + rowIndex * (keySize + keyGap)
+        this.createKey(char, x, y, keySize, keySize)
       })
     })
 
     // Control row: backspace, space, enter, hide.
-    const controlY = startY + KEYBOARD_ROWS.length * (keySize + keyGap) + 4
-    this.createKey('⌫', 120, controlY, keySize, 'BACKSPACE')
-    this.createKey('SPACE', GAME_CONFIG.width / 2, controlY, 140, 'SPACE')
-    this.createKey('⏎', GAME_CONFIG.width - 160, controlY, keySize, 'ENTER')
-    this.createKey('👁', GAME_CONFIG.width - 60, controlY, keySize, 'TOGGLE')
+    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 14
+    this.createKey('⌫', 120, controlY, keySize, keySize, 'BACKSPACE')
+    this.createKey('SPACE', GAME_CONFIG.width / 2, controlY, 140, keySize, 'SPACE')
+    this.createKey('⏎', GAME_CONFIG.width - 160, controlY, keySize, keySize, 'ENTER')
+    this.createKey('👁', GAME_CONFIG.width - 60, controlY, keySize, keySize, 'TOGGLE')
   }
 
-  createKey(label, x, y, size, emitKey = null) {
+  createKey(label, x, y, width, height, emitKey = null) {
     const key = emitKey || label
-    const bg = this.add.rectangle(0, 0, size, size - 4, 0x2c3e50)
+    const bg = this.add.rectangle(0, 0, width, height, 0x2c3e50)
       .setStrokeStyle(1, 0x5d6d7e)
     const text = this.add.text(0, 0, label, {
       ...FONTS.default,
@@ -255,9 +259,9 @@ export default class CascadeScene extends Phaser.Scene {
     }).setOrigin(0.5)
 
     const container = this.add.container(x, y, [bg, text])
-    container.setSize(size, size - 4)
+    container.setSize(width, height)
 
-    const hitArea = this.add.rectangle(0, 0, size, size - 4, 0x000000, 0)
+    const hitArea = this.add.rectangle(0, 0, width, height, 0x000000, 0)
     hitArea.setInteractive({ useHandCursor: true })
     container.add(hitArea)
 
@@ -326,7 +330,7 @@ export default class CascadeScene extends Phaser.Scene {
   recalculateGeometry() {
     this.dangerY = GAME_CONFIG.height - (this.keyboardVisible ? 170 : 60)
     this.rowHeight = (this.dangerY - 90) / (ROWS_TO_DANGER - 1)
-    this.inputText.y = this.keyboardVisible ? GAME_CONFIG.height - 160 : GAME_CONFIG.height - 50
+    this.inputText.y = this.keyboardVisible ? this.keyboardStartY - 36 : GAME_CONFIG.height - 50
 
     // Reposition the current word by its row.
     if (this.currentWord && this.currentWord.wordData && this.currentWord.wordData.row) {
@@ -367,7 +371,8 @@ export default class CascadeScene extends Phaser.Scene {
     if (time - this.lastSpawnTime < this.spawnInterval) return
 
     this.lastSpawnTime = time
-    const word = this.wordList[this.wordsDestroyed % this.wordList.length]
+    const word = this.wordList[this.wordIndex % this.wordList.length]
+    this.wordIndex += 1
     this.spawnWord(word)
   }
 
@@ -403,9 +408,7 @@ export default class CascadeScene extends Phaser.Scene {
     this.currentWord.y = 90 + (this.currentWord.wordData.row - 1) * this.rowHeight
 
     if (this.currentWord.wordData.row >= ROWS_TO_DANGER) {
-      this.currentWord.destroy()
-      this.currentWord = null
-      this.loseLife()
+      this.crashWord()
     }
   }
 
@@ -413,11 +416,58 @@ export default class CascadeScene extends Phaser.Scene {
     this.lives = Math.max(0, this.lives - 1)
     this.hud.lives.setText(this.heartString())
     this.cameras.main.shake(100, 0.005)
+    this.inputBuffer = ''
+    this.updateInputDisplay()
     if (this.lives <= 0) {
       this.endGame(false)
     } else {
       this.lastSpawnTime = 0
     }
+  }
+
+  skipWord() {
+    if (!this.gameActive || this.gameEnded || !this.currentWord) return
+    this.crashWord()
+  }
+
+  crashWord() {
+    if (!this.currentWord) return
+    const wordData = this.currentWord.wordData
+    this.showAnswer(wordData)
+    this.currentWord.destroy()
+    this.currentWord = null
+    this.loseLife()
+  }
+
+  showAnswer(wordData) {
+    if (this.answerText) {
+      this.answerText.destroy()
+    }
+
+    const meaning = (wordData.meaning || '').slice(0, 80)
+    const reading = wordData.reading || ''
+    const label = reading ? `${meaning} (${reading})` : meaning
+
+    this.answerText = this.add.text(GAME_CONFIG.width / 2, this.dangerY - 30, `Answer: ${label}`, {
+      ...FONTS.default,
+      fontSize: '16px',
+      color: '#e74c3c',
+      backgroundColor: '#000000aa',
+      padding: { left: 10, right: 10, top: 6, bottom: 6 },
+    }).setOrigin(0.5).setDepth(120)
+
+    this.tweens.add({
+      targets: this.answerText,
+      alpha: 0,
+      duration: 1000,
+      delay: 3500,
+      onComplete: () => {
+        if (this.answerText) {
+          this.answerText.destroy()
+          this.answerText = null
+        }
+      },
+    })
   }
 
   destroyWord() {

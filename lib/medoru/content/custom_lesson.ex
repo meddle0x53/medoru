@@ -136,12 +136,13 @@ defmodule Medoru.Content.CustomLesson do
   end
 
   @doc """
-  Changeset for unarchiving a lesson (restores to published status).
+  Changeset for unarchiving a lesson.
+  Restores to the given status ("published" or "draft").
   """
-  def unarchive_changeset(custom_lesson) do
+  def unarchive_changeset(custom_lesson, status \\ "draft") do
     custom_lesson
-    |> cast(%{status: "published"}, [:status])
-    |> validate_inclusion(:status, ["published"])
+    |> cast(%{status: status}, [:status])
+    |> validate_inclusion(:status, ["published", "draft"])
   end
 
   @doc """

@@ -104,6 +104,12 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
     test "teacher can publish a draft lesson", %{conn: conn, teacher: teacher} do
       word = word_fixture()
 
+      {:ok, classroom} =
+        Medoru.Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          teacher_id: teacher.id
+        })
+
       {:ok, lesson} =
         Content.create_custom_lesson(%{
           title: "Lesson to Publish",
@@ -120,6 +126,18 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       view
       |> element("button", "Publish")
       |> render_click()
+
+      # Redirected to publish page; lesson stays draft until a classroom is chosen
+      assert_redirected(view, ~p"/teacher/custom-lessons/#{lesson.id}/publish")
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/custom-lessons/#{lesson.id}/publish")
+
+      view
+      |> element("button[phx-click='publish']")
+      |> render_click(%{"classroom_id" => classroom.id})
 
       published = Content.get_custom_lesson!(lesson.id)
       assert published.status == "published"
@@ -215,10 +233,20 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       # Verify it was unpublished
       publications = Content.list_lesson_classroom_publications(lesson.id, status: "active")
       assert Enum.empty?(publications)
+
+      # Lesson should revert to draft when no longer published to any classroom
+      lesson = Content.get_custom_lesson!(lesson.id)
+      assert lesson.status == "draft"
     end
 
     test "requires_test generates test on publish", %{conn: conn, teacher: teacher} do
       word = word_fixture()
+
+      {:ok, classroom} =
+        Medoru.Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          teacher_id: teacher.id
+        })
 
       {:ok, lesson} =
         Content.create_custom_lesson(%{
@@ -231,7 +259,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       # Add word to lesson
       {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
 
-      # Publish the lesson
+      # Start publishing the lesson
       {:ok, view, _html} =
         conn |> log_in_user(teacher) |> live(~p"/teacher/custom-lessons/#{lesson.id}/edit")
 
@@ -239,9 +267,21 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       |> element("button", "Publish")
       |> render_click()
 
-      # Verify lesson is published
+      assert_redirected(view, ~p"/teacher/custom-lessons/#{lesson.id}/publish")
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/custom-lessons/#{lesson.id}/publish")
+
+      view
+      |> element("button[phx-click='publish']")
+      |> render_click(%{"classroom_id" => classroom.id})
+
+      # Verify lesson is published and test was generated
       published = Content.get_custom_lesson!(lesson.id)
       assert published.status == "published"
+      assert published.test_id != nil
     end
 
     test "teacher can reorder lesson words", %{conn: conn, teacher: teacher} do

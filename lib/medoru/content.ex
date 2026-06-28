@@ -2094,6 +2094,9 @@ defmodule Medoru.Content do
   @doc """
   Publishes a custom lesson (changes status from draft to published).
 
+  A lesson can only be marked as published if it has at least one active
+  classroom publication.
+
   ## Examples
 
       iex> publish_custom_lesson(custom_lesson)
@@ -2101,9 +2104,13 @@ defmodule Medoru.Content do
 
   """
   def publish_custom_lesson(%CustomLesson{} = custom_lesson) do
-    custom_lesson
-    |> CustomLesson.publish_changeset()
-    |> Repo.update()
+    if count_active_classroom_publications(custom_lesson.id) > 0 do
+      custom_lesson
+      |> CustomLesson.publish_changeset()
+      |> Repo.update()
+    else
+      {:error, :not_published_to_classroom}
+    end
   end
 
   @doc """
@@ -2122,7 +2129,10 @@ defmodule Medoru.Content do
   end
 
   @doc """
-  Unarchives a custom lesson (restores to published status).
+  Unarchives a custom lesson.
+
+  Restores to "published" status if the lesson has at least one active classroom
+  publication; otherwise restores to "draft".
 
   ## Examples
 
@@ -2131,8 +2141,13 @@ defmodule Medoru.Content do
 
   """
   def unarchive_custom_lesson(%CustomLesson{} = custom_lesson) do
+    status =
+      if count_active_classroom_publications(custom_lesson.id) > 0,
+        do: "published",
+        else: "draft"
+
     custom_lesson
-    |> CustomLesson.unarchive_changeset()
+    |> CustomLesson.unarchive_changeset(status)
     |> Repo.update()
   end
 
@@ -2319,31 +2334,41 @@ defmodule Medoru.Content do
         |> where(classroom_id: ^classroom_id, custom_lesson_id: ^lesson_id)
         |> Repo.one()
 
-      case existing do
-        nil ->
-          # Get next order index for this classroom
-          next_order_index = Medoru.Classrooms.get_next_lesson_order_index(classroom_id)
+      result =
+        case existing do
+          nil ->
+            # Get next order index for this classroom
+            next_order_index = Medoru.Classrooms.get_next_lesson_order_index(classroom_id)
 
-          # Create new published record
-          attrs =
-            attrs
-            |> Map.put(:custom_lesson_id, lesson_id)
-            |> Map.put(:classroom_id, classroom_id)
-            |> Map.put(:published_by_id, teacher_id)
-            |> Map.put(:order_index, next_order_index)
+            # Create new published record
+            attrs =
+              attrs
+              |> Map.put(:custom_lesson_id, lesson_id)
+              |> Map.put(:classroom_id, classroom_id)
+              |> Map.put(:published_by_id, teacher_id)
+              |> Map.put(:order_index, next_order_index)
 
-          %ClassroomCustomLesson{}
-          |> ClassroomCustomLesson.publish_changeset(attrs)
-          |> Repo.insert()
+            %ClassroomCustomLesson{}
+            |> ClassroomCustomLesson.publish_changeset(attrs)
+            |> Repo.insert()
 
-        %{status: "unpublished"} = classroom_lesson ->
-          # Republish existing record - keep the original order_index
-          classroom_lesson
-          |> ClassroomCustomLesson.republish_changeset()
-          |> Repo.update()
+          %{status: "unpublished"} = classroom_lesson ->
+            # Republish existing record - keep the original order_index
+            classroom_lesson
+            |> ClassroomCustomLesson.republish_changeset()
+            |> Repo.update()
 
+          _ ->
+            {:error, :already_published}
+        end
+
+      with {:ok, classroom_lesson} <- result,
+           %CustomLesson{} = lesson <- Repo.get(CustomLesson, lesson_id) do
+        publish_custom_lesson(lesson)
+        {:ok, classroom_lesson}
+      else
         _ ->
-          {:error, :already_published}
+          result
       end
     end
   end
@@ -2364,9 +2389,20 @@ defmodule Medoru.Content do
     if classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
-      classroom_lesson
-      |> ClassroomCustomLesson.unpublish_changeset()
-      |> Repo.update()
+      result =
+        classroom_lesson
+        |> ClassroomCustomLesson.unpublish_changeset()
+        |> Repo.update()
+
+      with {:ok, _} <- result,
+           %CustomLesson{} = lesson <- Repo.get(CustomLesson, classroom_lesson.custom_lesson_id),
+           0 <- count_active_classroom_publications(classroom_lesson.custom_lesson_id) do
+        lesson
+        |> CustomLesson.changeset(%{status: "draft"})
+        |> Repo.update()
+      end
+
+      result
     end
   end
 
@@ -2385,9 +2421,17 @@ defmodule Medoru.Content do
     if classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
-      classroom_lesson
-      |> ClassroomCustomLesson.republish_changeset()
-      |> Repo.update()
+      result =
+        classroom_lesson
+        |> ClassroomCustomLesson.republish_changeset()
+        |> Repo.update()
+
+      with {:ok, _} <- result,
+           %CustomLesson{} = lesson <- Repo.get(CustomLesson, classroom_lesson.custom_lesson_id) do
+        publish_custom_lesson(lesson)
+      end
+
+      result
     end
   end
 
@@ -2503,6 +2547,15 @@ defmodule Medoru.Content do
     |> order_by([ccl], desc: ccl.published_at)
     |> preload(:classroom)
     |> Repo.all()
+  end
+
+  @doc """
+  Returns the number of active classroom publications for a custom lesson.
+  """
+  def count_active_classroom_publications(lesson_id) do
+    ClassroomCustomLesson
+    |> where([ccl], ccl.custom_lesson_id == ^lesson_id and ccl.status == "active")
+    |> Repo.aggregate(:count, :id)
   end
 
   # ============================================================================
