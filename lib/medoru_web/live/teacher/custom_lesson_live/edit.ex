@@ -488,11 +488,20 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                 {length(@lesson_words)} {gettext("words")} • {@lesson.status}
               </p>
             </div>
-            <%= if @lesson.status == "draft" and @lesson.word_count >= 1 do %>
-              <button phx-click="publish" class="btn btn-primary">
-                <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Publish")}
-              </button>
-            <% end %>
+            <div class="flex items-center gap-2">
+              <.link
+                navigate={~p"/teacher/custom-lessons/#{@lesson.id}/preview"}
+                target="_blank"
+                class="btn btn-outline btn-sm"
+              >
+                <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Preview")}
+              </.link>
+              <%= if @lesson.status == "draft" and @lesson.word_count >= 1 do %>
+                <button phx-click="publish" class="btn btn-primary">
+                  <.icon name="hero-check" class="w-5 h-5 mr-2" /> {gettext("Publish")}
+                </button>
+              <% end %>
+            </div>
           </div>
         </div>
 
