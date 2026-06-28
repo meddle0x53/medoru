@@ -15,8 +15,10 @@
 | 2026-06-27 | v0.8.0 Learned Kanji Practice Pagination | COMPLETED | 2026-06-27 |
 | 2026-06-27 | v0.8.0 Grammar Text Section Truncation Fix | COMPLETED | 2026-06-27 |
 | 2026-06-27 | v0.8.0 Draft Lesson Preview Crash Fix | COMPLETED | 2026-06-27 |
+| 2026-06-28 | v0.8.0 Link Previews | COMPLETED | 2026-06-28 |
+| 2026-06-28 | v0.8.0 Generate Vocabulary Test | COMPLETED | 2026-06-28 |
 
 ## Current State
 
-- Last completed: Iteration 2026-06-27 — Draft Lesson Preview Crash Fix
+- Last completed: Iteration 2026-06-28 — Generate Vocabulary Test
 - Next: remaining v0.8.0 tasks
