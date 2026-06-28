@@ -322,10 +322,41 @@ function getTileCountForColumn(col) {
   return randomInt(2, 5)
 }
 
+// Chance that a tile in a given column becomes a SHORT_CASCADE game.
+const CASCADE_CHANCES = {
+  1: 0.05,
+  2: 0.10,
+  3: 0.15,
+  4: 0.20,
+  5: 0.25,
+  6: 0.25,
+  7: 0.25,
+  8: 0.25,
+}
+
 function getTypePool(col) {
-  if (col <= 3) return TYPE_WEIGHTS.early
-  if (col <= 6) return TYPE_WEIGHTS.mid
-  return TYPE_WEIGHTS.late
+  // Column 9 is always a rest camp (the calm before the boss).
+  if (col === 9) return { [TILE_TYPES.REST_CAMP]: 1 }
+
+  const base = col <= 3 ? TYPE_WEIGHTS.early : col <= 6 ? TYPE_WEIGHTS.mid : TYPE_WEIGHTS.late
+  const cascadeChance = CASCADE_CHANCES[col] ?? 0.1
+
+  // Replace the base cascade weight with the column-specific chance and
+  // rescale the remaining weights so the pool still sums to 1.
+  const pool = { ...base, [TILE_TYPES.SHORT_CASCADE]: cascadeChance }
+  const otherTotal = Object.entries(pool).reduce(
+    (sum, [type, weight]) => (type === TILE_TYPES.SHORT_CASCADE ? sum : sum + weight),
+    0,
+  )
+  if (otherTotal > 0) {
+    const scale = (1 - cascadeChance) / otherTotal
+    for (const type of Object.keys(pool)) {
+      if (type !== TILE_TYPES.SHORT_CASCADE) {
+        pool[type] *= scale
+      }
+    }
+  }
+  return pool
 }
 
 function pickWeightedType(pool) {

@@ -568,7 +568,7 @@ export default class Player extends Character {
 
   getWeaponCharmSlots() {
     const level = this.weapon?.level || 0
-    if (level >= 7) return 4
+    if (level >= 9) return 4
     if (level >= 6) return 3
     if (level >= 3) return 2
     if (level >= 1) return 1
@@ -577,7 +577,7 @@ export default class Player extends Character {
 
   getShieldCharmSlots() {
     const level = this.shield?.level || 0
-    if (level >= 7) return 4
+    if (level >= 9) return 4
     if (level >= 6) return 3
     if (level >= 3) return 2
     if (level >= 1) return 1

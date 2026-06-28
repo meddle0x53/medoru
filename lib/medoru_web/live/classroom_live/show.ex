@@ -5,6 +5,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
   """
   use MedoruWeb, :live_view
 
+  require Logger
+
   import MedoruWeb.Components.Helpers, only: [display_name: 3]
 
   alias Medoru.Chat
@@ -94,6 +96,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:convert_emoticons, convert_emoticons)
           |> assign(:message_reactions, %{})
           |> assign(:reaction_picker_message_id, nil)
+          |> assign(:link_preview_tick, nil)
 
         {:ok, socket}
 
@@ -151,6 +154,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:convert_emoticons, convert_emoticons)
                 |> assign(:message_reactions, %{})
                 |> assign(:reaction_picker_message_id, nil)
+                |> assign(:link_preview_tick, nil)
 
               {:ok, socket}
             end
@@ -812,7 +816,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
-  def handle_info({:link_preview_ready, _preview}, socket) do
+  def handle_info({:link_preview_ready, preview}, socket) do
+    Logger.debug(
+      "ClassroomLive.Show: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})"
+    )
+
     {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 
@@ -1086,6 +1094,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 convert_emoticons={@convert_emoticons}
                 message_reactions={@message_reactions}
                 reaction_picker_message_id={@reaction_picker_message_id}
+                link_preview_tick={@link_preview_tick}
               />
           <% end %>
         </div>
@@ -1871,6 +1880,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :convert_emoticons, :boolean, required: true
   attr :message_reactions, :map, required: true
   attr :reaction_picker_message_id, :any, required: true
+  attr :link_preview_tick, :any, required: true
 
   defp chat_tab(assigns) do
     ~H"""
@@ -1968,7 +1978,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                             {render_message_content(
                               message.reply_to_message.content,
                               @convert_emoticons,
-                              @current_user
+                              @current_user,
+                              @link_preview_tick
                             )}
                         <% end %>
                       </span>
@@ -2197,7 +2208,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               {render_message_content(
                                 message.content,
                                 @convert_emoticons,
-                                @current_user
+                                @current_user,
+                                @link_preview_tick
                               )}
                             </p>
                           <% true -> %>
@@ -2205,7 +2217,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               {render_message_content(
                                 message.content,
                                 @convert_emoticons,
-                                @current_user
+                                @current_user,
+                                @link_preview_tick
                               )}
                             </p>
                         <% end %>
@@ -2399,6 +2412,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 <.classroom_message_preview_panel
                   message={@preview_message}
                   current_user={@current_user}
+                  link_preview_tick={@link_preview_tick}
                 />
               </div>
             <% end %>
@@ -2734,16 +2748,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
       |> String.trim() == ""
   end
 
-  defp render_message_content(text, convert_emoticons, viewer)
-  defp render_message_content(nil, _convert, _viewer), do: ""
+  defp render_message_content(text, convert_emoticons, viewer, link_preview_tick)
+  defp render_message_content(nil, _convert, _viewer, _link_preview_tick), do: ""
 
-  defp render_message_content(text, convert_emoticons, viewer) do
+  defp render_message_content(text, convert_emoticons, viewer, link_preview_tick) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text, convert_emoticons, viewer)
+            render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -2755,7 +2769,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text, convert_emoticons, viewer)
+                render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
               word ->
                 if MatureContent.mature_word_visible_to_user?(word, viewer) do
@@ -2771,7 +2785,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text, convert_emoticons, viewer)
+                    render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -2780,13 +2794,13 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 end
 
               :error ->
-                render_message_body(text, convert_emoticons, viewer)
+                render_message_body(text, convert_emoticons, viewer, link_preview_tick)
             end
         end
     end
   end
 
-  defp render_message_body(text, convert_emoticons, viewer) do
+  defp render_message_body(text, convert_emoticons, viewer, _link_preview_tick) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -3083,6 +3097,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   attr :message, :map, required: true
   attr :current_user, :map, required: true
+  attr :link_preview_tick, :any, required: true
 
   defp classroom_message_preview_panel(assigns) do
     ~H"""
@@ -3153,7 +3168,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content, @convert_emoticons, @current_user)}
+              {render_message_content(@message.content, @convert_emoticons, @current_user, @link_preview_tick)}
             </p>
         <% end %>
       </div>

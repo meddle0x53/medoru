@@ -2,6 +2,7 @@
   "warrior": {
     "bleed": ["gutting_slash"],
     "heavy": ["seismic_slam"],
-    "fire": ["flame_arc"]
+    "fire": ["flame_arc"],
+    "wind": ["gale_strike"]
   }
 }

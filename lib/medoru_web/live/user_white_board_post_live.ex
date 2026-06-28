@@ -6,6 +6,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
   """
   use MedoruWeb, :live_view
 
+  require Logger
+
   alias Medoru.{Repo, WhiteBoard}
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
 
@@ -95,7 +97,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                     WhiteBoardPostRenderer.render_post_content(
                       @post.content,
                       @post.id,
-                      @current_scope.current_user
+                      @current_scope.current_user,
+                      @link_preview_tick
                     )
                   )}
                 </div>
@@ -106,7 +109,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                       WhiteBoardPostRenderer.render_post_content(
                         @post.content,
                         @post.id,
-                        @current_scope.current_user
+                        @current_scope.current_user,
+                        @link_preview_tick
                       )
                     )}
                   </div>
@@ -117,7 +121,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                         WhiteBoardPostRenderer.render_post_content(
                           @post.content,
                           @post.id,
-                          @current_scope.current_user
+                          @current_scope.current_user,
+                          @link_preview_tick
                         )
                       )}
                     </div>
@@ -127,7 +132,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                         WhiteBoardPostRenderer.render_post_content(
                           @post.content,
                           @post.id,
-                          @current_scope.current_user
+                          @current_scope.current_user,
+                          @link_preview_tick
                         )
                       )}
                     </div>
@@ -208,7 +214,8 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                             {raw(
                               WhiteBoardPostRenderer.render_comment_content(
                                 comment.content,
-                                @current_scope.current_user
+                                @current_scope.current_user,
+                                @link_preview_tick
                               )
                             )}
                           </p>
@@ -290,6 +297,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
             |> assign(:post, post)
             |> assign(:comments, comments)
             |> assign(:reactions, reactions)
+            |> assign(:link_preview_tick, nil)
 
           socket =
             if connected?(socket) do
@@ -417,7 +425,11 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
   end
 
   @impl true
-  def handle_info({:link_preview_ready, _preview}, socket) do
+  def handle_info({:link_preview_ready, preview}, socket) do
+    Logger.debug(
+      "UserWhiteBoardPostLive: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})"
+    )
+
     {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 

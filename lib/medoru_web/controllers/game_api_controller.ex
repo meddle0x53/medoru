@@ -20,9 +20,15 @@ defmodule MedoruWeb.GameApiController do
         %{character: k.character, readings: [readings]}
       end)
 
+    learned_words =
+      if user.learning_language == "english" do
+        Learning.list_english_learned_words(user.id, limit: 1000)
+      else
+        Learning.list_learned_words(user.id, limit: 1000)
+      end
+
     word_list =
-      user.id
-      |> Learning.list_learned_words(limit: 1000)
+      learned_words
       |> Enum.map(fn w ->
         %{
           word: w.text,
@@ -45,6 +51,7 @@ defmodule MedoruWeb.GameApiController do
       user_id: user.id,
       name: user.name || user.email,
       level: user_level,
+      learning_language: user.learning_language,
       kanji_list: kanji_list,
       word_list: word_list
     })

@@ -5,6 +5,8 @@ defmodule MedoruWeb.DashboardLive do
   """
   use MedoruWeb, :live_view
 
+  require Logger
+
   import Ecto.Query, warn: false
 
   alias Medoru.{Accounts, Learning, Repo, Social, WhiteBoard}
@@ -82,6 +84,7 @@ defmodule MedoruWeb.DashboardLive do
       |> assign(:stream_reactions, stream_reactions)
       |> assign(:stream_comments, stream_comments)
       |> assign(:stream_replying_to, %{})
+      |> assign(:link_preview_tick, nil)
 
     socket =
       if connected?(socket) do
@@ -243,7 +246,11 @@ defmodule MedoruWeb.DashboardLive do
   # ============================================================================
 
   @impl true
-  def handle_info({:link_preview_ready, _preview}, socket) do
+  def handle_info({:link_preview_ready, preview}, socket) do
+    Logger.debug(
+      "DashboardLive: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})"
+    )
+
     {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 

@@ -470,7 +470,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                           WhiteBoardPostRenderer.render_post_content(
                             post.content,
                             post.id,
-                            @current_scope.current_user
+                            @current_scope.current_user,
+                            @link_preview_tick
                           )
                         )}
                       </div>
@@ -481,7 +482,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             WhiteBoardPostRenderer.render_post_content(
                               post.content,
                               post.id,
-                              @current_scope.current_user
+                              @current_scope.current_user,
+                              @link_preview_tick
                             )
                           )}
                         </div>
@@ -492,7 +494,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                               WhiteBoardPostRenderer.render_post_content(
                                 post.content,
                                 post.id,
-                                @current_scope.current_user
+                                @current_scope.current_user,
+                                @link_preview_tick
                               )
                             )}
                           </div>
@@ -502,7 +505,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                               WhiteBoardPostRenderer.render_post_content(
                                 post.content,
                                 post.id,
-                                @current_scope.current_user
+                                @current_scope.current_user,
+                                @link_preview_tick
                               )
                             )}
                           </div>
@@ -605,7 +609,8 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                                 {raw(
                                   WhiteBoardPostRenderer.render_comment_content(
                                     comment.content,
-                                    @current_scope.current_user
+                                    @current_scope.current_user,
+                                    @link_preview_tick
                                   )
                                 )}
                               </p>
@@ -775,6 +780,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
           |> assign(:canvas_description, "")
           |> assign(:editing_post_id, nil)
           |> assign(:replying_to, %{})
+          |> assign(:link_preview_tick, nil)
 
         socket =
           if connected?(socket) do

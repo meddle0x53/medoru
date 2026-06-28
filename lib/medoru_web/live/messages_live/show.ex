@@ -8,6 +8,8 @@ defmodule MedoruWeb.MessagesLive.Show do
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
 
+  require Logger
+
   alias Medoru.Chat
   alias Medoru.Content
   alias Medoru.Content.MatureContent
@@ -213,6 +215,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             |> assign(:chat_enter_sends, chat_enter_sends)
             |> assign(:convert_emoticons, convert_emoticons)
             |> assign(:online_user_ids, online_user_ids)
+            |> assign(:link_preview_tick, nil)
             |> push_event("scroll_to_bottom", %{})
 
           socket =
@@ -1147,7 +1150,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
-  def handle_info({:link_preview_ready, _preview}, socket) do
+  def handle_info({:link_preview_ready, preview}, socket) do
+    Logger.debug(
+      "MessagesLive.Show: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})"
+    )
+
     {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 
@@ -1364,16 +1371,16 @@ defmodule MedoruWeb.MessagesLive.Show do
   @doc """
   Renders message content, replacing `:medoru:` with the favicon image.
   """
-  def render_message_content(text, convert_emoticons, viewer \\ nil)
-  def render_message_content(nil, _convert, _viewer), do: ""
+  def render_message_content(text, convert_emoticons, viewer \\ nil, link_preview_tick \\ nil)
+  def render_message_content(nil, _convert, _viewer, _link_preview_tick), do: ""
 
-  def render_message_content(text, convert_emoticons, viewer) do
+  def render_message_content(text, convert_emoticons, viewer, link_preview_tick) do
     # Check for /grammar command first
     case parse_grammar_command(text) do
       {:ok, grammar_text} ->
         case Content.get_grammar_definition_by_title(grammar_text) do
           nil ->
-            render_message_body(text, convert_emoticons, viewer)
+            render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
           grammar ->
             GrammarChatPreview.render_html(%{grammar: grammar})
@@ -1385,7 +1392,7 @@ defmodule MedoruWeb.MessagesLive.Show do
           {:ok, word_text} ->
             case Content.get_word_by_text_or_meaning_or_conjugation(word_text) do
               nil ->
-                render_message_body(text, convert_emoticons, viewer)
+                render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
               word ->
                 if MatureContent.mature_word_visible_to_user?(word, viewer) do
@@ -1401,7 +1408,7 @@ defmodule MedoruWeb.MessagesLive.Show do
               {:ok, character} ->
                 case Content.get_kanji_by_character(character) do
                   nil ->
-                    render_message_body(text, convert_emoticons, viewer)
+                    render_message_body(text, convert_emoticons, viewer, link_preview_tick)
 
                   kanji ->
                     locale = Gettext.get_locale(MedoruWeb.Gettext)
@@ -1410,13 +1417,13 @@ defmodule MedoruWeb.MessagesLive.Show do
                 end
 
               :error ->
-                render_message_body(text, convert_emoticons, viewer)
+                render_message_body(text, convert_emoticons, viewer, link_preview_tick)
             end
         end
     end
   end
 
-  defp render_message_body(text, convert_emoticons, viewer) do
+  defp render_message_body(text, convert_emoticons, viewer, _link_preview_tick) do
     pipe_matches = Regex.scan(~r/\|([^|]+)\|/, text, return: :index)
     bracket_matches = Regex.scan(~r/\[\[([^\]]+)\]\]/, text, return: :index)
     corner_matches = Regex.scan(~r/「([^」]+)」/u, text, return: :index)
@@ -1455,9 +1462,7 @@ defmodule MedoruWeb.MessagesLive.Show do
                      ~s|<a href="#{word_path}" target="_blank" rel="noopener noreferrer" class="underline decoration-2 underline-offset-2 hover:opacity-80">#{escaped}</a>|}
                   ]
                 else
-                  [
-                    {:safe, ~s|<span class="text-error text-sm">unsafe content detected</span>|}
-                  ]
+                  [Phoenix.HTML.html_escape(word_text)]
                 end
             end
 
@@ -1697,6 +1702,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   attr :current_user_id, :string, required: true
   attr :current_user, :map, required: true
   attr :conversation, :map, required: true
+  attr :link_preview_tick, :any, required: true
 
   def message_preview_panel(assigns) do
     ~H"""
@@ -1777,7 +1783,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content, @convert_emoticons, @current_user)}
+              {render_message_content(@message.content, @convert_emoticons, @current_user, @link_preview_tick)}
             </p>
         <% end %>
       </div>

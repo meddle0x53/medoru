@@ -11,9 +11,9 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   alias Medoru.LinkPreviews
   alias MedoruWeb.{GrammarChatPreview, KanjiChatPreview, LinkPreviewCard, WordChatPreview}
 
-  def render_post_content(text_or_nil, post_id, viewer \\ nil)
+  def render_post_content(text_or_nil, post_id, viewer \\ nil, _link_preview_tick \\ nil)
 
-  def render_post_content(text, post_id, viewer) when is_binary(text) do
+  def render_post_content(text, post_id, viewer, _link_preview_tick) when is_binary(text) do
     lines = String.split(text, "\n")
 
     {segments, last_group} =
@@ -49,15 +49,15 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> Enum.join("\n")
   end
 
-  def render_post_content(nil, _post_id, _viewer), do: ""
+  def render_post_content(nil, _post_id, _viewer, _link_preview_tick), do: ""
 
   @doc """
   Renders comment content with command support (grammar, word, kanji),
   inline word links, URL autolinking, and markdown.
   """
-  def render_comment_content(text_or_nil, viewer \\ nil)
+  def render_comment_content(text_or_nil, viewer \\ nil, _link_preview_tick \\ nil)
 
-  def render_comment_content(text, viewer) when is_binary(text) do
+  def render_comment_content(text, viewer, _link_preview_tick) when is_binary(text) do
     lines = String.split(text, "\n")
 
     {segments, last_group} =
@@ -93,7 +93,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
     |> Enum.join("\n")
   end
 
-  def render_comment_content(nil, _viewer), do: ""
+  def render_comment_content(nil, _viewer, _link_preview_tick), do: ""
 
   defp render_post_body(text, post_id, viewer) do
     body =

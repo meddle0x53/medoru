@@ -858,6 +858,53 @@
           }
         }
       ]
+    },
+    {
+      "id": "gale_strike",
+      "name": "Gale Strike",
+      "nameJa": "\u98a8\u65ac\u308a",
+      "description": "A swift cutting wind that leaves the enemy reeling.",
+      "type": "attack",
+      "element": "wind",
+      "equipmentType": "weapon",
+      "requiredEquipment": null,
+      "requiredCharmFamily": "wind",
+      "staminaCost": 4,
+      "basePower": 12,
+      "scalingStat": "skill",
+      "scalingMultiplier": 1.1,
+      "kanji": "\u98a8",
+      "rarity": "rare",
+      "infusableWith": [
+        "fire",
+        "water",
+        "wind",
+        "earth",
+        "void",
+        "frost",
+        "bleed",
+        "poison"
+      ],
+      "lifecycle": {
+        "onUse": [
+          "dealDamage"
+        ]
+      },
+      "effects": [
+        {
+          "effectId": "weak",
+          "target": "enemy",
+          "chance": {
+            "base": 0.25,
+            "step": 0.05,
+            "cap": 0.45
+          },
+          "duration": {
+            "min": 2,
+            "max": 3
+          }
+        }
+      ]
     }
   ]
 }

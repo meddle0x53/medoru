@@ -140,6 +140,10 @@ defmodule Medoru.LinkPreviews do
   Broadcasts that a preview has been updated.
   """
   def broadcast_update(%LinkPreview{id: id} = preview) do
+    Logger.debug(
+      "LinkPreviews: broadcasting :link_preview_ready for preview #{id} (status: #{preview.status}) to topic #{@topic_prefix}#{id}"
+    )
+
     Phoenix.PubSub.broadcast(@pubsub, "#{@topic_prefix}#{id}", {:link_preview_ready, preview})
   end
 

@@ -76,6 +76,10 @@ defmodule MedoruWeb.LinkPreviewSubscribers do
   received. Bumps the tick so templates re-render with the new preview data.
   """
   def handle_preview_ready(socket) do
+    Logger.debug(
+      "LinkPreviewSubscribers: bumping link_preview_tick for socket #{inspect(self())}"
+    )
+
     Phoenix.Component.assign(socket, :link_preview_tick, System.monotonic_time())
   end
 

@@ -9,6 +9,19 @@
 **Tests**: 1512 passing  
 **URL**: https://medoru.net
 
+### Alpha Game Release Plan
+User-confirmed plan for the first alpha of **Kill Medoru!** (admin game at `/admin/game`):
+
+1. **JSON-driven foundation** — systems and data already support weapons, enemies, hero, abilities, and charm families via JSON. Slot 3/4 charms are planned but not required for alpha.
+2. **Finish the Level 1 map** — make all tile events functional (cascade ✅, memory, shop, rest, events, etc.) and make map visuals configurable from JSON (tile icons, offsets, backgrounds).
+3. **Profile reward** — the win condition should give something to the current user profile on the site.
+4. **Hero selection / preparation screen** — let the player spend site XP and in-game WIN tokens to start a stronger run.
+5. **More enemies / second hero** — nice-to-have, possibly post-alpha.
+6. **Public copy + admin copy** — extract a public version as a 5th daily challenge, while keeping the admin `/admin/game` version for parallel development.
+7. **Alpha ending** — level 1 map finishes in a meaningful way; alpha has only one level, later levels built in the admin version.
+
+Weapon/shield socket charms and slot unlock schedule are considered good enough for alpha. Work on them is paused.
+
 ### What's In Progress (v0.7.0)
 - **Learning Language setting**: `users.learning_language` string column (default `japanese`, options: `english`, `bulgarian`). Editable on `/settings/profile` and displayed (localized) on public profile pages.
 - **Word Open Graph previews**: `/words/:id` pages now include `og:title`, `og:description`, and `og:image` meta tags. If the word has an `image_path`, the word picture is used as the social-preview image.
@@ -52,7 +65,12 @@
 - **Map cursor sync fix**: `MapScene.onTileClick()` now sets `currentTileId` to the clicked tile before starting its scene, keeping the map cursor in sync with the tile being resolved. `MapScene.setupMap()` only moves the cursor away from a completed tile when it has no open connections (defeated boss or fully-cleared branch) or when the saved cursor is missing.
 - **Map edge target fix**: `MapScene.drawConnections()` now highlights the correct edges. Blue edges show the choices exiting the last completed node (the edges *entering* the possible next nodes), not the edges exiting the glowing next node. Travelled edges where both nodes are completed are drawn in green, matching the green checkmarks on finished nodes.
 - **Charm family reward map moved to JSON**: Created `assets/js/game/data/abilityFamilies.json` and wired `abilityRewards.js` to read the family → ability mapping from it. Adding new family-locked abilities now only requires editing JSON.
-- Service worker cache bumped to `medoru-v153`; game bundle bumped to `game.js?v=253`.
+- **Wind family ability**: Added `gale_strike` (skill-scaled wind attack that can inflict `weak`) to `assets/js/game/data/abilities/warrior.json` and wired the `wind` family to it in `assets/js/game/data/abilityFamilies.json`.
+- **Socket unlock schedule**: 4th weapon/shield socket now unlocks at equipment level `+9` instead of `+7`. Updated `Player.getWeaponCharmSlots()` / `getShieldCharmSlots()` and the legacy helpers in `data/charms.js`.
+- **Cascade tile game**: Added `CascadeScene` for `SHORT_CASCADE` map tiles. One-minute word cascade using the user's learned word pool (English-learning users get their English-progress words). Speed scales with map column and increases every 20 seconds. 3 lives, latin QWERTY touch keyboard with hide button, physical keyboard support. Rewards: 5 gold per word, random item every 10 words, ability choice every 20 words, weapon/shield/heal choice every 30 words. Map column 9 is now always a rest camp, and cascade tile chances are 5%/10%/15%/20%/25% for columns 1–8.
+- **Cascade balancing**: Movement is now row-based (20 rows to danger) using the same tick intervals as the site Kana Cascade game, so speed 4 takes ~20 seconds to reach the danger line instead of ~2 seconds. Spawn rate and active-word cap were also tuned.
+- **Cascade input/word rules**: Physical keyboard now calls `preventDefault()` so typing no longer triggers browser find/search. Only one word falls at a time, matching the site Kana Cascade behavior; the next word spawns immediately after the current one is answered or lost.
+- Service worker cache bumped to `medoru-v158`; game bundle bumped to `game.js?v=258`.
 
 ### What's Complete (v0.8.0) — Admin, Grammar, and Link Previews
 - **Admin word kanji de-association**: The admin/moderator word edit page (`/admin/words/:id/edit`, `/moderator/words/:id/edit`) lets users remove one or multiple kanji associations from a word. Each kanji card has a "Select" checkbox, and a "Remove selected" button deletes the checked `word_kanjis` rows via `Content.delete_word_kanjis/2`.
@@ -61,10 +79,12 @@
 - **Draft lesson preview crash fix**: Previewing a draft custom lesson (`/teacher/custom-lessons/:id/preview`) no longer crashes when the lesson is not published to a classroom. The preview classroom fallback includes `theme: nil`, the back link points to the editor, word links are disabled, last-step navigation shows "Back to Editor", and the `complete` event is a no-op in preview mode. Previewing a grammar lesson with zero steps is also handled gracefully.
 - **Grammar lesson word color fixes**: Changing the "apply_to" dropdown for a lesson/step word color no longer crashes with a `FunctionClauseError`. The select uses a dedicated `WordColorApplyTo` JS hook that pushes the update event with the correct index and field metadata. Student/preview rendering no longer drops text following a colored word (a zero-width space is inserted before line-leading `<span>` tags).
 - **Router duplicate white-board route warning**: Removed the unreachable duplicate `live "/:id/white-board", UserWhiteBoardLive` route in the `/users` scope.
-- **Link previews in posts, comments, and chats**: External URLs shared in white board posts/comments, dashboard stream, classroom chat, and encrypted 1:1/group chats render rich preview cards (title, description, image, hostname/favicon) using Open Graph metadata. Previews are cached in the new `link_previews` table keyed by normalized URL, fetched asynchronously so rendering is never blocked, and update live views via PubSub when ready. Encrypted chats fetch previews client-side through a new `/api/link-preview` endpoint. Security measures include private-IP/localhost rejection, response size limits, timeouts, and a bot user-agent. Cached previews with a nil `fetched_at` are no longer treated as stale. Fixed a fetcher crash caused by accessing the non-existent `resp.url` field on `Req.Response`, which silently broke every successful fetch in dev/prod. Fixed LiveView subscription to pending previews so first-time URLs actually update after fetch. Subscriptions are now established before the async fetch is triggered in `LinkPreviewSubscribers.subscribe_for_texts/2`, eliminating a race where a fast fetch could broadcast before the LiveView was listening. `create_post` also adds the new post optimistically so it is already rendered when the preview broadcast arrives. Fixed Earmark `pure_links` auto-linking inside already-generated `<a>` tags, which corrupted link HTML and dropped trailing text/punctuation. Added `pad_line_leading_links/1` to insert a zero-width space before line-leading `<a>` tags so Earmark no longer treats them as HTML blocks and drops the text that follows on the same line. Preview-card images now use `object-contain` with `h-auto max-h-80` so the full image is visible at its original aspect ratio, capped to a reasonable height.
+- **Link previews in posts, comments, and chats**: External URLs shared in white board posts/comments, dashboard stream, classroom chat, and encrypted 1:1/group chats render rich preview cards (title, description, image, hostname/favicon) using Open Graph metadata. Previews are cached in the new `link_previews` table keyed by normalized URL, fetched asynchronously so rendering is never blocked, and update live views via PubSub when ready. Encrypted chats fetch previews client-side through a new `/api/link-preview` endpoint. Security measures include private-IP/localhost rejection, response size limits, timeouts, and a bot user-agent. Cached previews with a nil `fetched_at` are no longer treated as stale. Fixed a fetcher crash caused by accessing the non-existent `resp.url` field on `Req.Response`, which silently broke every successful fetch in dev/prod. Fixed LiveView subscription to pending previews so first-time URLs actually update after fetch. Subscriptions are now established before the async fetch is triggered in `LinkPreviewSubscribers.subscribe_for_texts/2`, eliminating a race where a fast fetch could broadcast before the LiveView was listening. `create_post` also adds the new post optimistically so it is already rendered when the preview broadcast arrives. Fixed Earmark `pure_links` auto-linking inside already-generated `<a>` tags, which corrupted link HTML and dropped trailing text/punctuation. Added `pad_line_leading_links/1` to insert a zero-width space before line-leading `<a>` tags so Earmark no longer treats them as HTML blocks and drops the text that follows on the same line. Preview-card images now use `object-contain` with `h-auto max-h-80` so the full image is visible at its original aspect ratio, capped to a reasonable height. Fixed a HEEx change-tracking issue where first-time previews were not rendered after the async fetch completed: `link_preview_tick` is now passed as an argument to `WhiteBoardPostRenderer.render_post_content/4`, `render_comment_content/3`, and chat `render_message_content/4` so the renderer re-evaluates and picks up the newly cached preview without requiring a page refresh.
 
-### What's In Progress (v0.8.x) — Weapon/Shield Socket 1 Family Abilities
-The reward-pool family map is now JSON-driven (`assets/js/game/data/abilityFamilies.json`). Pending abilities to add:
+### Paused for Alpha — Weapon/Shield Socket 1 Family Abilities
+The reward-pool family map is now JSON-driven (`assets/js/game/data/abilityFamilies.json`). These abilities are **not required for the alpha** and are parked here for later:
+
+Pending abilities to add:
 
 1. **Shield Socket 1 families** (no abilities yet):
    - `sturdy` — defensive block/stance ability (can use existing `gainBlock` hook).
@@ -72,7 +92,7 @@ The reward-pool family map is now JSON-driven (`assets/js/game/data/abilityFamil
    - `luck_guard` — dodge/evasion ability (can use existing `gainDodge` hook).
 
 2. **Weapon Socket 1 families** (no abilities yet):
-   - `water`, `wind`, `earth`, `poison`, `dark`, `light`, `luck`.
+   - `water`, `earth`, `poison`, `dark`, `light`, `luck`. (`wind` is done with `gale_strike`.)
    - These can mostly use `dealDamage` + status effects / elemental guards already in `EffectRegistry.js`.
 
 For each ability, add:

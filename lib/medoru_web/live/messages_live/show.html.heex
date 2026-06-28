@@ -227,7 +227,8 @@
                       {render_message_content(
                         message.reply_to_message.content,
                         @convert_emoticons,
-                        @current_scope.current_user
+                        @current_scope.current_user,
+                        @link_preview_tick
                       ) || "..."}
                     </span>
                 <% end %>
@@ -476,7 +477,8 @@
                           {render_message_content(
                             message.content,
                             @convert_emoticons,
-                            @current_scope.current_user
+                            @current_scope.current_user,
+                            @link_preview_tick
                           )}
                         </p>
                       <% else %>
@@ -484,7 +486,8 @@
                           {render_message_content(
                             message.content,
                             @convert_emoticons,
-                            @current_scope.current_user
+                            @current_scope.current_user,
+                            @link_preview_tick
                           )}
                         </p>
                       <% end %>
@@ -697,6 +700,7 @@
             current_user_id={@current_scope.current_user.id}
             current_user={@current_scope.current_user}
             conversation={@conversation}
+            link_preview_tick={@link_preview_tick}
           />
         </div>
       <% end %>

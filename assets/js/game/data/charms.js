@@ -153,10 +153,10 @@ export function getCharmsByType(type) {
 // Level +1 → 1 slot
 // Level +3 → 2 slots
 // Level +6 → 3 slots
-// Level +7 → 4 slots
+// Level +9 → 4 slots
 export function getWeaponCharmSlots(weaponLevel) {
   const level = weaponLevel || 0
-  if (level >= 7) return 4
+  if (level >= 9) return 4
   if (level >= 6) return 3
   if (level >= 3) return 2
   if (level >= 1) return 1
@@ -165,7 +165,7 @@ export function getWeaponCharmSlots(weaponLevel) {
 
 export function getShieldCharmSlots(shieldLevel) {
   const level = shieldLevel || 0
-  if (level >= 7) return 4
+  if (level >= 9) return 4
   if (level >= 6) return 3
   if (level >= 3) return 2
   if (level >= 1) return 1

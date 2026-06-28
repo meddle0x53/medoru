@@ -597,6 +597,11 @@ export default class MapScene extends Phaser.Scene {
       return
     }
 
+    if (tile.type === TILE_TYPES.SHORT_CASCADE) {
+      this.scene.start('CascadeScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
     this.runPlaceholderEvent(tile)
   }
 
