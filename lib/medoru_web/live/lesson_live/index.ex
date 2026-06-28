@@ -101,8 +101,10 @@ defmodule MedoruWeb.LessonLive.Index do
   defp skill_level_card_bg(_), do: "bg-base-100 border-base-300"
 
   defp render_markdown(text) when is_binary(text) do
-    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
-    html
+    case Earmark.as_html(text, escape: false, smartypants: false) do
+      {:ok, html, _} -> html
+      {:error, html, _} -> html
+    end
   end
 
   defp render_markdown(nil), do: ""

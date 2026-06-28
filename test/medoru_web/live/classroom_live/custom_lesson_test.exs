@@ -342,4 +342,55 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       assert html =~ "means to eat"
     end
   end
+
+  describe "grammar lesson rendering with pseudo-HTML markdown" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "grammar",
+          title: "Grammar with Markdown HTML",
+          status: "published"
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        title: "でも",
+        position: 0,
+        step_type: "text",
+        explanation_sections: [
+          "<English>\nWhen you put \"でも\" in front of the sentence, you are going to say something that conflicts with the previous sentence.</English>"
+        ]
+      })
+
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      %{
+        conn: conn,
+        student: student,
+        classroom: classroom,
+        lesson: lesson
+      }
+    end
+
+    test "renders grammar step with unclosed pseudo-HTML tags without crashing", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      conn = log_in_user(conn, student)
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}")
+
+      assert html =~ lesson.title
+      assert html =~ "でも"
+      assert html =~ "When you put"
+    end
+  end
 end

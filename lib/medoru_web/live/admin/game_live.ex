@@ -48,9 +48,18 @@ defmodule MedoruWeb.Admin.GameLive do
         }
       end)
 
+    # Some users have words in both regular progress and English-learning progress,
+    # and the learning_language setting does not always match the actual data. Merge
+    # both sources and de-duplicate so the game always has the full learned pool.
+    regular_words = Learning.list_learned_words(user.id, limit: 1000)
+    english_words = Learning.list_english_learned_words(user.id, limit: 1000)
+
+    learned_words =
+      (regular_words ++ english_words)
+      |> Enum.uniq_by(& &1.id)
+
     word_list =
-      user.id
-      |> Learning.list_learned_words(limit: 1000)
+      learned_words
       |> Enum.map(fn w ->
         %{
           word: w.text,

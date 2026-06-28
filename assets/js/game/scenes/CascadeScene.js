@@ -84,10 +84,10 @@ export default class CascadeScene extends Phaser.Scene {
     const userData = getWindowGameData() || {}
     const rawWords = userData.word_list || []
     const words = rawWords
-      .filter(w => w && w.text && w.meaning)
+      .filter(w => w && (w.word || w.text) && w.meaning)
       .map(w => ({
         id: w.word || w.text,
-        text: w.text,
+        text: w.word || w.text,
         reading: w.reading || '',
         meaning: w.meaning,
         answers: this.extractAnswers(w.meaning),
@@ -299,6 +299,7 @@ export default class CascadeScene extends Phaser.Scene {
     if (this.currentWord.wordData.answers.includes(buffer)) {
       this.destroyWord()
       this.inputBuffer = ''
+      this.updateInputDisplay()
     }
   }
 
@@ -308,6 +309,7 @@ export default class CascadeScene extends Phaser.Scene {
     if (this.currentWord.wordData.answers.includes(buffer)) {
       this.destroyWord()
       this.inputBuffer = ''
+      this.updateInputDisplay()
     }
   }
 

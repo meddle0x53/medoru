@@ -1325,8 +1325,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   defp render_markdown(markdown_text) when is_binary(markdown_text) do
     # Parse markdown to HTML, preserving inline HTML
     # smartypants: false prevents curly quotes from breaking HTML attributes
-    {:ok, html, _} = Earmark.as_html(markdown_text, escape: false, smartypants: false)
-    html
+    case Earmark.as_html(markdown_text, escape: false, smartypants: false) do
+      {:ok, html, _} -> html
+      {:error, html, _} -> html
+    end
   end
 
   defp render_markdown(nil), do: ""

@@ -20,12 +20,14 @@ defmodule MedoruWeb.GameApiController do
         %{character: k.character, readings: [readings]}
       end)
 
+    # Merge both progress tables so the game always sees the user's full learned
+    # word pool regardless of the learning_language setting.
+    regular_words = Learning.list_learned_words(user.id, limit: 1000)
+    english_words = Learning.list_english_learned_words(user.id, limit: 1000)
+
     learned_words =
-      if user.learning_language == "english" do
-        Learning.list_english_learned_words(user.id, limit: 1000)
-      else
-        Learning.list_learned_words(user.id, limit: 1000)
-      end
+      (regular_words ++ english_words)
+      |> Enum.uniq_by(& &1.id)
 
     word_list =
       learned_words

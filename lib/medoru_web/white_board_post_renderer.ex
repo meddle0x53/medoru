@@ -350,10 +350,10 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
   end
 
   defp render_markdown(text) when is_binary(text) do
-    {:ok, html, _} =
-      Earmark.as_html(text, escape: false, smartypants: false, pure_links: false)
-
-    html
+    case Earmark.as_html(text, escape: false, smartypants: false, pure_links: false) do
+      {:ok, html, _} -> html
+      {:error, html, _} -> html
+    end
   end
 
   defp append_link_preview(html, text) when is_binary(html) do

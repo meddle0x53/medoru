@@ -308,8 +308,10 @@ defmodule MedoruWeb.UserLive.Show do
   defp tag_color_classes(_), do: "bg-base-300 text-base-content"
 
   defp render_markdown(text) when is_binary(text) do
-    {:ok, html, _} = Earmark.as_html(text, escape: false, smartypants: false)
-    html
+    case Earmark.as_html(text, escape: false, smartypants: false) do
+      {:ok, html, _} -> html
+      {:error, html, _} -> html
+    end
   end
 
   defp render_markdown(nil), do: ""
