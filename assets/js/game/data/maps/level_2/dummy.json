@@ -1,6 +1,7 @@
 {
   "id": "dummy",
   "level": 2,
+  "isFinal": false,
   "names": {
     "en": "The Dark Path",
     "ja": "暗黒の道"

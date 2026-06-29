@@ -59,11 +59,12 @@ export default class CascadeScene extends Phaser.Scene {
     this.currentWord = null
     this.inputBuffer = ''
     this.keyboardVisible = true
-    this.gameActive = true
+    this.gameActive = false
+    this.gameStarted = false
     this.gameEnded = false
     this.lastSpawnTime = 0
     this.lastTickTime = 0
-    this.gameStartTime = this.time.now
+    this.gameStartTime = 0
     this.lastSpeedIncreaseTime = 0
 
     this.createBackground()
@@ -81,6 +82,63 @@ export default class CascadeScene extends Phaser.Scene {
       callbackScope: this,
       loop: true,
     })
+
+    this.createStartOverlay()
+    this.autoStartEvent = this.time.delayedCall(2000, this.startGame, [], this)
+  }
+
+  createStartOverlay() {
+    this.startOverlayVisible = true
+    this.startOverlay = this.add.container(0, 0)
+    this.startOverlay.setDepth(300)
+
+    const backdrop = this.add.rectangle(
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2,
+      GAME_CONFIG.width,
+      GAME_CONFIG.height,
+      0x000000,
+      0.75,
+    ).setOrigin(0.5)
+    backdrop.setInteractive({ useHandCursor: true })
+    backdrop.on('pointerdown', () => this.startGame())
+    this.startOverlay.add(backdrop)
+
+    const title = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 30, 'Get Ready', {
+      ...FONTS.title,
+      fontSize: '32px',
+      color: '#f1c40f',
+    }).setOrigin(0.5)
+    this.startOverlay.add(title)
+
+    const hint = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 20, 'Click or press any key to start', {
+      ...FONTS.default,
+      fontSize: '18px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+    this.startOverlay.add(hint)
+  }
+
+  startGame() {
+    if (this.gameStarted) return
+    this.gameStarted = true
+    this.startOverlayVisible = false
+
+    if (this.autoStartEvent) {
+      this.autoStartEvent.remove()
+      this.autoStartEvent = null
+    }
+
+    if (this.startOverlay) {
+      this.startOverlay.destroy()
+      this.startOverlay = null
+    }
+
+    this.gameActive = true
+    this.gameStartTime = this.time.now
+    this.lastSpawnTime = this.time.now
+    this.lastTickTime = this.time.now
+    this.lastSpeedIncreaseTime = 0
   }
 
   buildWordList() {
@@ -196,6 +254,11 @@ export default class CascadeScene extends Phaser.Scene {
 
   setupPhysicalInput() {
     this.input.keyboard.on('keydown', (event) => {
+      if (this.startOverlayVisible) {
+        event.preventDefault()
+        this.startGame()
+        return
+      }
       if (!this.gameActive || this.gameEnded) return
 
       const key = event.key

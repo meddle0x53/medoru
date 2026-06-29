@@ -45,6 +45,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
          |> assign(:max_times_per_word, 1)
          |> assign(:total_questions, length(word_entries))
          |> assign(:title, default_title(classroom))
+         |> assign(:due_date, nil)
+         |> assign(:max_attempts, nil)
          |> assign(:error_message, nil)
          |> assign(:generating, false)}
       end
@@ -92,6 +94,27 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
       end
 
     {:noreply, assign(socket, :selected_types, new_types)}
+  end
+
+  @impl true
+  def handle_event("toggle_select_all", _params, socket) do
+    all_selected =
+      all_words_selected?(socket.assigns.selected_word_ids, socket.assigns.word_entries)
+
+    selected_word_ids =
+      if all_selected do
+        MapSet.new()
+      else
+        MapSet.new(Enum.map(socket.assigns.word_entries, & &1.word_id))
+      end
+
+    max = max_possible_questions(selected_word_ids, socket.assigns.max_times_per_word)
+
+    {:noreply,
+     socket
+     |> assign(:selected_word_ids, selected_word_ids)
+     |> assign(:total_questions, min(socket.assigns.total_questions, max))
+     |> clear_error()}
   end
 
   @impl true
@@ -196,6 +219,34 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
   end
 
   @impl true
+  def handle_event("update_due_date", %{"value" => value}, socket) do
+    due_date =
+      case value do
+        "" ->
+          nil
+
+        date_string ->
+          case DateTime.from_iso8601(date_string <> ":00Z") do
+            {:ok, dt, _} -> dt
+            _ -> nil
+          end
+      end
+
+    {:noreply, assign(socket, :due_date, due_date)}
+  end
+
+  @impl true
+  def handle_event("update_max_attempts", %{"value" => value}, socket) do
+    max_attempts =
+      case Integer.parse(value) do
+        {n, _} when n >= 1 and n <= 10 -> n
+        _ -> nil
+      end
+
+    {:noreply, assign(socket, :max_attempts, max_attempts)}
+  end
+
+  @impl true
   def handle_event("generate_test", params, socket) do
     classroom = socket.assigns.classroom
     word_entries = socket.assigns.word_entries
@@ -246,7 +297,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
            step_types: step_types,
            max_times_per_word: max_times_per_word,
            total_questions: total_questions,
-           title: title
+           title: title,
+           due_date: socket.assigns.due_date,
+           max_attempts: socket.assigns.max_attempts
          ) do
       {:ok, _test} ->
         {:noreply,
@@ -323,6 +376,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
     length(selected_in_lesson) == length(lesson_word_ids) and lesson_word_ids != []
   end
 
+  defp all_words_selected?(selected_word_ids, word_entries) do
+    MapSet.size(selected_word_ids) == length(word_entries) and word_entries != []
+  end
+
   defp available_step_types do
     [
       %{
@@ -353,7 +410,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
         id: "kanji_writing",
         label: gettext("Kanji Writing"),
         icon: "hero-paint-brush",
-        description: gettext("Draw kanji with correct stroke order (3 points)")
+        description: gettext("Draw kanji with correct stroke order (5 points)")
       }
     ]
   end
@@ -472,9 +529,18 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
           <div class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body">
               <div class="flex items-center justify-between mb-4">
-                <h2 class="card-title text-base-content">
-                  <.icon name="hero-book-open" class="w-5 h-5" /> {gettext("Word Pool")}
-                </h2>
+                <div class="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="select-all-words"
+                    checked={all_words_selected?(@selected_word_ids, @word_entries)}
+                    class="checkbox checkbox-primary"
+                    phx-click="toggle_select_all"
+                  />
+                  <label for="select-all-words" class="font-medium cursor-pointer">
+                    {gettext("Select All Words")}
+                  </label>
+                </div>
                 <span class="text-sm text-secondary">
                   {MapSet.size(@selected_word_ids)} {gettext("of")} {length(@word_entries)} {gettext(
                     "words selected"
@@ -584,6 +650,43 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
                     {gettext("Maximum possible: %{max}",
                       max: max_possible_questions(@selected_word_ids, @max_times_per_word)
                     )}
+                  </p>
+                </div>
+
+                <%!-- Due date --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text font-medium">{gettext("Due Date (optional)")}</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="due_date"
+                    phx-change="update_due_date"
+                    class="input input-bordered w-full"
+                  />
+                  <p class="text-xs text-secondary mt-1">
+                    {gettext("Students will see this due date on the test.")}
+                  </p>
+                </div>
+
+                <%!-- Max attempts --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text font-medium">
+                      {gettext("Max Attempts (optional)")}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    name="max_attempts"
+                    min="1"
+                    max="10"
+                    placeholder={gettext("Unlimited")}
+                    phx-change="update_max_attempts"
+                    class="input input-bordered w-full"
+                  />
+                  <p class="text-xs text-secondary mt-1">
+                    {gettext("Maximum number of times a student can take this test (1–10).")}
                   </p>
                 </div>
               </div>

@@ -621,6 +621,99 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert flash["error"] == "You don't have permission to access this classroom."
     end
 
+    test "teacher can select and deselect all words", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      # Deselect all
+      view
+      |> element("input#select-all-words")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "0 of 2 words selected"
+
+      # Select all
+      view
+      |> element("input#select-all-words")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "2 of 2 words selected"
+    end
+
+    test "teacher can set due date and max attempts when generating a vocabulary test", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert html =~ "Due Date (optional)"
+      assert html =~ "Max Attempts (optional)"
+
+      due_date = "2026-12-31T23:59"
+
+      view
+      |> element("input[name='due_date']")
+      |> render_change(%{"value" => due_date})
+
+      view
+      |> element("input[name='max_attempts']")
+      |> render_change(%{"value" => "2"})
+
+      view
+      |> element("form#generate-vocab-test-form")
+      |> render_submit(%{
+        "word_ids" => [word1.id],
+        "total_questions" => "1"
+      })
+
+      assert_redirected(view, ~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert length(published_tests) == 1
+      classroom_test = hd(published_tests)
+      assert classroom_test.max_attempts == 2
+      assert classroom_test.due_date
+      assert classroom_test.due_date.year == 2026
+      assert classroom_test.due_date.month == 12
+      assert classroom_test.due_date.day == 31
+    end
+
     test "teacher is redirected from generate page when no vocabulary lessons exist", %{
       conn: conn,
       teacher: teacher

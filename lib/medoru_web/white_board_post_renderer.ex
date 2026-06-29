@@ -362,7 +362,9 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
         html
 
       preview ->
-        Logger.debug("WhiteBoardPostRenderer: appending preview #{preview.id} for text: #{String.slice(text, 0, 80)}")
+        Logger.debug(
+          "WhiteBoardPostRenderer: appending preview #{preview.id} for text: #{String.slice(text, 0, 80)}"
+        )
 
         assigns = %{preview: preview, __changed__: %{}}
 

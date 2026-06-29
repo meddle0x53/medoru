@@ -62,7 +62,9 @@ defmodule MedoruWeb.LinkPreviewSubscribers do
         end
       end)
 
-    all_ids = MapSet.union(existing_ids, MapSet.new(new_previews_with_urls, fn {_url, p} -> p.id end))
+    all_ids =
+      MapSet.union(existing_ids, MapSet.new(new_previews_with_urls, fn {_url, p} -> p.id end))
+
     all_triggered_ids = MapSet.union(triggered_ids, MapSet.new(new_triggered_ids))
 
     socket

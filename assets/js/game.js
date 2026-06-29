@@ -14,6 +14,7 @@ import ShopScene from './game/scenes/ShopScene.js'
 import RestScene from './game/scenes/RestScene.js'
 import SocketScene from './game/scenes/SocketScene.js'
 import WinScene from './game/scenes/WinScene.js'
+import RunVictoryScene from './game/scenes/RunVictoryScene.js'
 import CascadeScene from './game/scenes/CascadeScene.js'
 import ChestScene from './game/scenes/ChestScene.js'
 
@@ -42,7 +43,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, HeroSelectScene, HomeShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, CascadeScene, ChestScene],
+    scene: [BootScene, HeroSelectScene, HomeShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene],
     physics: {
       default: 'arcade',
       arcade: {

@@ -68,4 +68,11 @@ defmodule Medoru.Tests.TestStepBuilder do
     end
     |> Enum.uniq_by(& &1.id)
   end
+
+  @doc """
+  Returns true if the word has at least one associated kanji record.
+  """
+  def word_has_kanji?(word) do
+    length(extract_kanji_from_word(word)) > 0
+  end
 end

@@ -106,22 +106,40 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
   end
 
   defp build_candidate_pairs(words, step_types, max_times_per_word) do
-    Enum.flat_map(words, fn word ->
+    words
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {word, word_index} ->
       available_types = available_types_for_word(word, step_types)
 
-      # Repeat each (word, type) pair up to max_times_per_word times
-      Enum.flat_map(1..max_times_per_word, fn _ ->
-        Enum.map(available_types, fn type -> {word, type} end)
-      end)
+      # A word may appear at most max_times_per_word times in total across all
+      # selected question types. Cycle through the available types with a
+      # per-word offset so different words are assigned different question
+      # types, ensuring variety when multiple types are selected.
+      if available_types == [] do
+        []
+      else
+        available_types
+        |> Stream.cycle()
+        |> Stream.drop(word_index)
+        |> Enum.take(max_times_per_word)
+        |> Enum.map(fn type -> {word, type} end)
+      end
     end)
   end
 
   defp available_types_for_word(word, step_types) do
-    if only_kana?(word.text) do
-      Enum.reject(step_types, &(&1 in [:word_to_reading, :reading_to_word]))
-    else
-      step_types
-    end
+    has_image? = not is_nil(word.image_path)
+    has_kanji? = TestStepBuilder.word_has_kanji?(word)
+
+    Enum.reject(step_types, fn type ->
+      case type do
+        :word_to_reading -> only_kana?(word.text)
+        :reading_to_word -> only_kana?(word.text)
+        :image_to_meaning -> not has_image?
+        :kanji_writing -> not has_kanji?
+        _ -> false
+      end
+    end)
   end
 
   defp filter_step_types(step_types, words) do
@@ -140,13 +158,13 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     steps =
       selected_pairs
       |> Enum.shuffle()
-      |> Enum.with_index(fn {word, step_type}, index ->
+      |> Enum.map(fn {word, step_type} ->
         pool = if step_type == :image_to_meaning, do: words_with_images, else: words
 
         build_step(word, step_type, distractor_count, pool)
-        |> Map.put(:order_index, index)
       end)
       |> Enum.reject(&is_nil/1)
+      |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
 
     Tests.create_test_steps(test, steps)
   end
@@ -172,15 +190,20 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
   end
 
   defp build_step(word, :reading_text, _distractor_count, _distractor_pool) do
-    base_step(word, 1)
+    base_step(word, 2)
     |> Map.merge(%{
       step_type: :vocabulary,
       question_type: :reading_text,
-      correct_answer: "#{word.meaning}|#{word.reading}",
+      correct_answer:
+        Jason.encode!(%{
+          meaning: word.meaning,
+          reading: word.reading
+        }),
       hints: ["Type the English meaning and hiragana reading"],
       question_data: %{
         word_text: word.text,
         word_reading: word.reading,
+        word_meaning: word.meaning,
         question_label: "reading_text",
         is_kana_only: only_kana?(word.text)
       }
@@ -196,6 +219,7 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     step =
       base_step(word, 1)
       |> Map.merge(%{
+        question_type: :image_to_meaning,
         correct_answer: word.meaning,
         hints: ["Look at the image carefully"],
         question_data: %{
@@ -229,7 +253,7 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
         correct_answer: kanji.character,
         kanji_id: kanji.id,
         word_id: word.id,
-        points: 3,
+        points: 5,
         hints: ["Remember the stroke order"],
         question_data: %{
           type: :kanji_writing,

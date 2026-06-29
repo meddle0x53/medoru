@@ -8,8 +8,11 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
   alias Medoru.Tests
 
   @impl true
-  def mount(%{"id" => classroom_id, "test_id" => test_id}, _session, socket) do
+  def mount(%{"id" => classroom_id, "test_id" => test_id}, session, socket) do
     user = socket.assigns.current_scope.current_user
+    locale = session["locale"] || "en"
+
+    socket = assign(socket, :locale, locale)
 
     # Verify user is an approved member of the classroom
     case Classrooms.get_user_membership(classroom_id, user.id) do
@@ -113,6 +116,45 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
 
   defp format_duration(_), do: "0:00"
 
+  defp format_question_for_results(step, locale) do
+    question = step.question || ""
+
+    case question do
+      "__MSG_WRITE_KANJI_FOR__|" <> _ ->
+        meanings = get_kanji_meanings_for_step(step, locale)
+        gettext("Write the kanji for '%{meanings}'", meanings: meanings)
+
+      _ ->
+        question
+    end
+  end
+
+  defp get_kanji_meanings_for_step(step, locale) when locale in ["bg", "ja"] do
+    case step.kanji do
+      nil ->
+        extract_meanings_from_question(step.question)
+
+      %Ecto.Association.NotLoaded{} ->
+        extract_meanings_from_question(step.question)
+
+      kanji ->
+        localized = Medoru.Content.get_localized_kanji_meanings(kanji, locale)
+
+        if localized != [] do
+          localized |> Enum.take(2) |> Enum.join(", ")
+        else
+          extract_meanings_from_question(step.question)
+        end
+    end
+  end
+
+  defp get_kanji_meanings_for_step(step, _locale) do
+    extract_meanings_from_question(step.question)
+  end
+
+  defp extract_meanings_from_question("__MSG_WRITE_KANJI_FOR__|" <> meanings), do: meanings
+  defp extract_meanings_from_question(question), do: question
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -205,7 +247,9 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
                 </div>
 
                 <%!-- Question --%>
-                <p class="text-lg text-base-content mb-4">{result.step.question}</p>
+                <p class="text-lg text-base-content mb-4">
+                  {format_question_for_results(result.step, @locale)}
+                </p>
 
                 <%!-- Answers --%>
                 <div class="space-y-2">

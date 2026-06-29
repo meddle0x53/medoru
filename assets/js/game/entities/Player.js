@@ -204,6 +204,7 @@ export default class Player extends Character {
       class: 'warrior',
       // Meta-currency and permanent unlocks
       gameTokens: this.level,
+      savedSiteLevel: this.level,
       rareGameTokens: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
@@ -569,6 +570,9 @@ export default class Player extends Character {
         // Migration: meta-currency and permanent unlocks.
         if (typeof loadout.gameTokens !== 'number') {
           loadout.gameTokens = this.level
+        }
+        if (typeof loadout.savedSiteLevel !== 'number') {
+          loadout.savedSiteLevel = this.level
         }
         if (typeof loadout.rareGameTokens !== 'number') {
           loadout.rareGameTokens = 0
@@ -1089,6 +1093,7 @@ export default class Player extends Character {
     // Preserve meta-progression.
     const meta = {
       gameTokens: this.loadout?.gameTokens ?? this.level,
+      savedSiteLevel: this.loadout?.savedSiteLevel ?? this.level,
       rareGameTokens: this.loadout?.rareGameTokens ?? 0,
       unlockedSocketCharmIds: this.loadout?.unlockedSocketCharmIds ?? getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: this.loadout?.unlockedHeroCharmIds ?? getDefaultUnlockedHeroCharmIds(),
@@ -1096,6 +1101,13 @@ export default class Player extends Character {
       permanentWeaponLevel: this.loadout?.permanentWeaponLevel ?? 0,
       permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
       permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
+    }
+
+    const previousLevel = meta.savedSiteLevel || this.level
+    const levelDiff = Math.max(0, this.level - previousLevel)
+    if (levelDiff > 0) {
+      meta.gameTokens += levelDiff
+      meta.savedSiteLevel = this.level
     }
 
     const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + meta.permanentStatPointBonus
@@ -1161,6 +1173,7 @@ export default class Player extends Character {
     this.loadout = {
       ...this.loadout,
       gameTokens: this.level,
+      savedSiteLevel: this.level,
       rareGameTokens: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),

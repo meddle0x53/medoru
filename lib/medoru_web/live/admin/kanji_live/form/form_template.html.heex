@@ -280,7 +280,10 @@
               </div>
             </div>
 
-            <div :if={@suggested_readings != []} class="p-4 bg-info/10 border border-info/30 rounded-lg mb-4">
+            <div
+              :if={@suggested_readings != []}
+              class="p-4 bg-info/10 border border-info/30 rounded-lg mb-4"
+            >
               <h4 class="font-medium mb-2 flex items-center gap-2">
                 <.icon name="hero-sparkles" class="w-4 h-4 text-info" />
                 {gettext("Suggested Readings")}

@@ -197,10 +197,11 @@ defmodule Medoru.Content.CustomLessonTest do
       assert archived.status == "archived"
     end
 
-    test "unarchive_custom_lesson/1 restores an archived lesson to published when published to a classroom", %{
-      teacher: teacher,
-      classroom: classroom
-    } do
+    test "unarchive_custom_lesson/1 restores an archived lesson to published when published to a classroom",
+         %{
+           teacher: teacher,
+           classroom: classroom
+         } do
       {:ok, lesson} =
         Content.create_custom_lesson(%{
           title: "Lesson to Unarchive",
@@ -218,9 +219,10 @@ defmodule Medoru.Content.CustomLessonTest do
       assert restored.status == "published"
     end
 
-    test "unarchive_custom_lesson/1 restores an archived lesson to draft when not published to any classroom", %{
-      teacher: teacher
-    } do
+    test "unarchive_custom_lesson/1 restores an archived lesson to draft when not published to any classroom",
+         %{
+           teacher: teacher
+         } do
       {:ok, lesson} =
         Content.create_custom_lesson(%{
           title: "Lesson to Unarchive",

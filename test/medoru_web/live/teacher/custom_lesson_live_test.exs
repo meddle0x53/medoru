@@ -82,7 +82,12 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
 
       assert html =~ lesson.title
       assert has_element?(view, "button", "Publish")
-      assert has_element?(view, "a[href=\"/teacher/custom-lessons/#{lesson.id}/preview\"]", "Preview")
+
+      assert has_element?(
+               view,
+               "a[href=\"/teacher/custom-lessons/#{lesson.id}/preview\"]",
+               "Preview"
+             )
     end
 
     test "teacher cannot edit another teacher's lesson", %{conn: conn} do

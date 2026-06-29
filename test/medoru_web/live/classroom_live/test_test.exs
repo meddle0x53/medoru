@@ -18,7 +18,9 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
   import Medoru.TestsFixtures
 
   alias Medoru.Classrooms
+  alias Medoru.Content
   alias Medoru.Tests
+  alias Medoru.Tests.ClassroomVocabularyTestGenerator
 
   describe "Test taking" do
     setup do
@@ -432,6 +434,73 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       assert html =~ "This is why"
     end
 
+    test "localizes kanji writing question on results page", %{
+      conn: conn,
+      student: student
+    } do
+      teacher = user_fixture(%{email: "writing_teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Writing Results Classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      test_resource =
+        test_fixture(%{
+          title: "Writing Results Test",
+          created_by_id: teacher.id,
+          status: :published,
+          time_limit_seconds: 600,
+          total_points: 5
+        })
+
+      kanji = kanji_fixture(%{character: "社", meanings: ["company", "firm"]})
+
+      test_step_fixture(test_resource, %{
+        step_type: :writing,
+        question_type: :writing,
+        question: "__MSG_WRITE_KANJI_FOR__|company, firm",
+        correct_answer: kanji.character,
+        kanji_id: kanji.id,
+        points: 5,
+        order_index: 0,
+        question_data: %{
+          "kanji" => kanji.character,
+          "meanings" => kanji.meanings,
+          "stroke_count" => kanji.stroke_count
+        }
+      })
+
+      {:ok, _} =
+        Classrooms.publish_test_to_classroom(
+          classroom.id,
+          test_resource.id,
+          teacher.id,
+          %{max_attempts: 1}
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      view
+      |> form("form")
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      {:ok, _results_view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      refute html =~ "__MSG_WRITE_KANJI_FOR__"
+      assert html =~ "Write the kanji for"
+    end
+
     test "redirects if no completed test found", %{
       conn: conn,
       student: student,
@@ -565,6 +634,217 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       attempt = Classrooms.get_test_attempt(classroom.id, student.id, test_resource.id)
       # Partial credit for meaning only
       assert attempt.score == 2
+    end
+  end
+
+  describe "Generated vocabulary tests" do
+    setup do
+      teacher = user_fixture(%{email: "gen_teacher@example.com"})
+      student = user_fixture(%{email: "gen_student@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Generated Test Classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+
+      word_with_reading =
+        word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+
+      image_words =
+        [
+          %{text: "写真", meaning: "photo", reading: "しゃしん"},
+          %{text: "絵", meaning: "picture", reading: "え"},
+          %{text: "地図", meaning: "map", reading: "ちず"},
+          %{text: "本", meaning: "book", reading: "ほん"}
+        ]
+        |> Enum.with_index()
+        |> Enum.map(fn {attrs, i} ->
+          word_fixture(
+            attrs
+            |> Map.put(:image_path, "/uploads/#{i}.jpg")
+            |> Map.to_list()
+          )
+        end)
+
+      image_word = hd(image_words)
+
+      word_with_kanji = word_with_kanji_fixture()
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word_with_kanji.id, %{position: 100})
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word_with_reading.id, %{position: 0})
+
+      Enum.with_index(image_words, 1)
+      |> Enum.each(fn {word, i} ->
+        {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: i})
+      end)
+
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      %{
+        teacher: teacher,
+        student: student,
+        classroom: classroom,
+        word_with_reading: word_with_reading,
+        image_word: image_word,
+        image_words: image_words,
+        word_with_kanji: word_with_kanji
+      }
+    end
+
+    test "student sees localized prompt for generated kanji_writing question", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      word_with_kanji: word
+    } do
+      {:ok, test} =
+        ClassroomVocabularyTestGenerator.generate_test(
+          classroom,
+          [word],
+          classroom.teacher_id,
+          step_types: [:kanji_writing],
+          max_times_per_word: 1,
+          total_questions: 1
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      refute html =~ "__MSG_WRITE_KANJI_FOR__"
+      assert html =~ "Write the kanji for"
+    end
+
+    test "student sees meaning for generated word_to_reading question", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      word_with_reading: word
+    } do
+      {:ok, test} =
+        ClassroomVocabularyTestGenerator.generate_test(
+          classroom,
+          [word],
+          classroom.teacher_id,
+          step_types: [:word_to_reading],
+          max_times_per_word: 1,
+          total_questions: 1
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      assert html =~ "How do you read this word?"
+      assert html =~ word.text
+      assert html =~ word.meaning
+    end
+
+    test "student sees a prompt for generated word_to_meaning question", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      word_with_reading: word
+    } do
+      {:ok, test} =
+        ClassroomVocabularyTestGenerator.generate_test(
+          classroom,
+          [word],
+          classroom.teacher_id,
+          step_types: [:word_to_meaning],
+          max_times_per_word: 1,
+          total_questions: 1
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      assert html =~ "What is the meaning of this word?"
+      assert html =~ word.text
+      assert html =~ word.reading
+    end
+
+    test "student can take a generated reading_text question", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      word_with_reading: word
+    } do
+      {:ok, test} =
+        ClassroomVocabularyTestGenerator.generate_test(
+          classroom,
+          [word],
+          classroom.teacher_id,
+          step_types: [:reading_text],
+          max_times_per_word: 1,
+          total_questions: 1
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      assert html =~ word.text
+      assert html =~ "Meaning (English)"
+      assert html =~ "Reading (Hiragana)"
+
+      view
+      |> form("form", %{
+        meaning_answer: word.meaning,
+        reading_answer: word.reading
+      })
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test.id}/results")
+    end
+
+    test "student can take a generated image_to_meaning question", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      image_word: word,
+      image_words: image_words
+    } do
+      {:ok, test} =
+        ClassroomVocabularyTestGenerator.generate_test(
+          classroom,
+          image_words,
+          classroom.teacher_id,
+          step_types: [:image_to_meaning],
+          max_times_per_word: 1,
+          total_questions: 1
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      assert html =~ "/uploads/0.jpg" or html =~ "/uploads/1.jpg" or
+               html =~ "/uploads/2.jpg" or html =~ "/uploads/3.jpg"
+
+      assert html =~ "phx-click=\"select_answer\""
+
+      view
+      |> element("button[phx-click='select_answer'][phx-value-answer='#{word.meaning}']")
+      |> render_click()
+
+      view
+      |> form("form")
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test.id}/results")
     end
   end
 end

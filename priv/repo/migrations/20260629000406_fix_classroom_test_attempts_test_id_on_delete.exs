@@ -13,8 +13,7 @@ defmodule Medoru.Repo.Migrations.FixClassroomTestAttemptsTestIdOnDelete do
     drop constraint(:classroom_test_attempts, "classroom_test_attempts_test_id_fkey")
 
     alter table(:classroom_test_attempts) do
-      modify :test_id, references(:tests, type: :binary_id, on_delete: :delete_all),
-        null: false
+      modify :test_id, references(:tests, type: :binary_id, on_delete: :delete_all), null: false
     end
   end
 
@@ -22,8 +21,7 @@ defmodule Medoru.Repo.Migrations.FixClassroomTestAttemptsTestIdOnDelete do
     drop constraint(:classroom_test_attempts, "classroom_test_attempts_test_id_fkey")
 
     alter table(:classroom_test_attempts) do
-      modify :test_id, references(:tests, type: :binary_id, on_delete: :nilify_all),
-        null: false
+      modify :test_id, references(:tests, type: :binary_id, on_delete: :nilify_all), null: false
     end
   end
 end

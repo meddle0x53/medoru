@@ -5,13 +5,18 @@ defmodule MedoruWeb.ClassroomLive.Test do
   use MedoruWeb, :live_view
 
   alias Medoru.Classrooms
+  alias Medoru.Content
   alias Medoru.Tests
   alias Medoru.Grammar.Validator
+  alias Medoru.Tests.ReadingAnswerValidator
   alias MedoruWeb.WritingFillInComponents
 
   @impl true
-  def mount(%{"id" => classroom_id, "test_id" => test_id}, _session, socket) do
+  def mount(%{"id" => classroom_id, "test_id" => test_id}, session, socket) do
     user = socket.assigns.current_scope.current_user
+    locale = session["locale"] || "en"
+
+    socket = assign(socket, :locale, locale)
 
     # Verify user is an approved member of the classroom
     case Classrooms.get_user_membership(classroom_id, user.id) do
@@ -115,7 +120,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
            |> assign(:answer, initial_answer_for_step(first_step))
            |> assign(:show_hint, false)
-           |> assign(:writing_start_time, writing_start_time(first_step))}
+           |> assign(:writing_start_time, writing_start_time(first_step))
+           |> assign(:meaning_answer, "")
+           |> assign(:reading_answer, "")
+           |> assign(:selected_answer, nil)
+           |> assign(:feedback, nil)
+           |> assign(:correct_meaning, nil)
+           |> assign(:correct_reading, nil)
+           |> assign(:meaning_error, false)
+           |> assign(:reading_error, false)}
 
         {:error, _} ->
           {:ok,
@@ -144,23 +157,32 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:time_remaining, attempt.time_remaining_seconds)
        |> assign(:answer, initial_answer_for_step(current_step))
        |> assign(:show_hint, false)
-       |> assign(:writing_start_time, writing_start_time(current_step))}
+       |> assign(:writing_start_time, writing_start_time(current_step))
+       |> assign(:meaning_answer, "")
+       |> assign(:reading_answer, "")
+       |> assign(:selected_answer, nil)
+       |> assign(:feedback, nil)
+       |> assign(:correct_meaning, nil)
+       |> assign(:correct_reading, nil)
+       |> assign(:meaning_error, false)
+       |> assign(:reading_error, false)}
     end
   end
 
-  defp start_new_test_session(socket, classroom_test, classroom_id, test_id, user) do
+  defp start_new_test_session(socket, _classroom_test, classroom_id, test_id, user) do
     test = Tests.get_test!(test_id)
     classroom = Classrooms.get_classroom!(classroom_id)
 
-    # Use classroom test settings or fall back to test defaults
-    time_limit = classroom_test.max_attempts || test.time_limit_seconds
+    # Use classroom test settings or fall back to test defaults.
+    # max_attempts is the number of allowed attempts, NOT seconds.
+    time_limit = test.time_limit_seconds || 3600
 
     # Start a new test attempt
     case Classrooms.start_test_attempt(
            classroom_id,
            user.id,
            test_id,
-           time_limit || 3600,
+           time_limit,
            test.total_points
          ) do
       {:ok, attempt} ->
@@ -189,7 +211,16 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:total_steps, length(steps))
              |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
              |> assign(:answer, initial_answer_for_step(first_step))
-             |> assign(:show_hint, false)}
+             |> assign(:show_hint, false)
+             |> assign(:meaning_answer, "")
+             |> assign(:reading_answer, "")
+             |> assign(:selected_answer, nil)
+             |> assign(:feedback, nil)
+             |> assign(:correct_meaning, nil)
+             |> assign(:correct_reading, nil)
+             |> assign(:meaning_error, false)
+             |> assign(:reading_error, false)
+             |> assign(:writing_start_time, writing_start_time(first_step))}
 
           {:error, _} ->
             {:ok,
@@ -220,6 +251,11 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
   defp initial_answer_for_step(%{question_type: :grammar_pattern}), do: ""
   defp initial_answer_for_step(%{question_type: :writing_fill_in}), do: %{}
+  defp initial_answer_for_step(%{question_type: :image_to_meaning}), do: nil
+
+  defp initial_answer_for_step(%{question_type: :reading_text}),
+    do: %{"meaning" => "", "reading" => ""}
+
   defp initial_answer_for_step(_), do: ""
 
   @impl true
@@ -231,6 +267,28 @@ defmodule MedoruWeb.ClassroomLive.Test do
   @impl true
   def handle_event("show_hint", _, socket) do
     {:noreply, assign(socket, :show_hint, true)}
+  end
+
+  @impl true
+  def handle_event("select_answer", %{"answer" => answer}, socket) do
+    {:noreply, assign(socket, :selected_answer, answer)}
+  end
+
+  @impl true
+  def handle_event("update_meaning", params, socket) do
+    value = Map.get(params, "meaning_answer", params["value"] || "")
+    {:noreply, assign(socket, :meaning_answer, value)}
+  end
+
+  @impl true
+  def handle_event("update_reading", params, socket) do
+    value = Map.get(params, "reading_answer", params["value"] || "")
+    {:noreply, assign(socket, :reading_answer, value)}
+  end
+
+  @impl true
+  def handle_event("submit_reading_text", params, socket) do
+    handle_reading_text_answer(socket, params)
   end
 
   @impl true
@@ -274,7 +332,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:current_step, next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)
-           |> assign(:writing_start_time, writing_start_time(next_step))}
+           |> assign(:writing_start_time, writing_start_time(next_step))
+           |> assign(:meaning_answer, "")
+           |> assign(:reading_answer, "")
+           |> assign(:selected_answer, nil)
+           |> assign(:feedback, nil)
+           |> assign(:correct_meaning, nil)
+           |> assign(:correct_reading, nil)
+           |> assign(:meaning_error, false)
+           |> assign(:reading_error, false)}
         end
 
       {:error, changeset} ->
@@ -395,31 +461,34 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
-  def handle_event("submit_answer", %{"answer" => answer}, socket) do
+  def handle_event("submit_answer", params, socket) do
     step = socket.assigns.current_step
     session = socket.assigns.session
     attempt = socket.assigns.attempt
 
     # Handle grammar step types with special scoring
     case step.question_type do
+      :image_to_meaning ->
+        handle_image_to_meaning_answer(socket)
+
       :sentence_validation ->
-        handle_sentence_validation_answer(socket, answer, step, session, attempt)
+        handle_sentence_validation_answer(socket, params["answer"], step, session, attempt)
 
       :conjugation ->
-        handle_conjugation_answer(socket, answer, step, session, attempt)
+        handle_conjugation_answer(socket, params["answer"], step, session, attempt)
 
       :conjugation_multichoice ->
-        handle_conjugation_multichoice_answer(socket, answer, step, session, attempt)
+        handle_conjugation_multichoice_answer(socket, params["answer"], step, session, attempt)
 
       :word_order ->
-        handle_word_order_answer(socket, answer, step, session, attempt)
+        handle_word_order_answer(socket, params["answer"], step, session, attempt)
 
       :grammar_pattern ->
-        handle_grammar_pattern_answer(socket, answer, step, session, attempt)
+        handle_grammar_pattern_answer(socket, params["answer"], step, session, attempt)
 
       _ ->
         # Standard multichoice handling
-        handle_standard_answer(socket, answer, step, session, attempt)
+        handle_standard_answer(socket, params["answer"], step, session, attempt)
     end
   end
 
@@ -549,6 +618,127 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
         {:noreply,
          put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+    end
+  end
+
+  # Image-to-meaning: answer is the selected option (meaning text). Validation is done
+  # via option_word_ids in TestStepAnswer, so we just record the selected answer.
+  defp handle_image_to_meaning_answer(socket) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+    answer = socket.assigns.selected_answer
+
+    if is_nil(answer) or String.trim(answer) == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please select an image"))}
+    else
+      result =
+        Tests.record_step_answer(session.id, step.id, %{
+          "answer" => answer,
+          "time_spent_seconds" => 30,
+          "step_index" => step.order_index
+        })
+
+      case result do
+        {:ok, step_answer} ->
+          Classrooms.update_test_progress(attempt.id, %{
+            score: step_answer.points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 30
+          })
+
+          move_to_next_step(socket, session, attempt)
+
+        {:error, changeset} ->
+          require Logger
+          Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+          {:noreply,
+           put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+      end
+    end
+  end
+
+  # Reading text: validate meaning and reading separately, then record.
+  defp handle_reading_text_answer(socket, params) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+    attempt = socket.assigns.attempt
+    is_kana_only = step.question_data["is_kana_only"] || false
+
+    meaning =
+      params
+      |> Map.get("meaning_answer", socket.assigns.meaning_answer)
+      |> to_string()
+      |> String.trim()
+
+    reading =
+      params
+      |> Map.get("reading_answer", socket.assigns.reading_answer)
+      |> to_string()
+      |> String.trim()
+
+    if meaning == "" or (not is_kana_only and reading == "") do
+      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
+    else
+      word = if step.word_id, do: Content.get_word!(step.word_id), else: nil
+
+      if word do
+        locale = socket.assigns[:locale] || "en"
+
+        {:ok, validation} =
+          ReadingAnswerValidator.validate_answer(
+            word,
+            meaning,
+            reading,
+            locale,
+            skip_reading: is_kana_only
+          )
+
+        answer_text =
+          Jason.encode!(%{
+            meaning: meaning,
+            reading: reading,
+            validation: validation
+          })
+
+        result =
+          Tests.record_step_answer(session.id, step.id, %{
+            "answer" => answer_text,
+            "time_spent_seconds" => 30,
+            "step_index" => step.order_index,
+            "is_correct" => validation.both_correct
+          })
+
+        case result do
+          {:ok, _step_answer} ->
+            if validation.both_correct do
+              Classrooms.update_test_progress(attempt.id, %{
+                score: step.points,
+                time_spent_seconds: attempt.time_spent_seconds + 30
+              })
+
+              move_to_next_step(socket, session, attempt)
+            else
+              {:noreply,
+               socket
+               |> assign(:feedback, :incorrect)
+               |> assign(:meaning_error, not validation.meaning_correct)
+               |> assign(:reading_error, not validation.reading_correct)
+               |> assign(:correct_meaning, word.meaning)
+               |> assign(:correct_reading, word.reading)
+               |> assign(:show_hint, true)}
+            end
+
+          {:error, changeset} ->
+            require Logger
+            Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+            {:noreply,
+             put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
     end
   end
 
@@ -851,7 +1041,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:current_step, next_step)
        |> assign(:answer, initial_answer_for_step(next_step))
        |> assign(:show_hint, false)
-       |> assign(:writing_start_time, writing_start_time(next_step))}
+       |> assign(:writing_start_time, writing_start_time(next_step))
+       |> assign(:meaning_answer, "")
+       |> assign(:reading_answer, "")
+       |> assign(:selected_answer, nil)
+       |> assign(:feedback, nil)
+       |> assign(:correct_meaning, nil)
+       |> assign(:correct_reading, nil)
+       |> assign(:meaning_error, false)
+       |> assign(:reading_error, false)}
     end
   end
 
@@ -888,7 +1086,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
          |> assign(:current_step, next_step)
          |> assign(:answer, initial_answer_for_step(next_step))
          |> assign(:show_hint, false)
-         |> assign(:writing_start_time, nil)}
+         |> assign(:writing_start_time, nil)
+         |> assign(:meaning_answer, "")
+         |> assign(:reading_answer, "")
+         |> assign(:selected_answer, nil)
+         |> assign(:feedback, nil)
+         |> assign(:correct_meaning, nil)
+         |> assign(:correct_reading, nil)
+         |> assign(:meaning_error, false)
+         |> assign(:reading_error, false)}
       end
     else
       # Calculate time spent on this writing step
@@ -946,7 +1152,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:current_step, next_step)
              |> assign(:answer, initial_answer_for_step(next_step))
              |> assign(:show_hint, false)
-             |> assign(:writing_start_time, nil)}
+             |> assign(:writing_start_time, nil)
+             |> assign(:meaning_answer, "")
+             |> assign(:reading_answer, "")
+             |> assign(:selected_answer, nil)
+             |> assign(:feedback, nil)
+             |> assign(:correct_meaning, nil)
+             |> assign(:correct_reading, nil)
+             |> assign(:meaning_error, false)
+             |> assign(:reading_error, false)}
           end
 
         {:error, _} ->
@@ -1114,17 +1328,53 @@ defmodule MedoruWeb.ClassroomLive.Test do
                   |> String.replace("_", " ")
                   |> String.capitalize()}
                 </span>
-                <h2 class="text-lg sm:text-xl font-medium text-base-content leading-relaxed">
-                  {@current_step.question}
-                </h2>
+
+                <%= if @current_step.step_type == :vocabulary do %>
+                  <p class="text-sm sm:text-base text-secondary mb-2 sm:mb-3">
+                    {vocabulary_question_prompt(@current_step)}
+                  </p>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-primary font-japanese text-center">
+                    {@current_step.question_data["word_text"] || @current_step.question}
+                  </h2>
+                  <%= if @current_step.question_data["word_reading"] && @current_step.question_data["question_label"] != "reading" do %>
+                    <p class="text-center text-secondary text-sm sm:text-base mt-2">
+                      {gettext("Reading:")} {@current_step.question_data["word_reading"]}
+                    </p>
+                  <% end %>
+                  <%= if @current_step.question_data["word_meaning"] && @current_step.question_data["question_label"] == "reading" do %>
+                    <p class="text-center text-secondary text-sm sm:text-base mt-2">
+                      {gettext("Meaning:")} {localize_question_data_meaning(
+                        @current_step.question_data,
+                        @locale
+                      )}
+                    </p>
+                  <% end %>
+                <% else %>
+                  <%= if @current_step.question_type != :writing do %>
+                    <h2 class="text-lg sm:text-xl font-medium text-base-content leading-relaxed">
+                      {@current_step.question}
+                    </h2>
+                  <% end %>
+                <% end %>
               </div>
 
               <%!-- Answer Input --%>
-              <form phx-submit="submit_answer" class="space-y-4">
+              <form
+                phx-submit={
+                  if @current_step.question_type == :reading_text,
+                    do: "submit_reading_text",
+                    else: "submit_answer"
+                }
+                class="space-y-4"
+              >
                 <%= case @current_step.question_type do %>
                   <% :multichoice -> %>
                     <div class="space-y-2">
                       <%= for option <- @current_step.options do %>
+                        <% display_option =
+                          if @current_step.question_data["question_label"] != "reading",
+                            do: localize_option(option, @locale),
+                            else: option %>
                         <label class="flex items-center gap-3 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
                           <input
                             type="radio"
@@ -1133,8 +1383,70 @@ defmodule MedoruWeb.ClassroomLive.Test do
                             required
                             class="radio radio-primary"
                           />
-                          <span class="text-base-content">{option}</span>
+                          <span class="text-base-content">{display_option}</span>
                         </label>
+                      <% end %>
+                    </div>
+                  <% :reading_text -> %>
+                    <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                      step={@current_step}
+                      meaning_answer={@meaning_answer}
+                      reading_answer={@reading_answer}
+                      feedback={@feedback}
+                      show_hint={@show_hint}
+                      meaning_error={@meaning_error}
+                      reading_error={@reading_error}
+                      correct_meaning={@correct_meaning}
+                      correct_reading={@correct_reading}
+                    />
+                  <% :image_to_meaning -> %>
+                    <div class="space-y-4">
+                      <%= if @current_step.question_data["word_reading"] do %>
+                        <p class="text-center text-secondary text-sm sm:text-base">
+                          {gettext("Reading:")} {@current_step.question_data["word_reading"]}
+                        </p>
+                      <% end %>
+
+                      <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <%= for {option, index} <- Enum.with_index(@current_step.options) do %>
+                          <% image_data =
+                            @current_step.question_data["image_options"] |> Enum.at(index) %>
+                          <% is_selected = @selected_answer == option %>
+                          <button
+                            type="button"
+                            phx-click="select_answer"
+                            phx-value-answer={option}
+                            class={[
+                              "relative rounded-xl border-2 overflow-hidden aspect-square transition-all duration-200",
+                              if is_selected do
+                                "border-primary ring-2 ring-primary"
+                              else
+                                "border-base-200 hover:border-primary/50 hover:shadow-md"
+                              end
+                            ]}
+                          >
+                            <%= if image_data && image_data["image_path"] do %>
+                              <img
+                                src={image_data["image_path"]}
+                                alt={option}
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            <% else %>
+                              <div class="w-full h-full flex items-center justify-center bg-base-200">
+                                <span class="text-secondary text-sm text-center px-2">
+                                  {option}
+                                </span>
+                              </div>
+                            <% end %>
+                          </button>
+                        <% end %>
+                      </div>
+
+                      <%= if is_nil(@selected_answer) do %>
+                        <input type="hidden" name="answer" value="" />
+                      <% else %>
+                        <input type="hidden" name="answer" value={@selected_answer} />
                       <% end %>
                     </div>
                   <% :listening -> %>
@@ -1169,6 +1481,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     <MedoruWeb.LessonTestLive.WritingComponent.writing_question
                       step={@current_step}
                       target="writing-component"
+                      locale={@locale}
                     />
                     <%!-- Hidden input for form submission when skipping --%>
                     <input type="hidden" name="answer" value="skipped" />
@@ -1320,6 +1633,43 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   defp format_percentage(float) when is_float(float), do: trunc(float)
   defp format_percentage(int) when is_integer(int), do: int
+
+  defp vocabulary_question_prompt(step) do
+    label = step.question_data["question_label"]
+
+    cond do
+      step.question_type == :image_to_meaning ->
+        gettext("Choose the picture that matches this word")
+
+      label == "reading" ->
+        gettext("How do you read this word?")
+
+      true ->
+        gettext("What is the meaning of this word?")
+    end
+  end
+
+  defp localize_option(option_text, locale) when locale in ["bg", "ja"] do
+    case Medoru.Content.get_word_by_meaning(option_text) do
+      nil -> option_text
+      word -> Medoru.Content.get_localized_meaning(word, locale)
+    end
+  end
+
+  defp localize_option(option_text, _locale), do: option_text
+
+  defp localize_question_data_meaning(question_data, locale) when locale in ["bg", "ja"] do
+    word_meaning = question_data["word_meaning"]
+
+    case Medoru.Content.get_word_by_meaning(word_meaning) do
+      nil -> word_meaning
+      word -> Medoru.Content.get_localized_meaning(word, locale)
+    end
+  end
+
+  defp localize_question_data_meaning(question_data, _locale) do
+    question_data["word_meaning"]
+  end
 
   # Validate meaning answer (fuzzy match)
   defp validate_meaning(answer, correct) do

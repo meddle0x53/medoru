@@ -11,6 +11,7 @@ import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
+import { getMapDefinition } from '../data/maps/index.js'
 
 import { INFUSION_ICONS, resolveInfusionReaction, getElementForInfusion } from '../data/infusionReactions.js'
 
@@ -2582,7 +2583,7 @@ export default class BattleScene extends Phaser.Scene {
         this.currentAttackingEnemy = enemy
         this.player.lastReactionCorrect = false
 
-        if (action.type === 'buff') state.usedBuff = true
+        if (action.type === 'buff' || action.type === 'debuff') state.usedBuff = true
         state.actionsTaken++
 
         // Per-ability challenge: word/kanji quiz to weaken or cancel the ability.
@@ -2590,6 +2591,7 @@ export default class BattleScene extends Phaser.Scene {
         const challengeConfigs = action.challenges || (action.challenge ? [action.challenge] : [])
         let challengeModifier = null
         let weakestMultiplier = 1
+        let effectChanceMultiplier = 1
         for (const config of challengeConfigs) {
           if (Math.random() >= (config.chance ?? 0)) continue
           const challenge = buildEnemyChallenge(this.player, config)
@@ -2604,6 +2606,12 @@ export default class BattleScene extends Phaser.Scene {
           if (outcome === 'weaken') {
             challengeModifier = 'weaken'
             weakestMultiplier = Math.min(weakestMultiplier, config.weakenMultiplier || 0.5)
+          }
+          if (outcome === 'halveChance') {
+            effectChanceMultiplier *= 0.5
+          }
+          if (outcome === 'boostChance') {
+            effectChanceMultiplier *= 2.1
           }
         }
         if (challengeModifier === 'cancel') {
@@ -2644,6 +2652,9 @@ export default class BattleScene extends Phaser.Scene {
         const context = {}
         if (challengeModifier === 'weaken') {
           context.damageMultiplier = weakestMultiplier
+        }
+        if (effectChanceMultiplier !== 1) {
+          context.effectChanceMultiplier = effectChanceMultiplier
         }
 
         if (!parried) {
@@ -2709,6 +2720,27 @@ export default class BattleScene extends Phaser.Scene {
             }
             break
           }
+          case 'debuff': {
+            const debuffSpriteKey = action.sprite || this.getEnemySpriteKey(enemy, 'attack')
+            this.setEnemySprite(debuffSpriteKey, enemy)
+            if (result.blocked) {
+              this.addCombatLog(`${enemyName} uses ${action.name}... BLOCKED by your guard!`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'BLOCKED!', 0x3498db)
+            } else {
+              const critText = result.isCrit ? ' CRITICAL!' : ''
+              const damageText = result.damage > 0 ? ` You take ${result.damage} damage!` : ''
+              this.addCombatLog(`${enemyName} uses ${action.name}${critText}!${damageText}`)
+              if (result.damage > 0) {
+                const dmgColor = this.getDamageColor(result, action.element, 'enemy')
+                this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
+                this.shakeSprite(this.playerSprite)
+              }
+            }
+            this.updateBars()
+            await this.delay(800)
+            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+            break
+          }
           case 'buff': {
             this.setEnemySprite(this.getEnemySpriteKey(enemy, 'buff'), enemy)
             this.addCombatLog(`${enemyName} uses ${action.name}! Its next attack will be stronger!`)
@@ -2741,11 +2773,7 @@ export default class BattleScene extends Phaser.Scene {
     return new Promise((resolve) => {
       const system = new EnemyAbilityChallengeSystem(this)
       system.start(challenge, ({ success }) => {
-        if (!success) {
-          resolve('full')
-          return
-        }
-        const outcome = challenge.onSuccess || 'weaken'
+        const outcome = success ? (challenge.onSuccess || 'weaken') : (challenge.onFail || 'full')
         resolve(outcome)
       })
     })
@@ -3082,8 +3110,29 @@ export default class BattleScene extends Phaser.Scene {
       })
 
       if (this.tile?.type === TILE_TYPES.BOSS) {
-        this.player.endRun(true)
-        this.scene.start('HeroSelectScene', { player: this.player })
+        const mapDef = getMapDefinition(this.mapIndex)
+        // Defaults to final when the flag is missing, so early-release maps
+        // always show the run-victory screen.
+        if (mapDef.isFinal !== false) {
+          const beforeTokens = this.player.loadout.gameTokens || 0
+          const beforeRare = this.player.loadout.rareGameTokens || 0
+          const beforeUnlocked = new Set(this.player.loadout.unlockedAbilityIds || [])
+
+          this.player.endRun(true)
+
+          const rewards = {
+            gameTokens: (this.player.loadout.gameTokens || 0) - beforeTokens,
+            rareTokens: (this.player.loadout.rareGameTokens || 0) - beforeRare,
+          }
+          const unlockedId = (this.player.loadout.unlockedAbilityIds || []).find(id => !beforeUnlocked.has(id))
+          rewards.unlockedAbility = unlockedId ? ALL_ACTIONS.find(a => a.id === unlockedId) : null
+
+          this.scene.start('RunVictoryScene', { player: this.player, rewards })
+        } else {
+          this.player.completeTile(this.tile.id)
+          this.player.advanceMap()
+          this.scene.start('MapScene', { player: this.player })
+        }
         return
       }
 

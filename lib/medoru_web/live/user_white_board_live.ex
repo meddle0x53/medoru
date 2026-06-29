@@ -825,7 +825,9 @@ defmodule MedoruWeb.UserWhiteBoardLive do
         # Add the post locally and subscribe to its link-preview topic before
         # broadcasting. This avoids a race where the async fetch completes and
         # broadcasts before the :post_created PubSub message is handled.
-        Logger.debug("UserWhiteBoardLive: create_post subscribing for content: #{inspect(post.content)}")
+        Logger.debug(
+          "UserWhiteBoardLive: create_post subscribing for content: #{inspect(post.content)}"
+        )
 
         socket =
           socket
@@ -1248,7 +1250,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
 
   @impl true
   def handle_info({:link_preview_ready, preview}, socket) do
-    Logger.debug("UserWhiteBoardLive: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})")
+    Logger.debug(
+      "UserWhiteBoardLive: received :link_preview_ready for preview #{preview.id} (status: #{preview.status})"
+    )
+
     {:noreply, LinkPreviewSubscribers.handle_preview_ready(socket)}
   end
 

@@ -1783,7 +1783,12 @@ defmodule MedoruWeb.MessagesLive.Show do
             </p>
           <% true -> %>
             <p class="text-[15px] leading-snug whitespace-pre-wrap break-words text-base-content">
-              {render_message_content(@message.content, @convert_emoticons, @current_user, @link_preview_tick)}
+              {render_message_content(
+                @message.content,
+                @convert_emoticons,
+                @current_user,
+                @link_preview_tick
+              )}
             </p>
         <% end %>
       </div>

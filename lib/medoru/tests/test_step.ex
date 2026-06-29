@@ -33,6 +33,7 @@ defmodule Medoru.Tests.TestStep do
     :order,
     :writing,
     :reading_text,
+    :image_to_meaning,
     :listening,
     :sentence_validation,
     :conjugation,

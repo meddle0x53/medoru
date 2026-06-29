@@ -126,8 +126,6 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
       html = render(view)
       assert html =~ "The Elixir programming language"
     end
-
-
   end
 
   describe "create post" do

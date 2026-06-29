@@ -6,6 +6,7 @@ import { getInfusionBaseEffect, getElementForInfusion } from '../data/infusionRe
 
 const AI_PHASE_PRIORITY = {
   buff: 0,
+  debuff: 0,
   attack: 1,
   recover: 2,
 }
@@ -89,7 +90,7 @@ export default class Enemy extends Character {
     })
 
     if (usedBuffThisTurn) {
-      return sorted.find(a => a.type !== 'buff') || sorted[0]
+      return sorted.find(a => a.type !== 'buff' && a.type !== 'debuff') || sorted[0]
     }
 
     return sorted[0]
@@ -132,14 +133,14 @@ export default class Enemy extends Character {
       })
 
       const action = buffUsed
-        ? sorted.find(a => a.type !== 'buff') || sorted[0]
+        ? sorted.find(a => a.type !== 'buff' && a.type !== 'debuff') || sorted[0]
         : sorted[0]
 
       if (!action) break
       plan.push(action)
       simulatedStamina -= action.staminaCost
       uses.set(action.id, (uses.get(action.id) || 0) + 1)
-      if (action.type === 'buff') buffUsed = true
+      if (action.type === 'buff' || action.type === 'debuff') buffUsed = true
     }
 
     return plan
@@ -196,7 +197,7 @@ export default class Enemy extends Character {
 
         if (ability.effects && ability.effects.length > 0) {
           const consecutiveHits = effectiveElement ? target.incrementElementStreak(effectiveElement) : 1
-          const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits)
+          const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits, context.effectChanceMultiplier || 1)
           if (applied.length > 0 && effectiveElement) target.resetElementStreak(effectiveElement)
         }
 
@@ -221,7 +222,45 @@ export default class Enemy extends Character {
         }
         return { type: 'attack', damage: actual, isCrit, missed: false }
       }
-      case 'buff':
+      case 'debuff':
+      case 'buff': {
+        if (ability.type === 'debuff') {
+          const declaredElement = ability.element
+          const effectiveElement = getElementForInfusion(declaredElement) || declaredElement
+
+          const base = ability.basePower + this.getStatValue(ability.scalingStat) * ability.scalingMultiplier
+          this.consumeBuff('next_attack_bonus')
+          const total = base + this.nextAttackBonus
+          this.nextAttackBonus = 0
+
+          const isCrit = Math.random() < this.getCritChance()
+          let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+          finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
+
+          if (effectiveElement) {
+            const interaction = resolveElementVsDefence(effectiveElement, target.getActiveEffectIds())
+            if (interaction.removeGuards.length > 0) target.removeEffects(interaction.removeGuards)
+            if (interaction.cureEffects.length > 0) target.removeEffects(interaction.cureEffects)
+            if (interaction.blocked) {
+              return { type: 'debuff', damage: 0, isCrit, missed: false, blocked: true }
+            }
+          }
+
+          finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
+          if (context.damageMultiplier != null) {
+            finalDamage = Math.floor(finalDamage * context.damageMultiplier)
+          }
+          const actual = target.takeDamage(finalDamage)
+
+          if (ability.effects && ability.effects.length > 0) {
+            const consecutiveHits = effectiveElement ? target.incrementElementStreak(effectiveElement) : 1
+            const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits, context.effectChanceMultiplier || 1)
+            if (applied.length > 0 && effectiveElement) target.resetElementStreak(effectiveElement)
+          }
+
+          return { type: 'debuff', damage: actual, isCrit, missed: false }
+        }
+
         if (ability.buffType === 'next_attack_bonus') {
           this.nextAttackBonus += ability.buffValue || 0
         }
@@ -230,9 +269,10 @@ export default class Enemy extends Character {
         }
         this.addBuff({ type: ability.buffType, value: ability.buffValue || 0 })
         if (ability.effects && ability.effects.length > 0) {
-          applyAbilityEffects(ability, this, target, {}, log)
+          applyAbilityEffects(ability, this, target, {}, log, 1, context.effectChanceMultiplier || 1)
         }
         return { type: 'buff', buffType: ability.buffType, value: ability.buffValue || 0 }
+      }
       case 'recover':
         const recovered = ability.staminaRecover || 0
         this.recoverStamina(recovered)

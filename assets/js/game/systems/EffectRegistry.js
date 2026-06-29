@@ -125,6 +125,26 @@ export const STATUS_EFFECTS = {
     description: 'Stamina is halved next turn.',
   },
 
+  slow: {
+    id: 'slow',
+    name: 'Slow',
+    category: EFFECT_CATEGORIES.DEBUFF,
+    stackRule: 'refresh',
+    duration: { min: 1, max: 1 },
+    staminaMultiplier: 0.75,
+    description: 'Next turn stamina is reduced by 25%.',
+  },
+
+  void_touched: {
+    id: 'void_touched',
+    name: 'Void Touched',
+    category: EFFECT_CATEGORIES.DEBUFF,
+    stackRule: 'refresh',
+    duration: { min: 2, max: 3 },
+    incomingDamageMultiplier: 1.25,
+    description: 'Take 25% more damage from all sources.',
+  },
+
   // Combo infusion values (used as infusion IDs, not necessarily applied as status effects)
   blaze: {
     id: 'blaze',

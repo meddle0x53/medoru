@@ -1,6 +1,7 @@
 {
   "id": "japanese_fields",
   "level": 1,
+  "isFinal": true,
   "names": {
     "en": "Japanese Fields",
     "ja": "日本の田園風景"
@@ -32,7 +33,7 @@
         "rest_camp": 0.1425,
         "short_cascade": 0.05
       },
-      "enemyPools": { "battle": ["kasa_obake"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"] }
     },
     {
       "index": 2,
@@ -43,7 +44,7 @@
         "rest_camp": 0.135,
         "short_cascade": 0.10
       },
-      "enemyPools": { "battle": ["kasa_obake"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"] }
     },
     {
       "index": 3,
@@ -54,7 +55,7 @@
         "rest_camp": 0.1275,
         "short_cascade": 0.15
       },
-      "enemyPools": { "battle": ["kasa_obake"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"] }
     },
     {
       "index": 4,
@@ -67,7 +68,7 @@
         "rest_camp": 0.0889,
         "short_cascade": 0.20
       },
-      "enemyPools": { "battle": ["kasa_obake"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"] }
     },
     {
       "index": 5,
@@ -80,7 +81,7 @@
         "rest_camp": 0.0833,
         "short_cascade": 0.25
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["kasa_obake_elite"] }
     },
     {
       "index": 6,
@@ -93,7 +94,7 @@
         "rest_camp": 0.0833,
         "short_cascade": 0.25
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["kasa_obake_elite"] }
     },
     {
       "index": 7,
@@ -107,7 +108,7 @@
         "rest_camp": 0.0833,
         "short_cascade": 0.25
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["kasa_obake_elite"] }
     },
     {
       "index": 8,
@@ -131,7 +132,7 @@
     }
   ],
   "defaultEnemyPools": {
-    "battle": ["kasa_obake"],
+    "battle": ["kasa_obake", "hitotsume_kozo"],
     "mini_boss": ["kasa_obake_elite"],
     "boss": ["kasa_obake_tyrant"]
   },

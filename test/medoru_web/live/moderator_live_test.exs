@@ -53,7 +53,8 @@ defmodule MedoruWeb.ModeratorLiveTest do
       {:ok, user} = Medoru.Accounts.update_user_moderator(user, true)
       kanji = kanji_fixture(%{character: "日"})
 
-      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/moderator/kanji/#{kanji.id}/edit")
+      {:ok, view, _html} =
+        conn |> log_in_user(user) |> live(~p"/moderator/kanji/#{kanji.id}/edit")
 
       refute render(view) =~ "Add New Reading"
 

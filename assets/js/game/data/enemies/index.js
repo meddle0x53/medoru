@@ -8,11 +8,13 @@
 import kasaObake from './kasa_obake.json'
 import kasaObakeElite from './kasa_obake_elite.json'
 import kasaObakeTyrant from './kasa_obake_tyrant.json'
+import hitotsumeKozo from './hitotsume_kozo.json'
 
 export const ENEMY_DEFINITIONS = [
   kasaObake,
   kasaObakeElite,
   kasaObakeTyrant,
+  hitotsumeKozo,
 ]
 
 export function getEnemyDefinition(id) {
