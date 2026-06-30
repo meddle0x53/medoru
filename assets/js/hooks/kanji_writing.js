@@ -52,6 +52,36 @@ const KanjiWriting = {
       snapCorrect: this.el.dataset.snapCorrect !== 'false'
     }
 
+    // Score display for classroom kanji drawing tests
+    const isKanjiDrawing = this.el.dataset.kanjiDrawing === 'true'
+    const strokePoints = parseInt(this.el.dataset.strokePoints || '0', 10)
+    const challengeBase = parseInt(this.el.dataset.challengeBase || '0', 10)
+    const totalPoints = parseInt(this.el.dataset.totalPoints || '0', 10)
+    const stepId = this.el.dataset.stepId
+
+    const updateScoreDisplay = () => {
+      if (!isKanjiDrawing || !stepId) return
+
+      const currentPoints = Math.max(0, strokePoints - this._state.wrongStrokes)
+      // Challenge score only counts finished kanji; it does not go down when the
+      // user makes mistakes on the current kanji.
+      const challengePoints = challengeBase
+
+      const wrongEl = document.getElementById(`kanji-wrong-stroke-count-${stepId}`)
+      if (wrongEl) wrongEl.textContent = this._state.wrongStrokes
+
+      const currentEl = document.getElementById(`kanji-current-points-${stepId}`)
+      if (currentEl) currentEl.textContent = `${currentPoints} / ${strokePoints}`
+
+      const challengeEl = document.getElementById(`kanji-challenge-points-${stepId}`)
+      if (challengeEl) challengeEl.textContent = `${challengePoints} / ${totalPoints}`
+    }
+
+    this._updateScoreDisplay = updateScoreDisplay
+    this._stepId = stepId
+
+    updateScoreDisplay()
+
     // Parse SVG path - handles KanjiVG format with bezier curves
     const parsePath = (pathStr) => {
       const points = []
@@ -265,6 +295,8 @@ const KanjiWriting = {
       ctx.clearRect(0, 0, 300, 300)
     }
 
+    this._clearCanvas = clearCanvas
+
     // Draw grid lines (center cross and diagonals)
     const drawGrid = () => {
       ctx.strokeStyle = '#e5e7eb'
@@ -438,12 +470,12 @@ const KanjiWriting = {
     const redrawStrokes = () => {
       ctx.clearRect(0, 0, 300, 300)
       clearCanvas()
-      
+
       // Draw grid if showing (hint button toggles this)
       if (this._state.showingGrid) {
         drawGrid()
       }
-      
+
       // Draw yellow hint if showing
       drawHintStroke()
 
@@ -546,7 +578,13 @@ const KanjiWriting = {
           if (counterEl) {
             counterEl.textContent = this._state.wrongStrokes
           }
-          this.pushEvent('wrong_stroke', {count: this._state.wrongStrokes})
+          updateScoreDisplay()
+          // Only push the server event for non-drawing contexts. For classroom
+          // kanji drawing tests the score panel is updated client-side; pushing
+          // the event would trigger a server re-render that overwrites it.
+          if (!isKanjiDrawing) {
+            this.pushEvent('wrong_stroke', {count: this._state.wrongStrokes})
+          }
           this._state.showingHint = true
           
           // Show wrong stroke in red temporarily
@@ -578,7 +616,9 @@ const KanjiWriting = {
       this._state.drawnStrokes = []
       this._state.showingHint = false
       this._state.showingGrid = false
+      this._state.wrongStrokes = 0
       redrawStrokes()
+      updateScoreDisplay()
     }
     if (this._clearBtn) {
       this._clearBtn.addEventListener('click', this._handlers.clear)

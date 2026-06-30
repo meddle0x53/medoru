@@ -146,6 +146,17 @@ export default class Enemy extends Character {
     return plan
   }
 
+  resolveDamageMultiplier(ability, context) {
+    let multiplier = ability.damageMultiplier || 1
+    if (context.valueOverrides && context.valueOverrides.damageMultiplier != null) {
+      multiplier = context.valueOverrides.damageMultiplier
+    }
+    if (context.damageMultiplier != null) {
+      multiplier *= context.damageMultiplier
+    }
+    return multiplier
+  }
+
   performAction(ability, target, context = {}, log = () => {}) {
     this.useStamina(ability.staminaCost)
     this.incrementAbilityUses(ability)
@@ -161,7 +172,7 @@ export default class Enemy extends Character {
         const total = base + this.nextAttackBonus
         this.nextAttackBonus = 0
 
-        const baseMissChance = (target.luck || 0) / 120
+        const baseMissChance = target.getMissChanceFor()
         const readinessMultiplier = 1 + (target.readiness || 0)
         const reactionMultiplier = target.reactionMultiplier || 1
         const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
@@ -183,8 +194,9 @@ export default class Enemy extends Character {
         }
 
         finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
-        if (context.damageMultiplier != null) {
-          finalDamage = Math.floor(finalDamage * context.damageMultiplier)
+        const damageMultiplier = this.resolveDamageMultiplier(ability, context)
+        if (damageMultiplier !== 1) {
+          finalDamage = Math.floor(finalDamage * damageMultiplier)
         }
         const actual = target.takeDamage(finalDamage)
 
@@ -197,7 +209,7 @@ export default class Enemy extends Character {
 
         if (ability.effects && ability.effects.length > 0) {
           const consecutiveHits = effectiveElement ? target.incrementElementStreak(effectiveElement) : 1
-          const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits, context.effectChanceMultiplier || 1)
+          const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual, chanceOverrides: context.chanceOverrides }, log, consecutiveHits, context.effectChanceMultiplier || 1)
           if (applied.length > 0 && effectiveElement) target.resetElementStreak(effectiveElement)
         }
 
@@ -233,6 +245,14 @@ export default class Enemy extends Character {
           const total = base + this.nextAttackBonus
           this.nextAttackBonus = 0
 
+          const baseMissChance = target.getMissChanceFor()
+          const readinessMultiplier = 1 + (target.readiness || 0)
+          const reactionMultiplier = target.reactionMultiplier || 1
+          const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
+          if (Math.random() < missChance) {
+            return { type: 'debuff', damage: 0, isCrit: false, missed: true }
+          }
+
           const isCrit = Math.random() < this.getCritChance()
           let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
           finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
@@ -247,14 +267,15 @@ export default class Enemy extends Character {
           }
 
           finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
-          if (context.damageMultiplier != null) {
-            finalDamage = Math.floor(finalDamage * context.damageMultiplier)
+          const damageMultiplier = this.resolveDamageMultiplier(ability, context)
+          if (damageMultiplier !== 1) {
+            finalDamage = Math.floor(finalDamage * damageMultiplier)
           }
           const actual = target.takeDamage(finalDamage)
 
           if (ability.effects && ability.effects.length > 0) {
             const consecutiveHits = effectiveElement ? target.incrementElementStreak(effectiveElement) : 1
-            const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual }, log, consecutiveHits, context.effectChanceMultiplier || 1)
+            const applied = applyAbilityEffects(ability, this, target, { initialDamage: actual, chanceOverrides: context.chanceOverrides }, log, consecutiveHits, context.effectChanceMultiplier || 1)
             if (applied.length > 0 && effectiveElement) target.resetElementStreak(effectiveElement)
           }
 
@@ -267,9 +288,19 @@ export default class Enemy extends Character {
         if (ability.defenseBonus) {
           this.addDefense(ability.defenseBonus)
         }
+
+        if (ability.buffType === 'evasion') {
+          const evasionValue = (context.valueOverrides && context.valueOverrides.evasion != null)
+            ? context.valueOverrides.evasion
+            : (ability.buffValue || 0)
+          this.addBuff({ type: 'evasion', value: evasionValue })
+          log(`${this.name || 'The enemy'}'s evasion rises!`)
+          return { type: 'buff', buffType: 'evasion', value: evasionValue }
+        }
+
         this.addBuff({ type: ability.buffType, value: ability.buffValue || 0 })
         if (ability.effects && ability.effects.length > 0) {
-          applyAbilityEffects(ability, this, target, {}, log, 1, context.effectChanceMultiplier || 1)
+          applyAbilityEffects(ability, this, target, { chanceOverrides: context.chanceOverrides }, log, 1, context.effectChanceMultiplier || 1)
         }
         return { type: 'buff', buffType: ability.buffType, value: ability.buffValue || 0 }
       }

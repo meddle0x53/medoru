@@ -1,9 +1,10 @@
 /**
- * Kill Medoru! - Game Entry Point
+ * The Hollow Ouroboros - Game Entry Point
  * Rogue-like RPG battle system using Phaser 3.
  */
 import { GAME_CONFIG } from './game/config.js'
 import BootScene from './game/scenes/BootScene.js'
+import TitleScene from './game/scenes/TitleScene.js'
 import HeroSelectScene from './game/scenes/HeroSelectScene.js'
 import HomeShopScene from './game/scenes/HomeShopScene.js'
 import MapScene from './game/scenes/MapScene.js'
@@ -21,17 +22,17 @@ import ChestScene from './game/scenes/ChestScene.js'
 function startGame() {
   const container = document.getElementById('game-container')
   if (!container) {
-    console.error('[Kill Medoru!] #game-container not found')
+    console.error('[The Hollow Ouroboros] #game-container not found')
     return
   }
 
   const Phaser = window.Phaser
   if (!Phaser) {
-    console.error('[Kill Medoru!] Phaser not loaded. Make sure phaser.min.js is loaded before game.js')
+    console.error('[The Hollow Ouroboros] Phaser not loaded. Make sure phaser.min.js is loaded before game.js')
     return
   }
 
-  console.log('[Kill Medoru!] Starting game...', { gameData: window.gameData })
+  console.log('[The Hollow Ouroboros] Starting game...', { gameData: window.gameData })
 
   const config = {
     type: Phaser.AUTO,
@@ -43,7 +44,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, HeroSelectScene, HomeShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene],
+    scene: [BootScene, TitleScene, HeroSelectScene, HomeShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene],
     physics: {
       default: 'arcade',
       arcade: {
@@ -55,9 +56,9 @@ function startGame() {
 
   try {
     new Phaser.Game(config)
-    console.log('[Kill Medoru!] Phaser initialized')
+    console.log('[The Hollow Ouroboros] Phaser initialized')
   } catch (err) {
-    console.error('[Kill Medoru!] Phaser failed to start:', err)
+    console.error('[The Hollow Ouroboros] Phaser failed to start:', err)
   }
 }
 

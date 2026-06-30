@@ -1,6 +1,6 @@
 defmodule MedoruWeb.Admin.GameLive do
   @moduledoc """
-  Admin-only game page for Kill Medoru! MVP.
+  Admin-only game page for The Hollow Ouroboros MVP.
   """
   use MedoruWeb, :live_view
 
@@ -115,7 +115,7 @@ defmodule MedoruWeb.Admin.GameLive do
 
     socket =
       socket
-      |> assign(:page_title, "Kill Medoru! - Battle MVP")
+      |> assign(:page_title, "The Hollow Ouroboros - Battle MVP")
       |> assign(:game_data, Jason.encode!(game_data))
 
     {:ok, socket}

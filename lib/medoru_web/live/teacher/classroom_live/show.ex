@@ -1132,6 +1132,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                   "Generate Vocabulary Test"
                 )}
               </.link>
+              <.link
+                navigate={~p"/teacher/classrooms/#{@classroom.id}/generate-kanji-drawing-test"}
+                class="btn btn-primary btn-sm"
+              >
+                <.icon name="hero-paint-brush" class="w-4 h-4 mr-1" /> {gettext(
+                  "Generate Kanji Drawing Test"
+                )}
+              </.link>
               <.link navigate={~p"/teacher/tests"} class="btn btn-outline btn-sm">
                 <.icon name="hero-plus" class="w-4 h-4 mr-1" /> {gettext("Publish a Test")}
               </.link>
@@ -1144,6 +1152,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               >
                 <.icon name="hero-sparkles" class="w-4 h-4 mr-1" /> {gettext(
                   "Generate Vocabulary Test"
+                )}
+              </.link>
+              <.link
+                navigate={~p"/teacher/classrooms/#{@classroom.id}/generate-kanji-drawing-test"}
+                class="btn btn-primary btn-sm"
+              >
+                <.icon name="hero-paint-brush" class="w-4 h-4 mr-1" /> {gettext(
+                  "Generate Kanji Drawing Test"
                 )}
               </.link>
               <.link navigate={~p"/teacher/tests"} class="btn btn-outline btn-sm">

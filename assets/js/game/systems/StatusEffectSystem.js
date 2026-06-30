@@ -15,14 +15,20 @@ export function applyAbilityEffects(ability, performer, target, ctx = {}, log = 
   if (!effects || effects.length === 0) return []
 
   const applied = []
+  const chanceOverrides = ctx?.chanceOverrides || {}
 
   for (const effectConfig of effects) {
     const effect = getEffect(effectConfig.effectId)
     if (!effect) continue
 
-    const chanceConfig = effectConfig.chance
-    const rawChance = chanceConfig ? rollChance(chanceConfig, consecutiveHits) : 1
-    const chance = Math.min(1, rawChance * (chanceMultiplier || 1))
+    let chance
+    if (chanceOverrides[effectConfig.effectId] != null) {
+      chance = chanceOverrides[effectConfig.effectId]
+    } else {
+      const chanceConfig = effectConfig.chance
+      const rawChance = chanceConfig ? rollChance(chanceConfig, consecutiveHits) : 1
+      chance = Math.min(1, rawChance * (chanceMultiplier || 1))
+    }
     if (Math.random() >= chance) continue
 
     const recipient = effectConfig.target === 'self' ? performer : target

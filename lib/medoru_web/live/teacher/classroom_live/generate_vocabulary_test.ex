@@ -47,6 +47,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
          |> assign(:title, default_title(classroom))
          |> assign(:due_date, nil)
          |> assign(:max_attempts, nil)
+         |> assign(:distractor_pool, :selected)
          |> assign(:error_message, nil)
          |> assign(:generating, false)}
       end
@@ -247,6 +248,17 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
   end
 
   @impl true
+  def handle_event("update_distractor_pool", %{"distractor_pool" => value}, socket) do
+    pool =
+      case value do
+        "classroom" -> :classroom
+        _ -> :selected
+      end
+
+    {:noreply, assign(socket, :distractor_pool, pool)}
+  end
+
+  @impl true
   def handle_event("generate_test", params, socket) do
     classroom = socket.assigns.classroom
     word_entries = socket.assigns.word_entries
@@ -288,6 +300,14 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
 
     title = params["title"] || socket.assigns.title
 
+    distractor_pool =
+      case params["distractor_pool"] do
+        "classroom" -> :classroom
+        _ -> :selected
+      end
+
+    all_classroom_words = Enum.map(word_entries, & &1.word)
+
     socket = assign(socket, :generating, true)
 
     case ClassroomVocabularyTestGenerator.generate_test(
@@ -298,6 +318,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
            max_times_per_word: max_times_per_word,
            total_questions: total_questions,
            title: title,
+           distractor_pool: distractor_pool,
+           all_classroom_words: all_classroom_words,
            due_date: socket.assigns.due_date,
            max_attempts: socket.assigns.max_attempts
          ) do
@@ -687,6 +709,30 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
                   />
                   <p class="text-xs text-secondary mt-1">
                     {gettext("Maximum number of times a student can take this test (1–10).")}
+                  </p>
+                </div>
+
+                <%!-- Distractor pool --%>
+                <div>
+                  <label class="label">
+                    <span class="label-text font-medium">
+                      {gettext("Distractor Pool")}
+                    </span>
+                  </label>
+                  <select
+                    name="distractor_pool"
+                    phx-change="update_distractor_pool"
+                    class="select select-bordered w-full"
+                  >
+                    <option value="selected" selected={@distractor_pool == :selected}>
+                      {gettext("Selected words only")}
+                    </option>
+                    <option value="classroom" selected={@distractor_pool == :classroom}>
+                      {gettext("All words in this classroom")}
+                    </option>
+                  </select>
+                  <p class="text-xs text-secondary mt-1">
+                    {gettext("Where multichoice distractors (wrong answers) are chosen from.")}
                   </p>
                 </div>
               </div>

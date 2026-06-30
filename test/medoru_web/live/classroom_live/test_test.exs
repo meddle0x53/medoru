@@ -21,6 +21,7 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
   alias Medoru.Content
   alias Medoru.Tests
   alias Medoru.Tests.ClassroomVocabularyTestGenerator
+  alias Medoru.Tests.ClassroomKanjiDrawingTestGenerator
 
   describe "Test taking" do
     setup do
@@ -690,11 +691,105 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
         teacher: teacher,
         student: student,
         classroom: classroom,
+        lesson: lesson,
         word_with_reading: word_with_reading,
         image_word: image_word,
         image_words: image_words,
         word_with_kanji: word_with_kanji
       }
+    end
+
+    test "student earns stroke_count minus wrong_strokes on a kanji drawing test", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson,
+      teacher: teacher
+    } do
+      stroke_data = %{"strokes" => [%{"path" => "M 10 10 L 20 20"}]}
+
+      word =
+        word_with_kanji_fixture(
+          %{stroke_count: 5, stroke_data: stroke_data},
+          %{text: "明", meaning: "bright", reading: "あか"}
+        )
+
+      [kanji1, kanji2] = Enum.map(word.word_kanjis, & &1.kanji)
+
+      {:ok, kanji2} =
+        Content.update_kanji(kanji2, %{
+          stroke_count: 3,
+          stroke_data: stroke_data
+        })
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 200})
+
+      kanji = [kanji1, kanji2]
+
+      {:ok, test} =
+        ClassroomKanjiDrawingTestGenerator.generate_test(
+          classroom,
+          kanji,
+          teacher.id,
+          title: "Kanji Drawing"
+        )
+
+      conn = log_in_user(conn, student)
+
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test.id}")
+
+      assert html =~ "Wrong strokes"
+      assert html =~ "This kanji"
+      assert html =~ "Challenge"
+
+      [step1, step2] =
+        test
+        |> Medoru.Repo.preload(:test_steps)
+        |> Map.get(:test_steps)
+        |> Enum.sort_by(& &1.order_index)
+
+      view
+      |> element("#writing-component-#{step1.id}")
+      |> render_hook("wrong_stroke", %{"count" => 2})
+
+      html = render(view)
+      parsed = Floki.parse_document!(html)
+
+      step1_current = max(0, step1.points - 2)
+
+      assert Floki.find(parsed, "#kanji-wrong-stroke-count-#{step1.id}") |> Floki.text() =~ "2"
+      assert Floki.find(parsed, "#kanji-current-points-#{step1.id}") |> Floki.text() =~
+               "#{step1_current} / #{step1.points}"
+      # Challenge only counts finished kanji, so it stays at 0 while drawing.
+      assert Floki.find(parsed, "#kanji-challenge-points-#{step1.id}") |> Floki.text() =~
+               "0 / #{test.total_points}"
+
+      view
+      |> element("#writing-component-#{step1.id}")
+      |> render_hook("kanji_complete", %{"wrong_strokes" => 2})
+
+      html = render(view)
+      parsed = Floki.parse_document!(html)
+
+      # Wrong strokes reset for the next kanji; challenge shows earned points only.
+      assert Floki.find(parsed, "#kanji-wrong-stroke-count-#{step2.id}") |> Floki.text() =~ "0"
+      assert Floki.find(parsed, "#kanji-current-points-#{step2.id}") |> Floki.text() =~
+               "#{step2.points} / #{step2.points}"
+
+      assert Floki.find(parsed, "#kanji-challenge-points-#{step2.id}") |> Floki.text() =~
+               "#{step1_current} / #{test.total_points}"
+
+      view
+      |> element("#writing-component-#{step2.id}")
+      |> render_hook("kanji_complete", %{"wrong_strokes" => 1})
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test.id}/results")
+
+      attempt = Classrooms.get_test_attempt(classroom.id, student.id, test.id)
+      expected_score = step1_current + max(0, step2.points - 1)
+      assert attempt.score == expected_score
+      assert attempt.max_score == test.total_points
     end
 
     test "student sees localized prompt for generated kanji_writing question", %{

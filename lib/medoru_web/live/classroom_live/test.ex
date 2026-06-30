@@ -121,6 +121,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:answer, initial_answer_for_step(first_step))
            |> assign(:show_hint, false)
            |> assign(:writing_start_time, writing_start_time(first_step))
+           |> assign(:current_wrong_strokes, 0)
+           |> assign(:challenge_score, 0)
            |> assign(:meaning_answer, "")
            |> assign(:reading_answer, "")
            |> assign(:selected_answer, nil)
@@ -128,7 +130,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:correct_meaning, nil)
            |> assign(:correct_reading, nil)
            |> assign(:meaning_error, false)
-           |> assign(:reading_error, false)}
+           |> assign(:reading_error, false)
+           }
 
         {:error, _} ->
           {:ok,
@@ -142,6 +145,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       # Calculate current step index from session
       current_step_index = session.current_step_index || 0
       current_step = Enum.at(steps, current_step_index)
+      {challenge_score, _max} = Tests.calculate_session_score(session.id)
 
       {:ok,
        socket
@@ -158,6 +162,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:answer, initial_answer_for_step(current_step))
        |> assign(:show_hint, false)
        |> assign(:writing_start_time, writing_start_time(current_step))
+       |> assign(:current_wrong_strokes, 0)
+       |> assign(:challenge_score, challenge_score)
        |> assign(:meaning_answer, "")
        |> assign(:reading_answer, "")
        |> assign(:selected_answer, nil)
@@ -165,7 +171,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:correct_meaning, nil)
        |> assign(:correct_reading, nil)
        |> assign(:meaning_error, false)
-       |> assign(:reading_error, false)}
+       |> assign(:reading_error, false)
+       }
     end
   end
 
@@ -220,7 +227,10 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:correct_reading, nil)
              |> assign(:meaning_error, false)
              |> assign(:reading_error, false)
-             |> assign(:writing_start_time, writing_start_time(first_step))}
+             |> assign(:writing_start_time, writing_start_time(first_step))
+             |> assign(:current_wrong_strokes, 0)
+             |> assign(:challenge_score, 0)
+             }
 
           {:error, _} ->
             {:ok,
@@ -333,6 +343,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)
            |> assign(:writing_start_time, writing_start_time(next_step))
+           |> assign(:current_wrong_strokes, 0)
            |> assign(:meaning_answer, "")
            |> assign(:reading_answer, "")
            |> assign(:selected_answer, nil)
@@ -340,7 +351,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:correct_meaning, nil)
            |> assign(:correct_reading, nil)
            |> assign(:meaning_error, false)
-           |> assign(:reading_error, false)}
+           |> assign(:reading_error, false)
+           }
         end
 
       {:error, changeset} ->
@@ -432,7 +444,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:current_step, next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)
-           |> assign(:writing_start_time, writing_start_time(next_step))}
+           |> assign(:writing_start_time, writing_start_time(next_step))
+           |> assign(:current_wrong_strokes, 0)}
         end
 
       {:error, changeset} ->
@@ -527,29 +540,38 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   @impl true
-  def handle_event("kanji_complete", _params, socket) do
+  def handle_event("kanji_complete", params, socket) do
     # All strokes drawn correctly - submit as correct answer
-    submit_writing_answer(socket, true, 1.0)
+    wrong_strokes = parse_wrong_strokes(params)
+    submit_writing_answer(socket, true, 1.0, wrong_strokes)
   end
 
   @impl true
-  def handle_event("submit_writing", %{"completed" => completed}, socket)
+  def handle_event("submit_writing", %{"completed" => completed} = params, socket)
       when completed in ["true", true] do
     # Submit button clicked when kanji is complete - treat same as kanji_complete
-    handle_event("kanji_complete", %{}, socket)
+    wrong_strokes = parse_wrong_strokes(params)
+    submit_writing_answer(socket, true, 1.0, wrong_strokes)
   end
 
   @impl true
   def handle_event("submit_writing", %{"completed" => completed}, socket)
       when completed in ["false", false] do
     # User gave up or skipped - mark as incorrect
-    submit_writing_answer(socket, false, 0.0)
+    submit_writing_answer(socket, false, 0.0, 0)
   end
 
   @impl true
-  def handle_event("wrong_stroke", _params, socket) do
-    # Wrong stroke drawn - hook shows hint locally, no server action needed
-    {:noreply, socket}
+  def handle_event("wrong_stroke", params, socket) do
+    # Wrong stroke drawn - the KanjiWriting hook updates the counter client-side
+    # instantly. For kanji drawing tests we also keep the count server-side so
+    # step transitions don't reset the displayed score.
+    if socket.assigns.test.metadata["kanji_drawing"] == true do
+      count = parse_wrong_strokes(params)
+      {:noreply, assign(socket, :current_wrong_strokes, count)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -1042,6 +1064,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:answer, initial_answer_for_step(next_step))
        |> assign(:show_hint, false)
        |> assign(:writing_start_time, writing_start_time(next_step))
+       |> assign(:current_wrong_strokes, 0)
        |> assign(:meaning_answer, "")
        |> assign(:reading_answer, "")
        |> assign(:selected_answer, nil)
@@ -1063,10 +1086,25 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   defp normalize_answer(answer), do: to_string(answer)
 
-  defp submit_writing_answer(socket, correct, accuracy) do
+  defp parse_wrong_strokes(params) when is_map(params) do
+    case params do
+      %{"wrong_strokes" => n} when is_integer(n) -> n
+      %{"wrong_strokes" => n} when is_binary(n) -> String.to_integer(n)
+      %{"count" => n} when is_integer(n) -> n
+      %{"count" => n} when is_binary(n) -> String.to_integer(n)
+      _ -> 0
+    end
+  rescue
+    _ -> 0
+  end
+
+  defp parse_wrong_strokes(_), do: 0
+
+  defp submit_writing_answer(socket, correct, accuracy, wrong_strokes \\ 0) do
     step = socket.assigns.current_step
     session = socket.assigns.session
     attempt = socket.assigns.attempt
+    kanji_drawing? = socket.assigns.test.metadata["kanji_drawing"] == true
 
     # Check if answer already exists for this step (prevent double submission)
     existing_answers = Tests.list_test_step_answers(session.id, step.id)
@@ -1079,6 +1117,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
         complete_test(socket, session.id, attempt.id)
       else
         next_step = Enum.at(socket.assigns.steps, next_index)
+        Tests.update_session_progress(session.id, next_index)
 
         {:noreply,
          socket
@@ -1087,6 +1126,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
          |> assign(:answer, initial_answer_for_step(next_step))
          |> assign(:show_hint, false)
          |> assign(:writing_start_time, nil)
+         |> assign(:current_wrong_strokes, 0)
          |> assign(:meaning_answer, "")
          |> assign(:reading_answer, "")
          |> assign(:selected_answer, nil)
@@ -1110,25 +1150,42 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       # Calculate score based on correctness and time
       points_earned =
-        if correct do
-          calculate_writing_score(step, time_spent_seconds)
-        else
-          0
+        cond do
+          kanji_drawing? and correct ->
+            max(0, step.points - wrong_strokes)
+
+          kanji_drawing? ->
+            0
+
+          correct ->
+            calculate_writing_score(step, time_spent_seconds)
+
+          true ->
+            0
         end
 
-      answer_text = if correct, do: "correct", else: "partial"
+      is_correct =
+        if kanji_drawing? do
+          points_earned > 0
+        else
+          correct
+        end
+
+      answer_text = if is_correct, do: "correct", else: "partial"
 
       result =
         Tests.record_step_answer(session.id, step.id, %{
           "answer" => answer_text,
           "time_spent_seconds" => time_spent_seconds,
           "step_index" => step.order_index,
-          "is_correct" => correct,
+          "is_correct" => is_correct,
           "points_earned" => points_earned,
           "metadata" => %{
             "accuracy" => accuracy,
             "writing" => true,
-            "time_spent" => time_spent_seconds
+            "time_spent" => time_spent_seconds,
+            "wrong_strokes" => wrong_strokes,
+            "kanji_drawing" => kanji_drawing?
           }
         })
 
@@ -1140,6 +1197,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           })
 
           next_index = socket.assigns.current_step_index + 1
+          Tests.update_session_progress(session.id, next_index)
 
           if next_index >= socket.assigns.total_steps do
             complete_test(socket, session.id, attempt.id)
@@ -1153,6 +1211,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:answer, initial_answer_for_step(next_step))
              |> assign(:show_hint, false)
              |> assign(:writing_start_time, nil)
+             |> assign(:current_wrong_strokes, 0)
+             |> assign(:challenge_score, socket.assigns.challenge_score + points_earned)
              |> assign(:meaning_answer, "")
              |> assign(:reading_answer, "")
              |> assign(:selected_answer, nil)
@@ -1478,10 +1538,15 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       </div>
                     </div>
                   <% :writing -> %>
+                    <span id="debug-wrong-strokes" class="hidden"><%= @current_wrong_strokes %></span>
                     <MedoruWeb.LessonTestLive.WritingComponent.writing_question
                       step={@current_step}
                       target="writing-component"
                       locale={@locale}
+                      kanji_drawing={@test.metadata["kanji_drawing"] == true}
+                      challenge_base={@challenge_score}
+                      total_points={@test.total_points}
+                      current_wrong_strokes={@current_wrong_strokes}
                     />
                     <%!-- Hidden input for form submission when skipping --%>
                     <input type="hidden" name="answer" value="skipped" />

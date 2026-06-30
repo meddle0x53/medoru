@@ -229,6 +229,7 @@ defmodule MedoruWeb.Router do
 
       live "/classrooms/:classroom_id/radical-hunt-games/:id", RadicalHuntGameLive.Show
       live "/classrooms/:id/generate-vocabulary-test", ClassroomLive.GenerateVocabularyTest
+      live "/classrooms/:id/generate-kanji-drawing-test", ClassroomLive.GenerateKanjiDrawingTest
 
       live "/tests", TestLive.Index
       live "/tests/new", TestLive.New

@@ -382,5 +382,33 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGeneratorTest do
       assert classroom_test.due_date == due_date
       assert classroom_test.max_attempts == 3
     end
+
+    test "uses classroom-wide distractors when distractor_pool is :classroom", %{
+      classroom: classroom,
+      teacher: teacher,
+      words: words
+    } do
+      [selected_word | _] = words
+
+      assert {:ok, test} =
+               ClassroomVocabularyTestGenerator.generate_test(
+                 classroom,
+                 [selected_word],
+                 teacher.id,
+                 step_types: [:word_to_meaning],
+                 max_times_per_word: 1,
+                 total_questions: 1,
+                 distractor_pool: :classroom,
+                 all_classroom_words: words
+               )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 1
+      step = hd(test.test_steps)
+
+      assert length(step.options) == 4
+      unselected_meanings = Enum.map(words -- [selected_word], & &1.meaning)
+      assert Enum.any?(step.options, &(&1 in unselected_meanings))
+    end
   end
 end

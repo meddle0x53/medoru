@@ -2442,6 +2442,14 @@ export default class BattleScene extends Phaser.Scene {
         const lifestealText = result.lifesteal ? ` (+${result.lifesteal} HP)` : ''
         const infusedIcon = result.infusion ? (INFUSION_ICONS[result.infusion.value] || '✦') : ''
         const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
+        if (result.missed) {
+          this.addCombatLog(`${quality} ${this.selectedSkill.name} -> missed!`)
+          if (targetDisplay) {
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, 'MISS', COLORS.warning)
+          }
+          this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+          break
+        }
         this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage!${bypassText}${lifestealText}`)
         if (targetDisplay) {
           if (result.blocked) {
@@ -2450,6 +2458,12 @@ export default class BattleScene extends Phaser.Scene {
             const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
             this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
             this.shakeSprite(targetDisplay.sprite)
+            if (target.isAlive()) {
+              this.setEnemySprite(this.getEnemySpriteKey(target, 'defend'), target)
+              this.time.delayedCall(350, () => {
+                if (target.isAlive()) this.setEnemySprite(this.getEnemySpriteKey(target, 'default'), target)
+              })
+            }
             if (result.infusion && this.isComboElement(result.infusion.value)) {
               this.flashScreen(dmgColor, 120)
               this.shakeScreen(0.01, 180)
@@ -2477,6 +2491,14 @@ export default class BattleScene extends Phaser.Scene {
         const bypassText = result.defenseBypassed ? ' (Defense pierced!)' : ''
         const infusedIcon = result.infusion ? (INFUSION_ICONS[result.infusion.value] || '✦') : ''
         const infusedText = result.infusion ? `${infusedIcon} Infused ` : ''
+        if (result.missed) {
+          this.addCombatLog(`${quality} ${this.selectedSkill.name} -> missed!`)
+          if (targetDisplay) {
+            this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, 'MISS', COLORS.warning)
+          }
+          this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+          break
+        }
         this.addCombatLog(`${quality} ${infusedText}${this.selectedSkill.name}${critText} -> ${result.damage} damage + ${result.block} block!${bypassText}`)
         if (targetDisplay) {
           if (result.blocked) {
@@ -2485,6 +2507,12 @@ export default class BattleScene extends Phaser.Scene {
             const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
             this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
             this.shakeSprite(targetDisplay.sprite)
+            if (target.isAlive()) {
+              this.setEnemySprite(this.getEnemySpriteKey(target, 'defend'), target)
+              this.time.delayedCall(350, () => {
+                if (target.isAlive()) this.setEnemySprite(this.getEnemySpriteKey(target, 'default'), target)
+              })
+            }
             if (result.infusion && this.isComboElement(result.infusion.value)) {
               this.flashScreen(dmgColor, 120)
               this.shakeScreen(0.01, 180)
@@ -2592,6 +2620,7 @@ export default class BattleScene extends Phaser.Scene {
         let challengeModifier = null
         let weakestMultiplier = 1
         let effectChanceMultiplier = 1
+        const context = {}
         for (const config of challengeConfigs) {
           if (Math.random() >= (config.chance ?? 0)) continue
           const challenge = buildEnemyChallenge(this.player, config)
@@ -2599,19 +2628,28 @@ export default class BattleScene extends Phaser.Scene {
           challenge.abilityName = action.name
           this.addCombatLog(`${enemy.name || 'The enemy'}'s ${action.name} triggers a ${challenge.type === 'kanji' ? 'kanji' : 'word'} challenge!`)
           const outcome = await this.runEnemyAbilityChallenge(challenge)
-          if (outcome === 'cancel') {
+          const outcomeType = typeof outcome === 'string' ? outcome : outcome?.type
+          if (outcomeType === 'cancel' || outcomeType === 'neutralize') {
             challengeModifier = 'cancel'
             break
           }
-          if (outcome === 'weaken') {
+          if (outcomeType === 'weaken') {
             challengeModifier = 'weaken'
             weakestMultiplier = Math.min(weakestMultiplier, config.weakenMultiplier || 0.5)
           }
-          if (outcome === 'halveChance') {
+          if (outcomeType === 'halveChance') {
             effectChanceMultiplier *= 0.5
           }
-          if (outcome === 'boostChance') {
+          if (outcomeType === 'boostChance') {
             effectChanceMultiplier *= 2.1
+          }
+          if (outcomeType === 'setChance') {
+            context.chanceOverrides = context.chanceOverrides || {}
+            context.chanceOverrides[outcome.effectId] = outcome.value
+          }
+          if (outcomeType === 'setValue') {
+            context.valueOverrides = context.valueOverrides || {}
+            context.valueOverrides[outcome.key] = outcome.value
           }
         }
         if (challengeModifier === 'cancel') {
@@ -2649,7 +2687,6 @@ export default class BattleScene extends Phaser.Scene {
           }
         }
 
-        const context = {}
         if (challengeModifier === 'weaken') {
           context.damageMultiplier = weakestMultiplier
         }
@@ -2723,7 +2760,10 @@ export default class BattleScene extends Phaser.Scene {
           case 'debuff': {
             const debuffSpriteKey = action.sprite || this.getEnemySpriteKey(enemy, 'attack')
             this.setEnemySprite(debuffSpriteKey, enemy)
-            if (result.blocked) {
+            if (result.missed) {
+              this.addCombatLog(`${enemyName} uses ${action.name}... but missed!`)
+              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
+            } else if (result.blocked) {
               this.addCombatLog(`${enemyName} uses ${action.name}... BLOCKED by your guard!`)
               this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'BLOCKED!', 0x3498db)
             } else {
@@ -2901,6 +2941,11 @@ export default class BattleScene extends Phaser.Scene {
   updateStatusIcons(display) {
     if (!display.statusContainer) return
     display.statusContainer.removeAll(true)
+
+    if (display.defeated || !display.enemy.isAlive()) {
+      display.statusContainer.setVisible(false)
+      return
+    }
 
     const effects = display.enemy.activeEffects
     if (effects.length === 0) {

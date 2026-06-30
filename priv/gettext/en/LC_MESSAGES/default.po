@@ -15539,7 +15539,7 @@ msgstr ""
 #: lib/medoru_web/components/layouts.ex:383
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:91
 #, elixir-autogen, elixir-format
-msgid "Kill Medoru!"
+msgid "The Hollow Ouroboros"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/from_image.ex:301

@@ -9,8 +9,10 @@ import kasaObake from './kasa_obake.json'
 import kasaObakeElite from './kasa_obake_elite.json'
 import kasaObakeTyrant from './kasa_obake_tyrant.json'
 import hitotsumeKozo from './hitotsume_kozo.json'
+import bakeNeko from './bake_neko.json'
 
 export const ENEMY_DEFINITIONS = [
+  bakeNeko,
   kasaObake,
   kasaObakeElite,
   kasaObakeTyrant,

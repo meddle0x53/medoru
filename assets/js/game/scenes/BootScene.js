@@ -44,7 +44,9 @@ export default class BootScene extends Phaser.Scene {
       }
     }
 
-    // Loadout portrait
+    // Title screen, hero select, and loadout portrait
+    this.load.image('title_screen', '/images/game/title_screen.png')
+    this.load.image('hero_select_background', '/images/game/hero_select_background.png')
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 
     // Enemy sprites — loaded dynamically from enemy definitions.
@@ -80,20 +82,8 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
-    // If the player has an active run, resume on the map instead of making
-    // them go through hero select again after every refresh.
-    const raw = localStorage.getItem('medoru_loadout_v1')
-    let hasActiveRun = false
-    if (raw) {
-      try {
-        const loadout = JSON.parse(raw)
-        const map = loadout.mapState?.maps?.[loadout.mapState?.currentMapIndex]
-        hasActiveRun = !!map
-      } catch (e) {
-        // Ignore corrupted saves; fall through to hero select.
-      }
-    }
-
-    this.scene.start(hasActiveRun ? 'MapScene' : 'HeroSelectScene')
+    // Always start at the title screen. It will decide whether to show
+    // Continue, New Run, or Settings based on the saved loadout.
+    this.scene.start('TitleScene')
   }
 }

@@ -28,6 +28,9 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     * `:total_questions` - Exact number of questions in the test (default: all possible)
     * `:title` - Test title (default: derived from classroom name)
     * `:distractor_count` - Number of distractors per multichoice question (default: 3)
+    * `:distractor_pool` - `:selected` (default) uses only selected words for distractors;
+      `:classroom` uses all words in the classroom. Requires `:all_classroom_words`.
+    * `:all_classroom_words` - Full list of classroom words when `:distractor_pool` is `:classroom`
     * `:due_date` - Optional due date for the classroom publication
     * `:max_attempts` - Optional max attempts for the classroom publication
 
@@ -45,6 +48,8 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     total_questions = Keyword.get(opts, :total_questions)
     title = Keyword.get(opts, :title, default_title(classroom))
     distractor_count = Keyword.get(opts, :distractor_count, 3)
+    distractor_pool = Keyword.get(opts, :distractor_pool, :selected)
+    all_classroom_words = Keyword.get(opts, :all_classroom_words)
     due_date = Keyword.get(opts, :due_date)
     max_attempts = Keyword.get(opts, :max_attempts)
 
@@ -89,7 +94,10 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
 
           with {:ok, test} <- Tests.create_test(test_attrs),
                {:ok, _steps} <-
-                 create_steps(test, selected_pairs, words, distractor_count),
+                 create_steps(test, selected_pairs, words, distractor_count,
+                   distractor_pool: distractor_pool,
+                   all_classroom_words: all_classroom_words
+                 ),
                {:ok, _classroom_test} <-
                  Classrooms.publish_test_to_classroom(classroom.id, test.id, teacher_id, %{
                    due_date: due_date,
@@ -152,14 +160,29 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     end
   end
 
-  defp create_steps(test, selected_pairs, words, distractor_count) do
-    words_with_images = Enum.filter(words, & &1.image_path)
+  defp create_steps(test, selected_pairs, words, distractor_count, opts) do
+    distractor_pool = Keyword.get(opts, :distractor_pool, :selected)
+    all_classroom_words = Keyword.get(opts, :all_classroom_words)
+
+    distractor_words =
+      if distractor_pool == :classroom and is_list(all_classroom_words) and all_classroom_words != [] do
+        all_classroom_words
+      else
+        words
+      end
+
+    distractor_words_with_images = Enum.filter(distractor_words, & &1.image_path)
 
     steps =
       selected_pairs
       |> Enum.shuffle()
       |> Enum.map(fn {word, step_type} ->
-        pool = if step_type == :image_to_meaning, do: words_with_images, else: words
+        pool =
+          if step_type == :image_to_meaning do
+            distractor_words_with_images
+          else
+            distractor_words
+          end
 
         build_step(word, step_type, distractor_count, pool)
       end)

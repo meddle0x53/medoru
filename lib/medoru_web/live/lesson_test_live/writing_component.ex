@@ -14,6 +14,10 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
   attr :target, :any, required: true
   attr :locale, :string, default: "en"
   attr :show_submit, :boolean, default: true
+  attr :kanji_drawing, :boolean, default: false
+  attr :challenge_base, :integer, default: 0
+  attr :total_points, :integer, default: 0
+  attr :current_wrong_strokes, :integer, default: 0
 
   def writing_question(assigns) do
     ~H"""
@@ -22,7 +26,40 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       id={"writing-component-#{@step.id}"}
       phx-hook="KanjiWriting"
       data-target={@target}
+      data-kanji-drawing={@kanji_drawing}
+      data-stroke-points={@step.points}
+      data-challenge-base={@challenge_base}
+      data-total-points={@total_points}
+      data-step-id={@step.id}
+      data-current-wrong-strokes={@current_wrong_strokes}
     >
+      <%= if @kanji_drawing do %>
+        <% current_points = max(0, @step.points - @current_wrong_strokes) %>
+        <% challenge_points = @challenge_base %>
+        <div class="mb-4 p-3 bg-base-200 rounded-lg flex flex-wrap items-center justify-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <.icon name="hero-x-circle" class="w-4 h-4 text-error" />
+            <span class="text-secondary">{gettext("Wrong strokes")}:</span>
+            <span id={"kanji-wrong-stroke-count-#{@step.id}"} class="font-bold text-error">
+              {@current_wrong_strokes}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <.icon name="hero-pencil-square" class="w-4 h-4 text-primary" />
+            <span class="text-secondary">{gettext("This kanji")}:</span>
+            <span id={"kanji-current-points-#{@step.id}"} class="font-bold text-primary">
+              {current_points} / {@step.points}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <.icon name="hero-trophy" class="w-4 h-4 text-warning" />
+            <span class="text-secondary">{gettext("Challenge")}:</span>
+            <span id={"kanji-challenge-points-#{@step.id}"} class="font-bold text-warning">
+              {challenge_points} / {@total_points}
+            </span>
+          </div>
+        </div>
+      <% end %>
       <%!-- Hidden stroke data for JS library --%>
       <%!-- Use step's question_data if available, otherwise fall back to kanji's stroke_data --%>
       <% strokes =

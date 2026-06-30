@@ -178,6 +178,12 @@ export default class TurnManager {
         // Status-effect incoming damage multiplier (frost / vulnerability)
         finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
 
+        const missChance = target.getMissChanceFor()
+        if (Math.random() < missChance) {
+          this.log(`${target.name || 'The enemy'} evades the attack!`)
+          return { type: 'attack', damage: 0, isCrit, multiplier, missed: true, blocked: false, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal: 0, infusion: infusion ? { value: infusion.value, potency } : undefined }
+        }
+
         const actual = target.takeDamage(finalDamage)
 
         // Berserk lifesteal on sword attacks
@@ -294,6 +300,13 @@ export default class TurnManager {
           finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
         }
         finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
+
+        const missChance = target.getMissChanceFor()
+        if (Math.random() < missChance) {
+          this.log(`${target.name || 'The enemy'} evades the attack!`)
+          return { type: 'attack_defence', damage: 0, block: 0, isCrit, multiplier, missed: true, blocked: false, defenseBypassed: performer.lastKanjiWrongStrokes === 0, infusion: infusion ? { value: infusion.value, potency } : undefined }
+        }
+
         const actual = target.takeDamage(finalDamage)
 
         // Add partial block

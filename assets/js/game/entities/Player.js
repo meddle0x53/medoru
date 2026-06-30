@@ -168,8 +168,8 @@ export default class Player extends Character {
     const maxStamina = 8 + Math.floor(baseStats.stamina / 3)
 
     super({
-      name: userData.name || 'Warrior',
-      nameJa: '戦士',
+      name: userData.name || 'The Anomaly',
+      nameJa: '異常存在',
       maxHp,
       maxStamina,
       defense: shirtDefense,

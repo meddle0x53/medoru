@@ -131,7 +131,29 @@ export default class Character {
   }
 
   addBuff(buff) {
-    this.buffs.push(buff)
+    // Replace same-type buffs so they don't stack infinitely.
+    const idx = this.buffs.findIndex(b => b.type === buff.type)
+    if (idx >= 0) {
+      this.buffs[idx] = buff
+    } else {
+      this.buffs.push(buff)
+    }
+  }
+
+  getEvasion() {
+    let evasion = 0
+    for (const buff of this.buffs) {
+      if (buff.type === 'evasion') {
+        evasion += buff.value || 0
+      }
+    }
+    for (const active of this.activeEffects) {
+      const effect = getEffect(active.effectId)
+      if (effect && typeof effect.evasionBonus === 'number') {
+        evasion += effect.evasionBonus
+      }
+    }
+    return evasion
   }
 
   consumeBuff(type) {
@@ -364,6 +386,10 @@ export default class Character {
       }
     }
     return Math.min(0.50, base)
+  }
+
+  getMissChanceFor(attackerLuck = 0) {
+    return this.getEvasion() + (this.luck / 120)
   }
 
   getPhysicalDefense() {

@@ -1,11 +1,11 @@
 /**
- * Kill Medoru! - Game Configuration
+ * The Hollow Ouroboros - Game Configuration
  */
 export const GAME_CONFIG = {
   width: 960,
   height: 540,
   backgroundColor: '#1a1a2e',
-  title: 'Kill Medoru!',
+  title: 'The Hollow Ouroboros',
   version: '0.1.0-mvp',
 }
 

@@ -602,6 +602,54 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert html =~ "Number of questions cannot exceed 2"
     end
 
+    test "teacher can choose classroom-wide distractor pool", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      lesson = custom_lesson_fixture(%{creator_id: teacher.id, lesson_subtype: "vocabulary"})
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word1.id, %{position: 0})
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word2.id, %{position: 1})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+
+      {:ok, view, html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/classrooms/#{classroom.id}/generate-vocabulary-test")
+
+      assert html =~ "Distractor Pool"
+      assert html =~ "Selected words only"
+      assert html =~ "All words in this classroom"
+
+      view
+      |> element("select[name='distractor_pool']")
+      |> render_change(%{"distractor_pool" => "classroom", "_target" => ["distractor_pool"]})
+
+      view
+      |> element("form#generate-vocab-test-form")
+      |> render_submit(%{
+        "word_ids" => [word1.id],
+        "total_questions" => "1"
+      })
+
+      assert_redirected(view, ~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert length(published_tests) == 1
+
+      test = hd(published_tests).test |> Medoru.Repo.preload(:test_steps)
+      step = hd(test.test_steps)
+      assert word2.meaning in step.options
+    end
+
     test "non-owner teacher cannot access generate vocabulary test page", %{conn: conn} do
       teacher1 = user_fixture(%{type: "teacher"})
       teacher2 = user_fixture(%{type: "teacher"})

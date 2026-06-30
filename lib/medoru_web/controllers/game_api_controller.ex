@@ -1,6 +1,6 @@
 defmodule MedoruWeb.GameApiController do
   @moduledoc """
-  API controller for Kill Medoru! game events.
+  API controller for The Hollow Ouroboros game events.
   """
   use MedoruWeb, :controller
 
@@ -70,7 +70,7 @@ defmodule MedoruWeb.GameApiController do
     if params["winner"] == "player" do
       Accounts.add_xp(user, 50,
         source_type: "game_battle",
-        description: "Won a battle in Kill Medoru!"
+        description: "Won a battle in The Hollow Ouroboros"
       )
     end
 
