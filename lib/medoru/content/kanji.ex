@@ -20,7 +20,7 @@ defmodule Medoru.Content.Kanji do
     # Translations: %{"bg" => %{"meanings" => [...]}, "ja" => %{"meanings" => [...]}}
     field :translations, :map, default: %{}
 
-    has_many :kanji_readings, Medoru.Content.KanjiReading
+    has_many :kanji_readings, Medoru.Content.KanjiReading, preload_order: [asc: :position]
 
     timestamps(type: :utc_datetime)
   end

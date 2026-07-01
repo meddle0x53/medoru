@@ -37,7 +37,7 @@ const STATUS_EFFECT_ICONS = {
 
 import { getWindowGameData, sendRunResult } from '../api.js'
 import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
-import { buildEnemyChallenge } from '../systems/EnemyChallengePicker.js'
+import { buildEnemyChallenge, filterChallengeWords } from '../systems/EnemyChallengePicker.js'
 import EnemyAbilityChallengeSystem from '../systems/EnemyAbilityChallengeSystem.js'
 
 export default class BattleScene extends Phaser.Scene {
@@ -1369,9 +1369,9 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   startReadinessChallenge() {
-    const wordList = this.player.wordList
+    const wordList = filterChallengeWords(this.player.wordList)
     if (!wordList || wordList.length === 0) {
-      // No words available — skip challenge, readiness stays 0
+      // No challenge-suitable words available — skip challenge, readiness stays 0
       this.addCombatLog('No words to review. Stay focused!')
       this.turnManager.endTurn()
       return
@@ -1547,7 +1547,7 @@ export default class BattleScene extends Phaser.Scene {
 
   async runReactionChallenge() {
     return new Promise((resolve) => {
-      const wordList = this.player.wordList
+      const wordList = filterChallengeWords(this.player.wordList)
       if (!wordList || wordList.length === 0) {
         resolve()
         return

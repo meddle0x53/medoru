@@ -20,6 +20,12 @@ const TILE_RADIUS = 22
 const CURRENT_PULSE_RADIUS = 28
 const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }
 
+// Dev test fight picker: Tanuki and his clone first, then the rest in registry order.
+const TEST_FIGHT_ENEMIES = [...ENEMY_DEFINITIONS].sort((a, b) => {
+  const rank = { danzaburo_danuki: -2, tanuki_clone: -1 }
+  return (rank[a.id] || 0) - (rank[b.id] || 0)
+})
+
 export default class MapScene extends Phaser.Scene {
   constructor() {
     super({ key: 'MapScene' })
@@ -247,7 +253,7 @@ export default class MapScene extends Phaser.Scene {
 
     this.testFightEnemyLabel = createRow(-30, '', () => {
       this.testFightSelection.enemyIndex =
-        (this.testFightSelection.enemyIndex + 1) % ENEMY_DEFINITIONS.length
+        (this.testFightSelection.enemyIndex + 1) % TEST_FIGHT_ENEMIES.length
       this.updateTestFightDialog()
     })
 
@@ -278,7 +284,7 @@ export default class MapScene extends Phaser.Scene {
 
   updateTestFightDialog() {
     if (!this.testFightDialog) return
-    const def = ENEMY_DEFINITIONS[this.testFightSelection.enemyIndex]
+    const def = TEST_FIGHT_ENEMIES[this.testFightSelection.enemyIndex]
     this.testFightEnemyLabel.setText(`Enemy: ${def.name}`)
     this.testFightCountLabel.setText(`Count: ${this.testFightSelection.count}`)
   }
@@ -293,7 +299,7 @@ export default class MapScene extends Phaser.Scene {
   }
 
   startTestFight() {
-    const def = ENEMY_DEFINITIONS[this.testFightSelection.enemyIndex]
+    const def = TEST_FIGHT_ENEMIES[this.testFightSelection.enemyIndex]
     const count = this.testFightSelection.count
     this.hideTestFightDialog()
 

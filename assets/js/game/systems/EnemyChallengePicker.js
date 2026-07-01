@@ -2,6 +2,17 @@ import { DEFAULT_KANJI_POOL } from '../data/defaultKanjiPool.js'
 
 const JLPT_ORDER = { N5: 1, N4: 2, N3: 3, N2: 4, N1: 5 }
 
+// Word challenges should only use concrete parts of speech, not set phrases/expressions.
+const ALLOWED_CHALLENGE_WORD_TYPES = new Set(['noun', 'verb', 'adjective', 'adverb'])
+
+export function isChallengeWord(word) {
+  return word != null && ALLOWED_CHALLENGE_WORD_TYPES.has(word.word_type)
+}
+
+export function filterChallengeWords(words) {
+  return (words || []).filter(isChallengeWord)
+}
+
 function shuffle(array) {
   const arr = array.slice()
   for (let i = arr.length - 1; i > 0; i--) {
@@ -45,13 +56,12 @@ function matchesKanjiFilters(kanji, filters = {}) {
 const MIN_FILTERED_WORD_POOL = 20
 
 export function pickWordForChallenge(player, filters = {}) {
-  const pool = player?.wordList || []
-  const candidates = pool.length > 0
-    ? pool.filter(w => matchesWordFilters(w, filters))
-    : []
+  // Exclude expressions and other non-challenge word types first.
+  const allowedPool = filterChallengeWords(player?.wordList)
+  const candidates = allowedPool.filter(w => matchesWordFilters(w, filters))
 
-  // If the filtered pool is too small, use the full known-word pool so challenges stay varied.
-  const source = candidates.length >= MIN_FILTERED_WORD_POOL ? candidates : pool
+  // If the filtered pool is too small, fall back to the full allowed pool so challenges stay varied.
+  const source = candidates.length >= MIN_FILTERED_WORD_POOL ? candidates : allowedPool
   if (source.length === 0) return null
 
   const shuffled = shuffle(source)

@@ -1,5 +1,6 @@
 import KanjiDrawingSystem from './KanjiDrawingSystem.js'
 import WordChallengeSystem from './WordChallengeSystem.js'
+import { filterChallengeWords } from './EnemyChallengePicker.js'
 
 /**
  * Manages the optional post-battle kanji + word challenge.
@@ -43,7 +44,7 @@ export default class WinChallengeSystem {
   }
 
   pickWord() {
-    const list = this.player.wordList || []
+    const list = filterChallengeWords(this.player.wordList)
     if (list.length === 0) return null
     return list[Math.floor(Math.random() * list.length)]
   }

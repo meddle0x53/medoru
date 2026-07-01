@@ -292,9 +292,34 @@ defmodule Medoru.Content do
 
   """
   def create_kanji_reading(attrs \\ %{}) do
+    attrs =
+      if is_nil(attrs["position"]) and is_nil(attrs[:position]) do
+        kanji_id = attrs["kanji_id"] || attrs[:kanji_id]
+        next_position = next_kanji_reading_position(kanji_id)
+
+        position_key =
+          if Enum.any?(attrs, fn {k, _} -> is_binary(k) end), do: "position", else: :position
+
+        Map.put(attrs, position_key, next_position)
+      else
+        attrs
+      end
+
     %KanjiReading{}
     |> KanjiReading.changeset(attrs)
     |> Repo.insert()
+  end
+
+  defp next_kanji_reading_position(nil), do: 0
+
+  defp next_kanji_reading_position(kanji_id) do
+    max_position =
+      KanjiReading
+      |> where([r], r.kanji_id == ^kanji_id)
+      |> select([r], max(r.position))
+      |> Repo.one()
+
+    (max_position || 0) + 1
   end
 
   @doc """
@@ -329,6 +354,27 @@ defmodule Medoru.Content do
   """
   def delete_kanji_reading(%KanjiReading{} = kanji_reading) do
     Repo.delete(kanji_reading)
+  end
+
+  @doc """
+  Reorders a kanji's readings by assigning positions based on the given ordered list of reading IDs.
+  """
+  def reorder_kanji_readings(kanji_id, reading_ids) when is_list(reading_ids) do
+    reading_ids
+    |> Enum.with_index()
+    |> Enum.reduce(Ecto.Multi.new(), fn {reading_id, index}, multi ->
+      Ecto.Multi.update_all(
+        multi,
+        {:position, reading_id},
+        fn _ ->
+          from(r in KanjiReading,
+            where: r.id == ^reading_id and r.kanji_id == ^kanji_id
+          )
+        end,
+        set: [position: index]
+      )
+    end)
+    |> Repo.transaction()
   end
 
   @doc """

@@ -182,7 +182,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTest do
   def handle_event("update_due_date", %{"due_date" => value}, socket) do
     due_date =
       case value do
-        "" -> nil
+        "" ->
+          nil
+
         date_string ->
           case DateTime.from_iso8601(date_string <> ":00Z") do
             {:ok, dt, _} -> dt
@@ -409,9 +411,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTest do
                                   {format_meanings(entry.kanji)}
                                 </span>
                                 <span class="text-sm text-secondary">
-                                  {gettext("On")}: {first_reading(entry.kanji, :on)} • {gettext(
-                                    "Kun"
-                                  )}: {first_reading(entry.kanji, :kun)}
+                                  {gettext("On")}: {first_reading(entry.kanji, :on)} • {gettext("Kun")}: {first_reading(
+                                    entry.kanji,
+                                    :kun
+                                  )}
                                 </span>
                                 <span class="text-xs text-secondary bg-base-200 px-2 py-1 rounded">
                                   {entry.kanji.stroke_count} {gettext("strokes")}

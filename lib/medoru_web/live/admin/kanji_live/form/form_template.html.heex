@@ -400,8 +400,12 @@
             <% end %>
 
             <%!-- Readings List --%>
-            <div class="space-y-2">
-              <%= for reading <- (@kanji.kanji_readings || []) do %>
+            <div
+              id="kanji-readings"
+              class="space-y-2"
+              phx-hook="ReadingSorter"
+            >
+              <%= for reading <- Enum.sort_by(@kanji.kanji_readings || [], & &1.position) do %>
                 <%= if @editing_reading == reading.id && @edit_reading do %>
                   <%!-- Edit Reading Form --%>
                   <div class="p-4 bg-base-200/50 rounded-lg border-2 border-secondary/30">
@@ -478,8 +482,15 @@
                   </div>
                 <% else %>
                   <%!-- Reading Display --%>
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-base-200/50 rounded-lg gap-2">
+                  <div
+                    data-reading-id={reading.id}
+                    class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-base-200/50 rounded-lg gap-2 cursor-move"
+                  >
                     <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <.icon
+                        name="hero-bars-3"
+                        class="w-4 h-4 text-base-content/30 handle cursor-grab active:cursor-grabbing"
+                      />
                       <span class={[
                         "badge",
                         if(reading.reading_type == :on,

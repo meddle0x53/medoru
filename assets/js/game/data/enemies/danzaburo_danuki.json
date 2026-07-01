@@ -18,18 +18,18 @@
   "portrait": "enemy_danzaburo_default",
   "icon": "enemy_bake_neko_icon",
   "layout": {
-    "1": [{ "x": 690, "y": 470, "scale": 0.18 }],
-    "2": [{ "x": 600, "y": 460, "scale": 0.14 }, { "x": 780, "y": 460, "scale": 0.14 }],
+    "1": [{ "x": 690, "y": 475, "scale": 0.18 }],
+    "2": [{ "x": 600, "y": 475, "scale": 0.18 }, { "x": 780, "y": 475, "scale": 0.18 }],
     "3": [{ "x": 540, "y": 455, "scale": 0.12 }, { "x": 690, "y": 455, "scale": 0.12 }, { "x": 840, "y": 455, "scale": 0.12 }]
   },
   "stats": {
-    "hp": { "min": 260, "max": 280 },
+    "hp": { "min": 240, "max": 260 },
     "stamina": { "min": 12, "max": 14 },
     "strength": { "min": 4, "max": 5 },
     "skill": { "min": 5, "max": 6 },
     "mana": { "min": 6, "max": 7 },
     "luck": { "min": 8, "max": 10 },
-    "defense": { "min": 8, "max": 10 },
+    "defense": { "min": 6, "max": 10 },
     "armor": { "min": 3, "max": 4 }
   },
   "abilities": [
@@ -51,11 +51,11 @@
         "chance": 0.35,
         "type": "word",
         "promptType": "meaning",
-        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 1000 },
         "onSuccess": "weaken",
         "weakenMultiplier": 0.5,
         "onFail": "full",
-        "timeLimit": 6000
+        "timeLimit": 9000
       }]
     },
     {

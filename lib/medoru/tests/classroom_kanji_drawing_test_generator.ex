@@ -130,8 +130,9 @@ defmodule Medoru.Tests.ClassroomKanjiDrawingTestGenerator do
     end
   end
 
-  defp has_strokes?(%{stroke_data: %{"strokes" => strokes}}) when is_list(strokes) and strokes != [],
-    do: true
+  defp has_strokes?(%{stroke_data: %{"strokes" => strokes}})
+       when is_list(strokes) and strokes != [],
+       do: true
 
   defp has_strokes?(_), do: false
 

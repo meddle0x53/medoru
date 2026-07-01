@@ -57,6 +57,9 @@ export default class Enemy extends Character {
     this.nextAttackBonus = 0
     this.usesThisTurn = new Map()
 
+    // Default to the full ability list; phase logic will refine it when phases exist.
+    this.abilities = (definition.abilities || []).map(a => ({ ...a }))
+
     this.applyPhase(0, () => {})
     this.resetAbilityUses()
   }

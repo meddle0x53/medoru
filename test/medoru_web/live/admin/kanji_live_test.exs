@@ -222,5 +222,24 @@ defmodule MedoruWeb.Admin.KanjiLiveTest do
       assert html =~ "ひ"
       assert html =~ "2 total"
     end
+
+    test "reorders readings via drag and drop", %{conn: conn} do
+      kanji = kanji_with_readings_fixture()
+      [reading1, reading2] = Enum.sort_by(kanji.kanji_readings, & &1.position)
+
+      {:ok, view, _html} = live(conn, ~p"/admin/kanji/#{kanji.id}/edit")
+
+      html = render_hook(view, "reorder_readings", %{"reading_ids" => [reading2.id, reading1.id]})
+
+      assert html =~ "Reading order updated."
+
+      updated = Medoru.Content.get_kanji_with_readings!(kanji.id)
+      readings = Enum.sort_by(updated.kanji_readings, & &1.position)
+
+      assert Enum.map(readings, & &1.id) == [reading2.id, reading1.id]
+
+      ordered_ids = Regex.scan(~r/data-reading-id="([^"]+)"/, html) |> Enum.map(&List.last/1)
+      assert ordered_ids == [to_string(reading2.id), to_string(reading1.id)]
+    end
   end
 end

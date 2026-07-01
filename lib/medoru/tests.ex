@@ -889,38 +889,7 @@ defmodule Medoru.Tests do
 
       # Check for existing active session
       case get_active_session(user_id, test_id) do
-      nil ->
-        test = get_test!(test_id)
-
-        attrs = %{
-          user_id: user_id,
-          test_id: test_id,
-          total_possible: test.total_points,
-          current_step_index: 0
-        }
-
-        %TestSession{}
-        |> TestSession.start_changeset(attrs)
-        |> Repo.insert()
-
-      existing_session ->
-        # Check if session has existing answers (from a reset test)
-        has_answers =
-          TestStepAnswer
-          |> where([a], a.test_session_id == ^existing_session.id)
-          |> Repo.exists?()
-
-        if has_answers do
-          # Delete old answers first to avoid constraint issues
-          TestStepAnswer
-          |> where([a], a.test_session_id == ^existing_session.id)
-          |> Repo.delete_all()
-
-          # Complete the old session
-          existing_session
-          |> TestSession.reset_changeset()
-          |> Repo.update()
-
+        nil ->
           test = get_test!(test_id)
 
           attrs = %{
@@ -933,9 +902,40 @@ defmodule Medoru.Tests do
           %TestSession{}
           |> TestSession.start_changeset(attrs)
           |> Repo.insert()
-        else
-          {:ok, existing_session}
-        end
+
+        existing_session ->
+          # Check if session has existing answers (from a reset test)
+          has_answers =
+            TestStepAnswer
+            |> where([a], a.test_session_id == ^existing_session.id)
+            |> Repo.exists?()
+
+          if has_answers do
+            # Delete old answers first to avoid constraint issues
+            TestStepAnswer
+            |> where([a], a.test_session_id == ^existing_session.id)
+            |> Repo.delete_all()
+
+            # Complete the old session
+            existing_session
+            |> TestSession.reset_changeset()
+            |> Repo.update()
+
+            test = get_test!(test_id)
+
+            attrs = %{
+              user_id: user_id,
+              test_id: test_id,
+              total_possible: test.total_points,
+              current_step_index: 0
+            }
+
+            %TestSession{}
+            |> TestSession.start_changeset(attrs)
+            |> Repo.insert()
+          else
+            {:ok, existing_session}
+          end
       end
     end
   end

@@ -11,6 +11,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTestTest do
   describe "Generate Kanji Drawing Test page" do
     setup %{conn: conn} do
       teacher = user_fixture(%{type: "teacher"})
+
       {:ok, classroom} =
         Classrooms.create_classroom(%{
           name: "Test Classroom",

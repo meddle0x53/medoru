@@ -157,6 +157,9 @@ defmodule Medoru.Content.CustomLesson do
   def update_word_count_changeset(custom_lesson, count) do
     custom_lesson
     |> cast(%{word_count: count}, [:word_count])
-    |> validate_number(:word_count, greater_than_or_equal_to: 0, less_than_or_equal_to: @max_words)
+    |> validate_number(:word_count,
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: @max_words
+    )
   end
 end

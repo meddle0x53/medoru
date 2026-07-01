@@ -12,6 +12,7 @@ defmodule Medoru.Content.KanjiReading do
     field :reading, :string
     field :romaji, :string
     field :usage_notes, :string
+    field :position, :integer, default: 0
 
     belongs_to :kanji, Medoru.Content.Kanji
 
@@ -21,8 +22,9 @@ defmodule Medoru.Content.KanjiReading do
   @doc false
   def changeset(kanji_reading, attrs) do
     kanji_reading
-    |> cast(attrs, [:reading_type, :reading, :romaji, :usage_notes, :kanji_id])
+    |> cast(attrs, [:reading_type, :reading, :romaji, :usage_notes, :kanji_id, :position])
     |> validate_required([:reading_type, :reading, :romaji, :kanji_id])
+    |> validate_number(:position, greater_than_or_equal_to: 0)
     |> validate_inclusion(:reading_type, [:on, :kun])
     |> validate_kana_reading()
     |> foreign_key_constraint(:kanji_id)

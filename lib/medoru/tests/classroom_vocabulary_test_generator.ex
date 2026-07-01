@@ -165,7 +165,8 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     all_classroom_words = Keyword.get(opts, :all_classroom_words)
 
     distractor_words =
-      if distractor_pool == :classroom and is_list(all_classroom_words) and all_classroom_words != [] do
+      if distractor_pool == :classroom and is_list(all_classroom_words) and
+           all_classroom_words != [] do
         all_classroom_words
       else
         words

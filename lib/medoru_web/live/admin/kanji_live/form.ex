@@ -361,6 +361,24 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
     end
   end
 
+  @impl true
+  def handle_event("reorder_readings", %{"reading_ids" => reading_ids}, socket) do
+    kanji = socket.assigns.kanji
+
+    case Content.reorder_kanji_readings(kanji.id, reading_ids) do
+      {:ok, _} ->
+        kanji = Content.get_kanji_with_readings!(kanji.id)
+
+        {:noreply,
+         socket
+         |> assign(:kanji, kanji)
+         |> put_flash(:info, gettext("Reading order updated."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to reorder readings."))}
+    end
+  end
+
   defp run_enrichment(:main, character, custom_prompt) do
     KanjiEnrichment.enrich(character, custom_prompt: custom_prompt)
   end
