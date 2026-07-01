@@ -407,8 +407,17 @@ export default class Character {
     return Math.min(0.50, base)
   }
 
-  getMissChanceFor(attackerLuck = 0) {
-    return this.getEvasion() + (this.luck / 120)
+  getMissChanceFor(attacker = null) {
+    let miss = this.getEvasion() + (this.luck / 120)
+    if (attacker && attacker.activeEffects) {
+      for (const entry of attacker.activeEffects) {
+        const effect = getEffect(entry.effectId)
+        if (effect && typeof effect.missChancePenalty === 'number') {
+          miss += effect.missChancePenalty
+        }
+      }
+    }
+    return Math.min(0.95, miss)
   }
 
   getPhysicalDefense() {

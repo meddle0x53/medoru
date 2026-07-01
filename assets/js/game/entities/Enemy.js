@@ -7,9 +7,14 @@ import { getInfusionBaseEffect, getElementForInfusion } from '../data/infusionRe
 const AI_PHASE_PRIORITY = {
   buff: 0,
   debuff: 0,
+  summon: 0,
+  transform: 0,
   attack: 1,
-  recover: 2,
+  heal: 2,
+  recover: 3,
 }
+
+const SETUP_ACTION_TYPES = new Set(['buff', 'debuff', 'summon', 'transform'])
 
 function rollStat(min, max) {
   if (min >= max) return min
@@ -41,11 +46,127 @@ export default class Enemy extends Character {
     })
 
     this.definition = definition
-    this.abilities = (definition.abilities || []).map(a => ({ ...a }))
+    this.phases = definition.phases || []
+    this.phaseIndex = 0
+    this.phaseModifiers = {}
+    this.phaseAbilityOverrides = {}
+    this.currentSprites = { ...(definition.sprites || {}) }
+    this.currentName = definition.name
+    this.currentNameJa = definition.nameJa
     this.aiProfile = 'aggressive'
     this.nextAttackBonus = 0
     this.usesThisTurn = new Map()
+
+    this.applyPhase(0, () => {})
     this.resetAbilityUses()
+  }
+
+  // ---------- Phases ----------
+
+  getHpRatio() {
+    return this.hp / Math.max(1, this.maxHp)
+  }
+
+  getPhaseIndexForHp(ratio) {
+    if (!this.phases || this.phases.length === 0) return 0
+    let index = 0
+    for (let i = 0; i < this.phases.length; i++) {
+      if (ratio <= this.phases[i].hpThreshold) {
+        index = i
+      }
+    }
+    return index
+  }
+
+  checkPhaseTransition(log = () => {}) {
+    if (!this.phases || this.phases.length === 0) return false
+    const ratio = this.getHpRatio()
+    const targetIndex = this.getPhaseIndexForHp(ratio)
+    if (targetIndex !== this.phaseIndex) {
+      return this.applyPhase(targetIndex, log)
+    }
+    return false
+  }
+
+  applyPhase(index, log = () => {}) {
+    if (!this.phases || index < 0 || index >= this.phases.length) {
+      this.phaseIndex = 0
+      return false
+    }
+    const changed = this.phaseIndex !== index
+    this.phaseIndex = index
+    const phase = this.phases[index]
+
+    // Merge sprites, falling back to the previous phase's sprites.
+    if (phase.sprites) {
+      this.currentSprites = { ...this.currentSprites, ...phase.sprites }
+    }
+
+    // Rebuild ability list from the original definition, applying phase filters and overrides.
+    this.recalcAbilitiesForPhase(phase)
+
+    // Store modifiers and per-ability overrides for combat resolution.
+    this.phaseModifiers = { ...(phase.modifiers || {}) }
+    this.phaseAbilityOverrides = { ...(phase.abilityOverrides || {}) }
+
+    if (changed && phase.announce) {
+      log(phase.announce)
+    }
+    return changed
+  }
+
+  recalcAbilitiesForPhase(phase) {
+    const all = (this.definition.abilities || [])
+    const filter = phase.abilityFilter || {}
+
+    this.abilities = all
+      .map(a => ({ ...a }))
+      .filter(a => {
+        const minPhase = a.minPhaseIndex
+        if (typeof minPhase === 'number' && this.phaseIndex < minPhase) return false
+        const maxPhase = a.maxPhaseIndex
+        if (typeof maxPhase === 'number' && this.phaseIndex > maxPhase) return false
+        if (filter.only && filter.only.length > 0 && !filter.only.includes(a.id)) return false
+        if (filter.exclude && filter.exclude.includes(a.id)) return false
+        return true
+      })
+
+    // Apply phase-specific ability overrides (e.g. double basic-attack damage).
+    for (const ability of this.abilities) {
+      const overrides = this.phaseAbilityOverrides[ability.id]
+      if (overrides) {
+        Object.assign(ability, overrides)
+      }
+    }
+  }
+
+  getCurrentSprites() {
+    return this.currentSprites
+  }
+
+  getAbilityContext(ability) {
+    const context = {
+      valueOverrides: {},
+      chanceOverrides: {},
+      effectChanceMultiplier: 1,
+    }
+    if (!ability) return context
+
+    const overrides = this.phaseAbilityOverrides[ability.id]
+    if (overrides) {
+      if (overrides.damageMultiplier != null) {
+        context.valueOverrides.damageMultiplier = overrides.damageMultiplier
+      }
+      if (overrides.effectChanceMultiplier != null) {
+        context.effectChanceMultiplier = overrides.effectChanceMultiplier
+      }
+      for (const [key, value] of Object.entries(overrides)) {
+        if (key.endsWith('Chance') && typeof value === 'number') {
+          context.chanceOverrides[key.replace(/Chance$/, '')] = value
+        }
+      }
+    }
+    return context
   }
 
   resetAbilityUses() {
@@ -80,8 +201,6 @@ export default class Enemy extends Character {
     const usable = this.abilities.filter(a => this.canUseAbility(a))
     if (usable.length === 0) return null
 
-    // Aggressive AI: buff first (only if not used this turn), then attacks,
-    // then everything else. Within a phase, pick by aiWeight descending.
     const sorted = usable.slice().sort((a, b) => {
       const phaseA = AI_PHASE_PRIORITY[a.type] ?? 99
       const phaseB = AI_PHASE_PRIORITY[b.type] ?? 99
@@ -90,7 +209,7 @@ export default class Enemy extends Character {
     })
 
     if (usedBuffThisTurn) {
-      return sorted.find(a => a.type !== 'buff' && a.type !== 'debuff') || sorted[0]
+      return sorted.find(a => !SETUP_ACTION_TYPES.has(a.type)) || sorted[0]
     }
 
     return sorted[0]
@@ -99,9 +218,7 @@ export default class Enemy extends Character {
   shouldContinueTurn(actionsTaken) {
     if (actionsTaken >= 5) return false
     if (this.stamina <= 0) return false
-    return this.abilities.some(a =>
-      a.type === 'attack' && this.canUseAbility(a)
-    )
+    return this.abilities.some(a => this.canUseAbility(a))
   }
 
   computeActionPlan() {
@@ -133,14 +250,14 @@ export default class Enemy extends Character {
       })
 
       const action = buffUsed
-        ? sorted.find(a => a.type !== 'buff' && a.type !== 'debuff') || sorted[0]
+        ? sorted.find(a => !SETUP_ACTION_TYPES.has(a.type)) || sorted[0]
         : sorted[0]
 
       if (!action) break
       plan.push(action)
       simulatedStamina -= action.staminaCost
       uses.set(action.id, (uses.get(action.id) || 0) + 1)
-      if (action.type === 'buff' || action.type === 'debuff') buffUsed = true
+      if (SETUP_ACTION_TYPES.has(action.type)) buffUsed = true
     }
 
     return plan
@@ -153,6 +270,10 @@ export default class Enemy extends Character {
     }
     if (context.damageMultiplier != null) {
       multiplier *= context.damageMultiplier
+    }
+    // Phase-wide basic-attack damage bonus.
+    if (ability.isBasicAttack && this.phaseModifiers.basicAttackDamageMultiplier != null) {
+      multiplier *= this.phaseModifiers.basicAttackDamageMultiplier
     }
     return multiplier
   }
@@ -167,12 +288,11 @@ export default class Enemy extends Character {
         const effectiveElement = getElementForInfusion(declaredElement) || declaredElement
 
         const base = ability.basePower + this.getStatValue(ability.scalingStat) * ability.scalingMultiplier
-        // Consume the queued next-attack bonus, if any.
         this.consumeBuff('next_attack_bonus')
         const total = base + this.nextAttackBonus
         this.nextAttackBonus = 0
 
-        const baseMissChance = target.getMissChanceFor()
+        const baseMissChance = target.getMissChanceFor(this)
         const readinessMultiplier = 1 + (target.readiness || 0)
         const reactionMultiplier = target.reactionMultiplier || 1
         const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
@@ -245,7 +365,7 @@ export default class Enemy extends Character {
           const total = base + this.nextAttackBonus
           this.nextAttackBonus = 0
 
-          const baseMissChance = target.getMissChanceFor()
+          const baseMissChance = target.getMissChanceFor(this)
           const readinessMultiplier = 1 + (target.readiness || 0)
           const reactionMultiplier = target.reactionMultiplier || 1
           const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
@@ -304,10 +424,61 @@ export default class Enemy extends Character {
         }
         return { type: 'buff', buffType: ability.buffType, value: ability.buffValue || 0 }
       }
-      case 'recover':
+      case 'recover': {
         const recovered = ability.staminaRecover || 0
         this.recoverStamina(recovered)
         return { type: 'recover', stamina: recovered }
+      }
+      case 'heal': {
+        let healed = 0
+        if (ability.healPercent) {
+          healed = Math.floor(this.maxHp * ability.healPercent)
+        } else if (ability.healAmount) {
+          healed = ability.healAmount
+        }
+        healed = this.heal(healed)
+
+        const cleansed = []
+        if (ability.cleanseEffects && ability.cleanseEffects.length > 0) {
+          for (const effectId of ability.cleanseEffects) {
+            if (this.removeEffect(effectId)) cleansed.push(effectId)
+          }
+        }
+
+        let buff = null
+        if (ability.buffEffect) {
+          const fx = ability.buffEffect
+          const duration = fx.duration ? rollDuration({ duration: fx.duration }) : rollDuration(getEffect(fx.effectId)) || 2
+          const entry = this.applyEffect(fx.effectId, { duration })
+          if (entry) {
+            buff = { effectId: fx.effectId, remainingTurns: entry.remainingTurns }
+          }
+        }
+
+        return { type: 'heal', healed, cleansed, buff }
+      }
+      case 'summon': {
+        const baseChance = ability.summonChance != null ? ability.summonChance : 1
+        const bonus = this.phaseModifiers.summonChanceBonus || 0
+        const chance = Math.min(1, baseChance + bonus)
+        const failed = Math.random() >= chance
+        return {
+          type: 'summon',
+          failed,
+          summonIds: ability.summonIds || [],
+          summonCount: ability.summonCount || 1,
+          summonHpMultiplier: ability.summonHpMultiplier != null ? ability.summonHpMultiplier : 0.35,
+        }
+      }
+      case 'transform': {
+        const pool = ability.transformPoolIds || ability.transformPool || []
+        let transformDef = null
+        if (pool.length > 0) {
+          const id = pool[Math.floor(Math.random() * pool.length)]
+          transformDef = typeof id === 'string' ? getEnemyDefinition(id) : id
+        }
+        return { type: 'transform', transformDef, keepHpRatio: ability.keepHpRatio !== false }
+      }
       default:
         return { type: 'none' }
     }

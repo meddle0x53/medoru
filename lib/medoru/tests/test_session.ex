@@ -53,7 +53,7 @@ defmodule Medoru.Tests.TestSession do
       :user_id,
       :test_id
     ])
-    |> validate_required([:status, :user_id, :test_id])
+    |> validate_required([:status, :test_id])
     |> validate_inclusion(:status, @session_statuses)
     |> validate_number(:score, greater_than_or_equal_to: 0)
     |> validate_number(:total_possible, greater_than_or_equal_to: 0)
@@ -76,7 +76,7 @@ defmodule Medoru.Tests.TestSession do
 
     test_session
     |> cast(attrs, [:user_id, :test_id])
-    |> validate_required([:user_id, :test_id])
+    |> validate_required([:test_id])
     |> put_change(:status, :started)
     |> put_change(:started_at, now)
     |> put_change(:current_step_index, 0)

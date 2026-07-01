@@ -10,6 +10,8 @@ import kasaObakeElite from './kasa_obake_elite.json'
 import kasaObakeTyrant from './kasa_obake_tyrant.json'
 import hitotsumeKozo from './hitotsume_kozo.json'
 import bakeNeko from './bake_neko.json'
+import danzaburoDanuki from './danzaburo_danuki.json'
+import tanukiClone from './tanuki_clone.json'
 
 export const ENEMY_DEFINITIONS = [
   bakeNeko,
@@ -17,6 +19,8 @@ export const ENEMY_DEFINITIONS = [
   kasaObakeElite,
   kasaObakeTyrant,
   hitotsumeKozo,
+  danzaburoDanuki,
+  tanukiClone,
 ]
 
 export function getEnemyDefinition(id) {

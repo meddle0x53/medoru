@@ -79,7 +79,9 @@ function getDefaultUnlockedSocketCharmIds() {
 
 function getDefaultUnlockedHeroCharmIds() {
   const locked = getLockedIds('heroCharms')
-  return CHARMS.filter(c => c.type === CHARM_TYPES.HERO && !locked.has(c.id)).map(c => c.id)
+  return CHARMS.filter(
+    c => c.type === CHARM_TYPES.HERO && !locked.has(c.id) && !c.firstDefeatReward
+  ).map(c => c.id)
 }
 
 function getDefaultUnlockedAbilityIds() {
@@ -166,14 +168,14 @@ export default class Player extends Character {
     const weapon = createDefaultWeapon()
     const shield = createDefaultShield()
 
-    // Calculate max HP from vitality
-    const maxHp = 80 + baseStats.vitality * 5
+    // Calculate max HP from vitality (charm multiplier applied after loadout)
+    const baseMaxHp = 80 + baseStats.vitality * 5
     const maxStamina = 8 + Math.floor(baseStats.stamina / 3)
 
     super({
       name: userData.name || 'The Anomaly',
       nameJa: '異常存在',
-      maxHp,
+      maxHp: baseMaxHp,
       maxStamina,
       defense: shirtDefense,
       strength: baseStats.strength,
@@ -251,7 +253,7 @@ export default class Player extends Character {
     }
 
     // Recalculate derived stats after allocations
-    this.maxHp = 80 + this.baseStats.vitality * 5
+    this.recalcMaxHp()
     this.hp = this.maxHp
     this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
     this.stamina = this.maxStamina
@@ -297,6 +299,9 @@ export default class Player extends Character {
 
     // Cache computed charm stats so we don't recompute every frame
     this._charmEffects = null
+
+    // Apply any max-HP charm multipliers now that loadout is available.
+    this.recalcMaxHp()
 
     // Kanji list for item challenges
     this.kanjiList = userData.kanji_list || []
@@ -721,6 +726,7 @@ export default class Player extends Character {
       this.loadout.shieldCharmIds.push(charmId)
     }
     this._charmEffects = null
+    this.recalcMaxHp()
     this.saveLoadout()
     return { ok: true }
   }
@@ -734,6 +740,7 @@ export default class Player extends Character {
       this.loadout.shieldCharmIds = this.loadout.shieldCharmIds.filter(id => id !== charmId)
     }
     this._charmEffects = null
+    this.recalcMaxHp()
     this.saveLoadout()
   }
 
@@ -742,6 +749,7 @@ export default class Player extends Character {
     this.loadout.weaponCharmIds = []
     this.loadout.shieldCharmIds = []
     this._charmEffects = null
+    this.recalcMaxHp()
     this.saveLoadout()
   }
 
@@ -756,6 +764,16 @@ export default class Player extends Character {
       }
     }
     return charms
+  }
+
+  recalcMaxHp() {
+    const base = 80 + this.baseStats.vitality * 5
+    const multiplier = 1 + (this.getCharmEffects().maxHpMultiplier || 0)
+    const newMax = Math.floor(base * multiplier)
+    const oldMax = this.maxHp || newMax
+    this.maxHp = newMax
+    // Heal the same amount the max increased so current HP keeps its ratio.
+    this.hp = Math.min(this.maxHp, Math.max(1, this.hp + (newMax - oldMax)))
   }
 
   // Returns a plain object of accumulated charm effects, e.g.
@@ -829,9 +847,24 @@ export default class Player extends Character {
       equipped = true
     }
 
-    if (equipped) this._charmEffects = null
+    if (equipped) {
+      this._charmEffects = null
+      this.recalcMaxHp()
+    }
     this.saveLoadout()
     return { owned: true, equipped }
+  }
+
+  addSocketCharm(charmId) {
+    const charm = getSocketCharmById(charmId)
+    if (!charm) return false
+
+    if (!this.loadout.ownedSocketCharmIds) this.loadout.ownedSocketCharmIds = []
+    if (!this.loadout.ownedSocketCharmIds.includes(charmId)) {
+      this.loadout.ownedSocketCharmIds.push(charmId)
+    }
+    this.saveLoadout()
+    return true
   }
 
   // ---------- Equipment Upgrades ----------

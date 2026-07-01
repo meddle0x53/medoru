@@ -100,6 +100,7 @@ export default class WinScene extends Phaser.Scene {
 
     if (equipped) {
       this.player._charmEffects = null
+      this.player.recalcMaxHp()
     }
     this.player.saveLoadout()
   }

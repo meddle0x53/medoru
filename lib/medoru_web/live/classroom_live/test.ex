@@ -9,6 +9,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   alias Medoru.Tests
   alias Medoru.Grammar.Validator
   alias Medoru.Tests.ReadingAnswerValidator
+  alias MedoruWeb.PublicAccess
   alias MedoruWeb.WritingFillInComponents
 
   @impl true
@@ -18,23 +19,35 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     socket = assign(socket, :locale, locale)
 
-    # Verify user is an approved member of the classroom
-    case Classrooms.get_user_membership(classroom_id, user.id) do
-      nil ->
+    cond do
+      not is_nil(user) ->
+        # Verify user is an approved member of the classroom
+        case Classrooms.get_user_membership(classroom_id, user.id) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, gettext("You are not a member of this classroom."))
+             |> push_navigate(to: ~p"/classrooms")}
+
+          membership ->
+            if membership.status != :approved do
+              {:ok,
+               socket
+               |> put_flash(:error, gettext("Your membership is pending approval."))
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+            else
+              load_test_session(socket, classroom_id, test_id, user)
+            end
+        end
+
+      PublicAccess.featured_classroom?(classroom_id) ->
+        load_anonymous_test_session(socket, classroom_id, test_id)
+
+      true ->
         {:ok,
          socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
-
-      membership ->
-        if membership.status != :approved do
-          {:ok,
-           socket
-           |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-        else
-          load_test_session(socket, classroom_id, test_id, user)
-        end
+         |> put_flash(:error, gettext("You must sign in to take this test."))
+         |> push_navigate(to: ~p"/auth/google")}
     end
   end
 
@@ -76,6 +89,72 @@ defmodule MedoruWeb.ClassroomLive.Test do
           # Can start new attempt (no existing or was reset)
           true ->
             start_new_test_session(socket, classroom_test, classroom_id, test_id, user)
+        end
+    end
+  end
+
+  defp load_anonymous_test_session(socket, classroom_id, test_id) do
+    classroom_test = Classrooms.get_classroom_test(classroom_id, test_id)
+
+    cond do
+      is_nil(classroom_test) || classroom_test.status != :active ->
+        {:ok,
+         socket
+         |> put_flash(:error, gettext("This test is not available in this classroom."))
+         |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+
+      true ->
+        test = Tests.get_test!(test_id)
+        classroom = Classrooms.get_classroom!(classroom_id)
+        steps = Tests.list_test_steps(test_id)
+        first_step = List.first(steps)
+        time_limit = test.time_limit_seconds || 3600
+
+        # Only persist a session once the LiveView socket is connected. The
+        # initial HTTP dead-render also invokes mount and would otherwise leave
+        # an abandoned session behind.
+        session =
+          if connected?(socket) do
+            case Tests.start_test_session(nil, test_id) do
+              {:ok, session} -> session
+              {:error, _} -> nil
+            end
+          else
+            nil
+          end
+
+        if connected?(socket) and is_nil(session) do
+          {:ok,
+           socket
+           |> put_flash(:error, gettext("Failed to start test session."))
+           |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+        else
+          {:ok,
+           socket
+           |> assign(:page_title, test.title)
+           |> assign(:classroom, classroom)
+           |> assign(:test, test)
+           |> assign(:attempt, nil)
+           |> assign(:is_anonymous, true)
+           |> assign(:session, session)
+           |> assign(:steps, steps)
+           |> assign(:current_step_index, 0)
+           |> assign(:current_step, first_step)
+           |> assign(:total_steps, length(steps))
+           |> assign(:time_remaining, time_limit)
+           |> assign(:answer, initial_answer_for_step(first_step))
+           |> assign(:show_hint, false)
+           |> assign(:writing_start_time, writing_start_time(first_step))
+           |> assign(:current_wrong_strokes, 0)
+           |> assign(:challenge_score, 0)
+           |> assign(:meaning_answer, "")
+           |> assign(:reading_answer, "")
+           |> assign(:selected_answer, nil)
+           |> assign(:feedback, nil)
+           |> assign(:correct_meaning, nil)
+           |> assign(:correct_reading, nil)
+           |> assign(:meaning_error, false)
+           |> assign(:reading_error, false)}
         end
     end
   end
@@ -130,8 +209,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:correct_meaning, nil)
            |> assign(:correct_reading, nil)
            |> assign(:meaning_error, false)
-           |> assign(:reading_error, false)
-           }
+           |> assign(:reading_error, false)}
 
         {:error, _} ->
           {:ok,
@@ -171,8 +249,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:correct_meaning, nil)
        |> assign(:correct_reading, nil)
        |> assign(:meaning_error, false)
-       |> assign(:reading_error, false)
-       }
+       |> assign(:reading_error, false)}
     end
   end
 
@@ -229,8 +306,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:reading_error, false)
              |> assign(:writing_start_time, writing_start_time(first_step))
              |> assign(:current_wrong_strokes, 0)
-             |> assign(:challenge_score, 0)
-             }
+             |> assign(:challenge_score, 0)}
 
           {:error, _} ->
             {:ok,
@@ -306,7 +382,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
     # User clicked skip button - mark as incorrect and move to next
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
 
     # Record the skipped answer as incorrect
     result =
@@ -322,16 +397,18 @@ defmodule MedoruWeb.ClassroomLive.Test do
     case result do
       {:ok, _step_answer} ->
         # Update attempt progress
-        Classrooms.update_test_progress(attempt.id, %{
-          score: 0,
-          time_spent_seconds: attempt.time_spent_seconds + 10
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: 0,
+            time_spent_seconds: attempt.time_spent_seconds + 10
+          }
+        end)
 
         # Move to next step or complete
         next_index = socket.assigns.current_step_index + 1
 
         if next_index >= socket.assigns.total_steps do
-          complete_test(socket, session.id, attempt.id)
+          maybe_complete_test(socket, session.id)
         else
           Tests.update_session_progress(session.id, next_index)
           next_step = Enum.at(socket.assigns.steps, next_index)
@@ -351,8 +428,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:correct_meaning, nil)
            |> assign(:correct_reading, nil)
            |> assign(:meaning_error, false)
-           |> assign(:reading_error, false)
-           }
+           |> assign(:reading_error, false)}
         end
 
       {:error, changeset} ->
@@ -369,7 +445,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
     # Handle fill question with meaning and optional reading
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
 
     # Extract values from form
     meaning = answer_map["meaning"]
@@ -421,17 +496,19 @@ defmodule MedoruWeb.ClassroomLive.Test do
     case result do
       {:ok, _step_answer} ->
         # Update attempt progress
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 30
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 30
+          }
+        end)
 
         # Move to next step or complete
         next_index = socket.assigns.current_step_index + 1
 
         if next_index >= socket.assigns.total_steps do
           # Complete the test
-          complete_test(socket, session.id, attempt.id)
+          maybe_complete_test(socket, session.id)
         else
           # Update session progress for resume functionality
           Tests.update_session_progress(session.id, next_index)
@@ -462,7 +539,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
       when is_map(answers) do
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
 
     answer =
       WritingFillInComponents.build_filled_sentence(
@@ -470,14 +546,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
         answers
       )
 
-    handle_writing_fill_in_answer(socket, answer, step, session, attempt)
+    handle_writing_fill_in_answer(socket, answer, step, session)
   end
 
   @impl true
   def handle_event("submit_answer", params, socket) do
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
 
     # Handle grammar step types with special scoring
     case step.question_type do
@@ -485,23 +560,23 @@ defmodule MedoruWeb.ClassroomLive.Test do
         handle_image_to_meaning_answer(socket)
 
       :sentence_validation ->
-        handle_sentence_validation_answer(socket, params["answer"], step, session, attempt)
+        handle_sentence_validation_answer(socket, params["answer"], step, session)
 
       :conjugation ->
-        handle_conjugation_answer(socket, params["answer"], step, session, attempt)
+        handle_conjugation_answer(socket, params["answer"], step, session)
 
       :conjugation_multichoice ->
-        handle_conjugation_multichoice_answer(socket, params["answer"], step, session, attempt)
+        handle_conjugation_multichoice_answer(socket, params["answer"], step, session)
 
       :word_order ->
-        handle_word_order_answer(socket, params["answer"], step, session, attempt)
+        handle_word_order_answer(socket, params["answer"], step, session)
 
       :grammar_pattern ->
-        handle_grammar_pattern_answer(socket, params["answer"], step, session, attempt)
+        handle_grammar_pattern_answer(socket, params["answer"], step, session)
 
       _ ->
         # Standard multichoice handling
-        handle_standard_answer(socket, params["answer"], step, session, attempt)
+        handle_standard_answer(socket, params["answer"], step, session)
     end
   end
 
@@ -520,23 +595,34 @@ defmodule MedoruWeb.ClassroomLive.Test do
   # Timer and Writing event handlers
   @impl true
   def handle_event("time_up", _, socket) do
-    # Timer ran out - auto-submit the test
-    auto_submit_test(socket)
+    # Anonymous featured-classroom tests are untimed; ignore time_up.
+    if socket.assigns[:is_anonymous] do
+      {:noreply, socket}
+    else
+      # Timer ran out - auto-submit the test
+      auto_submit_test(socket)
+    end
   end
 
   @impl true
   def handle_event("sync_time", %{"time_remaining" => time_remaining}, socket) do
-    # Periodic sync from client-side timer - update DB but don't re-render
-    attempt = socket.assigns.attempt
+    # Anonymous users have no attempt record to sync.
+    if socket.assigns[:is_anonymous] do
+      {:noreply, socket}
+    else
+      # Periodic sync from client-side timer - update DB and server state.
+      # The timer display is driven by the client-side JS hook, so updating
+      # the assign here does not produce visible flicker.
+      attempt = socket.assigns.attempt
 
-    Task.start(fn ->
-      Classrooms.update_test_progress(attempt.id, %{
-        time_remaining_seconds: time_remaining
-      })
-    end)
+      Task.start(fn ->
+        Classrooms.update_test_progress(attempt.id, %{
+          time_remaining_seconds: time_remaining
+        })
+      end)
 
-    # Silently update server state without triggering re-render
-    {:noreply, socket}
+      {:noreply, assign(socket, :time_remaining, time_remaining)}
+    end
   end
 
   @impl true
@@ -617,7 +703,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Standard answer handler for multichoice questions
-  defp handle_standard_answer(socket, answer, step, session, attempt) do
+  defp handle_standard_answer(socket, answer, step, session) do
     result =
       Tests.record_step_answer(session.id, step.id, %{
         "answer" => answer,
@@ -627,12 +713,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: step_answer.points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 30
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: step_answer.points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 30
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -648,7 +736,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp handle_image_to_meaning_answer(socket) do
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
     answer = socket.assigns.selected_answer
 
     if is_nil(answer) or String.trim(answer) == "" do
@@ -663,12 +750,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       case result do
         {:ok, step_answer} ->
-          Classrooms.update_test_progress(attempt.id, %{
-            score: step_answer.points_earned,
-            time_spent_seconds: attempt.time_spent_seconds + 30
-          })
+          maybe_update_attempt_progress(socket, fn attempt ->
+            %{
+              score: step_answer.points_earned,
+              time_spent_seconds: attempt.time_spent_seconds + 30
+            }
+          end)
 
-          move_to_next_step(socket, session, attempt)
+          move_to_next_step(socket, session)
 
         {:error, changeset} ->
           require Logger
@@ -684,7 +773,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp handle_reading_text_answer(socket, params) do
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
     is_kana_only = step.question_data["is_kana_only"] || false
 
     meaning =
@@ -734,12 +822,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
         case result do
           {:ok, _step_answer} ->
             if validation.both_correct do
-              Classrooms.update_test_progress(attempt.id, %{
-                score: step.points,
-                time_spent_seconds: attempt.time_spent_seconds + 30
-              })
+              maybe_update_attempt_progress(socket, fn attempt ->
+                %{
+                  score: step.points,
+                  time_spent_seconds: attempt.time_spent_seconds + 30
+                }
+              end)
 
-              move_to_next_step(socket, session, attempt)
+              move_to_next_step(socket, session)
             else
               {:noreply,
                socket
@@ -765,7 +855,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Sentence validation: 10 points, -3 per wrong attempt, min 1 point
-  defp handle_sentence_validation_answer(socket, answer, step, session, attempt) do
+  defp handle_sentence_validation_answer(socket, answer, step, session) do
     # Get existing answer for this step (only one record exists per step due to unique constraint)
     existing_answers = Tests.list_test_step_answers(session.id, step.id)
     existing_answer = List.first(existing_answers)
@@ -811,15 +901,17 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 45
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 45
+          }
+        end)
 
         # Max 4 attempts total
         if is_correct or current_attempt >= 4 do
           # Correct or max attempts reached - move to next
-          move_to_next_step(socket, session, attempt)
+          move_to_next_step(socket, session)
         else
           # Wrong but can retry - stay on this step
           {:noreply,
@@ -843,7 +935,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Conjugation: 3 points, single attempt, text validation
-  defp handle_conjugation_answer(socket, answer, step, session, attempt) do
+  defp handle_conjugation_answer(socket, answer, step, session) do
     question_data = step.question_data || %{}
     correct_answer = question_data["generated_answer"] || step.correct_answer
     is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
@@ -865,12 +957,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 30
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 30
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -882,7 +976,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Conjugation multichoice: 3 points, single attempt, option selection
-  defp handle_conjugation_multichoice_answer(socket, answer, step, session, attempt) do
+  defp handle_conjugation_multichoice_answer(socket, answer, step, session) do
     question_data = step.question_data || %{}
     correct_answer = question_data["generated_answer"] || step.correct_answer
     is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
@@ -903,12 +997,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 20
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 20
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -920,7 +1016,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Word order: 3 points, single attempt, drag-drop validation
-  defp handle_word_order_answer(socket, answer, step, session, attempt) do
+  defp handle_word_order_answer(socket, answer, step, session) do
     # answer is the joined string from word_order question
     correct_answer = step.correct_answer
     is_correct = normalize_answer(answer) == normalize_answer(correct_answer)
@@ -942,12 +1038,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 40
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 40
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -959,7 +1057,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Grammar pattern: compare against correct_answer and alt_correct_answers
-  defp handle_grammar_pattern_answer(socket, answer, step, session, attempt) do
+  defp handle_grammar_pattern_answer(socket, answer, step, session) do
     question_data = step.question_data || %{}
     correct_answer = step.correct_answer
     alt_answers = question_data["alt_correct_answers"] || []
@@ -987,12 +1085,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 40
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 40
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -1003,7 +1103,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
-  defp handle_writing_fill_in_answer(socket, answer, step, session, attempt) do
+  defp handle_writing_fill_in_answer(socket, answer, step, session) do
     question_data = step.question_data || %{}
     correct_answer = step.correct_answer
     alt_answers = question_data["alt_correct_answers"] || []
@@ -1031,12 +1131,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     case result do
       {:ok, _step_answer} ->
-        Classrooms.update_test_progress(attempt.id, %{
-          score: points_earned,
-          time_spent_seconds: attempt.time_spent_seconds + 40
-        })
+        maybe_update_attempt_progress(socket, fn attempt ->
+          %{
+            score: points_earned,
+            time_spent_seconds: attempt.time_spent_seconds + 40
+          }
+        end)
 
-        move_to_next_step(socket, session, attempt)
+        move_to_next_step(socket, session)
 
       {:error, changeset} ->
         require Logger
@@ -1048,11 +1150,11 @@ defmodule MedoruWeb.ClassroomLive.Test do
   end
 
   # Helper to move to next step or complete test
-  defp move_to_next_step(socket, session, attempt) do
+  defp move_to_next_step(socket, session) do
     next_index = socket.assigns.current_step_index + 1
 
     if next_index >= socket.assigns.total_steps do
-      complete_test(socket, session.id, attempt.id)
+      maybe_complete_test(socket, session.id)
     else
       Tests.update_session_progress(session.id, next_index)
       next_step = Enum.at(socket.assigns.steps, next_index)
@@ -1103,7 +1205,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp submit_writing_answer(socket, correct, accuracy, wrong_strokes \\ 0) do
     step = socket.assigns.current_step
     session = socket.assigns.session
-    attempt = socket.assigns.attempt
     kanji_drawing? = socket.assigns.test.metadata["kanji_drawing"] == true
 
     # Check if answer already exists for this step (prevent double submission)
@@ -1114,7 +1215,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       next_index = socket.assigns.current_step_index + 1
 
       if next_index >= socket.assigns.total_steps do
-        complete_test(socket, session.id, attempt.id)
+        maybe_complete_test(socket, session.id)
       else
         next_step = Enum.at(socket.assigns.steps, next_index)
         Tests.update_session_progress(session.id, next_index)
@@ -1191,16 +1292,18 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       case result do
         {:ok, _step_answer} ->
-          Classrooms.update_test_progress(attempt.id, %{
-            score: points_earned,
-            time_spent_seconds: attempt.time_spent_seconds + time_spent_seconds
-          })
+          maybe_update_attempt_progress(socket, fn attempt ->
+            %{
+              score: points_earned,
+              time_spent_seconds: attempt.time_spent_seconds + time_spent_seconds
+            }
+          end)
 
           next_index = socket.assigns.current_step_index + 1
           Tests.update_session_progress(session.id, next_index)
 
           if next_index >= socket.assigns.total_steps do
-            complete_test(socket, session.id, attempt.id)
+            maybe_complete_test(socket, session.id)
           else
             next_step = Enum.at(socket.assigns.steps, next_index)
 
@@ -1279,26 +1382,40 @@ defmodule MedoruWeb.ClassroomLive.Test do
         attempt.time_limit_seconds - socket.assigns.time_remaining
       end
 
-    # Complete the attempt
+    # If the timer hasn't been synced yet (e.g. the user finished before the
+    # first periodic sync), fall back to wall-clock elapsed time so the result
+    # isn't reported as 0:00.
+    time_spent_seconds =
+      if time_spent_seconds <= 0 do
+        DateTime.diff(DateTime.utc_now(), attempt.started_at, :second)
+      else
+        time_spent_seconds
+      end
+
+    time_spent_seconds = min(max(time_spent_seconds, 0), attempt.time_limit_seconds)
+
+    # Complete the classroom attempt and the underlying test session so the
+    # results page can read consistent score/time data from either source.
     attrs = %{
       test_session_id: session_id,
       score: score,
       max_score: max_score,
       points_earned: score,
-      time_spent_seconds: max(time_spent_seconds, 0),
+      time_spent_seconds: time_spent_seconds,
       time_remaining_seconds: socket.assigns.time_remaining
     }
 
-    case Classrooms.complete_test_attempt(attempt_id, attrs) do
-      {:ok, _attempt} ->
-        {:noreply,
-         socket
-         |> push_navigate(
-           to:
-             ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
-         )}
-
-      {:error, _} ->
+    with {:ok, _attempt} <- Classrooms.complete_test_attempt(attempt_id, attrs),
+         {:ok, _session} <-
+           Tests.complete_test_session(session_id, score, max_score, time_spent_seconds) do
+      {:noreply,
+       socket
+       |> push_navigate(
+         to:
+           ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
+       )}
+    else
+      _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to complete test."))}
     end
   end
@@ -1319,19 +1436,57 @@ defmodule MedoruWeb.ClassroomLive.Test do
       auto_submitted: true
     }
 
-    case Classrooms.complete_test_attempt(attempt.id, attrs) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> put_flash(:warning, gettext("Time's up! Your test was auto-submitted."))
-         |> push_navigate(
-           to:
-             ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
-         )}
-
-      {:error, _} ->
+    with {:ok, _} <- Classrooms.complete_test_attempt(attempt.id, attrs),
+         {:ok, _} <-
+           Tests.complete_test_session(session.id, score, max_score, attempt.time_limit_seconds) do
+      {:noreply,
+       socket
+       |> put_flash(:warning, gettext("Time's up! Your test was auto-submitted."))
+       |> push_navigate(
+         to:
+           ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results"
+       )}
+    else
+      _ ->
         {:noreply, put_flash(socket, :error, gettext("Failed to submit test."))}
     end
+  end
+
+  # Updates the classroom test attempt progress, if the user is authenticated.
+  # Anonymous users in the featured classroom do not have an attempt record.
+  defp maybe_update_attempt_progress(socket, attrs_fun) when is_function(attrs_fun, 1) do
+    if socket.assigns[:is_anonymous] do
+      {:ok, nil}
+    else
+      attempt = socket.assigns.attempt
+      Classrooms.update_test_progress(attempt.id, attrs_fun.(attempt))
+    end
+  end
+
+  # Completes a test. For authenticated users this persists the classroom attempt;
+  # for anonymous users it completes the test session and redirects with the
+  # session id so the results page can display the outcome.
+  defp maybe_complete_test(socket, session_id) do
+    if socket.assigns[:is_anonymous] do
+      complete_anonymous_test(socket, session_id)
+    else
+      complete_test(socket, session_id, socket.assigns.attempt.id)
+    end
+  end
+
+  defp complete_anonymous_test(socket, session_id) do
+    {score, max_score} = Tests.calculate_session_score(session_id)
+
+    Tests.update_session_progress(session_id, socket.assigns.total_steps, 0)
+
+    Tests.complete_test_session(session_id, score, max_score, 0)
+
+    {:noreply,
+     socket
+     |> push_navigate(
+       to:
+         ~p"/classrooms/#{socket.assigns.classroom.id}/tests/#{socket.assigns.test.id}/results?session_id=#{session_id}"
+     )}
   end
 
   @impl true
@@ -1549,7 +1704,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       </div>
                     </div>
                   <% :writing -> %>
-                    <span id="debug-wrong-strokes" class="hidden"><%= @current_wrong_strokes %></span>
+                    <span id="debug-wrong-strokes" class="hidden">{@current_wrong_strokes}</span>
                     <MedoruWeb.LessonTestLive.WritingComponent.writing_question
                       step={@current_step}
                       target="writing-component"

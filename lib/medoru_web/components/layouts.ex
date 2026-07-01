@@ -692,6 +692,13 @@ defmodule MedoruWeb.Layouts do
               class="hidden lg:block"
             />
             <.nav_link
+              path="/tests"
+              icon="hero-clipboard-document-list"
+              label={gettext("Tests")}
+              locale={@current_scope[:locale]}
+              class="hidden lg:block"
+            />
+            <.nav_link
               path="/games"
               icon="hero-puzzle-piece"
               label={gettext("Games")}
@@ -826,6 +833,12 @@ defmodule MedoruWeb.Layouts do
                     path="/lessons"
                     icon="hero-book-open"
                     label={gettext("Lessons")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/tests"
+                    icon="hero-clipboard-document-list"
+                    label={gettext("Tests")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link

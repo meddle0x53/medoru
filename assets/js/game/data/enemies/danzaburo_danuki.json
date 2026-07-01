@@ -1,0 +1,228 @@
+{
+  "id": "danzaburo_danuki",
+  "name": "Danzaburō-danuki",
+  "nameJa": "団三郎狸",
+  "description": "A towering tanuki trickster who conjures sake, mirages, and borrowed forms.",
+  "level": 1,
+  "baseGold": 25,
+  "roles": ["mini_boss"],
+  "mapIds": [1],
+  "maxColumn": 10,
+  "tint": "0x8B5A2B",
+  "sprites": {
+    "default": "enemy_bake_neko_default",
+    "attack": "enemy_bake_neko_attack",
+    "defend": "enemy_bake_neko_defend",
+    "buff": "enemy_bake_neko_buff",
+    "death": "enemy_bake_neko_defeated"
+  },
+  "portrait": "enemy_bake_neko_portrait",
+  "icon": "enemy_bake_neko_icon",
+  "layout": {
+    "1": [{ "x": 690, "y": 470, "scale": 0.18 }],
+    "2": [{ "x": 600, "y": 460, "scale": 0.14 }, { "x": 780, "y": 460, "scale": 0.14 }],
+    "3": [{ "x": 540, "y": 455, "scale": 0.12 }, { "x": 690, "y": 455, "scale": 0.12 }, { "x": 840, "y": 455, "scale": 0.12 }]
+  },
+  "stats": {
+    "hp": { "min": 260, "max": 280 },
+    "stamina": { "min": 12, "max": 14 },
+    "strength": { "min": 4, "max": 5 },
+    "skill": { "min": 5, "max": 6 },
+    "mana": { "min": 6, "max": 7 },
+    "luck": { "min": 8, "max": 10 },
+    "defense": { "min": 8, "max": 10 },
+    "armor": { "min": 3, "max": 4 }
+  },
+  "abilities": [
+    {
+      "id": "tanuki_staff",
+      "name": "Tanuki Staff",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 2,
+      "sprite": "enemy_bake_neko_attack",
+      "aiWeight": 12,
+      "maxUsesPerTurn": 5,
+      "basePower": 9,
+      "scalingStat": "strength",
+      "scalingMultiplier": 0.9,
+      "isBasicAttack": true,
+      "effects": [],
+      "challenges": [{
+        "chance": 0.35,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+        "onSuccess": "weaken",
+        "weakenMultiplier": 0.5,
+        "onFail": "full",
+        "timeLimit": 6000
+      }]
+    },
+    {
+      "id": "falling_leaves",
+      "name": "Falling Leaves",
+      "type": "attack",
+      "element": "wind",
+      "staminaCost": 3,
+      "sprite": "enemy_bake_neko_attack",
+      "aiWeight": 10,
+      "maxUsesPerTurn": 2,
+      "minPhaseIndex": 1,
+      "basePower": 6,
+      "scalingStat": "skill",
+      "scalingMultiplier": 0.7,
+      "effects": [
+        {
+          "effectId": "blind",
+          "target": "enemy",
+          "chance": { "base": 0.35, "step": 0, "cap": 0.35 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ],
+      "challenges": [{
+        "chance": 0.50,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+        "onSuccess": "neutralize",
+        "onFail": { "type": "setChance", "effectId": "blind", "value": 0.50 },
+        "timeLimit": 6000
+      }]
+    },
+    {
+      "id": "stone_belly",
+      "name": "Stone Belly",
+      "type": "attack",
+      "element": "earth",
+      "staminaCost": 3,
+      "sprite": "enemy_bake_neko_attack",
+      "aiWeight": 9,
+      "maxUsesPerTurn": 2,
+      "basePower": 7,
+      "scalingStat": "strength",
+      "scalingMultiplier": 0.8,
+      "effects": [
+        {
+          "effectId": "slow",
+          "target": "enemy",
+          "chance": { "base": 0.45, "step": 0, "cap": 0.45 },
+          "duration": { "min": 1, "max": 1 }
+        },
+        {
+          "effectId": "blunt",
+          "target": "enemy",
+          "chance": { "base": 0.20, "step": 0, "cap": 0.20 },
+          "duration": { "min": 1, "max": 1 }
+        }
+      ],
+      "challenges": [{
+        "chance": 0.40,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+        "onSuccess": "halveChance",
+        "onFail": "boostChance",
+        "timeLimit": 6000
+      }]
+    },
+    {
+      "id": "forest_mirage",
+      "name": "Forest Mirage",
+      "type": "summon",
+      "staminaCost": 4,
+      "sprite": "enemy_bake_neko_buff",
+      "aiWeight": 11,
+      "maxUsesPerTurn": 1,
+      "summonIds": ["tanuki_clone"],
+      "summonCount": 1,
+      "summonChance": 0.75,
+      "summonHpMultiplier": 0.35,
+      "challenges": [{
+        "chance": 0.45,
+        "type": "kanji",
+        "source": "pool",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"] },
+        "onSuccess": "cancel",
+        "onFail": "full",
+        "timeLimit": 5000
+      }]
+    },
+    {
+      "id": "sake_of_a_hundred_years",
+      "name": "Sake of a Hundred Years",
+      "type": "heal",
+      "staminaCost": 5,
+      "sprite": "enemy_bake_neko_buff",
+      "aiWeight": 6,
+      "maxUsesPerTurn": 1,
+      "healPercent": 0.15,
+      "cleanseEffects": ["burn", "poison", "weak", "bleed", "slow", "blunt", "frost", "madness", "stamina_crash", "void_touched"],
+      "buffEffect": {
+        "effectId": "sake_power",
+        "duration": { "min": 2, "max": 3 }
+      },
+      "challenges": [{
+        "chance": 0.35,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
+        "onSuccess": "weaken",
+        "weakenMultiplier": 0.5,
+        "onFail": "full",
+        "timeLimit": 6000
+      }]
+    },
+    {
+      "id": "tanuki_transformation",
+      "name": "Tanuki Transformation",
+      "type": "transform",
+      "staminaCost": 5,
+      "sprite": "enemy_bake_neko_buff",
+      "aiWeight": 5,
+      "maxUsesPerTurn": 1,
+      "transformPoolIds": ["kasa_obake", "hitotsume_kozo", "bake_neko"],
+      "keepHpRatio": true,
+      "challenges": [{
+        "chance": 0.40,
+        "type": "word",
+        "promptType": "meaning",
+        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+        "onSuccess": "cancel",
+        "onFail": "full",
+        "timeLimit": 6000
+      }]
+    }
+  ],
+  "phases": [
+    {
+      "hpThreshold": 1.0,
+      "name": "Calm Deceiver",
+      "abilityFilter": { "exclude": ["falling_leaves"] }
+    },
+    {
+      "hpThreshold": 0.40,
+      "name": "Drunken Fury",
+      "announce": "Danzaburō enters Drunken Fury! Its staff blurs and the forest shivers!",
+      "modifiers": {
+        "basicAttackDamageMultiplier": 2.0,
+        "summonChanceBonus": 0.25
+      }
+    }
+  ],
+  "firstDefeatRewards": [
+    { "type": "charm", "id": "tanuki_fur_charm" },
+    { "type": "socketCharm", "id": "heavy_charm_sword" }
+  ],
+  "drops": {
+    "warrior": [
+      { "type": "item", "id": "health_potion", "chance": 0.25, "rarity": "normal" },
+      { "type": "item", "id": "stone", "chance": 0.35, "rarity": "normal" },
+      { "type": "charm", "id": "kaze_charm", "chance": 0.05, "rarity": "normal" },
+      { "type": "charm", "id": "tetsu_charm", "chance": 0.05, "rarity": "normal" },
+      { "type": "charm", "id": "kouri_charm", "chance": 0.03, "rarity": "special" }
+    ],
+    "mage": [],
+    "archer": []
+  }
+}

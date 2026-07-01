@@ -772,6 +772,21 @@ defmodule Medoru.Tests do
   end
 
   @doc """
+  Completes a test session with a final score, total possible, and time spent.
+  """
+  def complete_test_session(session_id, score, total_possible, time_spent) do
+    case Repo.get(TestSession, session_id) do
+      nil ->
+        {:ok, nil}
+
+      session ->
+        session
+        |> TestSession.complete_changeset(score, total_possible, time_spent)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
   Updates the test session's current step index.
   Used to track progress during test taking for resume functionality.
 
@@ -853,11 +868,27 @@ defmodule Medoru.Tests do
 
   """
   def start_test_session(user_id, test_id) do
-    # Clean up any duplicate active sessions (keep only the most recent)
-    cleanup_duplicate_sessions(user_id, test_id)
+    # Anonymous users always get a fresh session; do not reuse or clean up
+    # sessions that have no user_id.
+    if is_nil(user_id) do
+      test = get_test!(test_id)
 
-    # Check for existing active session
-    case get_active_session(user_id, test_id) do
+      attrs = %{
+        user_id: nil,
+        test_id: test_id,
+        total_possible: test.total_points,
+        current_step_index: 0
+      }
+
+      %TestSession{}
+      |> TestSession.start_changeset(attrs)
+      |> Repo.insert()
+    else
+      # Clean up any duplicate active sessions (keep only the most recent)
+      cleanup_duplicate_sessions(user_id, test_id)
+
+      # Check for existing active session
+      case get_active_session(user_id, test_id) do
       nil ->
         test = get_test!(test_id)
 
@@ -905,6 +936,7 @@ defmodule Medoru.Tests do
         else
           {:ok, existing_session}
         end
+      end
     end
   end
 

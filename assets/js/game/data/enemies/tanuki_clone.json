@@ -1,0 +1,57 @@
+{
+  "id": "tanuki_clone",
+  "name": "Tanuki Clone",
+  "nameJa": "狸の幻影",
+  "description": "A flickering copy spawned by Danzaburō's forest magic.",
+  "level": 1,
+  "baseGold": 3,
+  "roles": ["summon"],
+  "mapIds": [1],
+  "maxColumn": 10,
+  "tint": "0xA67B5B",
+  "sprites": {
+    "default": "enemy_bake_neko_default",
+    "attack": "enemy_bake_neko_attack",
+    "defend": "enemy_bake_neko_defend",
+    "buff": "enemy_bake_neko_buff",
+    "death": "enemy_bake_neko_defeated"
+  },
+  "portrait": null,
+  "icon": null,
+  "layout": {
+    "1": [{ "x": 780, "y": 470, "scale": 0.12 }],
+    "2": [{ "x": 600, "y": 460, "scale": 0.12 }, { "x": 780, "y": 460, "scale": 0.12 }],
+    "3": [{ "x": 540, "y": 455, "scale": 0.10 }, { "x": 690, "y": 455, "scale": 0.10 }, { "x": 840, "y": 455, "scale": 0.10 }]
+  },
+  "stats": {
+    "hp": { "min": 60, "max": 75 },
+    "stamina": { "min": 6, "max": 8 },
+    "strength": { "min": 2, "max": 3 },
+    "skill": { "min": 2, "max": 3 },
+    "mana": { "min": 2, "max": 3 },
+    "luck": { "min": 1, "max": 2 },
+    "defense": { "min": 2, "max": 3 },
+    "armor": { "min": 0, "max": 1 }
+  },
+  "abilities": [
+    {
+      "id": "clone_scratch",
+      "name": "Clone Scratch",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 2,
+      "sprite": "enemy_bake_neko_attack",
+      "aiWeight": 10,
+      "maxUsesPerTurn": 5,
+      "basePower": 4,
+      "scalingStat": "strength",
+      "scalingMultiplier": 0.7,
+      "effects": []
+    }
+  ],
+  "drops": {
+    "warrior": [],
+    "mage": [],
+    "archer": []
+  }
+}

@@ -1,0 +1,103 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">{gettext("Tests")}</h1>
+      <p class="text-secondary">
+        <%= if @current_scope && @current_scope.current_user do %>
+          {gettext("Try tests from our featured classroom.")}
+        <% else %>
+          {gettext("Try tests from our featured classroom.")}
+        <% end %>
+      </p>
+    </div>
+
+    <%= if @classroom_tests == [] do %>
+      <%= if @current_scope && @current_scope.current_user do %>
+        <%!-- Empty State for Authenticated Users --%>
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">📝</div>
+          <h3 class="text-lg font-medium text-base-content mb-2">
+            {gettext("No Tests Available")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto">
+            {gettext(
+              "There are no public tests available right now. Join a classroom to access tests from your teachers."
+            )}
+          </p>
+          <div class="mt-6">
+            <.link navigate={~p"/classrooms"} class="btn btn-primary">
+              <.icon name="hero-academic-cap" class="w-4 h-4 mr-1" /> {gettext(
+                "Browse Classrooms"
+              )}
+            </.link>
+          </div>
+        </div>
+      <% else %>
+        <%!-- Empty State for Anonymous Users --%>
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">🔒</div>
+          <h3 class="text-lg font-medium text-base-content mb-2">
+            {gettext("Sign in to see your tests")}
+          </h3>
+          <p class="text-secondary max-w-md mx-auto mb-6">
+            {gettext("Join a classroom to access tests from your teachers.")}
+          </p>
+          <.link href={~p"/auth/google"} class="btn btn-primary">
+            <.icon name="hero-arrow-right-end-on-rectangle" class="w-4 h-4 mr-1" /> {gettext(
+              "Sign in with Google"
+            )}
+          </.link>
+        </div>
+      <% end %>
+    <% else %>
+      <%!-- Tests List --%>
+      <div class="space-y-3">
+        <%= for classroom_test <- @classroom_tests do %>
+          <% test = classroom_test.test %>
+          <% test_path = ~p"/classrooms/#{@featured_classroom_id}/tests/#{classroom_test.test_id}" %>
+          <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-all">
+            <div class="card-body p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                <div class="flex-1 min-w-0">
+                  <h3 class="card-title text-base sm:text-lg text-base-content">
+                    {test.title}
+                  </h3>
+                  <p :if={test.description} class="text-secondary text-sm mt-1">
+                    {test.description}
+                  </p>
+                  <div class="flex flex-wrap gap-2 mt-2 text-xs sm:text-sm">
+                    <%= if test.total_points && test.total_points > 0 do %>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-star" class="w-3 h-3 mr-1" />
+                        {test.total_points} {gettext("points")}
+                      </span>
+                    <% end %>
+                    <%= if test.time_limit_seconds do %>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-clock" class="w-3 h-3 mr-1" />
+                        {format_duration(test.time_limit_seconds)}
+                      </span>
+                    <% end %>
+                    <%= if classroom_test.due_date do %>
+                      <span class="badge badge-outline badge-sm">
+                        <.icon name="hero-calendar" class="w-3 h-3 mr-1" />
+                        {gettext("Due")} {Calendar.strftime(classroom_test.due_date, "%b %d")}
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="sm:ml-4 self-start sm:self-auto">
+                  <.link navigate={test_path} class="btn btn-primary btn-sm sm:btn-md">
+                    <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start Test")}
+                  </.link>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

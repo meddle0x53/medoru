@@ -6,31 +6,44 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
 
   alias Medoru.Classrooms
   alias Medoru.Tests
+  alias MedoruWeb.PublicAccess
 
   @impl true
-  def mount(%{"id" => classroom_id, "test_id" => test_id}, session, socket) do
+  def mount(%{"id" => classroom_id, "test_id" => test_id} = params, session, socket) do
     user = socket.assigns.current_scope.current_user
     locale = session["locale"] || "en"
 
     socket = assign(socket, :locale, locale)
 
-    # Verify user is an approved member of the classroom
-    case Classrooms.get_user_membership(classroom_id, user.id) do
-      nil ->
+    cond do
+      not is_nil(user) ->
+        # Verify user is an approved member of the classroom
+        case Classrooms.get_user_membership(classroom_id, user.id) do
+          nil ->
+            {:ok,
+             socket
+             |> put_flash(:error, gettext("You are not a member of this classroom."))
+             |> push_navigate(to: ~p"/classrooms")}
+
+          membership ->
+            if membership.status != :approved do
+              {:ok,
+               socket
+               |> put_flash(:error, gettext("Your membership is pending approval."))
+               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+            else
+              load_results(socket, classroom_id, test_id, user)
+            end
+        end
+
+      PublicAccess.featured_classroom?(classroom_id) ->
+        load_anonymous_results(socket, classroom_id, test_id, params["session_id"])
+
+      true ->
         {:ok,
          socket
-         |> put_flash(:error, gettext("You are not a member of this classroom."))
-         |> push_navigate(to: ~p"/classrooms")}
-
-      membership ->
-        if membership.status != :approved do
-          {:ok,
-           socket
-           |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-        else
-          load_results(socket, classroom_id, test_id, user)
-        end
+         |> put_flash(:error, gettext("You must sign in to view these results."))
+         |> push_navigate(to: ~p"/auth/google")}
     end
   end
 
@@ -51,36 +64,8 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
       session = Tests.get_test_session(attempt.test_session_id)
       steps = Tests.list_test_steps(test_id)
 
-      # Get all answers for this session
-      answers =
-        if session do
-          Tests.list_step_answers(session.id)
-          |> Enum.map(fn answer ->
-            {answer.step_index, answer}
-          end)
-          |> Enum.into(%{})
-        else
-          %{}
-        end
-
-      # Build results for each step
-      results =
-        steps
-        |> Enum.with_index()
-        |> Enum.map(fn {step, index} ->
-          answer = Map.get(answers, index)
-
-          %{
-            index: index,
-            step: step,
-            user_answer: answer && answer.answer,
-            correct_answer: step.correct_answer,
-            is_correct: (answer && answer.is_correct) || false,
-            points_earned: (answer && answer.points_earned) || 0,
-            points_possible: step.points,
-            explanation: step.explanation
-          }
-        end)
+      {results, total_score, max_score} =
+        build_results(steps, session, attempt.score, attempt.max_score || test.total_points)
 
       {:ok,
        socket
@@ -89,13 +74,97 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
        |> assign(:test, test)
        |> assign(:attempt, attempt)
        |> assign(:results, results)
-       |> assign(:total_score, attempt.score)
-       |> assign(:max_score, attempt.max_score || test.total_points)
+       |> assign(:total_score, total_score)
+       |> assign(:max_score, max_score)
        |> assign(
          :percentage,
-         calculate_percentage(attempt.score, attempt.max_score || test.total_points)
+         calculate_percentage(total_score, max_score)
        )}
     end
+  end
+
+  defp load_anonymous_results(socket, classroom_id, test_id, session_id) do
+    classroom = Classrooms.get_classroom!(classroom_id)
+    test = Tests.get_test!(test_id)
+
+    session = Tests.get_test_session(session_id)
+
+    if is_nil(session) || session.status != :completed do
+      {:ok,
+       socket
+       |> put_flash(:error, gettext("No completed test found."))
+       |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=tests")}
+    else
+      steps = Tests.list_test_steps(test_id)
+      {results, total_score, max_score} = build_results(steps, session, 0, test.total_points)
+
+      # Build a fake attempt-like map so the template can still read time_spent_seconds.
+      attempt = %{
+        time_spent_seconds: session.time_spent_seconds || 0
+      }
+
+      {:ok,
+       socket
+       |> assign(:page_title, gettext("Test Results - %{title}", title: test.title))
+       |> assign(:classroom, classroom)
+       |> assign(:test, test)
+       |> assign(:attempt, attempt)
+       |> assign(:results, results)
+       |> assign(:total_score, total_score)
+       |> assign(:max_score, max_score)
+       |> assign(
+         :percentage,
+         calculate_percentage(total_score, max_score)
+       )}
+    end
+  end
+
+  defp build_results(steps, session, default_score, default_max) do
+    answers =
+      if session do
+        Tests.list_step_answers(session.id)
+        |> Enum.map(fn answer ->
+          {answer.step_index, answer}
+        end)
+        |> Enum.into(%{})
+      else
+        %{}
+      end
+
+    results =
+      steps
+      |> Enum.with_index()
+      |> Enum.map(fn {step, index} ->
+        answer = Map.get(answers, index)
+
+        %{
+          index: index,
+          step: step,
+          user_answer: answer && answer.answer,
+          correct_answer: step.correct_answer,
+          is_correct: (answer && answer.is_correct) || false,
+          points_earned: (answer && answer.points_earned) || 0,
+          points_possible: step.points,
+          explanation: step.explanation
+        }
+      end)
+
+    total_score =
+      if session && not is_nil(session.score), do: session.score, else: default_score
+
+    max_score =
+      cond do
+        session && not is_nil(session.total_possible) && session.total_possible > 0 ->
+          session.total_possible
+
+        default_max && default_max > 0 ->
+          default_max
+
+        true ->
+          Enum.reduce(steps, 0, &(&1.points + &2))
+      end
+
+    {results, total_score, max_score}
   end
 
   defp calculate_percentage(score, max) when max > 0, do: trunc(score / max * 100)

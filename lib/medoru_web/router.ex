@@ -77,6 +77,7 @@ defmodule MedoruWeb.Router do
       live "/users/:user_id/white-board/posts/:post_id", UserWhiteBoardPostLive
       live "/lessons", LessonLive.Index
       live "/lessons/:id", LessonLive.Show
+      live "/tests", TestLive.Index
       live "/games", GamesLive.Index
       live "/attribution", SettingsLive.Attribution
       live "/privacy", PrivacyLive
@@ -273,8 +274,6 @@ defmodule MedoruWeb.Router do
       live "/join", ClassroomLive.Join
       live "/:id", ClassroomLive.Show
       live "/:id/rankings", ClassroomLive.Rankings
-      live "/:id/tests/:test_id", ClassroomLive.Test
-      live "/:id/tests/:test_id/results", ClassroomLive.TestResults
     end
   end
 
@@ -284,6 +283,8 @@ defmodule MedoruWeb.Router do
 
     live_session :public_classroom_content,
       on_mount: [{MedoruWeb.UserAuth, :default}] do
+      live "/:id/tests/:test_id", ClassroomLive.Test
+      live "/:id/tests/:test_id/results", ClassroomLive.TestResults
       live "/:id/custom-lessons/:lesson_id", ClassroomLive.CustomLesson
       live "/:id/custom-lessons/:lesson_id/test", ClassroomLive.CustomLessonTest
       live "/:id/custom-lessons/:lesson_id/complete", ClassroomLive.CustomLessonComplete

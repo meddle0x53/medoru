@@ -58,6 +58,17 @@ export const CHARMS = [
     effect: { stat: 'luck', value: 3 },
   },
   {
+    id: 'tanuki_fur_charm',
+    name: 'Tanuki Fur Charm',
+    nameJa: '狸毛の護符',
+    kanji: '狸',
+    color: 0x8B5A2B, // tanuki-brown glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'rare',
+    firstDefeatReward: true,
+    effect: { stat: 'maxHpMultiplier', value: 0.10 },
+  },
+  {
     id: 'hi_charm',
     name: 'Charm of Fire',
     nameJa: '火の護符',

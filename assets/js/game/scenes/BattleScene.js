@@ -11,6 +11,7 @@ import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
+import { getSocketCharmById } from '../data/socketCharms.js'
 import { getMapDefinition } from '../data/maps/index.js'
 
 import { INFUSION_ICONS, resolveInfusionReaction, getElementForInfusion } from '../data/infusionReactions.js'
@@ -26,6 +27,7 @@ const STATUS_EFFECT_ICONS = {
   stamina_crash: '⚡',
   ember: '♨️',
   power_up: '💪',
+  blind: '🌫️',
   fire_guard: '🛡️🔥',
   water_guard: '🛡️💧',
   wind_guard: '🛡️🌪',
@@ -149,7 +151,10 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createEnemiesForTile() {
-    const count = this.tile?.testFightCount ?? this.determineEnemyCount()
+    let count = this.tile?.testFightCount
+    if (count == null) {
+      count = this.tile?.type === TILE_TYPES.MINI_BOSS ? 1 : this.determineEnemyCount()
+    }
     const multiplier = count === 3 ? 0.5 : count === 2 ? 0.65 : 1.0
 
     const enemies = []
@@ -283,6 +288,9 @@ export default class BattleScene extends Phaser.Scene {
     sprite.setScale(scale)
     sprite.setOrigin(0.5, 0.99)
     sprite.setInteractive({ useHandCursor: false })
+    if (enemy.definition.tint) {
+      sprite.setTint(parseInt(enemy.definition.tint, 16))
+    }
     sprite.on('pointerdown', () => this.onEnemySpriteClick(display))
 
     const nameTagWidth = total === 3 ? 130 : total === 2 ? 150 : 180
@@ -418,7 +426,106 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   getEnemySpriteKey(enemy, pose) {
-    return enemy.definition.sprites[pose] || enemy.definition.sprites.default
+    const current = typeof enemy.getCurrentSprites === 'function'
+      ? enemy.getCurrentSprites()
+      : null
+    const sprites = current || enemy.definition.sprites || {}
+    return sprites[pose] || sprites.default || enemy.definition.sprites.default
+  }
+
+  refreshEnemyDisplay(display) {
+    if (!display || !display.enemy) return
+    const enemy = display.enemy
+    display.nameText.setText(enemy.name)
+    display.jaText.setText(enemy.nameJa)
+    const key = this.getEnemySpriteKey(enemy, 'default')
+    if (display.sprite.texture.key !== key) {
+      display.sprite.setTexture(key)
+    }
+    if (enemy.definition.tint) {
+      display.sprite.setTint(parseInt(enemy.definition.tint, 16))
+    } else {
+      display.sprite.clearTint()
+    }
+  }
+
+  createSummonedEnemies(result) {
+    const enemies = []
+    for (let i = 0; i < (result.summonCount || 1); i++) {
+      const pool = result.summonIds || []
+      const id = pool[Math.floor(Math.random() * pool.length)]
+      const def = getEnemyDefinition(id)
+      if (!def) continue
+      const enemy = new Enemy(def)
+      if (result.summonHpMultiplier != null) {
+        enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * result.summonHpMultiplier))
+        enemy.hp = enemy.maxHp
+      }
+      enemies.push(enemy)
+    }
+    return enemies
+  }
+
+  relayoutEnemyDisplays() {
+    const total = this.enemyDisplays.length
+    const masterLayout = this.enemyDisplays[0]?.enemy.definition.layout[String(total)]
+    for (let i = 0; i < total; i++) {
+      const display = this.enemyDisplays[i]
+      const layout = masterLayout?.[i]
+        || display.enemy.definition.layout[String(total)]?.[i]
+        || display.enemy.definition.layout['1']?.[0]
+        || { x: 660 + i * 100, y: 470, scale: 0.12 }
+      display.x = layout.x
+      display.sprite.setPosition(layout.x, layout.y)
+      display.sprite.setScale(layout.scale)
+      if (display.enemy.definition.tint) {
+        display.sprite.setTint(parseInt(display.enemy.definition.tint, 16))
+      }
+      display.nameBg.setPosition(layout.x, 102)
+      display.nameText.setPosition(layout.x, 95)
+      display.jaText.setPosition(layout.x, 110)
+      display.hpBg.setPosition(layout.x, 500)
+      display.hpBar.setPosition(layout.x - 50, 500)
+      display.staminaBg.setPosition(layout.x, 517)
+      display.staminaBar.setPosition(layout.x - 50, 517)
+      display.hpText.setPosition(layout.x, 500)
+      display.staminaText.setPosition(layout.x, 517)
+      display.blockText.setPosition(layout.x, 485)
+      display.intentionContainer.setPosition(layout.x, 58)
+      display.statusContainer.setPosition(layout.x, layout.y - display.sprite.displayHeight * 0.95)
+    }
+  }
+
+  transformEnemy(enemy, result) {
+    const def = result.transformDef
+    if (!def) return
+    const transformed = new Enemy(def)
+    const keepRatio = result.keepHpRatio !== false
+    const hpRatio = keepRatio ? enemy.hp / Math.max(1, enemy.maxHp) : 1
+
+    enemy.definition = def
+    enemy.currentSprites = transformed.currentSprites
+    enemy.name = transformed.name
+    enemy.nameJa = transformed.nameJa
+    enemy.maxHp = transformed.maxHp
+    enemy.hp = keepRatio ? Math.max(1, Math.floor(enemy.maxHp * hpRatio)) : transformed.hp
+    enemy.maxStamina = transformed.maxStamina
+    enemy.stamina = Math.min(enemy.stamina, enemy.maxStamina)
+    enemy.strength = transformed.strength
+    enemy.skill = transformed.skill
+    enemy.mana = transformed.mana
+    enemy.luck = transformed.luck
+    enemy.defense = transformed.defense
+    enemy.armor = transformed.armor
+    enemy.abilities = transformed.abilities
+    enemy.phases = []
+    enemy.phaseIndex = 0
+    enemy.phaseModifiers = {}
+    enemy.phaseAbilityOverrides = {}
+    enemy.resetAbilityUses()
+
+    this.refreshEnemyDisplay(this.getDisplayForEnemy(enemy))
+    this.updateBars()
   }
 
   onEnemySpriteClick(display) {
@@ -1239,6 +1346,10 @@ export default class BattleScene extends Phaser.Scene {
 
     if (!target.isAlive()) {
       this.onEnemyDefeated(target)
+    } else if (target.checkPhaseTransition) {
+      if (target.checkPhaseTransition((msg) => this.addCombatLog(msg))) {
+        this.refreshEnemyDisplay(this.getDisplayForEnemy(target))
+      }
     }
 
     this.turnManager.checkBattleOver(this.player)
@@ -1507,6 +1618,9 @@ export default class BattleScene extends Phaser.Scene {
       recover: { char: '↩', color: 0x2ecc71 },    // green
       curse: { char: '⬇', color: 0x9b59b6 },     // purple
       debuff: { char: '⬇', color: 0x9b59b6 },    // purple
+      summon: { char: '✦', color: 0x2ecc71 },    // green star
+      transform: { char: '↻', color: 0x9b59b6 }, // purple cycle
+      heal: { char: '✚', color: 0xe91e63 },      // pink cross
     }
 
     display.intentionIcons.forEach((slot, i) => {
@@ -2420,21 +2534,42 @@ export default class BattleScene extends Phaser.Scene {
     return this.enemyDisplays.find(d => d.enemy === enemy)
   }
 
+  grantFirstDefeatRewards(enemy) {
+    const rewards = enemy.definition?.firstDefeatRewards || []
+    if (rewards.length === 0) return
+
+    for (const reward of rewards) {
+      if (reward.type === 'charm') {
+        const result = this.player.addCharm(reward.id)
+        if (result.owned) {
+          this.addCombatLog(`First defeat reward: ${getCharmById(reward.id)?.name || reward.id} unlocked!`)
+        }
+      } else if (reward.type === 'socketCharm') {
+        if (this.player.addSocketCharm(reward.id)) {
+          const charm = getSocketCharmById?.(reward.id)
+          this.addCombatLog(`First defeat reward: ${charm?.name || reward.id} unlocked!`)
+        }
+      }
+    }
+  }
+
   onEnemyDefeated(enemy) {
     const display = this.getDisplayForEnemy(enemy)
     if (!display || display.defeated) return
     display.defeated = true
 
-    if (this.tile?.type === TILE_TYPES.BATTLE) {
+    const roles = enemy.definition?.roles || []
+    if (this.tile?.type === TILE_TYPES.BATTLE && roles.includes('battle')) {
       this.player.recordNormalEnemyDefeated()
-    } else if (this.tile?.type === TILE_TYPES.MINI_BOSS) {
+    } else if (this.tile?.type === TILE_TYPES.MINI_BOSS && roles.includes('mini_boss')) {
       this.player.recordMiniBossDefeated()
-    } else if (this.tile?.type === TILE_TYPES.BOSS) {
+    } else if (this.tile?.type === TILE_TYPES.BOSS && roles.includes('boss')) {
       const mapDef = getMapDefinition(this.mapIndex)
       this.player.recordMapBossDefeated(mapDef?.level)
     }
 
     this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
+    this.grantFirstDefeatRewards(enemy)
 
     display.sprite.disableInteractive()
     display.sprite.setTexture(this.getEnemySpriteKey(enemy, 'death'))
@@ -2486,6 +2621,10 @@ export default class BattleScene extends Phaser.Scene {
 
     if (!target.isAlive()) {
       this.onEnemyDefeated(target)
+    } else if (target.checkPhaseTransition) {
+      if (target.checkPhaseTransition((msg) => this.addCombatLog(msg))) {
+        this.refreshEnemyDisplay(this.getDisplayForEnemy(target))
+      }
     }
 
     const targetDisplay = this.getDisplayForEnemy(target)
@@ -2658,6 +2797,8 @@ export default class BattleScene extends Phaser.Scene {
       enemyState.set(enemy, { usedBuff: false, actionsTaken: 0 })
     }
 
+    const pendingSummons = []
+
     while (this.turnManager.currentTurn === 'enemy' && !this.turnManager.battleOver) {
       let anyActionTaken = false
 
@@ -2674,7 +2815,7 @@ export default class BattleScene extends Phaser.Scene {
         this.currentAttackingEnemy = enemy
         this.player.lastReactionCorrect = false
 
-        if (action.type === 'buff' || action.type === 'debuff') state.usedBuff = true
+        if (['buff', 'debuff', 'summon', 'transform'].includes(action.type)) state.usedBuff = true
         state.actionsTaken++
 
         // Per-ability challenge: word/kanji quiz to weaken or cancel the ability.
@@ -2683,7 +2824,7 @@ export default class BattleScene extends Phaser.Scene {
         let challengeModifier = null
         let weakestMultiplier = 1
         let effectChanceMultiplier = 1
-        const context = {}
+        const context = enemy.getAbilityContext ? enemy.getAbilityContext(action) : {}
         for (const config of challengeConfigs) {
           if (Math.random() >= (config.chance ?? 0)) continue
           const challenge = buildEnemyChallenge(this.player, config)
@@ -2854,6 +2995,38 @@ export default class BattleScene extends Phaser.Scene {
             this.addCombatLog(`${enemyName} rests and recovers ${result.stamina} stamina.`)
             break
           }
+          case 'heal': {
+            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'buff'), enemy)
+            const cleanseText = result.cleansed && result.cleansed.length > 0 ? ` Cleansed ${result.cleansed.length} ailments.` : ''
+            const buffText = result.buff ? ` ${getEffect(result.buff.effectId)?.name || result.buff.effectId} (${result.buff.remainingTurns} turns).` : ''
+            this.addCombatLog(`${enemyName} drinks sake and recovers ${result.healed} HP!${cleanseText}${buffText}`)
+            this.spawnFloatingText(display.sprite.x, display.sprite.y - 40, `+${result.healed}`, COLORS.success)
+            this.updateBars()
+            await this.delay(800)
+            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+            break
+          }
+          case 'summon': {
+            if (result.failed) {
+              this.addCombatLog(`${enemyName}'s ${action.name} fizzles into leaves!`)
+            } else {
+              this.addCombatLog(`${enemyName} weaves ${action.name}!`)
+              const summoned = this.createSummonedEnemies(result)
+              pendingSummons.push(...summoned)
+            }
+            await this.delay(800)
+            break
+          }
+          case 'transform': {
+            if (result.transformDef) {
+              this.addCombatLog(`${enemyName} shifts shape with ${action.name}!`)
+              this.transformEnemy(enemy, result)
+            } else {
+              this.addCombatLog(`${enemyName}'s ${action.name} fails!`)
+            }
+            await this.delay(800)
+            break
+          }
         }
 
         anyActionTaken = true
@@ -2863,6 +3036,17 @@ export default class BattleScene extends Phaser.Scene {
       }
 
       if (!anyActionTaken) break
+    }
+
+    if (pendingSummons.length > 0) {
+      for (const enemy of pendingSummons) {
+        this.turnManager.enemies.push(enemy)
+        const display = this.createEnemyDisplay(enemy, this.enemyDisplays.length, this.enemyDisplays.length + 1)
+        this.enemyDisplays.push(display)
+      }
+      this.relayoutEnemyDisplays()
+      this.enemy = this.enemyDisplays[0]?.enemy || this.enemy
+      this.addCombatLog(`${pendingSummons.length} tanuki clone(s) appear!`)
     }
 
     this.currentAttackingEnemy = null

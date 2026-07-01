@@ -32,9 +32,12 @@ defmodule Medoru.SiteSettings do
 
   @doc """
   Returns the featured classroom ID, or nil if none is set.
+
+  The value can be overridden at runtime via the application environment
+  (`:featured_classroom_id`), which is useful for tests and ephemeral config.
   """
   def featured_classroom_id do
-    settings = get_settings()
-    settings.featured_classroom_id
+    Application.get_env(:medoru, :featured_classroom_id) ||
+      get_settings().featured_classroom_id
   end
 end

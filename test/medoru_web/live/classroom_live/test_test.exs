@@ -12,6 +12,7 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
   """
   use MedoruWeb.ConnCase, async: true
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
@@ -22,6 +23,14 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
   alias Medoru.Tests
   alias Medoru.Tests.ClassroomVocabularyTestGenerator
   alias Medoru.Tests.ClassroomKanjiDrawingTestGenerator
+
+  defp get_anonymous_session(test_id) do
+    Medoru.Tests.TestSession
+    |> where([ts], is_nil(ts.user_id) and ts.test_id == ^test_id)
+    |> order_by(desc: :inserted_at)
+    |> limit(1)
+    |> Medoru.Repo.one!()
+  end
 
   describe "Test taking" do
     setup do
@@ -435,6 +444,49 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       assert html =~ "This is why"
     end
 
+    test "records score, max score and elapsed time for authenticated results", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      # Sync the timer so completion calculates real elapsed time rather than 0.
+      view
+      |> element("#test-timer")
+      |> render_hook("sync_time", %{"time_remaining" => 590})
+
+      view
+      |> form("form", %{answer: "Correct"})
+      |> render_submit()
+
+      view
+      |> form("form", %{answer: "WrongA"})
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      attempt = Classrooms.get_test_attempt(classroom.id, student.id, test_resource.id)
+      assert attempt.score == 1
+      assert attempt.max_score == 2
+      assert attempt.time_spent_seconds == 10
+
+      session = Tests.get_test_session(attempt.test_session_id)
+      assert session.status == :completed
+      assert session.score == 1
+      assert session.total_possible == 2
+
+      {:ok, _results_view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      assert html =~ "50%"
+      assert html =~ "1 <span class=\"text-secondary\">/ 2</span>"
+    end
+
     test "localizes kanji writing question on results page", %{
       conn: conn,
       student: student
@@ -759,8 +811,10 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       step1_current = max(0, step1.points - 2)
 
       assert Floki.find(parsed, "#kanji-wrong-stroke-count-#{step1.id}") |> Floki.text() =~ "2"
+
       assert Floki.find(parsed, "#kanji-current-points-#{step1.id}") |> Floki.text() =~
                "#{step1_current} / #{step1.points}"
+
       # Challenge only counts finished kanji, so it stays at 0 while drawing.
       assert Floki.find(parsed, "#kanji-challenge-points-#{step1.id}") |> Floki.text() =~
                "0 / #{test.total_points}"
@@ -774,6 +828,7 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
 
       # Wrong strokes reset for the next kanji; challenge shows earned points only.
       assert Floki.find(parsed, "#kanji-wrong-stroke-count-#{step2.id}") |> Floki.text() =~ "0"
+
       assert Floki.find(parsed, "#kanji-current-points-#{step2.id}") |> Floki.text() =~
                "#{step2.points} / #{step2.points}"
 
@@ -945,6 +1000,133 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       |> render_submit()
 
       assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test.id}/results")
+    end
+  end
+
+  describe "Anonymous featured-classroom test taking" do
+    setup do
+      original_featured_id = Application.get_env(:medoru, :featured_classroom_id)
+      teacher = user_fixture(%{email: "anonymous_teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Featured Classroom",
+          teacher_id: teacher.id
+        })
+
+      test =
+        test_fixture(%{
+          title: "Anonymous Test",
+          created_by_id: teacher.id,
+          status: :published,
+          time_limit_seconds: 600,
+          total_points: 2
+        })
+
+      step1 =
+        test_step_fixture(test, %{
+          question: "Q1",
+          question_type: :multichoice,
+          correct_answer: "Correct",
+          options: ["Correct", "Wrong1", "Wrong2", "Wrong3"],
+          order_index: 0
+        })
+
+      step2 =
+        test_step_fixture(test, %{
+          question: "Q2",
+          question_type: :multichoice,
+          correct_answer: "Right",
+          options: ["Right", "WrongA", "WrongB", "WrongC"],
+          order_index: 1
+        })
+
+      {:ok, _} =
+        Classrooms.publish_test_to_classroom(
+          classroom.id,
+          test.id,
+          teacher.id,
+          %{max_attempts: 1}
+        )
+
+      Application.put_env(:medoru, :featured_classroom_id, classroom.id)
+
+      on_exit(fn ->
+        Application.put_env(:medoru, :featured_classroom_id, original_featured_id)
+      end)
+
+      %{
+        teacher: teacher,
+        classroom: classroom,
+        test_resource: test,
+        step1: step1,
+        step2: step2
+      }
+    end
+
+    test "anonymous user can take a multichoice test to completion", %{
+      conn: conn,
+      classroom: classroom,
+      test_resource: test_resource
+    } do
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      assert html =~ test_resource.title
+      assert html =~ "Question 1 of 2"
+
+      session = get_anonymous_session(test_resource.id)
+
+      view
+      |> form("form", %{answer: "Correct"})
+      |> render_submit()
+
+      assert render(view) =~ "Question 2 of 2"
+
+      view
+      |> form("form", %{answer: "Right"})
+      |> render_submit()
+
+      assert_redirected(
+        view,
+        ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results?session_id=#{session.id}"
+      )
+    end
+
+    test "anonymous results page shows results using session_id query param", %{
+      conn: conn,
+      classroom: classroom,
+      test_resource: test_resource
+    } do
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      session = get_anonymous_session(test_resource.id)
+
+      view
+      |> form("form", %{answer: "Correct"})
+      |> render_submit()
+
+      view
+      |> form("form", %{answer: "WrongA"})
+      |> render_submit()
+
+      assert_redirected(
+        view,
+        ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results?session_id=#{session.id}"
+      )
+
+      {:ok, _results_view, html} =
+        live(
+          conn,
+          ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results?session_id=#{session.id}"
+        )
+
+      assert html =~ "Test Results"
+      assert html =~ test_resource.title
+      assert html =~ "Correct"
+      assert html =~ "Incorrect"
+      assert html =~ "50%"
     end
   end
 end

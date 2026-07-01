@@ -289,6 +289,26 @@ export const STATUS_EFFECTS = {
     description: 'Successful attacks deal 25% more damage.',
   },
 
+  sake_power: {
+    id: 'sake_power',
+    name: 'Sake Power',
+    category: EFFECT_CATEGORIES.BUFF,
+    stackRule: 'refresh',
+    duration: { min: 3, max: 3 },
+    outgoingDamageMultiplier: 1.15,
+    description: 'Ancient sake increases damage dealt by 15%.',
+  },
+
+  blind: {
+    id: 'blind',
+    name: 'Blind',
+    category: EFFECT_CATEGORIES.DEBUFF,
+    stackRule: 'refresh',
+    duration: { min: 2, max: 3 },
+    missChancePenalty: 0.25,
+    description: 'Reduced accuracy.',
+  },
+
   element_infuse: {
     id: 'element_infuse',
     name: 'Element Infuse',
