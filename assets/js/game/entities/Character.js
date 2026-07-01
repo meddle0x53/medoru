@@ -166,6 +166,25 @@ export default class Character {
     return null
   }
 
+  decrementBuffDurations() {
+    const expired = []
+    for (let i = this.buffs.length - 1; i >= 0; i--) {
+      const buff = this.buffs[i]
+      // Buffs created this turn start counting down next turn.
+      if (buff.appliedThisTurn) {
+        delete buff.appliedThisTurn
+        continue
+      }
+      if (typeof buff.remainingTurns === 'number') {
+        buff.remainingTurns -= 1
+        if (buff.remainingTurns <= 0) {
+          expired.push(this.buffs.splice(i, 1)[0])
+        }
+      }
+    }
+    return expired
+  }
+
   // ---------- Ability Infusions ----------
 
   setAbilityInfusion(abilityId, value, mana, potency = 1, extraEffects = []) {

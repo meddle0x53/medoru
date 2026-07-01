@@ -363,7 +363,7 @@
       "id": "sword_buff",
       "name": "Sharpen Blade",
       "nameJa": "\u92ed\u6c17",
-      "description": "Kanji quality sharpens your blade; sword attacks deal bonus damage.",
+      "description": "Draw 鋭 to sharpen your blade. Bonus damage scales with Skill, and the buff's duration is extended by Luck.",
       "type": "buff",
       "element": "physical",
       "equipmentType": "weapon",
@@ -372,7 +372,24 @@
       "kanji": "\u92ed",
       "rarity": "common",
       "config": {
-        "buffType": "sword_damage_bonus"
+        "buffType": "sword_damage_bonus",
+        "duration": {
+          "baseTurns": 1,
+          "bonusTurns": 1,
+          "scalesWith": "luck",
+          "chanceTable": [
+            { "max": 10, "chance": 0.20 },
+            { "max": 25, "chance": 0.30 },
+            { "max": 40, "chance": 0.40 },
+            { "max": 80, "chance": 0.50 },
+            { "min": 80, "chance": 0.60 }
+          ],
+          "qualityModifiers": {
+            "0": 1.0,
+            "1-3": 0.5,
+            "4+": 0
+          }
+        }
       },
       "lifecycle": {
         "onUse": [

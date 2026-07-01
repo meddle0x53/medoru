@@ -185,16 +185,40 @@ defmodule MedoruWeb.Admin.WordLiveTest do
       |> element("button[phx-click='open_image_modal']")
       |> render_click()
 
+      html =
+        view
+        |> form("#image-generation-form")
+        |> render_submit(%{"prompt" => ""})
+
+      assert html =~ "Please enter an image prompt first"
+    end
+
+    test "allows editing image prompt before generation", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/words/new")
+
       view
-      |> element("textarea")
-      |> render_change(%{"prompt" => ""})
+      |> form("#word-form", %{"word" => %{"text" => "日本", "meaning" => "Japan"}})
+      |> render_change()
+
+      view
+      |> element("button[phx-click='open_image_modal']")
+      |> render_click()
 
       html =
         view
-        |> element("button[phx-click='generate_image']")
-        |> render_click()
+        |> element("textarea[name='prompt']")
+        |> render_change(%{"prompt" => "Custom image prompt for 日本"})
 
-      assert html =~ "Please enter an image prompt first"
+      assert html =~ "Custom image prompt for 日本"
+      assert html =~ "name=\"prompt\""
+
+      # Submitting the form sends the edited prompt value.
+      submitted_html =
+        view
+        |> form("#image-generation-form")
+        |> render_submit(%{"prompt" => "Custom image prompt for 日本"})
+
+      refute submitted_html =~ "Please enter an image prompt first"
     end
 
     test "shows error when generating pronunciation without text", %{conn: conn} do

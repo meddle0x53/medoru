@@ -71,7 +71,10 @@ function getLockedIds(category) {
 
 function getDefaultUnlockedSocketCharmIds() {
   const locked = getLockedIds('socketCharms')
-  return ALL_SOCKET_CHARMS.filter(c => !locked.has(c.id)).map(c => c.id)
+  // Fresh profiles start with only shield socket charms; weapon charms unlock through victories/events.
+  return ALL_SOCKET_CHARMS.filter(
+    c => c.equipmentType === 'secondary_weapon' && !locked.has(c.id)
+  ).map(c => c.id)
 }
 
 function getDefaultUnlockedHeroCharmIds() {
@@ -219,7 +222,7 @@ export default class Player extends Character {
       shieldCharmIds: [],
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
-      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
+      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
       statPoints: startingStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       gold: 0,
@@ -514,10 +517,11 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
         }
+        // Fresh profiles start with shield socket charms only; weapon charms are unlocked later.
         const starterSocketCharmIds = [
-          'sharp_charm_sword', 'heavy_charm_sword', 'sturdy_charm_shield',
-          'life_dew_charm_sword', 'wind_spirit_charm_sword',
-          'thorn_shell_charm_shield', 'steady_guard_charm_shield',
+          'sturdy_charm_shield',
+          'thorn_shell_charm_shield',
+          'steady_guard_charm_shield',
         ]
         if (!Array.isArray(loadout.ownedSocketCharmIds)) {
           loadout.ownedSocketCharmIds = starterSocketCharmIds
@@ -530,6 +534,12 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
+        }
+        // Migration: ensure Use Item is active by default (it has its own slot).
+        if (!Array.isArray(loadout.activeActionIds)) {
+          loadout.activeActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'use_item']
+        } else if (!loadout.activeActionIds.includes('use_item')) {
+          loadout.activeActionIds.push('use_item')
         }
         if (!loadout.mapState || typeof loadout.mapState !== 'object') {
           loadout.mapState = null
@@ -1122,7 +1132,7 @@ export default class Player extends Character {
       shieldCharmIds: [],
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
-      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry'],
+      activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
       statPoints: totalStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       gold: 0,

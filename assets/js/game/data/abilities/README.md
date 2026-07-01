@@ -80,6 +80,42 @@ Free-form extra parameters for the behavior hooks. Examples:
 - `{ "ignoreDefense": true }` for guard-breaking attacks.
 - `{ "buffType": "sword_damage_bonus" }` for generic buffs.
 - `{ "setReadiness": 1.0 }` for Focus.
+- `{ "duration": { ... } }` for turn-limited buffs/debuffs whose length scales with a stat (see below).
+
+### `config.duration` for buffs/debuffs
+
+Buff/debuff abilities can define a configurable, stat-scaling duration:
+
+```json
+{
+  "config": {
+    "buffType": "sword_damage_bonus",
+    "duration": {
+      "baseTurns": 1,
+      "bonusTurns": 1,
+      "scalesWith": "luck",
+      "chanceTable": [
+        { "max": 10, "chance": 0.20 },
+        { "max": 25, "chance": 0.30 },
+        { "max": 40, "chance": 0.40 },
+        { "max": 80, "chance": 0.50 },
+        { "min": 80, "chance": 0.60 }
+      ],
+      "qualityModifiers": {
+        "0": 1.0,
+        "1-3": 0.5,
+        "4+": 0
+      }
+    }
+  }
+}
+```
+
+- `baseTurns` — duration when the bonus chance fails.
+- `bonusTurns` — extra duration when the bonus chance succeeds.
+- `scalesWith` — stat used to look up the base chance (`luck`, `skill`, etc.).
+- `chanceTable` — stat thresholds. The first matching row wins; use `max` (exclusive upper bound), `min` (inclusive lower bound), or both.
+- `qualityModifiers` — multipliers keyed by wrong-stroke brackets (`0`, `1-3`, `4+`, etc.). `0` cancels the buff; omitted brackets use the `default` multiplier (1.0).
 
 ## Adding a new class
 

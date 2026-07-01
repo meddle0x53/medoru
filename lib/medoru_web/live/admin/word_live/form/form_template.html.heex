@@ -712,82 +712,89 @@
           </div>
 
           <%!-- Prompt textarea --%>
-          <div>
-            <label class="label">
-              <span class="label-text">{gettext("Image Prompt (editable)")}</span>
-            </label>
-            <textarea
-              phx-change="update_image_prompt"
-              phx-debounce="300"
-              class="textarea textarea-bordered w-full h-64 font-mono text-sm"
-            >{@image_prompt}</textarea>
-            <p class="text-xs text-base-content/50 mt-1">
-              {gettext("Edit the prompt before generating. The word and meaning are pre-filled.")}
-            </p>
-          </div>
-
-          <%!-- Error display --%>
-          <%= if @image_error do %>
-            <div class="alert alert-error alert-soft">
-              <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
-              <span>{@image_error}</span>
+          <.form
+            for={}
+            id="image-generation-form"
+            phx-submit="generate_image"
+            class="space-y-4"
+          >
+            <div>
+              <label class="label">
+                <span class="label-text">{gettext("Image Prompt (editable)")}</span>
+              </label>
+              <textarea
+                name="prompt"
+                phx-change="update_image_prompt"
+                phx-debounce="300"
+                class="textarea textarea-bordered w-full h-64 font-mono text-sm"
+              >{@image_prompt}</textarea>
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("Edit the prompt before generating. The word and meaning are pre-filled.")}
+              </p>
             </div>
-          <% end %>
 
-          <%!-- Image Preview --%>
-          <%= if @image_temp_path do %>
-            <div class="p-4 bg-base-200/50 rounded-lg">
-              <p class="text-sm text-secondary mb-2">{gettext("Preview:")}</p>
-              <img
-                src={@image_temp_path}
-                alt={gettext("Generated image preview")}
-                class="w-full max-w-[300px] h-auto rounded-xl border border-base-300 mx-auto"
-              />
-
-              <div class="flex gap-2 mt-3">
-                <button
-                  type="button"
-                  phx-click="approve_image"
-                  class="btn btn-sm btn-success flex-1"
-                >
-                  <.icon name="hero-check" class="w-4 h-4 mr-1" />
-                  {gettext("Approve")}
-                </button>
-                <button
-                  type="button"
-                  phx-click="reject_image"
-                  class="btn btn-sm btn-error flex-1"
-                >
-                  <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
-                  {gettext("Reject")}
-                </button>
+            <%!-- Error display --%>
+            <%= if @image_error do %>
+              <div class="alert alert-error alert-soft">
+                <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+                <span>{@image_error}</span>
               </div>
-            </div>
-          <% end %>
-        </div>
-
-        <div class="modal-action flex-col sm:flex-row gap-2">
-          <button
-            type="button"
-            phx-click="close_image_modal"
-            class="btn btn-ghost w-full sm:w-auto"
-          >
-            {gettext("Cancel")}
-          </button>
-          <button
-            type="button"
-            phx-click="generate_image"
-            class="btn btn-secondary w-full sm:w-auto"
-            disabled={@image_loading}
-          >
-            <%= if @image_loading do %>
-              <span class="loading loading-spinner loading-sm mr-2"></span>
-              {gettext("Generating...")}
-            <% else %>
-              <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
-              {gettext("Generate")}
             <% end %>
-          </button>
+
+            <%!-- Image Preview --%>
+            <%= if @image_temp_path do %>
+              <div class="p-4 bg-base-200/50 rounded-lg">
+                <p class="text-sm text-secondary mb-2">{gettext("Preview:")}</p>
+                <img
+                  src={@image_temp_path}
+                  alt={gettext("Generated image preview")}
+                  class="w-full max-w-[300px] h-auto rounded-xl border border-base-300 mx-auto"
+                />
+
+                <div class="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    phx-click="approve_image"
+                    class="btn btn-sm btn-success flex-1"
+                  >
+                    <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                    {gettext("Approve")}
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="reject_image"
+                    class="btn btn-sm btn-error flex-1"
+                  >
+                    <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
+                    {gettext("Reject")}
+                  </button>
+                </div>
+              </div>
+            <% end %>
+
+            <div class="modal-action flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                phx-click="close_image_modal"
+                class="btn btn-ghost w-full sm:w-auto"
+              >
+                {gettext("Cancel")}
+              </button>
+              <button
+                type="submit"
+                class="btn btn-secondary w-full sm:w-auto"
+                disabled={@image_loading}
+              >
+                <%= if @image_loading do %>
+                  <span class="loading loading-spinner loading-sm mr-2"></span>
+                  {gettext("Generating...")}
+                <% else %>
+                  <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
+                  {gettext("Generate")}
+                <% end %>
+              </button>
+            </div>
+          </.form>
         </div>
       </div>
       <div class="modal-backdrop" phx-click="close_image_modal"></div>
@@ -816,6 +823,7 @@
               <span class="label-text">{gettext("Prompt (editable)")}</span>
             </label>
             <textarea
+              name="prompt"
               phx-change="update_enrich_prompt"
               phx-debounce="300"
               class="textarea textarea-bordered w-full h-48 font-mono text-sm"

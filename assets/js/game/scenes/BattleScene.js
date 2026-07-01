@@ -2327,6 +2327,60 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Sharpen Blade uses kanji drawing for its skill kanji (鋭)
+    if (skill.id === 'sword_buff') {
+      const kanji = skill.kanji || '鋭'
+      let strokeData = null
+      const kanjiData = this.player.kanjiList.find(k => k.character === kanji)
+      if (kanjiData?.stroke_data?.strokes?.length > 0) {
+        strokeData = kanjiData.stroke_data
+      }
+      if (!strokeData) {
+        const userData = getWindowGameData()
+        strokeData = userData?.weapon_kanji_strokes || { strokes: [] }
+      }
+
+      if (!strokeData.strokes || strokeData.strokes.length === 0) {
+        this.player.setKanjiResult(99)
+        this.challengeActive = false
+        this.executeSkill('fail')
+        return
+      }
+
+      this.kanjiDrawing.start(strokeData, `Sharpen! Draw ${kanji}:`, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          if (result.completed) {
+            this.player.setKanjiResult(result.wrongStrokes)
+            if (result.wrongStrokes === 0) {
+              this.addCombatLog(`${kanji} drawn perfectly! A razor edge forms.`)
+            } else if (result.wrongStrokes <= 3) {
+              this.addCombatLog(`${kanji} drawn! The blade grows sharper.`)
+            } else {
+              this.addCombatLog(`${kanji} drawn sloppily. The edge is uneven.`)
+            }
+            this.executeSkill('success')
+          } else {
+            this.player.setKanjiResult(99)
+            this.addCombatLog(`${kanji} failed! The blade remains dull.`)
+            this.executeSkill('fail')
+          }
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      })
+      return
+    }
+
     // Use Item opens the item menu directly
     if (skill.id === 'use_item') {
       this.challengeActive = false

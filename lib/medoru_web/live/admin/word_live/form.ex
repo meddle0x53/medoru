@@ -316,8 +316,14 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   @impl true
-  def handle_event("generate_image", _params, socket) do
-    image_prompt = socket.assigns.image_prompt
+  def handle_event("generate_image", params, socket) do
+    # Prefer the prompt submitted with the form (current textarea value),
+    # falling back to the assign in case the change event has not been processed yet.
+    image_prompt =
+      case params do
+        %{"prompt" => prompt} when is_binary(prompt) -> prompt
+        _ -> socket.assigns.image_prompt
+      end
 
     if is_nil(image_prompt) or String.trim(image_prompt) == "" do
       {:noreply,
@@ -328,6 +334,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
         socket
         |> assign(:image_loading, true)
         |> assign(:image_error, nil)
+        |> assign(:image_prompt, image_prompt)
 
       image_prompt = String.trim(image_prompt)
       lv_pid = self()

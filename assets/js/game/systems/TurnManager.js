@@ -77,6 +77,79 @@ export default class TurnManager {
     }
   }
 
+  _getSkillValue(performer) {
+    const raw = performer.getStatValue ? performer.getStatValue('skill') : (performer.skill || 0)
+    return Math.min(Math.max(0, raw), 99)
+  }
+
+  _calculateSwordBuffBonus(performer, skill) {
+    const swordBuff = performer.buffs.find(b => b.type === 'sword_damage_bonus')
+    if (!swordBuff || skill.equipmentType !== 'weapon') return 0
+    const wrongStrokes = typeof swordBuff.wrongStrokes === 'number' ? swordBuff.wrongStrokes : performer.lastKanjiWrongStrokes
+    if (wrongStrokes >= 4) return 0
+
+    const skillValue = this._getSkillValue(performer)
+    const first = Math.min(skillValue, 40)
+    const second = Math.max(0, Math.min(skillValue, 60) - 40)
+    const third = Math.max(0, Math.min(skillValue, 80) - 60)
+    const fourth = Math.max(0, skillValue - 80)
+
+    if (wrongStrokes === 0) {
+      return Math.floor(first + second / 2 + third / 3 + fourth / 4)
+    }
+    // 1-3 wrong strokes
+    return Math.floor(first / 2 + second / 3 + third / 4 + fourth / 5)
+  }
+
+  _getStatValue(performer, stat) {
+    const raw = performer.getStatValue ? performer.getStatValue(stat) : (performer[stat] || 0)
+    return Math.min(Math.max(0, raw), 99)
+  }
+
+  _parseQualityBracket(key) {
+    const match = String(key).match(/^(\d+)(?:-(\d+|\+))?$/)
+    if (!match) return null
+    const min = parseInt(match[1], 10)
+    const max = match[2] === '+' ? Infinity : parseInt(match[2], 10)
+    return { min, max: isNaN(max) ? min : max }
+  }
+
+  _resolveBuffDuration(config, performer, wrongStrokes = 99) {
+    const duration = config?.duration
+    if (!duration) return null
+
+    const baseTurns = duration.baseTurns ?? 1
+    const bonusTurns = duration.bonusTurns ?? 0
+    const modifiers = duration.qualityModifiers || { default: 1 }
+
+    let modifier = modifiers.default ?? 1
+    for (const [key, value] of Object.entries(modifiers)) {
+      if (key === 'default') continue
+      const bracket = this._parseQualityBracket(key)
+      if (bracket && wrongStrokes >= bracket.min && wrongStrokes <= bracket.max) {
+        modifier = value
+        break
+      }
+    }
+
+    if (baseTurns <= 0 || modifier === 0) return 0
+
+    const statName = duration.scalesWith || 'luck'
+    const statValue = this._getStatValue(performer, statName)
+
+    let baseChance = 0
+    const table = duration.chanceTable || []
+    for (const threshold of table) {
+      if (threshold.max !== undefined && statValue > threshold.max) continue
+      if (threshold.min !== undefined && statValue < threshold.min) continue
+      baseChance = threshold.chance ?? 0
+      break
+    }
+
+    const chance = baseChance * modifier
+    return Math.random() < chance ? baseTurns + bonusTurns : baseTurns
+  }
+
   _resetSideForTurn(side) {
     if (side === 'player') {
       this.player.resetForTurn()
@@ -142,11 +215,11 @@ export default class TurnManager {
           effectiveDefense = Math.floor(effectiveDefense * 0.2)
         }
 
-        // Sword buff bonus damage (0-5 based on kanji quality)
-        const swordBuff = performer.buffs.find(b => b.type === 'sword_damage_bonus')
-        if (swordBuff && skill.equipmentType === 'weapon') {
-          const bonus = performer.lastKanjiWrongStrokes === 0 ? 5 : performer.lastKanjiWrongStrokes <= 2 ? 3 : 1
-          rawDamage += bonus
+        // Sword buff bonus damage (scales with skill and sharpen quality)
+        const swordBuffBonus = this._calculateSwordBuffBonus(performer, skill)
+        if (swordBuffBonus > 0) {
+          rawDamage += swordBuffBonus
+          this.log(`Sharpened blade adds ${swordBuffBonus} damage!`)
         }
 
         // Status-effect outgoing damage multiplier (weak / power_up)
@@ -252,7 +325,22 @@ export default class TurnManager {
         if (skill.buffType === 'max_readiness') {
           performer.setReadiness(1)
         } else {
-          performer.addBuff({ type: skill.buffType, value: 0 })
+          const wrongStrokes = typeof performer.lastKanjiWrongStrokes === 'number'
+            ? performer.lastKanjiWrongStrokes
+            : 99
+          const remainingTurns = this._resolveBuffDuration(skill.config, performer, wrongStrokes)
+          if (remainingTurns === null) {
+            // No duration configured: legacy infinite buff.
+            performer.addBuff({ type: skill.buffType, value: 0, wrongStrokes })
+          } else if (remainingTurns > 0) {
+            performer.addBuff({
+              type: skill.buffType,
+              value: 0,
+              wrongStrokes,
+              remainingTurns,
+              appliedThisTurn: true,
+            })
+          }
         }
         result = { type: 'buff', buffType: skill.buffType, multiplier }
         break
@@ -280,6 +368,13 @@ export default class TurnManager {
         let effectiveDefense = target.getDefense()
         if (performer.lastKanjiWrongStrokes === 0) {
           effectiveDefense = Math.floor(effectiveDefense * 0.2)
+        }
+
+        // Sword buff bonus damage (scales with skill and sharpen quality)
+        const swordBuffBonus = this._calculateSwordBuffBonus(performer, skill)
+        if (swordBuffBonus > 0) {
+          rawDamage += swordBuffBonus
+          this.log(`Sharpened blade adds ${swordBuffBonus} damage!`)
         }
 
         if (infusedElement) {
@@ -415,9 +510,14 @@ export default class TurnManager {
     // 1. Expire effects for the side whose turn just ended.
     if (this.currentTurn === 'player') {
       this._decrementDurations(this.player)
+      const expiredBuffs = this.player.decrementBuffDurations()
+      if (expiredBuffs.some(b => b.type === 'sword_damage_bonus')) {
+        this.log(`Sharpened blade wears off.`)
+      }
     } else {
       for (const enemy of this.getAliveEnemies()) {
         this._decrementDurations(enemy)
+        enemy.decrementBuffDurations()
       }
     }
 
