@@ -49,10 +49,16 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('hero_select_background', '/images/game/hero_select_background.png')
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 
-    // Enemy sprites — loaded dynamically from enemy definitions.
+    // Enemy sprites — loaded dynamically from enemy definitions (including phase sprites).
     const loadedKeys = new Set()
     for (const def of ENEMY_DEFINITIONS) {
-      for (const key of Object.values(def.sprites)) {
+      const spriteKeys = new Set(Object.values(def.sprites || {}))
+      for (const phase of def.phases || []) {
+        for (const key of Object.values(phase.sprites || {})) {
+          if (key) spriteKeys.add(key)
+        }
+      }
+      for (const key of spriteKeys) {
         if (!key || loadedKeys.has(key)) continue
         loadedKeys.add(key)
         this.load.image(key, `/images/game/${key}.png`)

@@ -20,6 +20,7 @@ defmodule Medoru.Content.CustomLesson do
   alias Medoru.Tests.Test
 
   @lesson_subtypes ["vocabulary", "grammar"]
+  @max_words 70
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
@@ -146,11 +147,16 @@ defmodule Medoru.Content.CustomLesson do
   end
 
   @doc """
+  Returns the maximum number of words allowed in a custom lesson.
+  """
+  def max_words, do: @max_words
+
+  @doc """
   Changeset for updating word count.
   """
   def update_word_count_changeset(custom_lesson, count) do
     custom_lesson
     |> cast(%{word_count: count}, [:word_count])
-    |> validate_number(:word_count, greater_than_or_equal_to: 0, less_than_or_equal_to: 60)
+    |> validate_number(:word_count, greater_than_or_equal_to: 0, less_than_or_equal_to: @max_words)
   end
 end

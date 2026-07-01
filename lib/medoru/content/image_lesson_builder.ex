@@ -12,6 +12,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
   require Logger
 
   alias Medoru.Content
+  alias Medoru.Content.CustomLesson
   alias Medoru.Content.Word
 
   @default_title "Vocabulary lesson from image — change the name"
@@ -71,6 +72,7 @@ defmodule Medoru.Content.ImageLessonBuilder do
   defp add_words_to_lesson(lesson, extracted_words) do
     results =
       extracted_words
+      |> Enum.take(CustomLesson.max_words())
       |> Enum.with_index()
       |> Enum.map(fn {word_data, position} ->
         add_single_word(lesson.id, word_data, position)

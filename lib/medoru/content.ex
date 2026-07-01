@@ -2198,15 +2198,24 @@ defmodule Medoru.Content do
       |> Map.put(:custom_lesson_id, lesson_id)
       |> Map.put(:word_id, word_id)
 
-    result =
-      %CustomLessonWord{}
-      |> CustomLessonWord.changeset(attrs)
-      |> Repo.insert()
+    current_count =
+      CustomLessonWord
+      |> where([lw], lw.custom_lesson_id == ^lesson_id)
+      |> Repo.aggregate(:count, :id)
 
-    # Update word count
-    with {:ok, lesson_word} <- result do
-      update_lesson_word_count(lesson_id)
-      {:ok, lesson_word}
+    if current_count >= CustomLesson.max_words() do
+      {:error, :max_words_reached}
+    else
+      result =
+        %CustomLessonWord{}
+        |> CustomLessonWord.changeset(attrs)
+        |> Repo.insert()
+
+      # Update word count
+      with {:ok, lesson_word} <- result do
+        update_lesson_word_count(lesson_id)
+        {:ok, lesson_word}
+      end
     end
   end
 

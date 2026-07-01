@@ -75,25 +75,43 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
     # Check if word already exists in lesson
     existing = Enum.find(socket.assigns.lesson_words, fn lw -> lw.word_id == word_id end)
 
-    if existing do
-      {:noreply, put_flash(socket, :error, gettext("This word is already in the lesson."))}
-    else
-      case Content.add_word_to_lesson(lesson.id, word_id, %{position: position}) do
-        {:ok, _} ->
-          lesson_words = Content.list_lesson_words(lesson.id)
-          lesson = Content.get_custom_lesson!(lesson.id)
+    cond do
+      existing ->
+        {:noreply, put_flash(socket, :error, gettext("This word is already in the lesson."))}
 
-          {:noreply,
-           socket
-           |> assign(:lesson_words, lesson_words)
-           |> assign(:lesson, lesson)
-           |> assign(:word_search_query, "")
-           |> assign(:word_search_results, [])
-           |> put_flash(:info, gettext("Word added!"))}
+      position >= Content.CustomLesson.max_words() ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Maximum %{count} words reached", count: Content.CustomLesson.max_words())
+         )}
 
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, gettext("Failed to add word."))}
-      end
+      true ->
+        case Content.add_word_to_lesson(lesson.id, word_id, %{position: position}) do
+          {:ok, _} ->
+            lesson_words = Content.list_lesson_words(lesson.id)
+            lesson = Content.get_custom_lesson!(lesson.id)
+
+            {:noreply,
+             socket
+             |> assign(:lesson_words, lesson_words)
+             |> assign(:lesson, lesson)
+             |> assign(:word_search_query, "")
+             |> assign(:word_search_results, [])
+             |> put_flash(:info, gettext("Word added!"))}
+
+          {:error, :max_words_reached} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Maximum %{count} words reached", count: Content.CustomLesson.max_words())
+             )}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to add word."))}
+        end
     end
   end
 
@@ -510,8 +528,8 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
           <div class="lg:col-span-2 space-y-4">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-base-content">{gettext("Words")}</h2>
-              <span class={["badge", (length(@lesson_words) > 60 && "badge-error") || "badge-ghost"]}>
-                {length(@lesson_words)}/{gettext("60")}
+              <span class={["badge", (length(@lesson_words) > 70 && "badge-error") || "badge-ghost"]}>
+                {length(@lesson_words)}/{gettext("70")}
               </span>
             </div>
 
@@ -674,7 +692,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                         phx-click="add_word"
                         phx-value-word_id={word.id}
                         class="btn btn-ghost btn-sm flex-shrink-0"
-                        disabled={length(@lesson_words) >= 60}
+                        disabled={length(@lesson_words) >= 70}
                       >
                         <.icon name="hero-plus" class="w-4 h-4" />
                       </button>
@@ -695,9 +713,9 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
                   <p class="text-center text-secondary py-4">{gettext("No words found")}</p>
                 <% end %>
 
-                <%= if length(@lesson_words) >= 60 do %>
+                <%= if length(@lesson_words) >= 70 do %>
                   <p class="text-center text-error text-sm mt-4">
-                    {gettext("Maximum 60 words reached")}
+                    {gettext("Maximum 70 words reached")}
                   </p>
                 <% end %>
               </div>

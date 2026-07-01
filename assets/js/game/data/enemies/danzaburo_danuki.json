@@ -8,15 +8,14 @@
   "roles": ["mini_boss"],
   "mapIds": [1],
   "maxColumn": 10,
-  "tint": "0x8B5A2B",
   "sprites": {
-    "default": "enemy_bake_neko_default",
-    "attack": "enemy_bake_neko_attack",
-    "defend": "enemy_bake_neko_defend",
-    "buff": "enemy_bake_neko_buff",
-    "death": "enemy_bake_neko_defeated"
+    "default": "enemy_danzaburo_default",
+    "attack": "enemy_danzaburo_attack",
+    "defend": "enemy_danzaburo_defend",
+    "buff": "enemy_danzaburo_buff",
+    "death": "enemy_danzaburo_defeated"
   },
-  "portrait": "enemy_bake_neko_portrait",
+  "portrait": "enemy_danzaburo_default",
   "icon": "enemy_bake_neko_icon",
   "layout": {
     "1": [{ "x": 690, "y": 470, "scale": 0.18 }],
@@ -204,6 +203,9 @@
       "hpThreshold": 0.40,
       "name": "Drunken Fury",
       "announce": "Danzaburō enters Drunken Fury! Its staff blurs and the forest shivers!",
+      "sprites": {
+        "default": "enemy_danzaburo_phase2_default"
+      },
       "modifiers": {
         "basicAttackDamageMultiplier": 2.0,
         "summonChanceBonus": 0.25
