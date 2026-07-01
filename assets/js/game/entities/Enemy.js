@@ -56,6 +56,7 @@ export default class Enemy extends Character {
     this.aiProfile = 'aggressive'
     this.nextAttackBonus = 0
     this.usesThisTurn = new Map()
+    this.justEnteredPhase = false
 
     // Default to the full ability list; phase logic will refine it when phases exist.
     this.abilities = (definition.abilities || []).map(a => ({ ...a }))
@@ -112,8 +113,9 @@ export default class Enemy extends Character {
     this.phaseModifiers = { ...(phase.modifiers || {}) }
     this.phaseAbilityOverrides = { ...(phase.abilityOverrides || {}) }
 
-    if (changed && phase.announce) {
-      log(phase.announce)
+    if (changed) {
+      this.justEnteredPhase = true
+      if (phase.announce) log(phase.announce)
     }
     return changed
   }
@@ -203,6 +205,16 @@ export default class Enemy extends Character {
   chooseAction(usedBuffThisTurn = false) {
     const usable = this.abilities.filter(a => this.canUseAbility(a))
     if (usable.length === 0) return null
+
+    // On the first action after a phase change, prefer an ability that just became available.
+    if (this.justEnteredPhase && !usedBuffThisTurn) {
+      const newAbility = usable.find(a => a.minPhaseIndex === this.phaseIndex)
+      if (newAbility) {
+        this.justEnteredPhase = false
+        return newAbility
+      }
+      this.justEnteredPhase = false
+    }
 
     const sorted = usable.slice().sort((a, b) => {
       const phaseA = AI_PHASE_PRIORITY[a.type] ?? 99

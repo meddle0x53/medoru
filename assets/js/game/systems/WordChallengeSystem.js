@@ -67,7 +67,7 @@ export default class WordChallengeSystem {
     this.startTime = Date.now()
     this.active = true
     this.currentOptions = {
-      promptType: 'reading',
+      promptType: 'meaning',
       timeLimit: this.options.timeLimit,
       hangOnWrong: this.options.hangOnWrong,
       hangOnCorrect: this.options.hangOnCorrect,
@@ -77,17 +77,23 @@ export default class WordChallengeSystem {
       onComplete: null,
       ...options,
     }
+    // For now every word challenge asks for meaning.
+    this.currentOptions.promptType = 'meaning'
 
     this.createOverlay()
     this.createHiddenInput()
 
     this.keyboardHandler = (event) => {
       if (!this.active) return
+      const isTypingKey = event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey
+      if (event.key === 'Enter' || event.key === 'Backspace' || isTypingKey) {
+        event.preventDefault()
+      }
       if (event.key === 'Enter') {
         this.submit(false)
       } else if (event.key === 'Backspace') {
         this.input = this.input.slice(0, -1)
-      } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      } else if (isTypingKey) {
         this.input += event.key
       }
       this.updateInputDisplay()

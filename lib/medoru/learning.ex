@@ -954,6 +954,129 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Returns a filtered, sorted, paginated list of learned kanji plus the total matching count.
+
+  ## Options
+
+    * `:search` - search term for character, meaning, or reading
+    * `:locale` - locale for search localization (default "en")
+    * `:jlpt_level` - filter by JLPT level (1-5)
+    * `:school_level` - filter by Japanese school level (1-6)
+    * `:sort_by` - one of `:learned_desc`, `:learned_asc`, `:character_asc`,
+      `:jlpt_asc`, `:stroke_asc`, `:known_score_desc`
+    * `:limit` - page size (default 30)
+    * `:offset` - offset (default 0)
+
+  """
+  def list_learned_kanji_filtered(user_id, opts \\ []) do
+    search = Keyword.get(opts, :search)
+    locale = Keyword.get(opts, :locale, "en")
+    jlpt_level = Keyword.get(opts, :jlpt_level)
+    school_level = Keyword.get(opts, :school_level)
+    sort_by = Keyword.get(opts, :sort_by, :learned_desc)
+    limit = Keyword.get(opts, :limit, 30)
+    offset = Keyword.get(opts, :offset, 0)
+
+    kanji_ids =
+      if is_binary(search) and String.trim(search) != "" do
+        search
+        |> String.trim()
+        |> Content.search_kanji_localized(locale, limit: 1000)
+        |> Enum.map(& &1.id)
+      else
+        nil
+      end
+
+    base_query =
+      from up in UserProgress,
+        join: k in assoc(up, :kanji),
+        where: up.user_id == ^user_id and not is_nil(up.kanji_id)
+
+    base_query =
+      base_query
+      |> maybe_filter_search_kanji_ids(kanji_ids)
+      |> maybe_filter_jlpt_level(jlpt_level)
+      |> maybe_filter_school_level(school_level)
+
+    total_count =
+      base_query
+      |> select([up, k], count(up.id))
+      |> Repo.one()
+
+    kanji =
+      base_query
+      |> order_by_learned_kanji(sort_by)
+      |> limit(^limit)
+      |> offset(^offset)
+      |> preload(kanji: :kanji_readings)
+      |> Repo.all()
+      |> Enum.map(fn up ->
+        k = up.kanji
+
+        %{
+          id: k.id,
+          character: k.character,
+          meanings: k.meanings,
+          jlpt_level: k.jlpt_level,
+          stroke_count: k.stroke_count,
+          stroke_data: k.stroke_data,
+          known_score: up.known_score,
+          inserted_at: up.inserted_at,
+          kanji_readings: k.kanji_readings
+        }
+      end)
+
+    %{kanji: kanji, total_count: total_count || 0}
+  end
+
+  defp maybe_filter_search_kanji_ids(query, nil), do: query
+  defp maybe_filter_search_kanji_ids(query, []), do: where(query, [up, k], false)
+
+  defp maybe_filter_search_kanji_ids(query, ids) when is_list(ids) do
+    where(query, [up, k], k.id in ^ids)
+  end
+
+  defp maybe_filter_jlpt_level(query, nil), do: query
+
+  defp maybe_filter_jlpt_level(query, level) when level in 1..5 do
+    where(query, [up, k], k.jlpt_level == ^level)
+  end
+
+  defp maybe_filter_jlpt_level(query, _), do: query
+
+  defp maybe_filter_school_level(query, nil), do: query
+
+  defp maybe_filter_school_level(query, level) when level in 1..6 do
+    where(query, [up, k], k.school_level == ^level)
+  end
+
+  defp maybe_filter_school_level(query, _), do: query
+
+  defp order_by_learned_kanji(query, :learned_desc),
+    do: order_by(query, [up, k], desc: up.inserted_at, desc: up.id)
+
+  defp order_by_learned_kanji(query, :learned_asc),
+    do: order_by(query, [up, k], asc: up.inserted_at, asc: up.id)
+
+  defp order_by_learned_kanji(query, :character_asc),
+    do: order_by(query, [up, k], asc: k.character)
+
+  defp order_by_learned_kanji(query, :jlpt_asc),
+    do: order_by(query, [up, k], asc: k.jlpt_level, asc: k.character)
+
+  defp order_by_learned_kanji(query, :stroke_asc),
+    do: order_by(query, [up, k], asc: k.stroke_count, asc: k.character)
+
+  defp order_by_learned_kanji(query, :known_score_desc),
+    do: order_by(query, [up, k], desc: up.known_score, asc: k.character)
+
+  defp order_by_learned_kanji(query, :frequency_asc),
+    do: order_by(query, [up, k], asc: k.frequency, asc: k.character)
+
+  defp order_by_learned_kanji(query, _),
+    do: order_by(query, [up, k], desc: up.inserted_at, asc: k.id)
+
+  @doc """
   Gets the list of already learned kanji IDs for a user.
 
   ## Examples

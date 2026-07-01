@@ -1,5 +1,4 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
-import { getAcceptedReadings, getAcceptedKanjiReadings, normalizeReadingInput } from './kanaUtils.js'
 
 function normalize(input) {
   return input.trim().toLowerCase()
@@ -27,16 +26,24 @@ export default class EnemyAbilityChallengeSystem {
     this.timeLimit = challenge.timeLimit || 5000
     this.startTime = Date.now()
 
+    // Enemy ability challenges are always word/meaning prompts.
+    this.challenge.promptType = 'meaning'
+    this.challenge.prompt = 'Type the meaning of this word:'
+
     this.createOverlay()
     this.createHiddenInput()
 
     this.keyboardHandler = (event) => {
       if (!this.active) return
+      const isTypingKey = event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey
+      if (event.key === 'Enter' || event.key === 'Backspace' || isTypingKey) {
+        event.preventDefault()
+      }
       if (event.key === 'Enter') {
         this.submit(false)
       } else if (event.key === 'Backspace') {
         this.input = this.input.slice(0, -1)
-      } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      } else if (isTypingKey) {
         this.input += event.key
       }
       this.updateInputDisplay()
@@ -73,9 +80,7 @@ export default class EnemyAbilityChallengeSystem {
     this.promptText = this.scene.add.text(0, -80, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
     this.overlay.add(this.promptText)
 
-    const displayValue = this.challenge.type === 'word'
-      ? this.challenge.word.word
-      : this.challenge.kanji
+    const displayValue = this.challenge.word?.word || ''
     this.targetText = this.scene.add.text(0, -30, displayValue, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
     this.overlay.add(this.targetText)
 
@@ -138,29 +143,13 @@ export default class EnemyAbilityChallengeSystem {
   }
 
   evaluate() {
-    if (this.challenge.type === 'word') {
-      const word = this.challenge.word
-      if (this.challenge.promptType === 'meaning') {
-        const input = normalize(this.input)
-        const accepted = String(word.meaning || '')
-          .split('/')
-          .map(s => s.trim().toLowerCase())
-          .filter(Boolean)
-        return accepted.includes(input)
-      } else {
-        const input = normalizeReadingInput(this.input)
-        const accepted = getAcceptedReadings(word)
-        return accepted.includes(input)
-      }
-    }
-
-    if (this.challenge.type === 'kanji') {
-      const input = normalizeReadingInput(this.input)
-      const accepted = getAcceptedKanjiReadings(this.challenge.readings)
-      return accepted.includes(input)
-    }
-
-    return false
+    const word = this.challenge.word
+    const input = normalize(this.input)
+    const accepted = String(word.meaning || '')
+      .split('/')
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean)
+    return accepted.includes(input)
   }
 
   submit(timedOut = false) {
@@ -169,14 +158,7 @@ export default class EnemyAbilityChallengeSystem {
     const isCorrect = !timedOut && this.evaluate()
     this.active = false
 
-    let correctAnswer = ''
-    if (this.challenge.type === 'word') {
-      correctAnswer = this.challenge.promptType === 'meaning'
-        ? (this.challenge.word.meaning || '')
-        : (this.challenge.word.reading || this.challenge.word.word || '')
-    } else if (this.challenge.type === 'kanji') {
-      correctAnswer = (this.challenge.readings || []).join(', ')
-    }
+    const correctAnswer = this.challenge.word?.meaning || ''
 
     if (isCorrect) {
       this.inputText.setColor('#2ecc71')

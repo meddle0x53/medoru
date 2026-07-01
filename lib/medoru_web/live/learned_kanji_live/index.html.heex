@@ -1,7 +1,7 @@
 <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
   <div class="max-w-6xl mx-auto px-4 py-8">
     <%!-- Header --%>
-    <div class="mb-8">
+    <div class="mb-6">
       <div class="flex items-center gap-3 mb-2">
         <.link
           navigate={~p"/users/#{@user.id}"}
@@ -18,6 +18,148 @@
       </p>
     </div>
 
+    <%!-- Search Bar --%>
+    <div class="mb-4">
+      <form id="search-form" phx-submit="search" class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1 min-w-0">
+          <input
+            type="text"
+            name="query"
+            value={@search_query}
+            placeholder={gettext("Search learned kanji by character, meaning, or reading...")}
+            class="w-full px-4 py-2.5 pl-10 bg-base-100 border border-base-300 rounded-xl
+                   text-base-content placeholder:text-secondary/50
+                   focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            phx-keydown={if @search_query != "", do: "clear_search"}
+            phx-key="Escape"
+          />
+          <.icon
+            name="hero-magnifying-glass"
+            class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary/50"
+          />
+        </div>
+        <button
+          type="submit"
+          class="px-5 py-2.5 bg-primary text-primary-content rounded-xl font-medium
+                 hover:bg-primary/90 transition-colors shrink-0"
+        >
+          {gettext("Search")}
+        </button>
+        <%= if @search_query != "" do %>
+          <button
+            type="button"
+            phx-click="clear_search"
+            class="px-4 py-2.5 bg-base-200 text-secondary rounded-xl font-medium
+                   hover:bg-base-300 transition-colors shrink-0"
+          >
+            {gettext("Clear")}
+          </button>
+        <% end %>
+      </form>
+    </div>
+
+    <%!-- Filters & Sort --%>
+    <div class="mb-4 space-y-3">
+      <%!-- Sort dropdown --%>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <label for="sort-by" class="text-sm text-secondary shrink-0">
+          {gettext("Sort by")}:
+        </label>
+        <form id="sort-form" phx-change="change_sort" class="flex-1 min-w-0">
+          <select
+            id="sort-by"
+            name="sort"
+            class="w-full sm:w-auto px-3 py-2 bg-base-100 border border-base-300 rounded-lg
+                   text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <option value="learned_desc" selected={@sort_by == :learned_desc}>
+              {gettext("Recently learned")}
+            </option>
+            <option value="learned_asc" selected={@sort_by == :learned_asc}>
+              {gettext("Oldest learned")}
+            </option>
+            <option value="character_asc" selected={@sort_by == :character_asc}>
+              {gettext("Character")}
+            </option>
+            <option value="jlpt_asc" selected={@sort_by == :jlpt_asc}>
+              {gettext("JLPT level")}
+            </option>
+            <option value="stroke_asc" selected={@sort_by == :stroke_asc}>
+              {gettext("Stroke count")}
+            </option>
+            <option value="known_score_desc" selected={@sort_by == :known_score_desc}>
+              {gettext("Known score")}
+            </option>
+            <option value="frequency_asc" selected={@sort_by == :frequency_asc}>
+              {gettext("Frequency")}
+            </option>
+          </select>
+        </form>
+      </div>
+
+      <%!-- JLPT Level Selector --%>
+      <div>
+        <span class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2 block">
+          {gettext("JLPT Level")}
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <%= for level <- [5, 4, 3, 2, 1] do %>
+            <.link
+              patch={~p"/users/#{@user.id}/kanji?level=#{level}"}
+              class={[
+                "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+                if(@filter_type == :jlpt && @jlpt_level == level,
+                  do: "bg-primary text-primary-content shadow-md",
+                  else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-primary"
+                )
+              ]}
+            >
+              N{level}
+            </.link>
+          <% end %>
+          <%= if @filter_type == :jlpt do %>
+            <.link
+              patch={~p"/users/#{@user.id}/kanji"}
+              class="px-4 py-2 rounded-xl font-medium bg-base-200 text-secondary hover:bg-base-300 transition-colors"
+            >
+              {gettext("All levels")}
+            </.link>
+          <% end %>
+        </div>
+      </div>
+
+      <%!-- School Level Selector --%>
+      <div>
+        <span class="text-xs font-semibold text-secondary uppercase tracking-wider mb-2 block">
+          {gettext("Japanese School Level")}
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <%= for level <- 1..6 do %>
+            <.link
+              patch={~p"/users/#{@user.id}/kanji?sl=#{level}"}
+              class={[
+                "px-4 py-2 rounded-xl font-medium transition-all duration-200",
+                if(@filter_type == :school && @school_level == level,
+                  do: "bg-secondary text-secondary-content shadow-md",
+                  else: "bg-base-200 text-secondary hover:bg-base-300 hover:text-secondary"
+                )
+              ]}
+            >
+              SL{level}
+            </.link>
+          <% end %>
+          <%= if @filter_type == :school do %>
+            <.link
+              patch={~p"/users/#{@user.id}/kanji"}
+              class="px-4 py-2 rounded-xl font-medium bg-base-200 text-secondary hover:bg-base-300 transition-colors"
+            >
+              {gettext("All levels")}
+            </.link>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
     <%!-- Stats + Actions --%>
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div class="flex flex-wrap items-center gap-3 text-sm text-secondary">
@@ -27,6 +169,21 @@
         <span class="bg-base-200 px-3 py-1.5 rounded-full">
           {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
         </span>
+        <%= cond do %>
+          <% @filter_type == :search -> %>
+            <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full">
+              {gettext("Search results for")} "{@search_query}"
+            </span>
+          <% @filter_type == :jlpt -> %>
+            <span class="bg-base-200 px-3 py-1.5 rounded-full">
+              JLPT N{@jlpt_level}
+            </span>
+          <% @filter_type == :school -> %>
+            <span class="bg-base-200 px-3 py-1.5 rounded-full">
+              {gettext("School Level")} SL{@school_level}
+            </span>
+          <% true -> %>
+        <% end %>
       </div>
       <%= if @current_scope.current_user && @current_scope.current_user.id == @user.id do %>
         <.link
@@ -120,25 +277,49 @@
       <div class="text-center py-16">
         <div class="text-6xl mb-4">🈳</div>
         <h3 class="text-lg font-medium text-base-content mb-2">
-          {gettext("No kanji learned yet")}
+          <%= cond do %>
+            <% @filter_type == :search -> %>
+              {gettext("No kanji found for")} "{@search_query}"
+            <% @filter_type in [:jlpt, :school] -> %>
+              {gettext("No kanji match the selected filter")}
+            <% true -> %>
+              {gettext("No kanji learned yet")}
+          <% end %>
         </h3>
         <p class="text-secondary mb-6">
-          {gettext("Start learning by completing lessons or browsing kanji.")}
+          <%= cond do %>
+            <% @filter_type == :search -> %>
+              {gettext("Try a different search term or clear the filter.")}
+            <% @filter_type in [:jlpt, :school] -> %>
+              {gettext("Try another level or clear the filter.")}
+            <% true -> %>
+              {gettext("Start learning by completing lessons or browsing kanji.")}
+          <% end %>
         </p>
-        <.link
-          navigate={~p"/lessons"}
-          class="inline-flex items-center px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
-        >
-          <.icon name="hero-book-open" class="w-5 h-5 mr-2" />
-          {gettext("Start Learning")}
-        </.link>
+        <%= if @filter_type != :all do %>
+          <.link
+            patch={~p"/users/#{@user.id}/kanji"}
+            class="inline-flex items-center px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+          >
+            <.icon name="hero-x-mark" class="w-5 h-5 mr-2" />
+            {gettext("Clear filters")}
+          </.link>
+        <% else %>
+          <.link
+            navigate={~p"/lessons"}
+            class="inline-flex items-center px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors"
+          >
+            <.icon name="hero-book-open" class="w-5 h-5 mr-2" />
+            {gettext("Start Learning")}
+          </.link>
+        <% end %>
       </div>
     <% end %>
 
     <%!-- Pagination --%>
     <%= if @total_pages > 1 do %>
       <div class="mt-8 flex justify-center">
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap justify-center">
           <%= if @page > 1 do %>
             <button
               phx-click="change_page"

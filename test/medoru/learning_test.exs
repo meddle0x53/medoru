@@ -498,6 +498,116 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
+  # list_learned_kanji_filtered/2
+  # ============================================================================
+
+  describe "list_learned_kanji_filtered/2" do
+    setup do
+      %{user: user_fixture()}
+    end
+
+    test "returns learned kanji sorted by most recently learned by default", %{user: user} do
+      k1 = kanji_fixture(%{character: "一"})
+      k2 = kanji_fixture(%{character: "二"})
+
+      {:ok, p1} = Learning.track_kanji_learned(user.id, k1.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, k2.id)
+
+      # Make the first progress older so ordering is deterministic despite
+      # timestamp precision.
+      p1
+      |> Ecto.Changeset.change(
+        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-1, :day)
+      )
+      |> Repo.update!()
+
+      result = Learning.list_learned_kanji_filtered(user.id, [])
+
+      assert length(result.kanji) == 2
+      assert Enum.map(result.kanji, & &1.character) == ["二", "一"]
+      assert result.total_count == 2
+    end
+
+    test "filters learned kanji by JLPT level", %{user: user} do
+      n5 = kanji_fixture(%{character: "三", jlpt_level: 5})
+      n4 = kanji_fixture(%{character: "四", jlpt_level: 4})
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, n5.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, n4.id)
+
+      result = Learning.list_learned_kanji_filtered(user.id, jlpt_level: 4)
+
+      assert result.total_count == 1
+      assert List.first(result.kanji).character == "四"
+    end
+
+    test "filters learned kanji by school level", %{user: user} do
+      sl1 = kanji_fixture(%{character: "五", school_level: 1})
+      sl2 = kanji_fixture(%{character: "六", school_level: 2})
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, sl1.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, sl2.id)
+
+      result = Learning.list_learned_kanji_filtered(user.id, school_level: 2)
+
+      assert result.total_count == 1
+      assert List.first(result.kanji).character == "六"
+    end
+
+    test "searches learned kanji by character", %{user: user} do
+      k1 = kanji_fixture(%{character: "日"})
+      k2 = kanji_fixture(%{character: "月"})
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, k1.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, k2.id)
+
+      result = Learning.list_learned_kanji_filtered(user.id, search: "日", locale: "en")
+
+      assert result.total_count == 1
+      assert List.first(result.kanji).character == "日"
+    end
+
+    test "sorts learned kanji by character", %{user: user} do
+      k1 = kanji_fixture(%{character: "山"})
+      k2 = kanji_fixture(%{character: "川"})
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, k1.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, k2.id)
+
+      result = Learning.list_learned_kanji_filtered(user.id, sort_by: :character_asc)
+
+      assert Enum.map(result.kanji, & &1.character) == ["山", "川"]
+    end
+
+    test "sorts learned kanji by known score", %{user: user} do
+      k1 = kanji_fixture(%{character: "木"})
+      k2 = kanji_fixture(%{character: "火"})
+
+      {:ok, p1} = Learning.track_kanji_learned(user.id, k1.id)
+      {:ok, p2} = Learning.track_kanji_learned(user.id, k2.id)
+
+      p1 |> Ecto.Changeset.change(known_score: 5) |> Repo.update!()
+      p2 |> Ecto.Changeset.change(known_score: 10) |> Repo.update!()
+
+      result = Learning.list_learned_kanji_filtered(user.id, sort_by: :known_score_desc)
+
+      assert Enum.map(result.kanji, & &1.character) == ["火", "木"]
+    end
+
+    test "sorts learned kanji by frequency ascending", %{user: user} do
+      k1 = kanji_fixture(%{character: "土", frequency: 100})
+      k2 = kanji_fixture(%{character: "天", frequency: 50})
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, k1.id)
+      {:ok, _} = Learning.track_kanji_learned(user.id, k2.id)
+
+      result = Learning.list_learned_kanji_filtered(user.id, sort_by: :frequency_asc)
+
+      assert Enum.map(result.kanji, & &1.character) == ["天", "土"]
+    end
+  end
+
+  # ============================================================================
   # Helpers
   # ============================================================================
 

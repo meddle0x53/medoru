@@ -4,6 +4,7 @@ import { getWindowGameData } from '../api.js'
 import { ITEMS } from '../data/items.js'
 import { ALL_ACTIONS } from '../data/actions.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
+import { isChallengeWord } from '../systems/EnemyChallengePicker.js'
 
 const GAME_DURATION_MS = 60000
 const SPEED_INCREASE_INTERVAL_MS = 20000
@@ -27,6 +28,7 @@ const SPEED_TO_MS = {
 }
 
 const KEYBOARD_ROWS = [
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
@@ -145,7 +147,7 @@ export default class CascadeScene extends Phaser.Scene {
     const userData = getWindowGameData() || {}
     const rawWords = userData.word_list || []
     const words = rawWords
-      .filter(w => w && (w.word || w.text) && w.meaning)
+      .filter(w => w && (w.word || w.text) && w.meaning && isChallengeWord(w))
       .map(w => ({
         id: w.word || w.text,
         text: w.word || w.text,
@@ -267,7 +269,7 @@ export default class CascadeScene extends Phaser.Scene {
         key === 'Enter' ||
         key === ' ' ||
         key === 'ArrowDown' ||
-        /^[a-zA-Z]$/.test(key)
+        /^[a-zA-Z0-9]$/.test(key)
 
       if (isGameKey) {
         event.preventDefault()
@@ -281,7 +283,7 @@ export default class CascadeScene extends Phaser.Scene {
         this.handleKey('SPACE')
       } else if (key === 'ArrowDown') {
         this.skipWord()
-      } else if (/^[a-zA-Z]$/.test(key)) {
+      } else if (/^[a-zA-Z0-9]$/.test(key)) {
         this.handleKey(key.toUpperCase())
       }
     })
@@ -291,9 +293,9 @@ export default class CascadeScene extends Phaser.Scene {
     this.keyboardContainer = this.add.container(0, 0)
     this.keyboardKeys = []
 
-    const keySize = 36
-    const keyGap = 6
-    this.keyboardStartY = GAME_CONFIG.height - 158
+    const keySize = 30
+    const keyGap = 5
+    this.keyboardStartY = GAME_CONFIG.height - 170
 
     KEYBOARD_ROWS.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
@@ -306,7 +308,7 @@ export default class CascadeScene extends Phaser.Scene {
     })
 
     // Control row: backspace, space, enter, hide.
-    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 14
+    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 10
     this.createKey('⌫', 120, controlY, keySize, keySize, 'BACKSPACE')
     this.createKey('SPACE', GAME_CONFIG.width / 2, controlY, 140, keySize, 'SPACE')
     this.createKey('⏎', GAME_CONFIG.width - 160, controlY, keySize, keySize, 'ENTER')
@@ -393,7 +395,7 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   recalculateGeometry() {
-    this.dangerY = GAME_CONFIG.height - (this.keyboardVisible ? 170 : 60)
+    this.dangerY = GAME_CONFIG.height - (this.keyboardVisible ? 180 : 60)
     this.rowHeight = (this.dangerY - 90) / (ROWS_TO_DANGER - 1)
     this.inputText.y = this.keyboardVisible ? this.keyboardStartY - 36 : GAME_CONFIG.height - 50
 
