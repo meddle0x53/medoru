@@ -780,6 +780,10 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       assert Floki.find(parsed, "#kanji-challenge-points-#{step2.id}") |> Floki.text() =~
                "#{step1_current} / #{test.total_points}"
 
+      # Ensure a measurable amount of time passes so the elapsed-time
+      # calculation for untimed kanji drawing tests is non-zero.
+      Process.sleep(1100)
+
       view
       |> element("#writing-component-#{step2.id}")
       |> render_hook("kanji_complete", %{"wrong_strokes" => 1})
@@ -790,6 +794,7 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       expected_score = step1_current + max(0, step2.points - 1)
       assert attempt.score == expected_score
       assert attempt.max_score == test.total_points
+      assert attempt.time_spent_seconds > 0
     end
 
     test "student sees localized prompt for generated kanji_writing question", %{

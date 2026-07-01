@@ -206,9 +206,12 @@ export default class Player extends Character {
     this.loadout = this.loadLoadout() || {
       class: 'warrior',
       // Meta-currency and permanent unlocks
-      gameTokens: this.level,
+      ouroScales: this.level,
       savedSiteLevel: this.level,
-      rareGameTokens: 0,
+      ouroSource: 0,
+      ouroEssence: 0,
+      lifetimeNormalEnemiesDefeated: 0,
+      lifetimeMiniBossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
@@ -578,14 +581,30 @@ export default class Player extends Character {
           loadout.statAllocations.capacity = 0
         }
         // Migration: meta-currency and permanent unlocks.
-        if (typeof loadout.gameTokens !== 'number') {
-          loadout.gameTokens = this.level
+        // Legacy `gameTokens` and `rareGameTokens` become `ouroScales` and `ouroSource`.
+        if (typeof loadout.ouroScales !== 'number') {
+          loadout.ouroScales = typeof loadout.gameTokens === 'number' ? loadout.gameTokens : this.level
+        }
+        if (typeof loadout.gameTokens === 'number') {
+          delete loadout.gameTokens
         }
         if (typeof loadout.savedSiteLevel !== 'number') {
           loadout.savedSiteLevel = this.level
         }
-        if (typeof loadout.rareGameTokens !== 'number') {
-          loadout.rareGameTokens = 0
+        if (typeof loadout.ouroSource !== 'number') {
+          loadout.ouroSource = typeof loadout.rareGameTokens === 'number' ? loadout.rareGameTokens : 0
+        }
+        if (typeof loadout.rareGameTokens === 'number') {
+          delete loadout.rareGameTokens
+        }
+        if (typeof loadout.ouroEssence !== 'number') {
+          loadout.ouroEssence = 0
+        }
+        if (typeof loadout.lifetimeNormalEnemiesDefeated !== 'number') {
+          loadout.lifetimeNormalEnemiesDefeated = 0
+        }
+        if (typeof loadout.lifetimeMiniBossesDefeated !== 'number') {
+          loadout.lifetimeMiniBossesDefeated = 0
         }
         if (!Array.isArray(loadout.unlockedSocketCharmIds)) {
           loadout.unlockedSocketCharmIds = getDefaultUnlockedSocketCharmIds()
@@ -1102,9 +1121,12 @@ export default class Player extends Character {
 
     // Preserve meta-progression.
     const meta = {
-      gameTokens: this.loadout?.gameTokens ?? this.level,
+      ouroScales: this.loadout?.ouroScales ?? this.loadout?.gameTokens ?? this.level,
       savedSiteLevel: this.loadout?.savedSiteLevel ?? this.level,
-      rareGameTokens: this.loadout?.rareGameTokens ?? 0,
+      ouroSource: this.loadout?.ouroSource ?? this.loadout?.rareGameTokens ?? 0,
+      ouroEssence: this.loadout?.ouroEssence ?? 0,
+      lifetimeNormalEnemiesDefeated: this.loadout?.lifetimeNormalEnemiesDefeated ?? 0,
+      lifetimeMiniBossesDefeated: this.loadout?.lifetimeMiniBossesDefeated ?? 0,
       unlockedSocketCharmIds: this.loadout?.unlockedSocketCharmIds ?? getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: this.loadout?.unlockedHeroCharmIds ?? getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: this.loadout?.unlockedAbilityIds ?? getDefaultUnlockedAbilityIds(),
@@ -1116,7 +1138,7 @@ export default class Player extends Character {
     const previousLevel = meta.savedSiteLevel || this.level
     const levelDiff = Math.max(0, this.level - previousLevel)
     if (levelDiff > 0) {
-      meta.gameTokens += levelDiff
+      meta.ouroScales += levelDiff
       meta.savedSiteLevel = this.level
     }
 
@@ -1182,9 +1204,12 @@ export default class Player extends Character {
   hardReset() {
     this.loadout = {
       ...this.loadout,
-      gameTokens: this.level,
+      ouroScales: this.level,
       savedSiteLevel: this.level,
-      rareGameTokens: 0,
+      ouroSource: 0,
+      ouroEssence: 0,
+      lifetimeNormalEnemiesDefeated: 0,
+      lifetimeMiniBossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
@@ -1197,37 +1222,78 @@ export default class Player extends Character {
 
   endRun(victory = true) {
     if (victory) {
-      this.loadout.gameTokens = (this.loadout.gameTokens || 0) + 1
+      this.loadout.ouroScales = (this.loadout.ouroScales || 0) + 1
       if (Math.random() < 0.05) {
-        this.loadout.rareGameTokens = (this.loadout.rareGameTokens || 0) + 1
+        this.loadout.ouroSource = (this.loadout.ouroSource || 0) + 1
       }
       this.unlockNextLockedItems()
     }
     this.resetToFreshHero()
   }
 
-  addGameTokens(amount) {
-    this.loadout.gameTokens = (this.loadout.gameTokens || 0) + amount
+  addOuroScales(amount) {
+    this.loadout.ouroScales = (this.loadout.ouroScales || 0) + amount
     this.saveLoadout()
   }
 
-  spendGameTokens(amount) {
-    if ((this.loadout.gameTokens || 0) < amount) return false
-    this.loadout.gameTokens -= amount
+  spendOuroScales(amount) {
+    if ((this.loadout.ouroScales || 0) < amount) return false
+    this.loadout.ouroScales -= amount
     this.saveLoadout()
     return true
   }
 
-  addRareGameTokens(amount) {
-    this.loadout.rareGameTokens = (this.loadout.rareGameTokens || 0) + amount
+  addOuroSource(amount) {
+    this.loadout.ouroSource = (this.loadout.ouroSource || 0) + amount
     this.saveLoadout()
   }
 
-  spendRareGameTokens(amount) {
-    if ((this.loadout.rareGameTokens || 0) < amount) return false
-    this.loadout.rareGameTokens -= amount
+  spendOuroSource(amount) {
+    if ((this.loadout.ouroSource || 0) < amount) return false
+    this.loadout.ouroSource -= amount
     this.saveLoadout()
     return true
+  }
+
+  addOuroEssence(amount) {
+    this.loadout.ouroEssence = (this.loadout.ouroEssence || 0) + amount
+    this.saveLoadout()
+  }
+
+  spendOuroEssence(amount) {
+    if ((this.loadout.ouroEssence || 0) < amount) return false
+    this.loadout.ouroEssence -= amount
+    this.saveLoadout()
+    return true
+  }
+
+  recordNormalEnemyDefeated() {
+    this.loadout.lifetimeNormalEnemiesDefeated = (this.loadout.lifetimeNormalEnemiesDefeated || 0) + 1
+    let gained = 0
+    if (this.loadout.lifetimeNormalEnemiesDefeated % 7 === 0) {
+      gained = 1
+      this.addOuroEssence(gained)
+    }
+    return gained
+  }
+
+  recordMiniBossDefeated() {
+    this.loadout.lifetimeMiniBossesDefeated = (this.loadout.lifetimeMiniBossesDefeated || 0) + 1
+    let gained = 0
+    if (this.loadout.lifetimeMiniBossesDefeated % 5 === 0) {
+      gained = 3
+      this.addOuroEssence(gained)
+    }
+    return gained
+  }
+
+  recordMapBossDefeated(level) {
+    let gained = 0
+    if (level === 1) {
+      gained = 2
+      this.addOuroEssence(gained)
+    }
+    return gained
   }
 
   unlockNextLockedItems() {

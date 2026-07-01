@@ -1267,14 +1267,25 @@ defmodule MedoruWeb.ClassroomLive.Test do
     # Calculate final score
     {score, max_score} = Tests.calculate_session_score(session_id)
 
+    attempt = socket.assigns.attempt
+
+    # Kanji drawing tests are untimed, so the remaining-timer calculation
+    # would always report ~0 seconds. Use the real elapsed time since the
+    # attempt started for those tests.
+    time_spent_seconds =
+      if socket.assigns.test.metadata["kanji_drawing"] == true do
+        DateTime.diff(DateTime.utc_now(), attempt.started_at, :second)
+      else
+        attempt.time_limit_seconds - socket.assigns.time_remaining
+      end
+
     # Complete the attempt
     attrs = %{
       test_session_id: session_id,
       score: score,
       max_score: max_score,
       points_earned: score,
-      time_spent_seconds:
-        socket.assigns.attempt.time_limit_seconds - socket.assigns.time_remaining,
+      time_spent_seconds: max(time_spent_seconds, 0),
       time_remaining_seconds: socket.assigns.time_remaining
     }
 

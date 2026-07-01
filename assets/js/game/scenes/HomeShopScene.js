@@ -1,12 +1,12 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 
 const SHOP_ITEMS = [
-  { id: 'stat_point', name: '+1 Stat Point', icon: '🌟', costTokens: 1, costRare: 0 },
-  { id: 'chest', name: 'Open Chest', icon: '🎁', costTokens: 2, costRare: 0 },
-  { id: 'memory', name: 'Memory Game', icon: '🧠', costTokens: 1, costRare: 0 },
-  { id: 'cascade', name: 'Cascade Game', icon: '🌊', costTokens: 1, costRare: 0 },
-  { id: 'weapon_upgrade_run', name: 'Weapon Upgrade (this run)', icon: '⚔️', costTokens: 1, costRare: 0 },
-  { id: 'weapon_upgrade_permanent', name: 'Permanent Weapon Upgrade', icon: '💎', costTokens: 5, costRare: 1 },
+  { id: 'stat_point', name: '+1 Stat Point', icon: '🌟', costScales: 1, costSource: 0 },
+  { id: 'chest', name: 'Open Chest', icon: '🎁', costScales: 2, costSource: 0 },
+  { id: 'memory', name: 'Memory Game', icon: '🧠', costScales: 1, costSource: 0 },
+  { id: 'cascade', name: 'Cascade Game', icon: '🌊', costScales: 1, costSource: 0 },
+  { id: 'weapon_upgrade_run', name: 'Weapon Upgrade (this run)', icon: '⚔️', costScales: 1, costSource: 0 },
+  { id: 'weapon_upgrade_permanent', name: 'Permanent Weapon Upgrade', icon: '💎', costScales: 5, costSource: 1 },
 ]
 
 export default class HomeShopScene extends Phaser.Scene {
@@ -41,10 +41,11 @@ export default class HomeShopScene extends Phaser.Scene {
   }
 
   createTokenDisplay() {
-    const tokens = this.player.loadout.gameTokens || 0
-    const rare = this.player.loadout.rareGameTokens || 0
+    const scales = this.player.loadout.ouroScales || 0
+    const source = this.player.loadout.ouroSource || 0
+    const essence = this.player.loadout.ouroEssence || 0
 
-    this.add.text(GAME_CONFIG.width / 2, 80, `🪙 ${tokens}    💎 ${rare}`, {
+    this.add.text(GAME_CONFIG.width / 2, 80, `🪙 ${scales}    💎 ${source}    🔮 ${essence}`, {
       ...FONTS.default,
       fontSize: '18px',
       color: '#ecf0f1',
@@ -67,7 +68,7 @@ export default class HomeShopScene extends Phaser.Scene {
         fontSize: '14px',
         color: '#ffffff',
       }).setOrigin(0, 0.5)
-      const cost = this.add.text(GAME_CONFIG.width / 2 + 160, y, item.costRare > 0 ? `${item.costTokens}🪙 + ${item.costRare}💎` : `${item.costTokens}🪙`, {
+      const cost = this.add.text(GAME_CONFIG.width / 2 + 160, y, item.costSource > 0 ? `${item.costScales}🪙 + ${item.costSource}💎` : `${item.costScales}🪙`, {
         ...FONTS.default,
         fontSize: '14px',
         color: canAfford ? '#f1c40f' : '#bdc3c7',
@@ -97,8 +98,8 @@ export default class HomeShopScene extends Phaser.Scene {
   }
 
   canAfford(item) {
-    return (this.player.loadout.gameTokens || 0) >= item.costTokens &&
-      (this.player.loadout.rareGameTokens || 0) >= item.costRare
+    return (this.player.loadout.ouroScales || 0) >= item.costScales &&
+      (this.player.loadout.ouroSource || 0) >= item.costSource
   }
 
   buyItem(item) {
@@ -146,8 +147,8 @@ export default class HomeShopScene extends Phaser.Scene {
   }
 
   spend(item) {
-    this.player.loadout.gameTokens = (this.player.loadout.gameTokens || 0) - item.costTokens
-    this.player.loadout.rareGameTokens = (this.player.loadout.rareGameTokens || 0) - item.costRare
+    this.player.loadout.ouroScales = (this.player.loadout.ouroScales || 0) - item.costScales
+    this.player.loadout.ouroSource = (this.player.loadout.ouroSource || 0) - item.costSource
     this.player.saveLoadout()
   }
 

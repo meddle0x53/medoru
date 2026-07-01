@@ -66,6 +66,10 @@ export default class ChestScene extends Phaser.Scene {
           this.flashOpen()
           this.spawnSparkles(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60)
           this.pendingRewards = openChest(this.player)
+          if (Math.random() < 0.05) {
+            this.player.addOuroEssence(1)
+            this.pendingRewards.push({ type: 'ouro_essence', amount: 1 })
+          }
           this.pendingUpgradeOptions = getUpgradeOptions(this.player)
           this.handleUpgradeFlow()
         },
@@ -232,6 +236,9 @@ export default class ChestScene extends Phaser.Scene {
           break
         case 'upgrade':
           lines.push(`${reward.option.icon} ${reward.option.name} +${reward.option.nextLevel}`)
+          break
+        case 'ouro_essence':
+          lines.push(`🔮 +${reward.amount} Ouro Essence`)
           break
         default:
           break

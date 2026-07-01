@@ -7,7 +7,7 @@ export default class RunVictoryScene extends Phaser.Scene {
 
   init(data) {
     this.player = data.player
-    this.rewards = data.rewards || { gameTokens: 0, rareTokens: 0, unlockedAbility: null }
+    this.rewards = data.rewards || { ouroScales: 0, ouroSource: 0, unlockedAbility: null }
   }
 
   create() {
@@ -38,12 +38,12 @@ export default class RunVictoryScene extends Phaser.Scene {
   createRewards() {
     const lines = []
 
-    if (this.rewards.gameTokens > 0) {
-      lines.push(`🪙 +${this.rewards.gameTokens} Game Token`)
+    if (this.rewards.ouroScales > 0) {
+      lines.push(`🪙 +${this.rewards.ouroScales} Ouro Scale`)
     }
 
-    if (this.rewards.rareTokens > 0) {
-      lines.push(`💎 +${this.rewards.rareTokens} Super Game Token`)
+    if (this.rewards.ouroSource > 0) {
+      lines.push(`💎 +${this.rewards.ouroSource} Ouro Source`)
     }
 
     if (this.rewards.unlockedAbility) {
@@ -66,7 +66,7 @@ export default class RunVictoryScene extends Phaser.Scene {
     })
 
     const totals = this.player.loadout || {}
-    this.add.text(GAME_CONFIG.width / 2, 360, `Total tokens: ${totals.gameTokens || 0} 🪙    ${totals.rareGameTokens || 0} 💎`, {
+    this.add.text(GAME_CONFIG.width / 2, 360, `Totals: ${totals.ouroScales || 0} 🪙    ${totals.ouroSource || 0} 💎    ${totals.ouroEssence || 0} 🔮`, {
       ...FONTS.default,
       fontSize: '14px',
       color: '#7f8c8d',

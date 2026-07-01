@@ -2425,6 +2425,15 @@ export default class BattleScene extends Phaser.Scene {
     if (!display || display.defeated) return
     display.defeated = true
 
+    if (this.tile?.type === TILE_TYPES.BATTLE) {
+      this.player.recordNormalEnemyDefeated()
+    } else if (this.tile?.type === TILE_TYPES.MINI_BOSS) {
+      this.player.recordMiniBossDefeated()
+    } else if (this.tile?.type === TILE_TYPES.BOSS) {
+      const mapDef = getMapDefinition(this.mapIndex)
+      this.player.recordMapBossDefeated(mapDef?.level)
+    }
+
     this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
 
     display.sprite.disableInteractive()
@@ -3213,15 +3222,15 @@ export default class BattleScene extends Phaser.Scene {
         // Defaults to final when the flag is missing, so early-release maps
         // always show the run-victory screen.
         if (mapDef.isFinal !== false) {
-          const beforeTokens = this.player.loadout.gameTokens || 0
-          const beforeRare = this.player.loadout.rareGameTokens || 0
+          const beforeScales = this.player.loadout.ouroScales || 0
+          const beforeSource = this.player.loadout.ouroSource || 0
           const beforeUnlocked = new Set(this.player.loadout.unlockedAbilityIds || [])
 
           this.player.endRun(true)
 
           const rewards = {
-            gameTokens: (this.player.loadout.gameTokens || 0) - beforeTokens,
-            rareTokens: (this.player.loadout.rareGameTokens || 0) - beforeRare,
+            ouroScales: (this.player.loadout.ouroScales || 0) - beforeScales,
+            ouroSource: (this.player.loadout.ouroSource || 0) - beforeSource,
           }
           const unlockedId = (this.player.loadout.unlockedAbilityIds || []).find(id => !beforeUnlocked.has(id))
           rewards.unlockedAbility = unlockedId ? ALL_ACTIONS.find(a => a.id === unlockedId) : null
