@@ -253,6 +253,89 @@ defmodule MedoruWeb.Admin.WordLiveTest do
       assert html =~ "本"
     end
 
+    test "renders word relations section for existing word", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん"})
+
+      {:ok, _view, html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      assert html =~ "Word Relations"
+      assert html =~ "Find Relations"
+    end
+
+    test "opens relations modal and shows error when API key is missing", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      html =
+        view
+        |> element("button[phx-click='open_relations_modal']")
+        |> render_click()
+
+      assert html =~ "AI Word Relations"
+      assert html =~ "本"
+
+      view
+      |> form("#relations-generation-form")
+      |> render_submit()
+
+      assert render(view) =~ "OpenAI API key is not configured"
+    end
+
+    test "approves a pending relation from the modal", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+      related = word_fixture(%{text: "書籍", reading: "しょせき"})
+
+      {:ok, relation} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :pending
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      view
+      |> element("button[phx-click='open_relations_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='approve_relation'][phx-value-relation_id='#{relation.id}']")
+        |> render_click()
+
+      assert html =~ "Relation approved"
+      refute html =~ "Pending"
+    end
+
+    test "rejects a pending relation from the modal", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+      related = word_fixture(%{text: "書籍", reading: "しょせき"})
+
+      {:ok, relation} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :pending
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      view
+      |> element("button[phx-click='open_relations_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='reject_relation'][phx-value-relation_id='#{relation.id}']")
+        |> render_click()
+
+      assert html =~ "Relation rejected"
+      refute html =~ "書籍"
+    end
+
     test "pre-fills prompt with existing word text", %{conn: conn} do
       word = word_fixture(%{text: "本", meaning: "book", reading: "ほん"})
 

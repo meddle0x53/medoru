@@ -47,6 +47,7 @@ defmodule MedoruWeb.WordLive.Show do
       locale = socket.assigns.locale
       localized_meaning = Content.get_localized_meaning(word, locale)
       page_image = og_image_url(word.image_path)
+      word_relations = Content.list_word_relations_for_word(word.id)
 
       # Check if user has learned this word (if authenticated)
       word_learned =
@@ -65,6 +66,7 @@ defmodule MedoruWeb.WordLive.Show do
        socket
        |> assign(:word, word)
        |> assign(:localized_meaning, localized_meaning)
+       |> assign(:word_relations, word_relations)
        |> assign(:word_learned, word_learned)
        |> assign(:english_mode?, english_mode?)
        |> assign(:return_to, return_to)

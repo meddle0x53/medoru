@@ -73,54 +73,56 @@
     {
       "index": 5,
       "weights": {
-        "battle": 0.2917,
-        "memory": 0.125,
-        "event": 0.0833,
-        "shop": 0.0833,
-        "chest": 0.0833,
-        "rest_camp": 0.0833,
-        "short_cascade": 0.25
+        "battle": 0.2431,
+        "memory": 0.1042,
+        "event": 0.0694,
+        "shop": 0.0694,
+        "chest": 0.0694,
+        "rest_camp": 0.0694,
+        "short_cascade": 0.2083,
+        "mini_boss": 0.1667
       },
       "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"], "mini_boss": ["kasa_obake_elite", "danzaburo_danuki"] }
     },
     {
       "index": 6,
       "weights": {
-        "battle": 0.2917,
-        "memory": 0.125,
-        "event": 0.0833,
-        "shop": 0.0833,
-        "chest": 0.0833,
-        "rest_camp": 0.0833,
-        "short_cascade": 0.25
+        "battle": 0.1945,
+        "memory": 0.0833,
+        "event": 0.0555,
+        "shop": 0.0555,
+        "chest": 0.0555,
+        "rest_camp": 0.0555,
+        "short_cascade": 0.1667,
+        "mini_boss": 0.3334
       },
       "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"], "mini_boss": ["kasa_obake_elite", "danzaburo_danuki"] }
     },
     {
       "index": 7,
       "weights": {
-        "battle": 0.2083,
-        "mini_boss": 0.1667,
-        "memory": 0.0833,
-        "event": 0.0833,
-        "shop": 0.0833,
-        "chest": 0.0417,
-        "rest_camp": 0.0833,
-        "short_cascade": 0.25
+        "battle": 0.1666,
+        "mini_boss": 0.3334,
+        "memory": 0.0666,
+        "event": 0.0666,
+        "shop": 0.0666,
+        "chest": 0.0334,
+        "rest_camp": 0.0666,
+        "short_cascade": 0.2
       },
       "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["kasa_obake_elite", "danzaburo_danuki"] }
     },
     {
       "index": 8,
       "weights": {
-        "battle": 0.2083,
-        "mini_boss": 0.1667,
-        "memory": 0.0833,
-        "event": 0.0833,
-        "shop": 0.0833,
-        "chest": 0.0417,
-        "rest_camp": 0.0833,
-        "short_cascade": 0.25
+        "battle": 0.0833,
+        "mini_boss": 0.6668,
+        "memory": 0.0333,
+        "event": 0.0333,
+        "shop": 0.0333,
+        "chest": 0.0167,
+        "rest_camp": 0.0333,
+        "short_cascade": 0.1
       },
       "enemyPools": { "battle": ["kasa_obake", "bake_neko"], "mini_boss": ["kasa_obake_elite", "danzaburo_danuki"] }
     },

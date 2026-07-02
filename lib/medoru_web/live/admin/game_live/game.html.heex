@@ -10,6 +10,36 @@
     style="max-width: 100%; width: 960px; height: 540px;"
     phx-update="ignore"
   >
+    <style>
+      #game-wrapper:fullscreen {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #000 !important;
+      }
+      #game-wrapper:fullscreen #game-container {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      body.game-keyboard-open {
+        overflow: hidden !important;
+      }
+      body.game-keyboard-open #game-wrapper:not(:fullscreen) {
+        position: fixed !important;
+        top: var(--gk-top) !important;
+        left: var(--gk-left) !important;
+        width: var(--gk-width) !important;
+        height: var(--gk-height) !important;
+        transform: none !important;
+        max-width: none !important;
+        z-index: 9999 !important;
+      }
+    </style>
     <div id="game-container" style="width: 100%; height: 100%;"></div>
   </div>
 
@@ -29,6 +59,6 @@
     onerror="this.src='https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.min.js'"
   >
   </script>
-  <script type="text/javascript" src={~p"/assets/js/game.js?v=326"}>
+  <script type="text/javascript" src={~p"/assets/js/game.js?v=333"}>
   </script>
 </div>

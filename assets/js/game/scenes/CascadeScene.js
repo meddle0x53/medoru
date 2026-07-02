@@ -73,6 +73,7 @@ export default class CascadeScene extends Phaser.Scene {
     this.createHud()
     this.createInputDisplay()
     this.createKeyboard()
+    this.createKeyboardToggleButton()
     this.setupPhysicalInput()
 
     this.recalculateGeometry()
@@ -307,12 +308,11 @@ export default class CascadeScene extends Phaser.Scene {
       })
     })
 
-    // Control row: backspace, space, enter, hide.
+    // Control row: backspace, space, enter.
     const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 10
     this.createKey('⌫', 120, controlY, keySize, keySize, 'BACKSPACE')
     this.createKey('SPACE', GAME_CONFIG.width / 2, controlY, 140, keySize, 'SPACE')
     this.createKey('⏎', GAME_CONFIG.width - 160, controlY, keySize, keySize, 'ENTER')
-    this.createKey('👁', GAME_CONFIG.width - 60, controlY, keySize, keySize, 'TOGGLE')
   }
 
   createKey(label, x, y, width, height, emitKey = null) {
@@ -344,6 +344,36 @@ export default class CascadeScene extends Phaser.Scene {
     this.keyboardKeys.push(container)
   }
 
+  createKeyboardToggleButton() {
+    const width = 80
+    const height = 28
+    const x = GAME_CONFIG.width - width / 2 - 10
+    const y = this.keyboardStartY - 24
+
+    const bg = this.add.rectangle(0, 0, width, height, 0x2c3e50)
+      .setStrokeStyle(1, 0x5d6d7e)
+    const text = this.add.text(0, 0, 'Hide', {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+
+    this.keyboardToggleButton = this.add.container(x, y, [bg, text])
+    this.keyboardToggleButton.setSize(width, height)
+    this.keyboardToggleButton.setDepth(100)
+
+    const hitArea = this.add.rectangle(0, 0, width, height, 0x000000, 0)
+    hitArea.setInteractive({ useHandCursor: true })
+    this.keyboardToggleButton.add(hitArea)
+
+    hitArea.on('pointerdown', () => {
+      bg.setFillStyle(0x3498db)
+      this.toggleKeyboard()
+    })
+    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
+    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+  }
+
   handleKey(key) {
     if (!this.gameActive || this.gameEnded) return
 
@@ -353,9 +383,6 @@ export default class CascadeScene extends Phaser.Scene {
       this.inputBuffer += ' '
     } else if (key === 'ENTER') {
       this.tryMatchExact()
-    } else if (key === 'TOGGLE') {
-      this.toggleKeyboard()
-      return
     } else if (key.length === 1) {
       this.inputBuffer += key.toLowerCase()
     }
@@ -394,10 +421,20 @@ export default class CascadeScene extends Phaser.Scene {
     this.recalculateGeometry()
   }
 
+  updateKeyboardToggleButton() {
+    if (!this.keyboardToggleButton) return
+    const textObj = this.keyboardToggleButton.list.find(c => c.type === 'Text')
+    if (textObj) textObj.setText(this.keyboardVisible ? 'Hide' : 'Show')
+    this.keyboardToggleButton.y = this.keyboardVisible
+      ? this.keyboardStartY - 24
+      : GAME_CONFIG.height - 40
+  }
+
   recalculateGeometry() {
     this.dangerY = GAME_CONFIG.height - (this.keyboardVisible ? 180 : 60)
     this.rowHeight = (this.dangerY - 90) / (ROWS_TO_DANGER - 1)
     this.inputText.y = this.keyboardVisible ? this.keyboardStartY - 36 : GAME_CONFIG.height - 50
+    this.updateKeyboardToggleButton()
 
     // Reposition the current word by its row.
     if (this.currentWord && this.currentWord.wordData && this.currentWord.wordData.row) {

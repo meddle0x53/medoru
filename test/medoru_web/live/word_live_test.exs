@@ -184,6 +184,59 @@ defmodule MedoruWeb.WordLiveTest do
       assert html =~ ~r/<meta[^>]*property="og:title"[^>]*>/
       assert html =~ ~r/<meta[^>]*property="og:description"[^>]*>/
     end
+
+    test "displays approved linked relations", %{conn: conn} do
+      word = word_fixture(%{text: "大きい", reading: "おおきい", word_type: :adjective})
+      related = word_fixture(%{text: "大きな", reading: "おおきな"})
+
+      {:ok, _} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :approved
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ "Synonyms"
+      assert html =~ related.text
+    end
+
+    test "displays approved text-only expressions", %{conn: conn} do
+      word = word_fixture(%{text: "日本", reading: "にほん", word_type: :noun})
+
+      {:ok, _} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :expression,
+          expression_text: "日本に行く",
+          status: :approved
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ "Common Expressions"
+      assert html =~ "日本に行く"
+    end
+
+    test "does not display pending relations", %{conn: conn} do
+      word = word_fixture(%{text: "日本", reading: "にほん", word_type: :noun})
+      related = word_fixture(%{text: "国", reading: "くに"})
+
+      {:ok, _} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :pending
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      refute html =~ "Synonyms"
+      refute html =~ related.text
+    end
   end
 
   defp create_word(_) do

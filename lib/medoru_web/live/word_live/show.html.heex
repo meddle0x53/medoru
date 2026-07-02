@@ -137,9 +137,55 @@
           <% end %>
         </div>
 
+        <%!-- Word Relations --%>
+        <%= if map_size(@word_relations) > 0 do %>
+          <div class="border-t border-base-300 pt-6 mt-6">
+            <%= for {type, relations} <- @word_relations do %>
+              <%= if relations != [] do %>
+                <div class="mb-6 last:mb-0">
+                  <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-3">
+                    {case type do
+                      :synonym -> gettext("Synonyms")
+                      :antonym -> gettext("Antonyms")
+                      :expression -> gettext("Common Expressions")
+                    end}
+                  </h2>
+                  <div class="flex flex-wrap gap-2">
+                    <%= for relation <- relations do %>
+                      <%= if relation.linked do %>
+                        <.link
+                          navigate={~p"/words/#{relation.id}"}
+                          class={[
+                            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors",
+                            type == :synonym && "bg-green-50 border-green-200 hover:border-green-400 dark:bg-green-900/20 dark:border-green-800",
+                            type == :antonym && "bg-red-50 border-red-200 hover:border-red-400 dark:bg-red-900/20 dark:border-red-800",
+                            type == :expression && "bg-blue-50 border-blue-200 hover:border-blue-400 dark:bg-blue-900/20 dark:border-blue-800"
+                          ]}
+                        >
+                          <span class="font-medium">{relation.text}</span>
+                          <span class="text-xs opacity-70">{relation.reading}</span>
+                        </.link>
+                      <% else %>
+                        <span class={[
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border",
+                          type == :synonym && "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800",
+                          type == :antonym && "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800",
+                          type == :expression && "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"
+                        ]}>
+                          <span class="font-medium">{relation.text}</span>
+                        </span>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+
         <%!-- Action Buttons - Mobile Responsive --%>
         <%= if @current_scope && @current_scope.current_user do %>
-          <div class="flex flex-col sm:flex-row gap-3 mb-6">
+          <div class="border-t border-base-300 pt-6 mt-6 flex flex-col sm:flex-row gap-3 mb-6">
             <%= if @word_learned do %>
               <button
                 phx-click="unlearn_word"

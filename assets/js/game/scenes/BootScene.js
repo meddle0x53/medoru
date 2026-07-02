@@ -49,6 +49,11 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('hero_select_background', '/images/game/hero_select_background.png')
     this.load.image('hero_portrait', '/images/game/hero_portrait.png')
 
+    // Meta-currency icons for the home camp shop and victory screens.
+    this.load.image('ouro_scale', '/images/game/ouro_scale.png')
+    this.load.image('ouro_source', '/images/game/ouro_source.png')
+    this.load.image('ouro_essence', '/images/game/ouro_essence.png')
+
     // Enemy sprites — loaded dynamically from enemy definitions (including phase sprites).
     const loadedKeys = new Set()
     for (const def of ENEMY_DEFINITIONS) {

@@ -7,8 +7,10 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   import MedoruWeb.CoreComponents
 
   alias Medoru.AI.WordEnrichment
+  alias Medoru.AI.WordRelations
   alias Medoru.Content
   alias Medoru.Content.Word
+  alias Medoru.Content.WordRelation
 
   embed_templates "form/*"
 
@@ -51,6 +53,11 @@ defmodule MedoruWeb.Admin.WordLive.Form do
      |> assign(:image_prompt, "")
      |> assign(:image_temp_path, nil)
      |> assign(:show_image_modal, false)
+     |> assign(:relations_loading, false)
+     |> assign(:relations_error, nil)
+     |> assign(:relations_prompt, "")
+     |> assign(:show_relations_modal, false)
+     |> assign(:pending_relations, [])
      |> assign(:selected_kanji_ids, MapSet.new())
      |> allow_upload(:image,
        accept: ~w(.jpg .jpeg .png .webp),
@@ -79,10 +86,12 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     |> assign(:word_kanjis_with_readings, [])
     |> assign(:selected_kanji_ids, MapSet.new())
     |> assign(:enrich_prompt, WordEnrichment.predefined_prompt(""))
+    |> assign(:relations_prompt, "")
+    |> assign(:pending_relations, [])
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    word = Content.get_word_with_kanji!(id)
+    word = Content.get_word_with_kanji_and_relations!(id)
     changeset = Content.change_word(word)
 
     # Load kanji readings for each kanji in the word
@@ -102,6 +111,8 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
     |> assign(:selected_kanji_ids, MapSet.new())
     |> assign(:enrich_prompt, WordEnrichment.predefined_prompt(word.text))
+    |> assign(:relations_prompt, WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type))
+    |> load_pending_relations(word)
   end
 
   @impl true
@@ -405,6 +416,116 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   @impl true
+  def handle_event("open_relations_modal", _params, socket) do
+    word = socket.assigns.word
+
+    if socket.assigns.live_action == :edit do
+      {:noreply,
+       socket
+       |> assign(:show_relations_modal, true)
+       |> assign(:relations_error, nil)
+       |> assign(:relations_prompt, WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type))
+       |> load_pending_relations(word)}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("Save the word first before finding relations."))}
+    end
+  end
+
+  @impl true
+  def handle_event("close_relations_modal", _params, socket) do
+    {:noreply, assign(socket, :show_relations_modal, false)}
+  end
+
+  @impl true
+  def handle_event("update_relations_prompt", %{"prompt" => prompt}, socket) do
+    {:noreply, assign(socket, :relations_prompt, prompt)}
+  end
+
+  @impl true
+  def handle_event("generate_relations", _params, socket) do
+    word = socket.assigns.word
+
+    if socket.assigns.live_action != :edit do
+      {:noreply,
+       socket
+       |> assign(:relations_loading, false)
+       |> assign(:relations_error, gettext("Save the word first before finding relations."))}
+    else
+      socket = assign(socket, :relations_loading, true)
+      custom_prompt = socket.assigns.relations_prompt
+
+      case WordRelations.generate(word.text, word.reading, word.meaning, word.word_type,
+             custom_prompt: custom_prompt
+           ) do
+        {:ok, suggestions} ->
+          created_count = create_pending_relations(word, suggestions)
+          word = Content.get_word_with_kanji_and_relations!(word.id)
+
+          {:noreply,
+           socket
+           |> assign(:relations_loading, false)
+           |> assign(:relations_error, nil)
+           |> assign(:word, word)
+           |> load_pending_relations(word)
+           |> put_flash(
+             :info,
+             gettext("Found %{count} relation suggestions.", count: created_count)
+           )}
+
+        {:error, reason} ->
+{:noreply,
+           socket
+           |> assign(:relations_loading, false)
+           |> assign(:relations_error, reason)}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("approve_relation", %{"relation_id" => relation_id}, socket) do
+    relation = Content.get_word_relation!(relation_id)
+
+    case Content.approve_word_relation(relation) do
+      {:ok, _approved} ->
+        word = Content.get_word_with_kanji_and_relations!(socket.assigns.word.id)
+
+        {:noreply,
+         socket
+         |> assign(:word, word)
+         |> load_pending_relations(word)
+         |> put_flash(:info, gettext("Relation approved."))}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to approve relation."))}
+    end
+  end
+
+  @impl true
+  def handle_event("reject_relation", %{"relation_id" => relation_id}, socket) do
+    relation = Content.get_word_relation!(relation_id)
+
+    case Content.reject_word_relation(relation) do
+      {:ok, _} ->
+        word = Content.get_word_with_kanji_and_relations!(socket.assigns.word.id)
+
+        {:noreply,
+         socket
+         |> assign(:word, word)
+         |> load_pending_relations(word)
+         |> put_flash(:info, gettext("Relation rejected."))}
+
+      {:error, _changeset} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to reject relation."))}
+    end
+  end
+
+  @impl true
   def handle_event("save", %{"word" => word_params}, socket) do
     save_word(socket, socket.assigns.live_action, word_params)
   end
@@ -434,7 +555,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     case Content.update_word_kanji(word_kanji, attrs) do
       {:ok, _updated_word_kanji} ->
         # Reload word with updated word_kanjis
-        word = Content.get_word_with_kanji!(socket.assigns.word.id)
+        word = Content.get_word_with_kanji_and_relations!(socket.assigns.word.id)
 
         # Reload kanji readings
         word_kanjis_with_readings =
@@ -467,7 +588,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
       count = length(new_word_kanjis)
 
       # Reload word with updated word_kanjis
-      word = Content.get_word_with_kanji!(word.id)
+      word = Content.get_word_with_kanji_and_relations!(word.id)
 
       # Reload kanji readings for display
       word_kanjis_with_readings =
@@ -523,7 +644,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
 
         {:ok, count} = Content.delete_word_kanjis(word.id, MapSet.to_list(selected))
 
-        word = Content.get_word_with_kanji!(word.id)
+        word = Content.get_word_with_kanji_and_relations!(word.id)
 
         word_kanjis_with_readings =
           word.word_kanjis
@@ -612,6 +733,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
 
     case Content.update_word(socket.assigns.word, word_params) do
       {:ok, word} ->
+        word = Content.get_word_with_kanji_and_relations!(word.id)
         changeset = Content.change_word(word)
 
         {:noreply,
@@ -804,6 +926,90 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     end
 
     socket
+  end
+
+  # Word Relations helpers
+
+  defp load_pending_relations(socket, %Word{id: nil}), do: assign(socket, :pending_relations, [])
+
+  defp load_pending_relations(socket, %Word{} = word) do
+    pending = Content.list_pending_word_relations_for_word(word.id)
+    assign(socket, :pending_relations, pending)
+  end
+
+  defp create_pending_relations(%Word{} = word, suggestions) do
+    types = [
+      {"synonyms", :synonym},
+      {"antonyms", :antonym},
+      {"expressions", :expression}
+    ]
+
+    existing =
+      (Content.list_pending_word_relations_for_word(word.id) ++
+         Content.list_word_relations_for_word_structs(word.id))
+      |> Enum.map(&relation_signature/1)
+      |> MapSet.new()
+
+    types
+    |> Enum.flat_map(fn {key, type} ->
+      suggestions
+      |> Map.get(key, [])
+      |> Enum.map(fn item -> {type, item} end)
+    end)
+    |> Enum.reduce(0, fn {type, item}, acc ->
+      text = item["text"]
+      related_word = Content.find_word_for_relation(text)
+
+      # Synonyms and antonyms must match an existing word. Expressions may be
+      # text-only when no matching word exists.
+      attrs =
+        cond do
+          type in [:synonym, :antonym] and is_nil(related_word) ->
+            nil
+
+          type == :expression and is_nil(related_word) ->
+            %{
+              word_id: word.id,
+              relation_type: type,
+              related_word_id: nil,
+              expression_text: text,
+              status: :pending
+            }
+
+          true ->
+            %{
+              word_id: word.id,
+              relation_type: type,
+              related_word_id: related_word.id,
+              expression_text: nil,
+              status: :pending
+            }
+        end
+
+      if is_nil(attrs) do
+        acc
+      else
+        signature = relation_signature(attrs)
+
+        if MapSet.member?(existing, signature) do
+          acc
+        else
+          case Content.create_word_relation(attrs) do
+            {:ok, _} -> acc + 1
+            {:error, _} -> acc
+          end
+        end
+      end
+    end)
+  end
+
+  defp relation_signature(%{word_id: word_id, relation_type: type, related_word_id: rw_id, expression_text: text}) do
+    {word_id, type, rw_id, text}
+  end
+
+  defp relation_signature(%WordRelation{} = relation) do
+    {relation.word_id, relation.relation_type, relation.related_word_id,
+     relation.expression_text}
   end
 
   # Helper function to format Ecto changeset errors for display

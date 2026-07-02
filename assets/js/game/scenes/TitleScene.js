@@ -22,6 +22,7 @@ export default class TitleScene extends Phaser.Scene {
     this.createButtons()
     this.createConfirmationOverlay()
     this.createSettingsOverlay()
+    this.setupFullscreenListeners()
   }
 
   loadSettings() {
@@ -360,19 +361,43 @@ export default class TitleScene extends Phaser.Scene {
     this.sfxVolumeSlider.setValue(this.settings.sfxVolume)
   }
 
+  setupFullscreenListeners() {
+    this.fullscreenChangeHandler = () => {
+      const isFullscreen = !!document.fullscreenElement
+      if (isFullscreen !== this.settings.fullscreen) {
+        this.settings.fullscreen = isFullscreen
+        this.saveSettings()
+        this.updateFullscreenButtonLabel()
+      }
+    }
+    document.addEventListener('fullscreenchange', this.fullscreenChangeHandler)
+  }
+
+  shutdown() {
+    if (this.fullscreenChangeHandler) {
+      document.removeEventListener('fullscreenchange', this.fullscreenChangeHandler)
+      this.fullscreenChangeHandler = null
+    }
+  }
+
+  updateFullscreenButtonLabel() {
+    const label = this.settings.fullscreen ? 'Fullscreen: On' : 'Fullscreen: Off'
+    const text = this.fullscreenButton?.list.find(c => c.type === 'Text')
+    if (text) text.setText(label)
+  }
+
   toggleFullscreen() {
-    const gameCanvas = this.game.canvas
     if (!document.fullscreenElement) {
-      gameCanvas.requestFullscreen?.().catch(() => {})
-      this.settings.fullscreen = true
+      // Fullscreen the wrapper, not the canvas, so CSS can make it fill the
+      // viewport while Phaser's FIT scale mode keeps the game centred.
+      const wrapper = document.getElementById('game-wrapper')
+      if (wrapper?.requestFullscreen) {
+        wrapper.requestFullscreen().catch(() => {})
+      } else {
+        this.game.canvas.requestFullscreen?.().catch(() => {})
+      }
     } else {
       document.exitFullscreen?.().catch(() => {})
-      this.settings.fullscreen = false
     }
-    this.saveSettings()
-
-    const label = this.settings.fullscreen ? 'Fullscreen: On' : 'Fullscreen: Off'
-    const text = this.fullscreenButton.list.find(c => c.type === 'Text')
-    if (text) text.setText(label)
   }
 }

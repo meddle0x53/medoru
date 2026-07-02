@@ -43,6 +43,7 @@ defmodule Medoru.Content.Word do
     field :mature, :boolean, default: false
 
     has_many :word_kanjis, Medoru.Content.WordKanji, preload_order: [asc: :position]
+    has_many :word_relations, Medoru.Content.WordRelation, preload_order: [asc: :inserted_at]
 
     timestamps(type: :utc_datetime)
   end

@@ -803,6 +803,84 @@
     </div>
   <% end %>
 
+  <%!-- Word Relations Section (Edit only) - Outside main form --%>
+  <%= if @live_action == :edit do %>
+    <div id="word-relations" class="card bg-base-100 shadow-sm border border-base-300 mt-6">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold flex items-center gap-2">
+            <.icon name="hero-link" class="w-5 h-5" />
+            {gettext("Word Relations")}
+          </h3>
+          <button
+            type="button"
+            phx-click="open_relations_modal"
+            class="btn btn-sm btn-outline btn-secondary"
+          >
+            <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+            {gettext("Find Relations")}
+          </button>
+        </div>
+
+        <%= if @word.word_relations == [] do %>
+          <div class="text-center py-8 text-secondary">
+            <.icon name="hero-link" class="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>{gettext("No relations linked to this word yet.")}</p>
+            <p class="text-sm mt-1">
+              {gettext("Click 'Find Relations' to generate synonyms, antonyms, and expressions with AI.")}
+            </p>
+          </div>
+        <% else %>
+          <div class="space-y-4">
+            <%= for relation <- @word.word_relations do %>
+              <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
+                <div class="flex items-center gap-3">
+                  <span class={[
+                    "badge badge-sm",
+                    relation.relation_type == :synonym && "badge-success",
+                    relation.relation_type == :antonym && "badge-error",
+                    relation.relation_type == :expression && "badge-info"
+                  ]}>
+                    {relation.relation_type}
+                  </span>
+                  <%= if relation.related_word do %>
+                    <.link
+                      navigate={~p"/admin/words/#{relation.related_word.id}/edit"}
+                      class="font-medium hover:text-primary"
+                    >
+                      {relation.related_word.text}
+                    </.link>
+                    <span class="text-sm text-secondary">{relation.related_word.reading}</span>
+                  <% else %>
+                    <span class="font-medium">{relation.expression_text}</span>
+                    <span class="text-sm text-secondary">{gettext("(text only)")}</span>
+                  <% end %>
+                </div>
+                <span class={[
+                  "badge badge-sm",
+                  relation.status == :approved && "badge-success",
+                  relation.status == :pending && "badge-warning",
+                  relation.status == :rejected && "badge-ghost"
+                ]}>
+                  {relation.status}
+                </span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <.relations_modal
+    word={@word}
+    relations_prompt={@relations_prompt}
+    relations_error={@relations_error}
+    relations_loading={@relations_loading}
+    pending_relations={@pending_relations}
+    show_relations_modal={@show_relations_modal}
+  />
+
   <%!-- AI Enrichment Modal --%>
   <%= if @show_enrich_modal do %>
     <div class="modal modal-open">

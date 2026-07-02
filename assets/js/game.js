@@ -55,8 +55,13 @@ function startGame() {
   }
 
   try {
-    new Phaser.Game(config)
+    window.game = new Phaser.Game(config)
     console.log('[The Hollow Ouroboros] Phaser initialized')
+
+    // Re-calculate scale after entering/exiting fullscreen so pointer input stays aligned.
+    document.addEventListener('fullscreenchange', () => {
+      window.game?.scale?.refresh?.()
+    })
   } catch (err) {
     console.error('[The Hollow Ouroboros] Phaser failed to start:', err)
   }

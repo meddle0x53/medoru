@@ -1,0 +1,138 @@
+<%= if @show_relations_modal do %>
+  <div class="modal modal-open">
+    <div class="modal-box max-w-3xl max-h-[90vh] flex flex-col">
+      <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
+        <.icon name="hero-link" class="w-5 h-5 text-secondary" />
+        {gettext("AI Word Relations")}
+      </h3>
+
+      <div class="space-y-4 flex-1 overflow-y-auto">
+        <%!-- Word info --%>
+        <div class="p-3 bg-base-200 rounded-lg flex flex-col sm:flex-row gap-4">
+          <div>
+            <span class="text-sm text-base-content/60">{gettext("Word")}:</span>
+            <span class="text-xl font-medium ml-2">{@word.text}</span>
+          </div>
+          <div>
+            <span class="text-sm text-base-content/60">{gettext("Meaning")}:</span>
+            <span class="font-medium ml-2">{@word.meaning}</span>
+          </div>
+        </div>
+
+        <%!-- Prompt textarea --%>
+        <.form
+          for={}
+          id="relations-generation-form"
+          phx-submit="generate_relations"
+          class="space-y-4"
+        >
+          <div>
+            <label class="label">
+              <span class="label-text">{gettext("Prompt (editable)")}</span>
+            </label>
+            <textarea
+              name="prompt"
+              phx-change="update_relations_prompt"
+              phx-debounce="300"
+              class="textarea textarea-bordered w-full h-48 font-mono text-sm"
+            >{@relations_prompt}</textarea>
+            <p class="text-xs text-base-content/50 mt-1">
+              {gettext("Edit the prompt before generating. The word details are pre-filled.")}
+            </p>
+          </div>
+
+          <%!-- Error display --%>
+          <%= if @relations_error do %>
+            <div class="alert alert-error alert-soft">
+              <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+              <span>{@relations_error}</span>
+            </div>
+          <% end %>
+
+          <div class="modal-action flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              phx-click="close_relations_modal"
+              class="btn btn-ghost w-full sm:w-auto"
+            >
+              {gettext("Close")}
+            </button>
+            <button
+              type="submit"
+              class="btn btn-secondary w-full sm:w-auto"
+              disabled={@relations_loading}
+            >
+              <%= if @relations_loading do %>
+                <span class="loading loading-spinner loading-sm mr-2"></span>
+                {gettext("Generating...")}
+              <% else %>
+                <.icon name="hero-sparkles" class="w-4 h-4 mr-2" />
+                {gettext("Generate")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
+
+        <%!-- Pending relations list (outside the generation form) --%>
+        <%= if @pending_relations != [] do %>
+          <div class="border border-base-300 rounded-lg overflow-hidden">
+            <div class="bg-base-200 px-4 py-2 font-medium">
+              {gettext("Pending suggestions — approve or reject each one")}
+            </div>
+            <div class="divide-y divide-base-300">
+              <%= for relation <- @pending_relations do %>
+                <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <span class={[
+                      "badge badge-sm",
+                      relation.relation_type == :synonym && "badge-success",
+                      relation.relation_type == :antonym && "badge-error",
+                      relation.relation_type == :expression && "badge-info"
+                    ]}>
+                      {relation.relation_type}
+                    </span>
+                    <%= if relation.related_word do %>
+                      <.link
+                        navigate={~p"/admin/words/#{relation.related_word.id}/edit"}
+                        class="font-medium hover:text-primary"
+                      >
+                        {relation.related_word.text}
+                      </.link>
+                      <span class="text-sm text-secondary">{relation.related_word.reading}</span>
+                      <span class="text-xs text-base-content/50">{relation.related_word.meaning}</span>
+                    <% else %>
+                      <span class="font-medium">{relation.expression_text}</span>
+                      <span class="text-sm text-secondary">{gettext("(not in database)")}</span>
+                    <% end %>
+                  </div>
+
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      phx-click="approve_relation"
+                      phx-value-relation_id={relation.id}
+                      class="btn btn-sm btn-success"
+                    >
+                      <.icon name="hero-check" class="w-4 h-4 mr-1" />
+                      {gettext("Approve")}
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="reject_relation"
+                      phx-value-relation_id={relation.id}
+                      class="btn btn-sm btn-error btn-outline"
+                    >
+                      <.icon name="hero-x-mark" class="w-4 h-4 mr-1" />
+                      {gettext("Reject")}
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    <div class="modal-backdrop" phx-click="close_relations_modal"></div>
+  </div>
+<% end %>

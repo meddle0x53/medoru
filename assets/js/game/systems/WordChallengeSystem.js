@@ -1,5 +1,6 @@
 import { COLORS, FONTS, GAME_CONFIG } from '../config.js'
 import { getAcceptedReadings, normalizeReadingInput } from './kanaUtils.js'
+import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
 
 /**
  * Reusable word challenge component used by every scene.
@@ -183,8 +184,14 @@ export default class WordChallengeSystem {
     this.inputEl.style.left = '0'
     this.inputEl.style.width = '1px'
     this.inputEl.style.height = '1px'
+    this.inputEl.style.fontSize = '16px'
+    this.inputEl.autocomplete = 'off'
+    this.inputEl.autocorrect = 'off'
+    this.inputEl.autocapitalize = 'off'
+    this.inputEl.spellcheck = false
     document.body.appendChild(this.inputEl)
     this.inputEl.focus()
+    lockGameWrapper()
 
     this.inputHandler = () => {
       this.input = this.inputEl.value
@@ -287,6 +294,7 @@ export default class WordChallengeSystem {
       this.inputEl.parentNode.removeChild(this.inputEl)
       this.inputEl = null
     }
+    unlockGameWrapper()
   }
 
   hide() {

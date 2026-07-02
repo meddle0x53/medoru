@@ -10,6 +10,7 @@ defmodule Medoru.Content do
     KanjiReading,
     Word,
     WordKanji,
+    WordRelation,
     WordConjugation,
     Lesson,
     LessonWord,
@@ -1057,6 +1058,16 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Gets a single word with kanji, readings, and word relations preloaded.
+  """
+  def get_word_with_kanji_and_relations!(id) do
+    Word
+    |> where(id: ^id)
+    |> preload(word_kanjis: [:kanji, :kanji_reading], word_relations: :related_word)
+    |> Repo.one!()
+  end
+
+  @doc """
   Gets a word by its text.
 
   Returns `nil` if the Word does not exist.
@@ -1546,6 +1557,153 @@ defmodule Medoru.Content do
       KanjiReadingExtractor.kanji?(char)
     end)
   end
+
+  # Word Relation Functions
+
+  @doc """
+  Returns approved relations for a word, grouped by relation type.
+
+  The result is a map like:
+    %{
+      synonym: [%{id: ..., text: ..., reading: ..., meaning: ...} | %{text: "..."}],
+      antonym: [...],
+      expression: [...]
+    }
+
+  For linked words the map contains word data; for text-only expressions it
+  contains `:text`.
+  """
+  def list_word_relations_for_word(word_id) do
+    WordRelation
+    |> where([wr], wr.word_id == ^word_id and wr.status == :approved)
+    |> preload(:related_word)
+    |> order_by([wr], asc: wr.inserted_at)
+    |> Repo.all()
+    |> Enum.group_by(& &1.relation_type)
+    |> Map.new(fn {type, relations} ->
+      {type,
+       Enum.map(relations, fn relation ->
+         if relation.related_word do
+           %{
+             id: relation.related_word.id,
+             text: relation.related_word.text,
+             reading: relation.related_word.reading,
+             meaning: relation.related_word.meaning,
+             word_type: relation.related_word.word_type,
+             linked: true
+           }
+         else
+           %{
+             text: relation.expression_text,
+             linked: false
+           }
+         end
+       end)}
+    end)
+  end
+
+  @doc """
+  Returns all pending relations for a word.
+  """
+  def list_pending_word_relations_for_word(word_id) do
+    WordRelation
+    |> where([wr], wr.word_id == ^word_id and wr.status == :pending)
+    |> preload(:related_word)
+    |> order_by([wr], asc: wr.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns all word relation structs (approved, pending, or rejected) for a word.
+  """
+  def list_word_relations_for_word_structs(word_id) do
+    WordRelation
+    |> where([wr], wr.word_id == ^word_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single word relation.
+
+  Raises `Ecto.NoResultsError` if the relation does not exist.
+  """
+  def get_word_relation!(id), do: Repo.get!(WordRelation, id)
+
+  @doc """
+  Creates a word relation.
+  """
+  def create_word_relation(attrs \\ %{}) do
+    %WordRelation{}
+    |> WordRelation.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Approves a pending word relation. For synonyms and antonyms, also creates the
+  inverse relation so the relationship is bidirectional.
+  """
+  def approve_word_relation(%WordRelation{status: :pending} = relation) do
+    Repo.transaction(fn ->
+      {:ok, approved} =
+        relation
+        |> WordRelation.changeset(%{status: :approved})
+        |> Repo.update()
+
+      if relation.relation_type in [:synonym, :antonym] and not is_nil(relation.related_word_id) do
+        # Create the inverse relation unless it already exists.
+        existing_inverse =
+          WordRelation
+          |> where(
+            [wr],
+            wr.word_id == ^relation.related_word_id and
+              wr.related_word_id == ^relation.word_id and
+              wr.relation_type == ^relation.relation_type and
+              wr.status == :approved
+          )
+          |> Repo.one()
+
+        if is_nil(existing_inverse) do
+          {:ok, _inverse} =
+            create_word_relation(%{
+              word_id: relation.related_word_id,
+              related_word_id: relation.word_id,
+              relation_type: relation.relation_type,
+              status: :approved
+            })
+        end
+      end
+
+      approved
+    end)
+  end
+
+  @doc """
+  Rejects a pending word relation by deleting it.
+  """
+  def reject_word_relation(%WordRelation{} = relation) do
+    Repo.delete(relation)
+  end
+
+  @doc """
+  Finds a word by its Japanese text, returning only the fields needed for
+  relation matching.
+  """
+  def find_word_for_relation(text) when is_binary(text) do
+    trimmed = String.trim(text)
+
+    Word
+    |> where([w], w.text == ^trimmed)
+    |> select([w], %{
+      id: w.id,
+      text: w.text,
+      reading: w.reading,
+      meaning: w.meaning,
+      word_type: w.word_type
+    })
+    |> Repo.one()
+  end
+
+  def find_word_for_relation(_), do: nil
 
   # Lesson Functions
 

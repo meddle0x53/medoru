@@ -45,11 +45,47 @@ export default class HomeShopScene extends Phaser.Scene {
     const source = this.player.loadout.ouroSource || 0
     const essence = this.player.loadout.ouroEssence || 0
 
-    this.add.text(GAME_CONFIG.width / 2, 80, `🪙 ${scales}    💎 ${source}    🔮 ${essence}`, {
+    const y = 80
+    const gap = 100
+    const startX = GAME_CONFIG.width / 2
+
+    this.createCurrencyBadge(startX - gap, y, 'ouro_scale', scales)
+    this.createCurrencyBadge(startX, y, 'ouro_source', source)
+    this.createCurrencyBadge(startX + gap, y, 'ouro_essence', essence)
+  }
+
+  createCurrencyBadge(x, y, iconKey, amount) {
+    const icon = this.add.image(x - 10, y, iconKey).setDisplaySize(24, 24).setOrigin(0.5)
+    const text = this.add.text(x + 10, y, String(amount), {
       ...FONTS.default,
       fontSize: '18px',
       color: '#ecf0f1',
-    }).setOrigin(0.5)
+    }).setOrigin(0, 0.5)
+    this.add.container(0, 0, [icon, text])
+  }
+
+  createCostDisplay(x, y, item, canAfford) {
+    const color = canAfford ? '#f1c40f' : '#bdc3c7'
+    const iconSize = 16
+    const fontSize = '14px'
+    const parts = []
+    if (item.costSource > 0) parts.push({ key: 'ouro_source', amount: item.costSource })
+    if (item.costScales > 0) parts.push({ key: 'ouro_scale', amount: item.costScales })
+
+    // Build right-to-left so the whole cost group is right-aligned at x.
+    let cursorX = x
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i]
+      const text = this.add.text(cursorX - 4, y, String(part.amount), {
+        ...FONTS.default,
+        fontSize,
+        color,
+      }).setOrigin(1, 0.5)
+      const textWidth = text.width
+      const iconX = cursorX - textWidth - 4 - iconSize / 2
+      this.add.image(iconX, y, part.key).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
+      cursorX = iconX - iconSize / 2 - 6
+    }
   }
 
   createShopList() {
@@ -68,11 +104,7 @@ export default class HomeShopScene extends Phaser.Scene {
         fontSize: '14px',
         color: '#ffffff',
       }).setOrigin(0, 0.5)
-      const cost = this.add.text(GAME_CONFIG.width / 2 + 160, y, item.costSource > 0 ? `${item.costScales}🪙 + ${item.costSource}💎` : `${item.costScales}🪙`, {
-        ...FONTS.default,
-        fontSize: '14px',
-        color: canAfford ? '#f1c40f' : '#bdc3c7',
-      }).setOrigin(1, 0.5)
+      this.createCostDisplay(GAME_CONFIG.width / 2 + 160, y, item, canAfford)
 
       if (canAfford) {
         bg.on('pointerdown', () => this.buyItem(item))
@@ -80,7 +112,7 @@ export default class HomeShopScene extends Phaser.Scene {
         bg.on('pointerout', () => bg.setFillStyle(0x2980b9))
       }
 
-      this.add.container(0, 0, [bg, icon, label, cost])
+      this.add.container(0, 0, [bg, icon, label])
     })
   }
 

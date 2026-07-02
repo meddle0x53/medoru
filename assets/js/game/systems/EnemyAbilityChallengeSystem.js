@@ -1,4 +1,5 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
+import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
 
 function normalize(input) {
   return input.trim().toLowerCase()
@@ -112,8 +113,14 @@ export default class EnemyAbilityChallengeSystem {
     this.inputEl.style.left = '0'
     this.inputEl.style.width = '1px'
     this.inputEl.style.height = '1px'
+    this.inputEl.style.fontSize = '16px'
+    this.inputEl.autocomplete = 'off'
+    this.inputEl.autocorrect = 'off'
+    this.inputEl.autocapitalize = 'off'
+    this.inputEl.spellcheck = false
     document.body.appendChild(this.inputEl)
     this.inputEl.focus()
+    lockGameWrapper()
 
     this.inputHandler = () => {
       this.input = this.inputEl.value
@@ -196,6 +203,7 @@ export default class EnemyAbilityChallengeSystem {
       this.inputEl.parentNode.removeChild(this.inputEl)
       this.inputEl = null
     }
+    unlockGameWrapper()
   }
 
   destroy() {
