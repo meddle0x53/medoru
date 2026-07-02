@@ -9,6 +9,9 @@
     class="relative bg-base-300 rounded-xl shadow-2xl overflow-hidden"
     style="max-width: 100%; width: 960px; height: 540px;"
     phx-update="ignore"
+    phx-hook="GameHook"
+    data-game-data={@game_data}
+    data-game-script-url={~p"/assets/js/game.js?v=344"}
   >
     <style>
       #game-wrapper:fullscreen {
@@ -49,16 +52,4 @@
     </p>
     <p class="mt-1">Perfect (fast) = 125% · Success = 100% · Fail = 50%</p>
   </div>
-
-  <script>
-    window.gameData = <%= raw(@game_data) %>;
-  </script>
-  <script
-    type="text/javascript"
-    src={~p"/assets/js/phaser.min.js"}
-    onerror="this.src='https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.min.js'"
-  >
-  </script>
-  <script type="text/javascript" src={~p"/assets/js/game.js?v=343"}>
-  </script>
 </div>
