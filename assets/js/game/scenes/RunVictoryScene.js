@@ -46,6 +46,10 @@ export default class RunVictoryScene extends Phaser.Scene {
       lines.push(`💎 +${this.rewards.ouroSource} Ouro Source`)
     }
 
+    if (this.rewards.ouroEssence > 0) {
+      lines.push(`🔮 +${this.rewards.ouroEssence} Ouro Essence`)
+    }
+
     if (this.rewards.unlockedAbility) {
       lines.push(`⚔️ New ability unlocked: ${this.rewards.unlockedAbility.name}`)
     }

@@ -64,30 +64,32 @@ function createDefaultShield(permanentLevel = 0) {
   }
 }
 
-function getLockedIds(category) {
-  const list = metaUnlocks[category]?.locked || []
+function getLockedIds(category, field = 'locked') {
+  const list = metaUnlocks[category]?.[field] || []
   return new Set(list.map(entry => (typeof entry === 'string' ? entry : entry.id)).filter(Boolean))
 }
 
 function getDefaultUnlockedSocketCharmIds() {
   const locked = getLockedIds('socketCharms')
-  // Fresh profiles start with only shield socket charms; weapon charms unlock through victories/events.
+  const eventLocked = getLockedIds('socketCharms', 'eventLocked')
+  // Fresh profiles start with no socket charms; all slot-1 weapon/shield charms unlock through victories/events.
   return ALL_SOCKET_CHARMS.filter(
-    c => c.equipmentType === 'secondary_weapon' && !locked.has(c.id)
+    c => c.equipmentType === 'secondary_weapon' && !locked.has(c.id) && !eventLocked.has(c.id)
   ).map(c => c.id)
 }
 
 function getDefaultUnlockedHeroCharmIds() {
   const locked = getLockedIds('heroCharms')
+  const eventLocked = getLockedIds('heroCharms', 'eventLocked')
   return CHARMS.filter(
-    c => c.type === CHARM_TYPES.HERO && !locked.has(c.id) && !c.firstDefeatReward
+    c => c.type === CHARM_TYPES.HERO && !locked.has(c.id) && !eventLocked.has(c.id) && !c.firstDefeatReward
   ).map(c => c.id)
 }
 
 function getDefaultUnlockedAbilityIds() {
   const locked = new Set([
     ...Array.from(getLockedIds('abilities')),
-    ...Array.from(getLockedIds('eventLocked')),
+    ...Array.from(getLockedIds('abilities', 'eventLocked')),
   ])
   return ALL_ACTIONS.filter(a => a.id !== 'use_item' && !locked.has(a.id)).map(a => a.id)
 }
@@ -212,6 +214,8 @@ export default class Player extends Character {
       savedSiteLevel: this.level,
       ouroSource: 0,
       ouroEssence: 0,
+      startingGoldBonus: 0,
+      startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
       lifetimeMiniBossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
@@ -526,11 +530,15 @@ export default class Player extends Character {
           loadout.ownedCharmIds = []
         }
         // Fresh profiles start with shield socket charms only; weapon charms are unlocked later.
+        // Starter charms are filtered so anything that has been moved into the locked/eventLocked
+        // lists is no longer given for free.
+        const socketLocked = getLockedIds('socketCharms')
+        const socketEventLocked = getLockedIds('socketCharms', 'eventLocked')
         const starterSocketCharmIds = [
           'sturdy_charm_shield',
           'thorn_shell_charm_shield',
           'steady_guard_charm_shield',
-        ]
+        ].filter(id => !socketLocked.has(id) && !socketEventLocked.has(id))
         if (!Array.isArray(loadout.ownedSocketCharmIds)) {
           loadout.ownedSocketCharmIds = starterSocketCharmIds
         } else {
@@ -539,6 +547,22 @@ export default class Player extends Character {
               loadout.ownedSocketCharmIds.push(id)
             }
           }
+        }
+
+        // One-time cleanup: old saves may have charms marked as unlocked/owned before they were
+        // moved to the eventLocked lists. Remove them so the new lock state applies.
+        const CHARM_LOCK_VERSION = 1
+        if ((loadout.charmLockVersion || 0) < CHARM_LOCK_VERSION) {
+          const heroEventLocked = getLockedIds('heroCharms', 'eventLocked')
+          loadout.unlockedSocketCharmIds = (loadout.unlockedSocketCharmIds || [])
+            .filter(id => !socketEventLocked.has(id))
+          loadout.ownedSocketCharmIds = (loadout.ownedSocketCharmIds || [])
+            .filter(id => !socketEventLocked.has(id))
+          loadout.unlockedHeroCharmIds = (loadout.unlockedHeroCharmIds || [])
+            .filter(id => !heroEventLocked.has(id))
+          loadout.ownedCharmIds = (loadout.ownedCharmIds || [])
+            .filter(id => !heroEventLocked.has(id))
+          loadout.charmLockVersion = CHARM_LOCK_VERSION
         }
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
@@ -605,6 +629,12 @@ export default class Player extends Character {
         if (typeof loadout.ouroEssence !== 'number') {
           loadout.ouroEssence = 0
         }
+        if (typeof loadout.startingGoldBonus !== 'number') {
+          loadout.startingGoldBonus = 0
+        }
+        if (typeof loadout.startingPotionBonus !== 'number') {
+          loadout.startingPotionBonus = 0
+        }
         if (typeof loadout.lifetimeNormalEnemiesDefeated !== 'number') {
           loadout.lifetimeNormalEnemiesDefeated = 0
         }
@@ -616,6 +646,9 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.unlockedHeroCharmIds)) {
           loadout.unlockedHeroCharmIds = getDefaultUnlockedHeroCharmIds()
+        }
+        if (!Array.isArray(loadout.ownedCharmIds)) {
+          loadout.ownedCharmIds = []
         }
         if (!Array.isArray(loadout.unlockedAbilityIds)) {
           loadout.unlockedAbilityIds = getDefaultUnlockedAbilityIds()
@@ -1158,6 +1191,8 @@ export default class Player extends Character {
       savedSiteLevel: this.loadout?.savedSiteLevel ?? this.level,
       ouroSource: this.loadout?.ouroSource ?? this.loadout?.rareGameTokens ?? 0,
       ouroEssence: this.loadout?.ouroEssence ?? 0,
+      startingGoldBonus: this.loadout?.startingGoldBonus ?? 0,
+      startingPotionBonus: Math.min(4, this.loadout?.startingPotionBonus ?? 0),
       lifetimeNormalEnemiesDefeated: this.loadout?.lifetimeNormalEnemiesDefeated ?? 0,
       lifetimeMiniBossesDefeated: this.loadout?.lifetimeMiniBossesDefeated ?? 0,
       unlockedSocketCharmIds: this.loadout?.unlockedSocketCharmIds ?? getDefaultUnlockedSocketCharmIds(),
@@ -1190,7 +1225,7 @@ export default class Player extends Character {
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
       statPoints: totalStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
-      gold: 0,
+      gold: meta.startingGoldBonus || 0,
       inventory: {},
       ownedCharmIds: [],
       ownedSocketCharmIds: [],
@@ -1224,7 +1259,7 @@ export default class Player extends Character {
     this.itemEffectModifier = 0
     this.parrySetup = false
     this.parryKanjiQuality = null
-    this.potionUsesLeft = 3
+    this.potionUsesLeft = 3 + (meta.startingPotionBonus || 0)
     this._charmEffects = null
     this.clearAllAbilityInfusions()
 
@@ -1241,6 +1276,8 @@ export default class Player extends Character {
       savedSiteLevel: this.level,
       ouroSource: 0,
       ouroEssence: 0,
+      startingGoldBonus: 0,
+      startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
       lifetimeMiniBossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),

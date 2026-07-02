@@ -24,6 +24,7 @@ export default class HomeShopScene extends Phaser.Scene {
     this.createBackground()
     this.createTitle()
     this.createTokenDisplay()
+    this.createBigEssenceCoin()
     this.createShopList()
     this.createPrepareButton()
   }
@@ -43,15 +44,38 @@ export default class HomeShopScene extends Phaser.Scene {
   createTokenDisplay() {
     const scales = this.player.loadout.ouroScales || 0
     const source = this.player.loadout.ouroSource || 0
-    const essence = this.player.loadout.ouroEssence || 0
 
     const y = 80
     const gap = 100
-    const startX = GAME_CONFIG.width / 2
+    const startX = GAME_CONFIG.width / 2 - 50
 
     this.createCurrencyBadge(startX - gap, y, 'ouro_scale', scales)
     this.createCurrencyBadge(startX, y, 'ouro_source', source)
-    this.createCurrencyBadge(startX + gap, y, 'ouro_essence', essence)
+  }
+
+  createBigEssenceCoin() {
+    const essence = this.player.loadout.ouroEssence || 0
+    const x = GAME_CONFIG.width - 90
+    const y = 70
+    const size = 80
+
+    this.add.image(x, y, 'ouro_essence').setDisplaySize(size, size).setOrigin(0.5)
+    this.add.text(x, y + size / 2 + 16, String(essence), {
+      ...FONTS.default,
+      fontSize: '20px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+
+    this.createRound3dButton({
+      x,
+      y: y + size / 2 + 44,
+      width: 150,
+      height: 36,
+      label: 'Essence Shop',
+      baseColor: 0x9b59b6,
+      hoverColor: 0x8e44ad,
+      onClick: () => this.scene.start('OuroEssenceShopScene', { player: this.player, tile: this.tile, mapIndex: this.mapIndex }),
+    })
   }
 
   createCurrencyBadge(x, y, iconKey, amount) {
@@ -64,16 +88,17 @@ export default class HomeShopScene extends Phaser.Scene {
     this.add.container(0, 0, [icon, text])
   }
 
-  createCostDisplay(x, y, item, canAfford) {
+  createCostDisplay(x, y, item, canAfford, container = null) {
     const color = canAfford ? '#f1c40f' : '#bdc3c7'
     const iconSize = 16
     const fontSize = '14px'
     const parts = []
-    if (item.costSource > 0) parts.push({ key: 'ouro_source', amount: item.costSource })
     if (item.costScales > 0) parts.push({ key: 'ouro_scale', amount: item.costScales })
+    if (item.costSource > 0) parts.push({ key: 'ouro_source', amount: item.costSource })
 
     // Build right-to-left so the whole cost group is right-aligned at x.
     let cursorX = x
+    const costObjects = []
     for (let i = parts.length - 1; i >= 0; i--) {
       const part = parts[i]
       const text = this.add.text(cursorX - 4, y, String(part.amount), {
@@ -83,8 +108,12 @@ export default class HomeShopScene extends Phaser.Scene {
       }).setOrigin(1, 0.5)
       const textWidth = text.width
       const iconX = cursorX - textWidth - 4 - iconSize / 2
-      this.add.image(iconX, y, part.key).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
+      const icon = this.add.image(iconX, y, part.key).setDisplaySize(iconSize, iconSize).setOrigin(0.5)
+      costObjects.push(text, icon)
       cursorX = iconX - iconSize / 2 - 6
+    }
+    if (container && costObjects.length > 0) {
+      container.add(costObjects)
     }
   }
 
@@ -96,37 +125,119 @@ export default class HomeShopScene extends Phaser.Scene {
       const y = startY + index * rowHeight
       const canAfford = this.canAfford(item)
       const color = canAfford ? 0x2980b9 : 0x555555
+      const hover = canAfford ? 0x3498db : 0x555555
 
-      const bg = this.add.rectangle(GAME_CONFIG.width / 2, y, 420, 44, color).setInteractive({ useHandCursor: canAfford }).setOrigin(0.5)
-      const icon = this.add.text(GAME_CONFIG.width / 2 - 180, y, item.icon, { fontSize: '20px' }).setOrigin(0.5)
-      const label = this.add.text(GAME_CONFIG.width / 2 - 130, y, item.name, {
+      const row = this.createRound3dRow(GAME_CONFIG.width / 2, y, 420, 44, color, hover, () => this.buyItem(item), !canAfford)
+
+      const icon = this.add.text(-180, 0, item.icon, { fontSize: '20px' }).setOrigin(0.5)
+      const label = this.add.text(-130, 0, item.name, {
         ...FONTS.default,
         fontSize: '14px',
         color: '#ffffff',
       }).setOrigin(0, 0.5)
-      this.createCostDisplay(GAME_CONFIG.width / 2 + 160, y, item, canAfford)
-
-      if (canAfford) {
-        bg.on('pointerdown', () => this.buyItem(item))
-        bg.on('pointerover', () => bg.setFillStyle(0x3498db))
-        bg.on('pointerout', () => bg.setFillStyle(0x2980b9))
-      }
-
-      this.add.container(0, 0, [bg, icon, label])
+      row.add([icon, label])
+      this.createCostDisplay(160, 0, item, canAfford, row)
     })
   }
 
   createPrepareButton() {
-    const btn = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height - 50, 220, 46, 0x27ae60).setInteractive({ useHandCursor: true }).setOrigin(0.5)
-    const text = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 50, 'Prepare for Battle', {
+    this.createRound3dButton({
+      x: GAME_CONFIG.width / 2,
+      y: GAME_CONFIG.height - 50,
+      width: 220,
+      height: 46,
+      label: 'Prepare for Battle',
+      baseColor: 0x27ae60,
+      hoverColor: 0x2ecc71,
+      onClick: () => this.leaveShop(),
+    })
+  }
+
+  createRound3dButton({ x, y, width, height, label, baseColor, hoverColor, onClick }) {
+    const container = this.add.container(x, y)
+    const radius = 10
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(0x000000, 0.35)
+    shadow.fillRoundedRect(-width / 2 + 3, -height / 2 + 4, width, height, radius)
+    container.add(shadow)
+
+    const bg = this.add.graphics()
+    const drawBg = (color) => {
+      bg.clear()
+      bg.fillStyle(color, 1)
+      bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius)
+      bg.lineStyle(2, 0xffffff, 0.15)
+      bg.strokeRoundedRect(-width / 2, -height / 2, width, height, radius)
+    }
+    drawBg(baseColor)
+    container.add(bg)
+
+    const text = this.add.text(0, 0, label, {
       ...FONTS.default,
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#ffffff',
     }).setOrigin(0.5)
+    container.add(text)
 
-    btn.on('pointerdown', () => this.leaveShop())
-    btn.on('pointerover', () => btn.setFillStyle(0x2ecc71))
-    btn.on('pointerout', () => btn.setFillStyle(0x27ae60))
+    container.setSize(width, height)
+    container.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    })
+    container.on('pointerover', () => drawBg(hoverColor))
+    container.on('pointerout', () => drawBg(baseColor))
+    container.on('pointerdown', () => {
+      text.y += 1
+      bg.y += 1
+    })
+    container.on('pointerup', () => {
+      text.y -= 1
+      bg.y -= 1
+      if (onClick) onClick()
+    })
+
+    return container
+  }
+
+  createRound3dRow(x, y, width, height, color, hoverColor, onClick, disabled = false) {
+    const container = this.add.container(x, y)
+    const radius = 8
+
+    const shadow = this.add.graphics()
+    shadow.fillStyle(0x000000, 0.25)
+    shadow.fillRoundedRect(-width / 2 + 2, -height / 2 + 3, width, height, radius)
+    container.add(shadow)
+
+    const bg = this.add.graphics()
+    const drawBg = (c) => {
+      bg.clear()
+      bg.fillStyle(c, 1)
+      bg.fillRoundedRect(-width / 2, -height / 2, width, height, radius)
+      bg.lineStyle(1, 0xffffff, 0.1)
+      bg.strokeRoundedRect(-width / 2, -height / 2, width, height, radius)
+    }
+    drawBg(color)
+    container.add(bg)
+
+    if (!disabled) {
+      container.setSize(width, height)
+      container.setInteractive({
+        useHandCursor: true,
+        hitArea: new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      })
+      container.on('pointerover', () => drawBg(hoverColor))
+      container.on('pointerout', () => drawBg(color))
+      container.on('pointerdown', () => container.y += 1)
+      container.on('pointerup', () => {
+        container.y -= 1
+        if (onClick) onClick()
+      })
+    }
+
+    return container
   }
 
   canAfford(item) {

@@ -30,6 +30,7 @@ export default class WinScene extends Phaser.Scene {
 
     this.challengePlayed = false
     this.challengeMultiplier = 1
+    this.essenceGained = data.essenceGained || 0
 
     // Roll drops immediately
     this.drops = rollEnemyDrops(this.enemy, this.player.loadout.class || 'warrior')
@@ -131,17 +132,25 @@ export default class WinScene extends Phaser.Scene {
     const panelW = 420
     const panel = this.add.rectangle(GAME_CONFIG.width / 2, y, panelW, 70, 0x1a1a2e).setStrokeStyle(2, 0x3498db)
 
-    this.pointsText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y - 10, `Attribute Points: +${this.attributePoints}`, {
+    this.pointsText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y - 15, `Attribute Points: +${this.attributePoints}`, {
       ...FONTS.default,
       fontSize: '16px',
       color: '#f1c40f',
     }).setOrigin(0, 0.5)
 
-    this.goldText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y + 20, `Gold: +${this.goldReward}`, {
+    this.goldText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y + 5, `Gold: +${this.goldReward}`, {
       ...FONTS.default,
       fontSize: '16px',
       color: '#f1c40f',
     }).setOrigin(0, 0.5)
+
+    if (this.essenceGained > 0) {
+      this.essenceText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y + 25, `+${this.essenceGained} Ouro Essence`, {
+        ...FONTS.default,
+        fontSize: '16px',
+        color: '#9b59b6',
+      }).setOrigin(0, 0.5)
+    }
   }
 
   createAbilityRewards() {

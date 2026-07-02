@@ -59,6 +59,7 @@ export default class BattleScene extends Phaser.Scene {
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.player.clearAllAbilityInfusions() // infusions last for one battle only
     this.player.onCombatLog = (msg) => this.addCombatLog(msg)
+    this.essenceGainedThisBattle = 0
     this.enemies = this.createEnemiesForTile()
     for (const enemy of this.enemies) {
       enemy.onCombatLog = (msg) => this.addCombatLog(msg)
@@ -2559,13 +2560,19 @@ export default class BattleScene extends Phaser.Scene {
     display.defeated = true
 
     const roles = enemy.definition?.roles || []
+    let essenceGained = 0
     if (this.tile?.type === TILE_TYPES.BATTLE && roles.includes('battle')) {
-      this.player.recordNormalEnemyDefeated()
+      essenceGained = this.player.recordNormalEnemyDefeated()
     } else if (this.tile?.type === TILE_TYPES.MINI_BOSS && roles.includes('mini_boss')) {
-      this.player.recordMiniBossDefeated()
+      essenceGained = this.player.recordMiniBossDefeated()
     } else if (this.tile?.type === TILE_TYPES.BOSS && roles.includes('boss')) {
       const mapDef = getMapDefinition(this.mapIndex)
-      this.player.recordMapBossDefeated(mapDef?.level)
+      essenceGained = this.player.recordMapBossDefeated(mapDef?.level)
+    }
+
+    if (essenceGained > 0) {
+      this.essenceGainedThisBattle += essenceGained
+      this.addCombatLog(`+${essenceGained} Ouro Essence`)
     }
 
     this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
@@ -3415,6 +3422,7 @@ export default class BattleScene extends Phaser.Scene {
           const rewards = {
             ouroScales: (this.player.loadout.ouroScales || 0) - beforeScales,
             ouroSource: (this.player.loadout.ouroSource || 0) - beforeSource,
+            ouroEssence: this.essenceGainedThisBattle,
           }
           const unlockedId = (this.player.loadout.unlockedAbilityIds || []).find(id => !beforeUnlocked.has(id))
           rewards.unlockedAbility = unlockedId ? ALL_ACTIONS.find(a => a.id === unlockedId) : null
@@ -3431,7 +3439,7 @@ export default class BattleScene extends Phaser.Scene {
       // Mark the tile completed immediately so the map state is correct even if
       // the player gambles/closes the WinScene before clicking Continue.
       if (this.tile?.id) this.player.completeTile(this.tile.id)
-      this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile })
+      this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile, essenceGained: this.essenceGainedThisBattle })
       return
     }
 

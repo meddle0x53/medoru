@@ -191,12 +191,22 @@ export default class ChestScene extends Phaser.Scene {
     const lines = this.formatRewardLines()
     let y = -70
     lines.forEach(line => {
-      panel.add(this.add.text(0, y, line, {
-        ...FONTS.default,
-        fontSize: '14px',
-        color: '#ecf0f1',
-        align: 'center',
-      }).setOrigin(0.5))
+      if (typeof line === 'string') {
+        panel.add(this.add.text(0, y, line, {
+          ...FONTS.default,
+          fontSize: '14px',
+          color: '#ecf0f1',
+          align: 'center',
+        }).setOrigin(0.5))
+      } else {
+        const text = this.add.text(8, y, line.text, {
+          ...FONTS.default,
+          fontSize: '14px',
+          color: '#ecf0f1',
+        }).setOrigin(0, 0.5)
+        const icon = this.add.image(-text.width / 2 - 4, y, line.iconKey).setDisplaySize(20, 20).setOrigin(0.5)
+        panel.add([icon, text])
+      }
       y += 26
     })
 
@@ -238,7 +248,7 @@ export default class ChestScene extends Phaser.Scene {
           lines.push(`${reward.option.icon} ${reward.option.name} +${reward.option.nextLevel}`)
           break
         case 'ouro_essence':
-          lines.push(`🔮 +${reward.amount} Ouro Essence`)
+          lines.push({ text: `+${reward.amount} Ouro Essence`, iconKey: 'ouro_essence' })
           break
         default:
           break

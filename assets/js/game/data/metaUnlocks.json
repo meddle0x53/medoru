@@ -2,11 +2,32 @@
   "socketCharms": {
     "locked": [
       { "id": "sharp_charm_sword", "cost": 5, "unlockOrder": 1 },
-      { "id": "heavy_charm_sword", "cost": 5, "unlockOrder": 2 }
+      { "id": "heavy_charm_sword", "cost": 5, "unlockOrder": 2 },
+      { "id": "fire_charm_sword", "cost": 5, "unlockOrder": 3 },
+      { "id": "water_charm_sword", "cost": 5, "unlockOrder": 4 },
+      { "id": "wind_charm_sword", "cost": 5, "unlockOrder": 5 },
+      { "id": "earth_charm_sword", "cost": 5, "unlockOrder": 6 },
+      { "id": "poison_charm_sword", "cost": 5, "unlockOrder": 7 },
+      { "id": "dark_charm_sword", "cost": 5, "unlockOrder": 8 },
+      { "id": "light_charm_sword", "cost": 5, "unlockOrder": 9 },
+      { "id": "lucky_charm_sword", "cost": 5, "unlockOrder": 10 }
+    ],
+    "eventLocked": [
+      { "id": "sturdy_charm_shield", "cost": 5, "unlockOrder": 1 },
+      { "id": "elemental_charm_shield", "cost": 5, "unlockOrder": 2 },
+      { "id": "lucky_charm_shield", "cost": 5, "unlockOrder": 3 }
     ]
   },
   "heroCharms": {
-    "locked": []
+    "locked": [],
+    "eventLocked": [
+      { "id": "chikara_charm", "cost": 5, "unlockOrder": 1 },
+      { "id": "tate_charm", "cost": 5, "unlockOrder": 2 },
+      { "id": "hayai_charm", "cost": 5, "unlockOrder": 3 },
+      { "id": "un_charm", "cost": 5, "unlockOrder": 4 },
+      { "id": "hi_charm", "cost": 5, "unlockOrder": 5 },
+      { "id": "mizu_charm", "cost": 5, "unlockOrder": 6 }
+    ]
   },
   "abilities": {
     "locked": [],

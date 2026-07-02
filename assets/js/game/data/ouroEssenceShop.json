@@ -1,0 +1,11 @@
+{
+  "defaults": {
+    "socketCharm": 100,
+    "heroCharm": 150,
+    "startingGold": 100,
+    "startingPotion": 100,
+    "ouroScale": 200,
+    "ouroSource": 1000
+  },
+  "overrides": {}
+}
