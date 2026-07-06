@@ -36,6 +36,7 @@ defmodule Medoru.Content.WordRelationTest do
       }
 
       changeset = WordRelation.changeset(%WordRelation{}, attrs)
+
       assert "is required when expression is not linked to a word" in errors_on(changeset).expression_text
     end
 
@@ -165,7 +166,10 @@ defmodule Medoru.Content.WordRelationTest do
         })
 
       assert {:ok, _} = Content.approve_word_relation(relation)
-      assert Content.list_word_relations_for_word(word.id).expression == [%{text: "テスト表現", linked: false}]
+
+      assert Content.list_word_relations_for_word(word.id).expression == [
+               %{text: "テスト表現", linked: false}
+             ]
     end
 
     test "approve_word_relation/1 is idempotent for inverse creation" do
@@ -200,6 +204,74 @@ defmodule Medoru.Content.WordRelationTest do
 
       assert {:ok, _} = Content.reject_word_relation(relation)
       assert Content.list_pending_word_relations_for_word(word.id) == []
+    end
+
+    test "delete_word_relation/1 deletes the relation" do
+      word = word_fixture()
+      related = word_fixture()
+
+      {:ok, relation} =
+        Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :approved
+        })
+
+      assert {:ok, _} = Content.delete_word_relation(relation)
+      assert Content.list_word_relations_for_word(word.id) == %{}
+    end
+
+    test "delete_word_relation/1 also deletes the inverse synonym relation" do
+      word = word_fixture()
+      related = word_fixture()
+
+      {:ok, relation} =
+        Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :pending
+        })
+
+      assert {:ok, approved} = Content.approve_word_relation(relation)
+      assert Content.list_word_relations_for_word(related.id).synonym != []
+
+      assert {:ok, _} = Content.delete_word_relation(approved)
+      assert Content.list_word_relations_for_word(word.id) == %{}
+      assert Content.list_word_relations_for_word(related.id) == %{}
+    end
+
+    test "delete_word_relation/1 also deletes the inverse antonym relation" do
+      word = word_fixture()
+      related = word_fixture()
+
+      {:ok, relation} =
+        Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :antonym,
+          related_word_id: related.id,
+          status: :pending
+        })
+
+      assert {:ok, approved} = Content.approve_word_relation(relation)
+      assert {:ok, _} = Content.delete_word_relation(approved)
+      assert Content.list_word_relations_for_word(related.id) == %{}
+    end
+
+    test "delete_word_relation/1 does not try to delete inverse for expressions" do
+      word = word_fixture()
+
+      {:ok, relation} =
+        Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :expression,
+          expression_text: "テスト表現",
+          status: :approved
+        })
+
+      assert {:ok, _} = Content.delete_word_relation(relation)
+      assert Content.list_word_relations_for_word(word.id) == %{}
     end
 
     test "find_word_for_relation/1 finds a word by text" do

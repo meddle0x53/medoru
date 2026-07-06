@@ -1685,6 +1685,31 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Deletes a word relation. For synonyms and antonyms that link two words,
+  also deletes the inverse approved relation so the relationship is removed
+  from both sides.
+  """
+  def delete_word_relation(%WordRelation{} = relation) do
+    Repo.transaction(fn ->
+      if relation.relation_type in [:synonym, :antonym] and not is_nil(relation.related_word_id) do
+        inverse_query =
+          from(wr in WordRelation,
+            where:
+              wr.word_id == ^relation.related_word_id and
+                wr.related_word_id == ^relation.word_id and
+                wr.relation_type == ^relation.relation_type and
+                wr.status == :approved
+          )
+
+        Repo.delete_all(inverse_query)
+      end
+
+      {:ok, deleted} = Repo.delete(relation)
+      deleted
+    end)
+  end
+
+  @doc """
   Finds a word by its Japanese text, returning only the fields needed for
   relation matching.
   """

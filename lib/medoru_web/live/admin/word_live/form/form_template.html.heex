@@ -827,7 +827,9 @@
             <.icon name="hero-link" class="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>{gettext("No relations linked to this word yet.")}</p>
             <p class="text-sm mt-1">
-              {gettext("Click 'Find Relations' to generate synonyms, antonyms, and expressions with AI.")}
+              {gettext(
+                "Click 'Find Relations' to generate synonyms, antonyms, and expressions with AI."
+              )}
             </p>
           </div>
         <% else %>
@@ -856,14 +858,26 @@
                     <span class="text-sm text-secondary">{gettext("(text only)")}</span>
                   <% end %>
                 </div>
-                <span class={[
-                  "badge badge-sm",
-                  relation.status == :approved && "badge-success",
-                  relation.status == :pending && "badge-warning",
-                  relation.status == :rejected && "badge-ghost"
-                ]}>
-                  {relation.status}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class={[
+                    "badge badge-sm",
+                    relation.status == :approved && "badge-success",
+                    relation.status == :pending && "badge-warning",
+                    relation.status == :rejected && "badge-ghost"
+                  ]}>
+                    {relation.status}
+                  </span>
+                  <button
+                    type="button"
+                    phx-click="remove_relation"
+                    phx-value-relation_id={relation.id}
+                    class="btn btn-xs btn-error btn-outline"
+                    data-confirm={gettext("Remove this relation?")}
+                  >
+                    <.icon name="hero-trash" class="w-3 h-3 mr-1" />
+                    {gettext("Remove")}
+                  </button>
+                </div>
               </div>
             <% end %>
           </div>

@@ -111,7 +111,10 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     |> assign(:word_kanjis_with_readings, word_kanjis_with_readings)
     |> assign(:selected_kanji_ids, MapSet.new())
     |> assign(:enrich_prompt, WordEnrichment.predefined_prompt(word.text))
-    |> assign(:relations_prompt, WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type))
+    |> assign(
+      :relations_prompt,
+      WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type)
+    )
     |> load_pending_relations(word)
   end
 
@@ -424,7 +427,10 @@ defmodule MedoruWeb.Admin.WordLive.Form do
        socket
        |> assign(:show_relations_modal, true)
        |> assign(:relations_error, nil)
-       |> assign(:relations_prompt, WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type))
+       |> assign(
+         :relations_prompt,
+         WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type)
+       )
        |> load_pending_relations(word)}
     else
       {:noreply,
@@ -475,7 +481,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
            )}
 
         {:error, reason} ->
-{:noreply,
+          {:noreply,
            socket
            |> assign(:relations_loading, false)
            |> assign(:relations_error, reason)}
@@ -522,6 +528,27 @@ defmodule MedoruWeb.Admin.WordLive.Form do
         {:noreply,
          socket
          |> put_flash(:error, gettext("Failed to reject relation."))}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_relation", %{"relation_id" => relation_id}, socket) do
+    relation = Content.get_word_relation!(relation_id)
+
+    case Content.delete_word_relation(relation) do
+      {:ok, _} ->
+        word = Content.get_word_with_kanji_and_relations!(socket.assigns.word.id)
+
+        {:noreply,
+         socket
+         |> assign(:word, word)
+         |> load_pending_relations(word)
+         |> put_flash(:info, gettext("Relation removed."))}
+
+      {:error, _reason} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, gettext("Failed to remove relation."))}
     end
   end
 
@@ -1003,13 +1030,17 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     end)
   end
 
-  defp relation_signature(%{word_id: word_id, relation_type: type, related_word_id: rw_id, expression_text: text}) do
+  defp relation_signature(%{
+         word_id: word_id,
+         relation_type: type,
+         related_word_id: rw_id,
+         expression_text: text
+       }) do
     {word_id, type, rw_id, text}
   end
 
   defp relation_signature(%WordRelation{} = relation) do
-    {relation.word_id, relation.relation_type, relation.related_word_id,
-     relation.expression_text}
+    {relation.word_id, relation.relation_type, relation.related_word_id, relation.expression_text}
   end
 
   # Helper function to format Ecto changeset errors for display

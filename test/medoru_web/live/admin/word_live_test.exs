@@ -336,6 +336,31 @@ defmodule MedoruWeb.Admin.WordLiveTest do
       refute html =~ "書籍"
     end
 
+    test "removes an approved relation from the word", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+      related = word_fixture(%{text: "書籍", reading: "しょせき"})
+
+      {:ok, relation} =
+        Medoru.Content.create_word_relation(%{
+          word_id: word.id,
+          relation_type: :synonym,
+          related_word_id: related.id,
+          status: :approved
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      assert render(view) =~ "書籍"
+
+      html =
+        view
+        |> element("button[phx-click='remove_relation'][phx-value-relation_id='#{relation.id}']")
+        |> render_click()
+
+      assert html =~ "Relation removed"
+      refute render(view) =~ "書籍"
+    end
+
     test "pre-fills prompt with existing word text", %{conn: conn} do
       word = word_fixture(%{text: "本", meaning: "book", reading: "ほん"})
 

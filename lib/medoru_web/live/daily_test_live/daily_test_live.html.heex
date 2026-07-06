@@ -455,7 +455,7 @@
                       end
                     ]}
                   >
-                    <%= if @current_step.question_data["type"] == "image_to_meaning" do %>
+                    <%= if @current_step.question_data["type"] in ["image_to_meaning", "meaning_to_image"] do %>
                       <%!-- Image Option --%>
                       <%= if image_data && image_data["image_path"] do %>
                         <img

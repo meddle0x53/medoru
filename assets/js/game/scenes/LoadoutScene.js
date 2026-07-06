@@ -50,12 +50,21 @@ export default class LoadoutScene extends Phaser.Scene {
         this.scrollItemList(e.deltaY * 0.8)
       } else if (this.currentTab === 'abilities' && this.abilityListContainer) {
         e.preventDefault()
-        this.setAbilityListScroll(this.abilityListScroll + e.deltaY * 0.8)
+        if (e.deltaY > 0) this.setAbilityPage(this.abilityPage + 1)
+        else this.setAbilityPage(this.abilityPage - 1)
       }
     }
     this.game.canvas.addEventListener('wheel', this._wheelHandler, { passive: false })
     this.events.on('shutdown', () => {
       this.game.canvas.removeEventListener('wheel', this._wheelHandler)
+    })
+
+    // Fallback for browsers/devices that don't reliably emit dragend during
+    // ability drags (reported on page 2 of the paginated ability list).
+    this.input.on('pointerup', (pointer) => {
+      if (this.abilityDragActive && this.abilityDragClone && this.abilityDragAction) {
+        this.endAbilityDrag(this.abilityDragAction, pointer)
+      }
     })
   }
 
@@ -528,6 +537,24 @@ export default class LoadoutScene extends Phaser.Scene {
 
   showTab(tabName) {
     this.closeAbilityDialog()
+
+    // Destroy any stray drag clones before rebuilding the tab content
+    if (this.abilityDragClone) {
+      this.abilityDragClone.destroy()
+      this.abilityDragClone = null
+      this.abilityDragAction = null
+    }
+    if (this.dragClone) {
+      this.dragClone.destroy()
+      this.dragClone = null
+      this.dragItem = null
+    }
+
+    // Clear stale pagination references so setAbilityPage doesn't touch
+    // text objects that were destroyed with the previous tabContent.
+    this.abilityPageText = null
+    this.abilityPaginationButtons = null
+
     this.currentTab = tabName
 
     // Update tab button colors
@@ -594,12 +621,9 @@ export default class LoadoutScene extends Phaser.Scene {
     this.itemListVisibleHeight = listH
     this.itemListItemHeight = itemHeight
 
-    // Geometry mask to clip rows to the visible list area
-    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false })
-    maskGraphics.fillStyle(0xffffff)
-    maskGraphics.fillRect(listX, listY, listW, listH)
-    const mask = maskGraphics.createGeometryMask()
-    this.itemListContainer.setMask(mask)
+    // NOTE: Geometry masks are not supported in Phaser 4 WebGL and corrupt the
+    // renderer, so the item list is no longer clipped. The list area is tall
+    // enough for 6 rows; overflow is visually bounded by the dark panel below.
 
     // Invisible interactive area for wheel + drag scrolling (slightly wider for mobile)
     const scrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW + 16, listH, 0x000000, 0.01)
@@ -1189,8 +1213,9 @@ export default class LoadoutScene extends Phaser.Scene {
     const listX = 460
     const listY = 95
     const listW = 460
-    const listH = 360
     const rowH = 56
+    const rowsPerPage = 6
+    const listH = rowsPerPage * rowH
 
     let actions = knownIds
       .map(id => ALL_ACTIONS.find(a => a.id === id))
@@ -1202,60 +1227,37 @@ export default class LoadoutScene extends Phaser.Scene {
       actions = [useItemAction, ...actions]
     }
 
-    // Scrollable container
+    // Paged container
     this.abilityListContainer = this.add.container(listX, listY)
     this.tabContent.add(this.abilityListContainer)
 
-    this.abilityListMaxScroll = Math.max(0, actions.length * rowH - listH)
-    this.abilityListScroll = 0
-    this.abilityListY = listY
     this.abilityListX = listX
-
-    // Invisible scroll/drag area behind the row hit areas.
-    // It is added to tabContent first so row hit areas sit on top and receive clicks.
-    this.abilityScrollHitArea = this.add.rectangle(listX + listW / 2, listY + listH / 2, listW, listH, 0x000000, 0.01)
-      .setInteractive({ useHandCursor: false })
-    this.tabContent.add(this.abilityScrollHitArea)
-
-    let dragStartY = 0
-    let dragStartScroll = 0
-    this.abilityScrollHitArea.on('pointerdown', (pointer) => {
-      dragStartY = pointer.y
-      dragStartScroll = this.abilityListScroll
-    })
-    this.abilityScrollHitArea.on('pointermove', (pointer) => {
-      if (pointer.isDown) {
-        this.setAbilityListScroll(dragStartScroll - (pointer.y - dragStartY))
-      }
-    })
+    this.abilityListY = listY
+    this.abilityRowH = rowH
+    this.abilityRowsPerPage = rowsPerPage
+    this.abilityPage = 0
+    this.abilityTotalPages = Math.max(1, Math.ceil(actions.length / rowsPerPage))
 
     const availableIds = new Set(getAvailableActions(this.player).map(a => a.id))
 
     this.abilityListRows = []
     actions.forEach((action, i) => {
-      const y = i * rowH
       const isAvailable = availableIds.has(action.id)
-      const row = this.createAbilityRow(0, y, action, rowH, isAvailable)
+      const row = this.createAbilityRow(0, 0, action, rowH, isAvailable)
       this.abilityListContainer.add(row.container)
       this.abilityListRows.push(row)
       this.tabContent.add(row.hitArea)
     })
 
-    // Mask to clip rows
-    const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false })
-    maskGraphics.fillStyle(0xffffff)
-    maskGraphics.fillRect(listX, listY, listW, listH)
-    const mask = maskGraphics.createGeometryMask()
-    this.abilityListContainer.setMask(mask)
+    // Pagination means rows never overflow the visible area, so no mask is
+    // needed. Phaser 4's geometry mask also warns/crashes in WebGL.
 
-    // Simple scrollbar track + thumb
-    const trackX = listX + listW + 10
-    this.tabContent.add(this.add.rectangle(trackX, listY + listH / 2, 6, listH, 0x2c3e50, 0.5))
-    const thumbH = this.abilityListMaxScroll > 0 ? Math.max(30, listH * (listH / (actions.length * rowH))) : listH
-    this.abilityListThumb = this.add.rectangle(trackX, listY + thumbH / 2, 6, thumbH, 0x3498db, 0.9)
-    this.tabContent.add(this.abilityListThumb)
+    // Pagination controls (must be created before setAbilityPage so the page
+    // text/button references are fresh, not pointing at destroyed objects).
+    const controlsY = listY + listH + 18
+    this.createAbilityPaginationControls(controlsY)
 
-    this.setAbilityListScroll(0)
+    this.setAbilityPage(0)
 
     // Info footer
     const combatSelected = selectedIds.filter(id => id !== 'use_item').length
@@ -1335,7 +1337,7 @@ export default class LoadoutScene extends Phaser.Scene {
       }).setOrigin(0.5)
     )
 
-    // Hit area is separate so it can live above the scroll overlay
+    // Separate draggable/clickable hit area
     const hitArea = this.add.rectangle(0, 0, rowW, rowH, 0x000000, 0)
       .setInteractive({ useHandCursor: true, draggable: isAvailable })
 
@@ -1368,28 +1370,78 @@ export default class LoadoutScene extends Phaser.Scene {
     return { container, hitArea, rowH }
   }
 
-  setAbilityListScroll(value) {
-    if (!this.abilityListContainer) return
-    this.abilityListScroll = Math.max(0, Math.min(this.abilityListMaxScroll, value))
-    this.abilityListContainer.setY(this.abilityListY - this.abilityListScroll)
+  setAbilityPage(page) {
+    if (!this.abilityListRows) return
+    const total = this.abilityTotalPages || 1
+    page = Math.max(0, Math.min(total - 1, page))
+    this.abilityPage = page
 
-    const listH = 360
-    const rowH = 56
+    const rowH = this.abilityRowH
+    const rowsPerPage = this.abilityRowsPerPage
+    const startIdx = page * rowsPerPage
+    const rowW = 460
+
     this.abilityListRows.forEach((row, i) => {
-      const relY = i * rowH - this.abilityListScroll
-      const visible = relY + rowH > 0 && relY < listH
-      row.container.setVisible(visible)
-      row.hitArea.setVisible(visible)
-      if (row.hitArea.input) row.hitArea.input.enabled = visible
-      row.hitArea.setPosition(this.abilityListX + 230, this.abilityListY - this.abilityListScroll + i * rowH + rowH / 2)
+      const onPage = i >= startIdx && i < startIdx + rowsPerPage
+      row.container.setVisible(onPage)
+      row.hitArea.setVisible(onPage)
+      if (row.hitArea.input) row.hitArea.input.enabled = onPage
+
+      if (onPage) {
+        const localIndex = i - startIdx
+        row.container.setY(localIndex * rowH)
+        row.hitArea.setPosition(this.abilityListX + rowW / 2, this.abilityListY + localIndex * rowH + rowH / 2)
+      }
     })
 
-    if (this.abilityListThumb && this.abilityListMaxScroll > 0) {
-      const thumbH = this.abilityListThumb.height
-      const pct = this.abilityListScroll / this.abilityListMaxScroll
-      const thumbY = this.abilityListY + thumbH / 2 + pct * (listH - thumbH)
-      this.abilityListThumb.setY(thumbY)
+    if (this.abilityPageText) {
+      this.abilityPageText.setText(`Page ${page + 1} / ${total}`)
     }
+    if (this.abilityPaginationButtons) {
+      const prevBg = this.abilityPaginationButtons.prev?.list?.[0]
+      const nextBg = this.abilityPaginationButtons.next?.list?.[0]
+      if (prevBg) {
+        prevBg.setFillStyle(page === 0 ? 0x555555 : 0x3498db)
+        prevBg.input.enabled = page !== 0
+      }
+      if (nextBg) {
+        nextBg.setFillStyle(page === total - 1 ? 0x555555 : 0x3498db)
+        nextBg.input.enabled = page !== total - 1
+      }
+    }
+  }
+
+  createAbilityPaginationControls(y) {
+    const total = this.abilityTotalPages
+    if (total <= 1) return
+
+    const prevBtn = this.createPageButton(560, y, '<', () => this.setAbilityPage(this.abilityPage - 1))
+    const nextBtn = this.createPageButton(820, y, '>', () => this.setAbilityPage(this.abilityPage + 1))
+
+    this.abilityPageText = this.add.text(690, y, `Page ${this.abilityPage + 1} / ${total}`, {
+      ...FONTS.default,
+      fontSize: '13px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+
+    this.tabContent.add([prevBtn, nextBtn, this.abilityPageText])
+    this.abilityPaginationButtons = { prev: prevBtn, next: nextBtn }
+  }
+
+  createPageButton(x, y, label, onClick) {
+    const w = 48
+    const h = 28
+    const bg = this.add.rectangle(0, 0, w, h, 0x3498db, 0.9)
+    const text = this.add.text(0, 0, label, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#ffffff',
+    }).setOrigin(0.5)
+    const container = this.add.container(x, y, [bg, text])
+    container.setSize(w, h)
+    bg.setInteractive({ useHandCursor: true })
+    bg.on('pointerup', () => onClick())
+    return container
   }
 
   formatAbilityRequirements(action) {
@@ -1583,9 +1635,6 @@ export default class LoadoutScene extends Phaser.Scene {
         if (row.hitArea && row.hitArea.input) row.hitArea.input.enabled = !disabled
       })
     }
-    if (this.abilityScrollHitArea && this.abilityScrollHitArea.input) {
-      this.abilityScrollHitArea.input.enabled = !disabled
-    }
   }
 
   closeAbilityDialog() {
@@ -1595,7 +1644,7 @@ export default class LoadoutScene extends Phaser.Scene {
     }
     this.disableAbilityRowsForDialog(false)
     if (this.abilityListContainer && this.abilityListContainer.scene) {
-      this.setAbilityListScroll(this.abilityListScroll || 0)
+      this.setAbilityPage(this.abilityPage)
     }
   }
 
@@ -1709,6 +1758,23 @@ export default class LoadoutScene extends Phaser.Scene {
   // ---------- Ability Drag & Drop ----------
 
   startAbilityDrag(action, sourceContainer, x, y) {
+    // Clean up any leftover clone from a previous interrupted drag
+    if (this.abilityDragClone) {
+      this.abilityDragClone.destroy()
+      this.abilityDragClone = null
+      this.abilityDragAction = null
+    }
+
+    this.abilityDragActive = true
+    // Disable pagination buttons while dragging so releasing over them doesn't
+    // change pages instead of dropping the ability.
+    if (this.abilityPaginationButtons) {
+      const prevBg = this.abilityPaginationButtons.prev?.list?.[0]
+      const nextBg = this.abilityPaginationButtons.next?.list?.[0]
+      if (prevBg && prevBg.input) prevBg.input.enabled = false
+      if (nextBg && nextBg.input) nextBg.input.enabled = false
+    }
+
     const colors = getActionTypeColor(action.type)
     const colorHex = '#' + (colors.main || 0xffffff).toString(16).padStart(6, '0')
     this.abilityDragClone = this.add.text(0, 0, action.kanji || '◆', {
@@ -1724,32 +1790,47 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   endAbilityDrag(action, pointer) {
-    if (this.abilityDragClone) {
-      // Check if dropped on an active action slot
-      const droppedSlot = this.actionSlots.find(slot => {
-        const dx = slot.x - pointer.x
-        const dy = slot.y - pointer.y
-        return Math.sqrt(dx * dx + dy * dy) < (slot.size / 2 + 12)
-      })
+    this.abilityDragActive = false
 
-      if (droppedSlot) {
-        // Allow dragging an attack onto an active attack slot to replace it,
-        // even if it is the only currently active attack.
-        const incomingIsAttack = action.type === 'attack'
-        const slotIsAttack = droppedSlot.action?.type === 'attack'
-        const forceReplace = incomingIsAttack && slotIsAttack
-
-        // If slot already has an ability, deactivate it first
-        if (droppedSlot.actionId) {
-          this.deactivateAbility(droppedSlot.actionId, { force: forceReplace })
-        }
-        this.activateAbility(action.id)
-      }
-
-      this.abilityDragClone.destroy()
-      this.abilityDragClone = null
-      this.abilityDragAction = null
+    // Re-enable pagination buttons and refresh the current page's row input.
+    if (this.abilityListContainer && this.abilityListContainer.scene) {
+      this.setAbilityPage(this.abilityPage)
     }
+
+    if (!this.abilityDragClone) return
+
+    // Check if dropped on an active action slot (generous radius for mobile)
+    const droppedSlot = this.actionSlots.find(slot => {
+      const dx = slot.x - pointer.x
+      const dy = slot.y - pointer.y
+      return Math.sqrt(dx * dx + dy * dy) < 60
+    })
+
+    // Destroy the clone immediately so it never lingers, even if activation
+    // rebuilds the tab and interrupts the drag event.
+    this.abilityDragClone.destroy()
+    this.abilityDragClone = null
+    this.abilityDragAction = null
+
+    if (!droppedSlot) return
+
+    // Defer the loadout mutation until the drag lifecycle is fully finished.
+    // Rebuilding the abilities tab mid-drag was leaving the drag clone stranded
+    // on some browsers/devices.
+    this.time.delayedCall(100, () => {
+      if (!this.scene.isActive()) return
+      // Allow dragging an attack onto an active attack slot to replace it,
+      // even if it is the only currently active attack.
+      const incomingIsAttack = action.type === 'attack'
+      const slotIsAttack = droppedSlot.action?.type === 'attack'
+      const forceReplace = incomingIsAttack && slotIsAttack
+
+      // If slot already has an ability, deactivate it first
+      if (droppedSlot.actionId) {
+        this.deactivateAbility(droppedSlot.actionId, { force: forceReplace })
+      }
+      this.activateAbility(action.id)
+    })
   }
 
   // ---------- UI Helpers ----------
