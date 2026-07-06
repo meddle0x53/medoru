@@ -3,9 +3,11 @@ defmodule Medoru.Content.CustomLessonTest do
 
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
+  import Medoru.LearningFixtures
 
   alias Medoru.Content
   alias Medoru.Classrooms
+  alias Medoru.Learning.WordSets
 
   describe "custom lessons" do
     setup do
@@ -335,6 +337,55 @@ defmodule Medoru.Content.CustomLessonTest do
       assert length(Content.list_teacher_custom_lessons(teacher.id, status: "draft")) == 1
       assert length(Content.list_teacher_custom_lessons(teacher.id, status: "published")) == 1
       assert length(Content.list_teacher_custom_lessons(teacher.id, status: "archived")) == 1
+    end
+
+    test "create_custom_lesson_from_word_set/2 creates a vocabulary lesson with words", %{
+      teacher: teacher
+    } do
+      word_set = word_set_fixture(%{user_id: teacher.id})
+      word1 = word_fixture()
+      word2 = word_fixture()
+
+      {:ok, _} = WordSets.add_word_to_set(word_set, word1.id)
+      {:ok, _} = WordSets.add_word_to_set(word_set, word2.id)
+
+      assert {:ok, lesson} =
+               Content.create_custom_lesson_from_word_set(teacher.id, word_set.id)
+
+      assert lesson.title == word_set.name
+      assert lesson.description == word_set.description
+      assert lesson.lesson_subtype == "vocabulary"
+      assert lesson.status == "draft"
+      assert lesson.creator_id == teacher.id
+      assert lesson.word_count == 2
+
+      lesson_words = Content.list_lesson_words(lesson.id)
+      assert length(lesson_words) == 2
+      assert Enum.map(lesson_words, & &1.word_id) == [word1.id, word2.id]
+    end
+
+    test "create_custom_lesson_from_word_set/2 returns error for empty word set", %{
+      teacher: teacher
+    } do
+      word_set = word_set_fixture(%{user_id: teacher.id})
+
+      assert {:error, :no_words} =
+               Content.create_custom_lesson_from_word_set(teacher.id, word_set.id)
+    end
+
+    test "create_custom_lesson_from_word_set/2 returns error when word set is too large", %{
+      teacher: teacher
+    } do
+      word_set = word_set_fixture(%{user_id: teacher.id})
+
+      # Add more words than a custom lesson allows
+      for _i <- 1..(Content.CustomLesson.max_words() + 1) do
+        word = word_fixture()
+        {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+      end
+
+      assert {:error, :max_words_exceeded} =
+               Content.create_custom_lesson_from_word_set(teacher.id, word_set.id)
     end
   end
 end

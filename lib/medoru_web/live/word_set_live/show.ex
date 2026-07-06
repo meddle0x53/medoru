@@ -35,8 +35,9 @@ defmodule MedoruWeb.WordSetLive.Show do
         word_type: word_type
       )
 
-    # Check if user owns this word set
+    # Check if user owns this word set and can create lessons
     is_owner = user && word_set.user_id == user.id
+    can_create_lesson = is_owner && user.type in ["teacher", "admin"]
 
     {:noreply,
      socket
@@ -47,6 +48,7 @@ defmodule MedoruWeb.WordSetLive.Show do
      |> assign(:page, page)
      |> assign(:word_type, word_type)
      |> assign(:is_owner, is_owner)
+     |> assign(:can_create_lesson, can_create_lesson)
      |> assign(:page_title, word_set.name)
      |> assign(:copy_modal_open, false)
      |> assign(:copy_search_term, "")
@@ -107,6 +109,38 @@ defmodule MedoruWeb.WordSetLive.Show do
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete practice test."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
+    end
+  end
+
+  @impl true
+  def handle_event("create_lesson", _params, socket) do
+    if socket.assigns.can_create_lesson do
+      user = socket.assigns.current_scope.current_user
+      word_set = socket.assigns.word_set
+
+      case Content.create_custom_lesson_from_word_set(user.id, word_set.id) do
+        {:ok, lesson} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Vocabulary lesson created."))
+           |> push_navigate(to: ~p"/teacher/custom-lessons/#{lesson.id}/edit")}
+
+        {:error, :no_words} ->
+          {:noreply, put_flash(socket, :error, gettext("Add words to the set first."))}
+
+        {:error, :max_words_exceeded} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Word set is too large to convert to a lesson.")
+           )}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to create lesson."))}
       end
     else
       {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
@@ -314,6 +348,16 @@ defmodule MedoruWeb.WordSetLive.Show do
                   <.icon name="hero-cog-6-tooth" class="w-4 h-4 inline mr-1" />
                   {gettext("Settings")}
                 </.link>
+                <%= if @can_create_lesson do %>
+                  <button
+                    type="button"
+                    phx-click="create_lesson"
+                    class="px-4 py-2 bg-secondary hover:bg-secondary/90 text-secondary-content rounded-lg font-medium transition-colors"
+                  >
+                    <.icon name="hero-academic-cap" class="w-4 h-4 inline mr-1" />
+                    {gettext("Create Vocabulary Lesson")}
+                  </button>
+                <% end %>
                 <button
                   type="button"
                   phx-click="open_copy_modal"

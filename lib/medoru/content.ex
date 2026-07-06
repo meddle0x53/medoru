@@ -19,7 +19,7 @@ defmodule Medoru.Content do
     CustomLessonWord
   }
 
-  alias Medoru.Learning.{UserEnglishProgress, UserProgress}
+  alias Medoru.Learning.{UserEnglishProgress, UserProgress, WordSet}
 
   # Kanji Functions
 
@@ -2284,6 +2284,72 @@ defmodule Medoru.Content do
     %CustomLesson{}
     |> CustomLesson.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @doc """
+  Creates a new vocabulary custom lesson from a word set.
+
+  The lesson title and description are copied from the word set, all words are
+  added in their word-set order, and the lesson is created as a draft.
+
+  Returns `{:error, :no_words}` if the word set has no words.
+  Returns `{:error, :max_words_exceeded}` if the word set contains more words
+  than a custom lesson allows.
+  """
+  def create_custom_lesson_from_word_set(user_id, word_set_id) do
+    word_set =
+      WordSet
+      |> Repo.get!(word_set_id)
+      |> Repo.preload(word_set_words: :word)
+
+    word_ids =
+      word_set.word_set_words
+      |> Enum.sort_by(& &1.position)
+      |> Enum.map(& &1.word_id)
+      |> Enum.uniq()
+
+    cond do
+      word_ids == [] ->
+        {:error, :no_words}
+
+      length(word_ids) > CustomLesson.max_words() ->
+        {:error, :max_words_exceeded}
+
+      true ->
+        lesson_attrs = %{
+          title: word_set.name,
+          description: word_set.description || "",
+          lesson_type: "reading",
+          lesson_subtype: "vocabulary",
+          difficulty: 1,
+          status: "draft",
+          creator_id: user_id,
+          word_count: 0
+        }
+
+        Repo.transaction(fn ->
+          {:ok, lesson} = create_custom_lesson(lesson_attrs)
+
+          now = DateTime.utc_now()
+
+          lesson_words =
+            Enum.with_index(word_ids, fn word_id, index ->
+              %{
+                custom_lesson_id: lesson.id,
+                word_id: word_id,
+                position: index,
+                inserted_at: now,
+                updated_at: now
+              }
+            end)
+
+          {inserted_count, _} = Repo.insert_all(CustomLessonWord, lesson_words)
+
+          lesson
+          |> CustomLesson.update_word_count_changeset(inserted_count)
+          |> Repo.update!()
+        end)
+    end
   end
 
   @doc """

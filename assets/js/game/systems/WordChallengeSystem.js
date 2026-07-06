@@ -46,6 +46,7 @@ export default class WordChallengeSystem {
     this.keyboardHandler = null
     this.timerEvent = null
     this.hangEvent = null
+    this.keyboardContainer = null
 
     this.word = null
     this.input = ''
@@ -82,7 +83,12 @@ export default class WordChallengeSystem {
     this.currentOptions.promptType = 'meaning'
 
     this.createOverlay()
-    this.createHiddenInput()
+
+    if (this.scene.sys.game.device.input.touch) {
+      this.createTouchKeyboard()
+    } else {
+      this.createHiddenInput()
+    }
 
     this.keyboardHandler = (event) => {
       if (!this.active) return
@@ -138,39 +144,42 @@ export default class WordChallengeSystem {
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
     this.overlay.add(backdrop)
 
-    const panel = this.scene.add.rectangle(0, 0, 460, 380, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
+    const panel = this.scene.add.rectangle(0, 0, 460, 300, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
     this.overlay.add(panel)
 
-    this.titleText = this.scene.add.text(0, -120, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
+    this.titleText = this.scene.add.text(0, -130, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
     this.overlay.add(this.titleText)
 
     const prompt = this.currentOptions.promptType === 'meaning'
       ? this.options.promptForMeaning
       : this.options.promptForReading
-    this.promptText = this.scene.add.text(0, -80, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    this.promptText = this.scene.add.text(0, -95, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
     this.overlay.add(this.promptText)
 
-    this.wordText = this.scene.add.text(0, -30, this.word.word, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
+    this.wordText = this.scene.add.text(0, -45, this.word.word, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
     this.overlay.add(this.wordText)
 
-    this.hintText = this.scene.add.text(0, 25, this.word.reading || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.hintText = this.scene.add.text(0, 0, this.word.reading || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.hintText)
 
-    this.inputText = this.scene.add.text(0, 55, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
+    this.inputText = this.scene.add.text(0, 30, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
     this.overlay.add(this.inputText)
 
-    const barBg = this.scene.add.rectangle(0, 95, 320, 12, COLORS.hpBg).setOrigin(0.5)
+    const barBg = this.scene.add.rectangle(0, 70, 320, 12, COLORS.hpBg).setOrigin(0.5)
     this.overlay.add(barBg)
-    this.timerBar = this.scene.add.rectangle(-160, 95, 320, 12, COLORS.warning).setOrigin(0, 0.5)
+    this.timerBar = this.scene.add.rectangle(-160, 70, 320, 12, COLORS.warning).setOrigin(0, 0.5)
     this.overlay.add(this.timerBar)
 
-    this.timerText = this.scene.add.text(0, 115, `${(this.currentOptions.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.timerText = this.scene.add.text(0, 88, `${(this.currentOptions.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.timerText)
 
-    this.feedbackText = this.scene.add.text(0, 138, 'Press Enter to submit', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    const feedbackLabel = this.scene.sys.game.device.input.touch
+      ? 'Tap the keys below to type'
+      : 'Press Enter to submit'
+    this.feedbackText = this.scene.add.text(0, 108, feedbackLabel, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.feedbackText)
 
-    this.answerText = this.scene.add.text(0, 165, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71', align: 'center', wordWrap: { width: 420 } }).setOrigin(0.5)
+    this.answerText = this.scene.add.text(0, 132, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71', align: 'center', wordWrap: { width: 420 } }).setOrigin(0.5)
     this.overlay.add(this.answerText)
   }
 
@@ -204,6 +213,87 @@ export default class WordChallengeSystem {
     if (this.inputText) {
       this.inputText.setText(this.input)
     }
+  }
+
+  createTouchKeyboard() {
+    this.keyboardContainer = this.scene.add.container(0, 0)
+    this.overlay.add(this.keyboardContainer)
+
+    const keySize = 36
+    const keyGap = 4
+    const startY = 170
+
+    const rows = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+    ]
+
+    rows.forEach((row, rowIndex) => {
+      const rowWidth = row.length * keySize + (row.length - 1) * keyGap
+      const startX = -rowWidth / 2 + keySize / 2
+      row.forEach((char, colIndex) => {
+        const x = startX + colIndex * (keySize + keyGap)
+        const y = startY + rowIndex * (keySize + keyGap)
+        this.createKeyboardKey(char, x, y, keySize, keySize, char)
+      })
+    })
+
+    // Control row: backspace, hyphen, space, enter
+    const controlY = startY + rows.length * (keySize + keyGap) + 6
+    const controls = [
+      { label: '⌫', width: 56, key: 'BACKSPACE' },
+      { label: '-', width: 36, key: '-' },
+      { label: 'SPACE', width: 100, key: 'SPACE' },
+      { label: '⏎', width: 56, key: 'ENTER' },
+    ]
+    const totalWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * keyGap
+    let x = -totalWidth / 2
+    controls.forEach(({ label, width, key }) => {
+      this.createKeyboardKey(label, x + width / 2, controlY, width, keySize, key)
+      x += width + keyGap
+    })
+  }
+
+  createKeyboardKey(label, x, y, width, height, keyName) {
+    const bg = this.scene.add.rectangle(0, 0, width, height, 0x2c3e50).setStrokeStyle(1, 0x5d6d7e)
+    const text = this.scene.add.text(0, 0, label, {
+      ...FONTS.default,
+      fontSize: label.length > 1 ? '12px' : '16px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+
+    const container = this.scene.add.container(x, y, [bg, text])
+    container.setSize(width, height)
+
+    const hitArea = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0)
+    hitArea.setInteractive({ useHandCursor: true })
+    container.add(hitArea)
+
+    hitArea.on('pointerdown', () => {
+      bg.setFillStyle(0x3498db)
+      this.handleKeyboardKey(keyName)
+    })
+    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
+    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+
+    this.keyboardContainer.add(container)
+  }
+
+  handleKeyboardKey(key) {
+    if (!this.active) return
+    if (key === 'BACKSPACE') {
+      this.input = this.input.slice(0, -1)
+    } else if (key === 'SPACE') {
+      this.input += ' '
+    } else if (key === 'ENTER') {
+      this.submit(false)
+      return
+    } else {
+      this.input += key
+    }
+    if (this.inputEl) this.inputEl.value = this.input
+    this.updateInputDisplay()
   }
 
   submit(timedOut = false) {
@@ -307,6 +397,7 @@ export default class WordChallengeSystem {
       this.overlay.destroy()
       this.overlay = null
     }
+    this.keyboardContainer = null
     this.word = null
     this.input = ''
     this.titleText = null
