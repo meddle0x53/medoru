@@ -32,6 +32,7 @@ const KEYBOARD_ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+  ['-'],
 ]
 
 export default class CascadeScene extends Phaser.Scene {
@@ -270,7 +271,7 @@ export default class CascadeScene extends Phaser.Scene {
         key === 'Enter' ||
         key === ' ' ||
         key === 'ArrowDown' ||
-        /^[a-zA-Z0-9]$/.test(key)
+        /^[a-zA-Z0-9-]$/.test(key)
 
       if (isGameKey) {
         event.preventDefault()
@@ -284,7 +285,7 @@ export default class CascadeScene extends Phaser.Scene {
         this.handleKey('SPACE')
       } else if (key === 'ArrowDown') {
         this.skipWord()
-      } else if (/^[a-zA-Z0-9]$/.test(key)) {
+      } else if (/^[a-zA-Z0-9-]$/.test(key)) {
         this.handleKey(key.toUpperCase())
       }
     })

@@ -71,12 +71,23 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
         <h2 class="text-2xl font-bold text-base-content mb-2">
           {translate_question(@step, @locale)}
         </h2>
+        <%= if word_context_step?(@step) do %>
+          <p class="text-secondary text-lg mt-1">
+            <%= if @step.question_data["reading_is_fallback"] do %>
+              {gettext("Reading %{reading} (general kanji reading — no specific word reading set)",
+                reading: @step.question_data["reading_display"]
+              )}
+            <% else %>
+              {gettext("Reading %{reading}", reading: @step.question_data["reading_display"])}
+            <% end %>
+          </p>
+        <% end %>
         <p class="text-secondary text-lg">
           <%= if @step.question_data["stroke_count"] do %>
             {@step.question_data["stroke_count"]} {gettext("strokes")}
           <% end %>
         </p>
-        <%= if @step.kanji && @step.kanji.kanji_readings != [] do %>
+        <%= if @step.kanji && @step.kanji.kanji_readings != [] && !word_context_step?(@step) do %>
           <p class="text-sm text-secondary mt-1">
             <span class="font-medium">{gettext("On")}:</span> {first_reading(@step.kanji, :on)} •
             <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@step.kanji, :kun)}
@@ -121,6 +132,19 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
           </button>
         <% end %>
       </div>
+
+      <%= if @step.hints != [] do %>
+        <div
+          id={"writing-hint-text-#{@step.id}"}
+          data-hint-text
+          class="hidden text-center bg-info/10 border border-info/30 rounded-lg p-4"
+        >
+          <p class="text-sm text-info">
+            <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
+            {List.first(@step.hints)}
+          </p>
+        </div>
+      <% end %>
 
       <%!-- Instructions --%>
       <div class="text-center text-sm text-secondary">
@@ -182,6 +206,19 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
     question = step.question || ""
 
     case question do
+      "__MSG_WRITE_KANJI_IN_WORD__|" <> rest ->
+        case String.split(rest, "|", parts: 2) do
+          [word_reading, word_meaning] ->
+            gettext(
+              "Write the kanji in the word %{word_reading} (%{word_meaning})",
+              word_reading: word_reading,
+              word_meaning: word_meaning
+            )
+
+          _ ->
+            gettext("Write the kanji")
+        end
+
       "__MSG_WRITE_KANJI_FOR__|" <> _ ->
         # Get localized meanings for the question
         meanings = get_localized_meanings_for_step(step, locale)
@@ -245,5 +282,9 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
       nil -> "—"
       reading -> reading.reading
     end
+  end
+
+  defp word_context_step?(step) do
+    step.question_data && step.question_data["word_reading"] not in [nil, ""]
   end
 end

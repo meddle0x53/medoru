@@ -636,10 +636,14 @@ const KanjiWriting = {
       this._submitBtn.addEventListener('click', this._handlers.submit)
     }
 
-    // Hint button - toggles grid lines
+    // Hint button - toggles grid lines and hint text
     this._hintBtn = this.el.querySelector('[data-action="hint"]')
     this._handlers.hint = () => {
       this._state.showingGrid = !this._state.showingGrid
+      const hintText = this.el.querySelector('[data-hint-text]')
+      if (hintText) {
+        hintText.classList.toggle('hidden')
+      }
       redrawStrokes()
     }
     if (this._hintBtn) {

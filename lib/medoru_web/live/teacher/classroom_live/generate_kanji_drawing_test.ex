@@ -68,18 +68,21 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTest do
       lesson.custom_lesson_words
       |> Enum.sort_by(& &1.position)
       |> Enum.flat_map(fn clw ->
-        kanji_list =
+        word_kanjis =
           case clw.word.word_kanjis do
             %Ecto.Association.NotLoaded{} -> []
-            wk -> Enum.map(wk, & &1.kanji) |> Enum.reject(&is_nil/1)
+            wk -> Enum.reject(wk, &is_nil(&1.kanji))
           end
 
-        Enum.map(kanji_list, fn kanji ->
+        Enum.map(word_kanjis, fn word_kanji ->
           %{
-            kanji_id: kanji.id,
-            kanji: kanji,
+            kanji_id: word_kanji.kanji_id,
+            kanji: word_kanji.kanji,
             lesson_id: lesson.id,
-            lesson_title: lesson.title
+            lesson_title: lesson.title,
+            word: clw.word,
+            word_kanji: word_kanji,
+            kanji_reading_in_word: word_kanji.kanji_reading
           }
         end)
       end)
@@ -218,10 +221,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTest do
       |> Enum.map(&parse_uuid/1)
       |> MapSet.new()
 
-    selected_kanji =
+    selected_entries =
       kanji_entries
       |> Enum.filter(&MapSet.member?(selected_kanji_ids, &1.kanji_id))
-      |> Enum.map(& &1.kanji)
 
     title = params["title"] || socket.assigns.title
 
@@ -229,7 +231,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateKanjiDrawingTest do
 
     case ClassroomKanjiDrawingTestGenerator.generate_test(
            classroom,
-           selected_kanji,
+           selected_entries,
            socket.assigns.current_scope.current_user.id,
            title: title,
            due_date: socket.assigns.due_date,

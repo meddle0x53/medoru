@@ -193,6 +193,19 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
         meanings = get_kanji_meanings_for_step(step, locale)
         gettext("Write the kanji for '%{meanings}'", meanings: meanings)
 
+      "__MSG_WRITE_KANJI_IN_WORD__|" <> rest ->
+        case String.split(rest, "|", parts: 2) do
+          [word_reading, word_meaning] ->
+            gettext(
+              "Write the kanji in the word %{word_reading} (%{word_meaning})",
+              word_reading: word_reading,
+              word_meaning: word_meaning
+            )
+
+          _ ->
+            question
+        end
+
       _ ->
         question
     end

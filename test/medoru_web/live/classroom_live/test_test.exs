@@ -766,22 +766,32 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
           %{text: "明", meaning: "bright", reading: "あか"}
         )
 
-      [kanji1, kanji2] = Enum.map(word.word_kanjis, & &1.kanji)
+      [entry1, entry2] =
+        word.word_kanjis
+        |> Enum.map(fn wk ->
+          %{
+            kanji_id: wk.kanji_id,
+            kanji: wk.kanji,
+            word: word,
+            word_kanji: wk,
+            kanji_reading_in_word: wk.kanji_reading
+          }
+        end)
 
       {:ok, kanji2} =
-        Content.update_kanji(kanji2, %{
+        Content.update_kanji(entry2.kanji, %{
           stroke_count: 3,
           stroke_data: stroke_data
         })
 
-      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 200})
+      entry2 = %{entry2 | kanji: kanji2}
 
-      kanji = [kanji1, kanji2]
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 200})
 
       {:ok, test} =
         ClassroomKanjiDrawingTestGenerator.generate_test(
           classroom,
-          kanji,
+          [entry1, entry2],
           teacher.id,
           title: "Kanji Drawing"
         )

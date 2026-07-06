@@ -162,8 +162,8 @@ msgstr "Архивирани"
 #: lib/medoru_web/live/lesson_test_live/show.ex:999
 #: lib/medoru_web/live/word_live/show.html.heex:10
 #: lib/medoru_web/live/word_live/show.html.heex:10
-#: lib/medoru_web/live/word_live/show.html.heex:227
-#: lib/medoru_web/live/word_live/show.html.heex:227
+#: lib/medoru_web/live/word_live/show.html.heex:273
+#: lib/medoru_web/live/word_live/show.html.heex:273
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Lesson"
 msgstr "Обратно към уроците"
@@ -233,7 +233,7 @@ msgstr "Български"
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:447
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:670
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:783
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:855
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:933
 #: lib/medoru_web/live/classroom_game_live/play.ex:1272
 #: lib/medoru_web/live/classroom_live/show.ex:1504
 #: lib/medoru_web/live/dashboard_live.html.heex:531
@@ -246,7 +246,7 @@ msgstr "Български"
 #: lib/medoru_web/live/settings_live/data_privacy.ex:279
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:514
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:909
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:516
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:518
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:773
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:149
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1408
@@ -274,8 +274,8 @@ msgstr "Български"
 #: lib/medoru_web/live/user_white_board_live.ex:160
 #: lib/medoru_web/live/user_white_board_live.ex:435
 #: lib/medoru_web/live/user_white_board_live.ex:692
-#: lib/medoru_web/live/word_live/show.html.heex:335
-#: lib/medoru_web/live/word_live/show.html.heex:335
+#: lib/medoru_web/live/word_live/show.html.heex:381
+#: lib/medoru_web/live/word_live/show.html.heex:381
 #: lib/medoru_web/live/word_set_live/form.ex:197
 #: lib/medoru_web/live/word_set_live/test_config.ex:280
 #, elixir-autogen, elixir-format
@@ -625,7 +625,7 @@ msgstr "Неуспешно премахване на публикацията."
 msgid "Failed to update word."
 msgstr "Неуспешно обновяване на думата."
 
-#: lib/medoru_web/live/classroom_live/test.ex:1813
+#: lib/medoru_web/live/classroom_live/test.ex:1803
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Finish Test"
 msgstr "Завърши"
@@ -646,7 +646,7 @@ msgstr "Отлична работа със завършването на \"%{tit
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:159
 #: lib/medoru_web/live/lesson_test_live/show.ex:896
 #: lib/medoru_web/live/lesson_test_live/show.ex:927
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:112
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:123
 #, elixir-autogen, elixir-format
 msgid "Hint"
 msgstr "Подсказка"
@@ -843,7 +843,7 @@ msgstr "Моите тестове"
 msgid "New Custom Lesson"
 msgstr "Нов персонализиран урок"
 
-#: lib/medoru_web/live/classroom_live/test.ex:1816
+#: lib/medoru_web/live/classroom_live/test.ex:1806
 #, elixir-autogen, elixir-format
 msgid "Next Question"
 msgstr "Следващ въпрос"
@@ -876,7 +876,7 @@ msgstr "Описание"
 msgid "No lessons yet"
 msgstr "Все още няма уроци"
 
-#: lib/medoru_web/live/classroom_live/test.ex:1841
+#: lib/medoru_web/live/classroom_live/test.ex:1821
 #, elixir-autogen, elixir-format
 msgid "No questions available."
 msgstr "Няма налични въпроси."
@@ -1102,7 +1102,6 @@ msgid "Settings"
 msgstr "Настройки"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:877
-#: lib/medoru_web/live/classroom_live/test.ex:1826
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Show Hint"
 msgstr "Покажете подсказка"
@@ -1135,7 +1134,7 @@ msgstr "Вход с Google"
 msgid "Sign out"
 msgstr "Изход"
 
-#: lib/medoru_web/live/classroom_live/test.ex:1835
+#: lib/medoru_web/live/classroom_live/test.ex:1815
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:117
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:168
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:253
@@ -1489,8 +1488,8 @@ msgstr "напр., Пролечна лексика 1"
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:232
 #: lib/medoru_web/live/word_live/index.html.heex:223
 #: lib/medoru_web/live/word_live/index.html.heex:223
-#: lib/medoru_web/live/word_live/show.html.heex:256
-#: lib/medoru_web/live/word_live/show.html.heex:256
+#: lib/medoru_web/live/word_live/show.html.heex:302
+#: lib/medoru_web/live/word_live/show.html.heex:302
 #, elixir-autogen, elixir-format, fuzzy
 msgid "words"
 msgstr "Думи"
@@ -1784,7 +1783,7 @@ msgstr "Учител"
 #: lib/medoru_web/live/grammar_definition_live/index.html.heex:213
 #: lib/medoru_web/live/learn_live.ex:55
 #: lib/medoru_web/live/moderator/grammar_definition_live/index/index.html.heex:219
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:363
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:365
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:567
 #, elixir-autogen, elixir-format
 msgid "of"
@@ -1828,7 +1827,7 @@ msgstr "Влезте"
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:55
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:152
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:152
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:105
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:116
 #: lib/medoru_web/live/moderator/kanji_live/index/index.html.heex:94
 #: lib/medoru_web/live/moderator/word_live/index/index.html.heex:91
 #: lib/medoru_web/live/users_live/index.html.heex:65
@@ -1949,8 +1948,8 @@ msgstr "Завършете по-рано"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:889
 #: lib/medoru_web/live/learn_live.ex:95
-#: lib/medoru_web/live/word_live/show.html.heex:180
-#: lib/medoru_web/live/word_live/show.html.heex:180
+#: lib/medoru_web/live/word_live/show.html.heex:226
+#: lib/medoru_web/live/word_live/show.html.heex:226
 #, elixir-autogen, elixir-format
 msgid "Kanji Breakdown"
 msgstr "Разбивка на канджи"
@@ -2005,7 +2004,8 @@ msgid "View Kanji"
 msgstr "Вижте канджи"
 
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:705
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:818
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:896
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:13
 #: lib/medoru_web/live/admin/word_live/index/index.html.heex:107
 #: lib/medoru_web/live/learn_live.ex:55
 #: lib/medoru_web/live/moderator/word_live/index/index.html.heex:107
@@ -2034,17 +2034,17 @@ msgstr "Завършете"
 #: lib/medoru_web/live/classroom_live/show.ex:1450
 #: lib/medoru_web/live/classroom_live/show.ex:1648
 #: lib/medoru_web/live/classroom_live/show.ex:1836
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:171
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:195
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Continue"
 msgstr "Продължете"
 
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:127
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:151
 #, elixir-autogen, elixir-format
 msgid "Draw the kanji stroke by stroke. Red guide shows next stroke."
 msgstr "Рисувайте канджи черта по черта. Червената спомагателна черта показва следващата вярна черта."
 
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:143
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:167
 #, elixir-autogen, elixir-format
 msgid "Incorrect - Study the correct strokes"
 msgstr "Грешно - Проучете правилните черти"
@@ -2052,12 +2052,12 @@ msgstr "Грешно - Проучете правилните черти"
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:159
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:183
 #, elixir-autogen, elixir-format
 msgid "Meanings"
 msgstr "Значения"
 
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:164
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:188
 #, elixir-autogen, elixir-format
 msgid "Strokes"
 msgstr "Черти"
@@ -2065,7 +2065,7 @@ msgstr "Черти"
 #: lib/medoru_web/live/classroom_game_live/play.ex:1279
 #: lib/medoru_web/live/daily_card_game_live.ex:757
 #: lib/medoru_web/live/daily_kanji_test_live.ex:176
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:120
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:131
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Submit"
 msgstr "Изпратете отговор"
@@ -2075,13 +2075,13 @@ msgstr "Изпратете отговор"
 #: lib/medoru_web/live/daily_test_live.ex:760
 #: lib/medoru_web/live/daily_test_live/complete.ex:236
 #: lib/medoru_web/live/lesson_test_live/show.ex:1039
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:188
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:196
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:225
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:233
 #, elixir-autogen, elixir-format
 msgid "Write the kanji for '%{meanings}'"
 msgstr "Напишете канджи за '%{meanings}'"
 
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:128
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:152
 #, elixir-autogen, elixir-format
 msgid "Wrong strokes will be cleared automatically."
 msgstr "Грешните черти ще бъдат изчистени автоматично."
@@ -2102,7 +2102,7 @@ msgstr "Трябва да влезете за да отворите тази с�
 #: lib/medoru_web/live/learned_kanji_live/index.html.heex:260
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:108
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:108
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:76
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:87
 #: lib/medoru_web/live/moderator/kanji_live/index/index.html.heex:141
 #: lib/medoru_web/live/radical_live/index.html.heex:57
 #: lib/medoru_web/live/radical_live/index.html.heex:57
@@ -2110,7 +2110,7 @@ msgstr "Трябва да влезете за да отворите тази с�
 #: lib/medoru_web/live/radical_live/show.html.heex:31
 #: lib/medoru_web/live/radical_live/show.html.heex:31
 #: lib/medoru_web/live/radical_live/show.html.heex:31
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:420
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:422
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/form.html.heex:90
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/form.html.heex:90
 #, elixir-autogen, elixir-format
@@ -2223,8 +2223,8 @@ msgstr "Обратно към канджи N%{level}"
 #: lib/medoru_web/live/kanji_live/show.html.heex:462
 #: lib/medoru_web/live/kanji_live/show.html.heex:462
 #: lib/medoru_web/live/kanji_live/show.html.heex:462
-#: lib/medoru_web/live/word_live/show.html.heex:234
-#: lib/medoru_web/live/word_live/show.html.heex:234
+#: lib/medoru_web/live/word_live/show.html.heex:280
+#: lib/medoru_web/live/word_live/show.html.heex:280
 #, elixir-autogen, elixir-format
 msgid "Back to list"
 msgstr "Обратно към списъка"
@@ -2249,6 +2249,7 @@ msgstr "Проверете"
 
 #: lib/medoru_web/live/admin/classroom_live/index.ex:168
 #: lib/medoru_web/live/admin/classroom_live/index.ex:244
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:58
 #: lib/medoru_web/live/kana_live/show.html.heex:119
 #: lib/medoru_web/live/kana_live/show.html.heex:119
 #: lib/medoru_web/live/kanji_live/show.html.heex:188
@@ -2383,8 +2384,8 @@ msgstr "Научено"
 #: lib/medoru_web/live/kanji_live/show.html.heex:135
 #: lib/medoru_web/live/kanji_live/show.html.heex:135
 #: lib/medoru_web/live/kanji_live/show.html.heex:135
-#: lib/medoru_web/live/word_live/show.html.heex:162
-#: lib/medoru_web/live/word_live/show.html.heex:162
+#: lib/medoru_web/live/word_live/show.html.heex:208
+#: lib/medoru_web/live/word_live/show.html.heex:208
 #, elixir-autogen, elixir-format
 msgid "Mark as Learned"
 msgstr "Отбележете като научено"
@@ -2425,7 +2426,7 @@ msgid "On'yomi"
 msgstr "Онйоми"
 
 #: lib/medoru_web/live/admin/grammar_form_live/index.ex:76
-#: lib/medoru_web/live/admin/word_live/form.ex:24
+#: lib/medoru_web/live/admin/word_live/form.ex:26
 #: lib/medoru_web/live/kanji_live/show.html.heex:360
 #: lib/medoru_web/live/kanji_live/show.html.heex:360
 #: lib/medoru_web/live/kanji_live/show.html.heex:360
@@ -2503,7 +2504,7 @@ msgstr "канджи"
 msgid "words total"
 msgstr "Думи"
 
-#: lib/medoru_web/live/word_live/show.ex:75
+#: lib/medoru_web/live/word_live/show.ex:77
 #, elixir-autogen, elixir-format
 msgid "%{word} - %{meaning}"
 msgstr "%{word} - %{meaning}"
@@ -2549,6 +2550,7 @@ msgstr "Канджи (А-Я)"
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:379
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:415
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:709
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:17
 #: lib/medoru_web/live/admin/word_live/index/index.html.heex:109
 #: lib/medoru_web/live/classroom_game_live/play.ex:1222
 #: lib/medoru_web/live/daily_card_game_live.ex:722
@@ -2578,8 +2580,8 @@ msgstr "Значение (А-Я)"
 msgid "Most Common First"
 msgstr "Най-чести първо"
 
-#: lib/medoru_web/live/word_live/show.html.heex:208
-#: lib/medoru_web/live/word_live/show.html.heex:208
+#: lib/medoru_web/live/word_live/show.html.heex:254
+#: lib/medoru_web/live/word_live/show.html.heex:254
 #, elixir-autogen, elixir-format
 msgid "No specific reading"
 msgstr "Няма специфично четене"
@@ -2648,8 +2650,8 @@ msgstr "Тип (А-Я)"
 msgid "Vocabulary Browser"
 msgstr "Преглед на речника"
 
-#: lib/medoru_web/live/word_live/show.html.heex:204
-#: lib/medoru_web/live/word_live/show.html.heex:204
+#: lib/medoru_web/live/word_live/show.html.heex:250
+#: lib/medoru_web/live/word_live/show.html.heex:250
 #, elixir-autogen, elixir-format
 msgid "inferred"
 msgstr "изведено"
@@ -2683,6 +2685,7 @@ msgstr "Потребителят е отхвърлен"
 #: lib/medoru_web/live/admin/classroom_live/show.ex:247
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:649
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:763
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:117
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1744
 #, elixir-autogen, elixir-format
 msgid "Approve"
@@ -2871,6 +2874,7 @@ msgstr "Регенерирайте"
 #: lib/medoru_web/live/admin/classroom_live/show.ex:240
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:657
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:771
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:126
 #: lib/medoru_web/live/cookie_consent_live.ex:34
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1737
 #, elixir-autogen, elixir-format
@@ -3607,7 +3611,7 @@ msgstr "Статус на теста"
 msgid "Test Steps"
 msgstr "Опити за тест"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:332
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:334
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:476
 #: lib/medoru_web/live/teacher/test_live/new.ex:89
 #: lib/medoru_web/live/teacher/test_live/show.ex:159
@@ -3653,7 +3657,7 @@ msgstr "Времеви лимит"
 msgid "Try a different filter"
 msgstr "Опитайте различен филтър"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:475
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:477
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:706
 #: lib/medoru_web/live/teacher/test_live/index.ex:343
 #: lib/medoru_web/live/teacher/test_live/new.ex:151
@@ -3762,8 +3766,8 @@ msgstr "Изискват се 4-8 опции"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:735
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2971
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:534
-#: lib/medoru_web/live/word_live/show.html.heex:269
-#: lib/medoru_web/live/word_live/show.html.heex:269
+#: lib/medoru_web/live/word_live/show.html.heex:315
+#: lib/medoru_web/live/word_live/show.html.heex:315
 #: lib/medoru_web/live/word_set_live/edit_words.ex:277
 #, elixir-autogen, elixir-format
 msgid "Add"
@@ -3842,7 +3846,7 @@ msgstr "Персонализирано значение (по желание)"
 msgid "Default from word database. Edit if you want a different reading accepted."
 msgstr "По подразбиране от базата данни с думи. Редактирайте, ако искате да се приема различно четене."
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:450
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:452
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:681
 #: lib/medoru_web/live/teacher/test_live/publish.ex:378
 #, elixir-autogen, elixir-format
@@ -3953,7 +3957,7 @@ msgstr "Код за покана: %{code}"
 msgid "Link to Word (optional)"
 msgstr "Връзка към дума (по избор)"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:467
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:469
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:698
 #: lib/medoru_web/live/teacher/test_live/publish.ex:388
 #, elixir-autogen, elixir-format, fuzzy
@@ -3985,7 +3989,7 @@ msgstr "Нова %{type} стъпка"
 msgid "No Classrooms Yet"
 msgstr "Все още няма уроци"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:424
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:426
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2635
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2646
 #, elixir-autogen, elixir-format
@@ -4729,7 +4733,7 @@ msgstr "Нов урок"
 msgid "Add New Reading"
 msgstr "Добавете ново четене"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:76
+#: lib/medoru_web/live/admin/word_live/form.ex:83
 #: lib/medoru_web/live/moderator/word_live/form.ex:60
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add New Word"
@@ -4764,7 +4768,7 @@ msgid "Add writing steps for kanji in the lesson words"
 msgstr "Добавете стъпки за писане на канджи от думите в урока"
 
 #: lib/medoru_web/live/admin/grammar_form_live/index.ex:74
-#: lib/medoru_web/live/admin/word_live/form.ex:18
+#: lib/medoru_web/live/admin/word_live/form.ex:20
 #: lib/medoru_web/live/moderator/word_live/form.ex:17
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:400
 #: lib/medoru_web/live/word_live/index.ex:347
@@ -4804,7 +4808,7 @@ msgstr "Табло"
 msgid "Administration"
 msgstr "Администратор"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:19
+#: lib/medoru_web/live/admin/word_live/form.ex:21
 #: lib/medoru_web/live/moderator/word_live/form.ex:18
 #: lib/medoru_web/live/word_live/index.ex:348
 #: lib/medoru_web/live/word_set_live/show.ex:266
@@ -4921,7 +4925,7 @@ msgstr "Завършете теста, за да приключите урока
 msgid "Content"
 msgstr "Продължете"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:22
+#: lib/medoru_web/live/admin/word_live/form.ex:24
 #: lib/medoru_web/live/moderator/word_live/form.ex:21
 #: lib/medoru_web/live/word_live/index.ex:351
 #: lib/medoru_web/live/word_set_live/show.ex:269
@@ -5023,7 +5027,7 @@ msgstr "Редактиране на канджи - %{character}"
 msgid "Edit Lesson - %{title}"
 msgstr "Редактирайте урок"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:99
+#: lib/medoru_web/live/admin/word_live/form.ex:108
 #: lib/medoru_web/live/moderator/word_live/form.ex:82
 #, elixir-autogen, elixir-format
 msgid "Edit Word - %{text}"
@@ -5062,7 +5066,7 @@ msgstr "Пример"
 msgid "Example Sentence"
 msgstr "Примерно изречение"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:23
+#: lib/medoru_web/live/admin/word_live/form.ex:25
 #: lib/medoru_web/live/moderator/word_live/form.ex:22
 #: lib/medoru_web/live/word_live/index.ex:352
 #: lib/medoru_web/live/word_set_live/show.ex:270
@@ -5104,7 +5108,7 @@ msgstr "Неуспешно обновяване на думата."
 msgid "Failed to delete word. It may be in use."
 msgstr "Неуспешно изтриване на дума. Вероятно се използва."
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:264
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:266
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:352
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:273
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:456
@@ -5119,7 +5123,7 @@ msgstr "Неуспешно генериране на тест: %{reason}"
 msgid "Failed to regenerate test: %{reason}"
 msgstr "Неуспешно генериране на тест: %{reason}"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:456
+#: lib/medoru_web/live/admin/word_live/form.ex:577
 #: lib/medoru_web/live/moderator/word_live/form.ex:153
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to update reading"
@@ -5217,7 +5221,7 @@ msgstr "Включете упражнение за писане на кандж�
 
 #: lib/medoru_web/live/admin/kanji_live/form.ex:538
 #: lib/medoru_web/live/admin/lesson_live/form.ex:104
-#: lib/medoru_web/live/admin/word_live/form.ex:812
+#: lib/medoru_web/live/admin/word_live/form.ex:1018
 #: lib/medoru_web/live/moderator/kanji_live/form.ex:284
 #: lib/medoru_web/live/moderator/word_live/form.ex:342
 #, elixir-autogen, elixir-format
@@ -5302,10 +5306,10 @@ msgstr "Поддържайте серията си с днешния прегл�
 #: lib/medoru_web/live/daily_kanji_test_live.ex:126
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:105
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:105
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:82
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:163
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:93
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:187
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:301
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:414
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:416
 #, elixir-autogen, elixir-format
 msgid "Kun"
 msgstr "Кун"
@@ -5586,7 +5590,7 @@ msgid "Notes (optional)"
 msgstr "Бележки (по желание)"
 
 #: lib/medoru_web/live/admin/grammar_form_live/index.ex:75
-#: lib/medoru_web/live/admin/word_live/form.ex:16
+#: lib/medoru_web/live/admin/word_live/form.ex:18
 #: lib/medoru_web/live/moderator/word_live/form.ex:15
 #: lib/medoru_web/live/word_live/index.ex:345
 #: lib/medoru_web/live/word_set_live/show.ex:263
@@ -5598,10 +5602,10 @@ msgstr "Съществително"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:122
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:101
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:101
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:81
-#: lib/medoru_web/live/lesson_test_live/writing_component.ex:162
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:92
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:186
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:298
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:414
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:416
 #, elixir-autogen, elixir-format
 msgid "On"
 msgstr "Он"
@@ -5629,7 +5633,7 @@ msgstr "Индекс на подреждане"
 msgid "Overdue"
 msgstr "Просрочено"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:20
+#: lib/medoru_web/live/admin/word_live/form.ex:22
 #: lib/medoru_web/live/moderator/word_live/form.ex:19
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:557
 #: lib/medoru_web/live/word_live/index.ex:349
@@ -5683,7 +5687,7 @@ msgstr "Режим на упражнение - без точки. Преглеж
 msgid "Practice mode - no points will be awarded"
 msgstr "Режим на упражнение - няма да се присъждат точки"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:21
+#: lib/medoru_web/live/admin/word_live/form.ex:23
 #: lib/medoru_web/live/moderator/word_live/form.ex:20
 #: lib/medoru_web/live/word_live/index.ex:350
 #: lib/medoru_web/live/word_set_live/show.ex:268
@@ -5756,7 +5760,7 @@ msgstr "Стъпката е добавена успешно."
 msgid "Reading deleted successfully."
 msgstr "Четенето е изтрито успешно."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:453
+#: lib/medoru_web/live/admin/word_live/form.ex:574
 #: lib/medoru_web/live/moderator/word_live/form.ex:150
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reading updated successfully"
@@ -5944,7 +5948,7 @@ msgstr "Преглед и управление на системата"
 msgid "Test"
 msgstr "Моите тестове"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:443
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:445
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:630
 #: lib/medoru_web/live/teacher/custom_lesson_live/new.ex:149
 #, elixir-autogen, elixir-format
@@ -6071,7 +6075,7 @@ msgid "Users"
 msgstr "Потребител"
 
 #: lib/medoru_web/live/admin/grammar_form_live/index.ex:73
-#: lib/medoru_web/live/admin/word_live/form.ex:17
+#: lib/medoru_web/live/admin/word_live/form.ex:19
 #: lib/medoru_web/live/moderator/word_live/form.ex:16
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:394
 #: lib/medoru_web/live/word_live/index.ex:346
@@ -6108,7 +6112,7 @@ msgstr "Управление на потребители"
 msgid "Word Type"
 msgstr "Думи"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:601
+#: lib/medoru_web/live/admin/word_live/form.ex:722
 #: lib/medoru_web/live/moderator/word_live/form.ex:260
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Word created successfully."
@@ -6120,7 +6124,7 @@ msgstr "Профилът е актуализиран успешно."
 msgid "Word deleted successfully."
 msgstr "Думата е изтрита успешно."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:621
+#: lib/medoru_web/live/admin/word_live/form.ex:743
 #: lib/medoru_web/live/moderator/word_live/form.ex:280
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Word updated successfully."
@@ -6588,9 +6592,10 @@ msgstr ""
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:609
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:680
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:792
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:865
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:943
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:67
 #: lib/medoru_web/live/settings_live/data_privacy.ex:194
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:507
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:509
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:764
 #, elixir-autogen, elixir-format
 msgid "Generating..."
@@ -6977,7 +6982,7 @@ msgstr ""
 msgid "%{name}'s Learned Words"
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.ex:104
+#: lib/medoru_web/live/word_live/show.ex:106
 #, elixir-autogen, elixir-format
 msgid "%{word} marked as learned!"
 msgstr ""
@@ -7067,7 +7072,7 @@ msgstr "Неуспешно изпращане на отговора. Моля, �
 msgid "Failed to update preferences."
 msgstr "Неуспешно обновяване на думата."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:815
+#: lib/medoru_web/live/admin/word_live/form.ex:1021
 #: lib/medoru_web/live/moderator/word_live/form.ex:345
 #, elixir-autogen, elixir-format
 msgid "File is too large (max 500KB)"
@@ -7238,7 +7243,7 @@ msgstr "Пишете и английското значение, и хирага
 msgid "Type to search words with images..."
 msgstr "Въведете, за да търсите думи..."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:818
+#: lib/medoru_web/live/admin/word_live/form.ex:1024
 #: lib/medoru_web/live/moderator/word_live/form.ex:348
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.ex:405
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.ex:433
@@ -7295,7 +7300,7 @@ msgstr "Предизвикателство за писане (5 точки)"
 msgid "You can only unarchive your own lessons."
 msgstr "Можете да архивирате само собствените си уроци."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:816
+#: lib/medoru_web/live/admin/word_live/form.ex:1022
 #: lib/medoru_web/live/moderator/word_live/form.ex:346
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.ex:403
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.ex:431
@@ -7503,7 +7508,7 @@ msgstr "Можете да редактирате само собствените
 msgid "You can only delete your own tests."
 msgstr "Можете да редактирате само собствените си уроци."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:486
+#: lib/medoru_web/live/admin/word_live/form.ex:607
 #: lib/medoru_web/live/moderator/word_live/form.ex:183
 #, elixir-autogen, elixir-format
 msgid "%{count} new kanji extracted and linked"
@@ -7539,7 +7544,7 @@ msgstr ""
 msgid "%{word} - Conjugations"
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.ex:125
+#: lib/medoru_web/live/word_live/show.ex:127
 #, elixir-autogen, elixir-format
 msgid "%{word} removed from learned list."
 msgstr ""
@@ -7564,7 +7569,7 @@ msgstr "+ Клас думи"
 msgid "+ Word Slot"
 msgstr "+ Слот за дума"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:485
+#: lib/medoru_web/live/admin/word_live/form.ex:606
 #: lib/medoru_web/live/moderator/word_live/form.ex:182
 #, elixir-autogen, elixir-format
 msgid "1 new kanji extracted and linked"
@@ -7712,8 +7717,8 @@ msgstr ""
 msgid "Are you sure? This will remove '%{kanji}' from your learned kanji."
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.html.heex:147
-#: lib/medoru_web/live/word_live/show.html.heex:147
+#: lib/medoru_web/live/word_live/show.html.heex:193
+#: lib/medoru_web/live/word_live/show.html.heex:193
 #, elixir-autogen, elixir-format
 msgid "Are you sure? This will remove '%{word}' from your learned words."
 msgstr ""
@@ -7885,7 +7890,7 @@ msgstr "Правилно:"
 msgid "Could not unlearn kanji."
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.ex:134
+#: lib/medoru_web/live/word_live/show.ex:136
 #, elixir-autogen, elixir-format
 msgid "Could not unlearn word."
 msgstr ""
@@ -8344,7 +8349,7 @@ msgid "Hint:"
 msgstr "Подсказка:"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:596
-#: lib/medoru_web/live/classroom_live/test.ex:1876
+#: lib/medoru_web/live/classroom_live/test.ex:1856
 #: lib/medoru_web/live/lesson_test_live/show.ex:1092
 #: lib/medoru_web/live/word_set_live/test.html.heex:204
 #, elixir-autogen, elixir-format, fuzzy
@@ -8393,8 +8398,8 @@ msgstr ""
 #: lib/medoru_web/live/kanji_live/show.html.heex:125
 #: lib/medoru_web/live/kanji_live/show.html.heex:125
 #: lib/medoru_web/live/kanji_live/show.html.heex:125
-#: lib/medoru_web/live/word_live/show.html.heex:154
-#: lib/medoru_web/live/word_live/show.html.heex:154
+#: lib/medoru_web/live/word_live/show.html.heex:200
+#: lib/medoru_web/live/word_live/show.html.heex:200
 #, elixir-autogen, elixir-format
 msgid "Learned (click to unlearn)"
 msgstr ""
@@ -8587,7 +8592,7 @@ msgstr "Няма намерени канджи"
 msgid "No moderator access."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:484
+#: lib/medoru_web/live/admin/word_live/form.ex:605
 #: lib/medoru_web/live/moderator/word_live/form.ex:181
 #, elixir-autogen, elixir-format
 msgid "No new kanji found in word text"
@@ -8783,7 +8788,7 @@ msgstr "Запази стъпката"
 msgid "Save the lesson first before adding steps."
 msgstr "Запазете урока първо, преди да добавяте стъпки."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:496
+#: lib/medoru_web/live/admin/word_live/form.ex:617
 #: lib/medoru_web/live/moderator/word_live/form.ex:193
 #, elixir-autogen, elixir-format
 msgid "Save the word first before extracting kanji"
@@ -9201,7 +9206,7 @@ msgstr ""
 msgid "Word set updated successfully."
 msgstr "Профилът е актуализиран успешно."
 
-#: lib/medoru_web/live/word_live/show.ex:131
+#: lib/medoru_web/live/word_live/show.ex:133
 #, elixir-autogen, elixir-format
 msgid "Word was not learned."
 msgstr ""
@@ -9544,7 +9549,7 @@ msgstr "Файлът е твърде голям (макс. 2MB)"
 msgid "Incorrect Answers"
 msgstr "Верен отговор"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:817
+#: lib/medoru_web/live/admin/word_live/form.ex:1023
 #: lib/medoru_web/live/moderator/word_live/form.ex:347
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.ex:404
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.ex:432
@@ -11423,7 +11428,7 @@ msgstr ""
 #: lib/medoru_web/live/radical_live/show.html.heex:34
 #: lib/medoru_web/live/radical_live/show.html.heex:34
 #: lib/medoru_web/live/radical_live/show.html.heex:34
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:389
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:391
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1018
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.html.heex:302
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.html.heex:302
@@ -12435,15 +12440,15 @@ msgstr "Добавете"
 msgid "Add Word Color"
 msgstr "Добавете клас думи"
 
-#: lib/medoru_web/live/word_live/show.html.heex:171
-#: lib/medoru_web/live/word_live/show.html.heex:171
-#: lib/medoru_web/live/word_live/show.html.heex:244
-#: lib/medoru_web/live/word_live/show.html.heex:244
+#: lib/medoru_web/live/word_live/show.html.heex:217
+#: lib/medoru_web/live/word_live/show.html.heex:217
+#: lib/medoru_web/live/word_live/show.html.heex:290
+#: lib/medoru_web/live/word_live/show.html.heex:290
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Add to Word Set"
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.ex:200
+#: lib/medoru_web/live/word_live/show.ex:202
 #, elixir-autogen, elixir-format
 msgid "Added '%{word}' to word set."
 msgstr ""
@@ -12500,8 +12505,8 @@ msgstr ""
 msgid "Already Fluent"
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.html.heex:261
-#: lib/medoru_web/live/word_live/show.html.heex:261
+#: lib/medoru_web/live/word_live/show.html.heex:307
+#: lib/medoru_web/live/word_live/show.html.heex:307
 #, elixir-autogen, elixir-format
 msgid "Already added"
 msgstr ""
@@ -12881,8 +12886,8 @@ msgstr "Създайте игра"
 msgid "Create Tag"
 msgstr "Създайте игра"
 
-#: lib/medoru_web/live/word_live/show.html.heex:325
-#: lib/medoru_web/live/word_live/show.html.heex:325
+#: lib/medoru_web/live/word_live/show.html.heex:371
+#: lib/medoru_web/live/word_live/show.html.heex:371
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Create a word set"
 msgstr "Създадена"
@@ -14053,7 +14058,7 @@ msgid "Please enter a sentence to validate."
 msgstr "Моля, въведете отговор"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_form.ex:97
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:247
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:249
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please select at least one kanji."
 msgstr "Моля, изберете отговор"
@@ -14506,12 +14511,12 @@ msgstr "Този потребител все още не е публикувал
 msgid "This user is currently soft-deleted. They cannot log in until restored."
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.ex:214
+#: lib/medoru_web/live/word_live/show.ex:216
 #, elixir-autogen, elixir-format, fuzzy
 msgid "This word is already in the word set."
 msgstr "Тази дума вече е в урока."
 
-#: lib/medoru_web/live/word_live/show.ex:207
+#: lib/medoru_web/live/word_live/show.ex:209
 #, elixir-autogen, elixir-format
 msgid "This word set is full (maximum %{max} words)."
 msgstr ""
@@ -14725,7 +14730,7 @@ msgstr ""
 msgid "Word Slot"
 msgstr "Думи"
 
-#: lib/medoru_web/live/word_live/show.ex:219
+#: lib/medoru_web/live/word_live/show.ex:221
 #, elixir-autogen, elixir-format
 msgid "Word set not found."
 msgstr ""
@@ -14833,8 +14838,8 @@ msgstr "Можете да архивирате само собствените �
 msgid "You can still read new messages once someone comes online."
 msgstr ""
 
-#: lib/medoru_web/live/word_live/show.html.heex:318
-#: lib/medoru_web/live/word_live/show.html.heex:318
+#: lib/medoru_web/live/word_live/show.html.heex:364
+#: lib/medoru_web/live/word_live/show.html.heex:364
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You don't have any word sets yet."
 msgstr "Все още нямате класни стаи."
@@ -15313,7 +15318,7 @@ msgstr ""
 msgid "%{count} steps added!"
 msgstr "✓ Добавени %{count} стъпки"
 
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:812
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:890
 #, elixir-autogen, elixir-format
 msgid "AI Word Enrichment"
 msgstr ""
@@ -15514,12 +15519,12 @@ msgstr ""
 msgid "Failed to create lesson: %{errors}"
 msgstr "Неуспешно генериране на тест: %{reason}"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:374
+#: lib/medoru_web/live/admin/word_live/form.ex:385
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to save image."
 msgstr "Неуспешно завършване на урока."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:260
+#: lib/medoru_web/live/admin/word_live/form.ex:271
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Failed to save pronunciation."
 msgstr "Неуспешно завършване на урока."
@@ -15550,7 +15555,8 @@ msgstr "Типът файл не се приема (използвайте JPG, 
 #: lib/medoru_web/live/admin/kanji_live/form/form_template.html.heex:612
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:683
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:795
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:868
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:946
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:70
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Generate"
 msgstr ""
@@ -15596,17 +15602,17 @@ msgstr ""
 msgid "Image Prompt (editable)"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:389
+#: lib/medoru_web/live/admin/word_live/form.ex:400
 #, elixir-autogen, elixir-format
 msgid "Image added. Save the word to persist it."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:404
+#: lib/medoru_web/live/admin/word_live/form.ex:415
 #, elixir-autogen, elixir-format
 msgid "Image rejected and deleted."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:371
+#: lib/medoru_web/live/admin/word_live/form.ex:382
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Image saved successfully."
 msgstr "Играта е запазена успешно."
@@ -15641,12 +15647,12 @@ msgstr ""
 msgid "No grammar pattern steps could be extracted from the image."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:356
+#: lib/medoru_web/live/admin/word_live/form.ex:367
 #, elixir-autogen, elixir-format
 msgid "No image to approve."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:242
+#: lib/medoru_web/live/admin/word_live/form.ex:253
 #, elixir-autogen, elixir-format
 msgid "No pronunciation to approve."
 msgstr ""
@@ -15674,17 +15680,17 @@ msgstr ""
 msgid "Only admins can create lessons from images."
 msgstr "Само администратори могат да нулират дневни тестове."
 
-#: lib/medoru_web/live/admin/word_live/form.ex:145
+#: lib/medoru_web/live/admin/word_live/form.ex:156
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please enter a word text first."
 msgstr "Моля, въведете отговор"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:331
+#: lib/medoru_web/live/admin/word_live/form.ex:342
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Please enter an image prompt first."
 msgstr "Моля, въведете отговор"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:217
+#: lib/medoru_web/live/admin/word_live/form.ex:228
 #, elixir-autogen, elixir-format
 msgid "Please enter text to speak first."
 msgstr ""
@@ -15719,22 +15725,23 @@ msgstr "Моля, въведете отговор"
 msgid "Preview:"
 msgstr "Назад"
 
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:825
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:903
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "Prompt (editable)"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:276
+#: lib/medoru_web/live/admin/word_live/form.ex:287
 #, elixir-autogen, elixir-format
 msgid "Pronunciation added. Save the word to persist it."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:291
+#: lib/medoru_web/live/admin/word_live/form.ex:302
 #, elixir-autogen, elixir-format
 msgid "Pronunciation rejected and deleted."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:257
+#: lib/medoru_web/live/admin/word_live/form.ex:268
 #, elixir-autogen, elixir-format
 msgid "Pronunciation saved successfully."
 msgstr ""
@@ -15817,7 +15824,7 @@ msgstr "Преглед на речника"
 msgid "Vocabulary lesson from image — change the name"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:168
+#: lib/medoru_web/live/admin/word_live/form.ex:179
 #, elixir-autogen, elixir-format
 msgid "Word enriched successfully. Review the fields and save."
 msgstr ""
@@ -15827,7 +15834,7 @@ msgstr ""
 msgid "Words given to the student, separated by /"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:834
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:912
 #, elixir-autogen, elixir-format
 msgid "You can edit the prompt before sending. The word text will be inserted where the placeholder appears."
 msgstr ""
@@ -16215,7 +16222,7 @@ msgstr ""
 msgid "You must be an admin to access this page."
 msgstr "Трябва да влезете за да отворите тази страница"
 
-#: lib/medoru_web/live/admin/word_live/form.ex:540
+#: lib/medoru_web/live/admin/word_live/form.ex:661
 #: lib/medoru_web/live/moderator/word_live/form.ex:237
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} kanji removed"
@@ -16231,7 +16238,7 @@ msgstr ""
 msgid "%{count} sec"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:539
+#: lib/medoru_web/live/admin/word_live/form.ex:660
 #: lib/medoru_web/live/moderator/word_live/form.ex:236
 #, elixir-autogen, elixir-format
 msgid "1 kanji removed"
@@ -16268,7 +16275,7 @@ msgstr ""
 msgid "Archived lessons cannot be published."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:312
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:314
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:451
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to Classroom Tests"
@@ -16297,7 +16304,7 @@ msgstr "канджи"
 msgid "Choose classrooms to publish to."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test.ex:1873
+#: lib/medoru_web/live/classroom_live/test.ex:1853
 #, elixir-autogen, elixir-format
 msgid "Choose the picture that matches this word"
 msgstr ""
@@ -16307,7 +16314,7 @@ msgstr ""
 msgid "Clear filters"
 msgstr "Изчисти филтрите"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:318
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:320
 #, elixir-autogen, elixir-format
 msgid "Create a drawing test from the kanji in this classroom's vocabulary lessons."
 msgstr ""
@@ -16359,14 +16366,14 @@ msgid "Failed to reorder readings."
 msgstr "Неуспешно обновяване на думата."
 
 #: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:50
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:315
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:317
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1139
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1161
 #, elixir-autogen, elixir-format
 msgid "Generate Kanji Drawing Test"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:509
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:511
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:766
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Generate Test"
@@ -16431,7 +16438,7 @@ msgstr ""
 msgid "Junior High"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:241
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:243
 #, elixir-autogen, elixir-format
 msgid "Kanji drawing test generated and published successfully!"
 msgstr ""
@@ -16467,7 +16474,7 @@ msgstr ""
 msgid "Maximum 70 words reached"
 msgstr "Достигнат максимум от 50 думи"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:480
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:482
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:711
 #, elixir-autogen, elixir-format
 msgid "Maximum number of times a student can take this test (1–10)."
@@ -16483,7 +16490,7 @@ msgstr ""
 msgid "No kanji match the selected filter"
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:520
+#: lib/medoru_web/live/admin/word_live/form.ex:641
 #: lib/medoru_web/live/moderator/word_live/form.ex:217
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No kanji selected"
@@ -16565,7 +16572,7 @@ msgstr ""
 msgid "Save the kanji first to add readings."
 msgstr ""
 
-#: lib/medoru_web/live/admin/word_live/form.ex:551
+#: lib/medoru_web/live/admin/word_live/form.ex:672
 #: lib/medoru_web/live/moderator/word_live/form.ex:248
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Save the word first before removing kanji"
@@ -16587,7 +16594,7 @@ msgstr "Търсете по канджи, четене или значение..
 msgid "Select"
 msgstr "Избери..."
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:359
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:361
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Select All Kanji"
 msgstr "Изберете канджи"
@@ -16602,7 +16609,7 @@ msgstr ""
 msgid "Select grade"
 msgstr "Избрано:"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:255
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:257
 #, elixir-autogen, elixir-format
 msgid "Selected kanji do not have stroke data and cannot be drawn."
 msgstr ""
@@ -16638,7 +16645,7 @@ msgstr "Черти"
 msgid "Stroke count"
 msgstr "Брой черти"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:459
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:461
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:690
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Students will see this due date on the test."
@@ -16703,7 +16710,7 @@ msgstr ""
 msgid "Vocabulary test generated and published successfully!"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test.ex:1879
+#: lib/medoru_web/live/classroom_live/test.ex:1859
 #, elixir-autogen, elixir-format, fuzzy
 msgid "What is the meaning of this word?"
 msgstr ""
@@ -16728,7 +16735,7 @@ msgstr ""
 msgid "e.g., 水"
 msgstr "напр., 1"
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:363
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:365
 #, elixir-autogen, elixir-format, fuzzy
 msgid "kanji selected"
 msgstr "Избрано:"
@@ -16738,7 +16745,121 @@ msgstr "Избрано:"
 msgid "words selected"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:289
+#: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:291
 #, elixir-autogen, elixir-format
 msgid "—"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:105
+#, elixir-autogen, elixir-format
+msgid "(not in database)"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:856
+#, elixir-autogen, elixir-format
+msgid "(text only)"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:6
+#, elixir-autogen, elixir-format
+msgid "AI Word Relations"
+msgstr ""
+
+#: lib/medoru_web/live/word_live/show.html.heex:149
+#: lib/medoru_web/live/word_live/show.html.heex:149
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Antonyms"
+msgstr "Анонимен"
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:830
+#, elixir-autogen, elixir-format
+msgid "Click 'Find Relations' to generate synonyms, antonyms, and expressions with AI."
+msgstr ""
+
+#: lib/medoru_web/live/word_live/show.html.heex:150
+#: lib/medoru_web/live/word_live/show.html.heex:150
+#, elixir-autogen, elixir-format
+msgid "Common Expressions"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:40
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Edit the prompt before generating. The word details are pre-filled."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form.ex:503
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to approve relation."
+msgstr "Неуспешно обновяване на думата."
+
+#: lib/medoru_web/live/admin/word_live/form.ex:524
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to reject relation."
+msgstr "Не можахме да отхвърлим ученика."
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:821
+#, elixir-autogen, elixir-format
+msgid "Find Relations"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form.ex:474
+#, elixir-autogen, elixir-format
+msgid "Found %{count} relation suggestions."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:828
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No relations linked to this word yet."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:80
+#, elixir-autogen, elixir-format
+msgid "Pending suggestions — approve or reject each one"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form.ex:498
+#, elixir-autogen, elixir-format
+msgid "Relation approved."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form.ex:519
+#, elixir-autogen, elixir-format
+msgid "Relation rejected."
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form.ex:432
+#: lib/medoru_web/live/admin/word_live/form.ex:454
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Save the word first before finding relations."
+msgstr ""
+
+#: lib/medoru_web/live/word_live/show.html.heex:148
+#: lib/medoru_web/live/word_live/show.html.heex:148
+#, elixir-autogen, elixir-format
+msgid "Synonyms"
+msgstr ""
+
+#: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:813
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Word Relations"
+msgstr "Думи"
+
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:219
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Write the kanji"
+msgstr "Напишете канджи за '%{meanings}'"
+
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:81
+#, elixir-autogen, elixir-format
+msgid "Reading %{reading}"
+msgstr ""
+
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:77
+#, elixir-autogen, elixir-format
+msgid "Reading %{reading} (general kanji reading — no specific word reading set)"
+msgstr ""
+
+#: lib/medoru_web/live/lesson_test_live/writing_component.ex:212
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Write the kanji in the word %{word_reading} (%{word_meaning})"
 msgstr ""

@@ -1796,16 +1796,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     />
                 <% end %>
 
-                <%!-- Hint --%>
-                <%= if @show_hint && @current_step.hints != [] do %>
-                  <div class="bg-info/10 border border-info/30 rounded-lg p-4 mt-4">
-                    <p class="text-sm text-info">
-                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" />
-                      Hint: {List.first(@current_step.hints)}
-                    </p>
-                  </div>
-                <% end %>
-
                 <%!-- Actions --%>
                 <div class="flex flex-col sm:flex-row justify-between items-stretch gap-3 pt-4 border-t border-base-200">
                   <button type="submit" class="w-full sm:w-auto btn btn-primary order-1 min-h-[48px]">
@@ -1816,16 +1806,6 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       {gettext("Next Question")}
                     <% end %>
                   </button>
-
-                  <%= if @current_step.question_type == :writing and @current_step.hints != [] and not @show_hint do %>
-                    <button
-                      type="button"
-                      phx-click="show_hint"
-                      class="w-full sm:w-auto btn btn-ghost btn-sm text-info order-3 sm:order-2"
-                    >
-                      <.icon name="hero-light-bulb" class="w-4 h-4 mr-1" /> {gettext("Show Hint")}
-                    </button>
-                  <% end %>
 
                   <button
                     type="button"
