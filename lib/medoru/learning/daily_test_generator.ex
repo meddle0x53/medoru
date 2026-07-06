@@ -89,8 +89,10 @@ defmodule Medoru.Learning.DailyTestGenerator do
     learned_count = count_learned_words(user_id)
     daily_goal = calculate_daily_goal(learned_count)
 
-    # Get due reviews
-    due_reviews = Learning.get_due_reviews(user_id, limit: daily_goal)
+    # Get due reviews, excluding mature words
+    due_reviews =
+      Learning.get_due_reviews(user_id, limit: daily_goal)
+      |> reject_mature_words()
 
     # Get unique word IDs from due reviews to exclude from new words
     due_word_ids = Enum.map(due_reviews, & &1.word_id)
@@ -100,10 +102,11 @@ defmodule Medoru.Learning.DailyTestGenerator do
     new_words_needed = max(0, daily_goal - due_count)
 
     # Get unreviewed learned words to fill the remaining slots
-    # (excluding words already in due reviews)
+    # (excluding words already in due reviews and mature words)
     new_words =
       if new_words_needed > 0 do
         get_eligible_new_words(user_id, limit: new_words_needed, exclude_word_ids: due_word_ids)
+        |> reject_mature_words()
       else
         []
       end
@@ -133,8 +136,10 @@ defmodule Medoru.Learning.DailyTestGenerator do
     learned_count = Learning.count_english_learned_words(user_id)
     daily_goal = calculate_daily_goal(learned_count)
 
-    # Get words for the test
-    test_words = get_english_test_words(user_id, daily_goal)
+    # Get words for the test, excluding mature words
+    test_words =
+      get_english_test_words(user_id, daily_goal)
+      |> reject_mature_words()
 
     if test_words == [] do
       {:error, :no_items_available}
@@ -278,6 +283,16 @@ defmodule Medoru.Learning.DailyTestGenerator do
   # Count how many words the user has learned
   defp count_learned_words(user_id) do
     Learning.count_learned_words(user_id)
+  end
+
+  # Remove mature words from a list of words or UserProgress/UserEnglishProgress
+  # entries. Daily tests must never include mature content.
+  defp reject_mature_words(items) do
+    Enum.reject(items, fn
+      %{word: %{mature: true}} -> true
+      %{mature: true} -> true
+      _ -> false
+    end)
   end
 
   @doc """
@@ -437,7 +452,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   defp get_english_test_words(user_id, count) do
-    learned = Learning.list_english_learned_words(user_id, limit: 200)
+    learned =
+      Learning.list_english_learned_words(user_id, limit: 200)
+      |> reject_mature_words()
 
     if learned == [] do
       []
@@ -577,6 +594,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
         on: uep.word_id == w.id and uep.user_id == ^user_id
       )
       |> where([w], w.id != ^word.id)
+      |> where([w], w.mature == false)
       |> order_by(fragment("RANDOM()"))
       |> limit(@distractor_count)
       |> select([w], w.text)
@@ -598,6 +616,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
           on: uep.word_id == w.id and uep.user_id == ^user_id
         )
         |> where([w], w.id != ^word.id)
+        |> where([w], w.mature == false)
         |> where([w], not is_nil(w.image_path))
         |> order_by(fragment("RANDOM()"))
         |> limit(@distractor_count)
@@ -913,6 +932,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
         on: up.word_id == w.id and up.user_id == ^user_id
       )
       |> where([w], w.id != ^word.id)
+      |> where([w], w.mature == false)
       |> order_by(fragment("RANDOM()"))
       |> limit(@distractor_count)
       |> select([w], w.meaning)
@@ -933,6 +953,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
         on: up.word_id == w.id and up.user_id == ^user_id
       )
       |> where([w], w.id != ^word.id)
+      |> where([w], w.mature == false)
       |> order_by(fragment("RANDOM()"))
       |> limit(@distractor_count)
       |> select([w], w.reading)
@@ -962,6 +983,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
         )
         |> where([w], w.id != ^word.id)
         |> where([w], not is_nil(w.image_path))
+        |> where([w], w.mature == false)
         |> order_by(fragment("RANDOM()"))
         |> limit(@distractor_count)
         |> select([w], %{meaning: w.meaning, image_path: w.image_path})
