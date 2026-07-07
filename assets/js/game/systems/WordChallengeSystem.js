@@ -3,6 +3,18 @@ import { getAcceptedReadings, normalizeReadingInput } from './kanaUtils.js'
 import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
 
 /**
+ * Normalize a verb meaning by stripping any leading "to " tokens.
+ * This lets "eat", "to eat", and "to to eat" all match the same verb meaning.
+ */
+function normalizeVerbMeaning(input) {
+  let s = input.trim().toLowerCase()
+  while (s.startsWith('to ')) {
+    s = s.slice(3).trim()
+  }
+  return s
+}
+
+/**
  * Reusable word challenge component used by every scene.
  *
  * Supports reading or meaning prompts, a countdown timer bar,
@@ -299,17 +311,26 @@ export default class WordChallengeSystem {
   submit(timedOut = false) {
     if (!this.word || this.hangEvent || !this.active) return
 
+    const isVerb = this.word?.type === 'verb'
     const accepted = this.currentOptions.promptType === 'meaning'
       ? String(this.word.meaning || '')
           .split('/')
           .map(s => s.trim().toLowerCase())
           .filter(Boolean)
       : getAcceptedReadings(this.word)
-    const normalized = this.currentOptions.promptType === 'meaning'
+    let normalized = this.currentOptions.promptType === 'meaning'
       ? this.input.trim().toLowerCase()
       : normalizeReadingInput(this.input)
 
-    const isCorrect = !timedOut && accepted.some(a => a === normalized)
+    if (this.currentOptions.promptType === 'meaning' && isVerb) {
+      normalized = normalizeVerbMeaning(normalized)
+    }
+
+    const isCorrect = !timedOut && accepted.some(a => {
+      if (this.currentOptions.promptType !== 'meaning') return a === normalized
+      const acceptedNormalized = isVerb ? normalizeVerbMeaning(a) : a
+      return acceptedNormalized === normalized
+    })
     const correctAnswer = this.currentOptions.promptType === 'meaning'
       ? (this.word.meaning || '')
       : (this.word.reading || '')

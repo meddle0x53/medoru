@@ -459,6 +459,11 @@ export default class Player extends Character {
 
   setActiveActionIds(ids) {
     this.activeActionIds = ids
+    // Keep the persistent loadout in sync so splitActions() and saves use the new set.
+    if (this.loadout) {
+      this.loadout.activeActionIds = ids
+      this.saveLoadout()
+    }
     this.refreshActions()
   }
 

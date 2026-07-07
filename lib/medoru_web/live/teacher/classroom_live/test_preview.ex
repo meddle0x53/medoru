@@ -669,7 +669,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
             </div>
 
             <%!-- Question card --%>
-            <div class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6 mb-4 sm:mb-6">
+            <div
+              id="question-card"
+              data-share-picture
+              class="bg-base-100 rounded-2xl shadow-sm border border-base-200 p-4 sm:p-6 mb-4 sm:mb-6"
+            >
               <%!-- Question header --%>
               <div class="mb-4 sm:mb-6">
                 <span class="badge badge-outline badge-xs sm:badge-sm mb-2 sm:mb-4">
@@ -955,7 +959,10 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                 <% end %>
 
                 <%!-- Actions --%>
-                <div class="flex flex-col sm:flex-row justify-between items-stretch gap-3 pt-4 border-t border-base-200">
+                <div
+                  data-share-exclude
+                  class="flex flex-col sm:flex-row justify-between items-stretch gap-3 pt-4 border-t border-base-200"
+                >
                   <%= if is_nil(@feedback) do %>
                     <button
                       type="submit"
@@ -972,7 +979,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                     <button
                       type="button"
                       phx-click="skip_question"
-                      class="w-full sm:w-auto sm:ml-auto btn btn-outline order-2 sm:order-3 min-h-[48px]"
+                      class="w-full sm:w-auto sm:ml-auto btn btn-outline order-3 min-h-[48px]"
                     >
                       {gettext("Skip →")}
                     </button>
@@ -989,6 +996,18 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                       <% end %>
                     </button>
                   <% end %>
+
+                  <button
+                    type="button"
+                    id={"share-picture-button-#{@current_step.id}"}
+                    phx-hook="ShareAsPicture"
+                    data-filename={"medoru-#{safe_filename(@test.title)}-q#{@current_step_index + 1}.png"}
+                    disabled={@current_step.question_type == :writing}
+                    class="w-full sm:w-auto btn btn-outline order-2 min-h-[48px]"
+                  >
+                    <.icon name="hero-camera" class="w-4 h-4 mr-2" />
+                    {gettext("Share as picture")}
+                  </button>
                 </div>
               </form>
             </div>
@@ -997,6 +1016,18 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
       </div>
     </Layouts.app>
     """
+  end
+
+  defp safe_filename(title) do
+    title
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9\-]+/u, "-")
+    |> String.replace(~r/-+/, "-")
+    |> String.trim("-")
+    |> case do
+      "" -> "question"
+      name -> name
+    end
   end
 
   defp render_options(assigns, options, picture) do

@@ -132,20 +132,24 @@ export default class WinScene extends Phaser.Scene {
     const panelW = 420
     const panel = this.add.rectangle(GAME_CONFIG.width / 2, y, panelW, 70, 0x1a1a2e).setStrokeStyle(2, 0x3498db)
 
-    this.pointsText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y - 15, `Attribute Points: +${this.attributePoints}`, {
-      ...FONTS.default,
-      fontSize: '16px',
-      color: '#f1c40f',
-    }).setOrigin(0, 0.5)
+    const leftX = GAME_CONFIG.width / 2 - panelW / 2 + 30
+    const textStyle = { ...FONTS.default, fontSize: '16px', color: '#f1c40f' }
+    const iconTextStyle = { ...FONTS.default, fontSize: '12px', color: '#1a1a2e', fontStyle: 'bold' }
 
-    this.goldText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y + 5, `Gold: +${this.goldReward}`, {
-      ...FONTS.default,
-      fontSize: '16px',
-      color: '#f1c40f',
-    }).setOrigin(0, 0.5)
+    // Attribute Points icon (gold circle with "P")
+    this.add.circle(leftX, y - 15, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, y - 15, 'P', iconTextStyle).setOrigin(0.5)
+    this.pointsText = this.add.text(leftX + 20, y - 15, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
 
+    // Gold icon (gold coin with "$")
+    this.add.circle(leftX, y + 5, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, y + 5, '$', iconTextStyle).setOrigin(0.5)
+    this.goldText = this.add.text(leftX + 20, y + 5, `+${this.goldReward}`, textStyle).setOrigin(0, 0.5)
+
+    // Ouro Essence icon (real currency image)
     if (this.essenceGained > 0) {
-      this.essenceText = this.add.text(GAME_CONFIG.width / 2 - panelW / 2 + 30, y + 25, `+${this.essenceGained} Ouro Essence`, {
+      this.add.image(leftX, y + 25, 'ouro_essence').setDisplaySize(22, 22).setOrigin(0.5)
+      this.essenceText = this.add.text(leftX + 20, y + 25, `+${this.essenceGained}`, {
         ...FONTS.default,
         fontSize: '16px',
         color: '#9b59b6',
@@ -482,8 +486,8 @@ export default class WinScene extends Phaser.Scene {
       this.attributePoints = Math.round(this.baseAttributePoints * this.challengeMultiplier)
       this.goldReward = Math.round(this.baseGold * this.challengeMultiplier)
 
-      this.pointsText.setText(`Attribute Points: +${this.attributePoints}`)
-      this.goldText.setText(`Gold: +${this.goldReward}`)
+      this.pointsText.setText(`+${this.attributePoints}`)
+      this.goldText.setText(`+${this.goldReward}`)
 
       const status = result.success ? 'Won!' : 'Lost...'
       const color = result.success ? '#2ecc71' : '#e74c3c'

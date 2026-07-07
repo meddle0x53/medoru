@@ -65,6 +65,7 @@ defmodule MedoruWeb.Admin.GameLive do
           word: w.text,
           reading: w.reading,
           meaning: w.meaning,
+          type: w.word_type,
           core_rank: w.core_rank,
           usage_frequency: w.usage_frequency,
           difficulty: w.difficulty
