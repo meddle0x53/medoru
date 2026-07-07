@@ -1,4 +1,4 @@
-import { toPng } from "html-to-image"
+import { toPng } from "../../vendor/html-to-image.js"
 
 const ShareAsPicture = {
   mounted() {
