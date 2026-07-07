@@ -786,8 +786,10 @@ export default class LoadoutScene extends Phaser.Scene {
     const icon = this.add.text(28, rowH / 2, item.icon, { fontSize: '22px' }).setOrigin(0.5)
     container.add(icon)
 
-    // Name
-    const name = this.add.text(56, 14, item.name, {
+    // Name with quantity
+    const count = this.player.loadout.inventory?.[item.id] || 0
+    const countLabel = item.infinite ? '∞' : `x${count}`
+    const name = this.add.text(56, 14, `${item.name} ${countLabel}`, {
       ...FONTS.default,
       fontSize: '14px',
       color: '#ecf0f1',

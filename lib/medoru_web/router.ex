@@ -274,6 +274,7 @@ defmodule MedoruWeb.Router do
       live "/join", ClassroomLive.Join
       live "/:id", ClassroomLive.Show
       live "/:id/rankings", ClassroomLive.Rankings
+      live "/:id/tests/:test_id/preview", Teacher.ClassroomLive.TestPreview
     end
   end
 

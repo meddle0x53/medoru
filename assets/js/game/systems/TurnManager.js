@@ -1,6 +1,7 @@
 import { getEffect, resolveElementVsDefence, rollDuration } from './EffectRegistry.js'
 import { applyAbilityEffects } from './StatusEffectSystem.js'
 import { getInfusionBaseEffect, getElementForInfusion, getGuardForInfusion } from '../data/infusionReactions.js'
+import { getEffectiveScaling, SCALING_MULTIPLIERS, getStatFactor } from '../entities/Player.js'
 
 /**
  * Manages whose turn it is and stamina consumption.
@@ -298,9 +299,24 @@ export default class TurnManager {
         break
       }
       case 'defence': {
-        const base = skill.baseBlock + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
+        let base = skill.baseBlock || 0
+        let scaling = 0
+        // Shield-based defence skills scale with the shield's effective scaling schedule
+        // (charms can change which stats the shield scales with).
+        if (skill.equipmentType === 'shield' && performer.shield) {
+          const shield = performer.shield
+          const shieldBase = shield.baseDefense || 0
+          for (const [stat, grade] of Object.entries(getEffectiveScaling(shield))) {
+            const gradeMultiplier = SCALING_MULTIPLIERS[grade] || 0
+            const statValue = performer.getStatValue(stat)
+            const factor = getStatFactor(statValue)
+            scaling += shieldBase * gradeMultiplier * factor
+          }
+        } else if (skill.scalingStat && skill.scalingMultiplier) {
+          scaling = performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
+        }
         const shieldBonus = performer.getShieldBonus ? performer.getShieldBonus() : 0
-        const total = Math.floor((base + shieldBonus) * multiplier)
+        const total = Math.floor((base + scaling + shieldBonus) * multiplier)
         performer.addBlock(total)
         result = { type: 'defence', block: total, multiplier }
         if (isElementInfusion) {

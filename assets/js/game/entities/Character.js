@@ -75,6 +75,14 @@ export default class Character {
       this.block -= absorbed
       damage -= absorbed
     }
+
+    // Temporary defence (e.g. from Setup Defence) absorbs damage next
+    if (this.tempDefense > 0) {
+      const absorbed = Math.min(this.tempDefense, damage)
+      this.tempDefense -= absorbed
+      damage -= absorbed
+    }
+
     // Armor reduces remaining damage
     damage = Math.max(1, damage - this.armor)
 
@@ -388,11 +396,16 @@ export default class Character {
   }
 
   getDefense() {
-    return this.baseDefense + this.tempDefense
+    // tempDefense is now a damage-absorption pool, not damage reduction.
+    return this.baseDefense
   }
 
   addDefense(amount) {
     this.tempDefense += amount
+  }
+
+  getTemporaryDefense() {
+    return this.tempDefense
   }
 
   getCritChance() {

@@ -14,7 +14,7 @@ const BASE_STAT_POINTS = 0
 const STAT_POINTS_PER_LEVEL = 0
 
 // Scaling letter multipliers
-const SCALING_MULTIPLIERS = {
+export const SCALING_MULTIPLIERS = {
   S: 1.10,
   A: 0.90,
   B: 0.70,
@@ -61,6 +61,8 @@ function createDefaultShield(permanentLevel = 0) {
     socketCharmIds: [null, null, null, null],
     kanjiPowerup: { kanji: '盾', name: 'tate', learned: true, effect: 'flat_defense', bonus: 3, hint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' } },
     moveHint: { en: 'Raise your GUARD.', ja: '盾を構えろ。' },
+    // Base pool for Setup Defence kanji challenge. Charms can extend this.
+    kanjiPool: ['守', '防', '盾', '硬', '堅'],
   }
 }
 
@@ -139,7 +141,7 @@ export function getEffectiveScaling(equipment) {
 }
 
 // Soft-cap stat factor: returns 0.0–1.0 based on stat value
-function getStatFactor(stat) {
+export function getStatFactor(stat) {
   if (stat <= 0) return 0
   if (stat <= 25) {
     // 0–25: grows from 0.0 to 0.5
@@ -275,9 +277,6 @@ export default class Player extends Character {
     this.activeKanjiBonus = 0
     this.activeShieldBonus = 0
 
-    // Track setup defence used this turn
-    this.setupDefenceUsed = false
-
     // Readiness: 0 = distracted, 1 = focused (set after End Turn word challenge)
     this.readiness = 0
 
@@ -378,7 +377,7 @@ export default class Player extends Character {
   }
 
   getShieldBonus() {
-    return this.shield ? this.shield.bonus : 0
+    return this.shield ? (this.shield.bonus || 0) : 0
   }
 
   // ---------- Shield Defence Calculation ----------
@@ -412,12 +411,32 @@ export default class Player extends Character {
     this.activeShieldBonus = 0
   }
 
-  // Total defense = base + temp + shield base/scaling + shield kanji bonus + readiness bonus + charm bonus
+  // Total defense = base + shield base/scaling + shield kanji bonus + readiness bonus + charm bonus
+  // NOTE: tempDefense is now a damage-absorption pool, not part of the damage-reduction formula.
   getTotalDefense() {
     const readinessBonus = this.readiness > 0 ? 5 : 0
     const charmEffects = this.getCharmEffects()
     const charmDefense = charmEffects.defense || 0
-    return this.baseDefense + this.tempDefense + this.calculateShieldDefense() + readinessBonus + charmDefense
+    return this.baseDefense + this.calculateShieldDefense() + readinessBonus + charmDefense
+  }
+
+  // Compute how much temporary defence Setup Defence should grant.
+  // It scales with the shield's effective scaling schedule (charms can change this).
+  computeSetupDefenceAmount(skill, multiplier = 1) {
+    const shield = this.shield
+    const baseBlock = skill?.baseBlock || 0
+    if (!shield) return Math.floor(baseBlock * multiplier)
+
+    const shieldBase = shield.baseDefense || 0
+    let scaling = 0
+    for (const [stat, grade] of Object.entries(getEffectiveScaling(shield))) {
+      const multiplierGrade = SCALING_MULTIPLIERS[grade] || 0
+      const statValue = this.getStatValue(stat)
+      const factor = getStatFactor(statValue)
+      scaling += shieldBase * multiplierGrade * factor
+    }
+
+    return Math.floor((baseBlock + scaling) * multiplier)
   }
 
   resetReadiness() {
@@ -859,6 +878,23 @@ export default class Player extends Character {
     return true
   }
 
+  /**
+   * Consume one use of an equipped item. Infinite items are not consumed.
+   * If the inventory count drops to zero, the item is automatically removed
+   * from the active item list.
+   */
+  useEquippedItem(itemId) {
+    const item = ITEMS.find(i => i.id === itemId)
+    if (item?.infinite) return { consumed: false, remaining: Infinity }
+    if (!this.consumeItem(itemId, 1)) return { consumed: false, remaining: 0 }
+    const remaining = this.loadout.inventory[itemId] || 0
+    if (remaining <= 0) {
+      this.loadout.activeItemIds = this.loadout.activeItemIds.filter(id => id !== itemId)
+    }
+    this.saveLoadout()
+    return { consumed: true, remaining }
+  }
+
   addCharm(charmId) {
     const charm = getCharmById(charmId)
     if (!charm) return false
@@ -1252,7 +1288,6 @@ export default class Player extends Character {
     this.buffs = []
     this.activeKanjiBonus = 0
     this.activeShieldBonus = 0
-    this.setupDefenceUsed = false
     this.readiness = 0
     this.reactionMultiplier = 1
     this.lastReactionCorrect = false

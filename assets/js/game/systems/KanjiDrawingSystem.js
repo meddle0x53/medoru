@@ -39,6 +39,21 @@ export default class KanjiDrawingSystem {
     this.hintText.style.touchAction = 'none'
     this.hintText.style.userSelect = 'none'
 
+    // Optional info label shown below the hint (e.g. current armor during setup)
+    this.infoText = document.createElement('div')
+    this.infoText.style.position = 'absolute'
+    this.infoText.style.left = `${x - this.halfSize}px`
+    this.infoText.style.top = `${y - this.halfSize - 36}px`
+    this.infoText.style.width = `${size}px`
+    this.infoText.style.textAlign = 'center'
+    this.infoText.style.color = '#c0392b'
+    this.infoText.style.fontFamily = '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    this.infoText.style.fontSize = '14px'
+    this.infoText.style.fontWeight = 'bold'
+    this.infoText.style.zIndex = '101'
+    this.infoText.style.display = 'none'
+    this.infoText.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'
+
     // Canvas element (DOM overlay)
     this.canvas = document.createElement('canvas')
     this.canvas.width = size
@@ -62,6 +77,7 @@ export default class KanjiDrawingSystem {
     const wrapper = document.getElementById('game-wrapper')
     if (wrapper) {
       wrapper.appendChild(this.hintText)
+      wrapper.appendChild(this.infoText)
       wrapper.appendChild(this.canvas)
     }
 
@@ -103,6 +119,12 @@ export default class KanjiDrawingSystem {
     this._loadStrokeData(strokeData)
     this.hintText.textContent = hint
     this.hintText.style.display = 'block'
+    if (callbacks.info) {
+      this.infoText.textContent = callbacks.info
+      this.infoText.style.display = 'block'
+    } else {
+      this.infoText.style.display = 'none'
+    }
     this.canvas.style.display = 'block'
     this._drawBackground()
     this._startTimer()
@@ -110,6 +132,7 @@ export default class KanjiDrawingSystem {
 
   hide() {
     this.hintText.style.display = 'none'
+    this.infoText.style.display = 'none'
     this.canvas.style.display = 'none'
     this._stopTimer()
   }
@@ -118,6 +141,9 @@ export default class KanjiDrawingSystem {
     this._stopTimer()
     if (this.hintText.parentNode) {
       this.hintText.parentNode.removeChild(this.hintText)
+    }
+    if (this.infoText.parentNode) {
+      this.infoText.parentNode.removeChild(this.infoText)
     }
     if (this.canvas.parentNode) {
       this.canvas.parentNode.removeChild(this.canvas)

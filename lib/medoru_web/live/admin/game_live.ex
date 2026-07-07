@@ -103,6 +103,23 @@ defmodule MedoruWeb.Admin.GameLive do
         %{character: "盾", strokes: []}
       end
 
+    # Stroke data for the Setup Defence kanji pool
+    shield_kanji_pool = ["守", "防", "盾", "硬", "堅"]
+
+    shield_kanji_pool_strokes =
+      Map.new(shield_kanji_pool, fn char ->
+        case Content.get_kanji_by_character(char) do
+          %{stroke_data: data, meanings: meanings} when is_map(data) ->
+            {char, %{character: char, strokes: data["strokes"] || [], meanings: Enum.take(meanings || [], 2)}}
+
+          %{stroke_data: data} when is_map(data) ->
+            {char, %{character: char, strokes: data["strokes"] || [], meanings: []}}
+
+          _ ->
+            {char, %{character: char, strokes: [], meanings: []}}
+        end
+      end)
+
     game_data = %{
       user_id: user.id,
       name: user.name || user.email,
@@ -110,7 +127,8 @@ defmodule MedoruWeb.Admin.GameLive do
       kanji_list: kanji_list,
       word_list: word_list,
       weapon_kanji_strokes: weapon_kanji_strokes,
-      shield_kanji_strokes: shield_kanji_strokes
+      shield_kanji_strokes: shield_kanji_strokes,
+      shield_kanji_pool_strokes: shield_kanji_pool_strokes
     }
 
     socket =

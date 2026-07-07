@@ -217,6 +217,9 @@ export default class BattleScene extends Phaser.Scene {
       })
     }
 
+    // Player status orb tracks the hero's head
+    this.updatePlayerStatusButtonPosition(time)
+
     // Floating particles
     this.particles = this.particles.filter(p => {
       p.y -= p.speed * (delta / 1000)
@@ -266,6 +269,9 @@ export default class BattleScene extends Phaser.Scene {
     // Charm overlays: small luminous kanji floating above the hero's head
     this.createCharmOverlays()
 
+    // Green status orb above the hero: shows temporary defence / block / buffs
+    this.createPlayerStatusButton()
+
     // Enemies rendered in a horizontal row on the right; scale down when there are more.
     this.enemyDisplays = this.enemies.map((enemy, i) => this.createEnemyDisplay(enemy, i, this.enemies.length))
     // Backwards-compatible alias for code paths still using the single enemy sprite.
@@ -276,6 +282,9 @@ export default class BattleScene extends Phaser.Scene {
     const layout = enemy.definition.layout[String(total)]?.[index] || { x: 690, y: 570, scale: 0.30 }
     const { x, y, scale } = layout
 
+    // Create the display object first so callbacks can reference it.
+    const display = { enemy, x }
+
     // Ensure all of this enemy's sprites are rendered smoothly.
     const spriteKeys = Object.values(enemy.definition.sprites).filter(Boolean)
     for (const key of spriteKeys) {
@@ -285,57 +294,59 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     const defaultKey = enemy.definition.sprites.default
-    const sprite = this.add.sprite(x, y, defaultKey)
-    sprite.setScale(scale)
-    sprite.setOrigin(0.5, 0.99)
-    sprite.setInteractive({ useHandCursor: false })
+    display.sprite = this.add.sprite(x, y, defaultKey)
+    display.sprite.setScale(scale)
+    display.sprite.setOrigin(0.5, 0.99)
+    display.sprite.setInteractive({ useHandCursor: false })
     if (enemy.definition.tint) {
-      sprite.setTint(parseInt(enemy.definition.tint, 16))
+      display.sprite.setTint(parseInt(enemy.definition.tint, 16))
     }
-    sprite.on('pointerdown', () => this.onEnemySpriteClick(display))
+    display.sprite.on('pointerdown', () => this.onEnemySpriteClick(display))
 
     const nameTagWidth = total === 3 ? 130 : total === 2 ? 150 : 180
     const nameFontSize = total === 3 ? '12px' : '14px'
-    const nameBg = this.drawNameBg(x, 102, nameTagWidth)
-    const nameText = this.add.text(x, 95, enemy.name, { ...FONTS.default, fontSize: nameFontSize }).setOrigin(0.5)
-    const jaText = this.add.text(x, 110, enemy.nameJa, { ...FONTS.kanji, fontSize: nameFontSize }).setOrigin(0.5)
+    display.nameBg = this.drawNameBg(x, 102, nameTagWidth)
+    display.nameText = this.add.text(x, 95, enemy.name, { ...FONTS.default, fontSize: nameFontSize }).setOrigin(0.5)
+    display.jaText = this.add.text(x, 110, enemy.nameJa, { ...FONTS.kanji, fontSize: nameFontSize }).setOrigin(0.5)
 
     // Per-enemy HP/stamina bars
     const barW = 100
     const barH = 12
     const hpY = 500
     const staminaY = 517
-    const hpBg = this.add.rectangle(x, hpY, barW, barH, 0xe0e0e0).setOrigin(0.5)
-    const hpBar = this.add.rectangle(x - barW / 2, hpY, barW, barH, COLORS.hp).setOrigin(0, 0.5)
-    const staminaBg = this.add.rectangle(x, staminaY, barW, barH, 0xe0e0e0).setOrigin(0.5)
-    const staminaBar = this.add.rectangle(x - barW / 2, staminaY, barW, barH, COLORS.stamina).setOrigin(0, 0.5)
+    display.hpBg = this.add.rectangle(x, hpY, barW, barH, 0xe0e0e0).setOrigin(0.5)
+    display.hpBar = this.add.rectangle(x - barW / 2, hpY, barW, barH, COLORS.hp).setOrigin(0, 0.5)
+    display.staminaBg = this.add.rectangle(x, staminaY, barW, barH, 0xe0e0e0).setOrigin(0.5)
+    display.staminaBar = this.add.rectangle(x - barW / 2, staminaY, barW, barH, COLORS.stamina).setOrigin(0, 0.5)
 
-    const hpText = this.add.text(x, hpY, `${enemy.hp}/${enemy.maxHp}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
-    const staminaText = this.add.text(x, staminaY, `${enemy.stamina}/${enemy.maxStamina}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
-    const blockText = this.add.text(x, 485, '', { ...FONTS.default, fontSize: '11px', color: '#3498db' }).setOrigin(0.5)
+    display.hpText = this.add.text(x, hpY, `${enemy.hp}/${enemy.maxHp}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
+    display.staminaText = this.add.text(x, staminaY, `${enemy.stamina}/${enemy.maxStamina}`, { ...FONTS.default, fontSize: '11px', color: '#1a1a2e' }).setOrigin(0.5)
+    display.blockText = this.add.text(x, 485, '', { ...FONTS.default, fontSize: '11px', color: '#3498db' }).setOrigin(0.5)
 
-    // Intention icons above this enemy
-    const intentionContainer = this.add.container(x, 58)
-    intentionContainer.setDepth(50)
-    intentionContainer.setVisible(false)
-    const intentionIcons = []
-    const iconSize = 22
-    const spacing = 28
-    for (let i = 0; i < 3; i++) {
-      const ix = (i - 1) * spacing
-      const bg = this.add.circle(ix, 0, iconSize / 2, 0x2c3e50).setOrigin(0.5)
-      const icon = this.add.text(ix, 0, '', { fontFamily: FONTS.default.fontFamily, fontSize: '14px', color: '#ecf0f1' }).setOrigin(0.5)
-      intentionContainer.add(bg)
-      intentionContainer.add(icon)
-      intentionIcons.push({ bg, icon })
-    }
+    // Intention button: red "!" circle that opens a detailed intention bubble
+    display.intentionBtn = this.add.container(x, 150).setDepth(50).setVisible(false)
+    const intentionBtnBg = this.add.circle(0, 0, 14, 0x8b0000).setStrokeStyle(2, 0xe74c3c)
+    const intentionBtnIcon = this.add.text(0, 0, '!', {
+      fontFamily: FONTS.default.fontFamily,
+      fontSize: '18px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
+    display.intentionBtn.add([intentionBtnBg, intentionBtnIcon])
+    const intentionBtnHit = this.add.circle(0, 0, 18, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+    display.intentionBtn.add(intentionBtnHit)
+    intentionBtnHit.on('pointerdown', () => this.toggleIntentionBubble(display))
 
     // Status effect icons above this enemy
-    const statusContainer = this.add.container(x, y - sprite.displayHeight * 0.95)
-    statusContainer.setDepth(60)
-    statusContainer.setVisible(false)
+    display.statusContainer = this.add.container(x, y - display.sprite.displayHeight * 0.95)
+    display.statusContainer.setDepth(60)
+    display.statusContainer.setVisible(false)
 
-    return { enemy, sprite, nameBg, nameText, jaText, hpBg, hpBar, staminaBg, staminaBar, hpText, staminaText, blockText, intentionContainer, intentionIcons, statusContainer, baseScale: scale, x }
+    display.baseScale = scale
+    display.intentionBubble = null
+
+    return display
   }
 
   setPlayerPose(poseKey) {
@@ -417,6 +428,156 @@ export default class BattleScene extends Phaser.Scene {
     this.createCharmOverlays()
   }
 
+  // ---------- Player Status Orb (defence / block / buffs) ----------
+
+  createPlayerStatusButton() {
+    const btn = this.add.container(0, 0).setDepth(66).setVisible(false)
+
+    const bg = this.add.circle(0, 0, 14, 0x1e8449).setStrokeStyle(2, 0x145a32)
+    const text = this.add.text(0, 0, '', {
+      ...FONTS.default,
+      fontSize: '11px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
+
+    btn.add([bg, text])
+
+    const hit = this.add.circle(0, 0, 18, 0x000000, 0)
+      .setInteractive({ useHandCursor: true })
+    btn.add(hit)
+    hit.on('pointerdown', () => this.togglePlayerStatusBubble())
+
+    this.playerStatusBtn = btn
+    this.playerStatusValueText = text
+    this.updatePlayerStatusButton()
+  }
+
+  updatePlayerStatusButton() {
+    if (!this.playerStatusBtn) return
+
+    const tempDef = this.player.tempDefense || 0
+    const block = this.player.block || 0
+    const hasBuffs = (this.player.buffs?.length > 0) || (this.player.activeEffects?.length > 0)
+    const visible = tempDef > 0 || block > 0 || hasBuffs
+
+    this.playerStatusBtn.setVisible(visible)
+    if (!visible) {
+      this.closePlayerStatusBubble()
+      return
+    }
+
+    const value = tempDef > 0 ? tempDef : block
+    this.playerStatusValueText.setText(String(value))
+    this.playerStatusValueText.setFontSize(value >= 100 ? '9px' : '11px')
+  }
+
+  updatePlayerStatusButtonPosition(time) {
+    if (!this.playerStatusBtn || !this.playerSprite) return
+
+    // Position right below the hero's name tag, matching the enemy intention-button level.
+    const baseX = this.playerSprite.x
+    const baseY = 150
+    const bob = Math.sin(time * 0.003) * 2
+    this.playerStatusBtn.setPosition(baseX, baseY + bob)
+  }
+
+  togglePlayerStatusBubble() {
+    if (this.playerStatusBubble && this.playerStatusBubble.active) {
+      this.closePlayerStatusBubble()
+    } else {
+      this.openPlayerStatusBubble()
+    }
+  }
+
+  openPlayerStatusBubble() {
+    this.closePlayerStatusBubble()
+
+    const rows = []
+    const tempDef = this.player.tempDefense || 0
+    const block = this.player.block || 0
+    const armor = this.player.armor || 0
+
+    if (tempDef > 0) rows.push({ label: 'Defence', value: tempDef, color: '#2ecc71' })
+    if (block > 0) rows.push({ label: 'Block', value: block, color: '#3498db' })
+    if (armor > 0) rows.push({ label: 'Armor', value: armor, color: '#f39c12' })
+
+    for (const buff of this.player.buffs || []) {
+      rows.push({ label: 'Buff', value: buff.type, color: '#9b59b6' })
+    }
+    for (const effect of this.player.activeEffects || []) {
+      const name = getEffect(effect.effectId)?.name || effect.effectId
+      rows.push({ label: 'Effect', value: name, color: '#e74c3c' })
+    }
+
+    if (rows.length === 0) return
+
+    const width = 160
+    const rowHeight = 22
+    const padding = 14
+    const height = padding * 2 + 18 + rows.length * rowHeight
+    const x = this.playerStatusBtn.x
+    const y = this.playerStatusBtn.y - height / 2 - 20
+
+    const container = this.add.container(x, y).setDepth(70)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(0x1a1a2e, 0.96)
+    bg.lineStyle(2, 0x1e8449, 0.9)
+    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 12)
+    bg.strokeRoundedRect(-width / 2, -height / 2, width, height, 12)
+    container.add(bg)
+
+    const title = this.add.text(0, -height / 2 + 16, 'Status', {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#1e8449',
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
+    container.add(title)
+
+    rows.forEach((row, i) => {
+      const rowY = -height / 2 + 34 + i * rowHeight
+      const label = this.add.text(-width / 2 + 12, rowY, `${row.label}:`, {
+        ...FONTS.default,
+        fontSize: '12px',
+        color: '#bdc3c7',
+      }).setOrigin(0, 0.5)
+      const value = this.add.text(width / 2 - 12, rowY, String(row.value), {
+        ...FONTS.default,
+        fontSize: '12px',
+        color: row.color,
+        fontStyle: 'bold',
+      }).setOrigin(1, 0.5)
+      container.add([label, value])
+    })
+
+    this.playerStatusBubble = container
+
+    this.playerStatusBubbleBackdrop = this.add.rectangle(
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2,
+      GAME_CONFIG.width,
+      GAME_CONFIG.height,
+      0x000000,
+      0.01
+    )
+      .setDepth(60)
+      .setInteractive()
+    this.playerStatusBubbleBackdrop.on('pointerdown', () => this.closePlayerStatusBubble())
+  }
+
+  closePlayerStatusBubble() {
+    if (this.playerStatusBubble) {
+      this.playerStatusBubble.destroy()
+      this.playerStatusBubble = null
+    }
+    if (this.playerStatusBubbleBackdrop) {
+      this.playerStatusBubbleBackdrop.destroy()
+      this.playerStatusBubbleBackdrop = null
+    }
+  }
+
   setEnemySprite(key, enemy = null) {
     const display = enemy
       ? this.enemyDisplays.find(d => d.enemy === enemy)
@@ -492,7 +653,8 @@ export default class BattleScene extends Phaser.Scene {
       display.hpText.setPosition(layout.x, 500)
       display.staminaText.setPosition(layout.x, 517)
       display.blockText.setPosition(layout.x, 485)
-      display.intentionContainer.setPosition(layout.x, 58)
+      if (display.intentionBtn) display.intentionBtn.setPosition(layout.x, 150)
+      if (display.intentionBubble) this.repositionIntentionBubble(display)
       display.statusContainer.setPosition(layout.x, layout.y - display.sprite.displayHeight * 0.95)
     }
   }
@@ -902,8 +1064,9 @@ export default class BattleScene extends Phaser.Scene {
       if (i < items.length) {
         const item = items[i]
         const canAfford = this.player.stamina >= item.staminaCost
+        const count = inventory[item.id] || 0
         row.icon.setText(item.icon)
-        row.name.setText(`${item.name} (${item.staminaCost} STA)`)
+        row.name.setText(`${item.name} x${count} (${item.staminaCost} STA)`)
         row.desc.setText(item.description)
         row.bg.setVisible(true)
         row.icon.setVisible(true)
@@ -1328,6 +1491,7 @@ export default class BattleScene extends Phaser.Scene {
       this.applyItemDamage(item, kanjiResult, aliveEnemies[0])
     }
 
+    this.player.useEquippedItem(item.id)
     this.player.clearItemEffectModifier()
     this.updateBars()
     this.updateBlockText()
@@ -1364,6 +1528,7 @@ export default class BattleScene extends Phaser.Scene {
     }
     this.time.delayedCall(600, () => this.setPlayerPose('idle'))
 
+    this.player.useEquippedItem(item.id)
     this.player.clearItemEffectModifier()
     this.updateBars()
     this.updateBlockText()
@@ -1604,68 +1769,183 @@ export default class BattleScene extends Phaser.Scene {
     // This method is kept for compatibility with the existing create() flow.
   }
 
-  showIntentionPlanForEnemy(display) {
+  computePredictedDamageRange(attacker, target) {
+    const plan = attacker.computeActionPlan()
+    let min = 0
+    let max = 0
+    for (const action of plan) {
+      if (action.type !== 'attack' && action.type !== 'attack_defence') continue
+      const range = this.computeAbilityDamageRange(attacker, action, target)
+      min += range.min
+      max += range.max
+    }
+    if (max <= 0) return null
+    return { min, max }
+  }
+
+  computeAbilityDamageRange(attacker, ability, target) {
+    const base = (ability.basePower || 0) + attacker.getStatValue(ability.scalingStat) * (ability.scalingMultiplier || 0)
+    const nextAttackBonus = attacker.nextAttackBonus || 0
+    const outgoing = attacker.getOutgoingDamageMultiplier()
+    const incoming = target.getIncomingDamageMultiplier()
+    const damageMultiplier = attacker.resolveDamageMultiplier(ability, {})
+    const raw = (base + nextAttackBonus) * outgoing * incoming * damageMultiplier
+
+    const minRaw = Math.floor(raw)
+    const maxRaw = Math.floor(raw * 1.5)
+
+    const defense = target.getTotalDefense ? target.getTotalDefense() : target.getDefense()
+    const min = this.applyDefenseToDamage(minRaw, defense, target.armor)
+    const max = this.applyDefenseToDamage(maxRaw, defense, target.armor)
+    return { min, max }
+  }
+
+  applyDefenseToDamage(raw, defense, armor) {
+    let damage
+    if (defense <= 0) {
+      damage = raw
+    } else {
+      damage = (raw * raw) / (raw + defense)
+    }
+    damage = Math.floor(damage)
+    damage = Math.max(1, damage - (armor || 0))
+    return Math.floor(damage)
+  }
+
+  updateIntentionButtonForEnemy(display) {
     const plan = display.enemy.computeActionPlan()
-    if (!plan || plan.length === 0) {
-      display.intentionContainer.setVisible(false)
+    display.intentionPlan = plan
+    if (!plan || plan.length === 0 || !display.enemy.isAlive()) {
+      this.closeIntentionBubble(display)
+      if (display.intentionBtn) display.intentionBtn.setVisible(false)
       return
     }
-
-    const ICON_MAP = {
-      buff: { char: '⬆', color: 0xf39c12 },      // orange
-      attack: { char: '⚔', color: 0xe74c3c },     // red
-      defence: { char: '🛡', color: 0x3498db },   // blue
-      defense: { char: '🛡', color: 0x3498db },   // blue (alias)
-      recover: { char: '↩', color: 0x2ecc71 },    // green
-      curse: { char: '⬇', color: 0x9b59b6 },     // purple
-      debuff: { char: '⬇', color: 0x9b59b6 },    // purple
-      summon: { char: '✦', color: 0x2ecc71 },    // green star
-      transform: { char: '↻', color: 0x9b59b6 }, // purple cycle
-      heal: { char: '✚', color: 0xe91e63 },      // pink cross
-    }
-
-    display.intentionIcons.forEach((slot, i) => {
-      if (i < plan.length) {
-        const action = plan[i]
-        const info = ICON_MAP[action.type] || { char: '?', color: 0x7f8c8d }
-        slot.bg.setFillStyle(info.color)
-        slot.icon.setText(info.char)
-        slot.bg.setVisible(true)
-        slot.icon.setVisible(true)
-      } else {
-        slot.bg.setVisible(false)
-        slot.icon.setVisible(false)
-      }
-    })
-
-    display.intentionContainer.setVisible(true)
-    display.intentionContainer.setScale(1)
-    display.intentionContainer.setAlpha(1)
-
-    // Subtle pop-in animation
-    this.tweens.add({
-      targets: display.intentionContainer,
-      scaleX: { from: 0.6, to: 1 },
-      scaleY: { from: 0.6, to: 1 },
-      alpha: { from: 0, to: 1 },
-      duration: 250,
-      ease: 'Back.easeOut',
-    })
+    if (display.intentionBtn) display.intentionBtn.setVisible(true)
   }
 
   showIntentionPlan() {
     for (const display of this.enemyDisplays) {
-      if (display.enemy.isAlive()) {
-        this.showIntentionPlanForEnemy(display)
-      } else {
-        display.intentionContainer.setVisible(false)
-      }
+      this.updateIntentionButtonForEnemy(display)
     }
   }
 
   hideIntentionIcons() {
     for (const display of this.enemyDisplays) {
-      display.intentionContainer.setVisible(false)
+      if (display.intentionBtn) display.intentionBtn.setVisible(false)
+      this.closeIntentionBubble(display)
+    }
+  }
+
+  toggleIntentionBubble(display) {
+    if (display.intentionBubble && display.intentionBubble.active) {
+      this.closeIntentionBubble(display)
+    } else {
+      this.openIntentionBubble(display)
+    }
+  }
+
+  openIntentionBubble(display) {
+    this.closeAllIntentionBubbles()
+    const plan = display.intentionPlan || display.enemy.computeActionPlan()
+    if (!plan || plan.length === 0) return
+
+    const ICON_MAP = {
+      buff: { char: '⬆', color: '#f39c12' },
+      attack: { char: '⚔', color: '#e74c3c' },
+      defence: { char: '🛡', color: '#3498db' },
+      defense: { char: '🛡', color: '#3498db' },
+      recover: { char: '↩', color: '#2ecc71' },
+      curse: { char: '⬇', color: '#9b59b6' },
+      debuff: { char: '⬇', color: '#9b59b6' },
+      summon: { char: '✦', color: '#2ecc71' },
+      transform: { char: '↻', color: '#9b59b6' },
+      heal: { char: '✚', color: '#e91e63' },
+    }
+
+    const width = 150
+    const rowHeight = 24
+    const padding = 14
+    const height = padding * 2 + 18 + plan.length * rowHeight
+    const x = display.x
+    const y = 120 + height / 2
+
+    const container = this.add.container(x, y).setDepth(70)
+
+    const bg = this.add.graphics()
+    bg.fillStyle(0x1a1a2e, 0.96)
+    bg.lineStyle(2, 0x3498db, 0.9)
+    bg.fillRoundedRect(-width / 2, -height / 2, width, height, 12)
+    bg.strokeRoundedRect(-width / 2, -height / 2, width, height, 12)
+    container.add(bg)
+
+    const title = this.add.text(0, -height / 2 + 16, 'Next turn', {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#f39c12',
+      fontStyle: 'bold',
+    }).setOrigin(0.5)
+    container.add(title)
+
+    plan.forEach((action, i) => {
+      const rowY = -height / 2 + 34 + i * rowHeight
+      const isAttack = action.type === 'attack' || action.type === 'attack_defence'
+      if (isAttack) {
+        const range = this.computeAbilityDamageRange(display.enemy, action, this.player)
+        const label = `${range.min}-${range.max}`
+        const txt = this.add.text(0, rowY, `⚔ ${label}`, {
+          ...FONTS.default,
+          fontSize: '13px',
+          color: '#e74c3c',
+        }).setOrigin(0.5)
+        container.add(txt)
+      } else {
+        const info = ICON_MAP[action.type] || { char: '?', color: '#7f8c8d' }
+        const txt = this.add.text(0, rowY, `${info.char} ${action.type}`, {
+          ...FONTS.default,
+          fontSize: '13px',
+          color: info.color,
+        }).setOrigin(0.5)
+        container.add(txt)
+      }
+    })
+
+    display.intentionBubble = container
+
+    // Backdrop to close when clicking outside
+    this.intentionBubbleBackdrop = this.add.rectangle(
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2,
+      GAME_CONFIG.width,
+      GAME_CONFIG.height,
+      0x000000,
+      0.01
+    )
+      .setDepth(60)
+      .setInteractive({ useHandCursor: false })
+    this.intentionBubbleBackdrop.on('pointerdown', () => this.closeIntentionBubble(display))
+  }
+
+  repositionIntentionBubble(display) {
+    if (!display.intentionBubble || !display.intentionBubble.active) return
+    const plan = display.intentionPlan || []
+    const height = 28 + 18 + plan.length * 24
+    display.intentionBubble.setPosition(display.x, 120 + height / 2)
+  }
+
+  closeIntentionBubble(display) {
+    if (display.intentionBubble) {
+      display.intentionBubble.destroy()
+      display.intentionBubble = null
+    }
+    if (this.intentionBubbleBackdrop) {
+      this.intentionBubbleBackdrop.destroy()
+      this.intentionBubbleBackdrop = null
+    }
+  }
+
+  closeAllIntentionBubbles() {
+    for (const display of this.enemyDisplays) {
+      this.closeIntentionBubble(display)
     }
   }
 
@@ -2231,12 +2511,6 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   startChallenge(skill) {
-    // Setup Defence can only be used once per turn — check before disabling UI
-    if (skill.id === 'setup_defence' && this.player.setupDefenceUsed) {
-      this.addCombatLog('Setup Defence already used this turn!')
-      return
-    }
-
     this.challengeActive = true
     this.selectedSkill = skill
     this.setSkillButtonsEnabled(false)
@@ -2351,14 +2625,26 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Setup Defence uses kanji drawing for shield (盾)
+    // Setup Defence uses kanji drawing for a random shield kanji
     if (skill.id === 'setup_defence') {
       const userData = getWindowGameData()
-      const strokeData = userData?.shield_kanji_strokes || { strokes: [] }
+      const basePool = ['守', '防', '盾', '硬', '堅']
+      const charmPool = this.player.shield?.kanjiPool || []
+      const pool = Array.from(new Set([...basePool, ...charmPool]))
+      const selectedKanji = pool[Math.floor(Math.random() * pool.length)]
+
+      let strokeData = this.player.kanjiList.find(k => k.character === selectedKanji)?.stroke_data
+      if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
+        strokeData = userData?.shield_kanji_pool_strokes?.[selectedKanji] || userData?.shield_kanji_strokes || { strokes: [] }
+      }
 
       if (!strokeData.strokes || strokeData.strokes.length === 0) {
+        // No stroke data for this kanji: fall back to a guaranteed success with half value.
+        const amount = Math.floor(this.player.computeSetupDefenceAmount(skill, 0.5))
         this.challengeActive = false
-        this.player.setupDefenceUsed = true
+        this.player.addDefense(amount)
+        this.addCombatLog(`Guard raised! +${amount} Defence`)
+        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `+${amount} Defence`, 0x2ecc71)
         this.executeSkill('success')
         return
       }
@@ -2366,22 +2652,35 @@ export default class BattleScene extends Phaser.Scene {
       const gameData = getWindowGameData()
       const userLevel = gameData?.level || 1
       const hint = userLevel >= 10
-        ? this.player.shield.moveHint.ja
-        : this.player.shield.moveHint.en
+        ? this.player.shield?.moveHint?.ja || '盾を構えろ。'
+        : this.player.shield?.moveHint?.en || 'Raise your GUARD.'
+
+      const kanjiEntry = this.player.kanjiList.find(k => k.character === selectedKanji)
+      const meanings = kanjiEntry?.meanings || userData?.shield_kanji_pool_strokes?.[selectedKanji]?.meanings || []
+      const meaningText = meanings.slice(0, 2).join(', ')
+      if (meaningText) {
+        this.addCombatLog(`Draw the kanji meaning "${meaningText}"`)
+      }
+
       this.kanjiDrawing.start(strokeData, hint, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
-          this.player.setupDefenceUsed = true
+
+          const multiplier = result.completed
+            ? (result.wrongStrokes === 0 ? 1.25 : 1.0)
+            : 0.5
+          const amount = this.player.computeSetupDefenceAmount(skill, multiplier)
+          this.player.addDefense(amount)
+          this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `+${amount} Defence`, 0x2ecc71)
 
           if (result.completed) {
-            this.player.setShieldBonus(3)
-            this.player.addDefense(3)
-            this.addCombatLog('Tate drawn! Shield fortified! (+3 DEF for this turn)')
+            const quality = result.wrongStrokes === 0 ? 'perfectly' : ''
+            this.addCombatLog(`${selectedKanji} drawn${quality ? ' ' + quality : ''}! +${amount} Defence`)
             this.executeSkill('success')
           } else {
-            this.addCombatLog('Tate failed! Shield not fortified.')
+            this.addCombatLog(`${selectedKanji} failed! Only +${amount} Defence`)
             this.executeSkill('fail')
           }
         },
@@ -2580,7 +2879,8 @@ export default class BattleScene extends Phaser.Scene {
 
     display.sprite.disableInteractive()
     display.sprite.setTexture(this.getEnemySpriteKey(enemy, 'death'))
-    display.intentionContainer.setVisible(false)
+    if (display.intentionBtn) display.intentionBtn.setVisible(false)
+    this.closeIntentionBubble(display)
 
     // Fade out the sprite and collapse the UI.
     this.tweens.add({
@@ -2639,6 +2939,7 @@ export default class BattleScene extends Phaser.Scene {
     this.updateBars()
     this.updateBlockText()
     this.updateSkillButtonLabels()
+    this.updatePlayerStatusButton()
     this.player.clearKanjiBonus()
 
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
@@ -2765,6 +3066,7 @@ export default class BattleScene extends Phaser.Scene {
   async onTurnChange(turn) {
     this.updateBars()
     this.updateBlockText()
+    this.updatePlayerStatusButton()
 
     if (turn === 'player') {
       this.turnText.setText('YOUR TURN')
@@ -2774,8 +3076,6 @@ export default class BattleScene extends Phaser.Scene {
       this.endTurnBtn.setVisible(true)
       this.updateSkillButtonLabels()
       // Reset per-turn flags
-      this.player.setupDefenceUsed = false
-      this.player.clearShieldBonus()
       this.player.resetReadiness()
       // Trigger socket start-of-turn procs
       this.socketProcSystem.trigger('on_turn_start', { scene: this })
@@ -3161,6 +3461,7 @@ export default class BattleScene extends Phaser.Scene {
     this.playerHpText.setText(`${this.player.hp}/${this.player.maxHp}`)
     this.playerStaminaText.setText(`${this.player.stamina}/${this.player.maxStamina}`)
     this.updatePlayerStatusIcons()
+    this.updatePlayerStatusButton()
 
     for (const display of this.enemyDisplays) {
       const e = display.enemy
@@ -3261,14 +3562,12 @@ export default class BattleScene extends Phaser.Scene {
 
   setSkillButtonsEnabled(enabled) {
     this.skillButtons.forEach(({ btn, skill }) => {
-      // Setup Defence can only be used once per turn
-      const setupDefenceUsed = skill.id === 'setup_defence' && this.player.setupDefenceUsed
       // Use Item needs at least 1 stamina (minimum item cost)
       const cantUseItem = skill.type === 'item' && this.player.stamina < 1
       // Parry: already set up can't be paid again; otherwise needs stamina
       const parryAlreadySetup = skill.type === 'parry' && this.player.parrySetup
 
-      if (enabled && this.player.canUseSkill(skill) && !setupDefenceUsed && !cantUseItem && !parryAlreadySetup) {
+      if (enabled && this.player.canUseSkill(skill) && !cantUseItem && !parryAlreadySetup) {
         btn.redraw(btn.color)
         btn.hitArea.setInteractive({ useHandCursor: true })
         btn.text.setAlpha(1)

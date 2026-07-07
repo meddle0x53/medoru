@@ -1168,7 +1168,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             </div>
             <div class="space-y-3">
               <%= for classroom_test <- @published_tests do %>
-                <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg">
+                <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg gap-4">
                   <div>
                     <p class="font-medium text-base-content">{classroom_test.test.title}</p>
                     <div class="flex gap-4 text-sm text-secondary mt-1">
@@ -1178,7 +1178,17 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       <% end %>
                     </div>
                   </div>
-                  <span class="badge badge-success badge-sm">{gettext("Active")}</span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <.link
+                      navigate={
+                        ~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test.id}/preview"
+                      }
+                      class="btn btn-info btn-sm"
+                    >
+                      <.icon name="hero-eye" class="w-4 h-4 mr-1" /> {gettext("Preview")}
+                    </.link>
+                    <span class="badge badge-success badge-sm">{gettext("Active")}</span>
+                  </div>
                 </div>
               <% end %>
             </div>

@@ -271,6 +271,7 @@ lib/medoru_web/live/
 - ✅ **Always:** Use changesets for data validation
 - ✅ **Always:** Add indexes on foreign keys and frequently queried fields
 - ✅ **Always:** Ensure `word_kanjis` references valid `kanji_reading` records
+- ✅ **Always:** Follow the Elixir/BEAM "let it crash" principle — prefer explicit failure and supervision over defensive coding that hides errors
 - ⚠️ **Ask first:** New dependencies, OAuth provider changes, schema changes affecting existing data
 - 🚫 **Never:** Store OAuth secrets in code, modify user progress history directly, skip transactions for multi-step operations
 - 🚫 **Never:** Allow orphaned `kanji_readings` or `word_kanjis`
