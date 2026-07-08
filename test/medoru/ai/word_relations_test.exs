@@ -110,7 +110,8 @@ defmodule Medoru.AI.WordRelationsTest do
           "choices" => [
             %{
               "message" => %{
-                "content" => Jason.encode!(%{"synonyms" => [], "antonyms" => [], "expressions" => []})
+                "content" =>
+                  Jason.encode!(%{"synonyms" => [], "antonyms" => [], "expressions" => []})
               }
             }
           ]

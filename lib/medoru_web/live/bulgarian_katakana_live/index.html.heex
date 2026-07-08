@@ -1,0 +1,52 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Back Link --%>
+    <div class="mb-6">
+      <.link
+        navigate={~p"/katakana"}
+        class="inline-flex items-center gap-2 text-secondary hover:text-primary transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-4 h-4" />
+        {gettext("Back to Katakana")}
+      </.link>
+    </div>
+
+    <%!-- Header --%>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-base-content mb-2">
+        {gettext("Bulgarian Katakana")}
+      </h1>
+      <p class="text-secondary">
+        {gettext("How Bulgarian letters and common words sound in Japanese katakana")}
+      </p>
+    </div>
+
+    <%!-- Bulgarian Letter Grid --%>
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+      <div class="bg-base-200/50 px-6 py-3 border-b border-base-300">
+        <span class="text-sm font-semibold text-secondary uppercase tracking-wider">
+          {gettext("Bulgarian Alphabet")}
+        </span>
+      </div>
+      <div class="p-4 sm:p-6">
+        <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3 sm:gap-4">
+          <%= for letter <- @letters do %>
+            <.link
+              navigate={~p"/katakana/bulgarian/#{letter.letter}"}
+              class="group"
+            >
+              <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200 p-2">
+                <span class="text-2xl sm:text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
+                  {letter.letter}
+                </span>
+                <span class="text-xs sm:text-sm text-secondary/70 group-hover:text-primary/80 transition-colors mt-0.5">
+                  {letter.katakana}
+                </span>
+              </div>
+            </.link>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

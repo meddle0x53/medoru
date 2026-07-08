@@ -234,6 +234,7 @@ export default class Player extends Character {
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
+      singleUseCharges: {},
       statPoints: startingStatPoints,
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       gold: 0,
@@ -473,6 +474,16 @@ export default class Player extends Character {
     this.setActiveActionIds(newActive)
   }
 
+  // ---------- Skill Availability ----------
+
+  canUseSkill(skill) {
+    if (this.stamina < skill.staminaCost) return false
+    if (skill.singleUse) {
+      return (this.loadout.singleUseCharges?.[skill.id] || 0) > 0
+    }
+    return true
+  }
+
   // ---------- Parry System ----------
 
   hasActiveParry() {
@@ -590,6 +601,10 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
+        }
+        // Migration: single-use ability charges.
+        if (!loadout.singleUseCharges || typeof loadout.singleUseCharges !== 'object') {
+          loadout.singleUseCharges = {}
         }
         // Migration: ensure Use Item is active by default (it has its own slot).
         if (!Array.isArray(loadout.activeActionIds)) {
@@ -1375,6 +1390,68 @@ export default class Player extends Character {
     this.loadout.ouroEssence -= amount
     this.saveLoadout()
     return true
+  }
+
+  // ---------- Single-Use Ability Charges ----------
+
+  getAbilityCharges(actionId) {
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    if (!action || !action.singleUse) return Infinity
+    return this.loadout.singleUseCharges?.[actionId] || 0
+  }
+
+  addAbilityCharges(actionId, charges = 1) {
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    if (!action) return
+
+    if (!action.singleUse) {
+      // Multi-use ability: just make sure it's known.
+      if (!this.loadout.knownActionIds.includes(actionId)) {
+        this.loadout.knownActionIds.push(actionId)
+      }
+      this.saveLoadout()
+      this.refreshActions()
+      return
+    }
+
+    // Single-use ability.
+    if (!this.loadout.singleUseCharges) this.loadout.singleUseCharges = {}
+    this.loadout.singleUseCharges[actionId] = (this.loadout.singleUseCharges[actionId] || 0) + charges
+
+    if (!this.loadout.knownActionIds.includes(actionId)) {
+      this.loadout.knownActionIds.push(actionId)
+    }
+
+    // Auto-equip if there is a free active slot.
+    const maxActive = getMaxActiveActions(this.capacity || 3)
+    const combatActive = this.loadout.activeActionIds.filter(id => id !== 'use_item')
+    if (combatActive.length < maxActive && !this.loadout.activeActionIds.includes(actionId)) {
+      this.loadout.activeActionIds.push(actionId)
+    }
+
+    // Keep the battle pool consistent so the loadout UI shows it correctly.
+    this.addToSelectedPool(actionId)
+
+    this.saveLoadout()
+    this.refreshActions()
+  }
+
+  consumeAbilityCharge(actionId) {
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    if (!action || !action.singleUse) return true
+
+    const charges = (this.loadout.singleUseCharges?.[actionId] || 0) - 1
+    if (charges > 0) {
+      this.loadout.singleUseCharges[actionId] = charges
+    } else {
+      delete this.loadout.singleUseCharges[actionId]
+      this.loadout.knownActionIds = this.loadout.knownActionIds.filter(id => id !== actionId)
+      this.loadout.activeActionIds = this.loadout.activeActionIds.filter(id => id !== actionId)
+      this.loadout.selectedActionIds = this.loadout.selectedActionIds.filter(id => id !== actionId)
+    }
+    this.saveLoadout()
+    this.refreshActions()
+    return charges >= 0
   }
 
   recordNormalEnemyDefeated() {

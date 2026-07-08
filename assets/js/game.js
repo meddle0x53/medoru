@@ -6,6 +6,7 @@ import { GAME_CONFIG } from './game/config.js'
 import BootScene from './game/scenes/BootScene.js'
 import TitleScene from './game/scenes/TitleScene.js'
 import HeroSelectScene from './game/scenes/HeroSelectScene.js'
+import KanjiLibraryScene from './game/scenes/KanjiLibraryScene.js'
 import HomeShopScene from './game/scenes/HomeShopScene.js'
 import OuroEssenceShopScene from './game/scenes/OuroEssenceShopScene.js'
 import MapScene from './game/scenes/MapScene.js'
@@ -45,7 +46,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, TitleScene, HeroSelectScene, HomeShopScene, OuroEssenceShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene],
+    scene: [BootScene, TitleScene, HeroSelectScene, KanjiLibraryScene, HomeShopScene, OuroEssenceShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene],
     physics: {
       default: 'arcade',
       arcade: {

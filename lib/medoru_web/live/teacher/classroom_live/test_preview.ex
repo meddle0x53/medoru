@@ -170,7 +170,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
         handle_fill_answer(socket, params["answer"], step)
 
       :multichoice ->
-        handle_multichoice_answer(socket, params["answer"] || socket.assigns.selected_answer, step)
+        handle_multichoice_answer(
+          socket,
+          params["answer"] || socket.assigns.selected_answer,
+          step
+        )
 
       :picture_multichoice ->
         handle_multichoice_answer(socket, socket.assigns.selected_answer, step)
@@ -885,7 +889,8 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                           <% is_selected = @selected_answer == option %>
                           <% is_correct =
                             @feedback != nil and
-                              normalize_answer(option) == normalize_answer(@current_step.correct_answer) %>
+                              normalize_answer(option) ==
+                                normalize_answer(@current_step.correct_answer) %>
                           <% is_wrong_selected = @feedback != nil and is_selected and not is_correct %>
                           <button
                             type="button"
@@ -1043,7 +1048,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
           if @current_step.question_data["question_label"] != "reading",
             do: localize_option(option, @locale),
             else: option %>
-        <% is_correct = @feedback != nil and normalize_answer(option) == normalize_answer(@current_step.correct_answer) %>
+        <% is_correct =
+          @feedback != nil and
+            normalize_answer(option) == normalize_answer(@current_step.correct_answer) %>
         <% is_wrong_selected = @feedback != nil and @selected_answer == option and not is_correct %>
         <%= if @picture do %>
           <% image_option =

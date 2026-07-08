@@ -110,10 +110,7 @@ export default class HeroSelectScene extends Phaser.Scene {
       player.resetToFreshHero()
     }
 
-    if (player.getCurrentMap()) {
-      this.scene.start('MapScene', { player })
-    } else {
-      this.scene.start('LoadoutScene', { player, mode: 'map', returnScene: 'MapScene' })
-    }
+    const returnScene = player.getCurrentMap() ? 'MapScene' : 'LoadoutScene'
+    this.scene.start('KanjiLibraryScene', { player, returnScene })
   }
 }

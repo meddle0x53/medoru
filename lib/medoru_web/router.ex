@@ -61,6 +61,8 @@ defmodule MedoruWeb.Router do
       live "/hiragana", KanaLive.Index
       live "/hiragana/:character", KanaLive.Show
       live "/katakana", KanaLive.Index
+      live "/katakana/bulgarian", BulgarianKatakanaLive.Index
+      live "/katakana/bulgarian/:letter", BulgarianKatakanaLive.Show
       live "/katakana/:character", KanaLive.Show
       live "/words", WordLive.Index
       live "/words/:id", WordLive.Show

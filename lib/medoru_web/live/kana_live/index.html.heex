@@ -58,6 +58,18 @@
       </.link>
     </div>
 
+    <%= if @type == :katakana do %>
+      <div class="mb-8">
+        <.link
+          navigate={~p"/katakana/bulgarian"}
+          class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-medium"
+        >
+          <.icon name="hero-language" class="w-5 h-5" />
+          {gettext("Bulgarian words in katakana")}
+        </.link>
+      </div>
+    <% end %>
+
     <%!-- Gojuon Chart --%>
     <div class="space-y-6">
       <%= for {group, label, items} <- @groups do %>

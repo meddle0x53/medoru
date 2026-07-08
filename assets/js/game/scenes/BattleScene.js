@@ -1245,10 +1245,29 @@ export default class BattleScene extends Phaser.Scene {
         const colors = getActionTypeColor(action.type)
         const isSelected = false // active rows can't be selected first
         row.bg.setStrokeStyle(2, colors.main)
+        row.bg.setFillStyle(0x1a1a2e, 1)
         row.hitArea.setInteractive({ useHandCursor: true })
         row.hitArea.off('pointerdown')
         row.hitArea.on('pointerdown', () => this._onSwitchDialogActiveClick(action))
+        row.hitArea.off('pointerover')
+        row.hitArea.off('pointerout')
         row.hitArea.on('pointerover', () => row.bg.setFillStyle(colors.main, 0.15))
+        row.hitArea.on('pointerout', () => row.bg.setFillStyle(0x1a1a2e, 1))
+      } else if (i < maxActive) {
+        // Empty active slot — show it so the player can fill it.
+        row.container.setVisible(true)
+        row.typeIcon.setText('○')
+        row.name.setText('Empty Slot')
+        row.meta.setText('Click to fill')
+        row.stamina.setText('')
+        row.bg.setStrokeStyle(1, 0x555555)
+        row.bg.setFillStyle(0x1a1a2e, 1)
+        row.hitArea.setInteractive({ useHandCursor: true })
+        row.hitArea.off('pointerdown')
+        row.hitArea.on('pointerdown', () => this._onSwitchDialogActiveClick(null))
+        row.hitArea.off('pointerover')
+        row.hitArea.off('pointerout')
+        row.hitArea.on('pointerover', () => row.bg.setFillStyle(0x555555, 0.25))
         row.hitArea.on('pointerout', () => row.bg.setFillStyle(0x1a1a2e, 1))
       } else {
         row.container.setVisible(false)
@@ -1309,11 +1328,12 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     // Validate: must keep at least one attack action active
-    const newActive = this.player.activeActions.map(a => a.id)
-    const idx = newActive.indexOf(activeAction.id)
-    if (idx >= 0) newActive[idx] = inactiveAction.id
+    const currentActiveIds = this.player.activeActions.map(a => a.id)
+    const newActiveIds = activeAction
+      ? currentActiveIds.map(id => (id === activeAction.id ? inactiveAction.id : id))
+      : [...currentActiveIds, inactiveAction.id]
 
-    const wouldHaveAttack = newActive.some(id => {
+    const wouldHaveAttack = newActiveIds.some(id => {
       const a = ALL_ACTIONS.find(act => act.id === id)
       return a && a.type === 'attack'
     })
@@ -1324,8 +1344,15 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Perform swap
-    this.player.swapActions(activeAction.id, inactiveAction.id)
+    // Perform swap (or fill an empty slot)
+    if (activeAction) {
+      this.player.swapActions(activeAction.id, inactiveAction.id)
+    } else {
+      this.player.loadout.activeActionIds.push(inactiveAction.id)
+      this.player.addToSelectedPool(inactiveAction.id)
+      this.player.saveLoadout()
+      this.player.refreshActions()
+    }
     this.player.useStamina(1)
     this.updateBars()
     this.switchDialogSelectedInactive = null
@@ -2108,7 +2135,9 @@ export default class BattleScene extends Phaser.Scene {
   getSkillButtonLabel(action) {
     const infusion = this.player.getAbilityInfusion(action.id)
     const badge = infusion ? (INFUSION_ICONS[infusion.value] || '✦') : ''
-    return `${badge}${badge ? ' ' : ''}${action.name} (${action.staminaCost})`
+    const charges = action.singleUse ? this.player.getAbilityCharges(action.id) : null
+    const chargesText = charges !== null ? ` x${charges}` : ''
+    return `${badge}${badge ? ' ' : ''}${action.name} (${action.staminaCost})${chargesText}`
   }
 
   updateSkillButtonLabels() {
@@ -2924,6 +2953,12 @@ export default class BattleScene extends Phaser.Scene {
     if (!result) {
       this.addCombatLog('Skill failed!')
       return
+    }
+
+    // Consume a charge for single-use abilities and refresh the action bar.
+    if (this.selectedSkill.singleUse) {
+      this.player.consumeAbilityCharge(this.selectedSkill.id)
+      this._refreshSkillButtons()
     }
 
     if (!target.isAlive()) {

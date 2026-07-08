@@ -8,6 +8,9 @@ defmodule MedoruWeb.Admin.GameLive do
   alias Medoru.Accounts.UserStats
   alias Medoru.Repo
   alias Medoru.Content
+  alias Medoru.Content.Kanji
+
+  import Ecto.Query
 
   embed_templates "game_live/*"
 
@@ -19,7 +22,7 @@ defmodule MedoruWeb.Admin.GameLive do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     user = socket.assigns.current_scope.current_user
 
     # Fetch user learning data for the game
@@ -72,6 +75,36 @@ defmodule MedoruWeb.Admin.GameLive do
         }
       end)
 
+    # Locale for localized kanji meanings.
+    locale = session["locale"] || "en"
+
+    # Full kanji collection for the pre-run Kanji Collection scene.
+    all_kanji =
+      Kanji
+      |> order_by([k], asc: k.frequency)
+      |> Repo.all()
+      |> Repo.preload(:kanji_readings)
+      |> Enum.map(fn k ->
+        meanings = Content.get_localized_kanji_meanings(k, locale) |> Enum.take(2)
+
+        readings =
+          k.kanji_readings
+          |> Enum.map(& &1.reading)
+          |> Enum.take(5)
+
+        %{
+          id: k.id,
+          character: k.character,
+          jlpt_level: k.jlpt_level,
+          school_level: k.school_level,
+          frequency: k.frequency,
+          meanings: meanings,
+          readings: readings,
+          stroke_count: k.stroke_count,
+          stroke_data: k.stroke_data
+        }
+      end)
+
     user_level =
       case Repo.get_by(UserStats, user_id: user.id) do
         %UserStats{level: level} -> level
@@ -111,7 +144,12 @@ defmodule MedoruWeb.Admin.GameLive do
       Map.new(shield_kanji_pool, fn char ->
         case Content.get_kanji_by_character(char) do
           %{stroke_data: data, meanings: meanings} when is_map(data) ->
-            {char, %{character: char, strokes: data["strokes"] || [], meanings: Enum.take(meanings || [], 2)}}
+            {char,
+             %{
+               character: char,
+               strokes: data["strokes"] || [],
+               meanings: Enum.take(meanings || [], 2)
+             }}
 
           %{stroke_data: data} when is_map(data) ->
             {char, %{character: char, strokes: data["strokes"] || [], meanings: []}}
@@ -121,11 +159,22 @@ defmodule MedoruWeb.Admin.GameLive do
         end
       end)
 
+    # All learned kanji characters (no limit) for the library learned indicator.
+    learned_kanji_ids = Learning.list_learned_kanji_ids(user.id)
+
+    learned_kanji_chars =
+      from(k in Kanji, where: k.id in ^learned_kanji_ids, select: k.character)
+      |> Repo.all()
+      |> MapSet.new()
+      |> MapSet.to_list()
+
     game_data = %{
       user_id: user.id,
       name: user.name || user.email,
       level: user_level,
       kanji_list: kanji_list,
+      all_kanji: all_kanji,
+      learned_kanji_chars: learned_kanji_chars,
       word_list: word_list,
       weapon_kanji_strokes: weapon_kanji_strokes,
       shield_kanji_strokes: shield_kanji_strokes,

@@ -16,7 +16,10 @@ defmodule Medoru.Repo.Migrations.CreateWordRelations do
     create index(:word_relations, [:word_id])
     create index(:word_relations, [:related_word_id])
     create index(:word_relations, [:word_id, :relation_type])
-    create unique_index(:word_relations, [:word_id, :related_word_id, :relation_type, :expression_text],
+
+    create unique_index(
+             :word_relations,
+             [:word_id, :related_word_id, :relation_type, :expression_text],
              name: :word_relations_unique_entry,
              where: "status = 'approved'"
            )

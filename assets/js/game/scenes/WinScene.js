@@ -178,7 +178,7 @@ export default class WinScene extends Phaser.Scene {
       return
     }
 
-    this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY, 'Choose an ability to learn:', {
+    this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY, 'Choose an ability reward:', {
       ...FONTS.default,
       fontSize: '16px',
       color: '#3498db',
@@ -255,10 +255,13 @@ export default class WinScene extends Phaser.Scene {
     }).setOrigin(0.5))
 
     const known = this.player.hasAbility(action.id)
-    container.add(this.add.text(0, 32, known ? 'Known' : 'Click to learn', {
+    const isSingleUse = action.singleUse
+    const rewardLabel = isSingleUse && known ? '+1 Use' : known ? 'Known' : 'Click to learn'
+    const rewardColor = isSingleUse && known ? '#f1c40f' : known ? '#e74c3c' : '#2ecc71'
+    container.add(this.add.text(0, 32, rewardLabel, {
       ...FONTS.default,
       fontSize: '10px',
-      color: known ? '#e74c3c' : '#2ecc71',
+      color: rewardColor,
     }).setOrigin(0.5))
 
     const hitArea = this.add.rectangle(0, 0, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
@@ -336,6 +339,14 @@ export default class WinScene extends Phaser.Scene {
 
   onAbilitySelected(action) {
     if (this.abilitySelected) return
+
+    // Single-use abilities can be collected again to gain extra charges.
+    if (action.singleUse) {
+      this.player.addAbilityCharges(action.id, 1)
+      this.showToast(`${action.name} +1 use`)
+      this.markAbilitySelected(`${action.name} +1 use`)
+      return
+    }
 
     if (this.player.hasAbility(action.id)) {
       this.showToast('You already know this ability')

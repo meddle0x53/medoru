@@ -5,6 +5,7 @@
  */
 
 import ABILITY_FAMILIES from './abilityFamilies.json'
+import { ALL_ACTIONS } from './actions.js'
 
 export const ABILITY_REWARDS = {
   warrior: {
@@ -73,10 +74,16 @@ export function getRewardPool(playerOrClass = 'warrior', weaponName, shieldName)
  * Guarantees variety by drawing at least one ability from each available
  * category (weapon/shield/class) before filling the rest from the full pool.
  */
+function isSingleUseAbility(id) {
+  const action = ALL_ACTIONS.find(a => a.id === id)
+  return action?.singleUse === true
+}
+
 export function pickRewardAbilities(pool, count, alreadyKnownIds = []) {
   const known = new Set(alreadyKnownIds)
   const picks = []
-  const isUnknown = (id) => !known.has(id)
+  // Single-use abilities can be rewarded again to add charges; multi-use abilities are only offered once.
+  const isEligible = (id) => !known.has(id) || isSingleUseAbility(id)
   const notPicked = (id) => !picks.includes(id)
 
   const categories = ['weapon', 'shield', 'class']
@@ -84,16 +91,16 @@ export function pickRewardAbilities(pool, count, alreadyKnownIds = []) {
   // Round 1: one pick from each category so rewards feel varied
   for (const cat of categories) {
     if (picks.length >= count) break
-    const options = shuffle(pool[cat].filter(isUnknown).filter(notPicked))
+    const options = shuffle(pool[cat].filter(isEligible).filter(notPicked))
     if (options.length > 0) {
       picks.push(options[0])
     }
   }
 
-  // Round 2: fill remaining slots from all remaining unknown abilities
+  // Round 2: fill remaining slots from all remaining eligible abilities
   const allOptions = shuffle(
     [...pool.weapon, ...pool.shield, ...pool.class]
-      .filter(isUnknown)
+      .filter(isEligible)
       .filter(notPicked)
   )
 

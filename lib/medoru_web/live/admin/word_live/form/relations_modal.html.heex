@@ -99,7 +99,9 @@
                         {relation.related_word.text}
                       </.link>
                       <span class="text-sm text-secondary">{relation.related_word.reading}</span>
-                      <span class="text-xs text-base-content/50">{relation.related_word.meaning}</span>
+                      <span class="text-xs text-base-content/50">
+                        {relation.related_word.meaning}
+                      </span>
                     <% else %>
                       <span class="font-medium">{relation.expression_text}</span>
                       <span class="text-sm text-secondary">{gettext("(not in database)")}</span>

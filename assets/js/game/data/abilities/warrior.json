@@ -5,7 +5,7 @@
     {
       "id": "forward_slash",
       "name": "Forward Slash",
-      "nameJa": "\u65ac\u6483",
+      "nameJa": "斬撃",
       "description": "A swift sword strike.",
       "type": "attack",
       "element": "physical",
@@ -15,11 +15,11 @@
       "basePower": 8,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
-      "kanji": "\u529b",
+      "kanji": "力",
       "rarity": "common",
       "moveHint": {
         "en": "Make a POWERFUL swing.",
-        "ja": "\u5f37\u529b\u306a\u4e00\u632f\u308a\u3092\u3002"
+        "ja": "強力な一振りを。"
       },
       "infusableWith": [
         "fire",
@@ -50,12 +50,13 @@
             "max": 1
           }
         }
-      ]
+      ],
+      "singleUse": false
     },
     {
       "id": "heavy_slash",
       "name": "Heavy Slash",
-      "nameJa": "\u91cd\u65ac",
+      "nameJa": "重斬",
       "description": "A powerful but slower strike.",
       "type": "attack",
       "element": "physical",
@@ -65,11 +66,11 @@
       "basePower": 16,
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
-      "kanji": "\u65ac",
+      "kanji": "斬",
       "rarity": "common",
       "moveHint": {
         "en": "Unleash a DEVASTATING blow!",
-        "ja": "\u58ca\u6ec5\u7684\u306a\u4e00\u6483\u3092\u653e\u3066\uff01"
+        "ja": "壊滅的な一撃を放て！"
       },
       "infusableWith": [
         "fire",
@@ -109,12 +110,13 @@
             "cap": 0.3
           }
         }
-      ]
+      ],
+      "singleUse": true
     },
     {
       "id": "setup_defence",
       "name": "Setup Defence",
-      "nameJa": "\u9632\u5fa1",
+      "nameJa": "防御",
       "description": "Raise your guard.",
       "type": "defence",
       "element": "physical",
@@ -124,11 +126,11 @@
       "baseBlock": 5,
       "scalingStat": "skill",
       "scalingMultiplier": 0.8,
-      "kanji": "\u76fe",
+      "kanji": "盾",
       "rarity": "common",
       "moveHint": {
         "en": "Raise your GUARD.",
-        "ja": "\u76fe\u3092\u69cb\u3048\u308d\u3002"
+        "ja": "盾を構えろ。"
       },
       "infusableWith": [
         "fire",
@@ -142,12 +144,13 @@
           "gainBlock"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": false
     },
     {
       "id": "shield_parry",
       "name": "Shield Parry",
-      "nameJa": "\u53d7\u3051\u6d41\u3057",
+      "nameJa": "受け流し",
       "description": "Chance to parry and counter-attack when hit.",
       "type": "parry",
       "element": "physical",
@@ -155,38 +158,40 @@
       "requiredEquipment": "Wooden Shield",
       "staminaCost": 2,
       "baseParryChance": 0.15,
-      "kanji": "\u53d7",
+      "kanji": "受",
       "rarity": "common",
       "lifecycle": {
         "onUse": [
           "setupParry"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": false
     },
     {
       "id": "use_item",
       "name": "Use Item",
-      "nameJa": "\u30a2\u30a4\u30c6\u30e0",
+      "nameJa": "アイテム",
       "description": "Use an item from your inventory.",
       "type": "item",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 1,
-      "kanji": "\u4f7f",
+      "kanji": "使",
       "rarity": "common",
       "lifecycle": {
         "onUse": [
           "useItem"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": false
     },
     {
       "id": "quick_stab",
       "name": "Quick Stab",
-      "nameJa": "\u7a81\u304d",
+      "nameJa": "突き",
       "description": "A fast thrust that costs little stamina.",
       "type": "attack",
       "element": "physical",
@@ -196,7 +201,7 @@
       "basePower": 5,
       "scalingStat": "skill",
       "scalingMultiplier": 0.9,
-      "kanji": "\u7a81",
+      "kanji": "突",
       "rarity": "common",
       "infusableWith": [
         "fire",
@@ -227,12 +232,13 @@
             "max": 1
           }
         }
-      ]
+      ],
+      "singleUse": true
     },
     {
       "id": "guard_break",
       "name": "Guard Break",
-      "nameJa": "\u7834\u9632",
+      "nameJa": "破防",
       "description": "An overhead smash that ignores enemy defense.",
       "type": "attack",
       "element": "physical",
@@ -242,7 +248,7 @@
       "basePower": 12,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
-      "kanji": "\u7834",
+      "kanji": "破",
       "rarity": "common",
       "config": {
         "ignoreDefense": true
@@ -262,19 +268,20 @@
           "dealDamage"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "focus",
       "name": "Focus",
-      "nameJa": "\u96c6\u4e2d",
+      "nameJa": "集中",
       "description": "Raise readiness to maximum.",
       "type": "buff",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u96c6",
+      "kanji": "集",
       "rarity": "common",
       "config": {
         "setReadiness": 1.0
@@ -284,38 +291,40 @@
           "setReadiness"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "taunt",
       "name": "Taunt",
-      "nameJa": "\u6311\u767a",
+      "nameJa": "挑発",
       "description": "Force the enemy to target you and lower their defense.",
       "type": "debuff",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u6311",
+      "kanji": "挑",
       "rarity": "common",
       "lifecycle": {
         "onUse": [
           "applyTaunt"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "dash",
       "name": "Dash",
-      "nameJa": "\u75be\u8d70",
+      "nameJa": "疾走",
       "description": "Dodge the next enemy attack.",
       "type": "defence",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 3,
-      "kanji": "\u75be",
+      "kanji": "疾",
       "rarity": "common",
       "config": {
         "dodgeNextAttack": true
@@ -325,12 +334,13 @@
           "gainDodge"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "two_hand_heavy",
       "name": "Two-Hand Heavy",
-      "nameJa": "\u4e21\u624b\u91cd\u6483",
+      "nameJa": "両手重撃",
       "description": "A powerful two-handed strike.",
       "type": "attack",
       "element": "physical",
@@ -340,7 +350,7 @@
       "basePower": 24,
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
-      "kanji": "\u4e21",
+      "kanji": "両",
       "rarity": "common",
       "infusableWith": [
         "fire",
@@ -357,19 +367,20 @@
           "dealDamage"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "sword_buff",
       "name": "Sharpen Blade",
-      "nameJa": "\u92ed\u6c17",
+      "nameJa": "鋭気",
       "description": "Draw 鋭 to sharpen your blade. Bonus damage scales with Skill, and the buff's duration is extended by Luck.",
       "type": "buff",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 3,
-      "kanji": "\u92ed",
+      "kanji": "鋭",
       "rarity": "common",
       "config": {
         "buffType": "sword_damage_bonus",
@@ -378,11 +389,26 @@
           "bonusTurns": 1,
           "scalesWith": "luck",
           "chanceTable": [
-            { "max": 10, "chance": 0.20 },
-            { "max": 25, "chance": 0.30 },
-            { "max": 40, "chance": 0.40 },
-            { "max": 80, "chance": 0.50 },
-            { "min": 80, "chance": 0.60 }
+            {
+              "max": 10,
+              "chance": 0.2
+            },
+            {
+              "max": 25,
+              "chance": 0.3
+            },
+            {
+              "max": 40,
+              "chance": 0.4
+            },
+            {
+              "max": 80,
+              "chance": 0.5
+            },
+            {
+              "min": 80,
+              "chance": 0.6
+            }
           ],
           "qualityModifiers": {
             "0": 1.0,
@@ -396,12 +422,13 @@
           "applyBuff"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "shield_bash",
       "name": "Shield Bash",
-      "nameJa": "\u76fe\u6253",
+      "nameJa": "盾打",
       "description": "Strike with your shield and raise a partial guard.",
       "type": "attack_defence",
       "element": "physical",
@@ -414,7 +441,7 @@
       "baseBlock": 3,
       "scalingBlockStat": "skill",
       "scalingBlockMultiplier": 0.4,
-      "kanji": "\u6253",
+      "kanji": "打",
       "rarity": "common",
       "infusableWith": [
         "fire",
@@ -432,19 +459,20 @@
           "gainBlock"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "berserk",
       "name": "Berserk",
-      "nameJa": "\u72c2\u6226",
+      "nameJa": "狂戦",
       "description": "Enter a rage; sword attacks heal you for part of the damage dealt.",
       "type": "buff",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 6,
-      "kanji": "\u72c2",
+      "kanji": "狂",
       "rarity": "common",
       "config": {
         "buffType": "berserk_lifesteal"
@@ -454,34 +482,35 @@
           "applyBuff"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_fire",
       "name": "Infuse Fire",
-      "nameJa": "\u706b\u7e8f\u3044",
+      "nameJa": "火纏い",
       "description": "Infuse an ability with fire.",
       "type": "infuse",
       "element": "fire",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u706b",
+      "kanji": "火",
       "rarity": "common",
       "infusionValue": "fire",
       "infusionKanjiPools": {
         "0": [
-          "\u706b",
-          "\u708e"
+          "火",
+          "炎"
         ],
         "10": [
-          "\u7114",
-          "\u706f"
+          "焔",
+          "灯"
         ],
         "20": [
-          "\u707c",
-          "\u7126",
-          "\u71c3"
+          "灼",
+          "焦",
+          "燃"
         ]
       },
       "lifecycle": {
@@ -489,34 +518,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_water",
       "name": "Infuse Water",
-      "nameJa": "\u6c34\u7e8f\u3044",
+      "nameJa": "水纏い",
       "description": "Infuse an ability with water.",
       "type": "infuse",
       "element": "water",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u6c34",
+      "kanji": "水",
       "rarity": "common",
       "infusionValue": "water",
       "infusionKanjiPools": {
         "0": [
-          "\u6c34",
-          "\u5ddd"
+          "水",
+          "川"
         ],
         "10": [
-          "\u6d77",
-          "\u6cb3"
+          "海",
+          "河"
         ],
         "20": [
-          "\u6e56",
-          "\u6cc9",
-          "\u6ce2"
+          "湖",
+          "泉",
+          "波"
         ]
       },
       "lifecycle": {
@@ -524,34 +554,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_wind",
       "name": "Infuse Wind",
-      "nameJa": "\u98a8\u7e8f\u3044",
+      "nameJa": "風纏い",
       "description": "Infuse an ability with wind.",
       "type": "infuse",
       "element": "wind",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u98a8",
+      "kanji": "風",
       "rarity": "common",
       "infusionValue": "wind",
       "infusionKanjiPools": {
         "0": [
-          "\u98a8",
-          "\u7a7a"
+          "風",
+          "空"
         ],
         "10": [
-          "\u6c17",
-          "\u96f2"
+          "気",
+          "雲"
         ],
         "20": [
-          "\u5d50",
-          "\u5439",
-          "\u66b4"
+          "嵐",
+          "吹",
+          "暴"
         ]
       },
       "lifecycle": {
@@ -559,34 +590,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_earth",
       "name": "Infuse Earth",
-      "nameJa": "\u571f\u7e8f\u3044",
+      "nameJa": "土纏い",
       "description": "Infuse an ability with earth.",
       "type": "infuse",
       "element": "earth",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u571f",
+      "kanji": "土",
       "rarity": "common",
       "infusionValue": "earth",
       "infusionKanjiPools": {
         "0": [
-          "\u571f",
-          "\u5730"
+          "土",
+          "地"
         ],
         "10": [
-          "\u5c71",
-          "\u5ca9"
+          "山",
+          "岩"
         ],
         "20": [
-          "\u77f3",
-          "\u7802",
-          "\u5d16"
+          "石",
+          "砂",
+          "崖"
         ]
       },
       "lifecycle": {
@@ -594,34 +626,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_void",
       "name": "Infuse Void",
-      "nameJa": "\u865a\u7e8f\u3044",
+      "nameJa": "虚纏い",
       "description": "Infuse an ability with void.",
       "type": "infuse",
       "element": "void",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u865a",
+      "kanji": "虚",
       "rarity": "common",
       "infusionValue": "void",
       "infusionKanjiPools": {
         "0": [
-          "\u865a",
-          "\u7121"
+          "虚",
+          "無"
         ],
         "10": [
-          "\u7a7a",
-          "\u95c7"
+          "空",
+          "闇"
         ],
         "20": [
-          "\u51a5",
-          "\u6697",
-          "\u6ec5"
+          "冥",
+          "暗",
+          "滅"
         ]
       },
       "lifecycle": {
@@ -629,34 +662,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_frost",
       "name": "Infuse Ice",
-      "nameJa": "\u6c37\u7e8f\u3044",
+      "nameJa": "氷纏い",
       "description": "Infuse an ability with ice ( potent frost ).",
       "type": "infuse",
       "element": "water",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u6c37",
+      "kanji": "氷",
       "rarity": "common",
       "infusionValue": "frost",
       "infusionKanjiPools": {
         "0": [
-          "\u6c37",
-          "\u51b7"
+          "氷",
+          "冷"
         ],
         "10": [
-          "\u96ea",
-          "\u51ac"
+          "雪",
+          "冬"
         ],
         "20": [
-          "\u6dbc",
-          "\u971c",
-          "\u51cd"
+          "涼",
+          "霜",
+          "凍"
         ]
       },
       "lifecycle": {
@@ -664,34 +698,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_bleed",
       "name": "Infuse Bleed",
-      "nameJa": "\u8840\u7e8f\u3044",
+      "nameJa": "血纏い",
       "description": "Infuse an ability with bleed.",
       "type": "infuse",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u8840",
+      "kanji": "血",
       "rarity": "common",
       "infusionValue": "bleed",
       "infusionKanjiPools": {
         "0": [
-          "\u8840",
-          "\u5200"
+          "血",
+          "刀"
         ],
         "10": [
-          "\u5203",
-          "\u50b7"
+          "刃",
+          "傷"
         ],
         "20": [
-          "\u5263",
-          "\u77e2",
-          "\u69cd"
+          "剣",
+          "矢",
+          "槍"
         ]
       },
       "lifecycle": {
@@ -699,34 +734,35 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "infuse_poison",
       "name": "Infuse Poison",
-      "nameJa": "\u6bd2\u7e8f\u3044",
+      "nameJa": "毒纏い",
       "description": "Infuse an ability with poison.",
       "type": "infuse",
       "element": "poison",
       "equipmentType": null,
       "requiredEquipment": null,
       "staminaCost": 2,
-      "kanji": "\u6bd2",
+      "kanji": "毒",
       "rarity": "common",
       "infusionValue": "poison",
       "infusionKanjiPools": {
         "0": [
-          "\u6bd2",
-          "\u866b"
+          "毒",
+          "虫"
         ],
         "10": [
-          "\u85ac",
-          "\u86c7"
+          "薬",
+          "蛇"
         ],
         "20": [
-          "\u83cc",
-          "\u75ab",
-          "\u85fb"
+          "菌",
+          "疫",
+          "藻"
         ]
       },
       "lifecycle": {
@@ -734,12 +770,13 @@
           "infuseAbility"
         ]
       },
-      "effects": []
+      "effects": [],
+      "singleUse": true
     },
     {
       "id": "gutting_slash",
       "name": "Gutting Slash",
-      "nameJa": "\u65ac\u308a\u88c2\u304d",
+      "nameJa": "斬り裂き",
       "description": "A bleeding cut that opens deep wounds.",
       "type": "attack",
       "element": "physical",
@@ -750,7 +787,7 @@
       "basePower": 14,
       "scalingStat": "skill",
       "scalingMultiplier": 1.0,
-      "kanji": "\u88c2",
+      "kanji": "裂",
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -781,12 +818,13 @@
             "max": 3
           }
         }
-      ]
+      ],
+      "singleUse": true
     },
     {
       "id": "seismic_slam",
       "name": "Seismic Slam",
-      "nameJa": "\u5730\u788e\u6253",
+      "nameJa": "地碎打",
       "description": "A crushing overhead strike that shatters armour.",
       "type": "attack",
       "element": "physical",
@@ -797,7 +835,7 @@
       "basePower": 20,
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
-      "kanji": "\u7815",
+      "kanji": "砕",
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -824,12 +862,13 @@
             "cap": 0.45
           }
         }
-      ]
+      ],
+      "singleUse": true
     },
     {
       "id": "flame_arc",
       "name": "Flame Arc",
-      "nameJa": "\u708e\u5f27",
+      "nameJa": "炎弧",
       "description": "A sweeping blade of fire that scorches the enemy.",
       "type": "attack",
       "element": "fire",
@@ -840,7 +879,7 @@
       "basePower": 12,
       "scalingStat": "mana",
       "scalingMultiplier": 1.1,
-      "kanji": "\u708e",
+      "kanji": "炎",
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -874,12 +913,13 @@
             "element": "fire"
           }
         }
-      ]
+      ],
+      "singleUse": true
     },
     {
       "id": "gale_strike",
       "name": "Gale Strike",
-      "nameJa": "\u98a8\u65ac\u308a",
+      "nameJa": "風斬り",
       "description": "A swift cutting wind that leaves the enemy reeling.",
       "type": "attack",
       "element": "wind",
@@ -890,7 +930,7 @@
       "basePower": 12,
       "scalingStat": "skill",
       "scalingMultiplier": 1.1,
-      "kanji": "\u98a8",
+      "kanji": "風",
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -921,7 +961,8 @@
             "max": 3
           }
         }
-      ]
+      ],
+      "singleUse": true
     }
   ]
 }

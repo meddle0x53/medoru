@@ -13,6 +13,7 @@ export default class KanjiDrawingSystem {
       offsetXPercent: 0.05,
       offsetYPercent: 0.05,
       offsetYAdjust: -20,
+      timeLimit: 7000,
       ...options,
     }
 
@@ -105,7 +106,7 @@ export default class KanjiDrawingSystem {
     }
 
     this.timer = null
-    this.timeLimit = 7000
+    this.timeLimit = this.options.timeLimit
     this.timeRemaining = this.timeLimit
 
     this._bindEvents()

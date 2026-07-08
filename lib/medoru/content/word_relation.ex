@@ -62,7 +62,11 @@ defmodule Medoru.Content.WordRelation do
         add_error(changeset, :related_word_id, "is required for synonyms and antonyms")
 
       relation_type == :expression and is_nil(related_word_id) and is_nil(expression_text) ->
-        add_error(changeset, :expression_text, "is required when expression is not linked to a word")
+        add_error(
+          changeset,
+          :expression_text,
+          "is required when expression is not linked to a word"
+        )
 
       true ->
         changeset
