@@ -243,6 +243,8 @@ export default class Player extends Character {
       ownedSocketCharmIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
+      focusKanji: null,
+      focusKanjiData: null,
     }
 
     // Load persisted equipment or fall back to defaults.
@@ -614,6 +616,12 @@ export default class Player extends Character {
         }
         if (!loadout.mapState || typeof loadout.mapState !== 'object') {
           loadout.mapState = null
+        }
+        if (loadout.focusKanji === undefined) {
+          loadout.focusKanji = null
+        }
+        if (loadout.focusKanjiData === undefined) {
+          loadout.focusKanjiData = null
         }
         // Migration: persisted weapon/shield support.
         if (!loadout.weapon || typeof loadout.weapon !== 'object') {

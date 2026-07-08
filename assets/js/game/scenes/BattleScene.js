@@ -80,6 +80,7 @@ export default class BattleScene extends Phaser.Scene {
       320,
       { offsetXPercent: -0.038 }
     )
+    this.kanjiDrawing.setFocusKanjiData(this.player.loadout.focusKanjiData)
 
     this.turnManager.onTurnChange = (turn) => this.onTurnChange(turn)
     this.turnManager.onBattleEnd = (winner) => this.onBattleEnd(winner)
@@ -246,6 +247,22 @@ export default class BattleScene extends Phaser.Scene {
 
     // Ground line (subtle, for visual reference)
     this.add.line(0, 0, 0, 580, GAME_CONFIG.width, 580, 0x0f3460, 0.5).setOrigin(0, 0)
+  }
+
+  startKanjiDrawingChallenge(strokeData, hint, callbacks, kanjiData = null) {
+    const wrappedCallbacks = { ...callbacks }
+    wrappedCallbacks.onStart = (actualKanjiData) => {
+      if (callbacks.onStart) callbacks.onStart(actualKanjiData)
+      if (actualKanjiData) {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const full = allKanji.find(k => k.character === actualKanjiData.character) || actualKanjiData
+        const meanings = (full.meanings || []).slice(0, 2).join(', ')
+        const on = (full.on_readings || []).slice(0, 2).join(', ')
+        const kun = (full.kun_readings || []).slice(0, 2).join(', ')
+        this.addCombatLog(`Draw the kanji for ${meanings || '?'}, read ON: ${on || '-'}/KUN: ${kun || '-'}`)
+      }
+    }
+    this.kanjiDrawing.start(strokeData, hint, wrappedCallbacks, kanjiData)
   }
 
   createCharacters() {
@@ -1461,7 +1478,7 @@ export default class BattleScene extends Phaser.Scene {
     if (on) hintParts.push(on)
     const hintText = hintParts.join(' | ')
     const hint = `Draw the kanji: ${hintText}`
-    this.kanjiDrawing.start(kanji.stroke_data, hint, {
+    this.startKanjiDrawingChallenge(kanji.stroke_data, hint, {
       onComplete: (result) => {
         this.challengeActive = false
         this.setSkillButtonsEnabled(true)
@@ -1476,7 +1493,7 @@ export default class BattleScene extends Phaser.Scene {
           COLORS.danger
         )
       },
-    })
+    }, kanji)
   }
 
   executeItem(item, kanjiResult) {
@@ -2282,7 +2299,7 @@ export default class BattleScene extends Phaser.Scene {
     this.endTurnBtn.setVisible(false)
     this.switchActionBtn.setVisible(false)
 
-    this.kanjiDrawing.start(pick.strokeData, hint, {
+    this.startKanjiDrawingChallenge(pick.strokeData, hint, {
       onComplete: (result) => {
         this.challengeActive = false
         this.setSkillButtonsEnabled(true)
@@ -2299,7 +2316,7 @@ export default class BattleScene extends Phaser.Scene {
           COLORS.danger
         )
       },
-    })
+    }, pick.data)
   }
 
   finishInfusionAttempt(pending, kanjiResult) {
@@ -2466,7 +2483,7 @@ export default class BattleScene extends Phaser.Scene {
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
 
-      this.kanjiDrawing.start(strokeData, `Set up parry! Draw ${kanji}:`, {
+      this.startKanjiDrawingChallenge(strokeData, `Set up parry! Draw ${kanji}:`, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2501,7 +2518,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData || { character: kanji, meanings: [] })
       return
     }
 
@@ -2548,7 +2565,8 @@ export default class BattleScene extends Phaser.Scene {
     // Forward Slash uses kanji drawing instead of typing
     if (skill.id === 'forward_slash') {
       const userData = getWindowGameData()
-      const strokeData = userData?.weapon_kanji_strokes || { strokes: [] }
+      const kanjiData = userData?.weapon_kanji_strokes || { strokes: [] }
+      const strokeData = kanjiData
 
       if (!strokeData.strokes || strokeData.strokes.length === 0) {
         // Fallback: no stroke data, just execute
@@ -2562,7 +2580,7 @@ export default class BattleScene extends Phaser.Scene {
       const hint = userLevel >= 10
         ? this.player.weapon.moveHints.forward_slash.ja
         : this.player.weapon.moveHints.forward_slash.en
-      this.kanjiDrawing.start(strokeData, hint, {
+      this.startKanjiDrawingChallenge(strokeData, hint, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2595,7 +2613,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData)
       return
     }
 
@@ -2619,7 +2637,7 @@ export default class BattleScene extends Phaser.Scene {
       }
 
       const hint = skill.moveHint?.en || 'Unleash a DEVASTATING blow!'
-      this.kanjiDrawing.start(strokeData, hint, {
+      this.startKanjiDrawingChallenge(strokeData, hint, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2650,7 +2668,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData || { character: '斬', meanings: [] })
       return
     }
 
@@ -2686,12 +2704,9 @@ export default class BattleScene extends Phaser.Scene {
 
       const kanjiEntry = this.player.kanjiList.find(k => k.character === selectedKanji)
       const meanings = kanjiEntry?.meanings || userData?.shield_kanji_pool_strokes?.[selectedKanji]?.meanings || []
-      const meaningText = meanings.slice(0, 2).join(', ')
-      if (meaningText) {
-        this.addCombatLog(`Draw the kanji meaning "${meaningText}"`)
-      }
+      const kanjiData = { character: selectedKanji, meanings }
 
-      this.kanjiDrawing.start(strokeData, hint, {
+      this.startKanjiDrawingChallenge(strokeData, hint, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2721,7 +2736,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData)
       return
     }
 
@@ -2744,7 +2759,7 @@ export default class BattleScene extends Phaser.Scene {
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
 
-      this.kanjiDrawing.start(strokeData, `Focus! Draw ${kanji}:`, {
+      this.startKanjiDrawingChallenge(strokeData, `Focus! Draw ${kanji}:`, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2766,7 +2781,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData || { character: kanji, meanings: [] })
       return
     }
 
@@ -2790,7 +2805,7 @@ export default class BattleScene extends Phaser.Scene {
         return
       }
 
-      this.kanjiDrawing.start(strokeData, `Sharpen! Draw ${kanji}:`, {
+      this.startKanjiDrawingChallenge(strokeData, `Sharpen! Draw ${kanji}:`, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
@@ -2820,7 +2835,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData || { character: kanji, meanings: [] })
       return
     }
 
@@ -3420,14 +3435,18 @@ export default class BattleScene extends Phaser.Scene {
     // Get stroke data for the counter kanji
     const kanji = attackAction.kanji
     let strokeData = null
+    let kanjiData = { character: kanji, meanings: [] }
     if (kanji === '力') {
-      strokeData = getWindowGameData()?.weapon_kanji_strokes || { strokes: [] }
+      kanjiData = getWindowGameData()?.weapon_kanji_strokes || kanjiData
+      strokeData = kanjiData
     } else if (kanji === '斬') {
-      const kanjiData = this.player.kanjiList.find(k => k.character === '斬')
-      if (kanjiData?.stroke_data?.strokes?.length > 0) {
-        strokeData = kanjiData.stroke_data
+      const found = this.player.kanjiList.find(k => k.character === '斬')
+      if (found?.stroke_data?.strokes?.length > 0) {
+        kanjiData = found
+        strokeData = found.stroke_data
       } else {
-        strokeData = getWindowGameData()?.weapon_kanji_strokes || { strokes: [] }
+        kanjiData = getWindowGameData()?.weapon_kanji_strokes || kanjiData
+        strokeData = kanjiData
       }
     }
 
@@ -3438,7 +3457,7 @@ export default class BattleScene extends Phaser.Scene {
 
     return new Promise((resolve) => {
       const allowedWrong = Math.max(Math.floor((strokeData.strokes?.length || 2) / 2), 3)
-      this.kanjiDrawing.start(strokeData, `Counter! Draw ${kanji}:`, {
+      this.startKanjiDrawingChallenge(strokeData, `Counter! Draw ${kanji}:`, {
         onComplete: (result) => {
           this.executeCounterAttack(attackAction, result)
           resolve()
@@ -3451,7 +3470,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      })
+      }, kanjiData)
     })
   }
 
@@ -3733,14 +3752,23 @@ export default class BattleScene extends Phaser.Scene {
           display.sprite.setTexture(this.getEnemySpriteKey(display.enemy, 'death'))
         }
       }
+      // Determine if this win completes the entire run (final boss).
+      const isRunVictory =
+        this.tile?.type === TILE_TYPES.BOSS &&
+        getMapDefinition(this.mapIndex).isFinal !== false
+
       // Send result to server before transitioning
-      sendRunResult({
+      const runResultPayload = {
         winner,
         playerHp: this.player.hp,
         enemyHp: representativeEnemy.hp,
         turnCount: this.turnManager.turnCount,
         timestamp: new Date().toISOString(),
-      })
+      }
+      if (isRunVictory && this.player.loadout.focusKanji) {
+        runResultPayload.focus_kanji = this.player.loadout.focusKanji
+      }
+      sendRunResult(runResultPayload)
 
       if (this.tile?.type === TILE_TYPES.BOSS) {
         const mapDef = getMapDefinition(this.mapIndex)

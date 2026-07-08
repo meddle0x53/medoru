@@ -478,6 +478,42 @@ defmodule Medoru.Social do
     |> Repo.all()
   end
 
+  @doc """
+  Lists users who are mutual followers with the given user.
+  (They follow the user AND the user follows them back.)
+  """
+  def list_mutual_follows(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 100)
+
+    following_ids =
+      Follow
+      |> where([f], f.follower_id == ^user_id)
+      |> select([f], f.following_id)
+
+    follower_ids =
+      Follow
+      |> where([f], f.following_id == ^user_id)
+      |> select([f], f.follower_id)
+
+    User
+    |> where([u], u.id in subquery(following_ids))
+    |> where([u], u.id in subquery(follower_ids))
+    |> where([u], u.is_deleted == false)
+    |> preload([:profile, :stats])
+    |> order_by([u], asc: u.inserted_at)
+    |> limit(^per_page)
+    |> offset((^page - 1) * ^per_page)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns true if two users are mutual followers.
+  """
+  def mutual_followers?(user_a_id, user_b_id) do
+    following?(user_a_id, user_b_id) and following?(user_b_id, user_a_id)
+  end
+
   # ============================================================================
   # Blocking
   # ============================================================================

@@ -221,6 +221,25 @@
                           )}
                         </.link>
                       </div>
+                    <% notification.type == "word_set_share" -> %>
+                      <div class="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          phx-click="accept_word_set_share"
+                          phx-value-id={notification.id}
+                          class="btn btn-primary btn-xs"
+                        >
+                          <.icon name="hero-check" class="w-3 h-3 mr-1" /> {gettext("Accept")}
+                        </button>
+                        <button
+                          type="button"
+                          phx-click="cancel_word_set_share"
+                          phx-value-id={notification.id}
+                          class="btn btn-ghost btn-xs"
+                        >
+                          {gettext("Cancel")}
+                        </button>
+                      </div>
                     <% true -> %>
                   <% end %>
                 </div>

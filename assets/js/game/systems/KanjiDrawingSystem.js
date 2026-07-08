@@ -12,7 +12,7 @@ export default class KanjiDrawingSystem {
     this.options = {
       offsetXPercent: 0.05,
       offsetYPercent: 0.05,
-      offsetYAdjust: -20,
+      offsetYAdjust: -40,
       timeLimit: 7000,
       ...options,
     }
@@ -105,6 +105,7 @@ export default class KanjiDrawingSystem {
       onCancel: null,
     }
 
+    this.focusKanjiData = null
     this.timer = null
     this.timeLimit = this.options.timeLimit
     this.timeRemaining = this.timeLimit
@@ -114,7 +115,22 @@ export default class KanjiDrawingSystem {
 
   // ---------- Public API ----------
 
-  start(strokeData, hint = '', callbacks = {}) {
+  start(strokeData, hint = '', callbacks = {}, kanjiData = null) {
+    // 20% chance to override the challenge with the run's focus kanji.
+    let actualKanjiData = kanjiData
+    if (this.focusKanjiData && Math.random() < 0.2) {
+      const focus = this.focusKanjiData
+      if (focus.stroke_data && focus.stroke_data.strokes && focus.stroke_data.strokes.length > 0) {
+        strokeData = focus.stroke_data
+        hint = `Focus lesson! Draw ${focus.character}:`
+        actualKanjiData = focus
+      }
+    }
+
+    if (callbacks.onStart) {
+      callbacks.onStart(actualKanjiData)
+    }
+
     this.callbacks = { ...this.callbacks, ...callbacks }
     this._resetState()
     this._loadStrokeData(strokeData)
@@ -136,6 +152,10 @@ export default class KanjiDrawingSystem {
     this.infoText.style.display = 'none'
     this.canvas.style.display = 'none'
     this._stopTimer()
+  }
+
+  setFocusKanjiData(data) {
+    this.focusKanjiData = data || null
   }
 
   destroy() {
@@ -375,13 +395,15 @@ export default class KanjiDrawingSystem {
     const s = this.size
     const pct = Math.max(0, this.timeRemaining / this.timeLimit)
 
+    const bottomOffset = 10
+
     // Timer bar background
     ctx.fillStyle = '#2c3e50'
-    ctx.fillRect(10, s - 20, s - 20, 10)
+    ctx.fillRect(5, s - bottomOffset, s - bottomOffset, 5)
 
     // Timer bar fill
     ctx.fillStyle = pct > 0.5 ? '#2ecc71' : pct > 0.25 ? '#f39c12' : '#e74c3c'
-    ctx.fillRect(10, s - 20, (s - 20) * pct, 10)
+    ctx.fillRect(5, s - bottomOffset, (s - bottomOffset) * pct, 5)
 
     // Timer text
     ctx.fillStyle = '#ecf0f1'

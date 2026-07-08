@@ -87,10 +87,19 @@ defmodule MedoruWeb.Admin.GameLive do
       |> Enum.map(fn k ->
         meanings = Content.get_localized_kanji_meanings(k, locale) |> Enum.take(2)
 
-        readings =
+        on_readings =
           k.kanji_readings
+          |> Enum.filter(&(&1.reading_type == :on))
           |> Enum.map(& &1.reading)
-          |> Enum.take(5)
+          |> Enum.take(3)
+
+        kun_readings =
+          k.kanji_readings
+          |> Enum.filter(&(&1.reading_type == :kun))
+          |> Enum.map(& &1.reading)
+          |> Enum.take(3)
+
+        readings = (on_readings ++ kun_readings) |> Enum.take(5)
 
         %{
           id: k.id,
@@ -99,6 +108,8 @@ defmodule MedoruWeb.Admin.GameLive do
           school_level: k.school_level,
           frequency: k.frequency,
           meanings: meanings,
+          on_readings: on_readings,
+          kun_readings: kun_readings,
           readings: readings,
           stroke_count: k.stroke_count,
           stroke_data: k.stroke_data

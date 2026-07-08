@@ -8,6 +8,7 @@ defmodule MedoruWeb.WordSetLive.Show do
 
   alias Medoru.Learning.WordSets
   alias Medoru.Content
+  alias Medoru.Social
 
   @per_page 30
 
@@ -54,7 +55,10 @@ defmodule MedoruWeb.WordSetLive.Show do
      |> assign(:copy_search_term, "")
      |> assign(:copy_search_results, [])
      |> assign(:copy_selected_target, nil)
-     |> assign(:copy_error, nil)}
+     |> assign(:copy_error, nil)
+     |> assign(:share_modal_open, false)
+     |> assign(:share_mutual_follows, [])
+     |> assign(:share_loading, false)}
   end
 
   @impl true
@@ -247,6 +251,82 @@ defmodule MedoruWeb.WordSetLive.Show do
     end
   end
 
+  # Share Word Set event handlers
+  @impl true
+  def handle_event("open_share_modal", _, socket) do
+    user = socket.assigns.current_scope.current_user
+    mutual_follows = Social.list_mutual_follows(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:share_modal_open, true)
+     |> assign(:share_mutual_follows, mutual_follows)
+     |> assign(:share_loading, false)}
+  end
+
+  @impl true
+  def handle_event("close_share_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:share_modal_open, false)
+     |> assign(:share_mutual_follows, [])
+     |> assign(:share_loading, false)}
+  end
+
+  @impl true
+  def handle_event("share_word_set", %{"recipient_id" => recipient_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+    word_set = socket.assigns.word_set
+
+    socket = assign(socket, :share_loading, true)
+
+    case WordSets.share_word_set(user.id, word_set.id, recipient_id) do
+      {:ok, _share} ->
+        {:noreply,
+         socket
+         |> assign(:share_modal_open, false)
+         |> assign(:share_mutual_follows, [])
+         |> assign(:share_loading, false)
+         |> put_flash(:info, gettext("Word set shared successfully."))}
+
+      {:error, :not_owner} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You can only share your own word sets."))}
+
+      {:error, :not_mutual} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You can only share with mutual followers."))}
+
+      {:error, :already_shared} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You already have a pending share with this user."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(
+           :error,
+           gettext("Failed to share word set: %{errors}",
+             errors: format_changeset_errors(changeset)
+           )
+         )}
+    end
+  end
+
+  defp format_changeset_errors(changeset) do
+    changeset.errors
+    |> Enum.map_join(", ", fn {field, {msg, _opts}} ->
+      "#{field}: #{msg}"
+    end)
+  end
+
   # Helper for template
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
@@ -365,6 +445,14 @@ defmodule MedoruWeb.WordSetLive.Show do
                 >
                   <.icon name="hero-document-duplicate" class="w-4 h-4 inline mr-1" />
                   {gettext("Copy to")}
+                </button>
+                <button
+                  type="button"
+                  phx-click="open_share_modal"
+                  class="px-4 py-2 bg-accent hover:bg-accent/90 text-accent-content rounded-lg font-medium transition-colors"
+                >
+                  <.icon name="hero-share" class="w-4 h-4 inline mr-1" />
+                  {gettext("Share")}
                 </button>
               </div>
             <% end %>
@@ -661,6 +749,77 @@ defmodule MedoruWeb.WordSetLive.Show do
                   ]}
                 >
                   {gettext("Copy")}
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Share Word Set Modal --%>
+        <%= if @share_modal_open do %>
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 class="text-xl font-bold text-base-content mb-2">
+                {gettext("Share Word Set")}
+              </h3>
+              <p class="text-secondary mb-4">
+                {gettext("Share '%{name}' with a mutual follower", name: @word_set.name)}
+              </p>
+
+              <%= if @share_mutual_follows == [] do %>
+                <div class="text-center py-8">
+                  <.icon name="hero-users" class="w-12 h-12 mx-auto text-secondary/30 mb-3" />
+                  <p class="text-secondary">
+                    {gettext("You don't have any mutual followers yet.")}
+                  </p>
+                  <p class="text-sm text-secondary/70 mt-1">
+                    {gettext(
+                      "You can only share word sets with users who follow you and whom you follow back."
+                    )}
+                  </p>
+                </div>
+              <% else %>
+                <div class="space-y-2 max-h-80 overflow-y-auto mb-4">
+                  <%= for user <- @share_mutual_follows do %>
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-base-200 hover:border-primary hover:bg-primary/5 transition-colors">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                          <span class="text-lg font-medium text-base-content">
+                            {String.first(
+                              (user.profile && user.profile.display_name) || user.name || "?"
+                            )}
+                          </span>
+                        </div>
+                        <div class="min-w-0">
+                          <div class="font-medium text-base-content truncate">
+                            {(user.profile && user.profile.display_name) || user.name}
+                          </div>
+                          <%= if user.profile && user.profile.display_name && user.profile.display_name != user.name do %>
+                            <div class="text-xs text-secondary truncate">{user.name}</div>
+                          <% end %>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        phx-click="share_word_set"
+                        phx-value-recipient_id={user.id}
+                        disabled={@share_loading}
+                        class="btn btn-primary btn-sm"
+                      >
+                        {gettext("Send")}
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  phx-click="close_share_modal"
+                  class="btn btn-ghost"
+                >
+                  {gettext("Close")}
                 </button>
               </div>
             </div>

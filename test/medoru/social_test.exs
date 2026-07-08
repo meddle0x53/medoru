@@ -266,4 +266,39 @@ defmodule Medoru.SocialTest do
       assert Social.can_message?(user_a.id, user_b.id) == true
     end
   end
+
+  describe "mutual follows" do
+    test "list_mutual_follows/1 returns only users who follow each other" do
+      user = user_fixture()
+      mutual = user_fixture()
+      only_follows = user_fixture()
+      only_follower = user_fixture()
+
+      Social.follow_user(user.id, mutual.id)
+      Social.follow_user(mutual.id, user.id)
+
+      Social.follow_user(user.id, only_follows.id)
+      Social.follow_user(only_follower.id, user.id)
+
+      mutuals = Social.list_mutual_follows(user.id)
+      mutual_ids = Enum.map(mutuals, & &1.id)
+
+      assert mutual.id in mutual_ids
+      assert only_follows.id not in mutual_ids
+      assert only_follower.id not in mutual_ids
+    end
+
+    test "mutual_followers?/2 returns true only for mutual follows" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      user_c = user_fixture()
+
+      Social.follow_user(user_a.id, user_b.id)
+      Social.follow_user(user_b.id, user_a.id)
+      Social.follow_user(user_a.id, user_c.id)
+
+      assert Social.mutual_followers?(user_a.id, user_b.id)
+      refute Social.mutual_followers?(user_a.id, user_c.id)
+    end
+  end
 end

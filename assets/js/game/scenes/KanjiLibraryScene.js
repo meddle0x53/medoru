@@ -18,6 +18,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     const userData = window.gameData || {}
     this.allKanji = userData.all_kanji || []
     this.learnedChars = new Set(userData.learned_kanji_chars || [])
+    this.selectedChar = null
     this.practiceOpen = false
   }
 
@@ -175,6 +176,14 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           transform: scale(1.05);
           border-color: #2ecc71;
         }
+        .kco-card.selected {
+          border-color: #f39c12;
+          box-shadow: inset 0 0 0 1px #f39c12;
+          cursor: pointer;
+        }
+        .kco-card.selectable {
+          cursor: pointer;
+        }
         .kco-char {
           font-size: 26px;
           color: #ffffff;
@@ -183,6 +192,18 @@ export default class KanjiLibraryScene extends Phaser.Scene {
         .kco-meaning {
           font-size: 8px;
           color: #7f8c8d;
+          text-align: center;
+          padding: 0 1px;
+          margin-top: 1px;
+          line-height: 1.1;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .kco-readings {
+          font-size: 7px;
+          color: #95a5a6;
           text-align: center;
           padding: 0 1px;
           margin-top: 1px;
@@ -289,6 +310,11 @@ export default class KanjiLibraryScene extends Phaser.Scene {
         this.practiceHeader.parentNode.removeChild(this.practiceHeader)
       }
       this.practiceHeader = null
+
+      const focusKanji = this.computeFocusKanji()
+      this.player.loadout.focusKanji = focusKanji ? focusKanji.character : null
+      this.player.loadout.focusKanjiData = focusKanji
+      this.player.saveLoadout()
 
       if (this.overlayElement && this.overlayElement.parentNode) {
         this.overlayElement.parentNode.removeChild(this.overlayElement)
@@ -412,6 +438,21 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     if (meaningEl) meaningEl.textContent = text
   }
 
+  computeFocusKanji() {
+    // If a non-learned kanji is selected, use it as the focus lesson.
+    if (this.selectedChar && !this.learnedChars.has(this.selectedChar)) {
+      return this.allKanji.find(k => k.character === this.selectedChar) || null
+    }
+
+    // Otherwise auto-select the first non-learned kanji by JLPT level (N5 → N1).
+    for (const level of [5, 4, 3, 2, 1]) {
+      const found = this.allKanji.find(k => (k.jlpt_level || 0) === level && !this.learnedChars.has(k.character))
+      if (found) return found
+    }
+
+    return null
+  }
+
   showPracticeStatus(text) {
     this.statsElement.textContent = text
     setTimeout(() => this.render(), 2000)
@@ -493,14 +534,39 @@ export default class KanjiLibraryScene extends Phaser.Scene {
       meaning.textContent = (k.meanings || [])[0] || ''
       card.appendChild(meaning)
 
+      const on = (k.on_readings || [])[0]
+      const kun = (k.kun_readings || [])[0]
+      if (on || kun) {
+        const readings = document.createElement('div')
+        readings.className = 'kco-readings'
+        const parts = []
+        if (on) parts.push(`On: ${on}`)
+        if (kun) parts.push(`Kun: ${kun}`)
+        readings.textContent = parts.join(' ')
+        card.appendChild(readings)
+      }
+
       if (learned) {
         const badge = document.createElement('div')
         badge.className = 'kco-badge'
         card.appendChild(badge)
+      }
 
-        if (hasStrokes) {
-          card.addEventListener('click', () => this.openPracticeDialog(k))
-        }
+      if (hasStrokes) {
+        const selected = this.selectedChar === k.character
+        if (selected) card.classList.add('selected')
+        if (!learned) card.classList.add('selectable')
+
+        card.addEventListener('click', () => {
+          if (learned) {
+            this.openPracticeDialog(k)
+          } else if (this.selectedChar === k.character) {
+            this.openPracticeDialog(k)
+          } else {
+            this.selectedChar = k.character
+            this.render()
+          }
+        })
       }
 
       fragment.appendChild(card)

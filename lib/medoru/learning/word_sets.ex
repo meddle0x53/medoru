@@ -7,8 +7,11 @@ defmodule Medoru.Learning.WordSets do
 
   import Ecto.Query
   alias Medoru.Repo
-  alias Medoru.Learning.{WordSet, WordSetWord}
+  alias Medoru.Accounts
+  alias Medoru.Learning.{WordSet, WordSetShare, WordSetWord}
   alias Medoru.Content.Word
+  alias Medoru.Notifications
+  alias Medoru.Social
   alias Medoru.Tests
 
   @max_words WordSet.max_words()
@@ -414,6 +417,179 @@ defmodule Medoru.Learning.WordSets do
       exact_matches ++ partial_matches
     else
       exact_matches
+    end
+  end
+
+  @doc """
+  Gets a single word set share.
+  """
+  def get_word_set_share(id) do
+    Repo.get(WordSetShare, id)
+  end
+
+  @doc """
+  Lists pending word set shares received by a user.
+  """
+  def list_pending_received_word_set_shares(user_id) do
+    WordSetShare
+    |> where([s], s.recipient_id == ^user_id and s.status == "pending")
+    |> preload([:word_set, sender: [:profile]])
+    |> order_by([s], desc: s.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Shares a word set with another user.
+
+  Requirements:
+  - The sender must own the word set.
+  - The sender and recipient must be mutual followers.
+  - There must not already be a pending share for the same word set/recipient.
+
+  On success, creates a notification for the recipient.
+  """
+  def share_word_set(sender_id, word_set_id, recipient_id) do
+    word_set = get_word_set!(word_set_id)
+
+    cond do
+      word_set.user_id != sender_id ->
+        {:error, :not_owner}
+
+      not Social.mutual_followers?(sender_id, recipient_id) ->
+        {:error, :not_mutual}
+
+      true ->
+        existing_pending =
+          WordSetShare
+          |> where(
+            [s],
+            s.word_set_id == ^word_set_id and
+              s.sender_id == ^sender_id and
+              s.recipient_id == ^recipient_id and
+              s.status == "pending"
+          )
+          |> Repo.exists?()
+
+        if existing_pending do
+          {:error, :already_shared}
+        else
+          Repo.transaction(fn ->
+            {:ok, share} =
+              %WordSetShare{}
+              |> WordSetShare.changeset(%{
+                word_set_id: word_set_id,
+                sender_id: sender_id,
+                recipient_id: recipient_id,
+                status: "pending"
+              })
+              |> Repo.insert()
+
+            sender = Accounts.get_user_with_profile(sender_id) || Accounts.get_user!(sender_id)
+            sender_name = (sender.profile && sender.profile.display_name) || sender.name
+
+            Notifications.create_notification(%{
+              user_id: recipient_id,
+              type: "word_set_share",
+              title: "#{sender_name} wants to share a word set",
+              message: "#{sender_name} wants to share '#{word_set.name}' with you",
+              data: %{
+                "share_id" => share.id,
+                "sender_id" => sender_id,
+                "sender_name" => sender_name,
+                "word_set_id" => word_set_id,
+                "word_set_name" => word_set.name
+              }
+            })
+
+            share
+          end)
+        end
+    end
+  end
+
+  @doc """
+  Accepts a word set share.
+
+  Copies the word set (name, description, and words) to the recipient's account.
+  Does not copy the practice test.
+  """
+  def accept_word_set_share(share_id, recipient_id) do
+    share =
+      WordSetShare
+      |> Repo.get!(share_id)
+      |> Repo.preload(word_set: [word_set_words: :word])
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      Repo.transaction(fn ->
+        source = share.word_set
+
+        {:ok, new_set} =
+          create_word_set(%{
+            name: source.name,
+            description: source.description,
+            user_id: recipient_id,
+            word_count: 0
+          })
+
+        word_set_words =
+          source.word_set_words
+          |> Enum.sort_by(& &1.position)
+          |> Enum.with_index(fn wsw, index ->
+            %{
+              word_set_id: new_set.id,
+              word_id: wsw.word_id,
+              position: index,
+              inserted_at: DateTime.utc_now(),
+              updated_at: DateTime.utc_now()
+            }
+          end)
+
+        {inserted_count, _} = Repo.insert_all(WordSetWord, word_set_words)
+
+        {:ok, new_set} =
+          new_set
+          |> WordSet.update_word_count_changeset(inserted_count)
+          |> Repo.update()
+
+        share
+        |> WordSetShare.status_changeset("accepted")
+        |> Repo.update!()
+
+        new_set
+      end)
+    end
+  end
+
+  @doc """
+  Cancels (declines) a word set share.
+  """
+  def cancel_word_set_share(share_id, recipient_id) do
+    share = Repo.get!(WordSetShare, share_id)
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      share
+      |> WordSetShare.status_changeset("cancelled")
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes a word set share.
+
+  Used when the recipient declines the share or deletes the notification,
+  so the share does not become an invisible pending request.
+  """
+  def delete_word_set_share(share_id, recipient_id) do
+    share = Repo.get!(WordSetShare, share_id)
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      Repo.delete(share)
     end
   end
 

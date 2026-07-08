@@ -6,6 +6,7 @@ defmodule MedoruWeb.GameApiController do
 
   alias Medoru.Accounts
   alias Medoru.Accounts.UserStats
+  alias Medoru.Content
   alias Medoru.Learning
   alias Medoru.Repo
 
@@ -72,6 +73,14 @@ defmodule MedoruWeb.GameApiController do
         source_type: "game_battle",
         description: "Won a battle in The Hollow Ouroboros"
       )
+    end
+
+    # Mark the run's focus kanji as learned when the run is completed.
+    if params["winner"] == "player" && is_binary(params["focus_kanji"]) do
+      case Content.get_kanji_by_character(params["focus_kanji"]) do
+        nil -> :ok
+        kanji -> Learning.track_kanji_learned(user.id, kanji.id)
+      end
     end
 
     json(conn, %{status: "ok"})

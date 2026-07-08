@@ -5,6 +5,8 @@ defmodule MedoruWeb.NotificationsLive do
   use MedoruWeb, :live_view
 
   alias Medoru.Notifications
+  alias Medoru.Learning.WordSets
+  alias Medoru.Repo
 
   @per_page 10
 
@@ -89,7 +91,29 @@ defmodule MedoruWeb.NotificationsLive do
   def handle_event("delete", %{"id" => notification_id}, socket) do
     user = socket.assigns.current_scope.current_user
 
-    case Notifications.delete_user_notification(user.id, notification_id) do
+    notification = Notifications.get_user_notification(user.id, notification_id)
+
+    result =
+      if notification && notification.type == "word_set_share" do
+        share_id = notification.data["share_id"]
+
+        Ecto.Multi.new()
+        |> Ecto.Multi.run(:delete_share, fn _repo, _changes ->
+          WordSets.delete_word_set_share(share_id, user.id)
+        end)
+        |> Ecto.Multi.run(:delete_notification, fn _repo, _changes ->
+          Notifications.delete_user_notification(user.id, notification_id)
+        end)
+        |> Repo.transaction()
+        |> case do
+          {:ok, _} -> {:ok, nil}
+          {:error, _step, error, _changes} -> {:error, error}
+        end
+      else
+        Notifications.delete_user_notification(user.id, notification_id)
+      end
+
+    case result do
       {:ok, _} ->
         socket = load_notifications(socket, user.id, socket.assigns.filter, socket.assigns.page)
         unread_count = Notifications.count_unread_notifications(user.id)
@@ -138,6 +162,75 @@ defmodule MedoruWeb.NotificationsLive do
     filter = socket.assigns.filter
     {:noreply, push_patch(socket, to: ~p"/notifications?#{[filter: filter, page: page]}")}
   end
+
+  @impl true
+  def handle_event("accept_word_set_share", %{"id" => notification_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case handle_word_set_share_action(notification_id, user.id, :accept) do
+      {:ok, word_set} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Word set added to your collection."))
+         |> push_navigate(to: ~p"/words/sets/#{word_set.id}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_word_set_share", %{"id" => notification_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case handle_word_set_share_action(notification_id, user.id, :cancel) do
+      {:ok, _} ->
+        socket = reload_and_broadcast(socket, user.id)
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
+  defp handle_word_set_share_action(notification_id, user_id, action) do
+    notification = Notifications.get_user_notification(user_id, notification_id)
+
+    if notification && notification.type == "word_set_share" do
+      share_id = notification.data["share_id"]
+
+      result =
+        case action do
+          :accept -> WordSets.accept_word_set_share(share_id, user_id)
+          :cancel -> WordSets.delete_word_set_share(share_id, user_id)
+        end
+
+      if elem(result, 0) == :ok do
+        Notifications.delete_user_notification(user_id, notification_id)
+      end
+
+      result
+    else
+      {:error, :not_found}
+    end
+  end
+
+  defp reload_and_broadcast(socket, user_id) do
+    socket = load_notifications(socket, user_id, socket.assigns.filter, socket.assigns.page)
+    unread_count = Notifications.count_unread_notifications(user_id)
+
+    Phoenix.PubSub.broadcast(
+      Medoru.PubSub,
+      "notifications:#{user_id}",
+      {:unread_count_updated, unread_count}
+    )
+
+    assign(socket, :unread_count, unread_count)
+  end
+
+  defp share_error_message(:not_found), do: gettext("Share request not found.")
+  defp share_error_message(:not_recipient), do: gettext("This share is not for you.")
+  defp share_error_message(_), do: gettext("Failed to process share request.")
 
   @impl true
   def handle_info({:unread_count_updated, _count}, socket) do
@@ -218,6 +311,7 @@ defmodule MedoruWeb.NotificationsLive do
   def icon_for_type("classroom_test"), do: "hero-clipboard-document-list"
   def icon_for_type("chat_message"), do: "hero-chat-bubble-left-ellipsis"
   def icon_for_type("chat_invite"), do: "hero-chat-bubble-left-right"
+  def icon_for_type("word_set_share"), do: "hero-share"
   def icon_for_type(_), do: "hero-bell"
 
   def icon_bg_class("badge_earned"),
@@ -237,6 +331,9 @@ defmodule MedoruWeb.NotificationsLive do
 
   def icon_bg_class("chat_invite"),
     do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+
+  def icon_bg_class("word_set_share"),
+    do: "bg-accent/20 text-accent dark:bg-accent/30 dark:text-accent"
 
   def icon_bg_class(_), do: "bg-base-200 text-base-content"
 
