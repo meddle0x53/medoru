@@ -38,10 +38,7 @@ defmodule MedoruWeb.BulgarianKatakanaLive.Show do
 
         words_with_links =
           Enum.map(entry.words, fn word ->
-            case Content.get_word_by_text(word.meaning) do
-              nil -> Map.put(word, :word_id, nil)
-              found -> Map.put(word, :word_id, found.id)
-            end
+            Map.put(word, :word_id, find_word_id(word.meaning))
           end)
 
         {:noreply,
@@ -54,5 +51,34 @@ defmodule MedoruWeb.BulgarianKatakanaLive.Show do
            gettext("%{letter} - Bulgarian Katakana", letter: entry.letter)
          )}
     end
+  end
+
+  defp find_word_id(meaning) do
+    case Content.get_word_by_text_or_meaning_or_conjugation(meaning) do
+      nil ->
+        case Content.find_words_by_reading(meaning) do
+          [] -> nil
+          words -> List.first(words).id
+        end
+
+      word ->
+        word.id
+    end
+  end
+
+  defp highlight_letter(word, letter) do
+    upper = Regex.escape(letter)
+    lower = Regex.escape(String.downcase(letter))
+    pattern = ~r/(#{upper}|#{lower})/u
+
+    word
+    |> String.split(pattern, include_captures: true)
+    |> Enum.map(fn part ->
+      if Regex.match?(pattern, part) do
+        raw(~s(<span class="text-accent font-bold">#{part}</span>))
+      else
+        part
+      end
+    end)
   end
 end

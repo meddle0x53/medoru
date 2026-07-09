@@ -7,6 +7,18 @@ defmodule Medoru.Content.BulgarianKatakana do
   common Bulgarian words and phrases transliterated into katakana the way a
   Japanese speaker would approximate them.
 
+  Notes about the transliteration style used here:
+
+    * Bulgarian В is usually written with ヴ when we want to preserve the "v" sound:
+      Вода → ヴォダ, Вино → ヴィノ.
+    * Bulgarian Ъ is represented as ア, because it is closer to a hard central
+      "a/uh" sound than Japanese ウ.
+    * Bulgarian Л and Р cannot be perfectly distinguished in Japanese, so both are
+      approximated with Japanese ラ/リ/ル/レ/ロ sounds depending on the vowel.
+    * Final Bulgarian consonants receive a small Japanese support vowel when needed:
+      нощ → ノシュト, град → グラド, хляб → フリャブ.
+    * These are practical learner-friendly approximations, not strict linguistic IPA.
+
   The `meaning` field for each word holds the Japanese equivalent so the detail
   page can link to the matching word entry on `/words` when available.
   """
@@ -38,10 +50,10 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "a",
         words: [
           %{bulgarian: "Аз", katakana: "アス", meaning: "私"},
-          %{bulgarian: "Ананас", katakana: "アナナス", meaning: "パイナップル"},
-          %{bulgarian: "Автобус", katakana: "アヴトブス", meaning: "バス"},
-          %{bulgarian: "Апел", katakana: "アペル", meaning: "抗議"},
-          %{bulgarian: "Артист", katakana: "アルティスト", meaning: "アーティスト"}
+          %{bulgarian: "Ало", katakana: "アロ", meaning: "もしもし"},
+          %{bulgarian: "Адрес", katakana: "アドレス", meaning: "住所"},
+          %{bulgarian: "Аптека", katakana: "アプテカ", meaning: "薬局"},
+          %{bulgarian: "Автобус", katakana: "アヴトブス", meaning: "バス"}
         ]
       },
       %__MODULE__{
@@ -50,11 +62,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ぶ",
         latin: "bu",
         words: [
-          %{bulgarian: "Банан", katakana: "バナン", meaning: "バナナ"},
-          %{bulgarian: "Бебе", katakana: "ベベ", meaning: "赤ちゃん"},
-          %{bulgarian: "България", katakana: "ブルガリア", meaning: "ブルガリア"},
+          %{bulgarian: "Благодаря", katakana: "ブラゴダリャ", meaning: "ありがとう"},
+          %{bulgarian: "България", katakana: "ブルガリヤ", meaning: "ブルガリア"},
           %{bulgarian: "Билет", katakana: "ビレット", meaning: "切符"},
-          %{bulgarian: "Бургер", katakana: "ブルゲル", meaning: "ハンバーガー"}
+          %{bulgarian: "Баня", katakana: "バニャ", meaning: "風呂"},
+          %{bulgarian: "Бързо", katakana: "バルゾ", meaning: "速い"}
         ]
       },
       %__MODULE__{
@@ -64,10 +76,10 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "vu",
         words: [
           %{bulgarian: "Вода", katakana: "ヴォダ", meaning: "水"},
-          %{bulgarian: "Време", katakana: "ヴレメ", meaning: "時間"},
-          %{bulgarian: "Влак", katakana: "ヴラク", meaning: "電車"},
           %{bulgarian: "Вино", katakana: "ヴィノ", meaning: "ワイン"},
-          %{bulgarian: "Врата", katakana: "ヴラタ", meaning: "ドア"}
+          %{bulgarian: "Вечер", katakana: "ヴェチェル", meaning: "夕方"},
+          %{bulgarian: "Вход", katakana: "ヴホド", meaning: "入口"},
+          %{bulgarian: "Вкусно", katakana: "ヴクスノ", meaning: "おいしい"}
         ]
       },
       %__MODULE__{
@@ -77,10 +89,10 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "gu",
         words: [
           %{bulgarian: "Град", katakana: "グラド", meaning: "街"},
-          %{bulgarian: "Голям", katakana: "ゴリャム", meaning: "大きい"},
-          %{bulgarian: "Грозде", katakana: "グロズデ", meaning: "ブドウ"},
-          %{bulgarian: "Глава", katakana: "グラヴァ", meaning: "頭"},
-          %{bulgarian: "Гора", katakana: "ゴラ", meaning: "山"}
+          %{bulgarian: "Гара", katakana: "ガラ", meaning: "駅"},
+          %{bulgarian: "Гладен съм", katakana: "グラデン サム", meaning: "お腹が空いた"},
+          %{bulgarian: "Горещо", katakana: "ゴレシュト", meaning: "暑い"},
+          %{bulgarian: "Говоря", katakana: "ゴヴォリャ", meaning: "話す"}
         ]
       },
       %__MODULE__{
@@ -89,11 +101,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ど",
         latin: "do",
         words: [
-          %{bulgarian: "Дом", katakana: "ドム", meaning: "家"},
-          %{bulgarian: "Ден", katakana: "デン", meaning: "日"},
-          %{bulgarian: "Дърво", katakana: "ダルヴォ", meaning: "木"},
-          %{bulgarian: "Добър", katakana: "ドバル", meaning: "良い"},
-          %{bulgarian: "Дядо", katakana: "ディャド", meaning: "おじいさん"}
+          %{bulgarian: "Добър ден", katakana: "ドバル デン", meaning: "こんにちは"},
+          %{bulgarian: "Добро утро", katakana: "ドブロ ウトロ", meaning: "おはよう"},
+          %{bulgarian: "Добър вечер", katakana: "ドバル ヴェチェル", meaning: "こんばんは"},
+          %{bulgarian: "До скоро", katakana: "ド スコロ", meaning: "またね"},
+          %{bulgarian: "Да", katakana: "ダ", meaning: "はい"}
         ]
       },
       %__MODULE__{
@@ -103,9 +115,9 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "e",
         words: [
           %{bulgarian: "Един", katakana: "エディン", meaning: "一"},
+          %{bulgarian: "Евтино", katakana: "エヴティノ", meaning: "安い"},
           %{bulgarian: "Език", katakana: "エズィク", meaning: "言語"},
-          %{bulgarian: "Елен", katakana: "エレン", meaning: "鹿"},
-          %{bulgarian: "Екран", katakana: "エクラン", meaning: "画面"},
+          %{bulgarian: "Елате", katakana: "エラテ", meaning: "来てください"},
           %{bulgarian: "Европа", katakana: "エヴロパ", meaning: "ヨーロッパ"}
         ]
       },
@@ -113,13 +125,13 @@ defmodule Medoru.Content.BulgarianKatakana do
         letter: "Ж",
         katakana: "ジュ",
         hiragana: "じゅ",
-        latin: "ju",
+        latin: "zhu",
         words: [
-          %{bulgarian: "Жена", katakana: "ジェナ", meaning: "女"},
+          %{bulgarian: "Жена", katakana: "ジェナ", meaning: "女性"},
+          %{bulgarian: "Живея", katakana: "ジヴェヤ", meaning: "住む"},
           %{bulgarian: "Живот", katakana: "ジヴォト", meaning: "人生"},
-          %{bulgarian: "Жълто", katakana: "ジャルト", meaning: "黄色"},
-          %{bulgarian: "Жираф", katakana: "ジラフ", meaning: "キリン"},
-          %{bulgarian: "Желязо", katakana: "ジェリャゾ", meaning: "鉄"}
+          %{bulgarian: "Жаден съм", katakana: "ジャデン サム", meaning: "喉が渇いた"},
+          %{bulgarian: "Жълто", katakana: "ジャルト", meaning: "黄色"}
         ]
       },
       %__MODULE__{
@@ -129,9 +141,9 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "zu",
         words: [
           %{bulgarian: "Здравей", katakana: "ズドラヴェイ", meaning: "こんにちは"},
-          %{bulgarian: "Зелен", katakana: "ゼレン", meaning: "緑"},
-          %{bulgarian: "Зима", katakana: "ズィマ", meaning: "冬"},
-          %{bulgarian: "Змия", katakana: "ズミヤ", meaning: "蛇"},
+          %{bulgarian: "Здрасти", katakana: "ズドラスティ", meaning: "やあ"},
+          %{bulgarian: "Заповядайте", katakana: "ザポヴャダイテ", meaning: "どうぞ"},
+          %{bulgarian: "Знам", katakana: "ズナム", meaning: "知っている"},
           %{bulgarian: "Захар", katakana: "ザハル", meaning: "砂糖"}
         ]
       },
@@ -142,23 +154,24 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "i",
         words: [
           %{bulgarian: "Име", katakana: "イメ", meaning: "名前"},
-          %{bulgarian: "Искам", katakana: "イスカム", meaning: "欲しい"},
-          %{bulgarian: "Индия", katakana: "インディヤ", meaning: "インド"},
-          %{bulgarian: "Истина", katakana: "イスティナ", meaning: "真実"},
-          %{bulgarian: "Игра", katakana: "イグラ", meaning: "遊び"}
+          %{bulgarian: "Искам вода", katakana: "イスカム ヴォダ", meaning: "水が欲しい"},
+          %{bulgarian: "Извинете", katakana: "イズヴィネテ", meaning: "すみません"},
+          %{bulgarian: "Имам", katakana: "イマム", meaning: "持っている"},
+          %{bulgarian: "Игра", katakana: "イグラ", meaning: "ゲーム"}
         ]
       },
       %__MODULE__{
         letter: "Й",
         katakana: "イ",
         hiragana: "い",
-        latin: "i",
+        latin: "y / i",
+        note: "short i / y sound; usually appears after a vowel",
         words: [
-          %{bulgarian: "Йод", katakana: "ヨド", meaning: "ヨウ素"},
-          %{bulgarian: "Йога", katakana: "ヨガ", meaning: "ヨガ"},
           %{bulgarian: "Май", katakana: "マイ", meaning: "五月"},
           %{bulgarian: "Чай", katakana: "チャイ", meaning: "お茶"},
-          %{bulgarian: "Хайде", katakana: "ハイデ", meaning: "行こう"}
+          %{bulgarian: "Здравей", katakana: "ズドラヴェイ", meaning: "こんにちは"},
+          %{bulgarian: "Хайде", katakana: "ハイデ", meaning: "行こう"},
+          %{bulgarian: "Йога", katakana: "ヨガ", meaning: "ヨガ"}
         ]
       },
       %__MODULE__{
@@ -167,11 +180,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "く",
         latin: "ku",
         words: [
-          %{bulgarian: "Куче", katakana: "クチェ", meaning: "犬"},
-          %{bulgarian: "Котка", katakana: "コトカ", meaning: "猫"},
+          %{bulgarian: "Как си?", katakana: "カク スィ", meaning: "元気ですか"},
           %{bulgarian: "Кафе", katakana: "カフェ", meaning: "コーヒー"},
-          %{bulgarian: "Книга", katakana: "クニガ", meaning: "本"},
-          %{bulgarian: "Кола", katakana: "コラ", meaning: "車"}
+          %{bulgarian: "Къде?", katakana: "カデ", meaning: "どこ"},
+          %{bulgarian: "Колко струва?", katakana: "コルコ ストルヴァ", meaning: "いくらですか"},
+          %{bulgarian: "Късмет", katakana: "カスメト", meaning: "幸運"}
         ]
       },
       %__MODULE__{
@@ -179,12 +192,13 @@ defmodule Medoru.Content.BulgarianKatakana do
         katakana: "ル",
         hiragana: "る",
         latin: "lu",
+        note: "Bulgarian Л is approximated with Japanese r/l row sounds",
         words: [
-          %{bulgarian: "Лъв", katakana: "ラヴ", meaning: "ライオン"},
-          %{bulgarian: "Лято", katakana: "リャト", meaning: "夏"},
-          %{bulgarian: "Лимон", katakana: "リモン", meaning: "レモン"},
-          %{bulgarian: "Луна", katakana: "ルナ", meaning: "月"},
-          %{bulgarian: "Лекар", katakana: "レカル", meaning: "医者"}
+          %{bulgarian: "Лека нощ", katakana: "レカ ノシュト", meaning: "おやすみ"},
+          %{bulgarian: "Ляво", katakana: "リャヴォ", meaning: "左"},
+          %{bulgarian: "Лесно", katakana: "レスノ", meaning: "簡単"},
+          %{bulgarian: "Лекар", katakana: "レカル", meaning: "医者"},
+          %{bulgarian: "Лято", katakana: "リャト", meaning: "夏"}
         ]
       },
       %__MODULE__{
@@ -193,11 +207,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "む",
         latin: "mu",
         words: [
-          %{bulgarian: "Мляко", katakana: "ムリャコ", meaning: "牛乳"},
+          %{bulgarian: "Моля", katakana: "モリャ", meaning: "お願いします"},
+          %{bulgarian: "Може ли?", katakana: "モジェ リ", meaning: "いいですか"},
           %{bulgarian: "Майка", katakana: "マイカ", meaning: "母"},
-          %{bulgarian: "Мъгла", katakana: "マグラ", meaning: "霧"},
-          %{bulgarian: "Музика", katakana: "ムズィカ", meaning: "音楽"},
-          %{bulgarian: "Месо", katakana: "メソ", meaning: "肉"}
+          %{bulgarian: "Малко", katakana: "マルコ", meaning: "少し"},
+          %{bulgarian: "Много добре", katakana: "ムノゴ ドブレ", meaning: "とても良い"}
         ]
       },
       %__MODULE__{
@@ -206,11 +220,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ぬ",
         latin: "nu",
         words: [
-          %{bulgarian: "Небе", katakana: "ネベ", meaning: "空"},
+          %{bulgarian: "Не", katakana: "ネ", meaning: "いいえ"},
+          %{bulgarian: "Няма проблем", katakana: "ニャマ プロブレム", meaning: "問題ありません"},
+          %{bulgarian: "Наздраве", katakana: "ナズドラヴェ", meaning: "乾杯"},
           %{bulgarian: "Нощ", katakana: "ノシュト", meaning: "夜"},
-          %{bulgarian: "Нос", katakana: "ノス", meaning: "鼻"},
-          %{bulgarian: "Неделя", katakana: "ネデリャ", meaning: "日曜日"},
-          %{bulgarian: "Нова", katakana: "ノヴァ", meaning: "新しい"}
+          %{bulgarian: "Неделя", katakana: "ネデリャ", meaning: "日曜日"}
         ]
       },
       %__MODULE__{
@@ -219,11 +233,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "お",
         latin: "o",
         words: [
-          %{bulgarian: "Око", katakana: "オコ", meaning: "目"},
-          %{bulgarian: "Огън", katakana: "オガン", meaning: "火"},
-          %{bulgarian: "Овца", katakana: "オヴツァ", meaning: "羊"},
-          %{bulgarian: "Оранжев", katakana: "オランジェヴ", meaning: "橙色"},
-          %{bulgarian: "Обичам", katakana: "オブィチャム", meaning: "愛してる"}
+          %{bulgarian: "Обичам те", katakana: "オビチャム テ", meaning: "愛してる"},
+          %{bulgarian: "Още веднъж", katakana: "オシュテ ヴェドナジュ", meaning: "もう一度"},
+          %{bulgarian: "Откъде сте?", katakana: "オトカデ ステ", meaning: "どちらからですか"},
+          %{bulgarian: "Окей", katakana: "オケイ", meaning: "オーケー"},
+          %{bulgarian: "Отивам", katakana: "オティヴァム", meaning: "行く"}
         ]
       },
       %__MODULE__{
@@ -232,11 +246,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ぷ",
         latin: "pu",
         words: [
-          %{bulgarian: "Портокал", katakana: "ポートカル", meaning: "オレンジ"},
-          %{bulgarian: "Пет", katakana: "ペト", meaning: "五"},
-          %{bulgarian: "Птица", katakana: "プティツァ", meaning: "鳥"},
-          %{bulgarian: "Приятел", katakana: "プリャテル", meaning: "友達"},
-          %{bulgarian: "Пари", katakana: "パリ", meaning: "お金"}
+          %{bulgarian: "Приятно ми е", katakana: "プリャトノ ミ エ", meaning: "はじめまして"},
+          %{bulgarian: "Помощ", katakana: "ポモシュト", meaning: "助け"},
+          %{bulgarian: "Пари", katakana: "パリ", meaning: "お金"},
+          %{bulgarian: "Пазар", katakana: "パザル", meaning: "市場"},
+          %{bulgarian: "Приятел", katakana: "プリャテル", meaning: "友達"}
         ]
       },
       %__MODULE__{
@@ -244,12 +258,13 @@ defmodule Medoru.Content.BulgarianKatakana do
         katakana: "ル",
         hiragana: "る",
         latin: "ru",
+        note: "Bulgarian Р is approximated with Japanese r row sounds",
         words: [
-          %{bulgarian: "Риба", katakana: "リバ", meaning: "魚"},
-          %{bulgarian: "Ръка", katakana: "ラカ", meaning: "手"},
-          %{bulgarian: "Роза", katakana: "ロザ", meaning: "バラ"},
+          %{bulgarian: "Разбирам", katakana: "ラズビラム", meaning: "分かる"},
+          %{bulgarian: "Радвам се", katakana: "ラドヴァム セ", meaning: "嬉しい"},
           %{bulgarian: "Работа", katakana: "ラボタ", meaning: "仕事"},
-          %{bulgarian: "Ресторант", katakana: "レストラント", meaning: "レストラン"}
+          %{bulgarian: "Ресторант", katakana: "レストラント", meaning: "レストラン"},
+          %{bulgarian: "Риба", katakana: "リバ", meaning: "魚"}
         ]
       },
       %__MODULE__{
@@ -258,11 +273,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "す",
         latin: "su",
         words: [
-          %{bulgarian: "Слънце", katakana: "スランツェ", meaning: "太陽"},
-          %{bulgarian: "Сок", katakana: "ソク", meaning: "ジュース"},
-          %{bulgarian: "Сняг", katakana: "スニャグ", meaning: "雪"},
-          %{bulgarian: "Син", katakana: "シン", meaning: "息子"},
-          %{bulgarian: "Сирене", katakana: "シレネ", meaning: "チーズ"}
+          %{bulgarian: "Съжалявам", katakana: "サジャリャヴァム", meaning: "ごめんなさい"},
+          %{bulgarian: "Сега", katakana: "セガ", meaning: "今"},
+          %{bulgarian: "Супер", katakana: "スペル", meaning: "すごい"},
+          %{bulgarian: "Сметката, моля", katakana: "スメトカタ モリャ", meaning: "お会計お願いします"},
+          %{bulgarian: "Семейство", katakana: "セメイストヴォ", meaning: "家族"}
         ]
       },
       %__MODULE__{
@@ -271,11 +286,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "と",
         latin: "to",
         words: [
-          %{bulgarian: "Тигър", katakana: "ティガル", meaning: "トラ"},
-          %{bulgarian: "Топка", katakana: "トプカ", meaning: "ボール"},
-          %{bulgarian: "Телефон", katakana: "テレフォン", meaning: "電話"},
           %{bulgarian: "Тук", katakana: "トゥク", meaning: "ここ"},
-          %{bulgarian: "Таван", katakana: "タヴァン", meaning: "天井"}
+          %{bulgarian: "Там", katakana: "タム", meaning: "そこ"},
+          %{bulgarian: "Така", katakana: "タカ", meaning: "そう"},
+          %{bulgarian: "Телефон", katakana: "テレフォン", meaning: "電話"},
+          %{bulgarian: "Топло е", katakana: "トプロ エ", meaning: "暖かい"}
         ]
       },
       %__MODULE__{
@@ -284,11 +299,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "う",
         latin: "u",
         words: [
-          %{bulgarian: "Улица", katakana: "ウリツァ", meaning: "通り"},
           %{bulgarian: "Утре", katakana: "ウトレ", meaning: "明日"},
+          %{bulgarian: "Улица", katakana: "ウリツァ", meaning: "通り"},
+          %{bulgarian: "У дома", katakana: "ウ ドマ", meaning: "家に"},
           %{bulgarian: "Училище", katakana: "ウチリシュテ", meaning: "学校"},
-          %{bulgarian: "Ухо", katakana: "ウホ", meaning: "耳"},
-          %{bulgarian: "У дома", katakana: "ウ ドマ", meaning: "家に"}
+          %{bulgarian: "Уморен съм", katakana: "ウモレン サム", meaning: "疲れた"}
         ]
       },
       %__MODULE__{
@@ -297,11 +312,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ふ",
         latin: "fu",
         words: [
-          %{bulgarian: "Футбол", katakana: "フトボル", meaning: "サッカー"},
+          %{bulgarian: "Фактура", katakana: "ファクトゥラ", meaning: "請求書"},
           %{bulgarian: "Филм", katakana: "フィルム", meaning: "映画"},
-          %{bulgarian: "Ферма", katakana: "フェルマ", meaning: "農場"},
+          %{bulgarian: "Футбол", katakana: "フトボル", meaning: "サッカー"},
           %{bulgarian: "Френски", katakana: "フレンスキ", meaning: "フランス語"},
-          %{bulgarian: "Флашка", katakana: "フラシュカ", meaning: "USBメモリ"}
+          %{bulgarian: "Фирма", katakana: "フィルマ", meaning: "会社"}
         ]
       },
       %__MODULE__{
@@ -310,11 +325,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "は",
         latin: "ha",
         words: [
-          %{bulgarian: "Хляб", katakana: "ハリャブ", meaning: "パン"},
+          %{bulgarian: "Хляб", katakana: "フリャブ", meaning: "パン"},
           %{bulgarian: "Хора", katakana: "ホラ", meaning: "人々"},
+          %{bulgarian: "Хубаво", katakana: "フバヴォ", meaning: "良い"},
           %{bulgarian: "Хотел", katakana: "ホテル", meaning: "ホテル"},
-          %{bulgarian: "Химия", katakana: "ヒミヤ", meaning: "化学"},
-          %{bulgarian: "Хубав", katakana: "フバヴ", meaning: "美しい"}
+          %{bulgarian: "Хайде", katakana: "ハイデ", meaning: "行こう"}
         ]
       },
       %__MODULE__{
@@ -323,11 +338,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "つ",
         latin: "tsu",
         words: [
+          %{bulgarian: "Център", katakana: "ツェンタル", meaning: "中心"},
+          %{bulgarian: "Цена", katakana: "ツェナ", meaning: "値段"},
           %{bulgarian: "Цвете", katakana: "ツヴェテ", meaning: "花"},
-          %{bulgarian: "Цар", katakana: "ツァル", meaning: "皇帝"},
-          %{bulgarian: "Целувка", katakana: "ツェルヴカ", meaning: "キス"},
-          %{bulgarian: "Цигара", katakana: "ツィガラ", meaning: "タバコ"},
-          %{bulgarian: "Цветя", katakana: "ツヴェティャ", meaning: "花々"}
+          %{bulgarian: "Цял ден", katakana: "ツャル デン", meaning: "一日中"},
+          %{bulgarian: "Целувка", katakana: "ツェルヴカ", meaning: "キス"}
         ]
       },
       %__MODULE__{
@@ -336,11 +351,11 @@ defmodule Medoru.Content.BulgarianKatakana do
         hiragana: "ち",
         latin: "chi",
         words: [
-          %{bulgarian: "Човек", katakana: "チョヴェク", meaning: "人"},
-          %{bulgarian: "Чаша", katakana: "チャシャ", meaning: "カップ"},
-          %{bulgarian: "Червен", katakana: "チェルヴェン", meaning: "赤い"},
-          %{bulgarian: "Чанта", katakana: "チャンタ", meaning: "バッグ"},
-          %{bulgarian: "Чистя", katakana: "チスティャ", meaning: "掃除する"}
+          %{bulgarian: "Чао", katakana: "チャオ", meaning: "バイバイ"},
+          %{bulgarian: "Чай", katakana: "チャイ", meaning: "お茶"},
+          %{bulgarian: "Чакайте", katakana: "チャカイテ", meaning: "待ってください"},
+          %{bulgarian: "Честито", katakana: "チェスティト", meaning: "おめでとう"},
+          %{bulgarian: "Човек", katakana: "チョヴェク", meaning: "人"}
         ]
       },
       %__MODULE__{
@@ -351,49 +366,51 @@ defmodule Medoru.Content.BulgarianKatakana do
         words: [
           %{bulgarian: "Шоколад", katakana: "ショコラド", meaning: "チョコレート"},
           %{bulgarian: "Шапка", katakana: "シャプカ", meaning: "帽子"},
-          %{bulgarian: "Шофьор", katakana: "ショフリョル", meaning: "運転手"},
-          %{bulgarian: "Шум", katakana: "シュム", meaning: "騒音"},
-          %{bulgarian: "Шарен", katakana: "シャレン", meaning: "色とりどり"}
+          %{bulgarian: "Шофьор", katakana: "ショフィョル", meaning: "運転手"},
+          %{bulgarian: "Шумно е", katakana: "シュムノ エ", meaning: "うるさい"},
+          %{bulgarian: "Шише вода", katakana: "シシェ ヴォダ", meaning: "水のボトル"}
         ]
       },
       %__MODULE__{
         letter: "Щ",
         katakana: "シュト",
         hiragana: "しゅと",
-        latin: "shto",
+        latin: "sht",
         words: [
-          %{bulgarian: "Щастие", katakana: "シュタスティエ", meaning: "幸せ"},
-          %{bulgarian: "Щипка", katakana: "シュティプカ", meaning: "ピンチ"},
-          %{bulgarian: "Щъркел", katakana: "シュタルケル", meaning: "コウノトリ"},
-          %{bulgarian: "Ще", katakana: "シュテ", meaning: "未来"},
-          %{bulgarian: "Щука", katakana: "シュトゥカ", meaning: "カワカマス"}
+          %{bulgarian: "Ще се видим", katakana: "シュテ セ ヴィディム", meaning: "また会いましょう"},
+          %{bulgarian: "Ще дойда", katakana: "シュテ ドイダ", meaning: "行きます"},
+          %{bulgarian: "Ще платя", katakana: "シュテ プラティャ", meaning: "払います"},
+          %{bulgarian: "Щастлив съм", katakana: "シュタストリヴ サム", meaning: "嬉しい"},
+          %{bulgarian: "Още", katakana: "オシュテ", meaning: "もっと"}
         ]
       },
       %__MODULE__{
         letter: "Ъ",
-        katakana: "ウ",
-        hiragana: "う",
-        latin: "u",
+        katakana: "ア",
+        hiragana: "あ",
+        latin: "ǎ",
+        note: "hard central Bulgarian vowel; closer to a short hard 'a/uh' than Japanese ウ",
         words: [
-          %{bulgarian: "Ъгъл", katakana: "ウガル", meaning: "角"},
+          %{bulgarian: "Къде?", katakana: "カデ", meaning: "どこ"},
+          %{bulgarian: "Добър", katakana: "ドバル", meaning: "良い"},
           %{bulgarian: "Сън", katakana: "サン", meaning: "夢"},
-          %{bulgarian: "Въздух", katakana: "ヴァズドゥフ", meaning: "空気"},
-          %{bulgarian: "България", katakana: "ブルガリア", meaning: "ブルガリア"},
-          %{bulgarian: "Дърво", katakana: "ダルヴォ", meaning: "木"}
+          %{bulgarian: "България", katakana: "ブルガリヤ", meaning: "ブルガリア"},
+          %{bulgarian: "Ръка", katakana: "ラカ", meaning: "手"}
         ]
       },
       %__MODULE__{
         letter: "Ь",
-        katakana: "ウ",
-        hiragana: "う",
-        latin: "u",
-        note: "soft sign",
+        katakana: "ヨ",
+        hiragana: "よ",
+        latin: "yo / soft sign",
+        note:
+          "soft sign; in Bulgarian it usually appears before О and softens the previous consonant",
         words: [
           %{bulgarian: "Сьомга", katakana: "ショムガ", meaning: "鮭"},
-          %{bulgarian: "Бьорн", katakana: "ビョルン", meaning: "ビョルン"},
-          %{bulgarian: "Аньо", katakana: "アニョ", meaning: "アニョ"},
-          %{bulgarian: "Мьонх", katakana: "ミョンフ", meaning: "ミュンフ"},
-          %{bulgarian: "Льо", katakana: "リョ", meaning: "レオ"}
+          %{bulgarian: "Шофьор", katakana: "ショフィョル", meaning: "運転手"},
+          %{bulgarian: "Актьор", katakana: "アクティョル", meaning: "俳優"},
+          %{bulgarian: "Пеньо", katakana: "ペニョ", meaning: "ペニョ"},
+          %{bulgarian: "Гьол", katakana: "ギョル", meaning: "池"}
         ]
       },
       %__MODULE__{
@@ -403,10 +420,10 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "yu",
         words: [
           %{bulgarian: "Юни", katakana: "ユニ", meaning: "六月"},
+          %{bulgarian: "Юли", katakana: "ユリ", meaning: "七月"},
           %{bulgarian: "Юг", katakana: "ユグ", meaning: "南"},
-          %{bulgarian: "Юбилей", katakana: "ユビレイ", meaning: "記念日"},
-          %{bulgarian: "Юмрук", katakana: "ユムルク", meaning: "拳"},
-          %{bulgarian: "Юрта", katakana: "ユルタ", meaning: "ゲル"}
+          %{bulgarian: "Ютия", katakana: "ユティヤ", meaning: "アイロン"},
+          %{bulgarian: "Юмрук", katakana: "ユムルク", meaning: "拳"}
         ]
       },
       %__MODULE__{
@@ -416,16 +433,16 @@ defmodule Medoru.Content.BulgarianKatakana do
         latin: "ya",
         words: [
           %{bulgarian: "Ябълка", katakana: "ヤバルカ", meaning: "りんご"},
-          %{bulgarian: "Яко", katakana: "ヤコ", meaning: "かっこいい"},
+          %{bulgarian: "Ям", katakana: "ヤム", meaning: "食べる"},
+          %{bulgarian: "Ясно", katakana: "ヤスノ", meaning: "分かった"},
           %{bulgarian: "Януари", katakana: "ヤヌアリ", meaning: "一月"},
-          %{bulgarian: "Ястие", katakana: "ヤスティエ", meaning: "料理"},
-          %{bulgarian: "Ядро", katakana: "ヤドロ", meaning: "核"}
+          %{bulgarian: "Якo", katakana: "ヤコ", meaning: "かっこいい"}
         ]
       }
     ]
   end
 
-  @doc "Get a Bulgarian letter entry by its Cyrillic character (e.g. \"А\" or \"я\")."
+  @doc "Get a Bulgarian letter entry by its Cyrillic character, e.g. \"А\" or \"я\"."
   def get_by_letter(letter) when is_binary(letter) do
     upper = String.upcase(letter)
     list_letters() |> Enum.find(&(&1.letter == upper))
