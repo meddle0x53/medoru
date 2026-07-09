@@ -7,11 +7,11 @@
   <div
     id="game-wrapper"
     class="relative bg-base-300 rounded-xl shadow-2xl overflow-hidden"
-    style="max-width: 100%; width: 960px; height: 540px;"
+    style="max-width: 100%; width: 960px; height: 540px; touch-action: none;"
     phx-update="ignore"
     phx-hook="GameHook"
     data-game-data={@game_data}
-    data-game-script-url={~p"/assets/js/game.js?v=403"}
+    data-game-script-url={~p"/assets/js/game.js?v=407"}
   >
     <style>
       #game-wrapper:fullscreen {

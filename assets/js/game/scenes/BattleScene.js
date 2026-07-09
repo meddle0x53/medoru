@@ -251,7 +251,7 @@ export default class BattleScene extends Phaser.Scene {
     this.add.line(0, 0, 0, 580, GAME_CONFIG.width, 580, 0x0f3460, 0.5).setOrigin(0, 0)
   }
 
-  startKanjiDrawingChallenge(strokeData, hint, callbacks, kanjiData = null) {
+  startKanjiDrawingChallenge(strokeData, hint, callbacks, kanjiData = null, drawingOptions = {}) {
     const wrappedCallbacks = { ...callbacks }
     wrappedCallbacks.onStart = (actualKanjiData) => {
       if (callbacks.onStart) callbacks.onStart(actualKanjiData)
@@ -264,7 +264,7 @@ export default class BattleScene extends Phaser.Scene {
         this.addCombatLog(`Draw the kanji for ${meanings || '?'}, read ON: ${on || '-'}/KUN: ${kun || '-'}`)
       }
     }
-    this.kanjiDrawing.start(strokeData, hint, wrappedCallbacks, kanjiData)
+    this.kanjiDrawing.start(strokeData, hint, wrappedCallbacks, kanjiData, drawingOptions)
   }
 
   createCharacters() {
@@ -2566,44 +2566,76 @@ export default class BattleScene extends Phaser.Scene {
 
     // Forward Slash uses kanji drawing instead of typing
     if (skill.id === 'forward_slash') {
-      const userData = getWindowGameData()
-      const kanjiData = userData?.weapon_kanji_strokes || { strokes: [] }
-      const strokeData = kanjiData
+      // 10% chance to skip the drawing challenge and strike immediately.
+      if (Math.random() < 0.1) {
+        this.challengeActive = false
+        this.addCombatLog('Forward Slash strikes cleanly! No kanji challenge.')
+        this.executeSkill('success')
+        return
+      }
 
-      if (!strokeData.strokes || strokeData.strokes.length === 0) {
-        // Fallback: no stroke data, just execute
+      const pool = skill.kanjiPool || ['刀', '斬', '切', '剣', '刃', '薙', '突']
+      let selectedKanjiData = null
+
+      // 20% chance to draw the current focus kanji instead of the pool.
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      }
+
+      if (!selectedKanjiData) {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const poolCandidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (poolCandidates.length > 0) {
+          selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+        }
+      }
+
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+        // No usable stroke data: fall back to a plain successful strike.
         this.challengeActive = false
         this.executeSkill('success')
         return
       }
 
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+      const failThreshold = Math.ceil(totalStrokes / 2)
+      let tier = 1
+      if (totalStrokes >= 8) {
+        tier = 3
+      } else if (totalStrokes >= 4) {
+        tier = 2
+      }
+
       const gameData = getWindowGameData()
       const userLevel = gameData?.level || 1
       const hint = userLevel >= 10
-        ? this.player.weapon.moveHints.forward_slash.ja
-        : this.player.weapon.moveHints.forward_slash.en
+        ? (this.player.weapon?.moveHints?.forward_slash?.ja || skill.moveHint?.ja || '強力な一振りを。')
+        : (this.player.weapon?.moveHints?.forward_slash?.en || skill.moveHint?.en || 'Make a POWERFUL swing.')
+
       this.startKanjiDrawingChallenge(strokeData, hint, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
 
-          // Store kanji result for damage calculation
-          this.player.setKanjiResult(result.wrongStrokes)
-
-          // Apply kanji bonus based on drawing quality
-          if (result.completed) {
-            if (result.wrongStrokes >= 3) {
-              this.player.setKanjiBonus(1)
-              this.addCombatLog('Chikara drawn! (+1 power, sloppy)')
-            } else {
-              this.player.setKanjiBonus(2)
-              this.addCombatLog('Chikara drawn perfectly! (+2 power)')
-            }
+          const kanjiChar = selectedKanjiData.character
+          if (result.completed && result.wrongStrokes < failThreshold) {
+            this.player.setBasePowerBonus(tier)
+            this.addCombatLog(`${kanjiChar} drawn! (+${tier} power)`)
             this.executeSkill('success')
           } else {
-            this.player.setKanjiBonus(0)
-            this.addCombatLog('Chikara failed! No power bonus.')
+            this.player.setBasePowerBonus(0)
+            this.addCombatLog(`${kanjiChar} failed! No power bonus.`)
             this.executeSkill('fail')
           }
         },
@@ -2615,7 +2647,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      }, kanjiData)
+      }, selectedKanjiData, { allowFocusOverride: false })
       return
     }
 
@@ -2993,6 +3025,7 @@ export default class BattleScene extends Phaser.Scene {
     this.updateSkillButtonLabels()
     this.updatePlayerStatusButton()
     this.player.clearKanjiBonus()
+    this.player.clearBasePowerBonus()
 
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
     switch (result.type) {

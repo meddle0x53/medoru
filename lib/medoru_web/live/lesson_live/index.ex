@@ -52,10 +52,14 @@ defmodule MedoruWeb.LessonLive.Index do
             page: page
           )
 
+        classroom = Classrooms.get_classroom!(classroom_id)
+
         # Annotate each lesson with classroom info so the template can navigate correctly
         lessons =
           Enum.map(result.lessons, fn ccl ->
-            Map.put(ccl, :classroom_id, classroom_id)
+            ccl
+            |> Map.put(:classroom_id, classroom_id)
+            |> Map.put(:classroom, classroom)
           end)
 
         %{lessons: lessons, total_count: result.total_count, total_pages: result.total_pages}

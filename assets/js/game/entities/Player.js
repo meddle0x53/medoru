@@ -278,6 +278,7 @@ export default class Player extends Character {
 
     // Current kanji powerup state during a move
     this.activeKanjiBonus = 0
+    this.activeBasePowerBonus = 0
     this.activeShieldBonus = 0
 
     // Readiness: 0 = distracted, 1 = focused (set after End Turn word challenge)
@@ -337,7 +338,8 @@ export default class Player extends Character {
 
     // Apply action-specific power modifier (e.g. Heavy Slash = 2x Forward Slash base)
     if (action && action.basePower) {
-      const actionMultiplier = action.basePower / 8 // 8 is Forward Slash basePower
+      const effectiveBasePower = action.basePower + (this.activeBasePowerBonus || 0)
+      const actionMultiplier = effectiveBasePower / 8 // 8 is Forward Slash basePower
       total = total * actionMultiplier
     }
 
@@ -363,6 +365,14 @@ export default class Player extends Character {
 
   setKanjiResult(wrongStrokes) {
     this.lastKanjiWrongStrokes = wrongStrokes
+  }
+
+  setBasePowerBonus(amount) {
+    this.activeBasePowerBonus = amount
+  }
+
+  clearBasePowerBonus() {
+    this.activeBasePowerBonus = 0
   }
 
   // ---------- Utility ----------

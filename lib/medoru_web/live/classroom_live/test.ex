@@ -10,6 +10,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   alias Medoru.Grammar.Validator
   alias Medoru.Tests.ReadingAnswerValidator
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
   alias MedoruWeb.WritingFillInComponents
 
   @impl true
@@ -19,10 +20,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
     socket = assign(socket, :locale, locale)
 
+    classroom = SlugRoutes.load_classroom!(classroom_id)
+    test = SlugRoutes.load_test!(test_id)
+
     cond do
       not is_nil(user) ->
         # Verify user is an approved member of the classroom
-        case Classrooms.get_user_membership(classroom_id, user.id) do
+        case Classrooms.get_user_membership(classroom.id, user.id) do
           nil ->
             {:ok,
              socket
@@ -34,14 +38,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
               {:ok,
                socket
                |> put_flash(:error, gettext("Your membership is pending approval."))
-               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+               |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
             else
-              load_test_session(socket, classroom_id, test_id, user)
+              load_test_session(socket, classroom.id, test.id, user)
             end
         end
 
-      PublicAccess.featured_classroom?(classroom_id) ->
-        load_anonymous_test_session(socket, classroom_id, test_id)
+      PublicAccess.featured_classroom?(classroom.id) ->
+        load_anonymous_test_session(socket, classroom.id, test.id)
 
       true ->
         {:ok,
@@ -132,6 +136,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           {:ok,
            socket
            |> assign(:page_title, test.title)
+           |> assign(:page_description, test.description || gettext("Take this test on Medoru"))
            |> assign(:classroom, classroom)
            |> assign(:test, test)
            |> assign(:attempt, nil)
@@ -188,6 +193,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           {:ok,
            socket
            |> assign(:page_title, test.title)
+           |> assign(:page_description, test.description || gettext("Take this test on Medoru"))
            |> assign(:classroom, classroom)
            |> assign(:test, test)
            |> assign(:attempt, updated_attempt)
@@ -228,6 +234,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:ok,
        socket
        |> assign(:page_title, test.title)
+       |> assign(:page_description, test.description || gettext("Take this test on Medoru"))
        |> assign(:classroom, classroom)
        |> assign(:test, test)
        |> assign(:attempt, attempt)
@@ -285,6 +292,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
             {:ok,
              socket
              |> assign(:page_title, test.title)
+             |> assign(:page_description, test.description || gettext("Take this test on Medoru"))
              |> assign(:classroom, classroom)
              |> assign(:test, test)
              |> assign(:attempt, updated_attempt)
@@ -1498,7 +1506,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-8">
           <div class="flex-1 min-w-0">
             <.link
-              navigate={~p"/classrooms/#{@classroom.id}?tab=tests"}
+              navigate={~p"/classrooms/#{@classroom.slug}?tab=tests"}
               class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-1 sm:mb-2 transition-colors"
             >
               <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Tests")}

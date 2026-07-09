@@ -8,6 +8,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
   alias Medoru.Classrooms
   alias Medoru.Content
   alias Medoru.Learning
+  alias MedoruWeb.SlugRoutes
 
   @impl true
   def mount(%{"id" => classroom_id, "lesson_id" => lesson_id} = params, _session, socket) do
@@ -15,11 +16,14 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
     practice = params["practice"] == "true"
     is_anonymous = is_nil(user)
 
+    classroom = SlugRoutes.load_classroom!(classroom_id)
+    lesson = SlugRoutes.load_custom_lesson!(lesson_id)
+
     if is_anonymous do
-      load_anonymous_completion(socket, classroom_id, lesson_id, practice)
+      load_anonymous_completion(socket, classroom.id, lesson.id, practice)
     else
       # Verify membership for authenticated users
-      case Classrooms.get_user_membership(classroom_id, user.id) do
+      case Classrooms.get_user_membership(classroom.id, user.id) do
         nil ->
           {:ok,
            socket
@@ -27,7 +31,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
            |> push_navigate(to: ~p"/classrooms")}
 
         _membership ->
-          load_completion(socket, classroom_id, lesson_id, user, practice)
+          load_completion(socket, classroom.id, lesson.id, user, practice)
       end
     end
   end
@@ -382,13 +386,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonComplete do
             <%!-- Actions --%>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
+                navigate={~p"/classrooms/#{@classroom.slug}?tab=lessons"}
                 class="btn btn-primary"
               >
                 <.icon name="hero-arrow-left" class="w-5 h-5 mr-2" /> {gettext("Back to Lessons")}
               </.link>
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}/rankings"}
+                navigate={~p"/classrooms/#{@classroom.slug}/rankings"}
                 class="btn btn-ghost"
               >
                 <.icon name="hero-chart-bar" class="w-5 h-5 mr-2" /> {gettext("View Rankings")}

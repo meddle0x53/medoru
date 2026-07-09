@@ -7,6 +7,7 @@ defmodule Medoru.Games do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
+  alias Medoru.Slug
 
   alias Medoru.Accounts
   alias Medoru.Classrooms
@@ -132,7 +133,12 @@ defmodule Medoru.Games do
   def get_game!(id) do
     Game
     |> Repo.get!(id)
-    |> Repo.preload(
+    |> preload_game_associations()
+  end
+
+  defp preload_game_associations(game) do
+    Repo.preload(
+      game,
       classroom: [:teacher],
       memory_card_game: [memory_card_game_words: [:word]],
       kana_memory_card_game: [],
@@ -157,6 +163,48 @@ defmodule Medoru.Games do
       words_falling_game: [],
       radical_hunt_game: []
     )
+  end
+
+  @doc """
+  Gets a single game by classroom and slug.
+
+  Returns `nil` if the game does not exist.
+  """
+  def get_game_by_slug(classroom_id, slug) do
+    Game
+    |> where(classroom_id: ^classroom_id, slug: ^slug)
+    |> Repo.one()
+    |> case do
+      nil -> nil
+      game -> preload_game_associations(game)
+    end
+  end
+
+  @doc """
+  Gets a single game by classroom and slug.
+
+  Raises `Ecto.NoResultsError` if the game does not exist.
+  """
+  def get_game_by_slug!(classroom_id, slug) do
+    Game
+    |> where(classroom_id: ^classroom_id, slug: ^slug)
+    |> Repo.one!()
+    |> preload_game_associations()
+  end
+
+  defp generate_unique_game_slug(classroom_id, name) do
+    base = Slug.generate(name || "", "game")
+    existing = fetch_existing_game_slugs(classroom_id, base)
+    Slug.ensure_unique(base, existing)
+  end
+
+  defp fetch_existing_game_slugs(classroom_id, base) do
+    Game
+    |> where([g], g.classroom_id == ^classroom_id)
+    |> where([g], g.slug == ^base or like(g.slug, ^"#{base}-%"))
+    |> select([g], g.slug)
+    |> Repo.all()
+    |> Slug.matching_existing(base)
   end
 
   # ============================================================================
@@ -185,9 +233,12 @@ defmodule Medoru.Games do
       {:error, :not_authorized}
     else
       Repo.transaction(fn ->
+        name = attrs["name"] || attrs[:name]
+
         # Create base game
         game_attrs = %{
-          name: attrs["name"] || attrs[:name],
+          name: name,
+          slug: generate_unique_game_slug(classroom_id, name),
           type: "memory_cards",
           status: :draft,
           max_players: attrs["max_players"] || attrs[:max_players] || 1,
@@ -350,8 +401,11 @@ defmodule Medoru.Games do
          %{selected_kana: ["at least #{kana_needed} kana required for #{board_size} board"]}}
       else
         Repo.transaction(fn ->
+          name = attrs["name"] || attrs[:name]
+
           game_attrs = %{
-            name: attrs["name"] || attrs[:name],
+            name: name,
+            slug: generate_unique_game_slug(classroom_id, name),
             type: "kana_memory_cards",
             status: :draft,
             max_players: attrs["max_players"] || attrs[:max_players] || 1,
@@ -1330,8 +1384,11 @@ defmodule Medoru.Games do
       {:error, :not_authorized}
     else
       Repo.transaction(fn ->
+        name = attrs["name"] || attrs[:name]
+
         game_attrs = %{
-          name: attrs["name"] || attrs[:name],
+          name: name,
+          slug: generate_unique_game_slug(classroom_id, name),
           type: "kana_falling",
           status: :draft,
           max_players: 1,
@@ -1595,8 +1652,11 @@ defmodule Medoru.Games do
       selected_kanji = Enum.uniq(selected_kanji)
 
       Repo.transaction(fn ->
+        name = attrs["name"] || attrs[:name]
+
         game_attrs = %{
-          name: attrs["name"] || attrs[:name],
+          name: name,
+          slug: generate_unique_game_slug(classroom_id, name),
           type: "kanji_falling",
           status: :draft,
           max_players: 1,
@@ -1776,8 +1836,11 @@ defmodule Medoru.Games do
       selected_word_ids = Enum.uniq(selected_word_ids)
 
       Repo.transaction(fn ->
+        name = attrs["name"] || attrs[:name]
+
         game_attrs = %{
-          name: attrs["name"] || attrs[:name],
+          name: name,
+          slug: generate_unique_game_slug(classroom_id, name),
           type: "words_falling",
           status: :draft,
           max_players: 1,
@@ -2008,8 +2071,11 @@ defmodule Medoru.Games do
       {:error, :not_authorized}
     else
       Repo.transaction(fn ->
+        name = attrs["name"] || attrs[:name]
+
         game_attrs = %{
-          name: attrs["name"] || attrs[:name],
+          name: name,
+          slug: generate_unique_game_slug(classroom_id, name),
           type: "radical_hunt",
           status: :draft,
           max_players: 1,

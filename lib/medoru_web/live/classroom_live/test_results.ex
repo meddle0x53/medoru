@@ -7,6 +7,7 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
   alias Medoru.Classrooms
   alias Medoru.Tests
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
 
   @impl true
   def mount(%{"id" => classroom_id, "test_id" => test_id} = params, session, socket) do
@@ -15,10 +16,13 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
 
     socket = assign(socket, :locale, locale)
 
+    classroom = SlugRoutes.load_classroom!(classroom_id)
+    test = SlugRoutes.load_test!(test_id)
+
     cond do
       not is_nil(user) ->
         # Verify user is an approved member of the classroom
-        case Classrooms.get_user_membership(classroom_id, user.id) do
+        case Classrooms.get_user_membership(classroom.id, user.id) do
           nil ->
             {:ok,
              socket
@@ -30,14 +34,14 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
               {:ok,
                socket
                |> put_flash(:error, gettext("Your membership is pending approval."))
-               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+               |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
             else
-              load_results(socket, classroom_id, test_id, user)
+              load_results(socket, classroom.id, test.id, user)
             end
         end
 
-      PublicAccess.featured_classroom?(classroom_id) ->
-        load_anonymous_results(socket, classroom_id, test_id, params["session_id"])
+      PublicAccess.featured_classroom?(classroom.id) ->
+        load_anonymous_results(socket, classroom.id, test.id, params["session_id"])
 
       true ->
         {:ok,
@@ -245,7 +249,7 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
         <%!-- Header --%>
         <div class="mb-8">
           <.link
-            navigate={~p"/classrooms/#{@classroom.id}?tab=tests"}
+            navigate={~p"/classrooms/#{@classroom.slug}?tab=tests"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> #{gettext("Back to Tests")}
@@ -374,7 +378,7 @@ defmodule MedoruWeb.ClassroomLive.TestResults do
 
         <%!-- Actions --%>
         <div class="flex justify-center gap-4 mt-8">
-          <.link navigate={~p"/classrooms/#{@classroom.id}?tab=tests"} class="btn btn-primary">
+          <.link navigate={~p"/classrooms/#{@classroom.slug}?tab=tests"} class="btn btn-primary">
             <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> #{gettext("Back to Tests")}
           </.link>
         </div>

@@ -620,6 +620,56 @@ defmodule Medoru.GamesTest do
     end
   end
 
+  describe "game slugs" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{name: "Test Classroom", teacher_id: teacher.id})
+
+      {:ok, classroom: classroom, teacher: teacher}
+    end
+
+    test "create_memory_card_game/4 generates a classroom-scoped slug", %{
+      classroom: classroom,
+      teacher: teacher
+    } do
+      assert {:ok, game} = create_memory_card_game(classroom.id, teacher.id)
+      assert game.slug == "test-game"
+    end
+
+    test "game slugs are unique within a classroom", %{classroom: classroom, teacher: teacher} do
+      assert {:ok, game1} = create_memory_card_game(classroom.id, teacher.id)
+      assert {:ok, game2} = create_memory_card_game(classroom.id, teacher.id)
+
+      assert game1.slug == "test-game"
+      assert game2.slug == "test-game-1"
+    end
+
+    test "the same slug can exist in different classrooms", %{
+      classroom: classroom1,
+      teacher: teacher
+    } do
+      {:ok, classroom2} =
+        Classrooms.create_classroom(%{name: "Other Classroom", teacher_id: teacher.id})
+
+      assert {:ok, game1} = create_memory_card_game(classroom1.id, teacher.id)
+      assert {:ok, game2} = create_memory_card_game(classroom2.id, teacher.id)
+
+      assert game1.slug == "test-game"
+      assert game2.slug == "test-game"
+    end
+
+    test "get_game_by_slug!/2 returns the matching game", %{
+      classroom: classroom,
+      teacher: teacher
+    } do
+      {:ok, game} = create_memory_card_game(classroom.id, teacher.id)
+
+      assert Games.get_game_by_slug!(classroom.id, game.slug).id == game.id
+    end
+  end
+
   # Helper functions
 
   defp create_memory_card_game(classroom_id, teacher_id, attrs \\ %{}) do

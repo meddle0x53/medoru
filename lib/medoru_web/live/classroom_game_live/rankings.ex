@@ -10,6 +10,7 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
   alias Medoru.Classrooms
   alias Medoru.Games
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
 
   @impl true
   def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
@@ -17,14 +18,14 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
     return_to = params["return_to"]
     is_anonymous = is_nil(user)
 
-    classroom = Classrooms.get_classroom!(classroom_id)
+    {classroom, game} = SlugRoutes.load_classroom_and_game!(classroom_id, game_id)
 
     has_access =
       if is_anonymous do
-        PublicAccess.featured_classroom?(classroom_id)
+        PublicAccess.featured_classroom?(classroom.id)
       else
         is_teacher = classroom.teacher_id == user.id
-        membership = Classrooms.get_user_membership(classroom_id, user.id)
+        membership = Classrooms.get_user_membership(classroom.id, user.id)
         is_approved = membership != nil and membership.status == :approved
         is_teacher or is_approved
       end
@@ -37,7 +38,7 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
           is_anonymous ->
             gettext("You must sign in to view this page.")
 
-          Classrooms.get_user_membership(classroom_id, user.id) == nil ->
+          Classrooms.get_user_membership(classroom.id, user.id) == nil ->
             gettext("You are not a member of this classroom.")
 
           true ->
@@ -49,19 +50,17 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
        |> put_flash(:error, message)
        |> push_navigate(to: redirect_path)}
     else
-      game = Games.get_game_for_play!(game_id)
-
-      if game.classroom_id != classroom_id do
+      if game.classroom_id != classroom.id do
         {:ok,
          socket
          |> put_flash(:error, gettext("Game not found in this classroom."))
-         |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+         |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
       else
         if game.status != :published do
           {:ok,
            socket
            |> put_flash(:error, gettext("This game is not available yet."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=games")}
+           |> push_navigate(to: ~p"/classrooms/#{classroom.id}?tab=games")}
         else
           sessions = Games.list_game_sessions(game.id)
 
@@ -86,7 +85,7 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
         <%!-- Header --%>
         <div class="mb-6">
           <.link
-            navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
+            navigate={@return_to || ~p"/classrooms/#{@classroom.slug}?tab=games"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-3 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Games")}
@@ -98,7 +97,7 @@ defmodule MedoruWeb.ClassroomGameLive.Rankings do
               <p class="text-secondary text-sm">{gettext("Rankings")}</p>
             </div>
             <.link
-              navigate={~p"/classrooms/#{@classroom.id}/games/#{@game.id}"}
+              navigate={~p"/classrooms/#{@classroom.slug}/games/#{@game.slug}"}
               class="btn btn-primary btn-sm"
             >
               <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Play")}

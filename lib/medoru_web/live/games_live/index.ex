@@ -165,14 +165,14 @@ defmodule MedoruWeb.GamesLive.Index do
   end
 
   defp play_path(game) do
-    classroom_id = game.classroom_id
+    classroom = game.classroom
 
     case game.type do
-      "kana_falling" -> ~p"/classrooms/#{classroom_id}/kana-falling-games/#{game.id}"
-      "kanji_falling" -> ~p"/classrooms/#{classroom_id}/kanji-falling-games/#{game.id}"
-      "words_falling" -> ~p"/classrooms/#{classroom_id}/words-falling-games/#{game.id}"
-      "radical_hunt" -> ~p"/classrooms/#{classroom_id}/radical-hunt-games/#{game.id}"
-      _ -> ~p"/classrooms/#{classroom_id}/games/#{game.id}"
+      "kana_falling" -> ~p"/classrooms/#{classroom.slug}/kana-falling-games/#{game.slug}"
+      "kanji_falling" -> ~p"/classrooms/#{classroom.slug}/kanji-falling-games/#{game.slug}"
+      "words_falling" -> ~p"/classrooms/#{classroom.slug}/words-falling-games/#{game.slug}"
+      "radical_hunt" -> ~p"/classrooms/#{classroom.slug}/radical-hunt-games/#{game.slug}"
+      _ -> ~p"/classrooms/#{classroom.slug}/games/#{game.slug}"
     end
   end
 

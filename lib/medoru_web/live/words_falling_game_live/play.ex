@@ -14,6 +14,7 @@ defmodule MedoruWeb.WordsFallingGameLive.Play do
   alias Medoru.Games
   alias Medoru.Games.WordsFallingGame
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
 
   @death_row 20
 
@@ -25,37 +26,36 @@ defmodule MedoruWeb.WordsFallingGameLive.Play do
     return_to = params["return_to"]
     is_anonymous = is_nil(user)
 
-    classroom = Classrooms.get_classroom!(classroom_id)
-    game = Games.get_game_for_play!(game_id)
+    {classroom, game} = SlugRoutes.load_classroom_and_game!(classroom_id, game_id)
 
     has_access =
       if is_anonymous do
-        PublicAccess.featured_classroom?(classroom_id)
+        PublicAccess.featured_classroom?(classroom.id)
       else
-        Classrooms.is_approved_member?(classroom_id, user.id) or classroom.teacher_id == user.id
+        Classrooms.is_approved_member?(classroom.id, user.id) or classroom.teacher_id == user.id
       end
 
     cond do
-      game.classroom_id != classroom_id ->
-        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
+      game.classroom_id != classroom.id ->
+        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom.id}")}
 
       game.status != :published ->
-        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
+        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom.id}")}
 
       not has_access ->
         redirect_path =
-          if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms/#{classroom_id}"
+          if is_anonymous, do: ~p"/auth/google", else: ~p"/classrooms/#{classroom.id}"
 
         {:ok, push_navigate(socket, to: redirect_path)}
 
       game.type != "words_falling" ->
-        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom_id}")}
+        {:ok, push_navigate(socket, to: ~p"/classrooms/#{classroom.id}")}
 
       true ->
         config = game.words_falling_game
 
         high_score =
-          if is_anonymous, do: nil, else: Games.get_words_falling_high_score(game_id, user.id)
+          if is_anonymous, do: nil, else: Games.get_words_falling_high_score(game.id, user.id)
 
         sessions = if is_anonymous, do: [], else: Games.list_words_falling_sessions(game.id)
         locale = socket.assigns.current_scope.locale || "en"
@@ -63,6 +63,10 @@ defmodule MedoruWeb.WordsFallingGameLive.Play do
         socket =
           socket
           |> assign(:page_title, game.name)
+          |> assign(
+            :page_description,
+            gettext("Play %{game_name} on Medoru", game_name: game.name)
+          )
           |> assign(:classroom, classroom)
           |> assign(:game, game)
           |> assign(:return_to, return_to)

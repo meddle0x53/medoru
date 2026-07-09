@@ -37,6 +37,7 @@ defmodule Medoru.Tests do
   alias Medoru.Accounts
   alias Medoru.Classrooms.ClassroomTest
   alias Medoru.Repo
+  alias Medoru.Slug
   alias Medoru.Tests.{Test, TestStep, TestSession, TestStepAnswer}
   alias Medoru.Learning
 
@@ -117,6 +118,30 @@ defmodule Medoru.Tests do
   end
 
   @doc """
+  Gets a single test by slug.
+
+  Returns `nil` if the test does not exist.
+  """
+  def get_test_by_slug(slug) do
+    Test
+    |> where(slug: ^slug)
+    |> preload(test_steps: [kanji: :kanji_readings, word: []])
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a single test by slug.
+
+  Raises `Ecto.NoResultsError` if the test does not exist.
+  """
+  def get_test_by_slug!(slug) do
+    Test
+    |> where(slug: ^slug)
+    |> preload(test_steps: [kanji: :kanji_readings, word: []])
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a test.
 
   ## Examples
@@ -129,6 +154,8 @@ defmodule Medoru.Tests do
 
   """
   def create_test(attrs \\ %{}) do
+    attrs = maybe_generate_test_slug(attrs)
+
     %Test{}
     |> Test.changeset(attrs)
     |> Repo.insert()
@@ -296,10 +323,39 @@ defmodule Medoru.Tests do
       attrs
       |> Map.put("creator_id", teacher_id)
       |> Map.put("setup_state", "in_progress")
+      |> Map.put("test_type", "teacher")
+      |> maybe_generate_test_slug()
 
     %Test{}
     |> Test.teacher_create_changeset(attrs)
     |> Repo.insert()
+  end
+
+  defp maybe_generate_test_slug(attrs) do
+    slug = attrs[:slug] || attrs["slug"]
+    title = attrs[:title] || attrs["title"]
+    test_type = attrs[:test_type] || attrs["test_type"]
+
+    if (is_nil(slug) or slug == "") and teacher_test_type?(test_type) do
+      base = Slug.generate(title || "", "test")
+      existing = fetch_existing_test_slugs(base)
+      slug_key = if Enum.any?(attrs, fn {k, _} -> is_binary(k) end), do: "slug", else: :slug
+      Map.put(attrs, slug_key, Slug.ensure_unique(base, existing))
+    else
+      attrs
+    end
+  end
+
+  defp teacher_test_type?(:teacher), do: true
+  defp teacher_test_type?("teacher"), do: true
+  defp teacher_test_type?(_), do: false
+
+  defp fetch_existing_test_slugs(base) do
+    Test
+    |> where([t], t.slug == ^base or like(t.slug, ^"#{base}-%"))
+    |> select([t], t.slug)
+    |> Repo.all()
+    |> Slug.matching_existing(base)
   end
 
   @doc """

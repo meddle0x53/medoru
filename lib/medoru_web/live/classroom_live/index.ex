@@ -575,7 +575,7 @@ defmodule MedoruWeb.ClassroomLive.Index do
               </button>
             <% true -> %>
               <.link
-                navigate={~p"/classrooms/#{@classroom.id}"}
+                navigate={~p"/classrooms/#{@classroom.slug}"}
                 class="btn btn-ghost btn-sm text-primary"
               >
                 {gettext("View")} →

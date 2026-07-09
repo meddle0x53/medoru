@@ -13,6 +13,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias Medoru.Classrooms
   alias Medoru.Content
   alias Medoru.Content.MatureContent
+  alias MedoruWeb.SlugRoutes
   alias Medoru.Games
   alias Medoru.Learning.WordSets
   alias Medoru.Notifications
@@ -53,15 +54,15 @@ defmodule MedoruWeb.ClassroomLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    classroom = Classrooms.get_classroom!(id)
+    classroom = SlugRoutes.load_classroom!(id)
 
     cond do
       classroom.teacher_id == user.id ->
-        members = Classrooms.list_classroom_members(id)
-        published_tests = Classrooms.list_classroom_tests(id, status: :active)
-        user_attempts = Classrooms.list_user_test_attempts(id, user.id)
-        published_games = Games.list_classroom_games(id, status: :published)
-        conversation = Chat.get_classroom_conversation(id)
+        members = Classrooms.list_classroom_members(classroom.id)
+        published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+        user_attempts = Classrooms.list_user_test_attempts(classroom.id, user.id)
+        published_games = Games.list_classroom_games(classroom.id, status: :published)
+        conversation = Chat.get_classroom_conversation(classroom.id)
 
         chat_enter_sends =
           user.profile && user.profile.chat_enter_sends != false
@@ -101,7 +102,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
         {:ok, socket}
 
       true ->
-        case Classrooms.get_user_membership(id, user.id) do
+        case Classrooms.get_user_membership(classroom.id, user.id) do
           nil ->
             {:ok,
              socket
@@ -115,11 +116,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                |> put_flash(:error, gettext("Your membership is pending approval."))
                |> push_navigate(to: ~p"/classrooms")}
             else
-              members = Classrooms.list_classroom_members(id)
-              published_tests = Classrooms.list_classroom_tests(id, status: :active)
-              user_attempts = Classrooms.list_user_test_attempts(id, user.id)
-              published_games = Games.list_classroom_games(id, status: :published)
-              conversation = Chat.get_classroom_conversation(id)
+              members = Classrooms.list_classroom_members(classroom.id)
+              published_tests = Classrooms.list_classroom_tests(classroom.id, status: :active)
+              user_attempts = Classrooms.list_user_test_attempts(classroom.id, user.id)
+              published_games = Games.list_classroom_games(classroom.id, status: :published)
+              conversation = Chat.get_classroom_conversation(classroom.id)
 
               chat_enter_sends =
                 user.profile && user.profile.chat_enter_sends != false
@@ -298,7 +299,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
     {:noreply,
      socket
      |> assign(:active_tab, tab)
-     |> push_patch(to: ~p"/classrooms/#{socket.assigns.classroom.id}?tab=#{tab}")}
+     |> push_patch(to: ~p"/classrooms/#{socket.assigns.classroom.slug}?tab=#{tab}")}
   end
 
   @impl true
@@ -1435,7 +1436,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                               +{progress.points_earned} {gettext("pts")}
                             </span>
                             <.link
-                              navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                              navigate={
+                                ~p"/classrooms/#{@classroom.slug}/custom-lessons/#{lesson.slug}"
+                              }
                               class="btn btn-secondary btn-sm"
                             >
                               <.icon name="hero-arrow-path" class="w-4 h-4 mr-1" /> {gettext("Review")}
@@ -1443,7 +1446,9 @@ defmodule MedoruWeb.ClassroomLive.Show do
                           </div>
                         <% _ -> %>
                           <.link
-                            navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{lesson.id}"}
+                            navigate={
+                              ~p"/classrooms/#{@classroom.slug}/custom-lessons/#{lesson.slug}"
+                            }
                             class="btn btn-primary btn-sm sm:btn-md"
                           >
                             <%= if progress_status == "in_progress" do %>
@@ -1635,14 +1640,18 @@ defmodule MedoruWeb.ClassroomLive.Show do
                   <%= case get_test_status(@classroom.id, @current_user.id, classroom_test.test_id, attempt) do %>
                     <% :not_started -> %>
                       <.link
-                        navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
+                        navigate={
+                          ~p"/classrooms/#{@classroom.slug}/tests/#{classroom_test.test.slug}"
+                        }
                         class="btn btn-primary btn-sm sm:btn-md"
                       >
                         <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start Test")}
                       </.link>
                     <% :in_progress -> %>
                       <.link
-                        navigate={~p"/classrooms/#{@classroom.id}/tests/#{classroom_test.test_id}"}
+                        navigate={
+                          ~p"/classrooms/#{@classroom.slug}/tests/#{classroom_test.test.slug}"
+                        }
                         class="btn btn-warning btn-sm sm:btn-md"
                       >
                         <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Continue")}
@@ -1806,19 +1815,19 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     <% play_path =
                       cond do
                         game.type == "kana_falling" ->
-                          ~p"/classrooms/#{@classroom.id}/kana-falling-games/#{game.id}"
+                          ~p"/classrooms/#{@classroom.slug}/kana-falling-games/#{game.slug}"
 
                         game.type == "kanji_falling" ->
-                          ~p"/classrooms/#{@classroom.id}/kanji-falling-games/#{game.id}"
+                          ~p"/classrooms/#{@classroom.slug}/kanji-falling-games/#{game.slug}"
 
                         game.type == "words_falling" ->
-                          ~p"/classrooms/#{@classroom.id}/words-falling-games/#{game.id}"
+                          ~p"/classrooms/#{@classroom.slug}/words-falling-games/#{game.slug}"
 
                         game.type == "radical_hunt" ->
-                          ~p"/classrooms/#{@classroom.id}/radical-hunt-games/#{game.id}"
+                          ~p"/classrooms/#{@classroom.slug}/radical-hunt-games/#{game.slug}"
 
                         true ->
-                          ~p"/classrooms/#{@classroom.id}/games/#{game.id}"
+                          ~p"/classrooms/#{@classroom.slug}/games/#{game.slug}"
                       end %>
                     <%= case get_game_status(session) do %>
                       <% :not_started -> %>
@@ -1850,7 +1859,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       <%!-- No rankings link for falling games (shown on game over instead) --%>
                     <% else %>
                       <.link
-                        navigate={~p"/classrooms/#{@classroom.id}/games/#{game.id}/rankings"}
+                        navigate={~p"/classrooms/#{@classroom.slug}/games/#{game.slug}/rankings"}
                         class="btn btn-ghost btn-sm"
                       >
                         <.icon name="hero-trophy" class="w-4 h-4 mr-1" /> {gettext("Rankings")}

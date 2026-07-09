@@ -32,6 +32,7 @@ defmodule Medoru.Content.CustomLesson do
     field :difficulty, :integer, default: 1
     field :status, :string, default: "draft"
     field :word_count, :integer, default: 0
+    field :slug, :string
 
     # Test configuration
     field :requires_test, :boolean, default: false
@@ -63,6 +64,7 @@ defmodule Medoru.Content.CustomLesson do
     custom_lesson
     |> cast(attrs, [
       :title,
+      :slug,
       :description,
       :lesson_type,
       :lesson_subtype,
@@ -93,7 +95,23 @@ defmodule Medoru.Content.CustomLesson do
     |> validate_number(:difficulty, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
     |> validate_number(:word_count, greater_than_or_equal_to: 0)
     |> validate_word_colors()
+    |> validate_slug()
     |> foreign_key_constraint(:creator_id)
+    |> unique_constraint(:slug)
+  end
+
+  defp validate_slug(changeset) do
+    slug = get_field(changeset, :slug)
+
+    if slug && slug != "" do
+      changeset
+      |> validate_length(:slug, min: 1, max: 100)
+      |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
+        message: "can only contain lowercase letters, numbers, and hyphens"
+      )
+    else
+      changeset
+    end
   end
 
   defp validate_word_colors(changeset) do

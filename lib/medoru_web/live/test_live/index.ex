@@ -17,21 +17,22 @@ defmodule MedoruWeb.TestLive.Index do
 
   @impl true
   def handle_params(_params, _url, socket) do
-    {classroom_tests, classroom_id} =
+    {classroom_tests, classroom} =
       case SiteSettings.featured_classroom_id() do
         nil ->
           {[], nil}
 
         classroom_id ->
           tests = Classrooms.list_classroom_tests(classroom_id, status: :active)
-          {tests, classroom_id}
+          classroom = Classrooms.get_classroom!(classroom_id)
+          {tests, classroom}
       end
 
     {:noreply,
      socket
      |> assign(:page_title, gettext("Tests"))
      |> assign(:classroom_tests, classroom_tests)
-     |> assign(:featured_classroom_id, classroom_id)}
+     |> assign(:featured_classroom, classroom)}
   end
 
   defp format_duration(nil), do: nil

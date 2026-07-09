@@ -4,6 +4,7 @@ defmodule Medoru.Content do
   """
   import Ecto.Query, warn: false
   alias Medoru.Repo
+  alias Medoru.Slug
 
   alias Medoru.Content.{
     Kanji,
@@ -2304,6 +2305,30 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Gets a single custom lesson by slug.
+
+  Returns `nil` if the lesson does not exist.
+  """
+  def get_custom_lesson_by_slug(slug) do
+    CustomLesson
+    |> where(slug: ^slug)
+    |> preload(:creator)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a single custom lesson by slug.
+
+  Raises `Ecto.NoResultsError` if the lesson does not exist.
+  """
+  def get_custom_lesson_by_slug!(slug) do
+    CustomLesson
+    |> where(slug: ^slug)
+    |> preload(:creator)
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a custom lesson.
 
   ## Examples
@@ -2316,9 +2341,33 @@ defmodule Medoru.Content do
 
   """
   def create_custom_lesson(attrs \\ %{}) do
+    attrs = maybe_generate_custom_lesson_slug(attrs)
+
     %CustomLesson{}
     |> CustomLesson.changeset(attrs)
     |> Repo.insert()
+  end
+
+  defp maybe_generate_custom_lesson_slug(attrs) do
+    slug = attrs[:slug] || attrs["slug"]
+    title = attrs[:title] || attrs["title"]
+
+    if is_nil(slug) or slug == "" do
+      base = Slug.generate(title || "", "lesson")
+      existing = fetch_existing_lesson_slugs(base)
+      slug_key = if Enum.any?(attrs, fn {k, _} -> is_binary(k) end), do: "slug", else: :slug
+      Map.put(attrs, slug_key, Slug.ensure_unique(base, existing))
+    else
+      attrs
+    end
+  end
+
+  defp fetch_existing_lesson_slugs(base) do
+    CustomLesson
+    |> where([l], l.slug == ^base or like(l.slug, ^"#{base}-%"))
+    |> select([l], l.slug)
+    |> Repo.all()
+    |> Slug.matching_existing(base)
   end
 
   @doc """

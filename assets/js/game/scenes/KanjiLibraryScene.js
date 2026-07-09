@@ -74,6 +74,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       z-index: 200;
       overflow: hidden;
+      touch-action: pan-y;
     `
 
     // Scale the overlay so the 960×540 design fills the displayed game area.
@@ -129,6 +130,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           color: #ecf0f1;
           font-size: 13px;
           outline: none;
+          touch-action: manipulation;
         }
         .kco-search::placeholder { color: #7f8c8d; }
         .kco-filters {
@@ -144,6 +146,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           color: #bdc3c7;
           cursor: pointer;
           font-size: 12px;
+          touch-action: manipulation;
         }
         .kco-filter.active {
           background: #3498db;
@@ -157,6 +160,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           background: #1a1a2e;
           color: #ecf0f1;
           font-size: 12px;
+          touch-action: manipulation;
         }
         .kco-stats {
           text-align: center;
@@ -269,6 +273,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           font-size: 15px;
           font-weight: bold;
           cursor: pointer;
+          touch-action: manipulation;
         }
         .kco-continue:hover { background: #2ecc71; }
       </style>
@@ -277,7 +282,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
         <p>Review your learned kanji and the journey ahead</p>
       </div>
       <div class="kco-toolbar">
-        <input type="text" class="kco-search" id="kco-search" placeholder="Search character, meaning, reading...">
+        <input type="text" class="kco-search" id="kco-search" placeholder="Search character, meaning, reading..." autocomplete="off" autocorrect="off" spellcheck="false">
         <div class="kco-filters" id="kco-filters">
           <button class="kco-filter active" data-level="all">All</button>
           <button class="kco-filter" data-level="5">N5</button>

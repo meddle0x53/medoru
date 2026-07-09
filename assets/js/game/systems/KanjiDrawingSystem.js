@@ -137,10 +137,10 @@ export default class KanjiDrawingSystem {
 
   // ---------- Public API ----------
 
-  start(strokeData, hint = '', callbacks = {}, kanjiData = null) {
+  start(strokeData, hint = '', callbacks = {}, kanjiData = null, options = {}) {
     // 20% chance to override the challenge with the run's focus kanji.
     let actualKanjiData = kanjiData
-    if (this.focusKanjiData && Math.random() < 0.2) {
+    if (options.allowFocusOverride !== false && this.focusKanjiData && Math.random() < 0.2) {
       const focus = this.focusKanjiData
       if (focus.stroke_data && focus.stroke_data.strokes && focus.stroke_data.strokes.length > 0) {
         strokeData = focus.stroke_data

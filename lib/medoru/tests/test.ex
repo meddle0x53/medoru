@@ -30,6 +30,7 @@ defmodule Medoru.Tests.Test do
     field :max_attempts, :integer
     field :is_system, :boolean, default: false
     field :metadata, :map, default: %{}
+    field :slug, :string
 
     # For lesson tests
     belongs_to :lesson, Medoru.Content.Lesson
@@ -48,6 +49,7 @@ defmodule Medoru.Tests.Test do
     test
     |> cast(attrs, [
       :title,
+      :slug,
       :description,
       :test_type,
       :status,
@@ -70,8 +72,24 @@ defmodule Medoru.Tests.Test do
       less_than_or_equal_to: 7200
     )
     |> maybe_validate_max_attempts()
+    |> validate_slug()
     |> foreign_key_constraint(:lesson_id)
     |> foreign_key_constraint(:creator_id)
+    |> unique_constraint(:slug)
+  end
+
+  defp validate_slug(changeset) do
+    slug = get_field(changeset, :slug)
+
+    if slug && slug != "" do
+      changeset
+      |> validate_length(:slug, min: 1, max: 100)
+      |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
+        message: "can only contain lowercase letters, numbers, and hyphens"
+      )
+    else
+      changeset
+    end
   end
 
   # Custom validation for max_attempts that allows nil

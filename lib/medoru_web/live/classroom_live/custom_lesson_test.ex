@@ -7,6 +7,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   alias Medoru.Classrooms
   alias Medoru.Content
   alias Medoru.Tests
+  alias MedoruWeb.SlugRoutes
   alias MedoruWeb.TestKeyboardShortcuts
   alias MedoruWeb.WritingFillInComponents
 
@@ -16,8 +17,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     user = socket.assigns.current_scope.current_user
     practice = params["practice"] == "true"
 
+    classroom = SlugRoutes.load_classroom!(classroom_id)
+    lesson = SlugRoutes.load_custom_lesson!(lesson_id)
+
     # Verify user is an approved member
-    case Classrooms.get_user_membership(classroom_id, user.id) do
+    case Classrooms.get_user_membership(classroom.id, user.id) do
       nil ->
         {:ok,
          socket
@@ -29,9 +33,9 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
           {:ok,
            socket
            |> put_flash(:error, gettext("Your membership is pending approval."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+           |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
         else
-          load_test(socket, classroom_id, lesson_id, user, locale, practice)
+          load_test(socket, classroom.id, lesson.id, user, locale, practice)
         end
     end
   end
@@ -779,7 +783,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
         <%!-- Header --%>
         <div class="mb-6">
           <.link
-            navigate={~p"/classrooms/#{@classroom.id}/custom-lessons/#{@lesson.id}"}
+            navigate={~p"/classrooms/#{@classroom.slug}/custom-lessons/#{@lesson.slug}"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lesson")}

@@ -11,21 +11,22 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
   alias Medoru.Games
   alias Medoru.Games.MemoryCardGame
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
 
   @impl true
   def mount(%{"classroom_id" => classroom_id, "game_id" => game_id} = params, _session, socket) do
     user = socket.assigns.current_scope.current_user
     return_to = params["return_to"]
-    classroom = Classrooms.get_classroom!(classroom_id)
+    {classroom, game} = SlugRoutes.load_classroom_and_game!(classroom_id, game_id)
     is_anonymous = is_nil(user)
 
     # Verify access: authenticated members/teacher, or anonymous on featured classroom
     has_access =
       if is_anonymous do
-        PublicAccess.featured_classroom?(classroom_id)
+        PublicAccess.featured_classroom?(classroom.id)
       else
         is_teacher = classroom.teacher_id == user.id
-        membership = Classrooms.get_user_membership(classroom_id, user.id)
+        membership = Classrooms.get_user_membership(classroom.id, user.id)
         is_approved = membership != nil and membership.status == :approved
         is_teacher or is_approved
       end
@@ -39,7 +40,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
           is_anonymous ->
             gettext("You must sign in to play this game.")
 
-          Classrooms.get_user_membership(classroom_id, user.id) == nil ->
+          Classrooms.get_user_membership(classroom.id, user.id) == nil ->
             gettext("You are not a member of this classroom.")
 
           true ->
@@ -51,26 +52,24 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
        |> put_flash(:error, message)
        |> push_navigate(to: redirect_path)}
     else
-      game = Games.get_game_for_play!(game_id)
-
-      if game.classroom_id != classroom_id do
+      if game.classroom_id != classroom.id do
         {:ok,
          socket
          |> put_flash(:error, gettext("Game not found in this classroom."))
-         |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+         |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
       else
         if game.status != :published do
           {:ok,
            socket
            |> put_flash(:error, gettext("This game is not available yet."))
-           |> push_navigate(to: ~p"/classrooms/#{classroom_id}?tab=games")}
+           |> push_navigate(to: ~p"/classrooms/#{classroom.id}?tab=games")}
         else
           # Get or create session (in-memory for anonymous)
           session =
             if is_anonymous do
               create_anonymous_session(game)
             else
-              {:ok, s} = Games.get_or_create_session(game_id, user.id)
+              {:ok, s} = Games.get_or_create_session(game.id, user.id)
               s
             end
 
@@ -88,6 +87,10 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
           socket =
             socket
             |> assign(:page_title, game.name)
+            |> assign(
+              :page_description,
+              gettext("Play %{game_name} on Medoru", game_name: game.name)
+            )
             |> assign(:classroom, classroom)
             |> assign(:game, game)
             |> assign(:return_to, return_to)
@@ -988,7 +991,7 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
         <%!-- Header --%>
         <div class="mb-4 sm:mb-6">
           <.link
-            navigate={@return_to || ~p"/classrooms/#{@classroom.id}?tab=games"}
+            navigate={@return_to || ~p"/classrooms/#{@classroom.slug}?tab=games"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-3 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Games")}
@@ -1010,8 +1013,8 @@ defmodule MedoruWeb.ClassroomGameLive.Play do
                 navigate={
                   if @return_to,
                     do:
-                      "#{~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"}?return_to=#{@return_to}",
-                    else: ~p"/classrooms/#{@classroom.id}/games/#{@game.id}/rankings"
+                      "#{~p"/classrooms/#{@classroom.slug}/games/#{@game.slug}/rankings"}?return_to=#{@return_to}",
+                    else: ~p"/classrooms/#{@classroom.slug}/games/#{@game.slug}/rankings"
                 }
                 class="btn btn-ghost btn-sm btn-circle sm:btn-square"
                 title={gettext("Rankings")}

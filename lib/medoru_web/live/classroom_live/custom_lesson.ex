@@ -8,6 +8,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   alias Medoru.Classrooms
   alias Medoru.Content
   alias MedoruWeb.PublicAccess
+  alias MedoruWeb.SlugRoutes
 
   @color_palette [
     "bg-red-200",
@@ -56,7 +57,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     user = socket.assigns.current_scope.current_user
     step = session["step"] || 0
 
-    lesson = Content.get_custom_lesson!(lesson_id)
+    lesson = SlugRoutes.load_custom_lesson!(lesson_id)
 
     # Only allow creator or teacher/admin to preview
     if user && (lesson.creator_id == user.id || user.type in ["teacher", "admin"]) do
@@ -87,10 +88,13 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     # Store step from query param (will be processed in handle_params)
     step = session["step"] || 0
 
+    classroom = SlugRoutes.load_classroom!(classroom_id)
+    lesson = SlugRoutes.load_custom_lesson!(lesson_id)
+
     cond do
       not is_nil(user) ->
         # Authenticated user - verify membership
-        case Classrooms.get_user_membership(classroom_id, user.id) do
+        case Classrooms.get_user_membership(classroom.id, user.id) do
           nil ->
             {:ok,
              socket
@@ -102,15 +106,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               {:ok,
                socket
                |> put_flash(:error, gettext("Your membership is pending approval."))
-               |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
+               |> push_navigate(to: ~p"/classrooms/#{classroom.id}")}
             else
-              load_lesson(socket, classroom_id, lesson_id, user, locale, practice, step)
+              load_lesson(socket, classroom.id, lesson.id, user, locale, practice, step)
             end
         end
 
-      PublicAccess.featured_classroom?(classroom_id) ->
+      PublicAccess.featured_classroom?(classroom.id) ->
         # Anonymous user accessing featured classroom
-        load_lesson(socket, classroom_id, lesson_id, nil, locale, false, step)
+        load_lesson(socket, classroom.id, lesson.id, nil, locale, false, step)
 
       true ->
         {:ok,
@@ -316,12 +320,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
         socket
       end
 
+    lesson = socket.assigns.lesson
+    locale = socket.assigns.locale
+    title = Content.get_localized_lesson_title(lesson, locale)
+    description = lesson.description || gettext("Study this custom lesson on Medoru")
+
     {:noreply,
-     assign(
-       socket,
-       :page_title,
-       Content.get_localized_lesson_title(socket.assigns.lesson, socket.assigns.locale)
-     )}
+     socket
+     |> assign(:page_title, title)
+     |> assign(:page_description, description)}
   end
 
   defp parse_step(nil), do: nil
@@ -759,7 +766,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
             </.link>
           <% else %>
             <.link
-              navigate={~p"/classrooms/#{@classroom.id}?tab=lessons"}
+              navigate={~p"/classrooms/#{@classroom.slug}?tab=lessons"}
               class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
             >
               <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Lessons")}

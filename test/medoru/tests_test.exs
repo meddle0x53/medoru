@@ -661,4 +661,36 @@ defmodule Medoru.TestsTest do
       assert listed.id == test.id
     end
   end
+
+  describe "teacher test slugs" do
+    test "create_teacher_test/2 generates a slug from the title" do
+      teacher = teacher_fixture()
+
+      assert {:ok, test} = Tests.create_teacher_test(%{"title" => "My Quiz"}, teacher.id)
+      assert test.slug == "my-quiz"
+    end
+
+    test "create_teacher_test/2 appends a suffix on title collisions" do
+      teacher = teacher_fixture()
+
+      assert {:ok, test1} = Tests.create_teacher_test(%{"title" => "Collision Quiz"}, teacher.id)
+
+      assert {:ok, test2} = Tests.create_teacher_test(%{"title" => "Collision Quiz"}, teacher.id)
+
+      assert test1.slug == "collision-quiz"
+      assert test2.slug == "collision-quiz-1"
+    end
+
+    test "create_test/1 does not generate a slug for non-teacher tests" do
+      assert {:ok, test} = Tests.create_test(@valid_attrs)
+      assert is_nil(test.slug)
+    end
+
+    test "get_test_by_slug!/1 returns the matching test" do
+      teacher = teacher_fixture()
+      {:ok, test} = Tests.create_teacher_test(%{"title" => "Slugged Quiz"}, teacher.id)
+
+      assert Tests.get_test_by_slug!(test.slug).id == test.id
+    end
+  end
 end

@@ -12,10 +12,19 @@
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 3,
-      "basePower": 8,
+      "basePower": 6,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
-      "kanji": "力",
+      "kanji": "刀",
+      "kanjiPool": [
+        "刀",
+        "斬",
+        "切",
+        "剣",
+        "刃",
+        "薙",
+        "突"
+      ],
       "rarity": "common",
       "moveHint": {
         "en": "Make a POWERFUL swing.",

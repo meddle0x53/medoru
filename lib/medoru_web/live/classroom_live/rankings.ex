@@ -9,15 +9,16 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
   use MedoruWeb, :live_view
 
   alias Medoru.Classrooms
+  alias MedoruWeb.SlugRoutes
 
   @impl true
   def mount(%{"id" => classroom_id}, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    classroom = Classrooms.get_classroom!(classroom_id)
+    classroom = SlugRoutes.load_classroom!(classroom_id)
 
     # Verify user is an approved member or the teacher
     is_teacher = classroom.teacher_id == user.id
-    is_approved = Classrooms.is_approved_member?(classroom_id, user.id)
+    is_approved = Classrooms.is_approved_member?(classroom.id, user.id)
 
     if not is_teacher and not is_approved do
       {:ok,
@@ -25,8 +26,8 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
        |> put_flash(:error, gettext("You must be a member to view rankings."))
        |> push_navigate(to: ~p"/classrooms")}
     else
-      my_rank = Classrooms.get_user_classroom_rank(classroom_id, user.id)
-      my_points = get_my_points(classroom_id, user.id)
+      my_rank = Classrooms.get_user_classroom_rank(classroom.id, user.id)
+      my_points = get_my_points(classroom.id, user.id)
 
       socket =
         socket
@@ -125,7 +126,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
         <%!-- Header --%>
         <div class="mb-8">
           <.link
-            navigate={~p"/classrooms/#{@classroom.id}"}
+            navigate={~p"/classrooms/#{@classroom.slug}"}
             class="text-secondary hover:text-primary text-sm flex items-center gap-1 mb-4 transition-colors"
           >
             <.icon name="hero-arrow-left" class="w-4 h-4" /> Back to Classroom

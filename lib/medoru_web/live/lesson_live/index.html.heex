@@ -58,7 +58,7 @@
           <% is_authenticated = @current_scope && @current_scope.current_user %>
           <% progress = if is_authenticated, do: ccl.student_progress, else: nil %>
           <% progress_status = if progress, do: progress.status, else: "not_started" %>
-          <% lesson_path = ~p"/classrooms/#{ccl.classroom_id}/custom-lessons/#{lesson.id}" %>
+          <% lesson_path = ~p"/classrooms/#{ccl.classroom.slug}/custom-lessons/#{lesson.slug}" %>
           <.link
             navigate={lesson_path}
             class="group block"

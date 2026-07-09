@@ -55,7 +55,7 @@
       <div class="space-y-3">
         <%= for classroom_test <- @classroom_tests do %>
           <% test = classroom_test.test %>
-          <% test_path = ~p"/classrooms/#{@featured_classroom_id}/tests/#{classroom_test.test_id}" %>
+          <% test_path = ~p"/classrooms/#{@featured_classroom.slug}/tests/#{test.slug}" %>
           <div class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-all">
             <div class="card-body p-4 sm:p-6">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">

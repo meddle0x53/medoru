@@ -388,4 +388,54 @@ defmodule Medoru.Content.CustomLessonTest do
                Content.create_custom_lesson_from_word_set(teacher.id, word_set.id)
     end
   end
+
+  describe "custom lesson slugs" do
+    setup do
+      teacher = user_fixture(%{user_type: :teacher})
+      %{teacher: teacher}
+    end
+
+    test "create_custom_lesson/1 generates a slug from the title", %{teacher: teacher} do
+      assert {:ok, lesson} =
+               Content.create_custom_lesson(%{
+                 title: "My First Lesson",
+                 creator_id: teacher.id
+               })
+
+      assert lesson.slug == "my-first-lesson"
+    end
+
+    test "create_custom_lesson/1 appends a suffix on title collisions", %{teacher: teacher} do
+      assert {:ok, lesson1} =
+               Content.create_custom_lesson(%{
+                 title: "Collision Lesson",
+                 creator_id: teacher.id
+               })
+
+      assert {:ok, lesson2} =
+               Content.create_custom_lesson(%{
+                 title: "Collision Lesson",
+                 creator_id: teacher.id
+               })
+
+      assert lesson1.slug == "collision-lesson"
+      assert lesson2.slug == "collision-lesson-1"
+    end
+
+    test "get_custom_lesson_by_slug/1 returns the matching lesson", %{teacher: teacher} do
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Slugged Lesson",
+          creator_id: teacher.id
+        })
+
+      assert Content.get_custom_lesson_by_slug(lesson.slug).id == lesson.id
+    end
+
+    test "get_custom_lesson_by_slug!/1 raises when the slug does not exist" do
+      assert_raise Ecto.NoResultsError, fn ->
+        Content.get_custom_lesson_by_slug!("missing-lesson")
+      end
+    end
+  end
 end

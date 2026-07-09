@@ -64,7 +64,7 @@ defmodule MedoruWeb.TestLive.IndexTest do
 
       assert has_element?(
                view,
-               "a[href='/classrooms/#{classroom.id}/tests/#{test_record.id}']",
+               "a[href='/classrooms/#{classroom.slug}/tests/#{test_record.slug}']",
                "Start Test"
              )
     end

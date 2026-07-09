@@ -1,3 +1,4 @@
+import { GAME_CONFIG } from '../config.js'
 import KanjiDrawingSystem from './KanjiDrawingSystem.js'
 import WordChallengeSystem from './WordChallengeSystem.js'
 import { filterChallengeWords } from './EnemyChallengePicker.js'
@@ -17,8 +18,8 @@ export default class WinChallengeSystem {
     this.player = player
     this.kanjiDrawing = new KanjiDrawingSystem(
       scene,
-      scene.scale.width / 2,
-      scene.scale.height / 2,
+      GAME_CONFIG.width / 2,
+      GAME_CONFIG.height / 2,
       320,
       { offsetXPercent: -0.038 }
     )

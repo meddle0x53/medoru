@@ -212,6 +212,19 @@ defmodule Medoru.Classrooms do
   end
 
   @doc """
+  Gets a single classroom by slug.
+
+  Raises `Ecto.NoResultsError` if the Classroom does not exist.
+  """
+  def get_classroom_by_slug!(slug) do
+    Classroom
+    |> where([c], c.slug == ^slug)
+    |> where([c], c.status == :active)
+    |> preload(teacher: [:profile], memberships: [user: [:profile]])
+    |> Repo.one!()
+  end
+
+  @doc """
   Gets a classroom by invite code.
 
   Returns nil if not found.

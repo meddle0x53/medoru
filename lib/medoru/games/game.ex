@@ -25,6 +25,7 @@ defmodule Medoru.Games.Game do
   @foreign_key_type :binary_id
   schema "games" do
     field :name, :string
+    field :slug, :string
     field :type, :string
     field :status, Ecto.Enum, values: @statuses, default: :draft
     field :max_players, :integer, default: 1
@@ -50,12 +51,37 @@ defmodule Medoru.Games.Game do
   @doc false
   def changeset(game, attrs) do
     game
-    |> cast(attrs, [:name, :type, :status, :max_players, :settings, :skill_level, :classroom_id])
+    |> cast(attrs, [
+      :name,
+      :slug,
+      :type,
+      :status,
+      :max_players,
+      :settings,
+      :skill_level,
+      :classroom_id
+    ])
     |> validate_required([:name, :type, :status, :max_players, :skill_level, :classroom_id])
     |> validate_inclusion(:type, @types)
     |> validate_number(:max_players, greater_than_or_equal_to: 1, less_than_or_equal_to: 10)
     |> validate_inclusion(:skill_level, @skill_levels)
+    |> validate_slug()
     |> foreign_key_constraint(:classroom_id)
+    |> unique_constraint(:slug, name: :games_classroom_id_slug_index)
+  end
+
+  defp validate_slug(changeset) do
+    slug = get_field(changeset, :slug)
+
+    if slug && slug != "" do
+      changeset
+      |> validate_length(:slug, min: 1, max: 100)
+      |> validate_format(:slug, ~r/^[a-z0-9-]+$/,
+        message: "can only contain lowercase letters, numbers, and hyphens"
+      )
+    else
+      changeset
+    end
   end
 
   @doc """
