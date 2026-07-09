@@ -78,7 +78,7 @@ export default class KanjiDrawingSystem {
     this.canvas.style.pointerEvents = 'auto'
 
     // Scaled DOM wrapper that maps the logical 960×540 design onto the displayed wrapper.
-    const gameWrapper = document.getElementById('game-wrapper')
+    this.gameWrapper = document.getElementById('game-wrapper')
     this.domWrapper = document.createElement('div')
     this.domWrapper.style.position = 'absolute'
     this.domWrapper.style.top = '0'
@@ -88,12 +88,16 @@ export default class KanjiDrawingSystem {
     this.domWrapper.style.zIndex = '300'
     this.domWrapper.style.pointerEvents = 'none'
 
-    if (gameWrapper) {
-      const scaleX = (gameWrapper.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
-      const scaleY = (gameWrapper.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
-      this.domWrapper.style.transform = `scale(${scaleX}, ${scaleY})`
-      this.domWrapper.style.transformOrigin = 'top left'
-      gameWrapper.appendChild(this.domWrapper)
+    this._updateScale = this._updateScale.bind(this)
+    if (this.gameWrapper) {
+      this._updateScale()
+      this.gameWrapper.appendChild(this.domWrapper)
+      if (typeof ResizeObserver !== 'undefined') {
+        this._resizeObserver = new ResizeObserver(this._updateScale)
+        this._resizeObserver.observe(this.gameWrapper)
+      } else {
+        window.addEventListener('resize', this._updateScale)
+      }
     }
 
     this.domWrapper.appendChild(this.hintText)
@@ -178,10 +182,24 @@ export default class KanjiDrawingSystem {
 
   destroy() {
     this._stopTimer()
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect()
+      this._resizeObserver = null
+    } else if (this._updateScale) {
+      window.removeEventListener('resize', this._updateScale)
+    }
     if (this.domWrapper && this.domWrapper.parentNode) {
       this.domWrapper.parentNode.removeChild(this.domWrapper)
     }
     this._unbindEvents()
+  }
+
+  _updateScale() {
+    if (!this.gameWrapper || !this.domWrapper) return
+    const scaleX = (this.gameWrapper.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
+    const scaleY = (this.gameWrapper.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
+    this.domWrapper.style.transform = `scale(${scaleX}, ${scaleY})`
+    this.domWrapper.style.transformOrigin = 'top left'
   }
 
   // ---------- Timer ----------
@@ -274,9 +292,12 @@ export default class KanjiDrawingSystem {
 
   _getPoint(e) {
     const rect = this.canvas.getBoundingClientRect()
+    // The canvas may be CSS-scaled by the wrapper; normalize to internal pixels.
+    const scaleX = rect.width > 0 ? this.canvas.width / rect.width : 1
+    const scaleY = rect.height > 0 ? this.canvas.height / rect.height : 1
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     }
   }
 

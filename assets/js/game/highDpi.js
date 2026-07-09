@@ -1,17 +1,25 @@
 /**
  * High-DPI helper for Phaser 4.
  *
- * NOTE: High-DPI rendering is currently disabled while we stabilize the game.
- * `getGamePX()` returns 1, so the game renders at the design resolution 960×540.
- * The helper is kept in place so it can be re-enabled later.
+ * The game canvas is created at physical resolution (960*PX × 540*PX) while the
+ * logical design stays 960×540. The main camera is zoomed by PX and scrolled so
+ * the design fills the physical canvas. Phaser's FIT scale mode then scales the
+ * whole canvas down to the displayed size, giving crisp pixels on DPR > 1 screens.
  */
 
 const DESIGN_WIDTH = 960
 const DESIGN_HEIGHT = 540
 
 export function getGamePX() {
-  // Temporarily disabled. Change this to use window.devicePixelRatio to re-enable.
-  return 1
+  if (typeof window === 'undefined') return 1
+  if (window.GAME_PX) return window.GAME_PX
+
+  const dpr = window.devicePixelRatio || 1
+  // Cap at 2 to keep fill-rate reasonable. Devices with DPR > 2 still get
+  // a crisp 2× render.
+  const px = Math.max(1, Math.min(2, Math.round(dpr)))
+  window.GAME_PX = px
+  return px
 }
 
 export function getPhysicalSize() {
@@ -22,17 +30,39 @@ export function getPhysicalSize() {
   }
 }
 
+function applyHighDPI(cam, px) {
+  if (px > 1) {
+    cam.setZoom(px)
+    cam.setViewport(0, 0, DESIGN_WIDTH * px, DESIGN_HEIGHT * px)
+    // With zoom > 1 the camera is centered on the middle of the world by default.
+    // Scroll back so the 960×540 design area starts at the top-left of the viewport.
+    cam.setScroll(
+      -(DESIGN_WIDTH * (px - 1)) / 2,
+      -(DESIGN_HEIGHT * (px - 1)) / 2,
+    )
+  } else {
+    cam.setZoom(1)
+    cam.setViewport(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT)
+    cam.setScroll(0, 0)
+  }
+}
+
 /**
- * Zooms and resizes the scene's main camera so logical 960×540 coordinates map
+ * Zooms and scrolls the scene's main camera so logical 960×540 coordinates map
  * to the physical-resolution canvas.
  *
- * With high-DPI disabled this is a no-op.
+ * Call this once at the top of a scene's create() method.
  */
 export function setupHighDPIWorld(scene) {
   const px = getGamePX()
-  if (px > 1) {
-    const cam = scene.cameras.main
-    cam.setZoom(px)
-    cam.setViewport(0, 0, DESIGN_WIDTH * px, DESIGN_HEIGHT * px)
-  }
+  const cam = scene.cameras.main
+
+  applyHighDPI(cam, px)
+
+  // Re-apply after any Scale Manager resize (e.g. entering/exiting fullscreen).
+  const handler = () => applyHighDPI(cam, getGamePX())
+  scene.scale.on('resize', handler)
+  scene.events.once('shutdown', () => {
+    scene.scale.off('resize', handler)
+  })
 }

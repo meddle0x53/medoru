@@ -42,6 +42,13 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     }
     this.practiceHeader = null
 
+    if (this._overlayResizeObserver) {
+      this._overlayResizeObserver.disconnect()
+      this._overlayResizeObserver = null
+    } else if (this._updateOverlayScale) {
+      window.removeEventListener('resize', this._updateOverlayScale)
+    }
+
     if (this.overlayElement && this.overlayElement.parentNode) {
       this.overlayElement.parentNode.removeChild(this.overlayElement)
     }
@@ -70,11 +77,21 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     `
 
     // Scale the overlay so the 960×540 design fills the displayed game area.
-    const gameContainer = document.getElementById('game-container') || document.body
-    const scaleX = (gameContainer.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
-    const scaleY = (gameContainer.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
-    wrapper.style.transform = `scale(${scaleX}, ${scaleY})`
-    wrapper.style.transformOrigin = 'top left'
+    this.gameContainer = document.getElementById('game-container') || document.body
+    this._updateOverlayScale = () => {
+      const scaleX = (this.gameContainer.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
+      const scaleY = (this.gameContainer.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
+      wrapper.style.transform = `scale(${scaleX}, ${scaleY})`
+      wrapper.style.transformOrigin = 'top left'
+    }
+    this._updateOverlayScale()
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this._overlayResizeObserver = new ResizeObserver(this._updateOverlayScale)
+      this._overlayResizeObserver.observe(this.gameContainer)
+    } else {
+      window.addEventListener('resize', this._updateOverlayScale)
+    }
 
     wrapper.innerHTML = `
       <style>
