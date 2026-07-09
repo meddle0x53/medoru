@@ -562,7 +562,7 @@ defmodule MedoruWeb.WordSetLive.Show do
                   <div class="flex items-center gap-4 p-4 bg-base-200 rounded-lg hover:bg-base-300/50 transition-colors">
                     <%!-- Word Text --%>
                     <.link
-                      navigate={~p"/words/#{word.id}"}
+                      navigate={word_path(word)}
                       class="text-xl font-medium text-base-content hover:text-primary transition-colors min-w-[80px]"
                     >
                       {word.text}

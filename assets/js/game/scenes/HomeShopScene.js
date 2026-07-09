@@ -1,4 +1,5 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const SHOP_ITEMS = [
   { id: 'stat_point', name: '+1 Stat Point', icon: '🌟', costScales: 1, costSource: 0 },
@@ -21,6 +22,7 @@ export default class HomeShopScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createTitle()
     this.createTokenDisplay()

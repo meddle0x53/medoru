@@ -247,7 +247,7 @@
       <%= for word <- @words do %>
         <% is_learned = word.id in @learned_word_ids %>
         <.link
-          navigate={~p"/words/#{word.id}"}
+          navigate={word_path(word)}
           class="group block"
         >
           <div class={[

@@ -1,5 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import { getSocketCharmById, getSocketCharmsForSlot } from '../data/socketCharms.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const SLOT_RADIUS = 22
 const SLOT_GAP = 56
@@ -19,6 +20,7 @@ export default class SocketScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createHeader()
     this.createEquipmentSection(120, this.player.weapon, 'primary_weapon')

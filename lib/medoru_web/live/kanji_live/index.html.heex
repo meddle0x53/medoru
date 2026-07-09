@@ -149,7 +149,7 @@
     <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10 gap-3">
       <%= for kanji <- @kanji_list do %>
         <.link
-          navigate={~p"/kanji/#{kanji.id}"}
+          navigate={kanji_path(kanji)}
           class="group"
         >
           <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex items-center justify-center

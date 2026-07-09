@@ -371,7 +371,7 @@
               <div class="divide-y divide-base-200">
                 <%= for word <- group.words do %>
                   <.link
-                    navigate={~p"/words/#{word.id}"}
+                    navigate={word_path(word)}
                     class="block px-4 sm:px-6 py-3 sm:py-4 hover:bg-base-200/50 transition-colors"
                   >
                     <div class="flex items-center justify-between gap-3">

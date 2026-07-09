@@ -218,7 +218,7 @@
             </button>
           <% end %>
 
-          <.link navigate={~p"/kanji/#{k.id}"} class="block text-center">
+          <.link navigate={kanji_path(k)} class="block text-center">
             <%!-- Kanji Character --%>
             <div class="text-4xl font-medium text-base-content group-hover:text-primary transition-colors mb-3">
               {k.character}

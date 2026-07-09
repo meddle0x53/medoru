@@ -88,7 +88,7 @@
               </div>
               <%= if word.word_id do %>
                 <.link
-                  navigate={~p"/words/#{word.word_id}"}
+                  navigate={~p"/words/#{word.word_text}"}
                   class="text-primary hover:text-primary/80 transition-colors"
                 >
                   {word.meaning} →

@@ -38,7 +38,10 @@ defmodule MedoruWeb.BulgarianKatakanaLive.Show do
 
         words_with_links =
           Enum.map(entry.words, fn word ->
-            Map.put(word, :word_id, find_word_id(word.meaning))
+            case find_word_for_meaning(word.meaning) do
+              nil -> Map.merge(word, %{word_id: nil, word_text: nil})
+              found -> Map.merge(word, %{word_id: found.id, word_text: found.text})
+            end
           end)
 
         {:noreply,
@@ -53,16 +56,16 @@ defmodule MedoruWeb.BulgarianKatakanaLive.Show do
     end
   end
 
-  defp find_word_id(meaning) do
+  defp find_word_for_meaning(meaning) do
     case Content.get_word_by_text_or_meaning_or_conjugation(meaning) do
       nil ->
         case Content.find_words_by_reading(meaning) do
           [] -> nil
-          words -> List.first(words).id
+          words -> List.first(words)
         end
 
       word ->
-        word.id
+        word
     end
   end
 

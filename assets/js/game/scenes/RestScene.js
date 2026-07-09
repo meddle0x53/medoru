@@ -1,5 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import Player, { getUpgradeCost } from '../entities/Player.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
  * Rest Camp scene — recover HP or spend gold to upgrade one piece of equipment.
@@ -16,6 +17,7 @@ export default class RestScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.actionTaken = false
     this.createBackground()
     this.createHeader()

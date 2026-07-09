@@ -20,7 +20,7 @@ defmodule MedoruWeb.KanjiChatPreview do
 
     ~H"""
     <a
-      href={~p"/kanji/#{@kanji.id}"}
+      href={kanji_path(@kanji)}
       target="_blank"
       rel="noopener noreferrer"
       class="block max-w-[180px] kanji-chat-preview"
@@ -115,7 +115,7 @@ defmodule MedoruWeb.KanjiChatPreview do
       end)
 
     viewbox = bounds["viewBox"] || "0 0 100 100"
-    kanji_path = ~p"/kanji/#{kanji.id}"
+    kanji_path = kanji_path(kanji)
 
     # Build compact HTML with no extra whitespace to avoid issues with whitespace-pre-wrap
     html =

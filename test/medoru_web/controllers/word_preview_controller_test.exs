@@ -15,7 +15,7 @@ defmodule MedoruWeb.WordPreviewControllerTest do
       response = json_response(conn, 200)
       assert response["id"] == word.id
       assert response["text"] == word.text
-      assert response["path"] == "/words/#{word.id}"
+      assert response["path"] == ~p"/words/#{word.text}"
     end
 
     test "returns 404 when word not found", %{conn: conn} do

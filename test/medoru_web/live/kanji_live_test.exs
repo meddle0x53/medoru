@@ -46,13 +46,14 @@ defmodule MedoruWeb.KanjiLiveTest do
 
     test "navigates to kanji detail page", %{conn: conn, kanji: kanji} do
       {:ok, view, _html} = live(conn, ~p"/kanji")
+      kanji_path = ~p"/kanji/#{kanji.character}"
 
       # Click on a kanji card
       view
-      |> element("a[href=\"/kanji/#{kanji.id}\"]")
+      |> element("a[href=\"#{kanji_path}\"]")
       |> render_click()
 
-      assert_redirect(view, ~p"/kanji/#{kanji.id}")
+      assert_redirect(view, kanji_path)
     end
 
     test "shows empty state when no kanji", %{conn: conn} do
@@ -73,6 +74,21 @@ defmodule MedoruWeb.KanjiLiveTest do
       assert html =~ hd(kanji.meanings)
       assert html =~ "#{kanji.stroke_count} strokes"
       assert html =~ "JLPT N#{kanji.jlpt_level}"
+    end
+
+    test "displays kanji details by character", %{conn: conn, kanji: kanji} do
+      {:ok, _view, html} = live(conn, ~p"/kanji/#{kanji.character}")
+
+      assert html =~ kanji.character
+      assert html =~ hd(kanji.meanings)
+      assert html =~ "#{kanji.stroke_count} strokes"
+      assert html =~ "JLPT N#{kanji.jlpt_level}"
+    end
+
+    test "404 for non-existent kanji character", %{conn: conn} do
+      assert_raise Ecto.NoResultsError, fn ->
+        live(conn, ~p"/kanji/鏡")
+      end
     end
 
     test "displays on'yomi readings", %{conn: conn, kanji: kanji} do

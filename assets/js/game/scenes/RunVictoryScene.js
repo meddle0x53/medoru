@@ -1,4 +1,5 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 export default class RunVictoryScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +12,7 @@ export default class RunVictoryScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createTitle()
     this.createRewards()

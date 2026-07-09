@@ -1,5 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import Player, { getUpgradeCost } from '../entities/Player.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
  * Shop / Smith scene for upgrading weapon and shield.
@@ -16,6 +17,7 @@ export default class ShopScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createHeader()
     this.createEquipmentPanel()

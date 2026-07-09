@@ -39,6 +39,7 @@ import { getWindowGameData, sendRunResult } from '../api.js'
 import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
 import { buildEnemyChallenge, filterChallengeWords } from '../systems/EnemyChallengePicker.js'
 import EnemyAbilityChallengeSystem from '../systems/EnemyAbilityChallengeSystem.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 export default class BattleScene extends Phaser.Scene {
   constructor() {
@@ -51,6 +52,7 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     const userData = getWindowGameData()
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)

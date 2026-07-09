@@ -1,6 +1,8 @@
 defmodule MedoruWeb.WordPreviewController do
   use MedoruWeb, :controller
 
+  import MedoruWeb.NavigationHelpers
+
   alias Medoru.Content
   alias Medoru.Content.MatureContent
 
@@ -23,7 +25,7 @@ defmodule MedoruWeb.WordPreviewController do
             word_type: word.word_type,
             image_path: word.image_path,
             pronunciation_path: word.pronunciation_path,
-            path: ~p"/words/#{word.id}"
+            path: word_path(word)
           })
         else
           json(conn, %{blocked: true, message: gettext("unsafe content detected")})

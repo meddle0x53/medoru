@@ -4,6 +4,7 @@ import { ITEMS } from '../data/items.js'
 import { CHARMS, getCharmsByType, getCharmById } from '../data/charms.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import { ALL_ACTIONS } from '../data/actions.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const GRID_COLS = 5
 const GRID_ROWS = 4
@@ -89,6 +90,7 @@ export default class MemoryScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createHeader()
 

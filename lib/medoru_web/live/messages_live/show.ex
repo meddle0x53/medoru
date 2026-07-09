@@ -1454,7 +1454,7 @@ defmodule MedoruWeb.MessagesLive.Show do
 
               word ->
                 if MatureContent.mature_word_visible_to_user?(word, viewer) do
-                  word_path = ~p"/words/#{word.id}"
+                  word_path = word_path(word)
                   {:safe, escaped} = Phoenix.HTML.html_escape(word_text)
 
                   [

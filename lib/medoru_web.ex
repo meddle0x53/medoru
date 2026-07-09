@@ -88,6 +88,8 @@ defmodule MedoruWeb do
       import Phoenix.HTML
       # Core UI components
       import MedoruWeb.CoreComponents
+      # Human-readable path helpers
+      import MedoruWeb.NavigationHelpers
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

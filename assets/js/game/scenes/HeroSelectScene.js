@@ -1,6 +1,7 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import Player, { getUpgradeCost } from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const HEROES = [
   {
@@ -18,6 +19,7 @@ export default class HeroSelectScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createTitle()
     this.createHeroCards()

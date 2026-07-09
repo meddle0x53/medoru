@@ -111,7 +111,7 @@
           <%!-- Conjugations Link (for verbs and adjectives) --%>
           <%= if @word.word_type in [:verb, :adjective] do %>
             <.link
-              navigate={~p"/words/#{@word.id}/conjugations"}
+              navigate={word_conjugations_path(@word)}
               class="inline-flex items-center gap-2 mt-4 text-primary hover:text-primary/80 font-medium transition-colors"
             >
               <.icon name="hero-table-cells" class="w-4 h-4" />
@@ -154,7 +154,7 @@
                     <%= for relation <- relations do %>
                       <%= if relation.linked do %>
                         <.link
-                          navigate={~p"/words/#{relation.id}"}
+                          navigate={word_path(relation)}
                           class={[
                             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-colors",
                             type == :synonym &&
@@ -234,7 +234,7 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               <%= for word_kanji <- @word.word_kanjis do %>
                 <.link
-                  navigate={~p"/kanji/#{word_kanji.kanji.id}"}
+                  navigate={kanji_path(word_kanji.kanji)}
                   class="bg-base-100 border border-base-300 rounded-xl p-4 hover:border-primary/30
                          hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 text-center group"
                 >

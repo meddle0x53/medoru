@@ -22,8 +22,8 @@ defmodule MedoruWeb.KanjiLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id} = params, _url, socket) do
-    kanji = Content.get_kanji_with_readings!(id)
+  def handle_params(%{"id" => id_or_character} = params, _url, socket) do
+    kanji = load_kanji_by_identifier(id_or_character)
     locale = socket.assigns.locale
     reading_pages = parse_reading_pages(params["r"])
 
@@ -233,6 +233,14 @@ defmodule MedoruWeb.KanjiLive.Show do
   end
 
   defp parse_reading_pages(_), do: %{}
+
+  defp load_kanji_by_identifier(identifier) do
+    if Ecto.UUID.cast(identifier) != :error do
+      Content.get_kanji_with_readings!(identifier)
+    else
+      Content.get_kanji_with_readings_by_character!(identifier)
+    end
+  end
 
   # Helper for template: get localized word meaning
   def localized_word_meaning(word, locale) do

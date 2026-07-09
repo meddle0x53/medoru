@@ -1,6 +1,8 @@
 defmodule MedoruWeb.KanjiPreviewController do
   use MedoruWeb, :controller
 
+  import MedoruWeb.NavigationHelpers
+
   alias Medoru.Content
 
   def show(conn, %{"character" => character}) do
@@ -21,7 +23,7 @@ defmodule MedoruWeb.KanjiPreviewController do
           stroke_data: kanji.stroke_data,
           on_reading: on && on.reading,
           kun_reading: kun && kun.reading,
-          path: ~p"/kanji/#{kanji.id}"
+          path: kanji_path(kanji)
         })
     end
   end

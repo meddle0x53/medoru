@@ -279,7 +279,7 @@ defmodule MedoruWeb.LearnLiveTest do
       {:ok, view, _html} = live(conn, ~p"/lessons/#{lesson_with_kanji.id}/learn")
 
       assert view
-             |> element("a[href=\"/kanji/#{kanji.id}\"]")
+             |> element("a[href=\"#{~p"/kanji/#{kanji.character}"}\"]")
              |> has_element?()
     end
   end

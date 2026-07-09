@@ -1,5 +1,6 @@
 import { GAME_CONFIG } from '../config.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
  * Pre-run Kanji Library scene.
@@ -23,6 +24,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createDOMOverlay()
     this.createPracticeDialog()
@@ -66,6 +68,13 @@ export default class KanjiLibraryScene extends Phaser.Scene {
       z-index: 200;
       overflow: hidden;
     `
+
+    // Scale the overlay so the 960×540 design fills the displayed game area.
+    const gameContainer = document.getElementById('game-container') || document.body
+    const scaleX = (gameContainer.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
+    const scaleY = (gameContainer.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
+    wrapper.style.transform = `scale(${scaleX}, ${scaleY})`
+    wrapper.style.transformOrigin = 'top left'
 
     wrapper.innerHTML = `
       <style>

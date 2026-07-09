@@ -1,5 +1,6 @@
 defmodule MedoruWeb.WhiteBoardPostRendererTest do
   use Medoru.DataCase
+  use MedoruWeb, :verified_routes
 
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
@@ -220,7 +221,7 @@ defmodule MedoruWeb.WhiteBoardPostRendererTest do
         WhiteBoardPostRenderer.render_post_content("/k   #{kanji.character}   ", "post-1", nil)
 
       assert html =~ "kanji-chat-preview"
-      assert html =~ "/kanji/#{kanji.id}"
+      assert html =~ ~p"/kanji/#{kanji.character}"
     end
 
     test "/kanji with extra spaces around expression renders kanji preview" do
@@ -234,7 +235,7 @@ defmodule MedoruWeb.WhiteBoardPostRendererTest do
         )
 
       assert html =~ "kanji-chat-preview"
-      assert html =~ "/kanji/#{kanji.id}"
+      assert html =~ ~p"/kanji/#{kanji.character}"
     end
   end
 end

@@ -1,6 +1,7 @@
 import { GAME_CONFIG, FONTS, COLORS } from '../config.js'
 import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const SETTINGS_KEY = 'medoru_settings_v1'
 const LOADOUT_KEY = 'medoru_loadout_v1'
@@ -15,6 +16,7 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.hasActiveRun = this.checkActiveRun()
 
     this.createBackground()

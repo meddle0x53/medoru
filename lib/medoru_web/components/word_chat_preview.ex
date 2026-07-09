@@ -22,7 +22,7 @@ defmodule MedoruWeb.WordChatPreview do
 
     ~H"""
     <a
-      href={~p"/words/#{@word.id}"}
+      href={word_path(@word)}
       target="_blank"
       rel="noopener noreferrer"
       class="block max-w-[200px] word-chat-preview -mt-1 -mb-1"
@@ -100,7 +100,7 @@ defmodule MedoruWeb.WordChatPreview do
       end
 
     type_class = word_type_classes(word.word_type)
-    word_path = ~p"/words/#{word.id}"
+    word_path = word_path(word)
 
     meaning_html =
       if meaning,

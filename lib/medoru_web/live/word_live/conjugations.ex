@@ -66,9 +66,9 @@ defmodule MedoruWeb.WordLive.Conjugations do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _url, socket) do
-    word = Content.get_word!(id)
-    conjugations = Content.list_word_conjugations(id)
+  def handle_params(%{"id" => id_or_text}, _url, socket) do
+    word = load_word_by_identifier(id_or_text)
+    conjugations = Content.list_word_conjugations(word.id)
 
     # Group conjugations by word type (verb/adjective)
     grouped_conjugations =
@@ -93,5 +93,13 @@ defmodule MedoruWeb.WordLive.Conjugations do
   """
   def form_suffix_color(form_name) when is_binary(form_name) do
     Map.get(@form_colors, form_name, "bg-base-200 text-base-content/70")
+  end
+
+  defp load_word_by_identifier(identifier) do
+    if Ecto.UUID.cast(identifier) != :error do
+      Content.get_word!(identifier)
+    else
+      Content.get_word_by_text!(identifier)
+    end
   end
 end

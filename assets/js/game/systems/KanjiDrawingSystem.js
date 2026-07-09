@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../config.js'
+
 /**
  * KanjiDrawingSystem - Replicates the KanjiWriting hook logic inside Phaser.
  * Uses a DOM canvas overlay for drawing with the exact same stroke validation.
@@ -73,14 +75,30 @@ export default class KanjiDrawingSystem {
     this.canvas.style.touchAction = 'none'
     this.canvas.style.userSelect = 'none'
     this.canvas.style.webkitUserSelect = 'none'
+    this.canvas.style.pointerEvents = 'auto'
 
-    // Append to game wrapper so it moves with the game
-    const wrapper = document.getElementById('game-wrapper')
-    if (wrapper) {
-      wrapper.appendChild(this.hintText)
-      wrapper.appendChild(this.infoText)
-      wrapper.appendChild(this.canvas)
+    // Scaled DOM wrapper that maps the logical 960×540 design onto the displayed wrapper.
+    const gameWrapper = document.getElementById('game-wrapper')
+    this.domWrapper = document.createElement('div')
+    this.domWrapper.style.position = 'absolute'
+    this.domWrapper.style.top = '0'
+    this.domWrapper.style.left = '0'
+    this.domWrapper.style.width = `${GAME_CONFIG.width}px`
+    this.domWrapper.style.height = `${GAME_CONFIG.height}px`
+    this.domWrapper.style.zIndex = '300'
+    this.domWrapper.style.pointerEvents = 'none'
+
+    if (gameWrapper) {
+      const scaleX = (gameWrapper.clientWidth || GAME_CONFIG.width) / GAME_CONFIG.width
+      const scaleY = (gameWrapper.clientHeight || GAME_CONFIG.height) / GAME_CONFIG.height
+      this.domWrapper.style.transform = `scale(${scaleX}, ${scaleY})`
+      this.domWrapper.style.transformOrigin = 'top left'
+      gameWrapper.appendChild(this.domWrapper)
     }
+
+    this.domWrapper.appendChild(this.hintText)
+    this.domWrapper.appendChild(this.infoText)
+    this.domWrapper.appendChild(this.canvas)
 
     this.ctx = this.canvas.getContext('2d')
 
@@ -160,14 +178,8 @@ export default class KanjiDrawingSystem {
 
   destroy() {
     this._stopTimer()
-    if (this.hintText.parentNode) {
-      this.hintText.parentNode.removeChild(this.hintText)
-    }
-    if (this.infoText.parentNode) {
-      this.infoText.parentNode.removeChild(this.infoText)
-    }
-    if (this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas)
+    if (this.domWrapper && this.domWrapper.parentNode) {
+      this.domWrapper.parentNode.removeChild(this.domWrapper)
     }
     this._unbindEvents()
   }

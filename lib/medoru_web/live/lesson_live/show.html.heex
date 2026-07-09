@@ -111,7 +111,7 @@
       <div class="space-y-3">
         <%= for lesson_word <- @lesson.lesson_words do %>
           <.link
-            navigate={~p"/words/#{lesson_word.word.id}"}
+            navigate={word_path(lesson_word.word)}
             class="group block"
           >
             <div class="bg-base-100 border border-base-300 rounded-xl p-4

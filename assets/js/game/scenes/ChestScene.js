@@ -1,5 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import { openChest, getUpgradeOptions, applyUpgrade } from '../systems/ChestRewards.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 export default class ChestScene extends Phaser.Scene {
   constructor() {
@@ -23,6 +24,7 @@ export default class ChestScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createTitle()
     this.startOpeningSequence()

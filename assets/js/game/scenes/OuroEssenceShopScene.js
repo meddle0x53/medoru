@@ -2,6 +2,7 @@ import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import SHOP_DATA from '../data/ouroEssenceShop.json'
 import { SOCKET_1_CHARMS, getSocketCharmById } from '../data/socketCharms.js'
 import { CHARMS, CHARM_TYPES, getCharmById } from '../data/charms.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const MAX_STARTING_GOLD_BONUS = 150
 const MAX_STARTING_POTION_BONUS = 4
@@ -22,6 +23,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.createBackground()
     this.createHeader()
     this.createCurrencyDisplay()

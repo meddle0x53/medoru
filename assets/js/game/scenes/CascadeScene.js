@@ -5,6 +5,7 @@ import { ITEMS } from '../data/items.js'
 import { ALL_ACTIONS } from '../data/actions.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import { isChallengeWord } from '../systems/EnemyChallengePicker.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const GAME_DURATION_MS = 60000
 const SPEED_INCREASE_INTERVAL_MS = 20000
@@ -49,6 +50,7 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.wordList = this.buildWordList()
     this.speedLevel = Math.min(10, this.tile?.col || 1)
     this.baseSpeedLevel = this.speedLevel

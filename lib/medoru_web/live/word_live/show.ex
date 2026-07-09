@@ -26,8 +26,8 @@ defmodule MedoruWeb.WordLive.Show do
 
   @impl true
   def handle_params(params, _url, socket) do
-    %{"id" => id} = params
-    word = Content.get_word_with_kanji!(id)
+    %{"id" => id_or_text} = params
+    word = load_word_by_identifier(id_or_text)
 
     current_user =
       if socket.assigns.current_scope do
@@ -295,6 +295,14 @@ defmodule MedoruWeb.WordLive.Show do
       String.starts_with?(path, "http://") or String.starts_with?(path, "https://") -> path
       String.starts_with?(path, "/") -> MedoruWeb.Endpoint.url() <> path
       true -> MedoruWeb.Endpoint.url() <> "/" <> path
+    end
+  end
+
+  defp load_word_by_identifier(identifier) do
+    if Ecto.UUID.cast(identifier) != :error do
+      Content.get_word_with_kanji!(identifier)
+    else
+      Content.get_word_with_kanji_by_text!(identifier)
     end
   end
 

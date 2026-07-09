@@ -42,7 +42,7 @@ defmodule MedoruWeb.BulgarianKatakanaLive.ShowTest do
 
     {:ok, _view, html} = live(conn, ~p"/katakana/bulgarian/Й")
 
-    assert html =~ ~p"/words/#{word.id}"
+    assert html =~ ~p"/words/#{word.text}"
     assert html =~ ~s(Ха<span class="text-accent font-bold">й</span>де)
   end
 
@@ -50,13 +50,13 @@ defmodule MedoruWeb.BulgarianKatakanaLive.ShowTest do
     evening_word = word_fixture(%{text: "今晩は", reading: "こんばんは"})
     {:ok, _view, html} = live(conn, ~p"/katakana/bulgarian/Д")
 
-    assert html =~ ~p"/words/#{evening_word.id}"
+    assert html =~ ~p"/words/#{evening_word.text}"
     assert html =~ ~s(<span class="text-accent font-bold">Д</span>обър вечер)
 
     greeting_word = word_fixture(%{text: "今日は", reading: "こんにちは"})
     {:ok, _view, html} = live(conn, ~p"/katakana/bulgarian/З")
 
-    assert html =~ ~p"/words/#{greeting_word.id}"
+    assert html =~ ~p"/words/#{greeting_word.text}"
     assert html =~ ~s(<span class="text-accent font-bold">З</span>дравей)
   end
 end

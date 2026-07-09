@@ -127,6 +127,30 @@ defmodule MedoruWeb.WordLiveTest do
       assert html =~ word.meaning
     end
 
+    test "displays word details by text", %{conn: conn, word: word} do
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.text}")
+
+      assert html =~ word.text
+      assert html =~ word.reading
+      assert html =~ word.meaning
+    end
+
+    test "redirects restricted users away from mature word show page by text", %{conn: conn} do
+      word = word_fixture(%{mature: true, text: "成人", reading: "せいじん"})
+      user = user_fixture_with_profile()
+      {:ok, _} = Medoru.Accounts.update_profile(user.profile, %{age: 17, safety: false})
+      conn = log_in_user(conn, user)
+
+      assert {:error, {:live_redirect, %{to: "/words", flash: %{"error" => "Word not found."}}}} =
+               live(conn, ~p"/words/#{word.text}")
+    end
+
+    test "404 for non-existent word by text", %{conn: conn} do
+      assert_raise Ecto.NoResultsError, fn ->
+        live(conn, ~p"/words/存在しない単語")
+      end
+    end
+
     test "displays kanji breakdown", %{conn: conn, word: word} do
       {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
 
@@ -291,6 +315,24 @@ defmodule MedoruWeb.WordLiveTest do
 
       assert render(view) =~ "Mark as Learned"
       refute Learning.english_word_learned?(user.id, word.id)
+    end
+  end
+
+  describe "Conjugations" do
+    test "renders by word id or text", %{conn: conn} do
+      word = word_fixture(%{text: "走る", reading: "はしる", word_type: :verb})
+
+      {:ok, _view, id_html} = live(conn, ~p"/words/#{word.id}/conjugations")
+      {:ok, _view, text_html} = live(conn, ~p"/words/#{word.text}/conjugations")
+
+      assert id_html =~ word.text
+      assert text_html =~ word.text
+    end
+
+    test "404 for non-existent word text", %{conn: conn} do
+      assert_raise Ecto.NoResultsError, fn ->
+        live(conn, ~p"/words/存在しない動詞/conjugations")
+      end
     end
   end
 end

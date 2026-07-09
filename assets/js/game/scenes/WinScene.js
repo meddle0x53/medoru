@@ -5,6 +5,7 @@ import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 export default class WinScene extends Phaser.Scene {
   constructor() {
@@ -12,6 +13,7 @@ export default class WinScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     const data = this.scene.settings.data || {}
     this.player = data.player
     this.enemy = data.enemy

@@ -144,6 +144,18 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Gets a single kanji by its character with all its readings preloaded.
+
+  Raises `Ecto.NoResultsError` if the Kanji does not exist.
+  """
+  def get_kanji_with_readings_by_character!(character) do
+    Kanji
+    |> where(character: ^character)
+    |> preload(:kanji_readings)
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a kanji.
 
   ## Examples
@@ -1054,6 +1066,29 @@ defmodule Medoru.Content do
     Word
     |> where(id: ^id)
     |> preload(word_kanjis: [:kanji, :kanji_reading])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a single word by its text with kanji and readings preloaded.
+
+  Raises `Ecto.NoResultsError` if the Word does not exist.
+  """
+  def get_word_with_kanji_by_text!(text) do
+    Word
+    |> where(text: ^text)
+    |> preload(word_kanjis: [:kanji, :kanji_reading])
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets a single word by its text.
+
+  Raises `Ecto.NoResultsError` if the Word does not exist.
+  """
+  def get_word_by_text!(text) do
+    Word
+    |> where(text: ^text)
     |> Repo.one!()
   end
 

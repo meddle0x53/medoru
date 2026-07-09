@@ -3,6 +3,7 @@
  * Rogue-like RPG battle system using Phaser 3.
  */
 import { GAME_CONFIG } from './game/config.js'
+import { getPhysicalSize, getGamePX } from './game/highDpi.js'
 import BootScene from './game/scenes/BootScene.js'
 import TitleScene from './game/scenes/TitleScene.js'
 import HeroSelectScene from './game/scenes/HeroSelectScene.js'
@@ -34,12 +35,14 @@ function startGame() {
     return
   }
 
-  console.log('[The Hollow Ouroboros] Starting game...', { gameData: window.gameData })
+  const px = getGamePX()
+  const physicalSize = getPhysicalSize()
+  console.log('[The Hollow Ouroboros] Starting game...', { gameData: window.gameData, px, physicalSize })
 
   const config = {
     type: Phaser.AUTO,
-    width: GAME_CONFIG.width,
-    height: GAME_CONFIG.height,
+    width: physicalSize.width,
+    height: physicalSize.height,
     parent: 'game-container',
     backgroundColor: GAME_CONFIG.backgroundColor,
     scale: {

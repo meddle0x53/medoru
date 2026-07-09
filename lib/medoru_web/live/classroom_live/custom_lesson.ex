@@ -891,7 +891,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
               <div class="flex items-center justify-center gap-3 flex-wrap">
                 <%= for word_kanji <- @current_word.word.word_kanjis do %>
                   <a
-                    href={~p"/kanji/#{word_kanji.kanji.id}"}
+                    href={kanji_path(word_kanji.kanji)}
                     target="_blank"
                     rel="noopener noreferrer"
                     class="bg-base-100 border border-base-300 rounded-xl px-4 py-3 hover:border-primary/30

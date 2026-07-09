@@ -1,5 +1,6 @@
 import { ENEMY_DEFINITIONS } from '../data/enemies/index.js'
 import { MAP_DEFINITIONS } from '../data/maps/index.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
  * Boot Scene - loads assets and initial data.
@@ -93,6 +94,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     // Always start at the title screen. It will decide whether to show
     // Continue, New Run, or Settings based on the saved loadout.
     this.scene.start('TitleScene')

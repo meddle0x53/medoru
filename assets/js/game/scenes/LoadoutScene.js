@@ -5,6 +5,7 @@ import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions, getMaxBattlePoolA
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 const TAB_NAMES = ['items', 'heroCharms', 'weapons', 'abilities', 'stats']
 const TAB_LABELS = ['Items', 'Hero', 'Weapons', 'Abilities', 'Stats']
@@ -22,6 +23,7 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     const passedPlayer = this.scene.settings.data?.player
     if (passedPlayer) {
       this.player = passedPlayer

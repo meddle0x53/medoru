@@ -4,6 +4,7 @@ import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
 import { updateReachability, findTileById, computeLayout, getMapName } from '../systems/MapGenerator.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
+import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
  * MapScene — the rogue-like hub.
@@ -38,6 +39,7 @@ export default class MapScene extends Phaser.Scene {
   }
 
   create() {
+    setupHighDPIWorld(this)
     this.setupMap()
     this.createBackground()
     this.createHud()

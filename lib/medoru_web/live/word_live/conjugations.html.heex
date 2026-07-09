@@ -2,7 +2,7 @@
   <div class="max-w-4xl mx-auto px-4 py-6 md:py-8">
     <%!-- Back Link --%>
     <.link
-      navigate={~p"/words/#{@word.id}"}
+      navigate={word_path(@word)}
       class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-4 md:mb-6 transition-colors"
     >
       <.icon name="hero-arrow-left" class="w-4 h-4" />
@@ -163,7 +163,7 @@
     <%!-- Navigation --%>
     <div class="mt-6 md:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
       <.link
-        navigate={~p"/words/#{@word.id}"}
+        navigate={word_path(@word)}
         class="inline-flex items-center justify-center gap-2 text-secondary hover:text-primary font-medium transition-colors px-4 py-2 rounded-lg hover:bg-base-200"
       >
         <.icon name="hero-arrow-left" class="w-4 h-4" />

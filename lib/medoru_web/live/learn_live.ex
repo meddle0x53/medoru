@@ -179,7 +179,7 @@ defmodule MedoruWeb.LearnLive do
                         </div>
                       </div>
                       <.link
-                        navigate={~p"/kanji/#{word_kanji.kanji.id}"}
+                        navigate={kanji_path(word_kanji.kanji)}
                         class="text-sm text-primary hover:text-primary/80 transition-colors"
                       >
                         {gettext("View Kanji")} →
