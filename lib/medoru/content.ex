@@ -1675,6 +1675,16 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Creates a word relation that is immediately approved. Used for manually added
+  relations in the admin UI.
+  """
+  def create_approved_word_relation(attrs \\ %{}) do
+    attrs
+    |> Map.put(:status, :approved)
+    |> create_word_relation()
+  end
+
+  @doc """
   Approves a pending word relation. For synonyms and antonyms, also creates the
   inverse relation so the relationship is bidirectional.
   """

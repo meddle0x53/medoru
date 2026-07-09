@@ -3,7 +3,7 @@
     <div class="modal-box max-w-3xl max-h-[90vh] flex flex-col">
       <h3 class="font-bold text-lg flex items-center gap-2 mb-4">
         <.icon name="hero-link" class="w-5 h-5 text-secondary" />
-        {gettext("AI Word Relations")}
+        {gettext("Word Relations")}
       </h3>
 
       <div class="space-y-4 flex-1 overflow-y-auto">
@@ -16,6 +16,115 @@
           <div>
             <span class="text-sm text-base-content/60">{gettext("Meaning")}:</span>
             <span class="font-medium ml-2">{@word.meaning}</span>
+          </div>
+        </div>
+
+        <%!-- Manual relation form --%>
+        <div class="border border-base-300 rounded-lg overflow-hidden">
+          <div class="bg-base-200 px-4 py-2 font-medium flex items-center gap-2">
+            <.icon name="hero-plus-circle" class="w-4 h-4" />
+            {gettext("Add relation manually")}
+          </div>
+
+          <div class="p-4 space-y-4">
+            <.form
+              for={}
+              id="manual-relation-form"
+              phx-submit="add_manual_relation"
+              class="space-y-4"
+            >
+              <div>
+                <label class="label">
+                  <span class="label-text">{gettext("Relation type")}</span>
+                </label>
+                <select
+                  name="type"
+                  phx-change="update_manual_relation_type"
+                  class="select select-bordered w-full"
+                >
+                  <%= for {value, label} <- [{"synonym", gettext("Synonym")}, {"antonym", gettext("Antonym")}, {"expression", gettext("Expression")}] do %>
+                    <option value={value} selected={@manual_relation_type == value}>
+                      {label}
+                    </option>
+                  <% end %>
+                </select>
+              </div>
+
+              <%= if @manual_relation_type == "expression" do %>
+                <div>
+                  <label class="label">
+                    <span class="label-text">{gettext("Expression text")}</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="expression"
+                    value={@manual_relation_expression_text}
+                    phx-change="update_manual_relation_expression"
+                    phx-debounce="300"
+                    placeholder={gettext("e.g., 日本に行く")}
+                    class="input input-bordered w-full"
+                  />
+                </div>
+              <% end %>
+
+              <div>
+                <label class="label">
+                  <%= if @manual_relation_type == "expression" do %>
+                    <span class="label-text">{gettext("Linked word (optional)")}</span>
+                  <% else %>
+                    <span class="label-text">{gettext("Related word")}</span>
+                  <% end %>
+                </label>
+                <input
+                  type="text"
+                  name="search"
+                  value={@manual_relation_search}
+                  phx-change="update_manual_relation_search"
+                  phx-debounce="300"
+                  placeholder={gettext("Search words...")}
+                  class="input input-bordered w-full"
+                />
+
+                <%= if @manual_relation_selected_word_id do %>
+                  <p class="text-sm text-success mt-2">
+                    {gettext("Selected word ID: %{id}", id: @manual_relation_selected_word_id)}
+                  </p>
+                <% end %>
+
+                <%= if @manual_relation_results != [] do %>
+                  <div class="mt-2 border border-base-300 rounded-lg divide-y divide-base-300 max-h-48 overflow-y-auto">
+                    <%= for result <- @manual_relation_results do %>
+                      <button
+                        type="button"
+                        phx-click="select_manual_relation_word"
+                        phx-value-word_id={result.id}
+                        class={[
+                          "w-full text-left px-3 py-2 flex items-center justify-between hover:bg-base-200",
+                          @manual_relation_selected_word_id == result.id && "bg-primary/10"
+                        ]}
+                      >
+                        <span class="font-medium">{result.text}</span>
+                        <span class="text-sm text-secondary">{result.reading}</span>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+
+              <%= if @manual_relation_error do %>
+                <div class="alert alert-error alert-soft">
+                  <.icon name="hero-exclamation-triangle" class="w-5 h-5" />
+                  <span>{@manual_relation_error}</span>
+                </div>
+              <% end %>
+
+              <div class="modal-action flex-col sm:flex-row gap-2">
+                <button type="submit" class="btn btn-primary w-full sm:w-auto">
+                  <.icon name="hero-plus" class="w-4 h-4 mr-2" />
+                  {gettext("Add Relation")}
+                </button>
+              </div>
+            </.form>
           </div>
         </div>
 

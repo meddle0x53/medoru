@@ -272,7 +272,7 @@ defmodule MedoruWeb.Admin.WordLiveTest do
         |> element("button[phx-click='open_relations_modal']")
         |> render_click()
 
-      assert html =~ "AI Word Relations"
+      assert html =~ "Word Relations"
       assert html =~ "本"
 
       view
@@ -359,6 +359,84 @@ defmodule MedoruWeb.Admin.WordLiveTest do
 
       assert html =~ "Relation removed"
       refute render(view) =~ "書籍"
+    end
+
+    test "adds a synonym relation manually from the modal", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+      related = word_fixture(%{text: "書籍", reading: "しょせき"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      view
+      |> element("button[phx-click='open_relations_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("#manual-relation-form input[name='search']")
+        |> render_change(%{"search" => "書籍"})
+
+      assert html =~ "書籍"
+
+      html =
+        view
+        |> element(
+          "button[phx-click='select_manual_relation_word'][phx-value-word_id='#{related.id}']"
+        )
+        |> render_click()
+
+      assert html =~ "Selected word ID"
+
+      html =
+        view
+        |> form("#manual-relation-form")
+        |> render_submit()
+
+      assert html =~ "Relation added"
+      assert render(view) =~ "書籍"
+    end
+
+    test "adds an expression relation manually from the modal", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      view
+      |> element("button[phx-click='open_relations_modal']")
+      |> render_click()
+
+      view
+      |> element("#manual-relation-form select[name='type']")
+      |> render_change(%{"type" => "expression"})
+
+      view
+      |> element("#manual-relation-form input[name='expression']")
+      |> render_change(%{"expression" => "本を読む"})
+
+      html =
+        view
+        |> form("#manual-relation-form")
+        |> render_submit()
+
+      assert html =~ "Relation added"
+      assert render(view) =~ "本を読む"
+    end
+
+    test "shows validation error when adding synonym without selected word", %{conn: conn} do
+      word = word_fixture(%{text: "本", meaning: "book", reading: "ほん", word_type: :noun})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words/#{word.id}/edit")
+
+      view
+      |> element("button[phx-click='open_relations_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> form("#manual-relation-form")
+        |> render_submit()
+
+      assert html =~ "is required for synonyms and antonyms"
     end
 
     test "pre-fills prompt with existing word text", %{conn: conn} do

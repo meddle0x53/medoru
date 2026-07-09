@@ -60,14 +60,6 @@ export default class LoadoutScene extends Phaser.Scene {
     this.events.on('shutdown', () => {
       this.game.canvas.removeEventListener('wheel', this._wheelHandler)
     })
-
-    // Fallback for browsers/devices that don't reliably emit dragend during
-    // ability drags (reported on page 2 of the paginated ability list).
-    this.input.on('pointerup', (pointer) => {
-      if (this.abilityDragActive && this.abilityDragClone && this.abilityDragAction) {
-        this.endAbilityDrag(this.abilityDragAction, pointer)
-      }
-    })
   }
 
   // ---------- Background ----------
@@ -416,6 +408,7 @@ export default class LoadoutScene extends Phaser.Scene {
     if (action) this.showToast(`${action.name} activated`)
   }
 
+
   addToSelectedPool(actionId) {
     // Deprecated: use Player.addToBattlePool directly
     this.player.addToBattlePool(actionId)
@@ -540,12 +533,7 @@ export default class LoadoutScene extends Phaser.Scene {
   showTab(tabName) {
     this.closeAbilityDialog()
 
-    // Destroy any stray drag clones before rebuilding the tab content
-    if (this.abilityDragClone) {
-      this.abilityDragClone.destroy()
-      this.abilityDragClone = null
-      this.abilityDragAction = null
-    }
+    // Destroy any stray charm drag clone before rebuilding the tab content
     if (this.dragClone) {
       this.dragClone.destroy()
       this.dragClone = null
@@ -1341,32 +1329,13 @@ export default class LoadoutScene extends Phaser.Scene {
       }).setOrigin(0.5)
     )
 
-    // Separate draggable/clickable hit area
+    // Clickable hit area (drag-and-drop removed due to slot-mapping bugs)
     const hitArea = this.add.rectangle(0, 0, rowW, rowH, 0x000000, 0)
-      .setInteractive({ useHandCursor: true, draggable: isAvailable })
+      .setInteractive({ useHandCursor: true })
 
-    if (isAvailable) {
-      hitArea.on('dragstart', (pointer) => {
-        this.startAbilityDrag(action, container, pointer.x, pointer.y)
-      })
-      hitArea.on('drag', (pointer) => {
-        if (this.abilityDragClone) {
-          this.abilityDragClone.setPosition(pointer.x, pointer.y)
-        }
-      })
-      hitArea.on('dragend', (pointer) => {
-        this.endAbilityDrag(action, pointer)
-      })
-    }
     hitArea.on('pointerup', (pointer) => {
       const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
       if (moveDist < 8) {
-        // Clean up any stray drag clone
-        if (this.abilityDragClone) {
-          this.abilityDragClone.destroy()
-          this.abilityDragClone = null
-          this.abilityDragAction = null
-        }
         this.showAbilityDetailDialog(action, isAvailable)
       }
     })
@@ -1463,13 +1432,18 @@ export default class LoadoutScene extends Phaser.Scene {
 
     const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(2000)
 
-    // Dark backdrop
+    // Dark backdrop — captures clicks outside the panel and closes on release.
     const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.85).setOrigin(0.5)
     backdrop.setInteractive()
+    backdrop.on('pointerdown', () => {})
+    backdrop.on('pointerup', () => this.closeAbilityDialog())
     overlay.add(backdrop)
 
-    // Panel
+    // Panel — captures clicks between buttons so they don't fall through to the ability list.
     const panel = this.add.rectangle(0, 0, 440, 460, 0x1a1a2e).setStrokeStyle(2, 0xf39c12).setOrigin(0.5)
+    panel.setInteractive()
+    panel.on('pointerdown', () => {})
+    panel.on('pointerup', () => {})
     overlay.add(panel)
 
     // Kanji
@@ -1759,84 +1733,6 @@ export default class LoadoutScene extends Phaser.Scene {
     )
   }
 
-  // ---------- Ability Drag & Drop ----------
-
-  startAbilityDrag(action, sourceContainer, x, y) {
-    // Clean up any leftover clone from a previous interrupted drag
-    if (this.abilityDragClone) {
-      this.abilityDragClone.destroy()
-      this.abilityDragClone = null
-      this.abilityDragAction = null
-    }
-
-    this.abilityDragActive = true
-    // Disable pagination buttons while dragging so releasing over them doesn't
-    // change pages instead of dropping the ability.
-    if (this.abilityPaginationButtons) {
-      const prevBg = this.abilityPaginationButtons.prev?.list?.[0]
-      const nextBg = this.abilityPaginationButtons.next?.list?.[0]
-      if (prevBg && prevBg.input) prevBg.input.enabled = false
-      if (nextBg && nextBg.input) nextBg.input.enabled = false
-    }
-
-    const colors = getActionTypeColor(action.type)
-    const colorHex = '#' + (colors.main || 0xffffff).toString(16).padStart(6, '0')
-    this.abilityDragClone = this.add.text(0, 0, action.kanji || '◆', {
-      fontFamily: FONTS.kanji.fontFamily,
-      fontSize: '28px',
-      color: '#ffffff',
-      stroke: colorHex,
-      strokeThickness: 4,
-    }).setOrigin(0.5)
-    this.abilityDragClone.setPosition(x, y)
-    this.abilityDragClone.setDepth(1000)
-    this.abilityDragAction = action
-  }
-
-  endAbilityDrag(action, pointer) {
-    this.abilityDragActive = false
-
-    // Re-enable pagination buttons and refresh the current page's row input.
-    if (this.abilityListContainer && this.abilityListContainer.scene) {
-      this.setAbilityPage(this.abilityPage)
-    }
-
-    if (!this.abilityDragClone) return
-
-    // Check if dropped on an active action slot (generous radius for mobile)
-    const droppedSlot = this.actionSlots.find(slot => {
-      const dx = slot.x - pointer.x
-      const dy = slot.y - pointer.y
-      return Math.sqrt(dx * dx + dy * dy) < 60
-    })
-
-    // Destroy the clone immediately so it never lingers, even if activation
-    // rebuilds the tab and interrupts the drag event.
-    this.abilityDragClone.destroy()
-    this.abilityDragClone = null
-    this.abilityDragAction = null
-
-    if (!droppedSlot) return
-
-    // Defer the loadout mutation until the drag lifecycle is fully finished.
-    // Rebuilding the abilities tab mid-drag was leaving the drag clone stranded
-    // on some browsers/devices.
-    this.time.delayedCall(100, () => {
-      if (!this.scene.isActive()) return
-      // Allow dragging an attack onto an active attack slot to replace it,
-      // even if it is the only currently active attack.
-      const incomingIsAttack = action.type === 'attack'
-      const slotIsAttack = droppedSlot.action?.type === 'attack'
-      const forceReplace = incomingIsAttack && slotIsAttack
-
-      // If slot already has an ability, deactivate it first
-      if (droppedSlot.actionId) {
-        this.deactivateAbility(droppedSlot.actionId, { force: forceReplace })
-      }
-      this.activateAbility(action.id)
-    })
-  }
-
   // ---------- UI Helpers ----------
 
   createMiniButton(x, y, label, color, onClick) {
@@ -1860,7 +1756,7 @@ export default class LoadoutScene extends Phaser.Scene {
     container.add([bg, text])
 
     const hitArea = this.add.rectangle(0, 0, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
-    hitArea.on('pointerdown', onClick)
+    hitArea.on('pointerup', onClick)
     container.add(hitArea)
 
     return { container, bg, text, hitArea }

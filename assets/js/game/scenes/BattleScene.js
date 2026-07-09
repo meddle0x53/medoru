@@ -2651,23 +2651,55 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Heavy Slash uses kanji drawing (same flow as Forward Slash, different kanji)
+    // Heavy Slash uses kanji drawing with a pool of powerful kanji
     if (skill.id === 'heavy_slash') {
-      // Try to find 斬 stroke data in player's kanji list, fallback to 力
-      let strokeData = null
-      const kanjiData = this.player.kanjiList.find(k => k.character === '斬')
-      if (kanjiData?.stroke_data?.strokes?.length > 0) {
-        strokeData = kanjiData.stroke_data
-      }
-      if (!strokeData) {
-        const userData = getWindowGameData()
-        strokeData = userData?.weapon_kanji_strokes || { strokes: [] }
+      // 10% chance to skip the drawing challenge and strike immediately.
+      if (Math.random() < 0.1) {
+        this.challengeActive = false
+        this.addCombatLog('Heavy Slash crashes down! No kanji challenge.')
+        this.executeSkill('success')
+        return
       }
 
-      if (!strokeData.strokes || strokeData.strokes.length === 0) {
+      const pool = skill.kanjiPool || ['斬', '豪', '猛', '剛', '砕', '破']
+      let selectedKanjiData = null
+
+      // 20% chance to draw the current focus kanji instead of the pool.
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      }
+
+      if (!selectedKanjiData) {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const poolCandidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (poolCandidates.length > 0) {
+          selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+        }
+      }
+
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
         this.challengeActive = false
         this.executeSkill('success')
         return
+      }
+
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+      const failThreshold = Math.ceil(totalStrokes / 2)
+      let tier = 1
+      if (totalStrokes >= 8) {
+        tier = 3
+      } else if (totalStrokes >= 4) {
+        tier = 2
       }
 
       const hint = skill.moveHint?.en || 'Unleash a DEVASTATING blow!'
@@ -2677,20 +2709,14 @@ export default class BattleScene extends Phaser.Scene {
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
 
-          this.player.setKanjiResult(result.wrongStrokes)
-
-          if (result.completed) {
-            if (result.wrongStrokes >= 3) {
-              this.player.setKanjiBonus(1)
-              this.addCombatLog('Zan drawn! (+1 power, sloppy)')
-            } else {
-              this.player.setKanjiBonus(2)
-              this.addCombatLog('Zan drawn perfectly! (+2 power)')
-            }
+          const kanjiChar = selectedKanjiData.character
+          if (result.completed && result.wrongStrokes < failThreshold) {
+            this.player.setBasePowerBonus(tier)
+            this.addCombatLog(`${kanjiChar} drawn! (+${tier} power)`)
             this.executeSkill('success')
           } else {
-            this.player.setKanjiBonus(0)
-            this.addCombatLog('Zan failed! No power bonus.')
+            this.player.setBasePowerBonus(0)
+            this.addCombatLog(`${kanjiChar} failed! No power bonus.`)
             this.executeSkill('fail')
           }
         },
@@ -2702,7 +2728,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      }, kanjiData || { character: '斬', meanings: [] })
+      }, selectedKanjiData, { allowFocusOverride: false })
       return
     }
 

@@ -72,10 +72,18 @@
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 4,
-      "basePower": 16,
+      "basePower": 15,
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
       "kanji": "斬",
+      "kanjiPool": [
+        "斬",
+        "豪",
+        "猛",
+        "剛",
+        "砕",
+        "破"
+      ],
       "rarity": "common",
       "moveHint": {
         "en": "Unleash a DEVASTATING blow!",

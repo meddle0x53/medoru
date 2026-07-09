@@ -58,6 +58,12 @@ defmodule MedoruWeb.Admin.WordLive.Form do
      |> assign(:relations_prompt, "")
      |> assign(:show_relations_modal, false)
      |> assign(:pending_relations, [])
+     |> assign(:manual_relation_type, "synonym")
+     |> assign(:manual_relation_search, "")
+     |> assign(:manual_relation_results, [])
+     |> assign(:manual_relation_selected_word_id, nil)
+     |> assign(:manual_relation_expression_text, "")
+     |> assign(:manual_relation_error, nil)
      |> assign(:selected_kanji_ids, MapSet.new())
      |> allow_upload(:image,
        accept: ~w(.jpg .jpeg .png .webp),
@@ -88,6 +94,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
     |> assign(:enrich_prompt, WordEnrichment.predefined_prompt(""))
     |> assign(:relations_prompt, "")
     |> assign(:pending_relations, [])
+    |> reset_manual_relation_form()
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -115,6 +122,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
       :relations_prompt,
       WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type)
     )
+    |> reset_manual_relation_form()
     |> load_pending_relations(word)
   end
 
@@ -431,6 +439,12 @@ defmodule MedoruWeb.Admin.WordLive.Form do
          :relations_prompt,
          WordRelations.predefined_prompt(word.text, word.reading, word.meaning, word.word_type)
        )
+       |> assign(:manual_relation_type, "synonym")
+       |> assign(:manual_relation_search, "")
+       |> assign(:manual_relation_results, [])
+       |> assign(:manual_relation_selected_word_id, nil)
+       |> assign(:manual_relation_expression_text, "")
+       |> assign(:manual_relation_error, nil)
        |> load_pending_relations(word)}
     else
       {:noreply,
@@ -485,6 +499,108 @@ defmodule MedoruWeb.Admin.WordLive.Form do
            socket
            |> assign(:relations_loading, false)
            |> assign(:relations_error, reason)}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("update_manual_relation_type", %{"type" => type}, socket) do
+    relation_type =
+      if type in ["synonym", "antonym", "expression"], do: type, else: "synonym"
+
+    {:noreply,
+     socket
+     |> assign(:manual_relation_type, relation_type)
+     |> assign(:manual_relation_selected_word_id, nil)
+     |> assign(:manual_relation_results, [])
+     |> assign(:manual_relation_error, nil)}
+  end
+
+  @impl true
+  def handle_event("update_manual_relation_search", %{"search" => query}, socket) do
+    word = socket.assigns.word
+
+    results =
+      if String.trim(query) == "" do
+        []
+      else
+        query
+        |> Content.search_words(limit: 10)
+        |> Enum.reject(fn result -> result.id == word.id end)
+      end
+
+    {:noreply,
+     socket
+     |> assign(:manual_relation_search, query)
+     |> assign(:manual_relation_results, results)
+     |> assign(:manual_relation_selected_word_id, nil)
+     |> assign(:manual_relation_error, nil)}
+  end
+
+  @impl true
+  def handle_event("select_manual_relation_word", %{"word_id" => word_id}, socket) do
+    {:noreply,
+     socket
+     |> assign(:manual_relation_selected_word_id, word_id)
+     |> assign(:manual_relation_error, nil)}
+  end
+
+  @impl true
+  def handle_event("update_manual_relation_expression", %{"expression" => expression}, socket) do
+    {:noreply,
+     socket
+     |> assign(:manual_relation_expression_text, expression)
+     |> assign(:manual_relation_error, nil)}
+  end
+
+  @impl true
+  def handle_event("add_manual_relation", _params, socket) do
+    word = socket.assigns.word
+
+    if socket.assigns.live_action != :edit do
+      {:noreply,
+       socket
+       |> assign(:manual_relation_error, gettext("Save the word first before adding relations."))}
+    else
+      relation_type = String.to_existing_atom(socket.assigns.manual_relation_type)
+
+      attrs =
+        case relation_type do
+          :expression ->
+            %{
+              word_id: word.id,
+              relation_type: :expression,
+              related_word_id: socket.assigns.manual_relation_selected_word_id,
+              expression_text: String.trim(socket.assigns.manual_relation_expression_text)
+            }
+
+          _ ->
+            %{
+              word_id: word.id,
+              relation_type: relation_type,
+              related_word_id: socket.assigns.manual_relation_selected_word_id,
+              expression_text: nil
+            }
+        end
+
+      case Content.create_approved_word_relation(attrs) do
+        {:ok, _relation} ->
+          word = Content.get_word_with_kanji_and_relations!(word.id)
+
+          {:noreply,
+           socket
+           |> assign(:word, word)
+           |> reset_manual_relation_form()
+           |> load_pending_relations(word)
+           |> put_flash(:info, gettext("Relation added."))}
+
+        {:error, changeset} ->
+          error =
+            changeset.errors
+            |> Enum.map(fn {field, {msg, _}} -> "#{field}: #{msg}" end)
+            |> Enum.join(", ")
+
+          {:noreply, assign(socket, :manual_relation_error, error)}
       end
     end
   end
@@ -962,6 +1078,16 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   defp load_pending_relations(socket, %Word{} = word) do
     pending = Content.list_pending_word_relations_for_word(word.id)
     assign(socket, :pending_relations, pending)
+  end
+
+  defp reset_manual_relation_form(socket) do
+    socket
+    |> assign(:manual_relation_type, "synonym")
+    |> assign(:manual_relation_search, "")
+    |> assign(:manual_relation_results, [])
+    |> assign(:manual_relation_selected_word_id, nil)
+    |> assign(:manual_relation_expression_text, "")
+    |> assign(:manual_relation_error, nil)
   end
 
   defp create_pending_relations(%Word{} = word, suggestions) do

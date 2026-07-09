@@ -1328,6 +1328,25 @@ defmodule Medoru.ContentTest do
     end
   end
 
+  describe "word relations" do
+    import Medoru.ContentFixtures
+
+    test "create_approved_word_relation/1 creates an approved relation" do
+      word = word_fixture(%{text: "本", reading: "ほん"})
+      related = word_fixture(%{text: "書籍", reading: "しょせき"})
+
+      assert {:ok, relation} =
+               Content.create_approved_word_relation(%{
+                 word_id: word.id,
+                 relation_type: :synonym,
+                 related_word_id: related.id
+               })
+
+      assert relation.status == :approved
+      assert relation.relation_type == :synonym
+    end
+  end
+
   # Helper functions
 
   defp unique_kanji_char do
