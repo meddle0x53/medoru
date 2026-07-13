@@ -121,20 +121,31 @@
           <% end %>
         </div>
 
-        <%!-- Meaning --%>
+        <%!-- Meanings --%>
         <div class="bg-base-200/50 rounded-xl p-6 mb-6">
-          <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-2">
-            {gettext("Meaning")}
+          <h2 class="text-sm font-medium text-secondary/70 uppercase tracking-wide mb-4">
+            {gettext("Meanings")}
           </h2>
-          <%= if @english_mode? do %>
-            <p class="text-xl text-base-content">
-              {@word.text} · {@word.reading}
-            </p>
-          <% else %>
-            <p class="text-xl text-base-content">
-              {@localized_meaning}
-            </p>
-          <% end %>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <%= for lang <- @meaning_languages do %>
+              <div class="bg-base-100 rounded-xl p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="badge badge-sm badge-primary">{lang.label}</span>
+                </div>
+                <%= if length(lang.meanings) > 1 do %>
+                  <ul class="list-disc list-inside space-y-1 text-base-content">
+                    <%= for meaning <- lang.meanings do %>
+                      <li>{meaning}</li>
+                    <% end %>
+                  </ul>
+                <% else %>
+                  <p class="text-lg text-base-content">
+                    {List.first(lang.meanings, gettext("No meaning found"))}
+                  </p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         </div>
 
         <%!-- Word Relations --%>

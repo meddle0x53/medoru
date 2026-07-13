@@ -214,5 +214,51 @@ defmodule MedoruWeb.SettingsLiveTest do
       profile = Medoru.Accounts.get_profile_by_user!(user.id)
       assert profile.is_public == false
     end
+
+    test "renders word meaning language preferences", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      assert has_element?(view, "span", "Word Meaning Languages")
+      assert has_element?(view, "input[name=\"user_profile[show_japanese_meanings]\"]")
+      assert has_element?(view, "input[name=\"user_profile[show_bulgarian_meanings]\"]")
+      assert has_element?(view, "input[name=\"user_profile[show_english_meanings]\"][disabled]")
+    end
+
+    test "updates word meaning language preferences", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      result =
+        view
+        |> form("#profile-form",
+          user_profile: %{
+            display_name: user.profile.display_name,
+            show_bulgarian_meanings: true
+          }
+        )
+        |> render_submit()
+
+      assert {:error, {:live_redirect, %{to: "/settings/profile"}}} = result
+
+      profile = Medoru.Accounts.get_profile_by_user!(user.id)
+      assert profile.show_bulgarian_meanings == true
+    end
+
+    test "checking japanese does not auto-check bulgarian", %{conn: conn, user: user} do
+      {:ok, view, _html} = conn |> log_in_user(user) |> live(~p"/settings/profile")
+
+      html =
+        view
+        |> form("#profile-form",
+          user_profile: %{
+            display_name: user.profile.display_name,
+            show_japanese_meanings: "true",
+            show_bulgarian_meanings: "false"
+          }
+        )
+        |> render_change()
+
+      refute html =~ ~r{name="user_profile\[show_bulgarian_meanings\]"[^>]*checked}
+      assert html =~ ~r{name="user_profile\[show_japanese_meanings\]"[^>]*checked}
+    end
   end
 end

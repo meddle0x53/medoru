@@ -127,6 +127,30 @@ defmodule MedoruWeb.WordLiveTest do
       assert html =~ word.meaning
     end
 
+    test "displays meaning language cards based on profile preferences", %{conn: conn} do
+      user = user_fixture_with_profile()
+
+      {:ok, _} =
+        Medoru.Accounts.update_profile(user.profile, %{show_bulgarian_meanings: true})
+
+      word =
+        word_fixture(%{
+          meaning: "exam / test",
+          translations: %{"bg" => %{"meaning" => "изпит / тест"}}
+        })
+
+      conn = log_in_user(conn, user)
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ "Meanings"
+      assert html =~ "English"
+      assert html =~ "Bulgarian"
+      refute html =~ ~r{>Japanese</span>}
+      assert html =~ "<li>exam</li>"
+      assert html =~ "<li>test</li>"
+      assert html =~ "<li>изпит</li>"
+    end
+
     test "displays word details by text", %{conn: conn, word: word} do
       {:ok, _view, html} = live(conn, ~p"/words/#{word.text}")
 

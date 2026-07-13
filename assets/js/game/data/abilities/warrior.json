@@ -218,7 +218,7 @@
       "id": "quick_stab",
       "name": "Quick Stab",
       "nameJa": "突き",
-      "description": "A fast thrust that costs little stamina.",
+      "description": "A fast thrust that costs little stamina. Requires a Sharp Charm in the sword's first socket.",
       "type": "attack",
       "element": "physical",
       "equipmentType": "weapon",
@@ -228,7 +228,14 @@
       "scalingStat": "skill",
       "scalingMultiplier": 0.9,
       "kanji": "突",
-      "rarity": "common",
+      "kanjiPool": [
+        "突",
+        "刺",
+        "貫",
+        "穿",
+        "迅"
+      ],
+      "rarity": "uncommon",
       "infusableWith": [
         "fire",
         "water",
@@ -249,9 +256,9 @@
           "effectId": "bleed",
           "target": "enemy",
           "chance": {
-            "base": 0.1,
-            "step": 0.03,
-            "cap": 0.2
+            "base": 0.15,
+            "step": 0,
+            "cap": 0.15
           },
           "duration": {
             "min": 1,

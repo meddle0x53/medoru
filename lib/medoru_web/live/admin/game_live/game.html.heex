@@ -11,7 +11,7 @@
     phx-update="ignore"
     phx-hook="GameHook"
     data-game-data={@game_data}
-    data-game-script-url={~p"/assets/js/game.js?v=419"}
+    data-game-script-url={~p"/assets/js/game.js?v=424"}
   >
     <style>
       #game-wrapper:fullscreen {
@@ -40,6 +40,19 @@
         transform: none !important;
         max-width: none !important;
         z-index: 9999 !important;
+      }
+      #game-container canvas {
+        touch-action: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+      }
+      @media (max-width: 960px) {
+        #game-wrapper {
+          width: 100% !important;
+          height: auto !important;
+          aspect-ratio: 16 / 9 !important;
+        }
       }
     </style>
     <div id="game-container" style="width: 100%; height: 100%;"></div>

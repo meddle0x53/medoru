@@ -17,7 +17,16 @@ export function getGamePX() {
   const dpr = window.devicePixelRatio || 1
   // Cap at 2 to keep fill-rate reasonable. Devices with DPR > 2 still get
   // a crisp 2× render.
-  const px = Math.max(1, Math.min(2, Math.round(dpr)))
+  let maxPx = 2
+  // Phones have very high DPR but small screens; rendering at 2× is too heavy
+  // for the GPU and drains battery. Drop to 1× on small screens.
+  if (typeof window.screen !== 'undefined') {
+    const minScreenDim = Math.min(window.screen.width, window.screen.height)
+    if (minScreenDim < 720) {
+      maxPx = 1
+    }
+  }
+  const px = Math.max(1, Math.min(maxPx, Math.round(dpr)))
   window.GAME_PX = px
   return px
 }

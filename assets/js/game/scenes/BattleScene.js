@@ -724,10 +724,12 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   relayoutEnemyDisplays() {
-    const total = this.enemyDisplays.length
-    const masterLayout = this.enemyDisplays[0]?.enemy.definition.layout[String(total)]
+    // Only layout living enemies; dead displays stay where they are (invisible).
+    const aliveDisplays = this.enemyDisplays.filter(d => d.enemy.isAlive())
+    const total = aliveDisplays.length
+    const masterLayout = aliveDisplays[0]?.enemy.definition.layout[String(total)]
     for (let i = 0; i < total; i++) {
-      const display = this.enemyDisplays[i]
+      const display = aliveDisplays[i]
       const layout = masterLayout?.[i]
         || display.enemy.definition.layout[String(total)]?.[i]
         || display.enemy.definition.layout['1']?.[0]
@@ -2779,6 +2781,91 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Quick Stab uses a thrusting kanji pool with a higher skip chance.
+    if (skill.id === 'quick_stab') {
+      // 30% chance to skip the drawing challenge and strike immediately.
+      if (Math.random() < 0.3) {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.addCombatLog('Quick Stab strikes cleanly! No kanji challenge.')
+        this.executeSkill('success')
+        return
+      }
+
+      const pool = skill.kanjiPool || ['突', '刺', '貫', '穿', '迅']
+      let selectedKanjiData = null
+
+      // 20% chance to draw the current focus kanji instead of the pool.
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      }
+
+      if (!selectedKanjiData) {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const poolCandidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (poolCandidates.length > 0) {
+          selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+        }
+      }
+
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.executeSkill('success')
+        return
+      }
+
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+      const failThreshold = Math.ceil(totalStrokes / 2)
+      let tier = 1
+      if (totalStrokes >= 8) {
+        tier = 3
+      } else if (totalStrokes >= 4) {
+        tier = 2
+      }
+
+      const hint = skill.moveHint?.en || 'A swift THRUST!'
+      this.startKanjiDrawingChallenge(strokeData, hint, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          const kanjiChar = selectedKanjiData.character
+          if (result.completed && result.wrongStrokes < failThreshold) {
+            this.player.setBasePowerBonus(tier)
+            this.addCombatLog(`${kanjiChar} drawn! (+${tier} power)`)
+            this.executeSkill('success')
+          } else {
+            this.player.setBasePowerBonus(0)
+            this.addCombatLog(`${kanjiChar} failed! No power bonus.`)
+            this.executeSkill('fail')
+          }
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      }, selectedKanjiData, { allowFocusOverride: false })
+      return
+    }
+
     // Setup Defence uses kanji drawing for a random shield kanji
     if (skill.id === 'setup_defence') {
       const userData = getWindowGameData()
@@ -2999,6 +3086,11 @@ export default class BattleScene extends Phaser.Scene {
         if (this.player.addSocketCharm(reward.id)) {
           const charm = getSocketCharmById?.(reward.id)
           this.addCombatLog(`First defeat reward: ${charm?.name || reward.id} unlocked!`)
+        }
+        // Also mark it as unlocked in the shop catalogue.
+        if (!this.player.loadout.unlockedSocketCharmIds.includes(reward.id)) {
+          this.player.loadout.unlockedSocketCharmIds.push(reward.id)
+          this.player.saveLoadout()
         }
       }
     }

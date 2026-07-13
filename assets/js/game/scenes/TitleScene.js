@@ -136,6 +136,7 @@ export default class TitleScene extends Phaser.Scene {
 
   newRun() {
     if (this.hasActiveRun) {
+      this.setOverlayInputEnabled(this.confirmationOverlay, true)
       this.confirmationOverlay.setVisible(true)
       return
     }
@@ -189,12 +190,16 @@ export default class TitleScene extends Phaser.Scene {
 
     this.createConfirmationButton(GAME_CONFIG.width / 2 - 90, GAME_CONFIG.height / 2 + 40, 'Yes', 0xc0392b, 0xe74c3c, () => {
       this.confirmationOverlay.setVisible(false)
+      this.setOverlayInputEnabled(this.confirmationOverlay, false)
       this.startNewRun()
     })
 
     this.createConfirmationButton(GAME_CONFIG.width / 2 + 90, GAME_CONFIG.height / 2 + 40, 'No', 0x27ae60, 0x2ecc71, () => {
       this.confirmationOverlay.setVisible(false)
+      this.setOverlayInputEnabled(this.confirmationOverlay, false)
     })
+
+    this.setOverlayInputEnabled(this.confirmationOverlay, false)
   }
 
   createConfirmationButton(x, y, label, color, hoverColor, callback) {
@@ -215,12 +220,38 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   openSettings() {
+    this.setOverlayInputEnabled(this.settingsOverlay, true)
     this.settingsOverlay.setVisible(true)
     this.updateSettingsUI()
   }
 
   closeSettings() {
     this.settingsOverlay.setVisible(false)
+    this.setOverlayInputEnabled(this.settingsOverlay, false)
+  }
+
+  /**
+   * Enable or disable input on all interactive objects inside an overlay.
+   * Hidden overlays must not steal touches from the title buttons.
+   */
+  setOverlayInputEnabled(overlay, enabled) {
+    const walk = (obj) => {
+      if (obj.input) {
+        if (enabled) {
+          if (obj.input.hitArea) {
+            obj.setInteractive(obj.input.hitArea, obj.input.hitAreaCallback)
+          } else {
+            obj.setInteractive({ useHandCursor: true })
+          }
+        } else {
+          obj.disableInteractive()
+        }
+      }
+      if (obj.list && obj.list.length > 0) {
+        obj.list.forEach(walk)
+      }
+    }
+    walk(overlay)
   }
 
   createSettingsOverlay() {
@@ -290,6 +321,8 @@ export default class TitleScene extends Phaser.Scene {
       () => this.closeSettings(),
     )
     this.settingsOverlay.add(closeButton)
+
+    this.setOverlayInputEnabled(this.settingsOverlay, false)
   }
 
   createSlider(x, y, initialValue, onChange) {

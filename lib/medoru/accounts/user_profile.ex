@@ -26,6 +26,10 @@ defmodule Medoru.Accounts.UserProfile do
     field :daily_test_step_types, {:array, :string},
       default: ["word_to_meaning", "word_to_reading", "reading_text", "image_to_meaning"]
 
+    field :show_japanese_meanings, :boolean, default: false
+    field :show_bulgarian_meanings, :boolean, default: false
+    field :show_english_meanings, :boolean, default: false
+
     field :age, :integer
     field :gender, :integer
     field :location, :string
@@ -52,6 +56,9 @@ defmodule Medoru.Accounts.UserProfile do
       :chat_enter_sends,
       :convert_emoticons,
       :daily_test_step_types,
+      :show_japanese_meanings,
+      :show_bulgarian_meanings,
+      :show_english_meanings,
       :age,
       :gender,
       :location,

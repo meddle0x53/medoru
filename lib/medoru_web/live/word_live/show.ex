@@ -2,6 +2,7 @@ defmodule MedoruWeb.WordLive.Show do
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
 
+  alias Medoru.Accounts
   alias Medoru.Content
   alias Medoru.Content.MatureContent
   alias Medoru.Learning
@@ -57,6 +58,16 @@ defmodule MedoruWeb.WordLive.Show do
           false
         end
 
+      # Load profile preferences for additional meaning languages
+      profile =
+        if current_user do
+          Accounts.get_user_profile(current_user.id)
+        else
+          nil
+        end
+
+      meaning_languages = enabled_meaning_languages(word, locale, profile)
+
       # Store return URL and step for navigation back to lesson
       return_to = params["return_to"]
       step = parse_step_param(params["step"])
@@ -66,6 +77,7 @@ defmodule MedoruWeb.WordLive.Show do
        socket
        |> assign(:word, word)
        |> assign(:localized_meaning, localized_meaning)
+       |> assign(:meaning_languages, meaning_languages)
        |> assign(:word_relations, word_relations)
        |> assign(:word_learned, word_learned)
        |> assign(:english_mode?, english_mode?)
@@ -287,6 +299,41 @@ defmodule MedoruWeb.WordLive.Show do
   def localized_word_meaning(word, locale) do
     Content.get_localized_meaning(word, locale)
   end
+
+  # Builds the list of meaning languages to display on the word detail page.
+  # The currently selected UI language is always included; additional languages
+  # are included based on the user's profile preferences.
+  defp enabled_meaning_languages(word, locale, profile) do
+    current = locale || "en"
+
+    languages = [
+      %{locale: "ja", label: gettext("Japanese"), meanings: split_meanings(word, "ja")},
+      %{locale: "en", label: gettext("English"), meanings: split_meanings(word, "en")},
+      %{locale: "bg", label: gettext("Bulgarian"), meanings: split_meanings(word, "bg")}
+    ]
+
+    Enum.filter(languages, fn %{locale: l} ->
+      l == current || meaning_language_enabled?(profile, l)
+    end)
+    |> Enum.sort_by(fn %{locale: l} ->
+      if l == current, do: 0, else: 1
+    end)
+  end
+
+  defp split_meanings(word, locale) do
+    word
+    |> Content.get_localized_meaning(locale)
+    |> to_string()
+    |> String.split("/")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp meaning_language_enabled?(nil, _locale), do: false
+  defp meaning_language_enabled?(profile, "ja"), do: profile.show_japanese_meanings
+  defp meaning_language_enabled?(profile, "bg"), do: profile.show_bulgarian_meanings
+  defp meaning_language_enabled?(profile, "en"), do: profile.show_english_meanings
+  defp meaning_language_enabled?(_profile, _locale), do: false
 
   defp og_image_url(nil), do: nil
 

@@ -490,6 +490,10 @@ export default class Player extends Character {
 
   canUseSkill(skill) {
     if (this.stamina < skill.staminaCost) return false
+    if (skill.id === 'quick_stab') {
+      const firstSocketCharm = this.weapon?.socketCharmIds?.[0]
+      if (firstSocketCharm !== 'sharp_charm_sword') return false
+    }
     if (skill.singleUse) {
       return (this.loadout.singleUseCharges?.[skill.id] || 0) > 0
     }

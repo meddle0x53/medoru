@@ -508,6 +508,81 @@
             </div>
           </div>
 
+          <%!-- Word Meaning Display Preferences --%>
+          <div class="form-control pt-4 border-t border-base-300">
+            <% current_meaning_locale = @current_scope.locale %>
+            <label class="label">
+              <span class="label-text font-medium">{gettext("Word Meaning Languages")}</span>
+            </label>
+            <p class="text-sm text-base-content/60 mb-3">
+              {gettext(
+                "Choose which additional meanings to show on word detail pages. The currently selected language is always shown."
+              )}
+            </p>
+            <div class="space-y-3">
+              <% ja_current? = current_meaning_locale == "ja" %>
+              <label class={["flex items-center gap-3", !ja_current? && "cursor-pointer"]}>
+                <%= if !ja_current? do %>
+                  <input type="hidden" name={@form[:show_japanese_meanings].name} value="false" />
+                <% end %>
+                <input
+                  type="checkbox"
+                  name={@form[:show_japanese_meanings].name}
+                  value="true"
+                  checked={ja_current? || @form[:show_japanese_meanings].value in [true, "true"]}
+                  disabled={ja_current?}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">
+                  {gettext("Show Japanese meanings")}
+                </span>
+                <%= if ja_current? do %>
+                  <span class="text-xs text-secondary">({gettext("always shown")})</span>
+                <% end %>
+              </label>
+              <% bg_current? = current_meaning_locale == "bg" %>
+              <label class={["flex items-center gap-3", !bg_current? && "cursor-pointer"]}>
+                <%= if !bg_current? do %>
+                  <input type="hidden" name={@form[:show_bulgarian_meanings].name} value="false" />
+                <% end %>
+                <input
+                  type="checkbox"
+                  name={@form[:show_bulgarian_meanings].name}
+                  value="true"
+                  checked={bg_current? || @form[:show_bulgarian_meanings].value in [true, "true"]}
+                  disabled={bg_current?}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">
+                  {gettext("Show Bulgarian meanings")}
+                </span>
+                <%= if bg_current? do %>
+                  <span class="text-xs text-secondary">({gettext("always shown")})</span>
+                <% end %>
+              </label>
+              <% en_current? = current_meaning_locale == "en" %>
+              <label class={["flex items-center gap-3", !en_current? && "cursor-pointer"]}>
+                <%= if !en_current? do %>
+                  <input type="hidden" name={@form[:show_english_meanings].name} value="false" />
+                <% end %>
+                <input
+                  type="checkbox"
+                  name={@form[:show_english_meanings].name}
+                  value="true"
+                  checked={en_current? || @form[:show_english_meanings].value in [true, "true"]}
+                  disabled={en_current?}
+                  class="checkbox checkbox-primary"
+                />
+                <span class="text-sm text-base-content">
+                  {gettext("Show English meanings")}
+                </span>
+                <%= if en_current? do %>
+                  <span class="text-xs text-secondary">({gettext("always shown")})</span>
+                <% end %>
+              </label>
+            </div>
+          </div>
+
           <%!-- Submit Button --%>
           <div class="flex flex-col-reverse md:flex-row md:items-center md:justify-between pt-4 border-t border-base-300 gap-3">
             <.link navigate={~p"/dashboard"} class="btn btn-ghost w-full md:w-auto">
