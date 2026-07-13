@@ -64,6 +64,7 @@ export default class BattleScene extends Phaser.Scene {
     this.player.clearAllAbilityInfusions() // infusions last for one battle only
     this.player.onCombatLog = (msg) => this.addCombatLog(msg)
     this.essenceGainedThisBattle = 0
+    this.normalBattleEssenceAwarded = false
     this.enemies = this.createEnemiesForTile()
     for (const enemy of this.enemies) {
       enemy.onCombatLog = (msg) => this.addCombatLog(msg)
@@ -3104,12 +3105,15 @@ export default class BattleScene extends Phaser.Scene {
     const roles = enemy.definition?.roles || []
     let essenceGained = 0
     if (this.tile?.type === TILE_TYPES.BATTLE && roles.includes('battle')) {
-      essenceGained = this.player.recordNormalEnemyDefeated()
+      if (!this.normalBattleEssenceAwarded) {
+        essenceGained = this.player.rollNormalBattleEssence()
+        this.normalBattleEssenceAwarded = true
+      }
     } else if (this.tile?.type === TILE_TYPES.MINI_BOSS && roles.includes('mini_boss')) {
-      essenceGained = this.player.recordMiniBossDefeated()
+      essenceGained = this.player.rollMiniBossEssence()
     } else if (this.tile?.type === TILE_TYPES.BOSS && roles.includes('boss')) {
       const mapDef = getMapDefinition(this.mapIndex)
-      essenceGained = this.player.recordMapBossDefeated(mapDef?.level)
+      essenceGained = this.player.rollMapBossEssence(mapDef?.level)
     }
 
     if (essenceGained > 0) {

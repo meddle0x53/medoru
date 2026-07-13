@@ -23,6 +23,8 @@ export default class WinScene extends Phaser.Scene {
     this.challengeSystem = null
     this.replaceDialog = null
     this.abilitySelected = false
+    this.selectedAbilityAction = null
+    this.bonusAbilityPending = false
 
     // Calculate base rewards
     this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.luck || 0) / 50 ? 1 : 0)
@@ -180,7 +182,10 @@ export default class WinScene extends Phaser.Scene {
       return
     }
 
-    this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY, 'Choose an ability reward:', {
+    const headerText = this.bonusAbilityPending
+      ? 'Choose an ability reward — you get a second matching ability!'
+      : 'Choose an ability reward:'
+    this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY, headerText, {
       ...FONTS.default,
       fontSize: '16px',
       color: '#3498db',
@@ -221,9 +226,9 @@ export default class WinScene extends Phaser.Scene {
     this.createAbilityRewards()
   }
 
-  markAbilitySelected(actionName) {
+  markAbilitySelected(actionName, bonusName = null) {
     this.abilitySelected = true
-    this.selectedAbilityName = actionName
+    this.selectedAbilityName = bonusName ? `${actionName} + ${bonusName}` : actionName
     this.createAbilityRewards()
   }
 
@@ -342,16 +347,20 @@ export default class WinScene extends Phaser.Scene {
   onAbilitySelected(action) {
     if (this.abilitySelected) return
 
+    this.selectedAbilityAction = action
+
     // Single-use abilities can be collected again to gain extra charges.
     if (action.singleUse) {
       this.player.addAbilityCharges(action.id, 1)
       this.showToast(`${action.name} +1 use`)
-      this.markAbilitySelected(`${action.name} +1 use`)
+      const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(action.type) : null
+      this.markAbilitySelected(`${action.name} +1 use`, bonusName)
       return
     }
 
     if (this.player.hasAbility(action.id)) {
       this.showToast('You already know this ability')
+      this.selectedAbilityAction = null
       return
     }
 
@@ -367,6 +376,7 @@ export default class WinScene extends Phaser.Scene {
     const result = this.player.learnAbility(action.id)
     if (!result.ok) {
       this.showToast(result.reason)
+      this.selectedAbilityAction = null
       return
     }
 
@@ -376,7 +386,73 @@ export default class WinScene extends Phaser.Scene {
     } else {
       this.showToast(`${action.name} learned (added to reserve)`)
     }
-    this.markAbilitySelected(action.name)
+    const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(action.type) : null
+    this.markAbilitySelected(action.name, bonusName)
+  }
+
+  /**
+   * Grant a second ability of the chosen type as a gamble bonus.
+   * Returns the bonus ability display name, or null if no match was possible.
+   */
+  grantBonusAbility(type) {
+    const pool = this.rewardAbilities.filter(
+      a => a.type === type && a.id !== this.selectedAbilityAction?.id
+    )
+    let bonus = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null
+
+    if (!bonus) {
+      const fullPool = getRewardPool(this.player)
+      const fallbackPool = [
+        ...(fullPool.weapon || []),
+        ...(fullPool.shield || []),
+        ...(fullPool.class || []),
+      ].filter(
+        a => a.type === type && a.id !== this.selectedAbilityAction?.id && !this.player.hasAbility(a.id)
+      )
+      if (fallbackPool.length > 0) {
+        bonus = fallbackPool[Math.floor(Math.random() * fallbackPool.length)]
+      }
+    }
+
+    if (!bonus) {
+      this.showToast('No matching bonus ability available')
+      return null
+    }
+
+    if (bonus.singleUse) {
+      this.player.addAbilityCharges(bonus.id, 1)
+      this.showToast(`Bonus: ${bonus.name} +1 use`)
+      return `${bonus.name} +1 use`
+    }
+
+    if (this.player.hasAbility(bonus.id)) {
+      this.showToast('Bonus ability already known')
+      return null
+    }
+
+    const capacity = this.player.capacity || 3
+    const knownCount = this.player.countCombatAbilities()
+    const maxOverall = getMaxOverallAbilities(capacity)
+
+    if (knownCount >= maxOverall) {
+      const knownIds = this.player.loadout.knownActionIds || []
+      const replaceId = knownIds.find(id => id !== bonus.id && id !== 'use_item')
+      if (replaceId) {
+        this.player.replaceAbility(replaceId, bonus.id)
+        this.showToast(`Bonus: ${bonus.name} learned (replaced)`)
+        return bonus.name
+      }
+      this.showToast('No room for bonus ability')
+      return null
+    }
+
+    const result = this.player.learnAbility(bonus.id)
+    if (!result.ok) {
+      this.showToast(result.reason)
+      return null
+    }
+    this.showToast(`Bonus: ${bonus.name} learned!`)
+    return bonus.name
   }
 
   closeReplaceDialog() {
@@ -429,7 +505,8 @@ export default class WinScene extends Phaser.Scene {
         this.player.replaceAbility(id, newAction.id)
         this.showToast(`${newAction.name} learned!`)
         this.closeReplaceDialog()
-        this.markAbilitySelected(newAction.name)
+        const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(newAction.type) : null
+        this.markAbilitySelected(newAction.name, bonusName)
       })
       rowButtons.push(btn)
     })
@@ -502,8 +579,33 @@ export default class WinScene extends Phaser.Scene {
       this.pointsText.setText(`+${this.attributePoints}`)
       this.goldText.setText(`+${this.goldReward}`)
 
-      const status = result.success ? 'Won!' : 'Lost...'
+      if (this.essenceGained > 0) {
+        const finalEssence = result.success ? this.essenceGained * 2 : Math.max(0, Math.floor(this.essenceGained / 2))
+        const delta = finalEssence - this.essenceGained
+        if (delta !== 0) {
+          this.player.addOuroEssence(delta)
+          this.essenceGained = finalEssence
+          if (this.essenceText) this.essenceText.setText(`+${this.essenceGained}`)
+        }
+      }
+
+      let status = result.success ? 'Won!' : 'Lost...'
       const color = result.success ? '#2ecc71' : '#e74c3c'
+
+      // 25% chance to win a second ability reward if both challenges passed.
+      if (result.success && Math.random() < 0.25) {
+        if (this.abilitySelected && this.selectedAbilityAction) {
+          const bonusName = this.grantBonusAbility(this.selectedAbilityAction.type)
+          if (bonusName) {
+            status = 'Won! Bonus ability!'
+            this.markAbilitySelected(this.selectedAbilityName, bonusName)
+          }
+        } else {
+          this.bonusAbilityPending = true
+          status = 'Won! Bonus ability unlocked!'
+        }
+      }
+
       this.challengeResultText.setText(`${status} Multiplier: x${this.challengeMultiplier.toFixed(2)}`)
       this.challengeResultText.setColor(color)
 

@@ -2008,7 +2008,7 @@ msgstr "テストを受けてレッスンを完了し、進捗を追跡しまし
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/learn_live.ex:203
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "前へ"
 
@@ -5816,9 +5816,9 @@ msgstr "この単語で使用される読み"
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:36
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:36
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:182
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Readings"
-msgstr "読み方:"
+msgstr "読み"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1073
 #, elixir-autogen, elixir-format
@@ -9781,7 +9781,7 @@ msgstr "N%{level}漢字に戻る"
 #: lib/medoru_web/live/kana_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to Katakana"
-msgstr ""
+msgstr "カタカナに戻る"
 
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.html.heex:152
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.html.heex:152
@@ -10341,7 +10341,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/kana_game_live/form.html.heex:131
 #, elixir-autogen, elixir-format
 msgid "Hiragana"
-msgstr ""
+msgstr "ひらがな"
 
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.ex:49
 #, elixir-autogen, elixir-format
@@ -10532,7 +10532,7 @@ msgstr "漢字"
 #: lib/medoru_web/live/teacher/kana_game_live/form.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Katakana"
-msgstr ""
+msgstr "カタカナ"
 
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:77
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:77
@@ -16909,13 +16909,7 @@ msgstr ""
 #: lib/medoru_web/live/bulgarian_katakana_live/show.ex:54
 #, elixir-autogen, elixir-format
 msgid "%{letter} - Bulgarian Katakana"
-msgstr ""
-
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#, elixir-autogen, elixir-format
-msgid "%{note}"
-msgstr ""
+msgstr "%{letter} - ブルガリア語カタカナ"
 
 #: lib/medoru_web/live/notification_dropdown_live.ex:107
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:232
@@ -16947,26 +16941,26 @@ msgstr "匿名"
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to Bulgarian Katakana"
-msgstr ""
+msgstr "ブルガリア語カタカナに戻る"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:28
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:28
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Bulgarian Alphabet"
-msgstr "Български"
+msgstr "ブルガリア語アルファベット"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/index.ex:25
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:17
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:17
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Bulgarian Katakana"
-msgstr "Български"
+msgstr "ブルガリア語カタカナ"
 
 #: lib/medoru_web/live/kana_live/index.html.heex:68
 #: lib/medoru_web/live/kana_live/index.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Bulgarian words in katakana"
-msgstr ""
+msgstr "ブルガリア語の単語をカタカナで"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:518
 #, elixir-autogen, elixir-format
@@ -16975,9 +16969,9 @@ msgstr "単語の詳細ページに表示する追加の意味を選択してく
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:74
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:74
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Example Words"
-msgstr "例"
+msgstr "例詞"
 
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:56
 #, elixir-autogen, elixir-format, fuzzy
@@ -17015,7 +17009,7 @@ msgstr "終了"
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "How Bulgarian letters and common words sound in Japanese katakana"
-msgstr ""
+msgstr "ブルガリア語の文字とよく使う単語が日本語のカタカナでどう聞こえるか"
 
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:123
 #, elixir-autogen, elixir-format
@@ -17024,14 +17018,14 @@ msgstr ""
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:58
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:58
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Latin"
-msgstr ""
+msgstr "ラテン"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.ex:25
 #, elixir-autogen, elixir-format
 msgid "Letter not found"
-msgstr ""
+msgstr "文字が見つかりません"
 
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:73
 #, elixir-autogen, elixir-format, fuzzy

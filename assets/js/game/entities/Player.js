@@ -1415,8 +1415,8 @@ export default class Player extends Character {
   }
 
   addOuroEssence(amount) {
-    const actual = (amount || 0) * 2
-    this.loadout.ouroEssence = (this.loadout.ouroEssence || 0) + actual
+    const actual = amount || 0
+    this.loadout.ouroEssence = Math.max(0, (this.loadout.ouroEssence || 0) + actual)
     this.saveLoadout()
     return actual
   }
@@ -1490,30 +1490,52 @@ export default class Player extends Character {
     return charges >= 0
   }
 
-  recordNormalEnemyDefeated() {
+  rollNormalBattleEssence() {
     this.loadout.lifetimeNormalEnemiesDefeated = (this.loadout.lifetimeNormalEnemiesDefeated || 0) + 1
+    const roll = Math.random()
     let gained = 0
-    if (this.loadout.lifetimeNormalEnemiesDefeated % 7 === 0) {
-      gained = this.addOuroEssence(1)
+    if (roll < 0.20) {
+      gained = 0
+    } else if (roll < 0.70) {
+      gained = 1
+    } else {
+      gained = 2
     }
-    return gained
+    if (gained > 0) return this.addOuroEssence(gained)
+    return 0
   }
 
-  recordMiniBossDefeated() {
+  rollMiniBossEssence() {
     this.loadout.lifetimeMiniBossesDefeated = (this.loadout.lifetimeMiniBossesDefeated || 0) + 1
+    const roll = Math.random()
     let gained = 0
-    if (this.loadout.lifetimeMiniBossesDefeated % 5 === 0) {
-      gained = this.addOuroEssence(3)
+    if (roll < 0.10) {
+      gained = 0
+    } else if (roll < 0.30) {
+      gained = 1
+    } else if (roll < 0.80) {
+      gained = 2
+    } else {
+      gained = 4
     }
-    return gained
+    if (gained > 0) return this.addOuroEssence(gained)
+    return 0
   }
 
-  recordMapBossDefeated(level) {
+  rollMapBossEssence(level) {
     let gained = 0
     if (level === 1) {
-      gained = this.addOuroEssence(2)
+      const roll = Math.random()
+      if (roll < 0.30) {
+        gained = 4
+      } else if (roll < 0.80) {
+        gained = 6
+      } else {
+        gained = 8
+      }
     }
-    return gained
+    if (gained > 0) return this.addOuroEssence(gained)
+    return 0
   }
 
   unlockNextLockedItems() {

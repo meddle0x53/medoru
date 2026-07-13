@@ -16910,12 +16910,6 @@ msgstr ""
 msgid "%{letter} - Bulgarian Katakana"
 msgstr ""
 
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#, elixir-autogen, elixir-format
-msgid "%{note}"
-msgstr ""
-
 #: lib/medoru_web/live/notification_dropdown_live.ex:107
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:232
 #, elixir-autogen, elixir-format

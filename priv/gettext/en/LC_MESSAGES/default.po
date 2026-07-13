@@ -1702,7 +1702,7 @@ msgstr ""
 #: lib/medoru_web/live/word_live/index.html.heex:460
 #, elixir-autogen, elixir-format
 msgid "Next"
-msgstr ""
+msgstr "Next"
 
 #: lib/medoru_web/live/teacher/classroom_live/index.ex:50
 #, elixir-autogen, elixir-format, fuzzy
@@ -2009,9 +2009,9 @@ msgstr ""
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/learn_live.ex:203
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Previous"
-msgstr ""
+msgstr "Previous"
 
 #: lib/medoru_web/live/learn_live.ex:176
 #, elixir-autogen, elixir-format
@@ -5815,9 +5815,9 @@ msgstr ""
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:36
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:36
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:182
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Readings"
-msgstr ""
+msgstr "Readings"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1073
 #, elixir-autogen, elixir-format
@@ -9782,7 +9782,7 @@ msgstr ""
 #: lib/medoru_web/live/kana_live/show.html.heex:18
 #, elixir-autogen, elixir-format
 msgid "Back to Katakana"
-msgstr ""
+msgstr "Back to Katakana"
 
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.html.heex:152
 #: lib/medoru_web/live/teacher/kana_falling_game_live/form.html.heex:152
@@ -10342,7 +10342,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/kana_game_live/form.html.heex:131
 #, elixir-autogen, elixir-format
 msgid "Hiragana"
-msgstr ""
+msgstr "Hiragana"
 
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/form.ex:49
 #, elixir-autogen, elixir-format
@@ -10533,7 +10533,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/kana_game_live/form.html.heex:179
 #, elixir-autogen, elixir-format
 msgid "Katakana"
-msgstr ""
+msgstr "Katakana"
 
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:77
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:77
@@ -16908,13 +16908,7 @@ msgstr ""
 #: lib/medoru_web/live/bulgarian_katakana_live/show.ex:54
 #, elixir-autogen, elixir-format
 msgid "%{letter} - Bulgarian Katakana"
-msgstr ""
-
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:30
-#, elixir-autogen, elixir-format
-msgid "%{note}"
-msgstr ""
+msgstr "%{letter} - Bulgarian Katakana"
 
 #: lib/medoru_web/live/notification_dropdown_live.ex:107
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:232
@@ -16946,26 +16940,26 @@ msgstr ""
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:9
 #, elixir-autogen, elixir-format
 msgid "Back to Bulgarian Katakana"
-msgstr ""
+msgstr "Back to Bulgarian Katakana"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:28
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:28
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Bulgarian Alphabet"
-msgstr ""
+msgstr "Bulgarian Alphabet"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/index.ex:25
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:17
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:17
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Bulgarian Katakana"
-msgstr ""
+msgstr "Bulgarian Katakana"
 
 #: lib/medoru_web/live/kana_live/index.html.heex:68
 #: lib/medoru_web/live/kana_live/index.html.heex:68
 #, elixir-autogen, elixir-format
 msgid "Bulgarian words in katakana"
-msgstr ""
+msgstr "Bulgarian words in katakana"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:518
 #, elixir-autogen, elixir-format
@@ -16974,9 +16968,9 @@ msgstr "Choose which additional meanings to show on word detail pages. The curre
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:74
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:74
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Example Words"
-msgstr ""
+msgstr "Example Words"
 
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:56
 #, elixir-autogen, elixir-format, fuzzy
@@ -17014,7 +17008,7 @@ msgstr ""
 #: lib/medoru_web/live/bulgarian_katakana_live/index.html.heex:20
 #, elixir-autogen, elixir-format
 msgid "How Bulgarian letters and common words sound in Japanese katakana"
-msgstr ""
+msgstr "How Bulgarian letters and common words sound in Japanese katakana"
 
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:123
 #, elixir-autogen, elixir-format
@@ -17023,14 +17017,14 @@ msgstr ""
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:58
 #: lib/medoru_web/live/bulgarian_katakana_live/show.html.heex:58
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Latin"
-msgstr ""
+msgstr "Latin"
 
 #: lib/medoru_web/live/bulgarian_katakana_live/show.ex:25
 #, elixir-autogen, elixir-format
 msgid "Letter not found"
-msgstr ""
+msgstr "Letter not found"
 
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:73
 #, elixir-autogen, elixir-format, fuzzy

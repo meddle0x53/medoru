@@ -68,9 +68,17 @@ export default class ChestScene extends Phaser.Scene {
           this.flashOpen()
           this.spawnSparkles(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60)
           this.pendingRewards = openChest(this.player)
-          if (Math.random() < 0.05) {
-            const essenceAmount = this.player.addOuroEssence(1)
-            this.pendingRewards.push({ type: 'ouro_essence', amount: essenceAmount })
+          {
+            const roll = Math.random()
+            let essenceAmount = 0
+            if (roll < 0.10) {
+              essenceAmount = this.player.addOuroEssence(1)
+            } else if (roll < 0.30) {
+              essenceAmount = this.player.addOuroEssence(2)
+            }
+            if (essenceAmount > 0) {
+              this.pendingRewards.push({ type: 'ouro_essence', amount: essenceAmount })
+            }
           }
           this.pendingUpgradeOptions = getUpgradeOptions(this.player)
           this.handleUpgradeFlow()
