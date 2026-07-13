@@ -11,7 +11,7 @@ defmodule MedoruWeb.Admin.UserLive.IndexTest do
   end
 
   describe "Index" do
-    test "lists all users with last login information", %{conn: conn} do
+    test "lists all users with last active information", %{conn: conn} do
       user = user_fixture(%{email: "student@example.com"})
       {:ok, user} = Medoru.Accounts.update_last_login(user)
 
@@ -19,7 +19,7 @@ defmodule MedoruWeb.Admin.UserLive.IndexTest do
 
       assert html =~ "User Management"
       assert html =~ user.email
-      assert html =~ "Last Login"
+      assert html =~ "Last Active"
       assert html =~ Calendar.strftime(user.last_login, "%b %d, %Y %H:%M")
     end
 

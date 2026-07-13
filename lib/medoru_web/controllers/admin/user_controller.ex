@@ -44,8 +44,6 @@ defmodule MedoruWeb.Admin.UserController do
         |> redirect(to: ~p"/admin/users")
 
       true ->
-        Accounts.update_last_login(target_user)
-
         conn
         |> put_session(:impersonator_user_id, current_user.id)
         |> put_session(:user_id, target_user.id)

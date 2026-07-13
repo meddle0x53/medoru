@@ -35,8 +35,6 @@ defmodule MedoruWeb.AuthController do
           # New user - register them
           case Accounts.register_user_with_oauth(user_params) do
             {:ok, %User{} = user} ->
-              Accounts.update_last_login(user)
-
               conn
               |> put_flash(:info, "Welcome to Medoru, #{user.name || user.email}!")
               |> put_session(:user_id, user.id)
@@ -56,8 +54,6 @@ defmodule MedoruWeb.AuthController do
             |> redirect(to: ~p"/not-available")
           else
             # Existing user - log them in
-            Accounts.update_last_login(user)
-
             conn
             |> put_flash(:info, "Welcome back, #{user.name || user.email}!")
             |> put_session(:user_id, user.id)

@@ -59,6 +59,8 @@ export default class BattleScene extends Phaser.Scene {
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.clearActiveEffects() // clear status effects from previous fight
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
+    this.player.block = 0 // block from previous battle must not carry over
+    this.player.tempDefense = 0 // setup defence from previous battle must not carry over
     this.player.clearAllAbilityInfusions() // infusions last for one battle only
     this.player.onCombatLog = (msg) => this.addCombatLog(msg)
     this.essenceGainedThisBattle = 0
@@ -80,7 +82,7 @@ export default class BattleScene extends Phaser.Scene {
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
       320,
-      { offsetXPercent: -0.038 }
+      { offsetXPercent: -0.039 }
     )
     this.kanjiDrawing.setFocusKanjiData(this.player.loadout.focusKanjiData)
 
@@ -2527,6 +2529,11 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    if (!this.player.canUseSkill(skill)) {
+      this.addCombatLog('Not enough stamina!')
+      return
+    }
+
     // Parry must be set up during player turn (kanji drawing + stamina cost)
     if (skill.type === 'parry') {
       this.challengeActive = true
@@ -2558,11 +2565,6 @@ export default class BattleScene extends Phaser.Scene {
           )
         },
       }, 'Set up parry!')
-      return
-    }
-
-    if (!this.player.canUseSkill(skill)) {
-      this.addCombatLog('Not enough stamina!')
       return
     }
 

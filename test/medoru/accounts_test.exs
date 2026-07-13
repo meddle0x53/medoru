@@ -114,6 +114,31 @@ defmodule Medoru.AccountsTest do
       assert fetched_user.last_login == updated_user.last_login
     end
 
+    test "update_last_login/1 does not update within the same hour" do
+      user = user_fixture()
+      assert {:ok, %User{} = user} = Accounts.update_last_login(user)
+      first_login = user.last_login
+
+      assert {:ok, %User{} = updated_user} = Accounts.update_last_login(user)
+      assert updated_user.last_login == first_login
+
+      fetched_user = Accounts.get_user!(user.id)
+      assert fetched_user.last_login == first_login
+    end
+
+    test "update_last_login/1 updates when existing login is from a different hour" do
+      user = user_fixture()
+      old_time = DateTime.utc_now() |> DateTime.add(-2, :hour) |> DateTime.truncate(:second)
+      {:ok, user} = Accounts.update_user(user, %{last_login: old_time})
+
+      assert {:ok, %User{} = updated_user} = Accounts.update_last_login(user)
+      assert updated_user.last_login != old_time
+      assert updated_user.last_login.hour != old_time.hour
+
+      fetched_user = Accounts.get_user!(user.id)
+      assert fetched_user.last_login == updated_user.last_login
+    end
+
     test "update_learning_language/2 updates the user's learning language" do
       user = user_fixture()
 

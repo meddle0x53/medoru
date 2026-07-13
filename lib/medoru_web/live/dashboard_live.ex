@@ -35,6 +35,14 @@ defmodule MedoruWeb.DashboardLive do
     # Load fresh user data with profile
     user = Accounts.get_user_with_profile!(user.id)
 
+    # Track meaningful dashboard visits for the admin "last active" view.
+    # Only writes when the existing timestamp is from a different hour.
+    user =
+      case Accounts.update_last_login(user) do
+        {:ok, updated_user} -> updated_user
+        _ -> user
+      end
+
     # Calculate stats dynamically from learning progress
     learning_stats = Learning.get_user_stats(user.id)
 

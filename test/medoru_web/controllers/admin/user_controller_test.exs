@@ -20,7 +20,7 @@ defmodule MedoruWeb.Admin.UserControllerTest do
       assert get_session(conn, :impersonator_user_id) == admin.id
 
       target = Medoru.Accounts.get_user!(target.id)
-      assert target.last_login
+      assert is_nil(target.last_login)
     end
 
     test "non-admin cannot impersonate", %{conn: conn} do

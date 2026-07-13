@@ -199,13 +199,31 @@ defmodule Medoru.Accounts do
   # Admin User Management
 
   @doc """
-  Updates the user's last login timestamp to the current UTC time.
+  Updates the user's last active timestamp to the current UTC time.
+
+  Only updates when the existing timestamp is nil or from a different hour,
+  so we record meaningful dashboard visits without writing on every request.
   """
   def update_last_login(%User{} = user) do
-    user
-    |> User.changeset(%{last_login: DateTime.utc_now() |> DateTime.truncate(:second)})
-    |> Repo.update()
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    if same_hour?(user.last_login, now) do
+      {:ok, user}
+    else
+      user
+      |> User.changeset(%{last_login: now})
+      |> Repo.update()
+    end
   end
+
+  defp same_hour?(%DateTime{} = a, %DateTime{} = b) do
+    a.year == b.year and
+      a.month == b.month and
+      a.day == b.day and
+      a.hour == b.hour
+  end
+
+  defp same_hour?(_a, _b), do: false
 
   @doc """
   Returns a paginated list of users for admin.
