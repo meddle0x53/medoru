@@ -1411,8 +1411,10 @@ export default class Player extends Character {
   }
 
   addOuroEssence(amount) {
-    this.loadout.ouroEssence = (this.loadout.ouroEssence || 0) + amount
+    const actual = (amount || 0) * 2
+    this.loadout.ouroEssence = (this.loadout.ouroEssence || 0) + actual
     this.saveLoadout()
+    return actual
   }
 
   spendOuroEssence(amount) {
@@ -1488,8 +1490,7 @@ export default class Player extends Character {
     this.loadout.lifetimeNormalEnemiesDefeated = (this.loadout.lifetimeNormalEnemiesDefeated || 0) + 1
     let gained = 0
     if (this.loadout.lifetimeNormalEnemiesDefeated % 7 === 0) {
-      gained = 1
-      this.addOuroEssence(gained)
+      gained = this.addOuroEssence(1)
     }
     return gained
   }
@@ -1498,8 +1499,7 @@ export default class Player extends Character {
     this.loadout.lifetimeMiniBossesDefeated = (this.loadout.lifetimeMiniBossesDefeated || 0) + 1
     let gained = 0
     if (this.loadout.lifetimeMiniBossesDefeated % 5 === 0) {
-      gained = 3
-      this.addOuroEssence(gained)
+      gained = this.addOuroEssence(3)
     }
     return gained
   }
@@ -1507,8 +1507,7 @@ export default class Player extends Character {
   recordMapBossDefeated(level) {
     let gained = 0
     if (level === 1) {
-      gained = 2
-      this.addOuroEssence(gained)
+      gained = this.addOuroEssence(2)
     }
     return gained
   }

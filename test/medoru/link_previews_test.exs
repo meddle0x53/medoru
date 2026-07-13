@@ -104,6 +104,26 @@ defmodule Medoru.LinkPreviewsTest do
     end
   end
 
+  describe "get_or_create_preview/1" do
+    test "creates pending preview for new url" do
+      url = "https://example.com/create-new"
+      assert Repo.get_by(LinkPreview, url: url) == nil
+
+      {:ok, preview} = LinkPreviews.get_or_create_preview(url)
+
+      assert preview.status == "pending"
+      assert Repo.get_by(LinkPreview, url: url) != nil
+    end
+
+    test "returns existing preview instead of crashing on duplicate url" do
+      url = "https://example.com/create-duplicate"
+      {:ok, existing} = LinkPreviews.create_preview(url, %{status: "fetched"})
+
+      {:ok, preview} = LinkPreviews.get_or_create_preview(url)
+      assert preview.id == existing.id
+    end
+  end
+
   describe "Fetcher.parse/2" do
     test "extracts Open Graph metadata" do
       html = """

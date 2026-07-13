@@ -20,9 +20,18 @@ defmodule Medoru.LinkPreviews do
 
     case get_preview_by_url(normalized) do
       nil ->
-        {:ok, preview} = create_preview(normalized, %{status: "pending"})
-        trigger_fetch(preview, url)
-        {:ok, preview}
+        case create_preview(normalized, %{status: "pending"}) do
+          {:ok, preview} ->
+            trigger_fetch(preview, url)
+            {:ok, preview}
+
+          {:error, changeset} ->
+            handle_create_conflict(changeset, normalized, fn preview ->
+              if preview.status in ["fetched", "failed", "blocked"] and stale?(preview) do
+                trigger_fetch(preview, url)
+              end
+            end)
+        end
 
       %LinkPreview{status: "pending"} = preview ->
         {:ok, preview}
@@ -45,8 +54,17 @@ defmodule Medoru.LinkPreviews do
     normalized = Fetcher.normalize_url(url)
 
     case get_preview_by_url(normalized) do
-      nil -> create_preview(normalized, %{status: "pending"})
-      preview -> {:ok, preview}
+      nil ->
+        case create_preview(normalized, %{status: "pending"}) do
+          {:ok, preview} ->
+            {:ok, preview}
+
+          {:error, changeset} ->
+            handle_create_conflict(changeset, normalized, fn _preview -> :ok end)
+        end
+
+      preview ->
+        {:ok, preview}
     end
   end
 
@@ -149,6 +167,34 @@ defmodule Medoru.LinkPreviews do
 
   defp get_preview_by_url(url) do
     Repo.get_by(LinkPreview, url: url)
+  end
+
+  # Handles the race where another process inserts the same URL between our
+  # get and create. In that case we return the existing record instead of
+  # crashing on the unique constraint.
+  defp handle_create_conflict(changeset, normalized, on_existing) do
+    if unique_url_error?(changeset) do
+      case get_preview_by_url(normalized) do
+        nil ->
+          {:error, changeset}
+
+        preview ->
+          on_existing.(preview)
+          {:ok, preview}
+      end
+    else
+      {:error, changeset}
+    end
+  end
+
+  defp unique_url_error?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn
+      {:url, {"has already been taken", opts}} ->
+        Keyword.get(opts, :constraint) == :unique
+
+      _ ->
+        false
+    end)
   end
 
   @doc """
