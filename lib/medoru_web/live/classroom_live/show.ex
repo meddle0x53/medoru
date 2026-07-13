@@ -25,6 +25,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
   alias MedoruWeb.Presence
   alias Medoru.LinkPreviews
 
+  import MedoruWeb.ChatMediaFolderComponent, only: [chat_media_folder: 1]
+
   @chat_message_limit 20
 
   @skill_level_colors %{
@@ -98,6 +100,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:message_reactions, %{})
           |> assign(:reaction_picker_message_id, nil)
           |> assign(:link_preview_tick, nil)
+          |> assign(:media_folder_open, false)
+          |> assign(:media_filter, "all")
+          |> assign(:media_items, [])
+          |> assign(:media_has_more, false)
+          |> assign(:media_offset, 0)
 
         {:ok, socket}
 
@@ -156,6 +163,11 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:message_reactions, %{})
                 |> assign(:reaction_picker_message_id, nil)
                 |> assign(:link_preview_tick, nil)
+                |> assign(:media_folder_open, false)
+                |> assign(:media_filter, "all")
+                |> assign(:media_items, [])
+                |> assign(:media_has_more, false)
+                |> assign(:media_offset, 0)
 
               {:ok, socket}
             end
@@ -711,6 +723,56 @@ defmodule MedoruWeb.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("open_media_folder", _params, socket) do
+    conversation_id = socket.assigns.conversation.id
+    {items, has_more} = load_media(conversation_id, "all", 0)
+
+    {:noreply,
+     socket
+     |> assign(:media_folder_open, true)
+     |> assign(:media_filter, "all")
+     |> assign(:media_items, items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, length(items))}
+  end
+
+  @impl true
+  def handle_event("close_media_folder", _params, socket) do
+    {:noreply, assign(socket, :media_folder_open, false)}
+  end
+
+  @impl true
+  def handle_event("set_media_filter", %{"type" => type}, socket) do
+    conversation_id = socket.assigns.conversation.id
+
+    filter =
+      if type in ["all", "image", "voice", "audio", "video", "document"], do: type, else: "all"
+
+    {items, has_more} = load_media(conversation_id, filter, 0)
+
+    {:noreply,
+     socket
+     |> assign(:media_filter, filter)
+     |> assign(:media_items, items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, length(items))}
+  end
+
+  @impl true
+  def handle_event("load_more_media", _params, socket) do
+    conversation_id = socket.assigns.conversation.id
+    filter = socket.assigns.media_filter
+    current_offset = socket.assigns.media_offset
+    {items, has_more} = load_media(conversation_id, filter, current_offset)
+
+    {:noreply,
+     socket
+     |> assign(:media_items, socket.assigns.media_items ++ items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, current_offset + length(items))}
+  end
+
+  @impl true
   def handle_event("start_edit", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
 
@@ -814,6 +876,16 @@ defmodule MedoruWeb.ClassroomLive.Show do
     else
       {:noreply, socket}
     end
+  end
+
+  defp load_media(conversation_id, filter, offset) do
+    type = if filter == "all", do: :all, else: String.to_existing_atom(filter)
+
+    items =
+      Chat.list_messages_with_attachments(conversation_id, type: type, limit: 20, offset: offset)
+
+    has_more = length(items) == 20
+    {items, has_more}
   end
 
   @impl true
@@ -1096,6 +1168,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 message_reactions={@message_reactions}
                 reaction_picker_message_id={@reaction_picker_message_id}
                 link_preview_tick={@link_preview_tick}
+                media_folder_open={@media_folder_open}
+                media_filter={@media_filter}
+                media_items={@media_items}
+                media_has_more={@media_has_more}
               />
           <% end %>
         </div>
@@ -1890,12 +1966,36 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :message_reactions, :map, required: true
   attr :reaction_picker_message_id, :any, required: true
   attr :link_preview_tick, :any, required: true
+  attr :media_folder_open, :boolean, required: true
+  attr :media_filter, :string, required: true
+  attr :media_items, :list, required: true
+  attr :media_has_more, :boolean, required: true
 
   defp chat_tab(assigns) do
     ~H"""
     <div class="max-w-2xl mx-auto flex flex-col classroom-chat-tab h-[calc(100dvh-14rem)] min-h-[400px]">
       <%= if @conversation do %>
+        <div class="flex items-center justify-end gap-2 px-2 pb-2">
+          <button
+            type="button"
+            phx-click="open_media_folder"
+            class="p-2 text-base-content/40 hover:text-primary transition-colors"
+            title={gettext("Media")}
+          >
+            <.icon name="hero-folder" class="w-5 h-5" />
+          </button>
+        </div>
         <div class="flex flex-col flex-1 w-full relative">
+          <.chat_media_folder
+            open={@media_folder_open}
+            filter={@media_filter}
+            items={@media_items}
+            has_more={@media_has_more}
+            current_user_id={@current_user.id}
+            sender_name_fn={&chat_message_sender_name/2}
+            time_formatter_fn={&format_message_time/1}
+          />
+
           <%!-- Messages Area --%>
           <div class="flex-1 relative overflow-hidden">
             <div
@@ -2699,6 +2799,10 @@ defmodule MedoruWeb.ClassroomLive.Show do
     else
       gettext("Unknown")
     end
+  end
+
+  defp chat_message_sender_name(message, current_user_id) do
+    chat_sender_name(message.sender, current_user_id)
   end
 
   defp format_message_time(%DateTime{} = dt) do

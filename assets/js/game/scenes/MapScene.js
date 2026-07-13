@@ -165,6 +165,15 @@ export default class MapScene extends Phaser.Scene {
       color: '#f1c40f',
     })
 
+    this.hud.essenceIcon = this.add.image(20, 119, 'ouro_essence').setDisplaySize(18, 18).setOrigin(0, 0.5)
+    this.hud.essence = this.add.text(42, 108, '', {
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      color: '#f1c40f',
+      stroke: '#000000',
+      strokeThickness: 3,
+    })
+
     this.hud.help = this.add.text(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height - 24,
@@ -218,6 +227,7 @@ export default class MapScene extends Phaser.Scene {
     this.hud.title.setText(getMapName(this.map, userData?.level) || `Map ${this.map.index + 1}`)
     this.hud.hp.setText(`HP: ${this.player.hp}/${this.player.maxHp}`)
     this.hud.gold.setText(`Gold: ${this.player.loadout.gold || 0}`)
+    this.hud.essence.setText(String(this.player.loadout.ouroEssence || 0))
   }
 
   showTestFightDialog() {

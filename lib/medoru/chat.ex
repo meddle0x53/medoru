@@ -402,6 +402,40 @@ defmodule Medoru.Chat do
   end
 
   @doc """
+  Lists messages in a conversation that have attachments, newest first.
+
+  Supports pagination via `:offset` and an optional `:type` filter
+  (`:image`, `:voice`, `:audio`, `:video`, `:document`, or `:all`).
+  Deleted messages are excluded.
+  """
+  def list_messages_with_attachments(conversation_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 20)
+    offset = Keyword.get(opts, :offset, 0)
+    type = Keyword.get(opts, :type, :all)
+
+    Message
+    |> where([m], m.conversation_id == ^conversation_id)
+    |> where([m], not is_nil(m.attachment_path) and m.is_deleted == false)
+    |> maybe_filter_by_attachment_type(type)
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> preload(sender: [:profile])
+    |> Repo.all()
+  end
+
+  defp maybe_filter_by_attachment_type(query, :all), do: query
+
+  defp maybe_filter_by_attachment_type(query, type)
+       when type in [:image, :voice, :audio, :video, :document] do
+    where(query, [m], m.attachment_type == ^to_string(type))
+  end
+
+  defp maybe_filter_by_attachment_type(query, type) when is_binary(type) do
+    maybe_filter_by_attachment_type(query, String.to_existing_atom(type))
+  end
+
+  @doc """
   Stores an encrypted message.
   Accepts base64-encoded ciphertext and IV.
   """

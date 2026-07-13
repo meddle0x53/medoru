@@ -24,6 +24,8 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias MedoruWeb.Presence
   alias Medoru.LinkPreviews
 
+  import MedoruWeb.ChatMediaFolderComponent, only: [chat_media_folder: 1]
+
   @per_page 20
 
   @impl true
@@ -216,6 +218,11 @@ defmodule MedoruWeb.MessagesLive.Show do
             |> assign(:convert_emoticons, convert_emoticons)
             |> assign(:online_user_ids, online_user_ids)
             |> assign(:link_preview_tick, nil)
+            |> assign(:media_folder_open, false)
+            |> assign(:media_filter, "all")
+            |> assign(:media_items, [])
+            |> assign(:media_has_more, false)
+            |> assign(:media_offset, 0)
             |> push_event("scroll_to_bottom", %{})
 
           socket =
@@ -861,6 +868,56 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   @impl true
+  def handle_event("open_media_folder", _params, socket) do
+    conversation_id = socket.assigns.conversation.id
+    {items, has_more} = load_media(conversation_id, "all", 0)
+
+    {:noreply,
+     socket
+     |> assign(:media_folder_open, true)
+     |> assign(:media_filter, "all")
+     |> assign(:media_items, items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, length(items))}
+  end
+
+  @impl true
+  def handle_event("close_media_folder", _params, socket) do
+    {:noreply, assign(socket, :media_folder_open, false)}
+  end
+
+  @impl true
+  def handle_event("set_media_filter", %{"type" => type}, socket) do
+    conversation_id = socket.assigns.conversation.id
+
+    filter =
+      if type in ["all", "image", "voice", "audio", "video", "document"], do: type, else: "all"
+
+    {items, has_more} = load_media(conversation_id, filter, 0)
+
+    {:noreply,
+     socket
+     |> assign(:media_filter, filter)
+     |> assign(:media_items, items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, length(items))}
+  end
+
+  @impl true
+  def handle_event("load_more_media", _params, socket) do
+    conversation_id = socket.assigns.conversation.id
+    filter = socket.assigns.media_filter
+    current_offset = socket.assigns.media_offset
+    {items, has_more} = load_media(conversation_id, filter, current_offset)
+
+    {:noreply,
+     socket
+     |> assign(:media_items, socket.assigns.media_items ++ items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, current_offset + length(items))}
+  end
+
+  @impl true
   def handle_event("delete_message", %{"id" => message_id}, socket) do
     current_user = socket.assigns.current_scope.current_user
 
@@ -1046,6 +1103,16 @@ defmodule MedoruWeb.MessagesLive.Show do
       Logger.warning("[ChatRekey] Failed to store re-encrypted key(s)")
       {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
     end
+  end
+
+  defp load_media(conversation_id, filter, offset) do
+    type = if filter == "all", do: :all, else: String.to_existing_atom(filter)
+
+    items =
+      Chat.list_messages_with_attachments(conversation_id, type: type, limit: 20, offset: offset)
+
+    has_more = length(items) == 20
+    {items, has_more}
   end
 
   @impl true

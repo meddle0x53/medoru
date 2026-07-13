@@ -460,6 +460,87 @@ defmodule Medoru.ChatTest do
     end
   end
 
+  describe "list_messages_with_attachments/2" do
+    test "returns only messages with attachments, excluding deleted ones" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Chat.store_plaintext_message(conv.id, user_a.id, "Text only")
+
+      {:ok, image} =
+        Chat.store_plaintext_message(conv.id, user_a.id, "Image",
+          attachment_path: "/uploads/chat_images/1.jpg",
+          attachment_type: "image"
+        )
+
+      {:ok, voice} =
+        Chat.store_plaintext_message(conv.id, user_a.id, "Voice",
+          attachment_path: "/uploads/voice_messages/1.webm",
+          attachment_type: "voice"
+        )
+
+      {:ok, deleted} =
+        Chat.store_plaintext_message(conv.id, user_a.id, "Deleted image",
+          attachment_path: "/uploads/chat_images/2.jpg",
+          attachment_type: "image"
+        )
+
+      Chat.delete_message(deleted.id, user_a.id)
+
+      items = Chat.list_messages_with_attachments(conv.id)
+      assert length(items) == 2
+      assert Enum.any?(items, &(&1.id == image.id))
+      assert Enum.any?(items, &(&1.id == voice.id))
+      refute Enum.any?(items, &(&1.id == deleted.id))
+    end
+
+    test "filters by attachment type" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      {:ok, _image} =
+        Chat.store_plaintext_message(conv.id, user_a.id, "Image",
+          attachment_path: "/uploads/chat_images/1.jpg",
+          attachment_type: "image"
+        )
+
+      {:ok, _voice} =
+        Chat.store_plaintext_message(conv.id, user_a.id, "Voice",
+          attachment_path: "/uploads/voice_messages/1.webm",
+          attachment_type: "voice"
+        )
+
+      images = Chat.list_messages_with_attachments(conv.id, type: :image)
+      assert length(images) == 1
+      assert hd(images).attachment_type == "image"
+
+      voice = Chat.list_messages_with_attachments(conv.id, type: :voice)
+      assert length(voice) == 1
+      assert hd(voice).attachment_type == "voice"
+    end
+
+    test "paginates results" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      for i <- 1..25 do
+        Chat.store_plaintext_message(conv.id, user_a.id, "Image #{i}",
+          attachment_path: "/uploads/chat_images/#{i}.jpg",
+          attachment_type: "image"
+        )
+      end
+
+      page1 = Chat.list_messages_with_attachments(conv.id, limit: 20)
+      assert length(page1) == 20
+
+      page2 = Chat.list_messages_with_attachments(conv.id, limit: 20, offset: 20)
+      assert length(page2) == 5
+    end
+  end
+
   describe "participant management" do
     test "add_participant_plain/2 adds participant without encrypted key" do
       teacher = user_fixture()

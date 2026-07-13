@@ -4,9 +4,9 @@
 
 ## Current State
 
-**Version**: 0.9.0 🔄 IN PROGRESS  
-**Status**: Fixing issues for the 0.9.0 release. The 0.8.x feature set (link previews, English-learning mode, admin impersonation, game meta-progression, classroom/test polish, kanji/word fixes, etc.) is complete and the test suite is green. Work is focused on regression fixes and release stabilization for 0.9.0.  
-**Tests**: 1607 passing  
+**Version**: 0.9.4 🔄 IN PROGRESS  
+**Status**: Stabilizing the 0.9.x release. Recent work fixed crashes in the new chat media folder and made audio playback inside the folder behave like the main chat (only one clip plays at a time). The remaining 0.9.x backlog covers kanji/word UI polish, meaningful admin "last login", link-preview unique-constraint fixes, meaning-language settings bugs, and katakana i18n.  
+**Tests**: 1706 passing  
 **URL**: https://medoru.net
 
 ### Alpha Game Release Plan
@@ -57,7 +57,8 @@ For each ability, add a new entry in `assets/js/game/data/abilities/warrior.json
 
 | Version | Focus |
 |---------|-------|
-| 0.9.0 | Release stabilization and regression fixes (in progress) |
+| 0.9.4 | Chat media folder fixes (classroom crash, single-audio playback) and ongoing 0.9.x stabilization |
+| 0.9.0 | Release stabilization and regression fixes |
 | 0.8.x | Link previews, English-learning mode, admin impersonation, game meta-progression, classroom/test polish, kanji fixes |
 | 0.7.x | Grammar definitions, learned grammar tracking, game map/events, cascade/memory tiles, socket charms |
 | 0.6.0 | Classroom & chat themes, AI word enrichment, writing fill-in steps |

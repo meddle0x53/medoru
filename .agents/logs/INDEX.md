@@ -17,8 +17,9 @@
 | 2026-06-27 | v0.8.0 Draft Lesson Preview Crash Fix | COMPLETED | 2026-06-27 |
 | 2026-06-28 | v0.8.0 Link Previews | COMPLETED | 2026-06-28 |
 | 2026-06-28 | v0.8.0 Generate Vocabulary Test | COMPLETED | 2026-06-28 |
+| 2026-07-13 | v0.9.4 Chat Media Folder Fixes | COMPLETED | 2026-07-13 |
 
 ## Current State
 
-- Last completed: Iteration 2026-06-28 — Generate Vocabulary Test
-- Next: remaining v0.8.0 tasks
+- Last completed: Iteration 2026-07-13 — Chat Media Folder Fixes
+- Next: remaining v0.9.x stabilization tasks

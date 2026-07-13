@@ -100,6 +100,14 @@
 
       <%!-- Header Actions --%>
       <div class="shrink-0 flex items-center gap-1">
+        <button
+          type="button"
+          phx-click="open_media_folder"
+          class="p-2 text-base-content/40 hover:text-primary transition-colors"
+          title={gettext("Media")}
+        >
+          <.icon name="hero-folder" class="w-5 h-5" />
+        </button>
         <%= if !@conversation.classroom_id do %>
           <.link
             navigate={~p"/messages/#{@conversation.id}/settings"}
@@ -131,6 +139,16 @@
         </button>
       </div>
     </div>
+
+    <.chat_media_folder
+      open={@media_folder_open}
+      filter={@media_filter}
+      items={@media_items}
+      has_more={@media_has_more}
+      current_user_id={@current_scope.current_user.id}
+      sender_name_fn={&sender_name/2}
+      time_formatter_fn={&format_message_time/1}
+    />
 
     <%!-- Messages Area --%>
     <div class="flex-1 relative overflow-hidden">
