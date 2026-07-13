@@ -169,6 +169,23 @@ defmodule MedoruWeb.LearnedKanjiLiveTest do
     end
   end
 
+  describe "Practice challenge" do
+    test "displays kanji readings during practice", %{conn: conn} do
+      user = user_fixture()
+      kanji = kanji_with_readings_fixture()
+      {:ok, _} = Learning.track_kanji_learned(user.id, kanji.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/users/#{user.id}/kanji/practice/challenge?ids=#{kanji.id}")
+
+      assert html =~ "Kanji Practice"
+      assert html =~ kanji.character
+      assert html =~ "テスト"
+      assert html =~ "てすと"
+    end
+  end
+
   defp unique_kanji_char(index) do
     # Use CJK Unified Ideographs Extension A range (U+3400 to U+4DBF)
     # spaced apart to avoid collisions with the fixture generator

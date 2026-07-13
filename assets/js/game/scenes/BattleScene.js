@@ -267,6 +267,66 @@ export default class BattleScene extends Phaser.Scene {
     this.kanjiDrawing.start(strokeData, hint, wrappedCallbacks, kanjiData, drawingOptions)
   }
 
+  /**
+   * Resolve a parry-related kanji draw using the parry ability's kanji pool.
+   * Follows the same rules as Forward Slash: 10% skip, 20% focus override,
+   * stroke-tier fail threshold (half the strokes, rounded up), perfect/sloppy/fail.
+   */
+  resolveParryKanjiChallenge(skill, callbacks, hintPrefix = '') {
+    const pool = skill.kanjiPool || ['受', '防', '守', '盾', '護', '弾', '反']
+
+    // 10% chance to bypass the drawing challenge entirely.
+    if (Math.random() < 0.1) {
+      if (callbacks.onComplete) callbacks.onComplete({ quality: 'sloppy', skipped: true })
+      return
+    }
+
+    let selectedKanjiData = null
+
+    // 20% chance to use the current focus kanji instead of the pool.
+    const focusKanjiData = this.player.loadout.focusKanjiData
+    if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+      selectedKanjiData = focusKanjiData
+    }
+
+    if (!selectedKanjiData) {
+      const allKanji = getWindowGameData()?.all_kanji || []
+      const poolCandidates = pool
+        .map(char => {
+          const fromList = this.player.kanjiList.find(k => k.character === char)
+          if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+          const fromAll = allKanji.find(k => k.character === char)
+          if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+          return null
+        })
+        .filter(Boolean)
+      if (poolCandidates.length > 0) {
+        selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+      }
+    }
+
+    if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+      if (callbacks.onComplete) callbacks.onComplete({ quality: 'sloppy', skipped: true })
+      return
+    }
+
+    const strokeData = selectedKanjiData.stroke_data
+    const totalStrokes = strokeData.strokes.length
+    const failThreshold = Math.ceil(totalStrokes / 2)
+    const hint = hintPrefix || 'Parry challenge!'
+
+    this.startKanjiDrawingChallenge(strokeData, hint, {
+      onComplete: (result) => {
+        let quality = 'fail'
+        if (result.completed && result.wrongStrokes < failThreshold) {
+          quality = result.wrongStrokes === 0 ? 'perfect' : 'sloppy'
+        }
+        if (callbacks.onComplete) callbacks.onComplete({ quality, result, selectedKanjiData, totalStrokes, failThreshold })
+      },
+      onWrongStroke: callbacks.onWrongStroke || (() => {}),
+    }, selectedKanjiData, { allowFocusOverride: false })
+  }
+
   createCharacters() {
     // Player sprite — default battle stance (sword + shield)
     const startPose = getHeroPose(HERO_DEFAULT_POSE)
@@ -478,7 +538,8 @@ export default class BattleScene extends Phaser.Scene {
     const tempDef = this.player.tempDefense || 0
     const block = this.player.block || 0
     const hasBuffs = (this.player.buffs?.length > 0) || (this.player.activeEffects?.length > 0)
-    const visible = tempDef > 0 || block > 0 || hasBuffs
+    const parryCharges = this.player.parryCharges?.length || 0
+    const visible = tempDef > 0 || block > 0 || hasBuffs || parryCharges > 0
 
     this.playerStatusBtn.setVisible(visible)
     if (!visible) {
@@ -486,7 +547,14 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    const value = tempDef > 0 ? tempDef : block
+    let value
+    if (parryCharges > 0) {
+      value = parryCharges
+    } else if (tempDef > 0) {
+      value = tempDef
+    } else {
+      value = block
+    }
     this.playerStatusValueText.setText(String(value))
     this.playerStatusValueText.setFontSize(value >= 100 ? '9px' : '11px')
   }
@@ -527,6 +595,12 @@ export default class BattleScene extends Phaser.Scene {
     for (const effect of this.player.activeEffects || []) {
       const name = getEffect(effect.effectId)?.name || effect.effectId
       rows.push({ label: 'Effect', value: name, color: '#e74c3c' })
+    }
+
+    const parryCharges = this.player.parryCharges || []
+    if (parryCharges.length > 0) {
+      const labels = parryCharges.map(q => q === 'perfect' ? 'P' : q === 'sloppy' ? 'S' : 'W')
+      rows.push({ label: 'Parry', value: `${parryCharges.length} [${labels.join(',')}]`, color: '#9b59b6' })
     }
 
     if (rows.length === 0) return
@@ -2455,63 +2529,26 @@ export default class BattleScene extends Phaser.Scene {
 
     // Parry must be set up during player turn (kanji drawing + stamina cost)
     if (skill.type === 'parry') {
-      if (this.player.parrySetup) {
-        this.addCombatLog('Parry already set up!')
-        return
-      }
-
-      const kanji = '受'
-      let strokeData = null
-      const kanjiData = this.player.kanjiList.find(k => k.character === '受')
-      if (kanjiData?.stroke_data?.strokes?.length > 0) {
-        strokeData = kanjiData.stroke_data
-      }
-      if (!strokeData) {
-        const userData = getWindowGameData()
-        strokeData = userData?.shield_kanji_strokes || { strokes: [] }
-      }
-
-      if (!strokeData.strokes || strokeData.strokes.length === 0) {
-        // No kanji data — set up with base stats
-        this.player.useStamina(skill.staminaCost)
-        this.player.parrySetup = true
-        this.player.parryKanjiQuality = 'sloppy'
-        this.updateBars()
-        this.addCombatLog(`Parry set up! (-${skill.staminaCost} STA)`)
-        return
-      }
-
       this.challengeActive = true
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
 
-      this.startKanjiDrawingChallenge(strokeData, `Set up parry! Draw ${kanji}:`, {
-        onComplete: (result) => {
-          this.challengeActive = false
-          this.setSkillButtonsEnabled(true)
-          this.endTurnBtn.setVisible(true)
+      const onComplete = (outcome) => {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
 
-          this.player.useStamina(skill.staminaCost)
-          this.player.parrySetup = true
+        this.player.useStamina(skill.staminaCost)
+        this.player.addParryCharge(outcome.quality)
 
-          if (result.completed) {
-            if (result.wrongStrokes === 0) {
-              this.player.parryKanjiQuality = 'perfect'
-              this.addCombatLog(`Perfect ${kanji}! Strong parry stance! (+15% chance)`)
-            } else if (result.wrongStrokes <= 2) {
-              this.player.parryKanjiQuality = 'sloppy'
-              this.addCombatLog(`${kanji} drawn! Parry set up.`)
-            } else {
-              this.player.parryKanjiQuality = 'fail'
-              this.addCombatLog(`${kanji} drawn sloppily! Weak parry stance. (-10% chance)`)
-            }
-          } else {
-            this.player.parryKanjiQuality = 'fail'
-            this.addCombatLog(`${kanji} failed! Weak parry stance. (-10% chance)`)
-          }
+        const count = this.player.parryCharges.length
+        const qualityText = outcome.quality === 'perfect' ? 'Perfect' : outcome.quality === 'sloppy' ? 'Solid' : 'Weak'
+        this.addCombatLog(`${qualityText} parry set up! (${count} charge${count !== 1 ? 's' : ''}) (-${skill.staminaCost} STA)`)
+        this.updateBars()
+      }
 
-          this.updateBars()
-        },
+      this.resolveParryKanjiChallenge(skill, {
+        onComplete,
         onWrongStroke: ({ count }) => {
           this.spawnFloatingText(
             GAME_CONFIG.width / 2,
@@ -2520,7 +2557,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      }, kanjiData || { character: kanji, meanings: [] })
+      }, 'Set up parry!')
       return
     }
 
@@ -2569,6 +2606,8 @@ export default class BattleScene extends Phaser.Scene {
       // 10% chance to skip the drawing challenge and strike immediately.
       if (Math.random() < 0.1) {
         this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
         this.addCombatLog('Forward Slash strikes cleanly! No kanji challenge.')
         this.executeSkill('success')
         return
@@ -2602,6 +2641,8 @@ export default class BattleScene extends Phaser.Scene {
       if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
         // No usable stroke data: fall back to a plain successful strike.
         this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
         this.executeSkill('success')
         return
       }
@@ -2656,6 +2697,8 @@ export default class BattleScene extends Phaser.Scene {
       // 10% chance to skip the drawing challenge and strike immediately.
       if (Math.random() < 0.1) {
         this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
         this.addCombatLog('Heavy Slash crashes down! No kanji challenge.')
         this.executeSkill('success')
         return
@@ -2688,6 +2731,8 @@ export default class BattleScene extends Phaser.Scene {
 
       if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
         this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
         this.executeSkill('success')
         return
       }
@@ -3299,6 +3344,8 @@ export default class BattleScene extends Phaser.Scene {
         if (action.type === 'attack' && this.player.hasActiveParry()) {
           const parryChance = this.player.getParryChance()
           this.addCombatLog(`Parry chance: ${(parryChance * 100).toFixed(0)}%`)
+          // Consume one parry charge regardless of whether the parry succeeds.
+          this.player.consumeParryCharge()
           if (Math.random() < parryChance) {
             parried = true
             result = { type: 'attack', damage: 0, isCrit: false, missed: false, parried: true }
@@ -3307,6 +3354,7 @@ export default class BattleScene extends Phaser.Scene {
             // Reset reaction multiplier since parry replaces the attack
             this.player.reactionMultiplier = 1
           }
+          this.updatePlayerStatusButton()
         }
 
         if (challengeModifier === 'weaken') {
@@ -3491,35 +3539,21 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    this.addCombatLog(`Counter-attack with ${attackAction.name}!`)
-
-    // Get stroke data for the counter kanji
-    const kanji = attackAction.kanji
-    let strokeData = null
-    let kanjiData = { character: kanji, meanings: [] }
-    if (kanji === '力') {
-      kanjiData = getWindowGameData()?.weapon_kanji_strokes || kanjiData
-      strokeData = kanjiData
-    } else if (kanji === '斬') {
-      const found = this.player.kanjiList.find(k => k.character === '斬')
-      if (found?.stroke_data?.strokes?.length > 0) {
-        kanjiData = found
-        strokeData = found.stroke_data
-      } else {
-        kanjiData = getWindowGameData()?.weapon_kanji_strokes || kanjiData
-        strokeData = kanjiData
-      }
-    }
-
-    if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
-      this.executeCounterAttack(attackAction, { completed: true, wrongStrokes: 999 })
+    const parryAction = this.player.activeActions.find(a => a.type === 'parry')
+    if (!parryAction) {
+      this.addCombatLog('No parry ability equipped — counter fails!')
       return
     }
 
+    this.addCombatLog(`Counter-attack with ${attackAction.name}!`)
+
     return new Promise((resolve) => {
-      const allowedWrong = Math.max(Math.floor((strokeData.strokes?.length || 2) / 2), 3)
-      this.startKanjiDrawingChallenge(strokeData, `Counter! Draw ${kanji}:`, {
-        onComplete: (result) => {
+      this.resolveParryKanjiChallenge(parryAction, {
+        onComplete: (outcome) => {
+          const result = {
+            completed: outcome.quality !== 'fail',
+            wrongStrokes: outcome.quality === 'perfect' ? 0 : (outcome.quality === 'sloppy' ? 1 : 999)
+          }
           this.executeCounterAttack(attackAction, result)
           resolve()
         },
@@ -3527,11 +3561,11 @@ export default class BattleScene extends Phaser.Scene {
           this.spawnFloatingText(
             GAME_CONFIG.width / 2,
             GAME_CONFIG.height / 2 - 180,
-            `Wrong stroke! (${count}/${allowedWrong} allowed)`,
+            `Wrong stroke! (${count})`,
             COLORS.danger
           )
         },
-      }, kanjiData)
+      }, 'Counter!')
     })
   }
 
@@ -3679,10 +3713,8 @@ export default class BattleScene extends Phaser.Scene {
     this.skillButtons.forEach(({ btn, skill }) => {
       // Use Item needs at least 1 stamina (minimum item cost)
       const cantUseItem = skill.type === 'item' && this.player.stamina < 1
-      // Parry: already set up can't be paid again; otherwise needs stamina
-      const parryAlreadySetup = skill.type === 'parry' && this.player.parrySetup
 
-      if (enabled && this.player.canUseSkill(skill) && !cantUseItem && !parryAlreadySetup) {
+      if (enabled && this.player.canUseSkill(skill) && !cantUseItem) {
         btn.redraw(btn.color)
         btn.hitArea.setInteractive({ useHandCursor: true })
         btn.text.setAlpha(1)

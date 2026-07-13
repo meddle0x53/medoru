@@ -148,13 +148,27 @@
     <%!-- Kanji Grid --%>
     <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10 gap-3">
       <%= for kanji <- @kanji_list do %>
+        <% is_learned = kanji.id in @learned_kanji_ids %>
         <.link
           navigate={kanji_path(kanji)}
           class="group"
         >
-          <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex items-center justify-center
-                      shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
-            <span class="text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
+          <div class={[
+            "aspect-square rounded-xl flex items-center justify-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 border",
+            if is_learned do
+              "bg-success/10 dark:bg-success/20 border-success/40 dark:border-success/30 hover:border-success/60 dark:hover:border-success/50"
+            else
+              "bg-base-100 border-base-300 hover:border-primary/30"
+            end
+          ]}>
+            <span class={[
+              "text-3xl font-medium transition-colors",
+              if is_learned do
+                "text-success dark:text-success group-hover:text-success/80 dark:group-hover:text-success/80"
+              else
+                "text-base-content group-hover:text-primary"
+              end
+            ]}>
               {kanji.character}
             </span>
           </div>

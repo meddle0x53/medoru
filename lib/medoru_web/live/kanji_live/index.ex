@@ -3,6 +3,7 @@ defmodule MedoruWeb.KanjiLive.Index do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Content
+  alias Medoru.Learning
 
   embed_templates "*.html"
 
@@ -10,13 +11,28 @@ defmodule MedoruWeb.KanjiLive.Index do
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
 
+    current_user =
+      if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+        socket.assigns.current_scope.current_user
+      else
+        nil
+      end
+
+    learned_kanji_ids =
+      if current_user do
+        Learning.list_learned_kanji_ids(current_user.id)
+      else
+        []
+      end
+
     {:ok,
      socket
      |> assign(:filter_type, :jlpt)
      |> assign(:jlpt_level, 5)
      |> assign(:school_level, nil)
      |> assign(:search_query, "")
-     |> assign(:locale, locale)}
+     |> assign(:locale, locale)
+     |> assign(:learned_kanji_ids, learned_kanji_ids)}
   end
 
   @impl true

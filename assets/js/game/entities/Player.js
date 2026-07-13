@@ -300,9 +300,9 @@ export default class Player extends Character {
     // Current item effect modifier from kanji challenge (-2, 0, +2)
     this.itemEffectModifier = 0
 
-    // Parry setup: player must click Shield Parry during their turn to activate it
-    this.parrySetup = false
-    this.parryKanjiQuality = null // 'perfect', 'sloppy', or 'fail'
+    // Parry setup: array of charge qualities ('perfect', 'sloppy', 'fail')
+    this.parryCharges = []
+    this.parryKanjiQuality = null // legacy field kept for compatibility
 
     // Cache computed charm stats so we don't recompute every frame
     this._charmEffects = null
@@ -499,21 +499,33 @@ export default class Player extends Character {
   // ---------- Parry System ----------
 
   hasActiveParry() {
-    return this.parrySetup
+    return this.parryCharges.length > 0
   }
 
   getParryChance() {
     if (!this.hasActiveParry()) return 0
+    const quality = this.parryCharges[0]
     const parryAction = this.activeActions.find(a => a.type === 'parry')
     const base = parryAction?.baseParryChance || 0.15
     const luckBonus = (this.luck || 0) / 100
     const readinessBonus = (this.readiness || 0) * 0.10
     const quizBonus = this.lastReactionCorrect ? 0.10 : 0
     let chance = base + luckBonus + readinessBonus + quizBonus
-    // Kanji quality bonus
-    if (this.parryKanjiQuality === 'perfect') chance += 0.15
-    else if (this.parryKanjiQuality === 'fail') chance -= 0.10
+    // Kanji quality bonus for the next charge
+    if (quality === 'perfect') chance += 0.15
+    else if (quality === 'fail') chance -= 0.10
     return Math.min(0.60, Math.max(0.05, chance))
+  }
+
+  addParryCharge(quality) {
+    this.parryCharges.push(quality)
+    this.parryKanjiQuality = this.parryCharges[this.parryCharges.length - 1]
+  }
+
+  consumeParryCharge() {
+    const quality = this.parryCharges.shift()
+    this.parryKanjiQuality = this.parryCharges[this.parryCharges.length - 1] || null
+    return quality
   }
 
   // ---------- Item System ----------
@@ -1330,7 +1342,7 @@ export default class Player extends Character {
     this.reactionMultiplier = 1
     this.lastReactionCorrect = false
     this.itemEffectModifier = 0
-    this.parrySetup = false
+    this.parryCharges = []
     this.parryKanjiQuality = null
     this.potionUsesLeft = 3 + (meta.startingPotionBonus || 0)
     this._charmEffects = null

@@ -43,8 +43,7 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
     else
       kanji_list =
         valid_ids
-        |> Enum.map(&Content.get_kanji/1)
-        |> Enum.reject(&is_nil/1)
+        |> Enum.map(&Content.get_kanji_with_readings!/1)
         |> Enum.shuffle()
 
       count = length(kanji_list)

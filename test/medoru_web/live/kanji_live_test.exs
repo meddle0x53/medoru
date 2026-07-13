@@ -5,6 +5,8 @@ defmodule MedoruWeb.KanjiLiveTest do
   import Medoru.ContentFixtures
   import Medoru.AccountsFixtures
 
+  alias Medoru.Learning
+
   describe "Index" do
     setup [:create_kanji]
 
@@ -61,6 +63,18 @@ defmodule MedoruWeb.KanjiLiveTest do
       {:ok, _view, html} = live(conn, ~p"/kanji?level=1")
 
       assert html =~ "No kanji found"
+    end
+
+    test "highlights learned kanji for authenticated users", %{conn: conn} do
+      user = user_fixture()
+      kanji = kanji_fixture(%{character: unique_kanji_char()})
+      {:ok, _} = Learning.track_kanji_learned(user.id, kanji.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} = live(conn, ~p"/kanji")
+
+      assert html =~ kanji.character
+      assert html =~ "border-success"
     end
   end
 

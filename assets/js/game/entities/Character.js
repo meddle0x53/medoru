@@ -39,6 +39,10 @@ export default class Character {
     this.weapon = config.weapon || null
     this.armorItem = config.armorItem || null
     this.shield = config.shield || null
+
+    // Parry state: array of charge qualities ('perfect', 'sloppy', 'fail')
+    this.parryCharges = []
+    this.parryKanjiQuality = null
   }
 
   isAlive() {
@@ -389,7 +393,7 @@ export default class Character {
 
   resetForTurn() {
     this.stamina = Math.floor(this.maxStamina * this.getStaminaMultiplier())
-    this.parrySetup = false
+    this.parryCharges = []
     this.parryKanjiQuality = null
     this.tempDefense = 0
     // Block decays at start of new round if we want, but for MVP keep it

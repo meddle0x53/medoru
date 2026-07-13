@@ -176,6 +176,15 @@
       "staminaCost": 2,
       "baseParryChance": 0.15,
       "kanji": "受",
+      "kanjiPool": [
+        "受",
+        "防",
+        "守",
+        "盾",
+        "護",
+        "弾",
+        "反"
+      ],
       "rarity": "common",
       "lifecycle": {
         "onUse": [
