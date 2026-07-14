@@ -49,6 +49,23 @@ defmodule Medoru.LinkPreviews.Fetcher do
     end
   end
 
+  @doc """
+  Decodes percent-encoded UTF-8 octets so a URL can be shown to users with
+  Japanese (or other non-ASCII) characters intact. ASCII percent-encodings such
+  as `%20` or `%2F` are left alone.
+  """
+  def display_url(url) when is_binary(url) do
+    Regex.replace(~r/%([0-9A-Fa-f]{2})/, url, fn full, hex ->
+      byte = String.to_integer(hex, 16)
+
+      if byte >= 0x80 do
+        <<byte>>
+      else
+        full
+      end
+    end)
+  end
+
   defp strip_trailing_punctuation(url) do
     url
     |> String.trim_trailing(".")

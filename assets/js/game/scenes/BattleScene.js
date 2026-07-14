@@ -2867,6 +2867,95 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Guard Break uses a heavy kanji pool and has a blunt chance tied to challenge outcome.
+    if (skill.id === 'guard_break') {
+      // 20% chance to skip the drawing challenge and strike immediately.
+      if (Math.random() < 0.2) {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.addCombatLog('Guard Break smashes through! No kanji challenge.')
+        this.player.guardBreakBluntChance = 0.5
+        this.executeSkill('success')
+        return
+      }
+
+      const pool = skill.kanjiPool || ['破', '砕', '崩', '割']
+      let selectedKanjiData = null
+
+      // 20% chance to draw the current focus kanji instead of the pool.
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      }
+
+      if (!selectedKanjiData) {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const poolCandidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (poolCandidates.length > 0) {
+          selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
+        }
+      }
+
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.player.guardBreakBluntChance = 0.5
+        this.executeSkill('success')
+        return
+      }
+
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+      const failThreshold = Math.ceil(totalStrokes / 2)
+      let tier = 1
+      if (totalStrokes >= 8) {
+        tier = 3
+      } else if (totalStrokes >= 4) {
+        tier = 2
+      }
+
+      const hint = skill.moveHint?.en || 'Smash through their guard!'
+      this.startKanjiDrawingChallenge(strokeData, hint, {
+        onComplete: (result) => {
+          this.challengeActive = false
+          this.setSkillButtonsEnabled(true)
+          this.endTurnBtn.setVisible(true)
+
+          const kanjiChar = selectedKanjiData.character
+          if (result.completed && result.wrongStrokes < failThreshold) {
+            this.player.setBasePowerBonus(tier)
+            this.addCombatLog(`${kanjiChar} drawn! (+${tier} power)`)
+            this.player.guardBreakBluntChance = 0.7
+            this.executeSkill('success')
+          } else {
+            this.player.setBasePowerBonus(0)
+            this.addCombatLog(`${kanjiChar} failed! No power bonus.`)
+            this.player.guardBreakBluntChance = 0.2
+            this.executeSkill('fail')
+          }
+        },
+        onWrongStroke: ({ count }) => {
+          this.spawnFloatingText(
+            GAME_CONFIG.width / 2,
+            GAME_CONFIG.height / 2 - 180,
+            `Wrong stroke! (${count})`,
+            COLORS.danger
+          )
+        },
+      }, selectedKanjiData, { allowFocusOverride: false })
+      return
+    }
+
     // Setup Defence uses kanji drawing for a random shield kanji
     if (skill.id === 'setup_defence') {
       const userData = getWindowGameData()

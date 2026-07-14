@@ -111,6 +111,24 @@ defmodule MedoruWeb.WhiteBoardPostRendererTest do
       assert html =~ url
     end
 
+    test "displays percent-encoded Japanese URLs as decoded text in posts" do
+      url = "https://example.com/%E6%97%A5%E6%9C%AC"
+
+      html = WhiteBoardPostRenderer.render_post_content("See #{url}", "post-1", nil)
+
+      assert html =~ "https://example.com/日本"
+      assert html =~ ~s|href="https://example.com/%E6%97%A5%E6%9C%AC"|
+    end
+
+    test "displays percent-encoded Japanese URLs as decoded text in comments" do
+      url = "https://example.com/%E6%97%A5%E6%9C%AC"
+
+      html = WhiteBoardPostRenderer.render_comment_content("See #{url}", nil)
+
+      assert html =~ "https://example.com/日本"
+      assert html =~ ~s|href="https://example.com/%E6%97%A5%E6%9C%AC"|
+    end
+
     test "preserves text after the link" do
       url = "https://example.com/article"
 

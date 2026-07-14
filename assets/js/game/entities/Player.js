@@ -494,6 +494,10 @@ export default class Player extends Character {
       const firstSocketCharm = this.weapon?.socketCharmIds?.[0]
       if (firstSocketCharm !== 'sharp_charm_sword') return false
     }
+    if (skill.id === 'guard_break') {
+      const firstSocketCharm = this.weapon?.socketCharmIds?.[0]
+      if (firstSocketCharm !== 'heavy_charm_sword') return false
+    }
     if (skill.singleUse) {
       return (this.loadout.singleUseCharges?.[skill.id] || 0) > 0
     }

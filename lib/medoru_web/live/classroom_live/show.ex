@@ -3051,10 +3051,14 @@ defmodule MedoruWeb.ClassroomLive.Show do
                     {:safe, MedoruWeb.YoutubeEmbed.embed_html(video_id)}
 
                   :error ->
-                    {:safe, escaped} = Phoenix.HTML.html_escape(segment)
+                    href = LinkPreviews.Fetcher.normalize_url(segment)
+                    display = LinkPreviews.Fetcher.display_url(segment)
+
+                    {:safe, escaped_href} = Phoenix.HTML.html_escape(href)
+                    {:safe, escaped_display} = Phoenix.HTML.html_escape(display)
 
                     {:safe,
-                     ~s|<a href="#{escaped}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped}</a>|}
+                     ~s|<a href="#{escaped_href}" target="_blank" rel="noopener noreferrer" class="underline break-all text-blue-300 hover:text-blue-200">#{escaped_display}</a>|}
                 end
 
               true ->

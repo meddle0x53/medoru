@@ -278,7 +278,14 @@ export default class TurnManager {
 
         if (infusedElement) {
           const consecutiveHits = target.incrementElementStreak(infusedElement)
-          const applied = applyAbilityEffects(skill, performer, target, { initialDamage: actual }, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
+          const effectCtx = { initialDamage: actual }
+          if (skill.id === 'guard_break' && typeof performer.guardBreakBluntChance === 'number') {
+            effectCtx.chanceOverrides = { blunt: performer.guardBreakBluntChance }
+          }
+          const applied = applyAbilityEffects(skill, performer, target, effectCtx, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
+          if (typeof performer.guardBreakBluntChance === 'number') {
+            delete performer.guardBreakBluntChance
+          }
           if (applied.length > 0) target.resetElementStreak(infusedElement)
         }
         if (isEffectInfusion) {

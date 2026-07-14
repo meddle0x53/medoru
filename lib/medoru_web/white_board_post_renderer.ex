@@ -312,6 +312,10 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
         Regex.match?(url_regex, segment) ->
           {url_text, trailing} = split_trailing_punctuation(segment)
           clean_url = Medoru.LinkPreviews.Fetcher.normalize_url(url_text)
+          display_url = Medoru.LinkPreviews.Fetcher.display_url(url_text)
+
+          {:safe, escaped_href} = Phoenix.HTML.html_escape(clean_url)
+          {:safe, escaped_display} = Phoenix.HTML.html_escape(display_url)
 
           link_html =
             case MedoruWeb.YoutubeEmbed.video_id(clean_url) do
@@ -319,7 +323,7 @@ defmodule MedoruWeb.WhiteBoardPostRenderer do
                 MedoruWeb.YoutubeEmbed.embed_html(video_id)
 
               :error ->
-                "<a href=\"#{clean_url}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{url_text}</a>"
+                "<a href=\"#{escaped_href}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link link-primary\">#{escaped_display}</a>"
             end
 
           link_html <> trailing

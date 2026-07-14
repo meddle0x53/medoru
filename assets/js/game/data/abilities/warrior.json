@@ -272,20 +272,24 @@
       "id": "guard_break",
       "name": "Guard Break",
       "nameJa": "破防",
-      "description": "An overhead smash that ignores enemy defense.",
+      "description": "A heavy overhead smash. Requires a Heavy Charm in the sword's first socket. Has a chance to inflict Blunt.",
       "type": "attack",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
+      "requiredSocketCharm": "heavy_charm_sword",
       "staminaCost": 5,
-      "basePower": 12,
+      "basePower": 14,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
-      "kanji": "破",
+      "kanji": "砕",
+      "kanjiPool": [
+        "破",
+        "砕",
+        "崩",
+        "割"
+      ],
       "rarity": "common",
-      "config": {
-        "ignoreDefense": true
-      },
       "infusableWith": [
         "fire",
         "water",
@@ -301,7 +305,17 @@
           "dealDamage"
         ]
       },
-      "effects": [],
+      "effects": [
+        {
+          "effectId": "blunt",
+          "target": "enemy",
+          "chance": {
+            "base": 0.5,
+            "step": 0,
+            "cap": 0.5
+          }
+        }
+      ],
       "singleUse": true
     },
     {

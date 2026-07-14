@@ -24,6 +24,30 @@ defmodule Medoru.LinkPreviewsTest do
     end
   end
 
+  describe "display_url/1" do
+    test "decodes percent-encoded Japanese characters" do
+      assert LinkPreviews.Fetcher.display_url("https://example.com/%E6%97%A5%E6%9C%AC") ==
+               "https://example.com/日本"
+    end
+
+    test "decodes percent-encoded query parameters" do
+      assert LinkPreviews.Fetcher.display_url(
+               "https://example.com?q=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF"
+             ) ==
+               "https://example.com?q=こんにちは"
+    end
+
+    test "leaves ASCII percent-encodings intact" do
+      assert LinkPreviews.Fetcher.display_url("https://example.com/%20%2F") ==
+               "https://example.com/%20%2F"
+    end
+
+    test "passes through raw Unicode unchanged" do
+      assert LinkPreviews.Fetcher.display_url("https://example.com/日本") ==
+               "https://example.com/日本"
+    end
+  end
+
   describe "validate_url/1" do
     test "allows public http urls" do
       assert LinkPreviews.Fetcher.validate_url("http://example.com") == :ok
