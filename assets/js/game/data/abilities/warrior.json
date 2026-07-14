@@ -540,7 +540,7 @@
       "id": "shield_bash",
       "name": "Shield Bash",
       "nameJa": "盾打",
-      "description": "Strike with your shield and raise a partial guard.",
+      "description": "Strike with your shield and raise a guard. Blunt chance rises with drawing quality.",
       "type": "attack_defence",
       "element": "physical",
       "equipmentType": "shield",
@@ -550,10 +550,17 @@
       "scalingStat": "strength",
       "scalingMultiplier": 0.5,
       "baseBlock": 3,
-      "scalingBlockStat": "skill",
-      "scalingBlockMultiplier": 0.4,
       "kanji": "打",
+      "kanjiPool": [
+        "撃",
+        "打",
+        "衝",
+        "盾"
+      ],
       "rarity": "common",
+      "config": {
+        "setupDefenceBlock": true
+      },
       "infusableWith": [
         "fire",
         "water",
@@ -564,13 +571,35 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "effectChanceOverrides": { "blunt": 0.1 } },
+          "fallback": { "challengeResult": "success", "effectChanceOverrides": { "blunt": 0.1 } },
+          "pass": { "challengeResult": "success", "perfectChallengeResult": "perfect", "effectChanceOverrides": { "blunt": 0.2 } },
+          "fail": { "challengeResult": "fail", "effectChanceOverrides": { "blunt": 0.05 } }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage",
           "gainBlock"
         ]
       },
-      "effects": [],
+      "effects": [
+        {
+          "effectId": "blunt",
+          "target": "enemy",
+          "chance": {
+            "base": 0.1,
+            "step": 0,
+            "cap": 0.1
+          }
+        }
+      ],
       "singleUse": true
     },
     {

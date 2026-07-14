@@ -11,7 +11,7 @@
             <.icon name="hero-check-circle" class="w-16 h-16 text-success mx-auto mb-4" />
             <h2 class="text-xl font-bold">{gettext("Already Completed!")}</h2>
             <p class="text-secondary">
-              {gettext("You have already completed today's Radical Hunt challenge.")}
+              {gettext("You have already completed today's Component Hunt challenge.")}
             </p>
             <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
               <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
@@ -34,20 +34,20 @@
                 <.icon name="hero-magnifying-glass" class="w-8 h-8 sm:w-10 sm:h-10 text-warning" />
               </div>
               <h1 class="text-2xl sm:text-3xl font-bold text-base-content mb-2">
-                {gettext("Daily Radical Hunt")}
+                {gettext("Daily Component Hunt")}
               </h1>
               <p class="text-secondary">
-                {gettext("Find as many kanji as you can that contain this radical")}
+                {gettext("Find as many kanji as you can that contain this component")}
               </p>
             </div>
 
-            <%!-- Radical Preview --%>
+            <%!-- Component Preview --%>
             <div class="card bg-base-200 border border-base-300 mb-6 max-w-sm mx-auto">
               <div class="card-body">
                 <p class="text-sm text-secondary mb-2">{gettext("Hunt for kanji containing")}</p>
-                <div class="text-7xl sm:text-8xl font-bold text-warning mb-2">{@radical}</div>
+                <div class="text-7xl sm:text-8xl font-bold text-warning mb-2">{@component}</div>
                 <p class="text-lg text-base-content">
-                  {@radical_meaning}
+                  {@component_meaning}
                 </p>
                 <p class="text-sm text-secondary mt-1">
                   {@valid_kanji_count} {gettext("possible kanji")} • {@timeout_seconds}s {gettext(
@@ -122,11 +122,11 @@
               </div>
             </div>
 
-            <%!-- Radical Display --%>
+            <%!-- Component Display --%>
             <div class="text-center mb-6">
               <div class="inline-block bg-warning/10 border-2 border-warning/30 rounded-2xl px-6 sm:px-8 py-4">
                 <p class="text-sm text-secondary mb-1">{gettext("Find kanji with")}</p>
-                <div class="text-5xl sm:text-6xl font-bold text-warning">{@radical}</div>
+                <div class="text-5xl sm:text-6xl font-bold text-warning">{@component}</div>
               </div>
             </div>
 
@@ -171,7 +171,7 @@
                   <% :incorrect -> %>
                     <span class="text-error font-medium">
                       <.icon name="hero-x-circle" class="w-4 h-4 inline" />
-                      {gettext("Not a valid kanji with this radical")}
+                      {gettext("Not a valid kanji with this component")}
                     </span>
                   <% :already_found -> %>
                     <span class="text-warning font-medium">

@@ -58,6 +58,8 @@ defmodule MedoruWeb.Router do
       live "/kanji/:id", KanjiLive.Show
       live "/radicals", RadicalLive.Index
       live "/radicals/:character", RadicalLive.Show
+      live "/components", KanjiComponentsLive.Index
+      live "/components/:character", KanjiComponentsLive.Show
       live "/hiragana", KanaLive.Index
       live "/hiragana/:character", KanaLive.Show
       live "/katakana", KanaLive.Index

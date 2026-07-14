@@ -2,7 +2,7 @@ defmodule Medoru.ContentTest do
   use Medoru.DataCase
 
   alias Medoru.Content
-  alias Medoru.Content.{Kanji, KanjiReading, Word, WordKanji}
+  alias Medoru.Content.{Kanji, KanjiComponents, KanjiReading, Word, WordKanji}
 
   describe "kanji" do
     import Medoru.ContentFixtures
@@ -1344,6 +1344,56 @@ defmodule Medoru.ContentTest do
 
       assert relation.status == :approved
       assert relation.relation_type == :synonym
+    end
+  end
+
+  describe "kanji components" do
+    import Medoru.ContentFixtures
+
+    test "list_kanji_by_component/1 returns kanji containing the component" do
+      k1 = kanji_fixture(%{character: unique_kanji_char(), components: ["口"], frequency: 1})
+      k2 = kanji_fixture(%{character: unique_kanji_char(), components: ["口"], frequency: 2})
+      _other = kanji_fixture(%{character: unique_kanji_char(), components: ["木"], frequency: 3})
+
+      result = Content.list_kanji_by_component("口")
+      ids = Enum.map(result, & &1.id)
+
+      assert k1.id in ids
+      assert k2.id in ids
+      refute _other.id in ids
+      assert Enum.map(result, & &1.frequency) == Enum.sort(Enum.map(result, & &1.frequency))
+    end
+
+    test "KanjiComponents.frequency/1 counts kanji with the component" do
+      kanji_fixture(%{character: unique_kanji_char(), components: ["口"]})
+      kanji_fixture(%{character: unique_kanji_char(), components: ["口"]})
+
+      assert KanjiComponents.frequency("口") >= 2
+    end
+
+    test "KanjiComponents.top_kanji/2 returns the most frequent kanji with the component" do
+      k1 = kanji_fixture(%{character: unique_kanji_char(), components: ["口"], frequency: 1})
+      k2 = kanji_fixture(%{character: unique_kanji_char(), components: ["口"], frequency: 2})
+
+      result = KanjiComponents.top_kanji("口", 10)
+      ids = Enum.map(result, & &1.id)
+
+      assert k1.id in ids
+      assert k2.id in ids
+      assert List.first(result).frequency <= List.last(result).frequency
+    end
+
+    test "KanjiComponents.get/1 returns component metadata" do
+      assert %{character: "口"} = KanjiComponents.get("口")
+    end
+
+    test "KanjiComponents.component?/1 recognises known components" do
+      assert KanjiComponents.component?("口")
+      refute KanjiComponents.component?("x")
+    end
+
+    test "KanjiComponents.meaning/1 returns the meaning of a known component" do
+      assert is_binary(KanjiComponents.meaning("口"))
     end
   end
 

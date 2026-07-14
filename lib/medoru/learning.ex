@@ -25,7 +25,7 @@ defmodule Medoru.Learning do
   }
 
   alias Medoru.Content
-  alias Medoru.Content.{GrammarDefinition, Kanji, KanjiRadicals, Lesson, Word, WordKanji}
+  alias Medoru.Content.{GrammarDefinition, Kanji, KanjiComponents, Lesson, Word, WordKanji}
   alias Medoru.Gamification
 
   # ============================================================================
@@ -1142,21 +1142,21 @@ defmodule Medoru.Learning do
   end
 
   @doc """
-  Generates a daily Radical Hunt challenge for a user.
+  Generates a daily Component Hunt challenge for a user.
 
-  Picks a learned kanji, uses its first radical, and ensures the radical has
-  at least 10 related kanji. Falls back to a common radical if needed.
+  Picks a learned kanji, uses its first component, and ensures the component has
+  at least 10 related kanji. Falls back to a common component if needed.
   Returns a deterministic result for the same user/date.
 
-  Returns `%{radical: String.t(), seed_kanji: Kanji.t() | nil, valid_kanji: [Kanji.t()]}`.
+  Returns `%{component: String.t(), seed_kanji: Kanji.t() | nil, valid_kanji: [Kanji.t()]}`.
   """
-  def generate_daily_radical_hunt(user_id) do
+  def generate_daily_component_hunt(user_id) do
     date = Date.utc_today()
 
     learned_kanji =
       user_id
       |> list_learned_kanji_ids()
-      |> load_kanji_with_radicals()
+      |> load_kanji_with_components()
 
     candidate_kanji =
       Enum.sort_by(learned_kanji, fn k ->
@@ -1165,38 +1165,48 @@ defmodule Medoru.Learning do
 
     result =
       Enum.find_value(candidate_kanji, fn kanji ->
-        radical = List.first(kanji.radicals)
+        component = List.first(kanji.components)
 
-        if radical && radical != "" do
-          valid_kanji = Content.list_kanji_by_radical(radical)
+        if component && component != "" do
+          valid_kanji = Content.list_kanji_by_component(component)
 
           if length(valid_kanji) >= 10 do
-            %{radical: radical, seed_kanji: kanji, valid_kanji: valid_kanji}
+            %{component: component, seed_kanji: kanji, valid_kanji: valid_kanji}
           end
         end
       end)
 
-    result || fallback_daily_radical_hunt()
+    result || fallback_daily_component_hunt()
   end
 
-  defp load_kanji_with_radicals(kanji_ids) do
+  defp load_kanji_with_components(kanji_ids) do
     Kanji
     |> where([k], k.id in ^kanji_ids)
-    |> where([k], not is_nil(k.radicals))
-    |> select([k], map(k, [:id, :character, :radicals]))
+    |> where([k], not is_nil(k.components))
+    |> select([k], map(k, [:id, :character, :components]))
     |> Repo.all()
-    |> Enum.reject(fn k -> k.radicals == [] end)
+    |> Enum.reject(fn k -> k.components == [] end)
   end
 
-  defp fallback_daily_radical_hunt do
-    KanjiRadicals.by_frequency()
-    |> Enum.find_value(fn %{character: radical} ->
-      valid_kanji = Content.list_kanji_by_radical(radical)
+  defp fallback_daily_component_hunt do
+    KanjiComponents.by_frequency()
+    |> Enum.find_value(fn %{character: component} ->
+      valid_kanji = Content.list_kanji_by_component(component)
 
       if length(valid_kanji) >= 10 do
-        %{radical: radical, seed_kanji: nil, valid_kanji: valid_kanji}
+        %{component: component, seed_kanji: nil, valid_kanji: valid_kanji}
       end
     end)
+    |> case do
+      nil ->
+        # Defensive fallback: if no component has enough related kanji yet,
+        # pick a common one so callers always get a usable map.
+        component = "口"
+        %{component: component, seed_kanji: nil, valid_kanji: Content.list_kanji_by_component(component)}
+
+      result ->
+        result
+    end
   end
 
   @doc """

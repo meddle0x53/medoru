@@ -5,7 +5,7 @@
   "description": "A stronger umbrella spirit.",
   "level": 3,
   "baseGold": 15,
-  "roles": ["mini_boss"],
+  "roles": ["battle"],
   "mapIds": [1, 2],
   "maxColumn": 10,
   "sprites": {

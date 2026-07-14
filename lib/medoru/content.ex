@@ -74,6 +74,16 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns kanji that contain the given component.
+  """
+  def list_kanji_by_component(component) when is_binary(component) do
+    Kanji
+    |> where([k], ^component in k.components)
+    |> order_by([k], asc: k.frequency)
+    |> Repo.all()
+  end
+
+  @doc """
   Gets a single kanji by ID.
 
   Raises `Ecto.NoResultsError` if the Kanji does not exist.

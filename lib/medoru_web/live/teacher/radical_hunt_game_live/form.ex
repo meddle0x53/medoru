@@ -6,7 +6,7 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
   use Gettext, backend: MedoruWeb.Gettext
 
   alias Medoru.Classrooms
-  alias Medoru.Content.KanjiRadicals
+  alias Medoru.Content.KanjiComponents
   alias Medoru.Games
 
   embed_templates "form*.html"
@@ -35,16 +35,16 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
 
   @impl true
   def mount(_params, _session, socket) do
-    radicals = KanjiRadicals.by_frequency()
+    components = KanjiComponents.by_frequency()
 
     {:ok,
      socket
-     |> assign(:page_title, gettext("Create Radical Hunt Game"))
+     |> assign(:page_title, gettext("Create Component Hunt Game"))
      |> assign(:name, "")
      |> assign(:skill_level, "1")
      |> assign(:timeout_seconds, "120")
-     |> assign(:selected_radical, nil)
-     |> assign(:radicals, radicals)
+     |> assign(:selected_component, nil)
+     |> assign(:components, components)
      |> assign(:form_errors, %{})}
   end
 
@@ -64,14 +64,14 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
 
       {:noreply,
        socket
-       |> assign(:page_title, gettext("Edit Radical Hunt Game"))
+       |> assign(:page_title, gettext("Edit Component Hunt Game"))
        |> assign(:classroom, classroom)
        |> assign(:game, game)
        |> assign(:mode, :edit)
        |> assign(:name, game.name)
        |> assign(:skill_level, Integer.to_string(game.skill_level))
        |> assign(:timeout_seconds, Integer.to_string(rhg.timeout_seconds))
-       |> assign(:selected_radical, rhg.radical)
+       |> assign(:selected_component, rhg.component)
        |> assign(:form_errors, %{})}
     end
   end
@@ -131,22 +131,22 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
   end
 
   @impl true
-  def handle_event("select_radical", %{"character" => character}, socket) do
+  def handle_event("select_component", %{"character" => character}, socket) do
     socket =
-      if socket.assigns.form_errors[:selected_radical] do
-        assign(socket, :form_errors, Map.delete(socket.assigns.form_errors, :selected_radical))
+      if socket.assigns.form_errors[:selected_component] do
+        assign(socket, :form_errors, Map.delete(socket.assigns.form_errors, :selected_component))
       else
         socket
       end
 
-    {:noreply, assign(socket, :selected_radical, character)}
+    {:noreply, assign(socket, :selected_component, character)}
   end
 
   @impl true
   def handle_event("save", params, socket) do
     classroom_id = socket.assigns.classroom.id
     teacher_id = socket.assigns.current_scope.current_user.id
-    selected_radical = socket.assigns.selected_radical
+    selected_component = socket.assigns.selected_component
 
     name = String.trim(params["name"] || socket.assigns.name || "")
     skill_level = params["skill_level"] || socket.assigns.skill_level || "1"
@@ -168,7 +168,7 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
       "radical_hunt_game" => rhg_attrs
     }
 
-    errors = validate_form(name, selected_radical)
+    errors = validate_form(name, selected_component)
 
     if map_size(errors) > 0 do
       {:noreply, assign(socket, :form_errors, errors)}
@@ -176,14 +176,14 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
       result =
         case socket.assigns.mode do
           :new ->
-            Games.create_radical_hunt_game(classroom_id, teacher_id, attrs, selected_radical)
+            Games.create_radical_hunt_game(classroom_id, teacher_id, attrs, selected_component)
 
           :edit ->
             Games.update_radical_hunt_game(
               socket.assigns.game,
               teacher_id,
               attrs,
-              selected_radical
+              selected_component
             )
         end
 
@@ -194,8 +194,8 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
            |> put_flash(
              :info,
              if(socket.assigns.mode == :new,
-               do: gettext("Radical Hunt game created successfully."),
-               else: gettext("Radical Hunt game updated successfully.")
+               do: gettext("Component Hunt game created successfully."),
+               else: gettext("Component Hunt game updated successfully.")
              )
            )
            |> push_navigate(to: ~p"/teacher/classrooms/#{classroom_id}?tab=games")}
@@ -218,7 +218,7 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
     end
   end
 
-  defp validate_form(name, selected_radical) do
+  defp validate_form(name, selected_component) do
     errors = %{}
 
     errors =
@@ -229,8 +229,8 @@ defmodule MedoruWeb.Teacher.RadicalHuntGameLive.Form do
       end
 
     errors =
-      if is_nil(selected_radical) do
-        Map.put(errors, :selected_radical, gettext("Select a radical"))
+      if is_nil(selected_component) do
+        Map.put(errors, :selected_component, gettext("Select a component"))
       else
         errors
       end

@@ -13,7 +13,7 @@
         {@page_title}
       </h1>
       <p class="text-secondary mt-1">
-        {gettext("Students will type kanji that contain the selected radical.")}
+        {gettext("Students will type kanji that contain the selected component.")}
       </p>
     </div>
 
@@ -33,7 +33,7 @@
             type="text"
             name="name"
             value={@name}
-            placeholder={gettext("e.g., Water Radical Challenge")}
+            placeholder={gettext("e.g., Water Component Challenge")}
             class={[
               "input input-bordered w-full",
               @form_errors[:name] && "input-error"
@@ -75,51 +75,51 @@
           </div>
         </div>
 
-        <%!-- Selected Radical Preview --%>
-        <%= if @selected_radical do %>
+        <%!-- Selected Component Preview --%>
+        <%= if @selected_component do %>
           <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
             <div class="flex items-center gap-4">
-              <div class="text-5xl font-bold text-primary">{@selected_radical}</div>
+              <div class="text-5xl font-bold text-primary">{@selected_component}</div>
               <div>
                 <p class="font-medium text-base-content">
-                  {KanjiRadicals.meaning(@selected_radical)}
+                  {KanjiComponents.meaning(@selected_component)}
                 </p>
                 <p class="text-sm text-secondary">
-                  {KanjiRadicals.frequency(@selected_radical)} {gettext(
-                    "kanji contain this radical"
-                  )} • {KanjiRadicals.get(@selected_radical).stroke_count} {gettext("strokes")}
+                  {KanjiComponents.frequency(@selected_component)} {gettext(
+                    "kanji contain this component"
+                  )} • {KanjiComponents.get(@selected_component).stroke_count} {gettext("strokes")}
                 </p>
               </div>
             </div>
           </div>
         <% end %>
 
-        <%= if @form_errors[:selected_radical] do %>
-          <p class="text-error text-sm mb-4">{@form_errors[:selected_radical]}</p>
+        <%= if @form_errors[:selected_component] do %>
+          <p class="text-error text-sm mb-4">{@form_errors[:selected_component]}</p>
         <% end %>
 
-        <%!-- Radical Grid --%>
+        <%!-- Component Grid --%>
         <div class="mb-4">
           <h3 class="text-lg font-semibold text-base-content mb-3">
-            {gettext("Select a Radical")}
+            {gettext("Select a Component")}
           </h3>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-h-96 overflow-y-auto p-2 border border-base-300 rounded-xl">
-            <%= for r <- @radicals do %>
+            <%= for c <- @components do %>
               <button
                 type="button"
-                phx-click="select_radical"
-                phx-value-character={r.character}
+                phx-click="select_component"
+                phx-value-character={c.character}
                 class={[
                   "relative flex flex-col items-center justify-center p-2 rounded-lg transition-all",
-                  if(@selected_radical == r.character,
+                  if(@selected_component == c.character,
                     do: "bg-primary text-primary-content ring-2 ring-primary",
                     else: "bg-base-200 hover:bg-base-300 text-base-content"
                   )
                 ]}
-                title={r.meaning}
+                title={c.meaning}
               >
-                <span class="text-xl font-medium">{r.character}</span>
-                <span class="text-xs opacity-70">{r.frequency}</span>
+                <span class="text-xl font-medium">{c.character}</span>
+                <span class="text-xs opacity-70">{c.frequency}</span>
               </button>
             <% end %>
           </div>

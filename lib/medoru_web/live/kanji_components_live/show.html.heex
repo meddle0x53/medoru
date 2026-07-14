@@ -1,0 +1,85 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Back Link --%>
+    <.link
+      navigate={~p"/components"}
+      class="inline-flex items-center gap-2 text-secondary hover:text-primary mb-6 transition-colors"
+    >
+      <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Components")}
+    </.link>
+
+    <%!-- Component Header --%>
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
+      <div class="p-8">
+        <div class="flex flex-col md:flex-row gap-8">
+          <%!-- Large Component Display --%>
+          <div class="flex-shrink-0">
+            <div class="w-32 h-32 md:w-40 md:h-40 bg-base-200/70 rounded-2xl flex items-center justify-center border border-base-300 shadow-inner">
+              <span class="text-7xl md:text-8xl font-medium text-base-content">
+                {@component.character}
+              </span>
+            </div>
+          </div>
+
+          <%!-- Info Section --%>
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <span class="bg-primary/20 text-primary/80 px-3 py-1 rounded-full text-sm font-medium">
+                {Medoru.Content.KanjiRadicals.category_name(@component.category)}
+              </span>
+              <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
+                {@component.stroke_count} {gettext("strokes")}
+              </span>
+              <span class="bg-base-200 text-secondary px-3 py-1 rounded-full text-sm">
+                {@frequency} {gettext("kanji")}
+              </span>
+            </div>
+
+            <h1 class="text-2xl font-bold text-base-content mb-2">
+              {@component.meaning}
+            </h1>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%!-- Top Kanji Section --%>
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-base-content mb-4">
+        {gettext("Top %{count} Most Frequent Kanji", count: length(@kanji_list))}
+      </h2>
+
+      <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+        <%= for kanji <- @kanji_list do %>
+          <.link
+            navigate={kanji_path(kanji)}
+            class="group"
+          >
+            <div class="aspect-square bg-base-100 border border-base-300 rounded-xl flex items-center justify-center
+                        shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-200">
+              <span class="text-3xl font-medium text-base-content group-hover:text-primary transition-colors">
+                {kanji.character}
+              </span>
+            </div>
+            <%= if kanji.frequency do %>
+              <div class="mt-1.5 text-center">
+                <span class="text-xs text-secondary/70">
+                  ##{kanji.frequency}
+                </span>
+              </div>
+            <% end %>
+          </.link>
+        <% end %>
+      </div>
+
+      <%= if @kanji_list == [] do %>
+        <div class="text-center py-12">
+          <div class="text-5xl mb-3">📚</div>
+          <p class="text-secondary">
+            {gettext("No kanji data available for this component.")}
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</Layouts.app>

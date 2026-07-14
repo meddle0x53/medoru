@@ -46,6 +46,15 @@ defmodule MedoruWeb.KanjiLiveTest do
       assert html =~ "N5"
     end
 
+    test "shows links to radicals and components browsers", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/kanji")
+
+      assert html =~ "Radicals"
+      assert html =~ "Components"
+      assert html =~ ~p"/radicals"
+      assert html =~ ~p"/components"
+    end
+
     test "navigates to kanji detail page", %{conn: conn, kanji: kanji} do
       {:ok, view, _html} = live(conn, ~p"/kanji")
       kanji_path = ~p"/kanji/#{kanji.character}"

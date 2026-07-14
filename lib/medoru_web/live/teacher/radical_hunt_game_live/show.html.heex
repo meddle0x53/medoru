@@ -11,7 +11,7 @@
             <span class="badge badge-ghost badge-sm">{gettext("Draft")}</span>
           <% end %>
         </div>
-        <p class="text-secondary">{gettext("Radical Hunt Game")}</p>
+        <p class="text-secondary">{gettext("Component Hunt Game")}</p>
       </div>
       <div class="flex gap-2">
         <%= if @game.status == :draft do %>
@@ -46,13 +46,13 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-2">
           <% rhg = @game.radical_hunt_game %>
           <div class="bg-base-200 rounded-lg p-3">
-            <div class="text-xs text-secondary">{gettext("Radical")}</div>
-            <div class="text-2xl font-semibold text-base-content">{rhg.radical}</div>
+            <div class="text-xs text-secondary">{gettext("Component")}</div>
+            <div class="text-2xl font-semibold text-base-content">{rhg.component}</div>
           </div>
           <div class="bg-base-200 rounded-lg p-3">
             <div class="text-xs text-secondary">{gettext("Meaning")}</div>
             <div class="text-lg font-semibold text-base-content">
-              {Medoru.Content.KanjiRadicals.meaning(rhg.radical)}
+              {Medoru.Content.KanjiComponents.meaning(rhg.component)}
             </div>
           </div>
           <div class="bg-base-200 rounded-lg p-3">
@@ -68,7 +68,7 @@
           <div class="bg-base-200 rounded-lg p-3">
             <div class="text-xs text-secondary">{gettext("Possible Kanji")}</div>
             <div class="text-lg font-semibold text-base-content">
-              {length(Medoru.Content.list_kanji_by_radical(rhg.radical))}
+              {length(Medoru.Content.list_kanji_by_component(rhg.component))}
             </div>
           </div>
         </div>

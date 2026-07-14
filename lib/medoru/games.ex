@@ -2064,7 +2064,7 @@ defmodule Medoru.Games do
   @doc """
   Creates a radical hunt game.
   """
-  def create_radical_hunt_game(classroom_id, teacher_id, attrs, radical) do
+  def create_radical_hunt_game(classroom_id, teacher_id, attrs, component) do
     classroom = Classrooms.get_classroom!(classroom_id)
 
     if classroom.teacher_id != teacher_id do
@@ -2090,7 +2090,7 @@ defmodule Medoru.Games do
 
         rhg_attrs = %{
           game_id: game.id,
-          radical: radical,
+          component: component,
           timeout_seconds:
             parse_int(
               get_in(attrs, ["radical_hunt_game", "timeout_seconds"]) ||
@@ -2111,7 +2111,7 @@ defmodule Medoru.Games do
   @doc """
   Updates a radical hunt game.
   """
-  def update_radical_hunt_game(%Game{} = game, teacher_id, attrs, radical) do
+  def update_radical_hunt_game(%Game{} = game, teacher_id, attrs, component) do
     if game.classroom.teacher_id != teacher_id do
       {:error, :not_authorized}
     else
@@ -2129,7 +2129,7 @@ defmodule Medoru.Games do
         rhg = Repo.get_by!(RadicalHuntGame, game_id: game.id)
 
         rhg_attrs = %{
-          radical: radical,
+          component: component,
           timeout_seconds:
             parse_int(
               get_in(attrs, ["radical_hunt_game", "timeout_seconds"]) ||
@@ -2160,8 +2160,8 @@ defmodule Medoru.Games do
          user_id when not is_nil(user_id) <- attrs[:user_id] do
       _ =
         Accounts.add_xp(user_id, 10,
-          source_type: "radical_hunt_game",
-          description: "Completed Radical Hunt game"
+          source_type: "component_hunt_game",
+          description: "Completed Component Hunt game"
         )
     end
 

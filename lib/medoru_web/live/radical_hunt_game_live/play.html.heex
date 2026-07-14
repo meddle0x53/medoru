@@ -14,17 +14,17 @@
             </div>
             <h1 class="text-3xl font-bold text-base-content mb-2">{@game.name}</h1>
             <p class="text-secondary">
-              {gettext("Find as many kanji as you can that contain this radical")}
+              {gettext("Find as many kanji as you can that contain this component")}
             </p>
           </div>
 
-          <%!-- Radical Preview --%>
+          <%!-- Component Preview --%>
           <div class="card bg-base-200 border border-base-300 mb-8 max-w-sm mx-auto">
             <div class="card-body">
               <p class="text-sm text-secondary mb-2">{gettext("Hunt for kanji containing")}</p>
-              <div class="text-8xl font-bold text-warning mb-2">{@config.radical}</div>
+              <div class="text-8xl font-bold text-warning mb-2">{@config.component}</div>
               <p class="text-lg text-base-content">
-                {Medoru.Content.KanjiRadicals.meaning(@config.radical)}
+                {Medoru.Content.KanjiComponents.meaning(@config.component)}
               </p>
               <p class="text-sm text-secondary mt-1">
                 {@valid_kanji_count} {gettext("possible kanji")} • {@config.timeout_seconds}s {gettext(
@@ -97,11 +97,11 @@
             </div>
           </div>
 
-          <%!-- Radical Display --%>
+          <%!-- Component Display --%>
           <div class="text-center mb-6">
             <div class="inline-block bg-warning/10 border-2 border-warning/30 rounded-2xl px-8 py-4">
               <p class="text-sm text-secondary mb-1">{gettext("Find kanji with")}</p>
-              <div class="text-6xl font-bold text-warning">{@config.radical}</div>
+              <div class="text-6xl font-bold text-warning">{@config.component}</div>
             </div>
           </div>
 
@@ -142,7 +142,7 @@
                 <% :incorrect -> %>
                   <span class="text-error font-medium">
                     <.icon name="hero-x-circle" class="w-4 h-4 inline" />
-                    {gettext("Not a valid kanji with this radical")}
+                    {gettext("Not a valid kanji with this component")}
                   </span>
                 <% :already_found -> %>
                   <span class="text-warning font-medium">

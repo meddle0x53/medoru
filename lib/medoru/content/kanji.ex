@@ -16,6 +16,7 @@ defmodule Medoru.Content.Kanji do
     field :school_level, :integer
     field :stroke_data, :map, default: %{}
     field :radicals, {:array, :string}, default: []
+    field :components, {:array, :string}, default: []
     field :frequency, :integer
     # Translations: %{"bg" => %{"meanings" => [...]}, "ja" => %{"meanings" => [...]}}
     field :translations, :map, default: %{}
@@ -38,6 +39,7 @@ defmodule Medoru.Content.Kanji do
       :school_level,
       :stroke_data,
       :radicals,
+      :components,
       :frequency,
       :translations
     ])
@@ -55,6 +57,7 @@ defmodule Medoru.Content.Kanji do
     attrs
     |> parse_field_meanings("meanings")
     |> parse_field_meanings("radicals")
+    |> parse_field_meanings("components")
     |> parse_translation_meanings("bg")
     |> parse_translation_meanings("ja")
     |> parse_stroke_data()

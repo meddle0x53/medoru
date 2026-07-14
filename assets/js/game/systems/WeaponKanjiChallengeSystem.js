@@ -69,9 +69,11 @@ export default class WeaponKanjiChallengeSystem {
         const kanjiChar = selectedKanjiData.character
 
         if (passed) {
-          this.scene.player.setBasePowerBonus(powerBonus)
-          this.scene.addCombatLog(`${kanjiChar} drawn! (+${powerBonus} power)`)
-          this._finish(skill, 'pass', cfg, onComplete)
+          if (powerBonus > 0) {
+            this.scene.player.setBasePowerBonus(powerBonus)
+            this.scene.addCombatLog(`${kanjiChar} drawn! (+${powerBonus} power)`)
+          }
+          this._finish(skill, 'pass', cfg, onComplete, { perfect: result.wrongStrokes === 0 })
         } else {
           this.scene.player.setBasePowerBonus(0)
           this.scene.addCombatLog(`${kanjiChar} failed! No power bonus.`)
@@ -116,7 +118,7 @@ export default class WeaponKanjiChallengeSystem {
     return candidates[Math.floor(Math.random() * candidates.length)]
   }
 
-  _finish(skill, outcomeKey, cfg, onComplete) {
+  _finish(skill, outcomeKey, cfg, onComplete, opts = {}) {
     this.scene.challengeActive = false
     this.scene.setSkillButtonsEnabled(true)
     this.scene.endTurnBtn.setVisible(true)
@@ -133,7 +135,12 @@ export default class WeaponKanjiChallengeSystem {
       this.scene.player.pendingEffectChanceOverrides = outcome.effectChanceOverrides
     }
 
-    onComplete({ challengeResult: outcome?.challengeResult || 'success' })
+    let challengeResult = outcome?.challengeResult || 'success'
+    if (opts.perfect && outcome?.perfectChallengeResult) {
+      challengeResult = outcome.perfectChallengeResult
+    }
+
+    onComplete({ challengeResult })
   }
 
   _resolveFailThreshold(totalStrokes, failThreshold) {

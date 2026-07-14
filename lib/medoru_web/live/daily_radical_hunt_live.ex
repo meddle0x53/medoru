@@ -1,14 +1,14 @@
 defmodule MedoruWeb.DailyRadicalHuntLive do
   @moduledoc """
-  Daily Radical Hunt challenge.
+  Daily Component Hunt challenge.
 
-  A 120-second game where the user types kanji that contain a chosen radical.
+  A 120-second game where the user types kanji that contain a chosen component.
   Earns 30 XP per found kanji plus a flat 50 XP participation bonus.
   """
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
 
-  alias Medoru.Content
+  alias Medoru.Content.KanjiComponents
 
   @impl true
   def render(assigns) do
@@ -32,19 +32,19 @@ defmodule MedoruWeb.DailyRadicalHuntLive do
     if Learning.daily_challenge_completed?(user.id, "daily_radical_hunt") do
       {:ok,
        socket
-       |> assign(:page_title, gettext("Daily Radical Hunt"))
+       |> assign(:page_title, gettext("Daily Component Hunt"))
        |> assign(:already_completed, true)
        |> assign(:streak, get_streak(user.id))}
     else
-      hunt = Learning.generate_daily_radical_hunt(user.id)
+      hunt = Learning.generate_daily_component_hunt(user.id)
       valid_characters = MapSet.new(hunt.valid_kanji, & &1.character)
 
       {:ok,
        socket
-       |> assign(:page_title, gettext("Daily Radical Hunt"))
+       |> assign(:page_title, gettext("Daily Component Hunt"))
        |> assign(:already_completed, false)
-       |> assign(:radical, hunt.radical)
-       |> assign(:radical_meaning, Content.KanjiRadicals.meaning(hunt.radical))
+       |> assign(:component, hunt.component)
+       |> assign(:component_meaning, KanjiComponents.meaning(hunt.component))
        |> assign(:seed_kanji, hunt.seed_kanji)
        |> assign(:valid_characters, valid_characters)
        |> assign(:valid_kanji_count, length(hunt.valid_kanji))
@@ -164,13 +164,13 @@ defmodule MedoruWeb.DailyRadicalHuntLive do
 
     user = socket.assigns.current_scope.current_user
     found_kanji = socket.assigns.found_kanji
-    radical = socket.assigns.radical
+    component = socket.assigns.component
     seed_kanji = socket.assigns.seed_kanji
     xp = length(found_kanji) * @xp_per_kanji + @base_xp
 
     metadata = %{
       "kanji_found" => found_kanji,
-      "radical" => radical,
+      "component" => component,
       "seed_kanji_id" => seed_kanji && seed_kanji.id
     }
 

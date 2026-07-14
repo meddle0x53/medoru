@@ -3689,6 +3689,14 @@ export default class BattleScene extends Phaser.Scene {
     const representativeEnemy = this.enemies[0]
     const isWin = winner === 'player'
     if (isWin) {
+      // Enemies that died from status effects won't have gone through the normal
+      // defeat path, so process them now to award essence, first-defeat rewards, etc.
+      for (const enemy of this.enemies) {
+        if (!enemy.isAlive()) {
+          this.onEnemyDefeated(enemy)
+        }
+      }
+
       for (const display of this.enemyDisplays) {
         if (display.enemy.isAlive()) {
           display.sprite.setTexture(this.getEnemySpriteKey(display.enemy, 'death'))

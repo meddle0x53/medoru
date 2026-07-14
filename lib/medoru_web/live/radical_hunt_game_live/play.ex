@@ -49,7 +49,7 @@ defmodule MedoruWeb.RadicalHuntGameLive.Play do
 
       true ->
         config = game.radical_hunt_game
-        valid_kanji = Content.list_kanji_by_radical(config.radical)
+        valid_kanji = Content.list_kanji_by_component(config.component)
         valid_characters = MapSet.new(valid_kanji, & &1.character)
 
         high_score =

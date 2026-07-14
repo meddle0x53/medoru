@@ -210,7 +210,7 @@ defmodule MedoruWeb.DailyChallengesLive do
             </div>
           </div>
 
-          <%!-- Daily Radical Hunt --%>
+          <%!-- Daily Component Hunt --%>
           <div class={[
             "card border transition-all",
             if(@stats.daily_radical_hunt_completed,
@@ -241,9 +241,9 @@ defmodule MedoruWeb.DailyChallengesLive do
                   <span class="badge badge-ghost">{gettext("Available")}</span>
                 <% end %>
               </div>
-              <h3 class="card-title text-lg">{gettext("Daily Radical Hunt")}</h3>
+              <h3 class="card-title text-lg">{gettext("Daily Component Hunt")}</h3>
               <p class="text-sm text-secondary mt-2">
-                {gettext("Type kanji containing a chosen radical before time runs out.")}
+                {gettext("Type kanji containing a chosen component before time runs out.")}
               </p>
               <div class="mt-4 flex items-center gap-2 text-sm text-base-content/70">
                 <.icon name="hero-sparkles" class="w-4 h-4 text-warning" />

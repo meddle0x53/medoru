@@ -134,27 +134,32 @@ export default class WinScene extends Phaser.Scene {
   createRewardSummary() {
     const y = 140
     const panelW = 420
-    const panelH = this.essenceGained > 0 ? 90 : 60
+    const hasEssence = this.essenceGained > 0
+    const panelH = hasEssence ? 90 : 70
     const panel = this.add.rectangle(GAME_CONFIG.width / 2, y, panelW, panelH, 0x1a1a2e).setStrokeStyle(2, 0x3498db)
 
     const leftX = GAME_CONFIG.width / 2 - panelW / 2 + 30
     const textStyle = { ...FONTS.default, fontSize: '16px', color: '#f1c40f' }
     const iconTextStyle = { ...FONTS.default, fontSize: '12px', color: '#1a1a2e', fontStyle: 'bold' }
 
+    const pointsY = hasEssence ? y - 25 : y - 15
+    const goldY = hasEssence ? y : y + 5
+    const essenceY = y + 25
+
     // Attribute Points icon (gold circle with "P")
-    this.add.circle(leftX, y - 25, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
-    this.add.text(leftX, y - 25, 'P', iconTextStyle).setOrigin(0.5)
-    this.pointsText = this.add.text(leftX + 20, y - 25, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
+    this.add.circle(leftX, pointsY, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, pointsY, 'P', iconTextStyle).setOrigin(0.5)
+    this.pointsText = this.add.text(leftX + 20, pointsY, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
 
     // Gold icon (gold coin with "$")
-    this.add.circle(leftX, y, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
-    this.add.text(leftX, y, '$', iconTextStyle).setOrigin(0.5)
-    this.goldText = this.add.text(leftX + 20, y, `+${this.goldReward}`, textStyle).setOrigin(0, 0.5)
+    this.add.circle(leftX, goldY, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, goldY, '$', iconTextStyle).setOrigin(0.5)
+    this.goldText = this.add.text(leftX + 20, goldY, `+${this.goldReward}`, textStyle).setOrigin(0, 0.5)
 
     // Ouro Essence icon (real currency image)
-    if (this.essenceGained > 0) {
-      this.essenceIcon = this.add.image(leftX, y + 25, 'ouro_essence').setDisplaySize(22, 22).setOrigin(0.5)
-      this.essenceText = this.add.text(leftX + 20, y + 25, `+${this.essenceGained}`, {
+    if (hasEssence) {
+      this.essenceIcon = this.add.image(leftX, essenceY, 'ouro_essence').setDisplaySize(22, 22).setOrigin(0.5)
+      this.essenceText = this.add.text(leftX + 20, essenceY, `+${this.essenceGained}`, {
         ...FONTS.default,
         fontSize: '16px',
         color: '#f1c40f',

@@ -19,6 +19,7 @@ defmodule Medoru.ContentFixtures do
         jlpt_level: 5,
         frequency: 100,
         radicals: ["口"],
+        components: ["口"],
         stroke_data: %{}
       })
       |> Content.create_kanji()
@@ -38,6 +39,7 @@ defmodule Medoru.ContentFixtures do
         jlpt_level: 5,
         frequency: 100,
         radicals: ["口"],
+        components: ["口"],
         stroke_data: %{}
       })
 

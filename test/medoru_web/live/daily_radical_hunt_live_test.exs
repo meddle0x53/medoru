@@ -10,10 +10,10 @@ defmodule MedoruWeb.DailyRadicalHuntLiveTest do
     user = user_fixture()
 
     for char <- ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"] do
-      kanji_fixture(%{character: char, radicals: ["口"]})
+      kanji_fixture(%{character: char, radicals: ["口"], components: ["口"]})
     end
 
-    seed_kanji = kanji_fixture(%{character: "中", radicals: ["口"]})
+    seed_kanji = kanji_fixture(%{character: "中", radicals: ["口"], components: ["口"]})
     {:ok, _} = Learning.track_kanji_learned(user.id, seed_kanji.id)
 
     %{user: user, seed_kanji: seed_kanji}
@@ -36,7 +36,7 @@ defmodule MedoruWeb.DailyRadicalHuntLiveTest do
 
       {:ok, _view, html} = live(conn, ~p"/daily-challenges/radical-hunt")
 
-      assert html =~ "Daily Radical Hunt"
+      assert html =~ "Daily Component Hunt"
       assert html =~ "口"
       assert html =~ "30 XP per kanji"
     end
@@ -46,7 +46,7 @@ defmodule MedoruWeb.DailyRadicalHuntLiveTest do
 
       {:ok, view, _html} = live(conn, ~p"/daily-challenges/radical-hunt")
 
-      assert render_hook(view, "device_info", %{"is_mobile" => false}) =~ "Daily Radical Hunt"
+      assert render_hook(view, "device_info", %{"is_mobile" => false}) =~ "Daily Component Hunt"
     end
   end
 

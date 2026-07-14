@@ -93,9 +93,15 @@ defmodule Medoru.Content.KanaRomaji do
 
   defp geminate(romaji) do
     cond do
-      String.starts_with?(romaji, "ch") -> "t" <> romaji
-      String.starts_with?(romaji, "sh") -> "s" <> romaji
-      String.starts_with?(romaji, "ts") -> "t" <> romaji
+      String.starts_with?(romaji, "ch") ->
+        "t" <> romaji
+
+      String.starts_with?(romaji, "sh") ->
+        "s" <> romaji
+
+      String.starts_with?(romaji, "ts") ->
+        "t" <> romaji
+
       true ->
         case String.first(romaji) do
           <<c>> when c in ?a..?z -> <<c>> <> romaji

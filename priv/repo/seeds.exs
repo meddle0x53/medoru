@@ -5,6 +5,7 @@
 
 import Ecto.Query
 alias Medoru.Content
+alias Medoru.Content.{KanjiDecompositionRadicals, KanjiRadicals}
 alias Medoru.Repo
 
 # Helper to clean kana readings (remove hyphens)
@@ -16,6 +17,28 @@ clean_kana = fn reading ->
   else
     reading
   end
+end
+
+# Normalize a radical to its canonical form from KanjiRadicals.
+normalize_radical = fn radical ->
+  case KanjiRadicals.get(radical) do
+    nil -> radical
+    %{character: character} -> character
+  end
+end
+
+# Extract component radicals from an IDS decomposition string.
+extract_components = fn decomposition, fallback_radical ->
+  components = KanjiDecompositionRadicals.extract_radicals(decomposition || "？")
+
+  components =
+    if fallback_radical not in components and KanjiRadicals.radical?(fallback_radical) do
+      [fallback_radical | components]
+    else
+      components
+    end
+
+  Enum.reject(components, &is_nil/1)
 end
 
 # ========== SEED ALL KANJI ==========
@@ -38,13 +61,22 @@ if File.exists?(kanji_path) do
         }
       end)
 
+    classical_radical = normalize_radical.(k["radical"] || k["character"])
+
+    components =
+      extract_components.(
+        k["decomposition"],
+        classical_radical
+      )
+
     attrs = %{
       character: k["character"],
       meanings: k["meanings"],
       stroke_count: k["stroke_count"],
       jlpt_level: k["jlpt_level"],
       frequency: k["frequency"],
-      radicals: k["radicals"] || [],
+      radicals: [classical_radical],
+      components: components,
       stroke_data: k["stroke_data"] || %{}
     }
 

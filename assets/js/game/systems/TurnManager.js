@@ -426,8 +426,13 @@ export default class TurnManager {
         const actual = target.takeDamage(finalDamage)
 
         // Add partial block
-        const blockBase = (skill.baseBlock || 0) + performer.getStatValue(skill.scalingBlockStat || 'skill') * (skill.scalingBlockMultiplier || 0)
-        const blockTotal = Math.floor((blockBase + (performer.getShieldBonus ? performer.getShieldBonus() : 0)) * multiplier)
+        let blockTotal = 0
+        if (skill.config?.setupDefenceBlock) {
+          blockTotal = Math.floor(performer.computeSetupDefenceAmount(skill, multiplier))
+        } else {
+          const blockBase = (skill.baseBlock || 0) + performer.getStatValue(skill.scalingBlockStat || 'skill') * (skill.scalingBlockMultiplier || 0)
+          blockTotal = Math.floor((blockBase + (performer.getShieldBonus ? performer.getShieldBonus() : 0)) * multiplier)
+        }
         if (blockTotal > 0) performer.addBlock(blockTotal)
 
         result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }

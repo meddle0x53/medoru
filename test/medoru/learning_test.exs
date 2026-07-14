@@ -444,56 +444,67 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
-  # generate_daily_radical_hunt/1
+  # generate_daily_component_hunt/1
   # ============================================================================
 
-  describe "generate_daily_radical_hunt/1" do
-    test "returns a radical from a learned kanji with at least 10 related kanji" do
+  describe "generate_daily_component_hunt/1" do
+    test "returns a component from a learned kanji with at least 10 related kanji" do
       user = user_fixture()
 
       for char <- ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"] do
-        kanji_fixture(%{character: char, radicals: ["口"]})
+        kanji_fixture(%{character: char, radicals: ["口"], components: ["口"]})
       end
 
-      seed_kanji = kanji_fixture(%{character: "中", radicals: ["口"]})
+      seed_kanji = kanji_fixture(%{character: "中", radicals: ["口"], components: ["口"]})
       {:ok, _} = Learning.track_kanji_learned(user.id, seed_kanji.id)
 
-      result = Learning.generate_daily_radical_hunt(user.id)
+      result = Learning.generate_daily_component_hunt(user.id)
 
-      assert result.radical == "口"
+      assert result.component == "口"
       assert result.seed_kanji.id == seed_kanji.id
       assert length(result.valid_kanji) >= 10
     end
 
-    test "falls back to a common radical when user has no learned kanji" do
+    test "falls back to a common component when user has no learned kanji" do
       user = user_fixture()
 
       for char <- ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"] do
-        kanji_fixture(%{character: char, radicals: ["口"]})
+        kanji_fixture(%{character: char, radicals: ["口"], components: ["口"]})
       end
 
-      result = Learning.generate_daily_radical_hunt(user.id)
+      result = Learning.generate_daily_component_hunt(user.id)
 
-      assert result.radical == "口"
+      assert result.component == "口"
       assert length(result.valid_kanji) >= 10
       assert result.seed_kanji == nil
     end
 
-    test "returns the same radical for the same user/date" do
+    test "returns the same component for the same user/date" do
       user = user_fixture()
 
       for char <- ["上", "下", "左", "右", "前", "後", "東", "西", "南", "北"] do
-        kanji_fixture(%{character: char, radicals: ["水"]})
+        kanji_fixture(%{character: char, radicals: ["水"], components: ["水"]})
       end
 
-      seed_kanji = kanji_fixture(%{character: "氷", radicals: ["水"]})
+      seed_kanji = kanji_fixture(%{character: "氷", radicals: ["水"], components: ["水"]})
       {:ok, _} = Learning.track_kanji_learned(user.id, seed_kanji.id)
 
-      result1 = Learning.generate_daily_radical_hunt(user.id)
-      result2 = Learning.generate_daily_radical_hunt(user.id)
+      result1 = Learning.generate_daily_component_hunt(user.id)
+      result2 = Learning.generate_daily_component_hunt(user.id)
 
-      assert result1.radical == result2.radical
+      assert result1.component == result2.component
       assert result1.seed_kanji.id == result2.seed_kanji.id
+    end
+
+    test "never returns nil, even when no components are populated" do
+      user = user_fixture()
+      kanji_fixture(%{character: "一", components: []})
+
+      result = Learning.generate_daily_component_hunt(user.id)
+
+      assert is_map(result)
+      assert is_binary(result.component)
+      assert is_list(result.valid_kanji)
     end
   end
 

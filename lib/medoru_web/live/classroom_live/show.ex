@@ -1875,7 +1875,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                       <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
                         <span class="badge badge-outline badge-sm">
                           <.icon name="hero-magnifying-glass" class="w-3 h-3 mr-1" />
-                          {gettext("Radical")} {game.radical_hunt_game.radical}
+                          {gettext("Component")} {game.radical_hunt_game.component}
                         </span>
                         <span class="badge badge-outline badge-sm">
                           <.icon name="hero-clock" class="w-3 h-3 mr-1" />
