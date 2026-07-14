@@ -40,6 +40,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -99,6 +115,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -246,6 +278,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.3,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -300,6 +348,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.2,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.5 }, "log": "Guard Break smashes through! No kanji challenge." },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.5 } },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true, "effectChanceOverrides": { "blunt": 0.7 } },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.2 } }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"

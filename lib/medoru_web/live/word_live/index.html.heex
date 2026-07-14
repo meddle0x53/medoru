@@ -272,7 +272,7 @@
                 </span>
               </div>
               <p class="text-secondary text-sm line-clamp-2 mb-3">
-                {word.text} · {word.reading}
+                {word.text} · {word.reading} ({kana_romaji(word.reading)})
               </p>
             <% else %>
               <div class="flex items-baseline justify-between mb-2">
@@ -287,7 +287,7 @@
                   {word.text}
                 </span>
                 <span class="text-sm text-secondary/70 font-medium">
-                  {word.reading}
+                  {word.reading} ({kana_romaji(word.reading)})
                 </span>
               </div>
               <p class="text-secondary text-sm line-clamp-2 mb-3">

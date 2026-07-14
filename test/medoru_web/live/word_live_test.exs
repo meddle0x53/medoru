@@ -16,6 +16,15 @@ defmodule MedoruWeb.WordLiveTest do
       assert html =~ word.meaning
     end
 
+    test "shows latin pronunciation next to kana reading", %{conn: conn} do
+      word = word_fixture(%{text: "食べる", reading: "たべる"})
+
+      {:ok, _view, html} = live(conn, ~p"/words")
+
+      assert html =~ word.reading
+      assert html =~ "(taberu)"
+    end
+
     test "filters words by difficulty", %{conn: conn} do
       _n5_word = word_fixture(%{difficulty: 5, text: "語一", reading: "ごいち"})
       _n4_word = word_fixture(%{difficulty: 4, text: "語二", reading: "ごに"})

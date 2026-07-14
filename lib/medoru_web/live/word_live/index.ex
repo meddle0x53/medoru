@@ -338,6 +338,13 @@ defmodule MedoruWeb.WordLive.Index do
     Content.get_localized_meaning(word, locale)
   end
 
+  # Helper for template: latin pronunciation for a kana reading
+  def kana_romaji(reading) when is_binary(reading) and reading != "" do
+    Medoru.Content.KanaRomaji.to_romaji(reading)
+  end
+
+  def kana_romaji(_), do: ""
+
   # Word type options for the filter dropdown
   def word_type_options do
     [

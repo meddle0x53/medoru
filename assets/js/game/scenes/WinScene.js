@@ -134,29 +134,32 @@ export default class WinScene extends Phaser.Scene {
   createRewardSummary() {
     const y = 140
     const panelW = 420
-    const panel = this.add.rectangle(GAME_CONFIG.width / 2, y, panelW, 70, 0x1a1a2e).setStrokeStyle(2, 0x3498db)
+    const panelH = this.essenceGained > 0 ? 90 : 60
+    const panel = this.add.rectangle(GAME_CONFIG.width / 2, y, panelW, panelH, 0x1a1a2e).setStrokeStyle(2, 0x3498db)
 
     const leftX = GAME_CONFIG.width / 2 - panelW / 2 + 30
     const textStyle = { ...FONTS.default, fontSize: '16px', color: '#f1c40f' }
     const iconTextStyle = { ...FONTS.default, fontSize: '12px', color: '#1a1a2e', fontStyle: 'bold' }
 
     // Attribute Points icon (gold circle with "P")
-    this.add.circle(leftX, y - 15, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
-    this.add.text(leftX, y - 15, 'P', iconTextStyle).setOrigin(0.5)
-    this.pointsText = this.add.text(leftX + 20, y - 15, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
+    this.add.circle(leftX, y - 25, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, y - 25, 'P', iconTextStyle).setOrigin(0.5)
+    this.pointsText = this.add.text(leftX + 20, y - 25, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
 
     // Gold icon (gold coin with "$")
-    this.add.circle(leftX, y + 5, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
-    this.add.text(leftX, y + 5, '$', iconTextStyle).setOrigin(0.5)
-    this.goldText = this.add.text(leftX + 20, y + 5, `+${this.goldReward}`, textStyle).setOrigin(0, 0.5)
+    this.add.circle(leftX, y, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
+    this.add.text(leftX, y, '$', iconTextStyle).setOrigin(0.5)
+    this.goldText = this.add.text(leftX + 20, y, `+${this.goldReward}`, textStyle).setOrigin(0, 0.5)
 
     // Ouro Essence icon (real currency image)
     if (this.essenceGained > 0) {
-      this.add.image(leftX, y + 25, 'ouro_essence').setDisplaySize(22, 22).setOrigin(0.5)
+      this.essenceIcon = this.add.image(leftX, y + 25, 'ouro_essence').setDisplaySize(22, 22).setOrigin(0.5)
       this.essenceText = this.add.text(leftX + 20, y + 25, `+${this.essenceGained}`, {
         ...FONTS.default,
         fontSize: '16px',
-        color: '#9b59b6',
+        color: '#f1c40f',
+        stroke: '#000000',
+        strokeThickness: 3,
       }).setOrigin(0, 0.5)
     }
   }
@@ -585,7 +588,11 @@ export default class WinScene extends Phaser.Scene {
         if (delta !== 0) {
           this.player.addOuroEssence(delta)
           this.essenceGained = finalEssence
-          if (this.essenceText) this.essenceText.setText(`+${this.essenceGained}`)
+        }
+        if (this.essenceText) this.essenceText.setText(`+${this.essenceGained}`)
+        if (finalEssence === 0 && this.essenceIcon) {
+          this.essenceIcon.setVisible(false)
+          this.essenceText.setVisible(false)
         }
       }
 
