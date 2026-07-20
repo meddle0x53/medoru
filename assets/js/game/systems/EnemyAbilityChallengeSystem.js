@@ -32,7 +32,13 @@ export default class EnemyAbilityChallengeSystem {
     this.challenge.prompt = 'Type the meaning of this word:'
 
     this.createOverlay()
-    this.createHiddenInput()
+
+    if (this.scene.sys.game.device.input.touch) {
+      this.createTouchKeyboard()
+      lockGameWrapper()
+    } else {
+      this.createHiddenInput()
+    }
 
     this.keyboardHandler = (event) => {
       if (!this.active) return
@@ -133,6 +139,87 @@ export default class EnemyAbilityChallengeSystem {
     if (this.inputText) {
       this.inputText.setText(this.input)
     }
+  }
+
+  createTouchKeyboard() {
+    this.keyboardContainer = this.scene.add.container(0, 0)
+    this.overlay.add(this.keyboardContainer)
+
+    // Compact on-screen keyboard that fits below the 340px enemy-ability panel.
+    const keySize = 26
+    const keyGap = 3
+    const startY = 162
+
+    const rows = [
+      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+      ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+    ]
+
+    rows.forEach((row, rowIndex) => {
+      const rowWidth = row.length * keySize + (row.length - 1) * keyGap
+      const startX = -rowWidth / 2 + keySize / 2
+      row.forEach((char, colIndex) => {
+        const x = startX + colIndex * (keySize + keyGap)
+        const y = startY + rowIndex * (keySize + keyGap)
+        this.createKeyboardKey(char, x, y, keySize, keySize, char)
+      })
+    })
+
+    // Control row: backspace, hyphen, space, enter
+    const controlY = startY + rows.length * (keySize + keyGap) + 4
+    const controls = [
+      { label: '⌫', width: 42, key: 'BACKSPACE' },
+      { label: '-', width: 26, key: '-' },
+      { label: 'SPACE', width: 78, key: 'SPACE' },
+      { label: '⏎', width: 42, key: 'ENTER' },
+    ]
+    const totalWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * keyGap
+    let x = -totalWidth / 2
+    controls.forEach(({ label, width, key }) => {
+      this.createKeyboardKey(label, x + width / 2, controlY, width, keySize, key)
+      x += width + keyGap
+    })
+  }
+
+  createKeyboardKey(label, x, y, width, height, keyName) {
+    const bg = this.scene.add.rectangle(0, 0, width, height, 0x2c3e50).setStrokeStyle(1, 0x5d6d7e)
+    const text = this.scene.add.text(0, 0, label, {
+      ...FONTS.default,
+      fontSize: label.length > 1 ? '12px' : '16px',
+      color: '#ecf0f1',
+    }).setOrigin(0.5)
+
+    const container = this.scene.add.container(x, y, [bg, text])
+    container.setSize(width, height)
+
+    const hitArea = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0)
+    hitArea.setInteractive({ useHandCursor: true })
+    container.add(hitArea)
+
+    hitArea.on('pointerdown', () => {
+      bg.setFillStyle(0x3498db)
+      this.handleKeyboardKey(keyName)
+    })
+    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
+    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+
+    this.keyboardContainer.add(container)
+  }
+
+  handleKeyboardKey(key) {
+    if (!this.active) return
+    if (key === 'BACKSPACE') {
+      this.input = this.input.slice(0, -1)
+    } else if (key === 'SPACE') {
+      this.input += ' '
+    } else if (key === 'ENTER') {
+      this.submit(false)
+      return
+    } else {
+      this.input += key
+    }
+    this.updateInputDisplay()
   }
 
   updateTimer() {

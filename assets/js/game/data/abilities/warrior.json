@@ -386,24 +386,35 @@
       "id": "focus",
       "name": "Focus",
       "nameJa": "集中",
-      "description": "Raise readiness to maximum.",
-      "type": "buff",
+      "description": "Meditate to raise readiness. Adds 0.5 readiness on average; a successful kanji challenge adds 0.7, a failed one 0.3. Can be used multiple times.",
+      "type": "focus",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
-      "staminaCost": 2,
+      "staminaCost": 6,
       "kanji": "集",
+      "kanjiPool": [
+        "気",
+        "心",
+        "集",
+        "念",
+        "魂",
+        "精"
+      ],
       "rarity": "common",
-      "config": {
-        "setReadiness": 1.0
-      },
-      "lifecycle": {
-        "onUse": [
-          "setReadiness"
-        ]
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "readinessDelta": 0.5 },
+          "fallback": { "challengeResult": "success", "readinessDelta": 0.5 },
+          "pass": { "challengeResult": "success", "readinessDelta": 0.7 },
+          "fail": { "challengeResult": "fail", "readinessDelta": 0.3 }
+        }
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": false
     },
     {
       "id": "taunt",

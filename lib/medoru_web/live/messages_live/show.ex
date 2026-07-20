@@ -223,6 +223,7 @@ defmodule MedoruWeb.MessagesLive.Show do
             |> assign(:media_items, [])
             |> assign(:media_has_more, false)
             |> assign(:media_offset, 0)
+            |> assign(:media_loading, false)
             |> push_event("scroll_to_bottom", %{})
 
           socket =
@@ -878,7 +879,8 @@ defmodule MedoruWeb.MessagesLive.Show do
      |> assign(:media_filter, "all")
      |> assign(:media_items, items)
      |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, length(items))}
+     |> assign(:media_offset, length(items))
+     |> assign(:media_loading, false)}
   end
 
   @impl true
@@ -900,21 +902,26 @@ defmodule MedoruWeb.MessagesLive.Show do
      |> assign(:media_filter, filter)
      |> assign(:media_items, items)
      |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, length(items))}
+     |> assign(:media_offset, length(items))
+     |> assign(:media_loading, false)}
   end
 
   @impl true
   def handle_event("load_more_media", _params, socket) do
-    conversation_id = socket.assigns.conversation.id
-    filter = socket.assigns.media_filter
-    current_offset = socket.assigns.media_offset
-    {items, has_more} = load_media(conversation_id, filter, current_offset)
+    if socket.assigns.media_loading || !socket.assigns.media_has_more do
+      {:noreply, socket}
+    else
+      conversation_id = socket.assigns.conversation.id
+      filter = socket.assigns.media_filter
+      current_offset = socket.assigns.media_offset
 
-    {:noreply,
-     socket
-     |> assign(:media_items, socket.assigns.media_items ++ items)
-     |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, current_offset + length(items))}
+      {:noreply,
+       socket
+       |> assign(:media_loading, true)
+       |> start_async(:load_more_media, fn ->
+         load_media(conversation_id, filter, current_offset)
+       end)}
+    end
   end
 
   @impl true
@@ -1103,6 +1110,29 @@ defmodule MedoruWeb.MessagesLive.Show do
       Logger.warning("[ChatRekey] Failed to store re-encrypted key(s)")
       {:noreply, put_flash(socket, :error, gettext("Failed to store re-encrypted key."))}
     end
+  end
+
+  @impl true
+  def handle_async(:load_more_media, {:ok, {items, has_more}}, socket) do
+    current_offset = socket.assigns.media_offset
+
+    {:noreply,
+     socket
+     |> assign(:media_items, socket.assigns.media_items ++ items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, current_offset + length(items))
+     |> assign(:media_loading, false)}
+  end
+
+  @impl true
+  def handle_async(:load_more_media, {:exit, reason}, socket) do
+    require Logger
+    Logger.warning("load_more_media failed: #{inspect(reason)}")
+
+    {:noreply,
+     socket
+     |> assign(:media_loading, false)
+     |> put_flash(:error, gettext("Failed to load more media."))}
   end
 
   defp load_media(conversation_id, filter, offset) do

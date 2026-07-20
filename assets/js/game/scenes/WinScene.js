@@ -472,6 +472,10 @@ export default class WinScene extends Phaser.Scene {
       this.game.canvas.removeEventListener('wheel', this.replaceWheelHandler)
       this.replaceWheelHandler = null
     }
+    if (this.replaceDragCleanup) {
+      this.replaceDragCleanup()
+      this.replaceDragCleanup = null
+    }
   }
 
   showReplaceDialog(newAction) {
@@ -488,7 +492,7 @@ export default class WinScene extends Phaser.Scene {
     const listY = -160
     const listW = 440
     const listH = 330
-    const rowH = 32
+    const rowH = 40
 
     const listContainer = this.add.container(0, listY)
     dialog.add(listContainer)
@@ -500,7 +504,7 @@ export default class WinScene extends Phaser.Scene {
       GAME_CONFIG.width / 2 - listW / 2,
       GAME_CONFIG.height / 2 + listY,
       listW,
-      listH
+      listH,
     )
     listContainer.setMask(maskGraphics.createGeometryMask())
 
@@ -509,24 +513,26 @@ export default class WinScene extends Phaser.Scene {
     knownIds.forEach((id, i) => {
       const action = ALL_ACTIONS.find(a => a.id === id)
       if (!action) return
-      const btn = this.createDialogButton(listContainer, 0, i * rowH, listW - 20, rowH - 4, `${action.kanji} ${action.name}`, 0x2c3e50, () => {
+      const onClick = () => {
         this.player.replaceAbility(id, newAction.id)
         this.showToast(`${newAction.name} learned!`)
         this.closeReplaceDialog()
         const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(newAction.type) : null
         this.markAbilitySelected(newAction.name, bonusName)
-      })
-      rowButtons.push(btn)
+      }
+      const btn = this.createDialogButton(listContainer, 0, i * rowH, listW - 20, rowH - 4, `${action.kanji} ${action.name}`, 0x2c3e50, onClick)
+      rowButtons.push({ ...btn, onClick })
     })
 
-    // Invisible bounds for the scrollable list (visual reference only)
+    // Invisible overlay for touch-drag scrolling (on top of the rows)
     const scrollHitArea = this.add.rectangle(0, listY + listH / 2, listW, listH, 0x000000, 0)
+      .setInteractive({ useHandCursor: false })
     dialog.add(scrollHitArea)
 
     let scroll = 0
     const maxScroll = Math.max(0, knownIds.length * rowH - listH)
-    const updateScroll = (delta) => {
-      scroll = Math.max(0, Math.min(maxScroll, scroll + delta))
+    const updateScroll = (target) => {
+      scroll = Math.max(0, Math.min(maxScroll, target))
       listContainer.setY(listY - scroll)
       rowButtons.forEach(({ container, hitArea }) => {
         const relY = container.y - scroll
@@ -538,9 +544,49 @@ export default class WinScene extends Phaser.Scene {
 
     this.replaceWheelHandler = (e) => {
       e.preventDefault()
-      updateScroll(e.deltaY * 0.8)
+      updateScroll(scroll + e.deltaY * 0.8)
     }
     this.game.canvas.addEventListener('wheel', this.replaceWheelHandler, { passive: false })
+
+    // Touch-drag scrolling + tap-to-select
+    let dragStartY = null
+    let dragStartScroll = 0
+    let dragged = false
+    const DRAG_THRESHOLD = 8
+
+    const onPointerDown = (pointer) => {
+      dragStartY = pointer.y
+      dragStartScroll = scroll
+      dragged = false
+    }
+    const onPointerMove = (pointer) => {
+      if (dragStartY === null) return
+      const dy = pointer.y - dragStartY
+      if (Math.abs(dy) > DRAG_THRESHOLD) dragged = true
+      updateScroll(dragStartScroll - dy)
+    }
+    const onPointerUp = (pointer) => {
+      if (dragStartY === null) return
+      if (!dragged) {
+        const relY = pointer.y - (listY - scroll)
+        const index = Math.floor(relY / rowH)
+        const row = rowButtons[index]
+        if (row && row.onClick) row.onClick()
+      }
+      dragStartY = null
+    }
+
+    scrollHitArea.on('pointerdown', onPointerDown)
+    scrollHitArea.on('pointermove', onPointerMove)
+    scrollHitArea.on('pointerup', onPointerUp)
+    scrollHitArea.on('pointerupoutside', onPointerUp)
+
+    this.replaceDragCleanup = () => {
+      scrollHitArea.off('pointerdown', onPointerDown)
+      scrollHitArea.off('pointermove', onPointerMove)
+      scrollHitArea.off('pointerup', onPointerUp)
+      scrollHitArea.off('pointerupoutside', onPointerUp)
+    }
 
     updateScroll(0)
 

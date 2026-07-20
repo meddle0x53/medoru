@@ -589,10 +589,12 @@ export default class BattleScene extends Phaser.Scene {
     const tempDef = this.player.tempDefense || 0
     const block = this.player.block || 0
     const armor = this.player.armor || 0
+    const readiness = this.player.readiness || 0
 
     if (tempDef > 0) rows.push({ label: 'Defence', value: tempDef, color: '#2ecc71' })
     if (block > 0) rows.push({ label: 'Block', value: block, color: '#3498db' })
     if (armor > 0) rows.push({ label: 'Armor', value: armor, color: '#f39c12' })
+    rows.push({ label: 'Readiness', value: `${Math.round(readiness * 100)}%`, color: '#9b59b6' })
 
     for (const buff of this.player.buffs || []) {
       rows.push({ label: 'Buff', value: buff.type, color: '#9b59b6' })
@@ -1694,10 +1696,10 @@ export default class BattleScene extends Phaser.Scene {
       },
       onResult: ({ success, timedOut, word, correctAnswer }) => {
         if (success) {
-          this.player.setReadiness(1)
+          this.player.addReadiness(0.3)
           this._animateWordChallengeSuccess(this.wordChallenge.wordText)
         } else {
-          this.player.setReadiness(0)
+          this.player.addReadiness(-0.3)
           this._animateWordChallengeFailure(this.wordChallenge.wordText, timedOut, correctAnswer)
         }
       },
@@ -2684,36 +2686,90 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Focus uses kanji drawing for its skill kanji (集)
+    // Focus uses a kanji challenge to add readiness.
     if (skill.id === 'focus') {
-      const kanji = skill.kanji || '集'
-      let strokeData = null
-      const kanjiData = this.player.kanjiList.find(k => k.character === kanji)
-      if (kanjiData?.stroke_data?.strokes?.length > 0) {
-        strokeData = kanjiData.stroke_data
-      }
+      const cfg = skill.kanjiChallenge || {}
+      const outcomes = cfg.outcomes || {}
 
-      if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
+      // 10% chance to skip the challenge entirely.
+      const skipChance = cfg.skipChance ?? 0.1
+      if (skipChance > 0 && Math.random() < skipChance) {
+        const delta = outcomes.skipped?.readinessDelta ?? 0.5
+        this.player.addReadiness(delta)
         this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.addCombatLog(`Focus settles. +${delta} readiness.`)
+        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${delta} Readiness`, 0x9b59b6)
         this.executeSkill('success')
         return
       }
+
+      // Pick a kanji from the Focus pool; 20% chance to use the current focus kanji instead.
+      const pool = skill.kanjiPool || ['気', '心', '集', '念', '魂', '精']
+      const focusOverrideChance = cfg.focusOverrideChance ?? 0.2
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      let selectedKanjiData = null
+
+      if (focusKanjiData && focusOverrideChance > 0 && Math.random() < focusOverrideChance && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      } else {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const candidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (candidates.length > 0) {
+          selectedKanjiData = candidates[Math.floor(Math.random() * candidates.length)]
+        }
+      }
+
+      // No usable stroke data: fall back to the base gain.
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+        const delta = outcomes.fallback?.readinessDelta ?? 0.5
+        this.player.addReadiness(delta)
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+        this.addCombatLog(`Focus settles. +${delta} readiness.`)
+        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${delta} Readiness`, 0x9b59b6)
+        this.executeSkill('success')
+        return
+      }
+
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+      const failThreshold = cfg.failThreshold === 'halfUp'
+        ? Math.ceil(totalStrokes / 2)
+        : (typeof cfg.failThreshold === 'number' ? cfg.failThreshold : Math.ceil(totalStrokes / 2))
 
       this.challengeActive = true
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
 
-      this.startKanjiDrawingChallenge(strokeData, `Focus! Draw ${kanji}:`, {
+      this.startKanjiDrawingChallenge(strokeData, `Focus! Draw ${selectedKanjiData.character}:`, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
 
-          if (result.completed) {
-            this.addCombatLog(`${kanji} drawn! Focus achieved!`)
+          const passed = result.completed && result.wrongStrokes < failThreshold
+          if (passed) {
+            const delta = outcomes.pass?.readinessDelta ?? 0.7
+            this.player.addReadiness(delta)
+            this.addCombatLog(`${selectedKanjiData.character} drawn! +${delta} readiness.`)
+            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${delta} Readiness`, 0x9b59b6)
             this.executeSkill('success')
           } else {
-            this.addCombatLog(`${kanji} failed! Focus lost.`)
+            const delta = outcomes.fail?.readinessDelta ?? 0.3
+            this.player.addReadiness(delta)
+            this.addCombatLog(`${selectedKanjiData.character} failed! +${delta} readiness.`)
+            this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${delta} Readiness`, 0x9b59b6)
             this.executeSkill('fail')
           }
         },
@@ -2725,7 +2781,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      }, kanjiData || { character: kanji, meanings: [] })
+      }, selectedKanjiData)
       return
     }
 

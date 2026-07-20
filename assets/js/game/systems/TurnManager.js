@@ -464,6 +464,11 @@ export default class TurnManager {
         }
         break
       }
+      case 'focus': {
+        // Readiness is applied during the kanji challenge phase in BattleScene.
+        result = { type: 'focus' }
+        break
+      }
       default:
         result = { type: 'none' }
     }

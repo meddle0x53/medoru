@@ -504,7 +504,7 @@ export default class LoadoutScene extends Phaser.Scene {
       }).setOrigin(0.5)
 
       // Larger invisible hit area for mobile
-      const hitArea = this.add.rectangle(x, y, this.tabWidth - 4, 36, 0x000000, 0)
+      const hitArea = this.add.rectangle(x, y, this.tabWidth - 4, 48, 0x000000, 0)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.showTab(key))
       this.rightPanel.add(hitArea)

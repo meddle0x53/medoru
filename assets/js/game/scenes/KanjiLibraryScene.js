@@ -220,7 +220,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           line-height: 1;
         }
         .kco-meaning {
-          font-size: 8px;
+          font-size: 10px;
           color: #7f8c8d;
           text-align: center;
           padding: 0 1px;
@@ -232,7 +232,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           white-space: nowrap;
         }
         .kco-readings {
-          font-size: 7px;
+          font-size: 9px;
           color: #95a5a6;
           text-align: center;
           padding: 0 1px;
@@ -263,6 +263,12 @@ export default class KanjiLibraryScene extends Phaser.Scene {
           text-align: center;
           flex-shrink: 0;
           border-top: 1px solid #1a1a2e;
+        }
+        @media (max-width: 600px) {
+          .kco-grid { grid-template-columns: repeat(10, 1fr); }
+        }
+        @media (max-width: 400px) {
+          .kco-grid { grid-template-columns: repeat(8, 1fr); }
         }
         .kco-continue {
           padding: 10px 36px;

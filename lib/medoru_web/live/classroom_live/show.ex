@@ -105,6 +105,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
           |> assign(:media_items, [])
           |> assign(:media_has_more, false)
           |> assign(:media_offset, 0)
+          |> assign(:media_loading, false)
 
         {:ok, socket}
 
@@ -168,6 +169,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 |> assign(:media_items, [])
                 |> assign(:media_has_more, false)
                 |> assign(:media_offset, 0)
+                |> assign(:media_loading, false)
 
               {:ok, socket}
             end
@@ -733,7 +735,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
      |> assign(:media_filter, "all")
      |> assign(:media_items, items)
      |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, length(items))}
+     |> assign(:media_offset, length(items))
+     |> assign(:media_loading, false)}
   end
 
   @impl true
@@ -755,21 +758,26 @@ defmodule MedoruWeb.ClassroomLive.Show do
      |> assign(:media_filter, filter)
      |> assign(:media_items, items)
      |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, length(items))}
+     |> assign(:media_offset, length(items))
+     |> assign(:media_loading, false)}
   end
 
   @impl true
   def handle_event("load_more_media", _params, socket) do
-    conversation_id = socket.assigns.conversation.id
-    filter = socket.assigns.media_filter
-    current_offset = socket.assigns.media_offset
-    {items, has_more} = load_media(conversation_id, filter, current_offset)
+    if socket.assigns.media_loading || !socket.assigns.media_has_more do
+      {:noreply, socket}
+    else
+      conversation_id = socket.assigns.conversation.id
+      filter = socket.assigns.media_filter
+      current_offset = socket.assigns.media_offset
 
-    {:noreply,
-     socket
-     |> assign(:media_items, socket.assigns.media_items ++ items)
-     |> assign(:media_has_more, has_more)
-     |> assign(:media_offset, current_offset + length(items))}
+      {:noreply,
+       socket
+       |> assign(:media_loading, true)
+       |> start_async(:load_more_media, fn ->
+         load_media(conversation_id, filter, current_offset)
+       end)}
+    end
   end
 
   @impl true
@@ -876,6 +884,29 @@ defmodule MedoruWeb.ClassroomLive.Show do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_async(:load_more_media, {:ok, {items, has_more}}, socket) do
+    current_offset = socket.assigns.media_offset
+
+    {:noreply,
+     socket
+     |> assign(:media_items, socket.assigns.media_items ++ items)
+     |> assign(:media_has_more, has_more)
+     |> assign(:media_offset, current_offset + length(items))
+     |> assign(:media_loading, false)}
+  end
+
+  @impl true
+  def handle_async(:load_more_media, {:exit, reason}, socket) do
+    require Logger
+    Logger.warning("load_more_media failed: #{inspect(reason)}")
+
+    {:noreply,
+     socket
+     |> assign(:media_loading, false)
+     |> put_flash(:error, gettext("Failed to load more media."))}
   end
 
   defp load_media(conversation_id, filter, offset) do
@@ -1172,6 +1203,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
                 media_filter={@media_filter}
                 media_items={@media_items}
                 media_has_more={@media_has_more}
+                media_loading={@media_loading}
               />
           <% end %>
         </div>
@@ -1970,6 +2002,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
   attr :media_filter, :string, required: true
   attr :media_items, :list, required: true
   attr :media_has_more, :boolean, required: true
+  attr :media_loading, :boolean, required: true
 
   defp chat_tab(assigns) do
     ~H"""
@@ -1991,6 +2024,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             filter={@media_filter}
             items={@media_items}
             has_more={@media_has_more}
+            loading={@media_loading}
             current_user_id={@current_user.id}
             sender_name_fn={&chat_message_sender_name/2}
             time_formatter_fn={&format_message_time/1}

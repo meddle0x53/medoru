@@ -1202,7 +1202,12 @@ defmodule Medoru.Learning do
         # Defensive fallback: if no component has enough related kanji yet,
         # pick a common one so callers always get a usable map.
         component = "口"
-        %{component: component, seed_kanji: nil, valid_kanji: Content.list_kanji_by_component(component)}
+
+        %{
+          component: component,
+          seed_kanji: nil,
+          valid_kanji: Content.list_kanji_by_component(component)
+        }
 
       result ->
         result

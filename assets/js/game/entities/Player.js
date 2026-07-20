@@ -427,7 +427,7 @@ export default class Player extends Character {
   // Total defense = base + shield base/scaling + shield kanji bonus + readiness bonus + charm bonus
   // NOTE: tempDefense is now a damage-absorption pool, not part of the damage-reduction formula.
   getTotalDefense() {
-    const readinessBonus = this.readiness > 0 ? 5 : 0
+    const readinessBonus = Math.floor((this.readiness || 0) * 7)
     const charmEffects = this.getCharmEffects()
     const charmDefense = charmEffects.defense || 0
     return this.baseDefense + this.calculateShieldDefense() + readinessBonus + charmDefense
@@ -457,7 +457,11 @@ export default class Player extends Character {
   }
 
   setReadiness(value) {
-    this.readiness = value
+    this.readiness = Math.max(0, Math.min(1, value))
+  }
+
+  addReadiness(delta) {
+    this.setReadiness((this.readiness || 0) + delta)
   }
 
   // ---------- Action Management ----------
@@ -516,7 +520,7 @@ export default class Player extends Character {
     const parryAction = this.activeActions.find(a => a.type === 'parry')
     const base = parryAction?.baseParryChance || 0.15
     const luckBonus = (this.luck || 0) / 100
-    const readinessBonus = (this.readiness || 0) * 0.10
+    const readinessBonus = (this.readiness || 0) * 0.20
     const quizBonus = this.lastReactionCorrect ? 0.10 : 0
     let chance = base + luckBonus + readinessBonus + quizBonus
     // Kanji quality bonus for the next charge

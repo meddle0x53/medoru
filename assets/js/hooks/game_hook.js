@@ -12,12 +12,47 @@ function loadScript(src) {
   })
 }
 
+function isMobile() {
+  return (
+    window.matchMedia('(pointer: coarse)').matches ||
+    'ontouchstart' in window ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  )
+}
+
+function tryEnterFullscreen() {
+  if (!isMobile() || document.fullscreenElement) return
+  const wrapper = document.getElementById('game-wrapper')
+  if (!wrapper) return
+  if (wrapper.requestFullscreen) {
+    wrapper.requestFullscreen().catch(() => {})
+  } else if (wrapper.webkitRequestFullscreen) {
+    wrapper.webkitRequestFullscreen()
+  }
+}
+
 const GameHook = {
   mounted() {
     this.fullscreenHandler = () => {
       window.game?.scale?.refresh?.()
     }
     document.addEventListener('fullscreenchange', this.fullscreenHandler)
+
+    // Lock the viewport on mobile so double-tap zoom doesn't break the game.
+    this.viewportMeta = document.querySelector('meta[name="viewport"]')
+    if (this.viewportMeta) {
+      this.originalViewport = this.viewportMeta.getAttribute('content')
+      this.viewportMeta.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+      )
+    }
+
+    // Auto-enter fullscreen on the first user interaction on touch devices.
+    this.firstInteractionHandler = () => {
+      tryEnterFullscreen()
+    }
+    document.addEventListener('pointerdown', this.firstInteractionHandler, { once: true })
 
     const el = this.el
     try {
@@ -30,10 +65,16 @@ const GameHook = {
     this.startIfReady()
   },
 
+  hideLoadingOverlay() {
+    const overlay = document.getElementById('game-loading-overlay')
+    if (overlay) overlay.remove()
+  },
+
   startIfReady() {
     if (window.Phaser && window.startTheHollowOuroboros) {
       this.destroyExisting()
       window.startTheHollowOuroboros()
+      this.hideLoadingOverlay()
       return
     }
 
@@ -73,6 +114,14 @@ const GameHook = {
     if (this.fullscreenHandler) {
       document.removeEventListener('fullscreenchange', this.fullscreenHandler)
       this.fullscreenHandler = null
+    }
+    if (this.firstInteractionHandler) {
+      document.removeEventListener('pointerdown', this.firstInteractionHandler)
+      this.firstInteractionHandler = null
+    }
+    if (this.viewportMeta && this.originalViewport) {
+      this.viewportMeta.setAttribute('content', this.originalViewport)
+      this.viewportMeta = null
     }
   },
 }

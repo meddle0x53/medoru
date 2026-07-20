@@ -231,9 +231,10 @@ export default class WordChallengeSystem {
     this.keyboardContainer = this.scene.add.container(0, 0)
     this.overlay.add(this.keyboardContainer)
 
-    const keySize = 36
-    const keyGap = 4
-    const startY = 170
+    // Smaller keys so the full keyboard (including Enter) fits on 540px screens.
+    const keySize = 26
+    const keyGap = 3
+    const startY = 166
 
     const rows = [
       ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -252,12 +253,12 @@ export default class WordChallengeSystem {
     })
 
     // Control row: backspace, hyphen, space, enter
-    const controlY = startY + rows.length * (keySize + keyGap) + 6
+    const controlY = startY + rows.length * (keySize + keyGap) + 4
     const controls = [
-      { label: '⌫', width: 56, key: 'BACKSPACE' },
-      { label: '-', width: 36, key: '-' },
-      { label: 'SPACE', width: 100, key: 'SPACE' },
-      { label: '⏎', width: 56, key: 'ENTER' },
+      { label: '⌫', width: 42, key: 'BACKSPACE' },
+      { label: '-', width: 26, key: '-' },
+      { label: 'SPACE', width: 78, key: 'SPACE' },
+      { label: '⏎', width: 42, key: 'ENTER' },
     ]
     const totalWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * keyGap
     let x = -totalWidth / 2

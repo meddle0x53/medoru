@@ -209,9 +209,9 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
       color: priceColor,
     }).setOrigin(0, 0.5))
 
-    // Buy button.
-    const btnWidth = 80
-    const btnHeight = 26
+    // Buy button — enlarged for mobile touch targets.
+    const btnWidth = 96
+    const btnHeight = 40
     const btnX = ROW_WIDTH / 2 - 25
     const btnColor = canAfford ? 0x9b59b6 : 0x555555
     const btnHover = canAfford ? 0x8e44ad : 0x555555

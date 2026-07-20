@@ -14,6 +14,7 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
   attr :filter, :string, required: true
   attr :items, :list, required: true
   attr :has_more, :boolean, required: true
+  attr :loading, :boolean, default: false
   attr :current_user_id, :string, required: true
   attr :sender_name_fn, :any, required: true
   attr :time_formatter_fn, :any, required: true
@@ -65,7 +66,11 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
         </div>
 
         <%!-- Media Grid --%>
-        <div class="flex-1 overflow-y-auto p-4">
+        <div
+          id="chat-media-folder-grid"
+          class="flex-1 overflow-y-auto p-4"
+          phx-viewport-bottom={if @has_more && !@loading, do: "load_more_media"}
+        >
           <%= if @items == [] do %>
             <div class="h-full flex flex-col items-center justify-center text-secondary">
               <.icon name="hero-folder-open" class="w-16 h-16 mb-4 opacity-40" />
@@ -202,13 +207,24 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
             </div>
 
             <%= if @has_more do %>
-              <div class="flex justify-center py-4">
+              <div id="chat-media-folder-load-more" class="flex justify-center py-6">
                 <button
+                  type="button"
                   phx-click="load_more_media"
-                  class="btn btn-ghost btn-sm text-secondary"
+                  disabled={@loading}
+                  class={[
+                    "btn btn-sm",
+                    @loading && "btn-ghost opacity-60 cursor-not-allowed",
+                    !@loading && "btn-outline btn-primary"
+                  ]}
                 >
-                  <.icon name="hero-arrow-down" class="w-3 h-3 mr-1" />
-                  {gettext("Load more media")}
+                  <%= if @loading do %>
+                    <span class="loading loading-spinner loading-sm mr-1"></span>
+                    {gettext("Loading...")}
+                  <% else %>
+                    <.icon name="hero-arrow-down" class="w-4 h-4 mr-1" />
+                    {gettext("Load more media")}
+                  <% end %>
                 </button>
               </div>
             <% end %>
