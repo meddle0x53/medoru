@@ -438,11 +438,6 @@ export default class KanjiDrawingSystem {
     ctx.fillStyle = pct > 0.5 ? '#2ecc71' : pct > 0.25 ? '#f39c12' : '#e74c3c'
     ctx.fillRect(5, s - bottomOffset, (s - bottomOffset) * pct, 5)
 
-    // Timer text
-    ctx.fillStyle = '#ecf0f1'
-    ctx.font = '12px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(`${(this.timeRemaining / 1000).toFixed(1)}s`, s / 2, s - 24)
   }
 
   _drawHintStroke() {

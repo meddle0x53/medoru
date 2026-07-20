@@ -159,6 +159,7 @@ export function getActionTypeColor(type) {
     case 'attack_defence': return { main: 0x16a085, hover: 0x1abc9c, label: 'ATK/DEF' }
     case 'infuse': return { main: 0x9b59b6, hover: 0xaf7ac5, label: 'INF' }
     case 'focus': return { main: 0x8e44ad, hover: 0x9b59b6, label: 'FCS' }
+    case 'stance': return { main: 0xe67e22, hover: 0xf39c12, label: 'STN' }
     default: return { main: 0x7f8c8d, hover: 0x95a5a6, label: '???' }
   }
 }

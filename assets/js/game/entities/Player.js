@@ -284,6 +284,11 @@ export default class Player extends Character {
     // Readiness: 0 = distracted, 1 = focused (set after End Turn word challenge)
     this.readiness = 0
 
+    // Stance multipliers: persist for the whole battle and stack multiplicatively.
+    // Taunt raises both; Zen lowers both.
+    this.stanceOutgoingMultiplier = 1
+    this.stanceIncomingMultiplier = 1
+
     // Reaction multiplier: applied during enemy attacks when a reaction challenge triggers
     // 1 = no effect, 2 = correct reaction (doubles readiness effect), 0.5 = wrong reaction (halves it)
     this.reactionMultiplier = 1
@@ -462,6 +467,27 @@ export default class Player extends Character {
 
   addReadiness(delta) {
     this.setReadiness((this.readiness || 0) + delta)
+  }
+
+  resetStanceMultipliers() {
+    this.stanceOutgoingMultiplier = 1
+    this.stanceIncomingMultiplier = 1
+  }
+
+  multiplyStanceOutgoing(factor) {
+    this.stanceOutgoingMultiplier = (this.stanceOutgoingMultiplier || 1) * factor
+  }
+
+  multiplyStanceIncoming(factor) {
+    this.stanceIncomingMultiplier = (this.stanceIncomingMultiplier || 1) * factor
+  }
+
+  getOutgoingDamageMultiplier() {
+    return super.getOutgoingDamageMultiplier() * (this.stanceOutgoingMultiplier || 1)
+  }
+
+  getIncomingDamageMultiplier() {
+    return super.getIncomingDamageMultiplier() * (this.stanceIncomingMultiplier || 1)
   }
 
   // ---------- Action Management ----------

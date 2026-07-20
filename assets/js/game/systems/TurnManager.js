@@ -469,6 +469,11 @@ export default class TurnManager {
         result = { type: 'focus' }
         break
       }
+      case 'stance': {
+        // Stance multipliers are applied during the kanji challenge phase in BattleScene.
+        result = { type: 'stance' }
+        break
+      }
       default:
         result = { type: 'none' }
     }

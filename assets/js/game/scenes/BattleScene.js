@@ -59,6 +59,7 @@ export default class BattleScene extends Phaser.Scene {
     this.player = passedPlayer || new Player(userData)
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.clearActiveEffects() // clear status effects from previous fight
+    this.player.resetStanceMultipliers() // stance multipliers last one battle only
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.player.block = 0 // block from previous battle must not carry over
     this.player.tempDefense = 0 // setup defence from previous battle must not carry over
@@ -596,6 +597,16 @@ export default class BattleScene extends Phaser.Scene {
     if (armor > 0) rows.push({ label: 'Armor', value: armor, color: '#f39c12' })
     rows.push({ label: 'Readiness', value: `${Math.round(readiness * 100)}%`, color: '#9b59b6' })
 
+    const outgoingStance = this.player.stanceOutgoingMultiplier || 1
+    const incomingStance = this.player.stanceIncomingMultiplier || 1
+    if (outgoingStance !== 1 || incomingStance !== 1) {
+      rows.push({
+        label: 'Stance',
+        value: `x${outgoingStance.toFixed(2)} / x${incomingStance.toFixed(2)}`,
+        color: '#e67e22',
+      })
+    }
+
     for (const buff of this.player.buffs || []) {
       rows.push({ label: 'Buff', value: buff.type, color: '#9b59b6' })
     }
@@ -612,7 +623,7 @@ export default class BattleScene extends Phaser.Scene {
 
     if (rows.length === 0) return
 
-    const width = 160
+    const width = 180
     const rowHeight = 22
     const padding = 14
     const height = padding * 2 + 18 + rows.length * rowHeight
@@ -2846,6 +2857,32 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Taunt and Zen are whole-battle stances resolved with a kanji challenge.
+    if (skill.type === 'stance') {
+      if (skill.id === 'taunt') {
+        this.startStanceAbilityChallenge(skill, {
+          label: 'Taunt',
+          basePlayerMult: 1.5,
+          baseEnemyMult: 1.5,
+          passPlayerMult: 1.7,
+          passEnemyMult: 1.4,
+          failPlayerMult: 1.3,
+          failEnemyMult: 1.7,
+        })
+      } else if (skill.id === 'zen') {
+        this.startStanceAbilityChallenge(skill, {
+          label: 'Zen',
+          basePlayerMult: 1 / 1.5,
+          baseEnemyMult: 1 / 1.5,
+          passPlayerMult: 1 / 1.7,
+          passEnemyMult: 1 / 1.5,
+          failPlayerMult: 1 / 1.3,
+          failEnemyMult: 1 / 1.5,
+        })
+      }
+      return
+    }
+
     // Fallback: typing challenge for other skills
     this.typedInput = ''
     this.currentChallenge = this.challengeSystem.getChallengeForSkill(skill)
@@ -2862,6 +2899,91 @@ export default class BattleScene extends Phaser.Scene {
     this.challengePrompt.setText(this.currentChallenge.prompt)
     this.challengeInput.setText('')
     this.challengeOverlay.setVisible(true)
+  }
+
+  startStanceAbilityChallenge(skill, cfg) {
+    const challengeCfg = skill.kanjiChallenge || {}
+
+    const finish = (playerMult, enemyMult, logMsg) => {
+      this.player.multiplyStanceOutgoing(playerMult)
+      this.player.multiplyStanceIncoming(enemyMult)
+      this.challengeActive = false
+      this.setSkillButtonsEnabled(true)
+      this.endTurnBtn.setVisible(true)
+      this.addCombatLog(logMsg)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `${cfg.label} x${playerMult.toFixed(2)}`, cfg.label === 'Zen' ? 0x3498db : 0xe67e22)
+      this.executeSkill('success')
+    }
+
+    // 40% chance to skip the challenge entirely.
+    const skipChance = challengeCfg.skipChance ?? 0.4
+    if (skipChance > 0 && Math.random() < skipChance) {
+      finish(cfg.basePlayerMult, cfg.baseEnemyMult, `${cfg.label} takes hold. Player x${cfg.basePlayerMult.toFixed(2)}, enemy x${cfg.baseEnemyMult.toFixed(2)}`)
+      return
+    }
+
+    // Pick a kanji from the stance pool; 20% chance to use the focus kanji instead.
+    const pool = skill.kanjiPool || []
+    const focusOverrideChance = challengeCfg.focusOverrideChance ?? 0.2
+    const focusKanjiData = this.player.loadout.focusKanjiData
+    let selectedKanjiData = null
+
+    if (focusKanjiData && focusOverrideChance > 0 && Math.random() < focusOverrideChance && focusKanjiData.stroke_data?.strokes?.length > 0) {
+      selectedKanjiData = focusKanjiData
+    } else {
+      const allKanji = getWindowGameData()?.all_kanji || []
+      const candidates = pool
+        .map(char => {
+          const fromList = this.player.kanjiList.find(k => k.character === char)
+          if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+          const fromAll = allKanji.find(k => k.character === char)
+          if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+          return null
+        })
+        .filter(Boolean)
+      if (candidates.length > 0) {
+        selectedKanjiData = candidates[Math.floor(Math.random() * candidates.length)]
+      }
+    }
+
+    // No usable stroke data: apply the base multiplier.
+    if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+      finish(cfg.basePlayerMult, cfg.baseEnemyMult, `${cfg.label} takes hold. Player x${cfg.basePlayerMult.toFixed(2)}, enemy x${cfg.baseEnemyMult.toFixed(2)}`)
+      return
+    }
+
+    const strokeData = selectedKanjiData.stroke_data
+    const totalStrokes = strokeData.strokes.length
+    const failThreshold = challengeCfg.failThreshold === 'halfUp'
+      ? Math.ceil(totalStrokes / 2)
+      : (typeof challengeCfg.failThreshold === 'number' ? challengeCfg.failThreshold : Math.ceil(totalStrokes / 2))
+
+    this.challengeActive = true
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
+
+    this.startKanjiDrawingChallenge(strokeData, `${cfg.label}! Draw ${selectedKanjiData.character}:`, {
+      onComplete: (result) => {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+
+        const passed = result.completed && result.wrongStrokes < failThreshold
+        if (passed) {
+          finish(cfg.passPlayerMult, cfg.passEnemyMult, `${selectedKanjiData.character} drawn! ${cfg.label} intensified. Player x${cfg.passPlayerMult.toFixed(2)}, enemy x${cfg.passEnemyMult.toFixed(2)}`)
+        } else {
+          finish(cfg.failPlayerMult, cfg.failEnemyMult, `${selectedKanjiData.character} failed! ${cfg.label} weakened. Player x${cfg.failPlayerMult.toFixed(2)}, enemy x${cfg.failEnemyMult.toFixed(2)}`)
+        }
+      },
+      onWrongStroke: ({ count }) => {
+        this.spawnFloatingText(
+          GAME_CONFIG.width / 2,
+          GAME_CONFIG.height / 2 - 180,
+          `Wrong stroke! (${count})`,
+          COLORS.danger
+        )
+      },
+    }, selectedKanjiData)
   }
 
   submitChallenge() {

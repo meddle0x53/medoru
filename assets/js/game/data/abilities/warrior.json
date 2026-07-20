@@ -420,18 +420,64 @@
       "id": "taunt",
       "name": "Taunt",
       "nameJa": "挑発",
-      "description": "Force the enemy to target you and lower their defense.",
-      "type": "debuff",
+      "description": "Enter a provocative stance for the rest of the battle. Player damage x1.5, enemy damage x1.5. Stacks multiplicatively. A kanji challenge can raise player damage to x1.7 (pass) or lower it to x1.3 (fail).",
+      "type": "stance",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
-      "staminaCost": 2,
+      "staminaCost": 5,
       "kanji": "挑",
-      "rarity": "common",
-      "lifecycle": {
-        "onUse": [
-          "applyTaunt"
-        ]
+      "kanjiPool": [
+        "挑",
+        "煽",
+        "誘",
+        "嘲",
+        "罵"
+      ],
+      "rarity": "uncommon",
+      "kanjiChallenge": {
+        "skipChance": 0.4,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "outcomes": {
+          "skipped": { "challengeResult": "success" },
+          "fallback": { "challengeResult": "success" },
+          "pass": { "challengeResult": "success" },
+          "fail": { "challengeResult": "fail" }
+        }
+      },
+      "effects": [],
+      "singleUse": true
+    },
+    {
+      "id": "zen",
+      "name": "Zen",
+      "nameJa": "禅",
+      "description": "Enter a calm stance for the rest of the battle. Player damage /1.5, enemy damage /1.5. Stacks multiplicatively and cancels Taunt. A kanji challenge can deepen the calm to /1.7 player (pass) or /1.3 player (fail).",
+      "type": "stance",
+      "element": "physical",
+      "equipmentType": null,
+      "requiredEquipment": null,
+      "staminaCost": 5,
+      "kanji": "禅",
+      "kanjiPool": [
+        "禅",
+        "悟",
+        "静",
+        "無",
+        "和"
+      ],
+      "rarity": "uncommon",
+      "kanjiChallenge": {
+        "skipChance": 0.4,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "outcomes": {
+          "skipped": { "challengeResult": "success" },
+          "fallback": { "challengeResult": "success" },
+          "pass": { "challengeResult": "success" },
+          "fail": { "challengeResult": "fail" }
+        }
       },
       "effects": [],
       "singleUse": true
