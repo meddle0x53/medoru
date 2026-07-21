@@ -1,5 +1,5 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
-import { ALL_ACTIONS, getActionTypeColor, getMaxOverallAbilities, getMaxBattlePoolActions } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxOverallAbilities, getMaxBattlePoolActions } from '../data/actions.js'
 import { ITEMS } from '../data/items.js'
 import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
@@ -66,7 +66,7 @@ export default class WinScene extends Phaser.Scene {
   generateAbilityRewards() {
     const pool = getRewardPool(this.player)
     const count = 3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0)
-    return pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
+    return pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [], this.tile)
   }
 
   applyDrops() {
@@ -230,7 +230,7 @@ export default class WinScene extends Phaser.Scene {
     // learned ability doesn't keep showing up.
     const pool = getRewardPool(this.player)
     const count = this.rewardAbilities.length
-    this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [])
+    this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [], this.tile)
     this.createAbilityRewards()
   }
 
@@ -242,7 +242,7 @@ export default class WinScene extends Phaser.Scene {
 
   createAbilityCard(x, y, w, h, action) {
     const container = this.add.container(x, y)
-    const colors = getActionTypeColor(action.type)
+    const colors = getAbilityRarityColor(action.rarity)
 
     const bg = this.add.graphics()
     bg.fillStyle(0x16213e, 0.95)

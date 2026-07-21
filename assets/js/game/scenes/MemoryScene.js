@@ -424,7 +424,7 @@ export default class MemoryScene extends Phaser.Scene {
     if (combatCount >= 10) return null
 
     const pool = getRewardPool(this.player)
-    const picks = pickRewardAbilities(pool, 1, this.player.loadout?.knownActionIds || [])
+    const picks = pickRewardAbilities(pool, 1, this.player.loadout?.knownActionIds || [], this.tile)
     if (!picks || picks.length === 0) return null
 
     const action = ALL_ACTIONS.find((a) => a.id === picks[0])

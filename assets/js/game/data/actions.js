@@ -146,6 +146,8 @@ export function splitActions(player) {
 
 /**
  * Get the color config for an action type.
+ * The label is still used in some debug/tooltip contexts, but the main
+ * player-facing ability color is now driven by rarity (see getAbilityRarityColor).
  */
 export function getActionTypeColor(type) {
   switch (type) {
@@ -160,6 +162,22 @@ export function getActionTypeColor(type) {
     case 'infuse': return { main: 0x9b59b6, hover: 0xaf7ac5, label: 'INF' }
     case 'focus': return { main: 0x8e44ad, hover: 0x9b59b6, label: 'FCS' }
     case 'stance': return { main: 0xe67e22, hover: 0xf39c12, label: 'STN' }
+    case 'dash': return { main: 0x27ae60, hover: 0x2ecc71, label: 'DSH' }
     default: return { main: 0x7f8c8d, hover: 0x95a5a6, label: '???' }
+  }
+}
+
+/**
+ * Get the color config for an ability based on its rarity.
+ * Common = purple, uncommon = copper, rare = silver, epic = gold.
+ */
+export function getAbilityRarityColor(rarity) {
+  switch (rarity) {
+    case 'uncommon': return { main: 0xb87333, hover: 0xd98c52 }
+    case 'rare': return { main: 0xbdc3c7, hover: 0xecf0f1 }
+    case 'epic': return { main: 0xf1c40f, hover: 0xf4d03f }
+    case 'common':
+    case 'normal':
+    default: return { main: 0x8e44ad, hover: 0x9b59b6 }
   }
 }

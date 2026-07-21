@@ -1,11 +1,12 @@
 /**
  * Post-battle ability reward pools.
  * Reward abilities are class and equipment based.
- * All rewards are currently rarity 'normal'.
+ * Rarity weights now scale by map column and tile type.
  */
 
 import ABILITY_FAMILIES from './abilityFamilies.json'
 import { ALL_ACTIONS } from './actions.js'
+import { TILE_TYPES } from './tileTypes.js'
 
 export const ABILITY_REWARDS = {
   warrior: {
@@ -27,6 +28,44 @@ export const ABILITY_REWARDS = {
     class: [],
     family: {},
   },
+}
+
+/**
+ * Rarity weights for normal battles and memory challenges based on map column.
+ */
+const COLUMN_RARITY_WEIGHTS = {
+  low: { common: 0.70, uncommon: 0.15, rare: 0.10, epic: 0.05 },
+  midLow: { common: 0.60, uncommon: 0.20, rare: 0.15, epic: 0.05 },
+  midHigh: { common: 0.50, uncommon: 0.25, rare: 0.20, epic: 0.05 },
+  high: { common: 0.40, uncommon: 0.30, rare: 0.20, epic: 0.10 },
+}
+
+/**
+ * Return rarity weights for an ability reward based on the tile that generated it.
+ * Normal battles / memory challenges use column-based scaling.
+ * Mini-boss and boss tiles use fixed weights.
+ * Returns null if no tile is provided (caller falls back to uniform random).
+ */
+export function getRarityWeightsForTile(tile) {
+  if (!tile) return null
+
+  if (tile.type === TILE_TYPES.BOSS) {
+    return { common: 0, uncommon: 0.30, rare: 0.30, epic: 0.40 }
+  }
+  if (tile.type === TILE_TYPES.MINI_BOSS) {
+    return { common: 0.20, uncommon: 0.30, rare: 0.30, epic: 0.20 }
+  }
+
+  const col = tile.col ?? 0
+  if (col <= 2) return COLUMN_RARITY_WEIGHTS.low
+  if (col <= 4) return COLUMN_RARITY_WEIGHTS.midLow
+  if (col <= 6) return COLUMN_RARITY_WEIGHTS.midHigh
+  return COLUMN_RARITY_WEIGHTS.high
+}
+
+function mapAbilityRarity(rarity) {
+  if (rarity === 'normal') return 'common'
+  return rarity || 'common'
 }
 
 /**
@@ -73,13 +112,40 @@ export function getRewardPool(playerOrClass = 'warrior', weaponName, shieldName)
  * Pick a set of reward ability IDs.
  * Guarantees variety by drawing at least one ability from each available
  * category (weapon/shield/class) before filling the rest from the full pool.
+ * If a tile is provided, abilities are weighted by their rarity using the
+ * tile's column and type.
  */
 function isSingleUseAbility(id) {
   const action = ALL_ACTIONS.find(a => a.id === id)
   return action?.singleUse === true
 }
 
-export function pickRewardAbilities(pool, count, alreadyKnownIds = []) {
+function weightedPickId(ids, weights) {
+  if (!weights) {
+    return ids[Math.floor(Math.random() * ids.length)]
+  }
+
+  const entries = ids.map(id => {
+    const action = ALL_ACTIONS.find(a => a.id === id)
+    const rarity = mapAbilityRarity(action?.rarity)
+    return { id, weight: weights[rarity] || 0 }
+  })
+
+  const total = entries.reduce((sum, e) => sum + e.weight, 0)
+  if (total <= 0) {
+    return ids[Math.floor(Math.random() * ids.length)]
+  }
+
+  let roll = Math.random() * total
+  for (const entry of entries) {
+    roll -= entry.weight
+    if (roll <= 0) return entry.id
+  }
+  return entries[entries.length - 1].id
+}
+
+export function pickRewardAbilities(pool, count, alreadyKnownIds = [], tile = null) {
+  const weights = getRarityWeightsForTile(tile)
   const known = new Set(alreadyKnownIds)
   const picks = []
   // Single-use abilities can be rewarded again to add charges; multi-use abilities are only offered once.
@@ -91,31 +157,19 @@ export function pickRewardAbilities(pool, count, alreadyKnownIds = []) {
   // Round 1: one pick from each category so rewards feel varied
   for (const cat of categories) {
     if (picks.length >= count) break
-    const options = shuffle(pool[cat].filter(isEligible).filter(notPicked))
-    if (options.length > 0) {
-      picks.push(options[0])
-    }
+    const options = pool[cat].filter(isEligible).filter(notPicked)
+    if (options.length === 0) continue
+    picks.push(weightedPickId(options, weights))
   }
 
   // Round 2: fill remaining slots from all remaining eligible abilities
-  const allOptions = shuffle(
-    [...pool.weapon, ...pool.shield, ...pool.class]
+  while (picks.length < count) {
+    const allOptions = [...pool.weapon, ...pool.shield, ...pool.class]
       .filter(isEligible)
       .filter(notPicked)
-  )
-
-  while (picks.length < count && allOptions.length > 0) {
-    picks.push(allOptions.shift())
+    if (allOptions.length === 0) break
+    picks.push(weightedPickId(allOptions, weights))
   }
 
   return picks
-}
-
-function shuffle(array) {
-  const arr = [...array]
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
-  }
-  return arr
 }

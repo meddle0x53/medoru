@@ -86,8 +86,15 @@ export default class TurnManager {
   _calculateSwordBuffBonus(performer, skill) {
     const swordBuff = performer.buffs.find(b => b.type === 'sword_damage_bonus')
     if (!swordBuff || skill.equipmentType !== 'weapon') return 0
+
+    const strokes = typeof swordBuff.kanjiStrokes === 'number' ? swordBuff.kanjiStrokes : performer.lastKanjiStrokes
     const wrongStrokes = typeof swordBuff.wrongStrokes === 'number' ? swordBuff.wrongStrokes : performer.lastKanjiWrongStrokes
-    if (wrongStrokes >= 4) return 0
+
+    // Bonus quality depends on both kanji complexity (strokes) and drawing accuracy.
+    // More strokes = higher potential bonus; mistakes reduce it more harshly on simple kanji.
+    // floor(strokes / 2) mistakes wipes out the bonus; a 1-stroke kanji can survive one mistake.
+    const maxMistakes = Math.max(1, Math.floor(strokes / 2))
+    const quality = Math.max(0, Math.min(1, strokes / 12 - wrongStrokes / maxMistakes))
 
     const skillValue = this._getSkillValue(performer)
     const first = Math.min(skillValue, 40)
@@ -95,11 +102,9 @@ export default class TurnManager {
     const third = Math.max(0, Math.min(skillValue, 80) - 60)
     const fourth = Math.max(0, skillValue - 80)
 
-    if (wrongStrokes === 0) {
-      return Math.floor(first + second / 2 + third / 3 + fourth / 4)
-    }
-    // 1-3 wrong strokes
-    return Math.floor(first / 2 + second / 3 + third / 4 + fourth / 5)
+    // Keep the original skill scaling, but the final bonus is half of what it used to be.
+    const baseBonus = first + second / 2 + third / 3 + fourth / 4
+    return Math.floor((baseBonus * quality) / 2)
   }
 
   _getStatValue(performer, stat) {
@@ -349,15 +354,19 @@ export default class TurnManager {
           const wrongStrokes = typeof performer.lastKanjiWrongStrokes === 'number'
             ? performer.lastKanjiWrongStrokes
             : 99
+          const kanjiStrokes = typeof performer.lastKanjiStrokes === 'number'
+            ? performer.lastKanjiStrokes
+            : 0
           const remainingTurns = this._resolveBuffDuration(skill.config, performer, wrongStrokes)
           if (remainingTurns === null) {
             // No duration configured: legacy infinite buff.
-            performer.addBuff({ type: skill.buffType, value: 0, wrongStrokes })
+            performer.addBuff({ type: skill.buffType, value: 0, wrongStrokes, kanjiStrokes })
           } else if (remainingTurns > 0) {
             performer.addBuff({
               type: skill.buffType,
               value: 0,
               wrongStrokes,
+              kanjiStrokes,
               remainingTurns,
               appliedThisTurn: true,
             })
@@ -472,6 +481,11 @@ export default class TurnManager {
       case 'stance': {
         // Stance multipliers are applied during the kanji challenge phase in BattleScene.
         result = { type: 'stance' }
+        break
+      }
+      case 'dash': {
+        // Dash reflex bonus is applied during the kanji challenge phase in BattleScene.
+        result = { type: 'dash' }
         break
       }
       default:

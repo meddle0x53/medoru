@@ -1,7 +1,7 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
-import { ALL_ACTIONS, getActionTypeColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions } from '../data/actions.js'
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
@@ -1266,7 +1266,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
   createAbilityRow(x, y, action, rowH, isAvailable = true) {
     const container = this.add.container(x, y)
-    const colors = getActionTypeColor(action.type)
+    const colors = getAbilityRarityColor(action.rarity)
     const rowW = 460
     const isInBattle = this.player.loadout.selectedActionIds.includes(action.id)
     const isActive = this.player.loadout.activeActionIds.includes(action.id)

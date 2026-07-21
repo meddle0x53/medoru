@@ -1,201 +1,732 @@
-# Plan: Medoru Mobile API (`/api/v1`) and `/m` Chat PWA
+# Implementation Plan: Medoru 0.10.0 — `/m` TypeScript SPA/PWA + Capacitor Native Packages
 
-**Goal:** Build a standalone mobile-first chat PWA at `/m` backed by a new Phoenix REST API (`/api/v1`), without breaking the existing site or PWA. The first release covers 1-1 and group chats only; classroom chats come later with the classroom selector.
+**Goal:** Build a standalone TypeScript SPA/PWA at `/m` backed by `/api/v1` REST and Phoenix Channels, then package the same frontend with Capacitor for iOS/Android. The existing site and PWA at `/` remain untouched.
 
-**Non-goal for this plan:** Classroom mode, offline sync, Apple/email auth, store submission.
+**Target architecture:**
+- Browser `/m` PWA: Phoenix session-cookie auth, Web Push, service worker.
+- Native iOS/Android packages (Capacitor): OAuth PKCE → JWT access + DB refresh tokens, APNs/FCM push.
+- REST (`/api/v1`) for commands and history.
+- Phoenix Channels for real-time events.
 
----
+**Scope for 0.10.0:** 1-1 and group chats. Classroom chats, full offline sync, and store submission are out of scope for the initial release.
 
-## Architecture Decisions
-
-1. **API is REST + OpenAPI 3**, served by `open_api_spex`. Swagger UI at `/api/swagger`.
-2. **Auth uses the existing session cookie**, not API tokens. The `/m` PWA is a first-party client, so cookie-based auth is simpler and secure. API tokens remain for third-party integrations.
-3. **Real-time chat uses existing Phoenix PubSub / LiveView channels**, not a separate WebSocket API. The `/m` PWA connects to the same `chat:<conversation_id>` topics the desktop site uses.
-4. **End-to-end encryption stays in the client.** The API transports ciphertext; the `/m` PWA reuses or ports the existing `chat_crypto.js` logic.
-5. **File uploads reuse `ChatUploadController`** under `/api/v1/chat/upload`.
-6. **The existing site is untouched.** New code is isolated to `/api/v1/*` routes and `/m/*` LiveView routes. The existing manifest and service worker stay at `/`; `/m` gets its own manifest and scoped service worker.
+**Critical constraint:** The existing browser chat at `/messages` is **not modified**. The mobile app interoperates with it by calling the same `Medoru.Chat` context functions and by subscribing to the existing `chat:<conversation_id>` Phoenix.PubSub topics through a new, thin channel adapter. Desktop users and mobile users chat with each other transparently.
 
 ---
 
-## Phase 1: API Foundation
+## Phase 0: Foundation
 
-### 1.1 Add dependencies
-- Add `open_api_spex` to `mix.exs` and run `mix deps.get`.
+### 0.1 Version bump
+- Update `mix.exs` `version` to `0.10.0`.
+- Update `releases` version to match.
 
-### 1.2 Create the API pipeline and router
-- Add a new pipeline `:mobile_api` in `lib/medoru_web/router.ex`:
-  - `plug :accepts, ["json"]`
-  - `plug :fetch_session`
-  - `plug :put_secure_browser_headers`
-  - `plug MedoruWeb.UserAuth, :fetch_current_user`
-- Add a new scope `/api/v1` under `MedoruWeb.API` namespace.
-- Add `/api/swagger` route for Swagger UI.
+### 0.2 Dependencies
 
-### 1.3 Auth endpoint
-- `GET /api/v1/me` — returns current user (id, email, name, avatar, profile).
-- `POST /api/v1/auth/logout` — clears session.
-- Reuse Google OAuth at `/auth/google/callback`; after login redirect to `/m` when a `?mobile=true` param is present.
+Add to `mix.exs`:
+- `{:open_api_spex, "~> 3.21"}` — OpenAPI specs.
+- `{:pigeon, "~> 2.0"}` — APNs/FCM push for native packages.
+- `{:kadabra, "~> 0.6"}` — HTTP/2 adapter for Pigeon (APNs).
+- `{:jose, "~> 1.11"}` — JWT signing/verification.
+- `{:hammer, "~> 6.1"}` — rate limiting.
+- `{:hammer_backend_mnesia, "~> 0.6"}` — default Hammer backend for development. Use `hammer_backend_redis` in production for multi-node deployments.
 
-### 1.4 Conversation endpoints
-- `GET /api/v1/conversations` — list 1-1 and group conversations for current user, with last message metadata, unread count, and participant info.
-- `POST /api/v1/conversations` — create a 1-1 or group conversation.
-- `GET /api/v1/conversations/:id` — conversation details + participants + current user’s keys.
-- `GET /api/v1/conversations/:id/messages?limit=&offset=` — paginated messages (ciphertext, plaintext, attachments, reactions).
-- `POST /api/v1/conversations/:id/messages` — send encrypted or plaintext message, with optional attachment metadata and `reply_to_message_id`.
-- `DELETE /api/v1/conversations/:id/messages/:message_id` — delete own message.
-- `PATCH /api/v1/conversations/:id/messages/:message_id` — edit own plaintext message.
-- `POST /api/v1/conversations/:id/read` — mark conversation as read.
+Add to `assets/m/package.json` (new Vite/Svelte mobile project):
+- `vite`, `@sveltejs/vite-plugin-svelte`, `svelte`, `typescript`, `@types/node`, `phoenix`.
+- `@capacitor/core`, `@capacitor/cli`, `@capacitor/preferences`, `@capacitor/push-notifications`, `@capacitor/browser`, `@capacitor/splash-screen`, `@capacitor/status-bar`.
+- `@aparajita/capacitor-secure-storage` — encrypted storage for refresh tokens.
 
-### 1.5 Reaction endpoints
-- `POST /api/v1/conversations/:id/messages/:message_id/reactions` — add reaction.
-- `DELETE /api/v1/conversations/:id/messages/:message_id/reactions/:emoji` — remove reaction.
+Run `mix deps.get` and `npm install` in `assets/m`.
 
-### 1.6 Attachment endpoint
-- `POST /api/v1/chat/upload` — wraps existing `ChatUploadController.create/2` logic for API clients.
-
-### 1.7 Special-command lookup endpoints
-- `GET /api/v1/words/lookup?text=` — for `/word` and `/w` commands.
-- `GET /api/v1/kanji/lookup?character=` — for `/kanji` and `/k` commands.
-- `GET /api/v1/grammars/lookup?pattern=` — for `/grammar` and `/g` commands.
-
-### 1.8 OpenAPI schemas and specs
-- Define request/response schemas in `lib/medoru_web/api/schemas.ex`.
-- Define operation specs on each API controller action.
-- Mount Swagger UI at `/api/swagger`.
+### 0.3 Green baseline
+- Run `mix compile`, `mix test`, `mix assets.build`.
 
 ---
 
-## Phase 2: `/m` PWA Chat Shell
+## Phase 1: `/api/v1` REST API
 
-### 2.1 New mobile layout and assets
-- Create `lib/medoru_web/components/layouts/mobile.html.heex` — minimal shell with no desktop chrome, safe-area insets, and bottom tab bar.
-- Create `assets/js/m_app.js` and `assets/css/m_app.css` for the mobile bundle.
-- Update `config/config.exs` (or `assets/esbuild.config.js`) to build the new bundle.
-- Create `/m/manifest.json` and `/m/service-worker.js` scoped to `/m/*`.
+### 1.1 Internal namespace
 
-### 2.2 Mobile router scope
-- Add `/m` scope in `lib/medoru_web/router.ex` with a `:mobile` pipeline:
-  - Reuses `:browser` but renders the mobile layout.
-  - Requires authenticated user.
-- Routes:
-  - `live "/m", Mobile.ChatLive.Index` — conversation list.
-  - `live "/m/conversations/:id", Mobile.ChatLive.Show` — chat view.
-  - `live "/m/login", Mobile.AuthLive.Login` — mobile login (redirects to Google OAuth).
-  - `live "/m/settings", Mobile.SettingsLive.Index` — minimal settings (logout, profile).
+Use `MedoruWeb.API.V1` for all controllers, schemas, specs, and plugs. Later V2 becomes `MedoruWeb.API.V2` without renaming existing modules.
 
-### 2.3 Login flow
-- Mobile login page shows Google button.
-- Button goes to `/auth/google?mobile=true`.
-- `AuthController.callback/2` checks for mobile param and redirects to `/m` after successful login.
-- Session cookie is shared across `/` and `/m`.
+### 1.2 Unified authentication plug
 
-### 2.4 Conversation list (`Mobile.ChatLive.Index`)
-- Fetch conversations from `/api/v1/conversations` via `Req` or `fetch`.
-- Display messenger-style list: avatar, name, last message preview, timestamp, unread badge.
-- Pull-to-refresh support.
-- Floating “New chat” button.
+Create `lib/medoru_web/api/v1/plugs/authenticate.ex`:
 
-### 2.5 Chat view (`Mobile.ChatLive.Show`)
-- Load messages via `/api/v1/conversations/:id/messages`.
-- Join the existing `chat:<conversation_id>` channel for real-time new messages, edits, deletes, reactions, typing, and read receipts.
-- Reuse or port `chat_crypto.js` functions for E2E encrypt/decrypt and key management.
-- Support:
-  - Sending plaintext and encrypted messages.
-  - Attachments (image, voice, audio, video, document) via `/api/v1/chat/upload`.
-  - Voice recording using the media recorder API.
-  - Reactions.
-  - Reply-to.
-  - Edit/delete own messages.
-  - Link previews.
-  - Special commands (`/word`, `/kanji`, `/grammar`) using lookup endpoints.
-  - Typing indicators and read receipts via the channel.
-- Media folder with the same pagination component used on desktop.
+```elixir
+defmodule MedoruWeb.API.V1.Plugs.Authenticate do
+  @moduledoc """
+  Authenticates mobile API requests.
+  First tries the Phoenix session cookie, then falls back to Bearer token.
+  """
+  import Plug.Conn
 
-### 2.6 Push notifications
-- Reuse existing push subscription API (`/api/push-subscribe`).
-- Service worker handles notification click to open `/m/conversations/:id`.
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    with nil <- current_user_from_session(conn),
+         nil <- current_user_from_bearer(conn) do
+      conn
+      |> put_status(401)
+      |> Phoenix.Controller.json(%{
+        error: %{code: "unauthenticated", message: "Authentication required.", details: %{}}
+      })
+      |> halt()
+    else
+      user ->
+        assign(conn, :current_scope, %{
+          current_user: user,
+          locale: conn.assigns[:locale] || "en"
+        })
+    end
+  end
+
+  defp current_user_from_session(conn) do
+    # reuse MedoruWeb.UserAuth.fetch_current_user logic
+  end
+
+  defp current_user_from_bearer(conn) do
+    case get_req_header(conn, "authorization") do
+      ["Bearer " <> token] -> verify_access_token(token)
+      _ -> nil
+    end
+  end
+end
+```
+
+Create `lib/medoru_web/api/v1/router.ex` or add directly in `lib/medoru_web/router.ex`:
+
+```elixir
+pipeline :mobile_api do
+  plug :accepts, ["json"]
+  plug :put_secure_browser_headers
+  plug MedoruWeb.API.V1.Plugs.Authenticate
+end
+
+scope "/api/v1", MedoruWeb.API.V1 do
+  pipe_through :mobile_api
+
+  get "/me", MeController, :show
+  post "/auth/logout", MeController, :logout
+  post "/auth/refresh", AuthController, :refresh
+  get "/socket_token", AuthController, :socket_token
+
+  resources "/conversations", ConversationController, only: [:index, :create, :show]
+  resources "/conversations/:conversation_id/messages", MessageController, only: [:index, :create, :update, :delete]
+  post "/conversations/:conversation_id/read", MessageController, :read
+
+  post "/conversations/:conversation_id/messages/:message_id/reactions", ReactionController, :create
+  delete "/conversations/:conversation_id/messages/:message_id/reactions/:emoji", ReactionController, :delete
+
+  post "/uploads", UploadController, :create
+  get "/uploads/:id", UploadController, :show
+
+  get "/words/lookup", LookupController, :word
+  get "/kanji/lookup", LookupController, :kanji
+  get "/grammars/lookup", LookupController, :grammar
+
+  post "/push/token", PushController, :register_token
+  delete "/push/token", PushController, :delete_token
+end
+```
+
+### 1.3 Rate limiting
+
+Configure `Hammer` in `config/config.exs`:
+
+```elixir
+config :hammer,
+  backend: {Hammer.Backend.Mnesia, [expiry_ms: 60_000, cleanup_interval_ms: 120_000]}
+```
+
+Create `lib/medoru_web/api/v1/plugs/rate_limit.ex`:
+
+- Keyed by `current_user.id` when authenticated, or `conn.remote_ip` when not.
+- Limits:
+  - login/refresh: 10/minute
+  - uploads: 10/minute
+  - messages: 120/minute
+  - lookups: 60/minute
+  - default: 300/minute
+- Returns 429 with `Retry-After` header.
+
+Apply rate limiting in `:mobile_api` pipeline after auth.
+
+### 1.4 OpenAPI spec & schemas
+
+Create:
+- `lib/medoru_web/api/v1/spec.ex` — `OpenApi` implementation with `cookieAuth` and `bearerAuth` security schemes.
+- `lib/medoru_web/api/v1/schemas.ex` — User, Conversation, Participant, Message, Reaction, Error, lookup results, paginated list wrapper.
+
+### 1.5 JWT access tokens
+
+Create `lib/medoru/tokens.ex`:
+
+- `generate_access_token(user_id, jti)` — signs a JWT with `sub`, `jti`, `iat`, `exp` (5 minutes).
+- `verify_access_token(token)` — verifies signature, expiry, and revocation list.
+- `revoke_access_token(jti)` — adds JTI to a short-lived ETS/Redis revocation set (or rely on short expiry).
+
+Use `JOSE.JWT`/`JOSE.JWS` with a secret from `config/runtime.exs`.
+
+### 1.5.1 Socket tokens
+
+Socket tokens are **not** JWTs. Create a short-lived, random token stored in ETS:
+
+- `Tokens.create_socket_token(user_id)` — generate 256-bit random string, store `{token, user_id, expires_at}` in ETS, return token.
+- `Tokens.verify_socket_token(token)` — lookup in ETS, delete on use or expiry, return `{:ok, user_id}` or `:error`.
+- TTL: 2 minutes.
+- Endpoint: `GET /api/v1/socket_token` returns `%{token: "..."}`.
+
+One practical note before coding: make the socket-token ETS table supervised and explicitly document whether tokens are single-use. Your plan implies single-use because verification deletes them; that is a good default.
+
+### 1.6 Native device & refresh tokens
+
+Create migration:
+
+```elixir
+create table(:native_devices, primary_key: false) do
+  add :id, :binary_id, primary_key: true
+  add :user_id, references(:users, type: :binary_id, on_delete: :delete_all), null: false
+  add :device_id, :string, null: false
+  add :platform, :string, null: false # ios | android
+  add :refresh_token_hash, :string, null: false
+  add :push_token, :string
+  add :last_seen_at, :utc_datetime_usec
+  add :revoked_at, :utc_datetime_usec
+  timestamps(type: :utc_datetime_usec)
+end
+
+create unique_index(:native_devices, [:device_id])
+create index(:native_devices, [:user_id])
+create index(:native_devices, [:refresh_token_hash])
+```
+
+Create `lib/medoru/accounts/native_device.ex` schema.
+
+Add context functions in `Medoru.Accounts`:
+- `create_native_device(user_id, device_id, platform, refresh_plaintext)`
+- `verify_native_refresh_token(refresh_plaintext)`
+- `rotate_native_device(device, new_refresh_plaintext)`
+- `revoke_native_device(user_id, device_id)`
+- `update_push_token(user_id, device_id, push_token)`
+- `touch_native_device(device_id)`
+
+### 1.7 Auth controllers
+
+Create `lib/medoru_web/api/v1/controllers/me_controller.ex`:
+- `show/2` → current user JSON.
+- `logout/2` → clear session for browser; for native, revoke device if `device_id` provided.
+
+Create `lib/medoru_web/api/v1/controllers/auth_controller.ex`:
+- `refresh/2` — accept `refresh_token` + `device_id`, verify, rotate refresh token, issue new JWT access token.
+- `socket_token/2` — issue a short-lived random socket token (2 min) stored in ETS. Browser PWA calls this with session cookie; native calls with bearer access token.
+
+### 1.8 Conversation controller
+
+Create `lib/medoru_web/api/v1/controllers/conversation_controller.ex`:
+- `index/2` — `Chat.list_conversations/2`, filter blocked, include unread counts and online status.
+- `show/2` — `Chat.get_conversation/2`, include participant public keys and user's encrypted conversation keys.
+- `create/2` — 1-1 or group.
+
+All conversation endpoints use the same `Medoru.Chat` context functions the desktop LiveViews use, ensuring identical behavior and data.
+
+### 1.9 Message controller with cursor pagination
+
+Create `lib/medoru_web/api/v1/controllers/message_controller.ex`:
+
+- `index/2` — `GET /api/v1/conversations/:id/messages?after=<cursor>&before=<cursor>&limit=20`.
+  - Cursor is an opaque value (base64-encoded `inserted_at` + message ID).
+  - Uses `Chat.list_messages_cursor/2`.
+  - Returns `{data: [...], next_cursor, prev_cursor}`.
+- `create/2` — plaintext or encrypted, with optional `reply_to_message_id` and `upload_id`. Uses `Chat.store_message/5` and `Chat.store_plaintext_message/4`.
+- `update/2` — edit own message via `Chat.edit_message/3`.
+- `delete/2` — soft-delete own message via `Chat.delete_message/2`.
+- `read/2` — `Chat.mark_read/2`.
+
+These are the same context functions the desktop chat uses, so messages sent from mobile trigger the same PubSub broadcasts desktop listens to, and vice versa.
+
+### 1.10 Message IDs
+
+Keep existing UUIDv4 primary keys for 0.10.0. Cursor pagination uses `inserted_at` + `id` rather than relying on ID ordering. Evaluate UUIDv7 or ULID in a future release with a proper migration strategy.
+
+### 1.11 Reaction controller
+
+Create `lib/medoru_web/api/v1/controllers/reaction_controller.ex`.
+
+### 1.12 Upload controller with upload_id flow
+
+Create `lib/medoru_web/api/v1/controllers/upload_controller.ex`:
+
+- `create/2` — `POST /api/v1/uploads` with multipart file.
+  - Stores file, creates `Medoru.Chat.Upload` record with `id`, `path`, `type`, `mime_type`, `size`, `name`.
+  - Returns `%{id: upload_id, ...}`.
+- `show/2` — `GET /api/v1/uploads/:id` returns metadata.
+
+Modify message creation:
+- Accept `upload_id` in message payload.
+- Server looks up upload and attaches metadata; client never sends paths.
+- When an upload is attached to a message, mark it `attached_at`.
+
+Add cleanup job:
+- Oban worker or periodic task deletes uploads with `attached_at IS NULL` and `inserted_at < now() - interval '24 hours'`.
+- Also delete the underlying file.
+
+### 1.13 Lookup controller
+
+Create `lib/medoru_web/api/v1/controllers/lookup_controller.ex`.
+
+### 1.14 Fallback controller
+
+Create `lib/medoru_web/api/v1/fallback_controller.ex`.
 
 ---
 
-## Phase 3: Polish and Wrap
+## Phase 2: Phoenix Channels
 
-### 3.1 PWA polish
-- Install prompt for Android.
-- iOS “Add to Home Screen” guidance.
-- Splash screen, themed status bar, standalone display mode.
-- Handle deep links (`/m/conversations/:id`) from notifications.
+### 2.1 Socket token auth
 
-### 3.2 Capacitor wrapper (optional, later)
-- Initialize Capacitor project in a `mobile/` directory.
-- Point web dir to `priv/static` or a production build.
-- Configure deep links and native push.
-- Build for Android/iOS internal testing.
+Add to endpoint:
+
+```elixir
+socket "/socket", MedoruWeb.UserSocket,
+  websocket: [timeout: 45_000],
+  longpoll: false
+```
+
+Create `lib/medoru_web/channels/user_socket.ex`:
+
+```elixir
+defmodule MedoruWeb.UserSocket do
+  use Phoenix.Socket
+
+  channel "chat:*", MedoruWeb.ChatChannel
+  channel "encryption:*", MedoruWeb.EncryptionChannel
+  channel "presence:*", MedoruWeb.PresenceChannel
+
+  @impl true
+  def connect(%{"token" => token}, socket, _connect_info) do
+    case Tokens.verify_socket_token(token) do
+      {:ok, user_id} -> {:ok, assign(socket, :current_user_id, user_id)}
+      :error -> :error
+    end
+  end
+
+  def connect(_params, _socket, _connect_info), do: :error
+
+  @impl true
+  def id(socket), do: "user_socket:#{socket.assigns.current_user_id}"
+end
+```
+
+### 2.2 ChatChannel
+
+Create `lib/medoru_web/channels/chat_channel.ex`:
+
+- `join("chat:" <> conversation_id, _payload, socket)` — verify participant, subscribe to the **same** `chat:<conversation_id>` Phoenix.PubSub topic the desktop LiveViews already use.
+- Inbound events:
+  - `typing` → calls `Chat.set_typing/3` (same as desktop)
+  - `read` → calls `Chat.mark_read/2` (same as desktop)
+- Forward existing PubSub broadcasts to mobile clients with versioned event names:
+  - `{:new_message, msg}` → `"message.created"`
+  - `{:message_edited, msg}` → `"message.updated"`
+  - `{:message_deleted, id}` → `"message.deleted"`
+  - `{:reaction, ...}` → `"reaction.updated"`
+
+**No changes to desktop code.** The channel is a passive listener and emitter on the existing topic.
+
+### 2.3 EncryptionChannel
+
+Create `lib/medoru_web/channels/encryption_channel.ex`:
+
+- `join("encryption:" <> conversation_id, _payload, socket)` — verify participant, subscribe to the existing `chat:<conversation_id>` PubSub topic.
+- Inbound events:
+  - `register_public_key`
+  - `ensure_conversation_key`
+  - `store_conversation_keys`
+  - `report_key_mismatch`
+  - `acknowledge_conversation_key`
+- Forward existing PubSub broadcasts with versioned event names:
+  - `{:request_key_reencryption, target, key}` → `"encryption.rekey_requested"`
+  - `{:reencrypted_key, target, key}` → `"encryption.key_updated"`
+  - `{:encryption_reset, conv_id}` → `"encryption.reset"`
+
+**No changes to desktop code.** The desktop already broadcasts these messages to `chat:<conversation_id>`.
+
+### 2.4 PresenceChannel
+
+Create `lib/medoru_web/channels/presence_channel.ex`:
+
+- `join("presence:conversation:<id>", ...)` — track presence for online status.
+- `join("presence:user:<id>", ...)` — global online status.
+- Forward `{:typing, ...}` PubSub broadcasts to typing subscribers.
+
+Uses the existing `MedoruWeb.Presence` module already used by the desktop chat. No desktop changes required.
 
 ---
 
-## Testing Strategy
+## Phase 3: `/m` TypeScript SPA/PWA
 
-1. **API tests** in `test/medoru_web/api/`:
-   - Authentication and authorization.
-   - Conversation CRUD.
-   - Message pagination, send, edit, delete.
-   - Reactions and read receipts.
-   - File uploads.
-   - OpenAPI spec validity via `open_api_spex` test helpers.
+### 3.1 Build setup
 
-2. **LiveView tests** in `test/medoru_web/live/mobile/`:
-   - Login redirect.
-   - Conversation list rendering.
-   - Chat view message loading.
+Create `assets/m/` as a Vite + Svelte + TypeScript project:
 
-3. **Manual QA**:
-   - Test on actual Android/iOS devices in browser.
-   - Verify E2E encryption between desktop and mobile users.
-   - Verify push notifications.
+```
+assets/m/
+├── index.html
+├── vite.config.ts
+├── tsconfig.json
+├── svelte.config.js
+├── package.json
+├── src/
+│   ├── main.ts
+│   ├── App.svelte
+│   ├── api/
+│   │   ├── client.ts
+│   │   ├── auth.ts
+│   │   ├── conversations.ts
+│   │   ├── messages.ts
+│   │   ├── uploads.ts
+│   │   └── lookups.ts
+│   ├── channels/
+│   │   ├── socket.ts
+│   │   ├── chat.ts
+│   │   ├── encryption.ts
+│   │   └── presence.ts
+│   ├── services/
+│   │   ├── auth.ts
+│   │   ├── notifier.ts
+│   │   ├── crypto/
+│   │   │   ├── service.ts
+│   │   │   ├── keyManager.ts
+│   │   │   ├── encryptor.ts
+│   │   │   ├── decryptor.ts
+│   │   │   └── rotation.ts
+│   │   └── push/
+│   │       ├── web.ts
+│   │       └── native.ts
+│   ├── models/
+│   │   ├── user.ts
+│   │   ├── conversation.ts
+│   │   └── message.ts
+│   ├── stores/
+│   │   ├── auth.ts
+│   │   ├── conversations.ts
+│   │   ├── messages.ts
+│   │   └── presence.ts
+│   ├── views/
+│   │   ├── LoginView.svelte
+│   │   ├── ConversationListView.svelte
+│   │   ├── ChatView.svelte
+│   │   ├── SettingsView.svelte
+│   │   └── UserPickerView.svelte
+│   ├── components/
+│   │   ├── MessageBubble.svelte
+│   │   ├── ChatInput.svelte
+│   │   ├── BottomNav.svelte
+│   │   └── ReactionPicker.svelte
+│   └── utils/
+│       ├── cursor.ts
+│       └── platform.ts
+└── public/
+    ├── manifest.json
+    └── service-worker.js
+```
+
+### 3.2 API client
+
+Create `assets/m/src/api/client.ts`:
+
+```typescript
+export const api = {
+  get, post, patch, del, upload,
+  refresh, websocketToken, setAuthHandler
+}
+```
+
+- Browser: `credentials: "include"`.
+- Native: attach `Authorization: Bearer <access_token>`.
+- Auto-refresh on 401 using refresh token (native only; browser PWA relies on session cookie).
+- Retry middleware: on network failure or 5xx, retry with exponential backoff (up to 3 attempts) for idempotent GET/HEAD requests. Timeouts tuned for mobile networks.
+
+### 3.3 Auth flow
+
+**Browser PWA:**
+1. Load app.
+2. Call `GET /api/v1/me` with credentials.
+3. If 401, show LoginView with "Sign in with Google" → `/auth/google?mobile=true`.
+4. `AuthController.callback/2` redirects to `/m` on success.
+5. Call `/api/v1/socket_token` to get channel token.
+
+**Native Capacitor:**
+1. Detect `Capacitor.isNativePlatform()`.
+2. Use `@capacitor/browser` for Google OAuth PKCE.
+3. Handle deep link `com.medoru.app:/oauth2callback?code=...`.
+4. POST `code` + `code_verifier` + `device_id` to `/api/v1/auth/native/exchange`.
+5. Store access token in `@capacitor/preferences` (short-lived, 5 minutes) and refresh token in `@aparajita/capacitor-secure-storage` (Keychain/Keystore-backed).
+6. Call `/api/v1/socket_token` with bearer token.
+
+Add `POST /api/v1/auth/native/exchange` endpoint.
+
+### 3.4 Svelte views
+
+Implement Svelte components as outlined in directory structure.
+
+### 3.5 Crypto services
+
+Create:
+- `assets/m/src/services/crypto/service.ts` — initializes user RSA keys.
+- `assets/m/src/services/crypto/keyManager.ts` — conversation key cache, decryption.
+- `assets/m/src/services/crypto/encryptor.ts` — message encryption.
+- `assets/m/src/services/crypto/decryptor.ts` — message decryption.
+- `assets/m/src/services/crypto/rotation.ts` — re-encryption for other users.
+
+Share low-level primitives with desktop via `assets/js/chat/crypto.js`.
+
+**Desktop compatibility:** Extract the crypto functions into a shared module without changing the desktop `ChatCrypto` hook's public API or behavior. The desktop chat continues to work exactly as before; the mobile app imports the same primitives.
+
+### 3.6 Web Push
+
+Create `assets/m/src/services/push/web.ts`:
+
+- Register `/m/service-worker.js`.
+- Subscribe with VAPID.
+- POST subscription to `/api/push-subscribe`.
+
+### 3.7 PWA manifest & service worker
+
+Create `assets/m/public/manifest.json` and `assets/m/public/service-worker.js`.
+
+Cache name: `medoru-mobile-${APP_VERSION}` where `APP_VERSION` is injected at build time.
+
+### 3.8 Build integration
+
+In `mix.exs`:
+
+```elixir
+"m.build": ["cmd cd assets/m && npm run build"],
+"m.dev": ["cmd cd assets/m && npm run dev"],
+"m.ios": ["m.build", "cmd cd clients/mobile && npx cap copy && npx cap open ios"],
+"m.android": ["m.build", "cmd cd clients/mobile && npx cap copy && npx cap open android"]
+```
+
+Vite build outputs to `priv/static/mobile/` (filesystem) while the public URL remains `/m`.
+
+---
+
+## Phase 4: Capacitor Native Packaging
+
+### 4.1 Project location
+
+Create `clients/mobile/`:
+
+```bash
+npx cap init MedoruMobile com.medoru.app --web-dir ../../priv/static/mobile
+npx cap add ios
+npx cap add android
+```
+
+### 4.2 Native auth
+
+Use `@capacitor/browser` for OAuth PKCE.
+
+Implement PKCE helpers in `assets/m/src/services/auth/native.ts`.
+
+### 4.3 Native push
+
+Create `assets/m/src/services/push/native.ts`:
+
+- Use `@capacitor/push-notifications`.
+- On token received, POST to `/api/v1/push/token`.
+- On notification tap, navigate to conversation.
+
+### 4.4 Plugins
+
+Configure:
+- `@capacitor/status-bar`
+- `@capacitor/splash-screen`
+- `@capacitor/preferences`
+- `@capacitor/browser`
+- `@capacitor/push-notifications`
+
+---
+
+## Phase 5: Push Notification Abstraction
+
+### 5.1 Notifier service
+
+Create `lib/medoru/notifier.ex`:
+
+```elixir
+def notify(user_id, notification) do
+  # notification is a struct such as %MessageNotification{conversation_id: ..., sender_name: ..., body: ...}
+  # dispatch to browser subscriptions via WebPush
+  # dispatch to native devices via APNs/FCM
+end
+```
+
+Define notification structs in `lib/medoru/notifications/`:
+- `MessageNotification`
+- Future: `MentionNotification`, `FriendRequestNotification`, etc.
+
+Create adapters:
+- `lib/medoru/notifier/web_push.ex`
+- `lib/medoru/notifier/apns.ex`
+- `lib/medoru/notifier/fcm.ex`
+
+### 5.2 Replace direct push calls
+
+In `Medoru.Chat.maybe_notify_participants/3`, replace `Notifications.send_push_notification/4` with `Notifier.notify/2`.
+
+Keep existing Web Push subscriptions in `push_subscriptions` table for browser PWA.
+Use `native_devices` table for native push tokens.
+
+### 5.3 APNs/FCM config
+
+In `config/runtime.exs`:
+
+```elixir
+config :medoru, :push,
+  apns: [
+    cert: System.get_env("APNS_CERT_PEM"),
+    key: System.get_env("APNS_KEY_PEM"),
+    mode: String.to_atom(System.get_env("APNS_MODE", "dev"))
+  ],
+  fcm: [
+    service_account_json: System.get_env("FCM_SERVICE_ACCOUNT_JSON")
+  ]
+```
+
+---
+
+## Phase 6: Offline Foundation
+
+For 0.10.0:
+
+- Service worker caches shell + static assets.
+- IndexedDB schema:
+  - `profiles`
+  - `conversations`
+  - `messages` (last 200 per conversation)
+- On load, render cached data immediately, then refresh.
+- Queue outgoing messages in IndexedDB when offline; retry on reconnect.
+
+Full offline sync deferred.
+
+---
+
+## Phase 7: Testing
+
+### 7.1 API tests
+
+Create `test/medoru_web/api/v1/`:
+- `me_controller_test.exs`
+- `auth_controller_test.exs`
+- `conversation_controller_test.exs`
+- `message_controller_test.exs`
+- `reaction_controller_test.exs`
+- `upload_controller_test.exs`
+- `lookup_controller_test.exs`
+
+Cover session auth, token auth, rate limiting, cursor pagination, upload_id flow.
+
+### 7.2 Channel tests
+
+Create `test/medoru_web/channels/`:
+- `chat_channel_test.exs`
+- `encryption_channel_test.exs`
+- `presence_channel_test.exs`
+
+### 7.3 Token tests
+
+Create `test/medoru/tokens_test.exs` and `test/medoru/accounts/native_device_test.exs`.
+
+### 7.4 Frontend tests
+
+Add `vitest` in `assets/m` for services and stores.
+
+### 7.5 Manual QA
+
+- Browser PWA on Android/iOS.
+- Capacitor simulators.
+- Desktop ↔ mobile E2E encryption.
+- Web Push and native push.
+
+---
+
+## Phase 8: Final Validation
+
+1. `mix format --check-formatted`
+2. `mix credo --strict`
+3. `mix test`
+4. `mix m.build`
+5. Update `AGENTS.md` to `0.10.0`.
 
 ---
 
 ## Files to Create / Modify
 
 ### New files
-- `lib/medoru_web/api/schemas.ex`
-- `lib/medoru_web/api/controllers/me_controller.ex`
-- `lib/medoru_web/api/controllers/conversation_controller.ex`
-- `lib/medoru_web/api/controllers/message_controller.ex`
-- `lib/medoru_web/api/controllers/reaction_controller.ex`
-- `lib/medoru_web/api/controllers/upload_controller.ex`
-- `lib/medoru_web/api/controllers/lookup_controller.ex`
-- `lib/medoru_web/live/mobile/chat_live/index.ex`
-- `lib/medoru_web/live/mobile/chat_live/index.html.heex`
-- `lib/medoru_web/live/mobile/chat_live/show.ex`
-- `lib/medoru_web/live/mobile/chat_live/show.html.heex`
-- `lib/medoru_web/live/mobile/auth_live/login.ex`
-- `lib/medoru_web/live/mobile/settings_live/index.ex`
+- `lib/medoru/tokens.ex`
+- `lib/medoru/accounts/native_device.ex`
+- `lib/medoru/notifier.ex`
+- `lib/medoru/notifier/web_push.ex`
+- `lib/medoru/notifier/apns.ex`
+- `lib/medoru/notifier/fcm.ex`
+- `lib/medoru_web/api/v1/plugs/authenticate.ex`
+- `lib/medoru_web/api/v1/plugs/rate_limit.ex`
+- `lib/medoru_web/api/v1/spec.ex`
+- `lib/medoru_web/api/v1/schemas.ex`
+- `lib/medoru_web/api/v1/fallback_controller.ex`
+- `lib/medoru_web/api/v1/controllers/me_controller.ex`
+- `lib/medoru_web/api/v1/controllers/auth_controller.ex`
+- `lib/medoru_web/api/v1/controllers/conversation_controller.ex`
+- `lib/medoru_web/api/v1/controllers/message_controller.ex`
+- `lib/medoru_web/api/v1/controllers/reaction_controller.ex`
+- `lib/medoru_web/api/v1/controllers/upload_controller.ex`
+- `lib/medoru_web/api/v1/controllers/lookup_controller.ex`
+- `lib/medoru_web/api/v1/controllers/push_controller.ex`
+- `lib/medoru_web/channels/user_socket.ex`
+- `lib/medoru_web/channels/chat_channel.ex`
+- `lib/medoru_web/channels/encryption_channel.ex`
+- `lib/medoru_web/channels/presence_channel.ex`
+- `lib/medoru_web/controllers/mobile_controller.ex`
 - `lib/medoru_web/components/layouts/mobile.html.heex`
-- `priv/static/m/manifest.json`
-- `priv/static/m/service-worker.js`
-- `assets/js/m_app.js`
-- `assets/css/m_app.css`
-- Tests under `test/medoru_web/api/` and `test/medoru_web/live/mobile/`
+- `lib/medoru/chat/upload.ex`
+- Migrations for `native_devices` and `uploads` tables.
+- `assets/m/` Vite + Svelte project.
+- `clients/mobile/` Capacitor project.
+- `priv/static/mobile/` built output.
+- Tests under `test/medoru_web/api/v1/`, `test/medoru_web/channels/`.
 
 ### Modified files
-- `mix.exs` — add `open_api_spex`.
-- `lib/medoru_web/router.ex` — API pipeline, `/api/v1` scope, `/m` scope, Swagger UI.
-- `lib/medoru_web/controllers/auth_controller.ex` — mobile redirect after OAuth.
-- `lib/medoru_web/components/layouts.ex` — add mobile layout.
-- `config/config.exs` or esbuild config — add `m_app.js` bundle.
+- `mix.exs` — deps, aliases, version.
+- `lib/medoru_web/router.ex` — `/api/v1` and `/m` routes.
+- `lib/medoru_web/endpoint.ex` — `/socket` mount.
+- `lib/medoru_web/controllers/auth_controller.ex` — mobile OAuth redirect.
+- `lib/medoru_web/components/layouts.ex` — mobile layout.
+- `lib/medoru/accounts.ex` — native device functions.
+- `lib/medoru/accounts/api_token.ex` — unchanged (no refresh/device fields).
+- `lib/medoru/chat.ex` — cursor pagination, upload_id, Notifier integration.
+- `lib/medoru/chat/message.ex` — unchanged (UUIDv4 retained for 0.10.0).
+- `lib/medoru/notifications.ex` — delegate to Notifier.
+- `config/config.exs` — Hammer, JWT.
+- `config/runtime.exs` — APNs/FCM, JWT secret.
+- `config/dev.exs` — mobile dev server integration.
+- `assets/js/hooks/chat_crypto.js` — extract crypto core.
+- `AGENTS.md` — version and state.
 
 ---
 
-## Suggested First Iteration (MVP)
+## Iteration Order (Recommended)
 
-To get something usable quickly, implement only:
+1. Phase 0: deps, version, green tests.
+2. Phase 1.1–1.6: unified auth, JWT, native device schema, rate limiting.
+3. Phase 1.7–1.14: all API controllers with cursor pagination and upload_id.
+4. Phase 2: socket token + split channels.
+5. Phase 5: Notifier abstraction + Web Push wiring.
+6. Phase 3.1–3.5: Vite/Svelte shell, API client, auth, conversation list, chat view.
+7. Phase 3.6–3.8: Web Push, manifest, service worker, build integration.
+8. Phase 6: offline foundation.
+9. Phase 4 + Phase 5 native: Capacitor project, PKCE, native push (APNs/FCM).
+10. Phase 7–8: tests, validation, docs.
 
-1. `GET /api/v1/me`
-2. `GET /api/v1/conversations`
-3. `GET /api/v1/conversations/:id/messages`
-4. `POST /api/v1/conversations/:id/messages` (plaintext only, no encryption)
-5. `/m/login`, `/m`, `/m/conversations/:id` with conversation list and chat view.
-6. Reuse existing channel for real-time delivery.
-
-This gives a working mobile chat in the first iteration. E2E encryption, attachments, reactions, and special commands follow in subsequent iterations.
+This order ships a working browser PWA first, then layers native packaging and push.

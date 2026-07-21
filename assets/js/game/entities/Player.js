@@ -280,6 +280,7 @@ export default class Player extends Character {
     this.activeKanjiBonus = 0
     this.activeBasePowerBonus = 0
     this.activeShieldBonus = 0
+    this.lastKanjiStrokes = 0
 
     // Readiness: 0 = distracted, 1 = focused (set after End Turn word challenge)
     this.readiness = 0
@@ -288,6 +289,11 @@ export default class Player extends Character {
     // Taunt raises both; Zen lowers both.
     this.stanceOutgoingMultiplier = 1
     this.stanceIncomingMultiplier = 1
+
+    // Dash reflex: bonus miss chance added per non-Dash ability used in a player turn.
+    // The bonus itself stacks for the whole battle; the accumulated miss chance resets each player turn.
+    this.dashBonusPerAbility = 0
+    this.turnMissChance = 0
 
     // Reaction multiplier: applied during enemy attacks when a reaction challenge triggers
     // 1 = no effect, 2 = correct reaction (doubles readiness effect), 0.5 = wrong reaction (halves it)
@@ -366,10 +372,15 @@ export default class Player extends Character {
   clearKanjiBonus() {
     this.activeKanjiBonus = 0
     this.lastKanjiWrongStrokes = 0
+    this.lastKanjiStrokes = 0
   }
 
   setKanjiResult(wrongStrokes) {
     this.lastKanjiWrongStrokes = wrongStrokes
+  }
+
+  setKanjiStrokeCount(count) {
+    this.lastKanjiStrokes = count
   }
 
   setBasePowerBonus(amount) {
@@ -480,6 +491,22 @@ export default class Player extends Character {
 
   multiplyStanceIncoming(factor) {
     this.stanceIncomingMultiplier = (this.stanceIncomingMultiplier || 1) * factor
+  }
+
+  resetDashBonus() {
+    this.dashBonusPerAbility = 0
+  }
+
+  addDashBonus(delta) {
+    this.dashBonusPerAbility = Math.max(0, (this.dashBonusPerAbility || 0) + delta)
+  }
+
+  resetTurnMissChance() {
+    this.turnMissChance = 0
+  }
+
+  addTurnMissChance(delta) {
+    this.turnMissChance = Math.max(0, Math.min(1, (this.turnMissChance || 0) + delta))
   }
 
   getOutgoingDamageMultiplier() {

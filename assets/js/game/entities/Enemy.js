@@ -310,7 +310,8 @@ export default class Enemy extends Character {
         const baseMissChance = target.getMissChanceFor(this)
         const readinessMultiplier = 1 + (target.readiness || 0)
         const reactionMultiplier = target.reactionMultiplier || 1
-        const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
+        const dashMiss = target.turnMissChance || 0
+        const missChance = Math.min(1, baseMissChance * readinessMultiplier * reactionMultiplier + dashMiss)
         if (Math.random() < missChance) {
           return { type: 'attack', damage: 0, isCrit: false, missed: true }
         }

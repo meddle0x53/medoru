@@ -8,7 +8,7 @@ import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import WeaponKanjiChallengeSystem from '../systems/WeaponKanjiChallengeSystem.js'
-import { getActionTypeColor, ALL_ACTIONS } from '../data/actions.js'
+import { getActionTypeColor, getAbilityRarityColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getCharmById } from '../data/charms.js'
@@ -60,6 +60,8 @@ export default class BattleScene extends Phaser.Scene {
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.clearActiveEffects() // clear status effects from previous fight
     this.player.resetStanceMultipliers() // stance multipliers last one battle only
+    this.player.resetDashBonus() // dash reflex bonus lasts one battle only
+    this.player.resetTurnMissChance() // miss chance is per player turn
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.player.block = 0 // block from previous battle must not carry over
     this.player.tempDefense = 0 // setup defence from previous battle must not carry over
@@ -607,6 +609,23 @@ export default class BattleScene extends Phaser.Scene {
       })
     }
 
+    const dashBonus = this.player.dashBonusPerAbility || 0
+    if (dashBonus > 0) {
+      rows.push({
+        label: 'Dash',
+        value: `+${(dashBonus * 100).toFixed(0)}% / ability`,
+        color: '#2ecc71',
+      })
+    }
+    const turnMiss = this.player.turnMissChance || 0
+    if (turnMiss > 0) {
+      rows.push({
+        label: 'Enemy miss',
+        value: `${(turnMiss * 100).toFixed(0)}%`,
+        color: '#2ecc71',
+      })
+    }
+
     for (const buff of this.player.buffs || []) {
       rows.push({ label: 'Buff', value: buff.type, color: '#9b59b6' })
     }
@@ -943,7 +962,7 @@ export default class BattleScene extends Phaser.Scene {
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
       const y = 155 + i * 44
-      const colors = getActionTypeColor(action.type)
+      const colors = getAbilityRarityColor(action.rarity)
       const label = this.getSkillButtonLabel(action)
       const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
@@ -1355,7 +1374,7 @@ export default class BattleScene extends Phaser.Scene {
         row.meta.setText(`${typeLabel} · ${equipLabel}`)
         row.stamina.setText(`${action.staminaCost} STA`)
 
-        const colors = getActionTypeColor(action.type)
+        const colors = getAbilityRarityColor(action.rarity)
         const isSelected = false // active rows can't be selected first
         row.bg.setStrokeStyle(2, colors.main)
         row.bg.setFillStyle(0x1a1a2e, 1)
@@ -1491,7 +1510,7 @@ export default class BattleScene extends Phaser.Scene {
     const clickableActions = this.player.activeActions
     clickableActions.forEach((action, i) => {
       const y = 155 + i * 44
-      const colors = getActionTypeColor(action.type)
+      const colors = getAbilityRarityColor(action.rarity)
       const label = this.getSkillButtonLabel(action)
       const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
       this.skillButtons.push({ btn, skill: action })
@@ -2796,45 +2815,56 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Sharpen Blade uses kanji drawing for its skill kanji (鋭)
+    // Sharpen Blade draws a kanji from its pool; the buff's damage depends on stroke count.
     if (skill.id === 'sword_buff') {
-      const kanji = skill.kanji || '鋭'
-      let strokeData = null
-      const kanjiData = this.player.kanjiList.find(k => k.character === kanji)
-      if (kanjiData?.stroke_data?.strokes?.length > 0) {
-        strokeData = kanjiData.stroke_data
-      }
-      if (!strokeData) {
-        const userData = getWindowGameData()
-        strokeData = userData?.weapon_kanji_strokes || { strokes: [] }
+      const pool = skill.kanjiPool || ['鋭', '研', '磨', '錬']
+      const focusOverrideChance = skill.kanjiChallenge?.focusOverrideChance ?? 0.2
+      const focusKanjiData = this.player.loadout.focusKanjiData
+      let selectedKanjiData = null
+
+      if (focusKanjiData && focusOverrideChance > 0 && Math.random() < focusOverrideChance && focusKanjiData.stroke_data?.strokes?.length > 0) {
+        selectedKanjiData = focusKanjiData
+      } else {
+        const allKanji = getWindowGameData()?.all_kanji || []
+        const candidates = pool
+          .map(char => {
+            const fromList = this.player.kanjiList.find(k => k.character === char)
+            if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+            const fromAll = allKanji.find(k => k.character === char)
+            if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+            return null
+          })
+          .filter(Boolean)
+        if (candidates.length > 0) {
+          selectedKanjiData = candidates[Math.floor(Math.random() * candidates.length)]
+        }
       }
 
-      if (!strokeData.strokes || strokeData.strokes.length === 0) {
+      if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
         this.player.setKanjiResult(99)
+        this.player.setKanjiStrokeCount(0)
         this.challengeActive = false
         this.executeSkill('fail')
         return
       }
 
-      this.startKanjiDrawingChallenge(strokeData, `Sharpen! Draw ${kanji}:`, {
+      const strokeData = selectedKanjiData.stroke_data
+      const totalStrokes = strokeData.strokes.length
+
+      this.startKanjiDrawingChallenge(strokeData, `Sharpen! Draw ${selectedKanjiData.character}:`, {
         onComplete: (result) => {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
 
+          this.player.setKanjiStrokeCount(totalStrokes)
           if (result.completed) {
             this.player.setKanjiResult(result.wrongStrokes)
-            if (result.wrongStrokes === 0) {
-              this.addCombatLog(`${kanji} drawn perfectly! A razor edge forms.`)
-            } else if (result.wrongStrokes <= 3) {
-              this.addCombatLog(`${kanji} drawn! The blade grows sharper.`)
-            } else {
-              this.addCombatLog(`${kanji} drawn sloppily. The edge is uneven.`)
-            }
+            this.addCombatLog(`${selectedKanjiData.character} drawn (${totalStrokes} strokes, ${result.wrongStrokes} mistakes). The blade is sharpened.`)
             this.executeSkill('success')
           } else {
             this.player.setKanjiResult(99)
-            this.addCombatLog(`${kanji} failed! The blade remains dull.`)
+            this.addCombatLog(`${selectedKanjiData.character} failed! The blade remains dull.`)
             this.executeSkill('fail')
           }
         },
@@ -2846,7 +2876,7 @@ export default class BattleScene extends Phaser.Scene {
             COLORS.danger
           )
         },
-      }, kanjiData || { character: kanji, meanings: [] })
+      }, selectedKanjiData)
       return
     }
 
@@ -2880,6 +2910,12 @@ export default class BattleScene extends Phaser.Scene {
           failEnemyMult: 1 / 1.5,
         })
       }
+      return
+    }
+
+    // Dash is a per-battle reflex ability that adds miss chance for every other ability used.
+    if (skill.type === 'dash') {
+      this.startDashAbilityChallenge(skill)
       return
     }
 
@@ -2973,6 +3009,95 @@ export default class BattleScene extends Phaser.Scene {
           finish(cfg.passPlayerMult, cfg.passEnemyMult, `${selectedKanjiData.character} drawn! ${cfg.label} intensified. Player x${cfg.passPlayerMult.toFixed(2)}, enemy x${cfg.passEnemyMult.toFixed(2)}`)
         } else {
           finish(cfg.failPlayerMult, cfg.failEnemyMult, `${selectedKanjiData.character} failed! ${cfg.label} weakened. Player x${cfg.failPlayerMult.toFixed(2)}, enemy x${cfg.failEnemyMult.toFixed(2)}`)
+        }
+      },
+      onWrongStroke: ({ count }) => {
+        this.spawnFloatingText(
+          GAME_CONFIG.width / 2,
+          GAME_CONFIG.height / 2 - 180,
+          `Wrong stroke! (${count})`,
+          COLORS.danger
+        )
+      },
+    }, selectedKanjiData)
+  }
+
+  startDashAbilityChallenge(skill) {
+    const challengeCfg = skill.kanjiChallenge || {}
+
+    const finish = (bonusDelta, logMsg) => {
+      this.player.addDashBonus(bonusDelta)
+      this.challengeActive = false
+      this.setSkillButtonsEnabled(true)
+      this.endTurnBtn.setVisible(true)
+      this.addCombatLog(logMsg)
+      this.spawnFloatingText(
+        this.playerSprite.x,
+        this.playerSprite.y - 60,
+        `Dash +${(bonusDelta * 100).toFixed(0)}%`,
+        0x2ecc71
+      )
+      this.executeSkill('success')
+    }
+
+    // 20% chance to skip the challenge entirely.
+    const skipChance = challengeCfg.skipChance ?? 0.2
+    if (skipChance > 0 && Math.random() < skipChance) {
+      finish(0.05, 'Dash reflex sharpened. +5% miss per ability.')
+      return
+    }
+
+    // Pick a kanji from the dash pool; 20% chance to use the focus kanji instead.
+    const pool = skill.kanjiPool || []
+    const focusOverrideChance = challengeCfg.focusOverrideChance ?? 0.2
+    const focusKanjiData = this.player.loadout.focusKanjiData
+    let selectedKanjiData = null
+
+    if (focusKanjiData && focusOverrideChance > 0 && Math.random() < focusOverrideChance && focusKanjiData.stroke_data?.strokes?.length > 0) {
+      selectedKanjiData = focusKanjiData
+    } else {
+      const allKanji = getWindowGameData()?.all_kanji || []
+      const candidates = pool
+        .map(char => {
+          const fromList = this.player.kanjiList.find(k => k.character === char)
+          if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+          const fromAll = allKanji.find(k => k.character === char)
+          if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+          return null
+        })
+        .filter(Boolean)
+      if (candidates.length > 0) {
+        selectedKanjiData = candidates[Math.floor(Math.random() * candidates.length)]
+      }
+    }
+
+    // No usable stroke data: apply the base bonus.
+    if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+      finish(0.05, 'Dash reflex sharpened. +5% miss per ability.')
+      return
+    }
+
+    const strokeData = selectedKanjiData.stroke_data
+    const totalStrokes = strokeData.strokes.length
+    const failThreshold = challengeCfg.failThreshold === 'halfUp'
+      ? Math.ceil(totalStrokes / 2)
+      : (typeof challengeCfg.failThreshold === 'number' ? challengeCfg.failThreshold : Math.ceil(totalStrokes / 2))
+
+    this.challengeActive = true
+    this.setSkillButtonsEnabled(false)
+    this.endTurnBtn.setVisible(false)
+
+    this.startKanjiDrawingChallenge(strokeData, `Dash! Draw ${selectedKanjiData.character}:`, {
+      onComplete: (result) => {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+
+        const passed = result.completed && result.wrongStrokes < failThreshold
+        if (passed) {
+          finish(0.07, `${selectedKanjiData.character} drawn! Dash reflex honed. +7% miss per ability.`)
+        } else {
+          finish(0.03, `${selectedKanjiData.character} failed! Dash reflex dulled. +3% miss per ability.`)
         }
       },
       onWrongStroke: ({ count }) => {
@@ -3234,6 +3359,19 @@ export default class BattleScene extends Phaser.Scene {
       }
     }
 
+    // Dash reflex: every non-Dash ability used during the player turn builds miss chance for the enemy turn.
+    if (this.player.dashBonusPerAbility > 0 && this.selectedSkill?.id !== 'dash') {
+      const bonus = this.player.dashBonusPerAbility
+      this.player.addTurnMissChance(bonus)
+      this.addCombatLog(`Dash reflex +${(bonus * 100).toFixed(0)}%. Enemy miss chance now ${(this.player.turnMissChance * 100).toFixed(0)}%.`)
+      this.spawnFloatingText(
+        this.playerSprite.x,
+        this.playerSprite.y - 90,
+        `Reflex +${(bonus * 100).toFixed(0)}%`,
+        0x2ecc71
+      )
+    }
+
     // Trigger socket hit procs for attacks that dealt damage.
     if ((result.type === 'attack' || result.type === 'attack_defence') && result.damage > 0) {
       this.socketProcSystem.trigger('on_hit', { scene: this, target, result })
@@ -3260,6 +3398,7 @@ export default class BattleScene extends Phaser.Scene {
       this.updateSkillButtonLabels()
       // Reset per-turn flags
       this.player.resetReadiness()
+      this.player.resetTurnMissChance()
       // Trigger socket start-of-turn procs
       this.socketProcSystem.trigger('on_turn_start', { scene: this })
       this.updateBars()

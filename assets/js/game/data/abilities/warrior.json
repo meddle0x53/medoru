@@ -486,21 +486,30 @@
       "id": "dash",
       "name": "Dash",
       "nameJa": "疾走",
-      "description": "Dodge the next enemy attack.",
-      "type": "defence",
+      "description": "Enter a reflex stance for the rest of the battle. Every non-Dash ability used during your turn adds +5% miss chance to the next enemy turn. Stacks: another Dash raises the bonus to +10%, etc.",
+      "type": "dash",
       "element": "physical",
       "equipmentType": null,
       "requiredEquipment": null,
-      "staminaCost": 3,
+      "staminaCost": 6,
       "kanji": "疾",
-      "rarity": "common",
-      "config": {
-        "dodgeNextAttack": true
-      },
-      "lifecycle": {
-        "onUse": [
-          "gainDodge"
-        ]
+      "kanjiPool": [
+        "疾",
+        "走",
+        "走",
+        "迅"
+      ],
+      "rarity": "rare",
+      "kanjiChallenge": {
+        "skipChance": 0.2,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "outcomes": {
+          "skipped": { "challengeResult": "success" },
+          "fallback": { "challengeResult": "success" },
+          "pass": { "challengeResult": "success" },
+          "fail": { "challengeResult": "fail" }
+        }
       },
       "effects": [],
       "singleUse": true
@@ -509,17 +518,25 @@
       "id": "two_hand_heavy",
       "name": "Two-Hand Heavy",
       "nameJa": "両手重撃",
-      "description": "A powerful two-handed strike.",
+      "description": "A devastating two-handed strike.",
       "type": "attack",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 5,
-      "basePower": 24,
+      "basePower": 25,
       "scalingStat": "strength",
-      "scalingMultiplier": 1.2,
-      "kanji": "両",
-      "rarity": "common",
+      "scalingMultiplier": 1.3,
+      "kanji": "断",
+      "kanjiPool": [
+        "断",
+        "豪",
+        "猛",
+        "剛",
+        "砕",
+        "裂"
+      ],
+      "rarity": "uncommon",
       "infusableWith": [
         "fire",
         "water",
@@ -530,26 +547,76 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
         ]
       },
-      "effects": [],
+      "effects": [
+        {
+          "effectId": "power_up",
+          "target": "self",
+          "chance": {
+            "base": 0.3,
+            "step": 0,
+            "cap": 0.3
+          },
+          "duration": {
+            "min": 1,
+            "max": 2
+          }
+        },
+        {
+          "effectId": "blunt",
+          "target": "enemy",
+          "chance": {
+            "base": 0.2,
+            "step": 0.05,
+            "cap": 0.4
+          }
+        }
+      ],
       "singleUse": true
     },
     {
       "id": "sword_buff",
       "name": "Sharpen Blade",
       "nameJa": "鋭気",
-      "description": "Draw 鋭 to sharpen your blade. Bonus damage scales with Skill, and the buff's duration is extended by Luck.",
+      "description": "Draw a kanji to sharpen your blade. Bonus damage scales with Skill and the number of strokes in the drawn kanji, and the buff's duration is extended by Luck.",
       "type": "buff",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
       "staminaCost": 3,
       "kanji": "鋭",
-      "rarity": "common",
+      "kanjiPool": [
+        "鋭",
+        "研",
+        "磨",
+        "錬"
+      ],
+      "rarity": "rare",
+      "kanjiChallenge": {
+        "skipChance": 0,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp"
+      },
       "config": {
         "buffType": "sword_damage_bonus",
         "duration": {
