@@ -9633,9 +9633,9 @@ msgid "Upload new pronunciation audio"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:832
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Writing Challenge"
-msgstr "Предизвикателство за писане (5 точки)"
+msgstr "Предизвикателство за писане"
 
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:196
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:639

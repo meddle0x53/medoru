@@ -45,15 +45,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -76,7 +97,27 @@
           }
         }
       ],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "slash",
+        "starter"
+      ],
+      "combo": {
+        "consumesState": [
+          {
+            "target": "enemy",
+            "state": "exposed",
+            "guaranteeCritical": true,
+            "log": "Weak point exploited! Guaranteed critical!"
+          },
+          {
+            "target": "self",
+            "state": "rushing",
+            "guaranteeCritical": true,
+            "log": "Rushing strike! Guaranteed critical!"
+          }
+        ]
+      }
     },
     {
       "id": "heavy_slash",
@@ -120,15 +161,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -160,7 +222,28 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "slash",
+        "heavy",
+        "finisher"
+      ],
+      "combo": {
+        "consumesState": [
+          {
+            "target": "enemy",
+            "state": "staggered",
+            "damageMultiplier": 1.5,
+            "log": "Heavy Slash smashes the staggered enemy!"
+          },
+          {
+            "target": "self",
+            "state": "rushing",
+            "guaranteeCritical": true,
+            "log": "Rushing strike! Guaranteed critical!"
+          }
+        ]
+      }
     },
     {
       "id": "setup_defence",
@@ -194,7 +277,18 @@
         ]
       },
       "effects": [],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "guard",
+        "defence"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "self",
+          "state": "guarding",
+          "duration": "end_of_turn"
+        }
+      }
     },
     {
       "id": "shield_parry",
@@ -224,7 +318,11 @@
         ]
       },
       "effects": [],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "counter",
+        "guard"
+      ]
     },
     {
       "id": "use_item",
@@ -283,15 +381,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -314,7 +433,25 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "pierce",
+        "starter",
+        "bleed"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "enemy",
+          "state": "exposed",
+          "duration": "next_attack"
+        },
+        "consumesState": {
+          "target": "self",
+          "state": "rushing",
+          "guaranteeCritical": true,
+          "log": "Rushing strike! Guaranteed critical!"
+        }
+      }
     },
     {
       "id": "guard_break",
@@ -353,15 +490,49 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.5 }, "log": "Guard Break smashes through! No kanji challenge." },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.5 } },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true, "effectChanceOverrides": { "blunt": 0.7 } },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false, "effectChanceOverrides": { "blunt": 0.2 } }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false,
+            "effectChanceOverrides": {
+              "blunt": 0.5
+            },
+            "log": "Guard Break smashes through! No kanji challenge."
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false,
+            "effectChanceOverrides": {
+              "blunt": 0.5
+            }
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true,
+            "effectChanceOverrides": {
+              "blunt": 0.7
+            }
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false,
+            "effectChanceOverrides": {
+              "blunt": 0.2
+            }
+          }
         }
       },
       "lifecycle": {
@@ -380,7 +551,18 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "heavy",
+        "stagger"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "enemy",
+          "state": "staggered",
+          "duration": "end_of_turn"
+        }
+      }
     },
     {
       "id": "focus",
@@ -407,14 +589,37 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "outcomes": {
-          "skipped": { "challengeResult": "success", "readinessDelta": 0.5 },
-          "fallback": { "challengeResult": "success", "readinessDelta": 0.5 },
-          "pass": { "challengeResult": "success", "readinessDelta": 0.7 },
-          "fail": { "challengeResult": "fail", "readinessDelta": 0.3 }
+          "skipped": {
+            "challengeResult": "success",
+            "readinessDelta": 0.5
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "readinessDelta": 0.5
+          },
+          "pass": {
+            "challengeResult": "success",
+            "readinessDelta": 0.7
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "readinessDelta": 0.3
+          }
         }
       },
       "effects": [],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "prepare",
+        "focus"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "self",
+          "state": "marked",
+          "duration": "next_attack"
+        }
+      }
     },
     {
       "id": "taunt",
@@ -440,14 +645,26 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "outcomes": {
-          "skipped": { "challengeResult": "success" },
-          "fallback": { "challengeResult": "success" },
-          "pass": { "challengeResult": "success" },
-          "fail": { "challengeResult": "fail" }
+          "skipped": {
+            "challengeResult": "success"
+          },
+          "fallback": {
+            "challengeResult": "success"
+          },
+          "pass": {
+            "challengeResult": "success"
+          },
+          "fail": {
+            "challengeResult": "fail"
+          }
         }
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "stance",
+        "taunt"
+      ]
     },
     {
       "id": "zen",
@@ -473,14 +690,26 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "outcomes": {
-          "skipped": { "challengeResult": "success" },
-          "fallback": { "challengeResult": "success" },
-          "pass": { "challengeResult": "success" },
-          "fail": { "challengeResult": "fail" }
+          "skipped": {
+            "challengeResult": "success"
+          },
+          "fallback": {
+            "challengeResult": "success"
+          },
+          "pass": {
+            "challengeResult": "success"
+          },
+          "fail": {
+            "challengeResult": "fail"
+          }
         }
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "stance",
+        "calm"
+      ]
     },
     {
       "id": "dash",
@@ -505,14 +734,32 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "outcomes": {
-          "skipped": { "challengeResult": "success" },
-          "fallback": { "challengeResult": "success" },
-          "pass": { "challengeResult": "success" },
-          "fail": { "challengeResult": "fail" }
+          "skipped": {
+            "challengeResult": "success"
+          },
+          "fallback": {
+            "challengeResult": "success"
+          },
+          "pass": {
+            "challengeResult": "success"
+          },
+          "fail": {
+            "challengeResult": "fail"
+          }
         }
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "mobility"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "self",
+          "state": "rushing",
+          "duration": "next_attack"
+        }
+      }
     },
     {
       "id": "two_hand_heavy",
@@ -552,15 +799,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -592,7 +860,28 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "heavy",
+        "two_hand",
+        "finisher"
+      ],
+      "combo": {
+        "consumesState": [
+          {
+            "target": "enemy",
+            "state": "staggered",
+            "damageMultiplier": 1.5,
+            "log": "Two-Hand Heavy crushes the staggered enemy!"
+          },
+          {
+            "target": "self",
+            "state": "rushing",
+            "guaranteeCritical": true,
+            "log": "Rushing strike! Guaranteed critical!"
+          }
+        ]
+      }
     },
     {
       "id": "sword_buff",
@@ -658,7 +947,11 @@
         ]
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "weapon_buff",
+        "prepare"
+      ]
     },
     {
       "id": "shield_bash",
@@ -701,10 +994,31 @@
         "failThreshold": "halfUp",
         "powerBonusTiers": [],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "effectChanceOverrides": { "blunt": 0.1 } },
-          "fallback": { "challengeResult": "success", "effectChanceOverrides": { "blunt": 0.1 } },
-          "pass": { "challengeResult": "success", "perfectChallengeResult": "perfect", "effectChanceOverrides": { "blunt": 0.2 } },
-          "fail": { "challengeResult": "fail", "effectChanceOverrides": { "blunt": 0.05 } }
+          "skipped": {
+            "challengeResult": "success",
+            "effectChanceOverrides": {
+              "blunt": 0.1
+            }
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "effectChanceOverrides": {
+              "blunt": 0.1
+            }
+          },
+          "pass": {
+            "challengeResult": "success",
+            "perfectChallengeResult": "perfect",
+            "effectChanceOverrides": {
+              "blunt": 0.2
+            }
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "effectChanceOverrides": {
+              "blunt": 0.05
+            }
+          }
         }
       },
       "lifecycle": {
@@ -724,7 +1038,25 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "stagger",
+        "bash",
+        "defence"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "enemy",
+          "state": "staggered",
+          "duration": "end_of_turn"
+        },
+        "consumesState": {
+          "target": "enemy",
+          "state": "off_balance",
+          "damageMultiplier": 1.5,
+          "log": "Shield Bash capitalises on the enemy being off balance!"
+        }
+      }
     },
     {
       "id": "berserk",
@@ -759,7 +1091,11 @@
         ]
       },
       "effects": [],
-      "singleUse": true
+      "singleUse": true,
+      "tags": [
+        "rage",
+        "buff"
+      ]
     },
     {
       "id": "infuse_fire",
@@ -1086,15 +1422,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -1117,7 +1474,19 @@
           }
         }
       ],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "bleed",
+        "slash"
+      ],
+      "combo": {
+        "consumesState": {
+          "target": "self",
+          "state": "rushing",
+          "guaranteeCritical": true,
+          "log": "Rushing strike! Guaranteed critical!"
+        }
+      }
     },
     {
       "id": "seismic_slam",
@@ -1156,15 +1525,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -1183,7 +1573,19 @@
           }
         }
       ],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "heavy",
+        "earth"
+      ],
+      "combo": {
+        "consumesState": {
+          "target": "enemy",
+          "state": "staggered",
+          "damageMultiplier": 1.5,
+          "log": "Seismic Slam shatters the staggered enemy!"
+        }
+      }
     },
     {
       "id": "flame_arc",
@@ -1224,15 +1626,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -1258,7 +1681,12 @@
           }
         }
       ],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "fire",
+        "arc",
+        "elemental"
+      ]
     },
     {
       "id": "gale_strike",
@@ -1298,15 +1726,36 @@
         "focusOverrideChance": 0.2,
         "failThreshold": "halfUp",
         "powerBonusTiers": [
-          { "minStrokes": 0, "bonus": 1 },
-          { "minStrokes": 4, "bonus": 2 },
-          { "minStrokes": 8, "bonus": 3 }
+          {
+            "minStrokes": 0,
+            "bonus": 1
+          },
+          {
+            "minStrokes": 4,
+            "bonus": 2
+          },
+          {
+            "minStrokes": 8,
+            "bonus": 3
+          }
         ],
         "outcomes": {
-          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
-          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
-          "pass": { "challengeResult": "success", "applyPowerBonus": true },
-          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+          "skipped": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "fallback": {
+            "challengeResult": "success",
+            "applyPowerBonus": false
+          },
+          "pass": {
+            "challengeResult": "success",
+            "applyPowerBonus": true
+          },
+          "fail": {
+            "challengeResult": "fail",
+            "applyPowerBonus": false
+          }
         }
       },
       "lifecycle": {
@@ -1329,7 +1778,106 @@
           }
         }
       ],
-      "singleUse": false
+      "singleUse": false,
+      "tags": [
+        "wind",
+        "slash",
+        "mobility"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "enemy",
+          "state": "off_balance",
+          "duration": "end_of_turn"
+        },
+        "consumesState": {
+          "target": "self",
+          "state": "rushing",
+          "guaranteeCritical": true,
+          "log": "Rushing strike! Guaranteed critical!"
+        }
+      }
+    },
+    {
+      "id": "raise_shield",
+      "name": "Raise Shield",
+      "nameJa": "盾を上げる",
+      "description": "Brace for the next enemy attack, gaining a huge block bonus when it lands.",
+      "type": "defence",
+      "element": "physical",
+      "equipmentType": "shield",
+      "requiredEquipment": "Wooden Shield",
+      "staminaCost": 2,
+      "baseBlock": 0,
+      "kanji": "盾",
+      "rarity": "uncommon",
+      "tags": [
+        "guard",
+        "defence",
+        "prepare"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "self",
+          "state": "raised_shield",
+          "duration": "until_hit"
+        }
+      },
+      "lifecycle": {
+        "onUse": [
+          "gainBlock"
+        ]
+      },
+      "effects": [],
+      "singleUse": true
+    },
+    {
+      "id": "sheathe_blade",
+      "name": "Sheathe Blade",
+      "nameJa": "居合",
+      "description": "Sheathe your blade and wait. The next enemy melee attack triggers a devastating iaijutsu counter.",
+      "type": "buff",
+      "element": "physical",
+      "equipmentType": "weapon",
+      "requiredEquipment": "Long Sword",
+      "staminaCost": 3,
+      "kanji": "居",
+      "rarity": "rare",
+      "tags": [
+        "prepare",
+        "counter"
+      ],
+      "combo": {
+        "appliesState": {
+          "target": "self",
+          "state": "sheathed",
+          "duration": "until_trigger"
+        }
+      },
+      "config": {
+        "buffType": "sheathed",
+        "duration": {
+          "baseTurns": 1,
+          "bonusTurns": 0,
+          "scalesWith": "luck",
+          "chanceTable": [
+            {
+              "max": 99,
+              "chance": 0
+            }
+          ],
+          "qualityModifiers": {
+            "0": 0
+          }
+        }
+      },
+      "lifecycle": {
+        "onUse": [
+          "applyBuff"
+        ]
+      },
+      "effects": [],
+      "singleUse": true
     }
   ]
 }

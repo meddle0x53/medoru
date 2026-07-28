@@ -1,0 +1,121 @@
+{
+  "states": {
+    "staggered": {
+      "id": "staggered",
+      "name": "Staggered",
+      "nameJa": "よろめき",
+      "category": "debuff",
+      "duration": "end_of_turn",
+      "description": "The next heavy attack deals bonus damage.",
+      "color": "#e67e22"
+    },
+    "exposed": {
+      "id": "exposed",
+      "name": "Exposed",
+      "nameJa": "隙",
+      "category": "debuff",
+      "duration": "next_attack",
+      "description": "The next slash attack is a guaranteed critical hit.",
+      "color": "#e74c3c"
+    },
+    "off_balance": {
+      "id": "off_balance",
+      "name": "Off Balance",
+      "nameJa": "バランス崩し",
+      "category": "debuff",
+      "duration": "end_of_turn",
+      "description": "The next shield bash deals bonus damage or may stun.",
+      "color": "#9b59b6"
+    },
+    "rushing": {
+      "id": "rushing",
+      "name": "Rushing",
+      "nameJa": "疾走中",
+      "category": "buff",
+      "duration": "next_attack",
+      "description": "The next sword attack is a guaranteed critical hit.",
+      "color": "#2ecc71"
+    },
+    "guarding": {
+      "id": "guarding",
+      "name": "Guarding",
+      "nameJa": "ガード中",
+      "category": "buff",
+      "duration": "end_of_turn",
+      "description": "The next enemy attack triggers a riposte.",
+      "color": "#3498db"
+    },
+    "marked": {
+      "id": "marked",
+      "name": "Marked",
+      "nameJa": "狙われ",
+      "category": "buff",
+      "duration": "next_attack",
+      "description": "The next infused attack has a higher elemental proc chance.",
+      "color": "#f1c40f"
+    },
+    "raised_shield": {
+      "id": "raised_shield",
+      "name": "Raised Shield",
+      "nameJa": "盾を構え",
+      "category": "buff",
+      "duration": "until_hit",
+      "description": "The next enemy attack is heavily blocked.",
+      "color": "#95a5a6"
+    },
+    "sheathed": {
+      "id": "sheathed",
+      "name": "Sheathed",
+      "nameJa": "居合構え",
+      "category": "buff",
+      "duration": "until_trigger",
+      "description": "Cannot attack. Counters the next enemy melee attack with a powerful iaijutsu strike.",
+      "color": "#e74c3c"
+    },
+    "last_moment": {
+      "id": "last_moment",
+      "name": "Last Moment",
+      "nameJa": "最後の一瞬",
+      "category": "buff",
+      "duration": "start_of_next_turn",
+      "description": "If HP would drop below 20%, automatically parry the attack.",
+      "color": "#f39c12"
+    },
+    "deflect": {
+      "id": "deflect",
+      "name": "Deflect",
+      "nameJa": "受け流し",
+      "category": "buff",
+      "duration": "until_hit",
+      "description": "Reduce the next attack and reflect part of it back.",
+      "color": "#1abc9c"
+    },
+    "revenge": {
+      "id": "revenge",
+      "name": "Revenge",
+      "nameJa": "復讐",
+      "category": "buff",
+      "duration": "start_of_next_turn",
+      "description": "After taking damage, next turn's first attack deals +40% damage.",
+      "color": "#c0392b"
+    },
+    "bloodlust": {
+      "id": "bloodlust",
+      "name": "Bloodlust",
+      "nameJa": "血欲",
+      "category": "buff",
+      "duration": "start_of_next_turn",
+      "description": "After taking damage, the next attack heals for a portion of its damage.",
+      "color": "#8e44ad"
+    },
+    "momentum": {
+      "id": "momentum",
+      "name": "Momentum",
+      "nameJa": "勢い",
+      "category": "buff",
+      "duration": "start_of_next_turn",
+      "description": "If not hit this enemy turn, next attack deals +80% damage.",
+      "color": "#16a085"
+    }
+  }
+}

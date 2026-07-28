@@ -8,6 +8,17 @@ import ChallengeSystem from '../systems/ChallengeSystem.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import WeaponKanjiChallengeSystem from '../systems/WeaponKanjiChallengeSystem.js'
+import {
+  recordTags,
+  expireStates,
+  hasComboState,
+  getStateDefinition,
+  getActiveComboStates,
+  getComboDamageMultiplier,
+  shouldGuaranteeCritical,
+  applyComboState,
+  consumeComboState,
+} from '../systems/CombatStateSystem.js'
 import { getActionTypeColor, getAbilityRarityColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
@@ -648,6 +659,12 @@ export default class BattleScene extends Phaser.Scene {
     if (parryCharges.length > 0) {
       const labels = parryCharges.map(q => q === 'perfect' ? 'P' : q === 'sloppy' ? 'S' : 'W')
       rows.push({ label: 'Parry', value: `${parryCharges.length} [${labels.join(',')}]`, color: '#9b59b6' })
+    }
+
+    // Combo states on the player.
+    for (const state of getActiveComboStates(this.player)) {
+      const def = getStateDefinition(state.id)
+      rows.push({ label: def?.name || state.id, value: '●', color: def?.color || '#f1c40f' })
     }
 
     if (rows.length === 0) return
@@ -2602,6 +2619,12 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Sheathed stance prevents attacking; only delayed/counter abilities can be set.
+    if (hasComboState(this.player, 'sheathed') && (skill.type === 'attack' || skill.type === 'attack_defence')) {
+      this.addCombatLog('Sheathed! You cannot attack until the enemy strikes.')
+      return
+    }
+
     // Parry must be set up during player turn (kanji drawing + stamina cost)
     if (skill.type === 'parry') {
       this.challengeActive = true
@@ -2649,7 +2672,38 @@ export default class BattleScene extends Phaser.Scene {
 
     // Single enemy or self-targeted skill: auto-target the first/only enemy.
     this.selectedTarget = aliveEnemies[0] || null
+
+    // Combo preview: tell the player when the selected ability will trigger a combo.
+    this.showComboPreview(skill, this.selectedTarget)
+
     this.startChallenge(skill)
+  }
+
+  showComboPreview(skill, target) {
+    if (!skill.combo) return
+    const combo = skill.combo
+    let preview = null
+
+    if (combo.consumesState) {
+      const subject = combo.consumesState.target === 'self' ? this.player : target
+      if (hasComboState(subject, combo.consumesState.state)) {
+        const parts = []
+        if (combo.consumesState.damageMultiplier) parts.push(`+${Math.round((combo.consumesState.damageMultiplier - 1) * 100)}% damage`)
+        if (combo.consumesState.guaranteeCritical) parts.push('guaranteed crit')
+        preview = `${skill.name} consumes ${combo.consumesState.state}: ${parts.join(', ')}`
+      }
+    }
+
+    if (!preview && combo.requiresPreviousTag) {
+      const last = this.player.turnTagLedger?.length ? this.player.turnTagLedger[this.player.turnTagLedger.length - 1].tag : null
+      if (last === combo.requiresPreviousTag.tag) {
+        preview = `${skill.name} chains from ${last}: bonus ready`
+      }
+    }
+
+    if (preview) {
+      this.addCombatLog(preview)
+    }
   }
 
   isEnemyTargetedSkill(skill) {
@@ -3483,6 +3537,22 @@ export default class BattleScene extends Phaser.Scene {
       }
     }
 
+    // ---------- Combo ledger & expiry ----------
+    if (this.selectedSkill?.tags?.length) {
+      recordTags(this.player, this.selectedSkill.tags)
+    }
+
+    // Visual chain counter for sequencing.
+    const distinctTags = new Set(this.player.turnTagLedger?.map((e) => e.tag) || []).size
+    if (distinctTags >= 2) {
+      this.spawnFloatingText(
+        this.playerSprite.x,
+        this.playerSprite.y - 120,
+        `Combo x${distinctTags}`,
+        0xf1c40f
+      )
+    }
+
     // Dash reflex: every non-Dash ability used during the player turn builds miss chance for the enemy turn.
     if (this.player.dashBonusPerAbility > 0 && this.selectedSkill?.id !== 'dash') {
       const bonus = this.player.dashBonusPerAbility
@@ -3523,6 +3593,11 @@ export default class BattleScene extends Phaser.Scene {
       // Reset per-turn flags
       this.player.resetReadiness()
       this.player.resetTurnMissChance()
+      // Momentum: if the player was not hit during the enemy turn, their next attack is boosted.
+      if (!this.playerHitThisEnemyTurn) {
+        applyComboState(this.player, 'momentum', 'turn_change')
+      }
+      this.playerHitThisEnemyTurn = false
       // Trigger socket start-of-turn procs
       this.socketProcSystem.trigger('on_turn_start', { scene: this })
       this.updateBars()
@@ -3530,6 +3605,7 @@ export default class BattleScene extends Phaser.Scene {
       this.showIntentionPlan()
     } else {
       if (this.pendingInfusion) this.clearInfusionMode()
+      this.playerHitThisEnemyTurn = false
       this.turnText.setText('ENEMY TURN')
       this.turnText.setColor(COLORS.danger)
       this.animateTurnChange()
@@ -3654,8 +3730,22 @@ export default class BattleScene extends Phaser.Scene {
           context.effectChanceMultiplier = effectChanceMultiplier
         }
 
-        if (!parried) {
+        // Combo-system reactive defences (sheathe, raised shield, guarding, deflect, last moment).
+        const reactive = (action.type === 'attack')
+          ? this.resolveReactiveDefences(enemy, action, context)
+          : { skipPerform: false, reflectDamage: 0, counterType: null }
+
+        if (!parried && !reactive.skipPerform) {
           result = enemy.performAction(action, this.player, context, (msg) => this.addCombatLog(msg))
+        } else if (reactive.skipPerform) {
+          result = { type: 'attack', damage: 0, isCrit: false, missed: false, parried: true }
+        }
+
+        // Apply reflect damage from deflect.
+        if (reactive.reflectDamage > 0 && enemy.isAlive()) {
+          const reflected = enemy.takeDamage(reactive.reflectDamage)
+          this.addCombatLog(`Deflect returns ${reflected} damage!`)
+          this.spawnFloatingText(this.getDisplayForEnemy(enemy).sprite.x, this.getDisplayForEnemy(enemy).sprite.y - 40, `-${reflected}`, 0x1abc9c)
         }
 
         // Reset reaction multiplier after the attack resolves
@@ -3680,7 +3770,11 @@ export default class BattleScene extends Phaser.Scene {
               await this.delay(600)
               this.setPlayerPose('idle')
               this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
-              await this.runCounterAttack()
+              if (reactive.counterType) {
+                await this.runReactiveCounter(enemy, reactive.counterType)
+              } else {
+                await this.runCounterAttack()
+              }
             } else if (result.missed) {
               const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
               this.addCombatLog(`${enemyName} uses ${action.name}... but missed!${reactionText}`)
@@ -3711,6 +3805,12 @@ export default class BattleScene extends Phaser.Scene {
               // Trigger socket defend procs now that damage has been taken.
               this.socketProcSystem.trigger('on_defend', { scene: this, source: enemy, result })
               this.updateBars()
+
+              // Combo reactive states that trigger on being hit.
+              this.playerHitThisEnemyTurn = true
+              applyComboState(this.player, 'revenge', enemy.id, 'start_of_next_turn')
+              applyComboState(this.player, 'bloodlust', enemy.id, 'start_of_next_turn')
+
               await this.delay(800)
               this.setPlayerPose('idle')
               this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
@@ -3809,6 +3909,107 @@ export default class BattleScene extends Phaser.Scene {
 
     if (!this.turnManager.battleOver) {
       this.turnManager.endTurn()
+    }
+  }
+
+  resolveReactiveDefences(enemy, action, context) {
+    const player = this.player
+    if (action.type !== 'attack') return { skipPerform: false, reflectDamage: 0, counterType: null }
+
+    // Sheathed stance: intercept any melee attack with a powerful iaijutsu counter.
+    if (hasComboState(player, 'sheathed')) {
+      consumeComboState(player, 'sheathed')
+      this.addCombatLog('Sheathed blade flashes! Iaijutsu counter!')
+      return { skipPerform: true, reflectDamage: 0, counterType: 'iaijutsu' }
+    }
+
+    // Last Moment: emergency parry when health is critical.
+    if (hasComboState(player, 'last_moment') && player.hp / player.maxHp <= 0.25) {
+      consumeComboState(player, 'last_moment')
+      this.addCombatLog('Last Moment! You parry at the brink of defeat!')
+      return { skipPerform: true, reflectDamage: 0, counterType: 'last_moment' }
+    }
+
+    let reflectDamage = 0
+
+    // Raised Shield: brace for the next hit with a large block bonus.
+    if (hasComboState(player, 'raised_shield')) {
+      consumeComboState(player, 'raised_shield')
+      const blockAmount = 15 + Math.floor((player.calculateShieldDefense ? player.calculateShieldDefense() : 0) / 2)
+      player.addBlock(blockAmount)
+      this.addCombatLog(`Raised Shield braces for +${blockAmount} block!`)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${blockAmount} Block`, 0x3498db)
+    }
+
+    // Guarding stance: small block plus a riposte.
+    if (hasComboState(player, 'guarding')) {
+      consumeComboState(player, 'guarding')
+      const blockAmount = 8 + Math.floor((player.calculateShieldDefense ? player.calculateShieldDefense() : 0) / 4)
+      player.addBlock(blockAmount)
+      this.addCombatLog(`Guarding stance absorbs up to ${blockAmount} damage and readies a riposte!`)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${blockAmount} Block`, 0x3498db)
+      return { skipPerform: false, reflectDamage: 0, counterType: 'riposte' }
+    }
+
+    // Deflect: halve the attack and bounce a portion back.
+    if (hasComboState(player, 'deflect')) {
+      consumeComboState(player, 'deflect')
+      context.damageMultiplier = (context.damageMultiplier || 1) * 0.5
+      reflectDamage = 3 + Math.floor((player.skill || 0) / 5)
+      this.addCombatLog('Deflect! The blow is turned aside.')
+    }
+
+    return { skipPerform: false, reflectDamage, counterType: null }
+  }
+
+  async runReactiveCounter(enemy, counterType) {
+    if (!enemy || !enemy.isAlive()) return
+    const attackAction = this.player.activeActions.find((a) => a.type === 'attack')
+    if (!attackAction) {
+      this.addCombatLog('No attack action equipped — counter fails!')
+      return
+    }
+
+    let multiplier = 1
+    let label = 'Counter'
+    if (counterType === 'iaijutsu') {
+      multiplier = 2
+      label = 'Iaijutsu'
+    } else if (counterType === 'last_moment') {
+      multiplier = 1.5
+      label = 'Last Moment'
+    } else if (counterType === 'riposte') {
+      multiplier = 1.2
+      label = 'Riposte'
+    }
+
+    this.addCombatLog(`${label} with ${attackAction.name}!`)
+    const target = enemy
+    const total = this.player.calculateWeaponDamage(attackAction) * multiplier
+    const isCrit = Math.random() < this.player.getCritChance()
+    let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+    rawDamage = Math.floor(rawDamage * this.player.getOutgoingDamageMultiplier())
+    const effectiveDefense = target.getDefense()
+    let finalDamage
+    if (effectiveDefense <= 0) {
+      finalDamage = rawDamage
+    } else {
+      finalDamage = Math.floor(rawDamage * rawDamage / (rawDamage + effectiveDefense))
+    }
+    finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
+    const actual = target.takeDamage(finalDamage)
+
+    this.setPlayerPose(isCrit ? 'slash_heavy' : 'slash_light_01')
+    const display = this.getDisplayForEnemy(target)
+    if (display) {
+      this.spawnFloatingText(display.sprite.x, display.sprite.y - 40, `-${actual}`, 0xe74c3c)
+      this.shakeSprite(display.sprite)
+    }
+    this.addCombatLog(`${label} hits for ${actual} damage!`)
+    this.time.delayedCall(600, () => this.setPlayerPose('idle'))
+
+    if (!target.isAlive()) {
+      this.onEnemyDefeated(target)
     }
   }
 

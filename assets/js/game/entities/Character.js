@@ -1,4 +1,5 @@
 import { getEffect, rollDuration, rollMadnessOutcome, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
+import { applyComboState as applyComboStateImpl, removeComboState as removeComboStateImpl } from '../systems/CombatStateSystem.js'
 
 /**
  * Base Character class for Player and Enemy.
@@ -43,6 +44,29 @@ export default class Character {
     // Parry state: array of charge qualities ('perfect', 'sloppy', 'fail')
     this.parryCharges = []
     this.parryKanjiQuality = null
+
+    // Combo-state container for temporary sequencing states (staggered, exposed, etc.)
+    this.comboStates = {}
+  }
+
+  hasComboState(stateId) {
+    return !!this.comboStates?.[stateId]
+  }
+
+  getComboState(stateId) {
+    return this.comboStates?.[stateId] || null
+  }
+
+  applyComboState(stateId, source = null, duration = null) {
+    return applyComboStateImpl(this, stateId, source, duration)
+  }
+
+  removeComboState(stateId) {
+    return removeComboStateImpl(this, stateId)
+  }
+
+  consumeComboState(stateId) {
+    return this.removeComboState(stateId)
   }
 
   isAlive() {

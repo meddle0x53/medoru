@@ -6,6 +6,7 @@ import { gradeForSchedule, getSocketCharmById, ALL_SOCKET_CHARMS } from '../data
 import metaUnlocks from '../data/metaUnlocks.json'
 import { generateMap } from '../systems/MapGenerator.js'
 import { getMapDefinition } from '../data/maps/index.js'
+import { clearTags, expireStates } from '../systems/CombatStateSystem.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
 const MAP_VERSION = 4
@@ -276,6 +277,9 @@ export default class Player extends Character {
     this.equippedSkills = this.activeActions
     this.maxActiveSlots = getMaxActiveActions(this.capacity || 3)
 
+    // Tag ledger for this turn's combo sequencing
+    this.turnTagLedger = []
+
     // Current kanji powerup state during a move
     this.activeKanjiBonus = 0
     this.activeBasePowerBonus = 0
@@ -522,6 +526,15 @@ export default class Player extends Character {
 
   getBerserkLifestealPercent() {
     return this.berserkLifestealPercent || 0
+  }
+
+  resetForTurn() {
+    super.resetForTurn()
+    // Clear the per-turn tag ledger and expire states that last only until the next turn.
+    clearTags(this)
+    expireStates(this, 'start_of_player_turn', (msg) => {
+      if (this.onCombatLog) this.onCombatLog(msg)
+    })
   }
 
   getOutgoingDamageMultiplier() {

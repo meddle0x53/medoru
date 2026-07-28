@@ -619,9 +619,29 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
-  # most_frequent_word_for_kanji/2
+  # complete_daily_challenge/4
   # ============================================================================
 
+  describe "complete_daily_challenge/4" do
+    test "completes without awarding XP when xp_awarded is 0" do
+      user = user_fixture()
+
+      assert {:ok, :completed} = Learning.complete_daily_challenge(user.id, "daily_kanji", 0)
+
+      transactions =
+        Medoru.Accounts.XpTransaction
+        |> where([t], t.user_id == ^user.id)
+        |> Repo.all()
+
+      # Only the streak bonus was awarded, no 0-amount challenge transaction
+      refute Enum.any?(transactions, &(&1.source_type == "daily_challenge"))
+      assert Enum.all?(transactions, &(&1.amount > 0))
+    end
+  end
+
+  # ============================================================================
+  # most_frequent_word_for_kanji/2
+  # ============================================================================
   describe "most_frequent_word_for_kanji/2" do
     setup do
       user = user_fixture()

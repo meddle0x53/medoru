@@ -15,7 +15,7 @@ export const ABILITY_REWARDS = {
     // Wooden Shield skills
     shield_Wooden_Shield: ['shield_parry', 'setup_defence', 'shield_bash'],
     // Generic warrior class skills
-    class: ['focus', 'taunt', 'dash'],
+    class: ['focus', 'taunt', 'dash', 'raise_shield', 'sheathe_blade'],
   },
   // Placeholders for future classes
   mage: {

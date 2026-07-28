@@ -1851,12 +1851,14 @@ defmodule Medoru.Learning do
 
         {:ok, updated_streak} = update_streak(user_id)
 
-        # Award challenge XP
-        Accounts.add_xp(user_id, xp_awarded,
-          source_type: "daily_challenge",
-          source_id: challenge_type,
-          description: "Completed #{challenge_type} daily challenge"
-        )
+        # Award challenge XP (skip when nothing was earned)
+        if xp_awarded > 0 do
+          Accounts.add_xp(user_id, xp_awarded,
+            source_type: "daily_challenge",
+            source_id: challenge_type,
+            description: "Completed #{challenge_type} daily challenge"
+          )
+        end
 
         # Award streak bonus XP only on first challenge of the day
         if not was_studied_today do

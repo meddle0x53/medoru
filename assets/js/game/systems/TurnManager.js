@@ -2,6 +2,15 @@ import { getEffect, resolveElementVsDefence, rollDuration } from './EffectRegist
 import { applyAbilityEffects } from './StatusEffectSystem.js'
 import { getInfusionBaseEffect, getElementForInfusion, getGuardForInfusion } from '../data/infusionReactions.js'
 import { getEffectiveScaling, SCALING_MULTIPLIERS, getStatFactor } from '../entities/Player.js'
+import {
+  applyComboState,
+  consumeComboState,
+  hasComboState,
+  getComboDamageMultiplier,
+  shouldGuaranteeCritical,
+  getChainDamageMultiplier,
+  expireStates,
+} from './CombatStateSystem.js'
 
 /**
  * Manages whose turn it is and stamina consumption.
@@ -187,15 +196,53 @@ export default class TurnManager {
     const infusedElement = isElementInfusion ? getElementForInfusion(infusion.value) : skill.element
     const potency = infusion?.potency || 1
     const baseEffect = isElementInfusion ? getInfusionBaseEffect(infusion.value) : null
-    const comboDamageMultiplier = baseEffect?.damageMultiplier || 0
+    const infusionComboDamageMultiplier = baseEffect?.damageMultiplier || 0
     const infusedDamageMultiplier = isElementInfusion
-      ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1) + comboDamageMultiplier)
+      ? Math.min(3.0, 1 + (infusion.mana || 0) / 20 + (potency - 1) + infusionComboDamageMultiplier)
       : 1.0
-    const elementalEffectChanceMultiplier = isElementInfusion
+    let elementalEffectChanceMultiplier = isElementInfusion
       ? Math.min(2.0, 1 + (infusion.mana || 0) / 40 + (potency - 1))
       : infusedElement
         ? Math.min(2.0, 1 + (performer.mana || 0) / 40)
         : 1.0
+
+    // ---------- Combo-state resolution ----------
+    const combo = skill.combo || {}
+    const pendingCombo = { damageMultiplier: 1, guaranteeCritical: false, consumeStates: [], log: null }
+    const stateConsumers = Array.isArray(combo.consumesState)
+      ? combo.consumesState
+      : combo.consumesState
+        ? [combo.consumesState]
+        : []
+    for (const stateConsumer of stateConsumers) {
+      const subject = stateConsumer.target === 'self' ? performer : target
+      if (hasComboState(subject, stateConsumer.state)) {
+        pendingCombo.damageMultiplier *= stateConsumer.damageMultiplier || 1
+        if (stateConsumer.guaranteeCritical) pendingCombo.guaranteeCritical = true
+        pendingCombo.consumeStates.push({ subject, stateId: stateConsumer.state })
+        if (stateConsumer.log) pendingCombo.log = stateConsumer.log
+      }
+    }
+    if (combo.requiresPreviousTag) {
+      pendingCombo.damageMultiplier *= getComboDamageMultiplier(skill, performer, target)
+      if (shouldGuaranteeCritical(skill, performer, target)) {
+        pendingCombo.guaranteeCritical = true
+      }
+    }
+    if (skill.chainBonus) {
+      pendingCombo.damageMultiplier *= getChainDamageMultiplier(performer, skill.chainBonus)
+    }
+    // Marked increases elemental proc chance for the next infused attack.
+    if (hasComboState(performer, 'marked') && infusedElement) {
+      elementalEffectChanceMultiplier *= 1.5
+    }
+    // Revenge and Momentum boost the next attack.
+    if (hasComboState(performer, 'revenge')) {
+      pendingCombo.damageMultiplier *= 1.4
+    }
+    if (hasComboState(performer, 'momentum')) {
+      pendingCombo.damageMultiplier *= 1.8
+    }
 
     let result = null
 
@@ -212,7 +259,10 @@ export default class TurnManager {
           const weaponBonus = performer.getWeaponBonus ? performer.getWeaponBonus() : 0
           total = (base + weaponBonus) * multiplier
         }
-        const isCrit = Math.random() < performer.getCritChance()
+        // Apply combo-state and chain damage multipliers before crit.
+        total *= pendingCombo.damageMultiplier
+
+        const isCrit = pendingCombo.guaranteeCritical || Math.random() < performer.getCritChance()
         let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
 
         // Perfect kanji (0 wrong strokes) bypasses 80% of enemy defense
@@ -273,8 +323,43 @@ export default class TurnManager {
           if (lifesteal > 0) performer.heal(lifesteal)
         }
 
-        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal }
+        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal, comboMultiplier: pendingCombo.damageMultiplier }
         if (infusion) result.infusion = { value: infusion.value, potency }
+
+        // Consume combo states that fuelled this attack and log the payoff.
+        if (pendingCombo.consumeStates.length > 0 && actual > 0) {
+          for (const { subject, stateId } of pendingCombo.consumeStates) {
+            consumeComboState(subject, stateId)
+          }
+          if (pendingCombo.log) this.log(pendingCombo.log)
+        }
+        if (hasComboState(performer, 'marked') && infusedElement && actual > 0) {
+          consumeComboState(performer, 'marked')
+        }
+
+        // Consume one-off turn-transition buffs.
+        if (actual > 0) {
+          if (hasComboState(performer, 'revenge')) {
+            consumeComboState(performer, 'revenge')
+            this.log('Revenge fuels the strike!')
+          }
+          if (hasComboState(performer, 'momentum')) {
+            consumeComboState(performer, 'momentum')
+            this.log('Momentum carries the strike!')
+          }
+          if (hasComboState(performer, 'bloodlust')) {
+            consumeComboState(performer, 'bloodlust')
+            const heal = Math.max(1, Math.floor(actual * 0.3))
+            performer.heal(heal)
+            this.log(`Bloodlust heals ${heal} HP!`)
+          }
+        }
+
+        // Apply any state declared by this ability.
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
 
         if (infusedElement === 'fire' && actual > 0) {
           this.applyEmberRecoil(performer, actual, challengeResult)
@@ -328,6 +413,13 @@ export default class TurnManager {
         const total = Math.floor((base + scaling + shieldBonus) * multiplier)
         performer.addBlock(total)
         result = { type: 'defence', block: total, multiplier }
+
+        // Apply any state declared by this defence ability.
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
+
         if (isElementInfusion) {
           const guardId = getGuardForInfusion(infusion.value)
           if (guardId) {
@@ -372,11 +464,19 @@ export default class TurnManager {
           }
         }
         result = { type: 'buff', buffType: skill.buffType, multiplier }
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
         break
       }
       case 'infuse': {
         // Infuse abilities are resolved by the UI before reaching TurnManager.
         result = { type: 'infuse', multiplier }
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
         break
       }
       case 'attack_defence': {
@@ -387,7 +487,10 @@ export default class TurnManager {
           const base = skill.basePower + performer.getStatValue(skill.scalingStat) * skill.scalingMultiplier
           total = base * multiplier
         }
-        const isCrit = Math.random() < performer.getCritChance()
+        // Apply combo-state and chain damage multipliers before crit.
+        total *= pendingCombo.damageMultiplier
+
+        const isCrit = pendingCombo.guaranteeCritical || Math.random() < performer.getCritChance()
         let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
         rawDamage = Math.floor(rawDamage * performer.getOutgoingDamageMultiplier())
 
@@ -443,8 +546,43 @@ export default class TurnManager {
         }
         if (blockTotal > 0) performer.addBlock(blockTotal)
 
-        result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0 }
+        result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, comboMultiplier: pendingCombo.damageMultiplier }
         if (infusion) result.infusion = { value: infusion.value, potency }
+
+        // Consume combo states that fuelled this attack and log the payoff.
+        if (pendingCombo.consumeStates.length > 0 && actual > 0) {
+          for (const { subject, stateId } of pendingCombo.consumeStates) {
+            consumeComboState(subject, stateId)
+          }
+          if (pendingCombo.log) this.log(pendingCombo.log)
+        }
+        if (hasComboState(performer, 'marked') && infusedElement && actual > 0) {
+          consumeComboState(performer, 'marked')
+        }
+
+        // Consume one-off turn-transition buffs.
+        if (actual > 0) {
+          if (hasComboState(performer, 'revenge')) {
+            consumeComboState(performer, 'revenge')
+            this.log('Revenge fuels the strike!')
+          }
+          if (hasComboState(performer, 'momentum')) {
+            consumeComboState(performer, 'momentum')
+            this.log('Momentum carries the strike!')
+          }
+          if (hasComboState(performer, 'bloodlust')) {
+            consumeComboState(performer, 'bloodlust')
+            const heal = Math.max(1, Math.floor(actual * 0.3))
+            performer.heal(heal)
+            this.log(`Bloodlust heals ${heal} HP!`)
+          }
+        }
+
+        // Apply any state declared by this ability.
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
 
         if (infusedElement === 'fire' && actual > 0) {
           this.applyEmberRecoil(performer, actual, challengeResult)
@@ -475,16 +613,28 @@ export default class TurnManager {
       case 'focus': {
         // Readiness is applied during the kanji challenge phase in BattleScene.
         result = { type: 'focus' }
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
         break
       }
       case 'stance': {
         // Stance multipliers are applied during the kanji challenge phase in BattleScene.
         result = { type: 'stance' }
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
         break
       }
       case 'dash': {
         // Dash reflex bonus is applied during the kanji challenge phase in BattleScene.
         result = { type: 'dash' }
+        if (combo.appliesState) {
+          const subject = combo.appliesState.target === 'self' ? performer : target
+          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+        }
         break
       }
       default:
@@ -563,11 +713,17 @@ export default class TurnManager {
       if (expiredBuffs.some(b => b.type === 'sword_damage_bonus')) {
         this.log(`Sharpened blade wears off.`)
       }
+      expireStates(this.player, 'end_of_player_turn', (msg) => this.log(msg))
+      for (const enemy of this.getAliveEnemies()) {
+        expireStates(enemy, 'end_of_player_turn', (msg) => this.log(msg))
+      }
     } else {
       for (const enemy of this.getAliveEnemies()) {
         this._decrementDurations(enemy)
         enemy.decrementBuffDurations()
+        expireStates(enemy, 'end_of_enemy_turn', (msg) => this.log(msg))
       }
+      expireStates(this.player, 'end_of_enemy_turn', (msg) => this.log(msg))
     }
 
     // 2. Switch turn.

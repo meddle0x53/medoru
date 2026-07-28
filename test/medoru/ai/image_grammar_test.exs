@@ -1,5 +1,5 @@
 defmodule Medoru.AI.ImageGrammarTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Medoru.AI.ImageGrammar
 
