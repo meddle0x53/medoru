@@ -315,8 +315,15 @@ defmodule Medoru.Content.KanjiRadicals do
     %{
       character: "日",
       meaning: "sun, day, time",
-      variants: ["曰"],
+      variants: [],
       category: :nature,
+      stroke_count: 4
+    },
+    %{
+      character: "曰",
+      meaning: "say, speech",
+      variants: [],
+      category: :abstract,
       stroke_count: 4
     },
     %{
@@ -767,6 +774,13 @@ defmodule Medoru.Content.KanjiRadicals do
     %{character: "高", meaning: "tall, high", variants: [], category: :abstract, stroke_count: 10},
     %{character: "髟", meaning: "hair", variants: [], category: :people, stroke_count: 10},
     %{character: "鬥", meaning: "fight", variants: [], category: :abstract, stroke_count: 10},
+    %{
+      character: "鬯",
+      meaning: "sacrificial wine",
+      variants: [],
+      category: :abstract,
+      stroke_count: 10
+    },
     %{
       character: "鬲",
       meaning: "tripod, cauldron",
