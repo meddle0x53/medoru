@@ -122,6 +122,77 @@ defmodule MedoruWeb.DailyKanjiTestLiveTest do
       assert progress_after.known_score == 2
     end
 
+    test "shows readings with the lowest admin-defined position first", %{
+      conn: conn,
+      kanji_list: kanji_list
+    } do
+      Enum.each(kanji_list, fn kanji ->
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :on,
+          reading: "カター",
+          romaji: "kataa",
+          position: 5
+        })
+
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :on,
+          reading: "アター",
+          romaji: "ataa",
+          position: 1
+        })
+
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :kun,
+          reading: "あと",
+          romaji: "ato",
+          position: 6
+        })
+
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :kun,
+          reading: "さき",
+          romaji: "saki",
+          position: 2
+        })
+      end)
+
+      {:ok, _view, html} = live(conn, ~p"/daily-challenges/kanji")
+
+      assert html =~ "アター"
+      assert html =~ "さき"
+      refute html =~ "カター"
+      refute html =~ "あと"
+    end
+
+    test "shows a word hint for the current kanji", %{conn: conn, kanji_list: kanji_list} do
+      Enum.each(kanji_list, fn kanji ->
+        reading =
+          kanji_reading_fixture(kanji.id, %{
+            reading_type: :on,
+            reading: "テスト",
+            romaji: "tesuto"
+          })
+
+        {:ok, _word} =
+          Medoru.Content.create_word_with_kanji(
+            %{
+              text: kanji.character <> <<0x3901::utf8>>,
+              reading: "てすと",
+              meaning: "hint word meaning",
+              difficulty: 5,
+              usage_frequency: 10,
+              word_type: :noun
+            },
+            [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+          )
+      end)
+
+      {:ok, _view, html} = live(conn, ~p"/daily-challenges/kanji")
+
+      assert html =~ "hint word meaning"
+      assert html =~ "てすと"
+    end
+
     test "known_score decreases but not below 1 on incorrect kanji", %{conn: conn, user: user} do
       {:ok, view, html} = live(conn, ~p"/daily-challenges/kanji")
 

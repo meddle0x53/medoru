@@ -1142,6 +1142,32 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Returns the most frequent word containing the given kanji that the user has
+  learned. Falls back to the most frequent word in the database when the user
+  knows no word with this kanji.
+
+  `usage_frequency` is a rank: lower means more common.
+
+  Returns `%Word{}` or `nil` when no word in the database uses this kanji.
+  """
+  def most_frequent_word_for_kanji(user_id, kanji_id) do
+    base_query =
+      Word
+      |> join(:inner, [w], wk in WordKanji, on: wk.word_id == w.id)
+      |> where([_w, wk], wk.kanji_id == ^kanji_id)
+      |> order_by([w], asc: w.usage_frequency)
+      |> limit(1)
+
+    known_query =
+      base_query
+      |> join(:inner, [w, _wk], up in UserProgress,
+        on: up.word_id == w.id and up.user_id == ^user_id
+      )
+
+    Repo.one(known_query) || Repo.one(base_query)
+  end
+
+  @doc """
   Generates a daily Component Hunt challenge for a user.
 
   Picks a learned kanji, uses its first component, and ensures the component has

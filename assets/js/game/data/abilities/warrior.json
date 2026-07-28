@@ -730,14 +730,26 @@
       "id": "berserk",
       "name": "Berserk",
       "nameJa": "狂戦",
-      "description": "Enter a rage; sword attacks heal you for part of the damage dealt.",
+      "description": "Enter a rage for the rest of the battle. Weapon attacks heal you for 10% of damage dealt by default. A successful kanji challenge raises the lifesteal based on the drawn kanji's strokes and accuracy. Multiple uses stack.",
       "type": "buff",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": "Long Sword",
-      "staminaCost": 6,
+      "staminaCost": 8,
       "kanji": "狂",
-      "rarity": "common",
+      "kanjiPool": [
+        "狂",
+        "猛",
+        "暴",
+        "怒",
+        "鬼"
+      ],
+      "rarity": "epic",
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp"
+      },
       "config": {
         "buffType": "berserk_lifesteal"
       },
@@ -1041,17 +1053,23 @@
       "id": "gutting_slash",
       "name": "Gutting Slash",
       "nameJa": "斬り裂き",
-      "description": "A bleeding cut that opens deep wounds.",
+      "description": "A bleeding cut that opens deep wounds. Multi-use; once learned it will not appear as a reward again.",
       "type": "attack",
       "element": "physical",
       "equipmentType": "weapon",
       "requiredEquipment": null,
       "requiredCharmFamily": "bleed",
-      "staminaCost": 4,
+      "staminaCost": 5,
       "basePower": 14,
       "scalingStat": "skill",
       "scalingMultiplier": 1.0,
       "kanji": "裂",
+      "kanjiPool": [
+        "裂",
+        "血",
+        "傷",
+        "噴"
+      ],
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -1063,6 +1081,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -1083,13 +1117,13 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": false
     },
     {
       "id": "seismic_slam",
       "name": "Seismic Slam",
       "nameJa": "地碎打",
-      "description": "A crushing overhead strike that shatters armour.",
+      "description": "A crushing overhead strike that shatters armour. Multi-use; once learned it will not appear as a reward again.",
       "type": "attack",
       "element": "physical",
       "equipmentType": "weapon",
@@ -1100,6 +1134,12 @@
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
       "kanji": "砕",
+      "kanjiPool": [
+        "震",
+        "砕",
+        "轟",
+        "崩"
+      ],
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -1111,6 +1151,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -1127,13 +1183,13 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": false
     },
     {
       "id": "flame_arc",
       "name": "Flame Arc",
       "nameJa": "炎弧",
-      "description": "A sweeping blade of fire that scorches the enemy.",
+      "description": "A sweeping blade of fire that scorches the enemy. Multi-use; once learned it will not appear as a reward again.",
       "type": "attack",
       "element": "fire",
       "equipmentType": "weapon",
@@ -1144,6 +1200,14 @@
       "scalingStat": "mana",
       "scalingMultiplier": 1.1,
       "kanji": "炎",
+      "kanjiPool": [
+        "火",
+        "炎",
+        "焔",
+        "焼",
+        "燃",
+        "灼"
+      ],
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -1155,6 +1219,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -1178,13 +1258,13 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": false
     },
     {
       "id": "gale_strike",
       "name": "Gale Strike",
       "nameJa": "風斬り",
-      "description": "A swift cutting wind that leaves the enemy reeling.",
+      "description": "A swift cutting wind that leaves the enemy reeling. Multi-use; once learned it will not appear as a reward again.",
       "type": "attack",
       "element": "wind",
       "equipmentType": "weapon",
@@ -1195,6 +1275,13 @@
       "scalingStat": "skill",
       "scalingMultiplier": 1.1,
       "kanji": "風",
+      "kanjiPool": [
+        "風",
+        "嵐",
+        "疾",
+        "迅",
+        "旋"
+      ],
       "rarity": "rare",
       "infusableWith": [
         "fire",
@@ -1206,6 +1293,22 @@
         "bleed",
         "poison"
       ],
+      "kanjiChallenge": {
+        "skipChance": 0.1,
+        "focusOverrideChance": 0.2,
+        "failThreshold": "halfUp",
+        "powerBonusTiers": [
+          { "minStrokes": 0, "bonus": 1 },
+          { "minStrokes": 4, "bonus": 2 },
+          { "minStrokes": 8, "bonus": 3 }
+        ],
+        "outcomes": {
+          "skipped": { "challengeResult": "success", "applyPowerBonus": false },
+          "fallback": { "challengeResult": "success", "applyPowerBonus": false },
+          "pass": { "challengeResult": "success", "applyPowerBonus": true },
+          "fail": { "challengeResult": "fail", "applyPowerBonus": false }
+        }
+      },
       "lifecycle": {
         "onUse": [
           "dealDamage"
@@ -1226,7 +1329,7 @@
           }
         }
       ],
-      "singleUse": true
+      "singleUse": false
     }
   ]
 }

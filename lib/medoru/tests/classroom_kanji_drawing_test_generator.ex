@@ -140,6 +140,7 @@ defmodule Medoru.Tests.ClassroomKanjiDrawingTestGenerator do
 
     kanji.kanji_readings
     |> Enum.filter(&(&1.reading_type == type))
+    |> Enum.sort_by(& &1.position)
     |> Enum.map(& &1.reading)
   end
 

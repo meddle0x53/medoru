@@ -2037,7 +2037,7 @@ msgstr "漢字を見る"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1017
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:509
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:968
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Word"
 msgstr "単語"
 
@@ -14831,9 +14831,9 @@ msgid "Write something on your white board"
 msgstr ""
 
 #: lib/medoru_web/live/daily_kanji_test_live.ex:116
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Write the kanji for"
-msgstr "『%{meanings}』の漢字を書いてください"
+msgstr "次の意味の漢字を書いてください"
 
 #: lib/medoru_web/live/daily_card_game_live.ex:160
 #, elixir-autogen, elixir-format
@@ -16891,9 +16891,9 @@ msgid "Word Relations"
 msgstr "単語"
 
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:219
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Write the kanji"
-msgstr "『%{meanings}』の漢字を書いてください"
+msgstr "漢字を書いてください"
 
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:81
 #, elixir-autogen, elixir-format

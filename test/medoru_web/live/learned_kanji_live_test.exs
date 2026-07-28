@@ -184,6 +184,84 @@ defmodule MedoruWeb.LearnedKanjiLiveTest do
       assert html =~ "テスト"
       assert html =~ "てすと"
     end
+
+    test "shows readings with the lowest admin-defined position first", %{conn: conn} do
+      user = user_fixture()
+      kanji = kanji_fixture()
+
+      kanji_reading_fixture(kanji.id, %{
+        reading_type: :on,
+        reading: "カター",
+        romaji: "kataa",
+        position: 2
+      })
+
+      kanji_reading_fixture(kanji.id, %{
+        reading_type: :on,
+        reading: "アター",
+        romaji: "ataa",
+        position: 0
+      })
+
+      kanji_reading_fixture(kanji.id, %{
+        reading_type: :kun,
+        reading: "あと",
+        romaji: "ato",
+        position: 3
+      })
+
+      kanji_reading_fixture(kanji.id, %{
+        reading_type: :kun,
+        reading: "さき",
+        romaji: "saki",
+        position: 1
+      })
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, kanji.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/users/#{user.id}/kanji/practice/challenge?ids=#{kanji.id}")
+
+      assert html =~ "アター"
+      assert html =~ "さき"
+      refute html =~ "カター"
+      refute html =~ "あと"
+    end
+
+    test "shows a word hint for the current kanji", %{conn: conn} do
+      user = user_fixture()
+      kanji = kanji_fixture()
+
+      reading =
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :on,
+          reading: "テスト",
+          romaji: "tesuto"
+        })
+
+      {:ok, _word} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: kanji.character <> <<0x3901::utf8>>,
+            reading: "てすと",
+            meaning: "hint word meaning",
+            difficulty: 5,
+            usage_frequency: 10,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      {:ok, _} = Learning.track_kanji_learned(user.id, kanji.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/users/#{user.id}/kanji/practice/challenge?ids=#{kanji.id}")
+
+      assert html =~ "hint word meaning"
+      assert html =~ "てすと"
+    end
   end
 
   defp unique_kanji_char(index) do

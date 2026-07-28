@@ -62,6 +62,7 @@ export default class BattleScene extends Phaser.Scene {
     this.player.resetStanceMultipliers() // stance multipliers last one battle only
     this.player.resetDashBonus() // dash reflex bonus lasts one battle only
     this.player.resetTurnMissChance() // miss chance is per player turn
+    this.player.resetBerserkLifesteal() // berserk lifesteal stacks one battle only
     this.player.resetForTurn() // start every battle with full stamina and clean per-turn state
     this.player.block = 0 // block from previous battle must not carry over
     this.player.tempDefense = 0 // setup defence from previous battle must not carry over
@@ -623,6 +624,15 @@ export default class BattleScene extends Phaser.Scene {
         label: 'Enemy miss',
         value: `${(turnMiss * 100).toFixed(0)}%`,
         color: '#2ecc71',
+      })
+    }
+
+    const berserkPercent = this.player.berserkLifestealPercent || 0
+    if (berserkPercent > 0) {
+      rows.push({
+        label: 'Berserk',
+        value: `${berserkPercent.toFixed(0)}% lifesteal`,
+        color: '#f1c40f',
       })
     }
 
@@ -2361,6 +2371,17 @@ export default class BattleScene extends Phaser.Scene {
     const userLevel = getWindowGameData()?.level || 1
     const pools = infuseSkill.infusionKanjiPools
 
+    // 20% chance to override the pool with the focus/to-learn kanji.
+    const focusKanjiData = this.player.loadout.focusKanjiData
+    if (focusKanjiData && Math.random() < 0.2 && focusKanjiData.stroke_data?.strokes?.length > 0) {
+      return {
+        kanji: focusKanjiData.character,
+        data: focusKanjiData,
+        strokeData: focusKanjiData.stroke_data,
+        tier: this.getInfusionKanjiTier(focusKanjiData.character, pools),
+      }
+    }
+
     if (pools) {
       const effectivePool = Object.entries(pools)
         .filter(([min]) => Number(min) <= userLevel)
@@ -2399,6 +2420,7 @@ export default class BattleScene extends Phaser.Scene {
 
     this.pendingInfusionTarget.kanji = pick.kanji
     this.pendingInfusionTarget.tier = pick.tier
+    this.pendingInfusionTarget.totalStrokes = pick.strokeData?.strokes?.length || 1
 
     const meaning = pick.data?.meanings?.[0]
     const on = pick.data?.on_readings?.[0]
@@ -2457,12 +2479,21 @@ export default class BattleScene extends Phaser.Scene {
 
     if (kanjiResult) {
       if (kanjiResult.completed) {
-        if (kanjiResult.wrongStrokes === 0) challengeBonus = 0.35
-        else if (kanjiResult.wrongStrokes <= 2) challengeBonus = 0.20
-        else challengeBonus = 0.10
-        this.addCombatLog(`${kanji} drawn! Infusion chance improved.`)
+        const totalStrokes = pending.totalStrokes || 1
+        const ratio = kanjiResult.wrongStrokes / totalStrokes
+        if (ratio <= 1 / 3) {
+          challengeBonus = 0.35
+          this.addCombatLog(`${kanji} drawn cleanly! Infusion chance greatly improved.`)
+        } else if (ratio <= 1 / 2) {
+          challengeBonus = 0.20
+          this.addCombatLog(`${kanji} drawn! Infusion chance improved.`)
+        } else {
+          challengeBonus = -0.10
+          this.addCombatLog(`${kanji} drawn sloppily. Infusion chance worsened.`)
+        }
       } else {
-        this.addCombatLog(`${kanji} failed! No infusion bonus.`)
+        challengeBonus = -0.10
+        this.addCombatLog(`${kanji} failed! Infusion chance worsened.`)
       }
     }
 
@@ -2880,6 +2911,12 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Berserk draws a kanji from its pool; the lifesteal percentage depends on strokes and mistakes.
+    if (skill.id === 'berserk') {
+      this.startBerserkChallenge(skill)
+      return
+    }
+
     // Use Item opens the item menu directly
     if (skill.id === 'use_item') {
       this.challengeActive = false
@@ -3098,6 +3135,93 @@ export default class BattleScene extends Phaser.Scene {
           finish(0.07, `${selectedKanjiData.character} drawn! Dash reflex honed. +7% miss per ability.`)
         } else {
           finish(0.03, `${selectedKanjiData.character} failed! Dash reflex dulled. +3% miss per ability.`)
+        }
+      },
+      onWrongStroke: ({ count }) => {
+        this.spawnFloatingText(
+          GAME_CONFIG.width / 2,
+          GAME_CONFIG.height / 2 - 180,
+          `Wrong stroke! (${count})`,
+          COLORS.danger
+        )
+      },
+    }, selectedKanjiData)
+  }
+
+  startBerserkChallenge(skill) {
+    const challengeCfg = skill.kanjiChallenge || {}
+
+    const finish = (percent, logMsg) => {
+      this.player.addBerserkLifesteal(percent)
+      this.challengeActive = false
+      this.setSkillButtonsEnabled(true)
+      this.endTurnBtn.setVisible(true)
+      this.addCombatLog(logMsg)
+      this.spawnFloatingText(
+        this.playerSprite.x,
+        this.playerSprite.y - 60,
+        `Berserk +${percent.toFixed(0)}%`,
+        0xf1c40f
+      )
+      this.executeSkill('success')
+    }
+
+    // 10% chance to skip the challenge entirely — default 10% lifesteal.
+    const skipChance = challengeCfg.skipChance ?? 0.1
+    if (skipChance > 0 && Math.random() < skipChance) {
+      finish(10, 'Berserk rage takes hold. +10% lifesteal.')
+      return
+    }
+
+    // Pick a kanji from the berserk pool; 20% chance to use the focus kanji instead.
+    const pool = skill.kanjiPool || []
+    const focusOverrideChance = challengeCfg.focusOverrideChance ?? 0.2
+    const focusKanjiData = this.player.loadout.focusKanjiData
+    let selectedKanjiData = null
+
+    if (focusKanjiData && focusOverrideChance > 0 && Math.random() < focusOverrideChance && focusKanjiData.stroke_data?.strokes?.length > 0) {
+      selectedKanjiData = focusKanjiData
+    } else {
+      const allKanji = getWindowGameData()?.all_kanji || []
+      const candidates = pool
+        .map(char => {
+          const fromList = this.player.kanjiList.find(k => k.character === char)
+          if (fromList?.stroke_data?.strokes?.length > 0) return fromList
+          const fromAll = allKanji.find(k => k.character === char)
+          if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
+          return null
+        })
+        .filter(Boolean)
+      if (candidates.length > 0) {
+        selectedKanjiData = candidates[Math.floor(Math.random() * candidates.length)]
+      }
+    }
+
+    // No usable stroke data: apply the default lifesteal.
+    if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
+      finish(10, 'Berserk rage takes hold. +10% lifesteal.')
+      return
+    }
+
+    const strokeData = selectedKanjiData.stroke_data
+    const totalStrokes = strokeData.strokes.length
+
+    this.startKanjiDrawingChallenge(strokeData, `Berserk! Draw ${selectedKanjiData.character}:`, {
+      onComplete: (result) => {
+        this.challengeActive = false
+        this.setSkillButtonsEnabled(true)
+        this.endTurnBtn.setVisible(true)
+
+        this.player.setKanjiStrokeCount(totalStrokes)
+        if (result.completed) {
+          this.player.setKanjiResult(result.wrongStrokes)
+          const cleanStrokes = Math.max(0, totalStrokes - result.wrongStrokes)
+          const bonus = 2 * cleanStrokes
+          const totalPercent = 10 + bonus
+          finish(totalPercent, `${selectedKanjiData.character} drawn! Berserk rage grows. +${totalPercent.toFixed(0)}% lifesteal (${cleanStrokes} clean strokes).`)
+        } else {
+          this.player.setKanjiResult(99)
+          finish(8, `${selectedKanjiData.character} failed! Berserk rage flickers. +8% lifesteal.`)
         }
       },
       onWrongStroke: ({ count }) => {

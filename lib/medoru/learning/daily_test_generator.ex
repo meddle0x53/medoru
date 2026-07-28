@@ -771,7 +771,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
       "kanji_writing" ->
         # Try to build a writing step from the word's kanji
-        case build_writing_step_for_word(word) do
+        case build_writing_step_for_word(word, user_id) do
           {:ok, step_attrs} ->
             Map.merge(base_attrs, step_attrs)
 
@@ -814,7 +814,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   # Build a writing step for a word using its first kanji
-  defp build_writing_step_for_word(word) do
+  defp build_writing_step_for_word(word, user_id) do
     # Ensure word_kanjis is loaded
     word_with_kanji =
       case word.word_kanjis do
@@ -839,6 +839,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
       kanji ->
         meanings = Enum.join(kanji.meanings || [], ", ")
 
+        # Most frequent word with this kanji that the user knows (DB-wide fallback)
+        hint_word = Medoru.Learning.most_frequent_word_for_kanji(user_id, kanji.id)
+
         # Extract stroke paths from kanji.stroke_data
         strokes =
           case kanji.stroke_data do
@@ -861,7 +864,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
              kanji: kanji.character,
              meanings: kanji.meanings,
              stroke_count: kanji.stroke_count,
-             strokes: strokes
+             strokes: strokes,
+             hint_word_reading: hint_word && hint_word.reading,
+             hint_word_meaning: hint_word && hint_word.meaning
            },
            options: []
          }}

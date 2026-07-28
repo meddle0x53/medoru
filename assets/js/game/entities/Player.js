@@ -295,6 +295,9 @@ export default class Player extends Character {
     this.dashBonusPerAbility = 0
     this.turnMissChance = 0
 
+    // Berserk lifesteal percentage stacks for the whole battle.
+    this.berserkLifestealPercent = 0
+
     // Reaction multiplier: applied during enemy attacks when a reaction challenge triggers
     // 1 = no effect, 2 = correct reaction (doubles readiness effect), 0.5 = wrong reaction (halves it)
     this.reactionMultiplier = 1
@@ -507,6 +510,18 @@ export default class Player extends Character {
 
   addTurnMissChance(delta) {
     this.turnMissChance = Math.max(0, Math.min(1, (this.turnMissChance || 0) + delta))
+  }
+
+  resetBerserkLifesteal() {
+    this.berserkLifestealPercent = 0
+  }
+
+  addBerserkLifesteal(percent) {
+    this.berserkLifestealPercent = Math.max(0, Math.min(100, (this.berserkLifestealPercent || 0) + percent))
+  }
+
+  getBerserkLifestealPercent() {
+    return this.berserkLifestealPercent || 0
   }
 
   getOutgoingDamageMultiplier() {

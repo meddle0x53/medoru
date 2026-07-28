@@ -93,6 +93,13 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
             <span class="font-medium">{gettext("Kun")}:</span> {first_reading(@step.kanji, :kun)}
           </p>
         <% end %>
+        <%= if @step.question_data["hint_word_reading"] do %>
+          <p class="text-sm text-secondary mt-1">
+            <span class="font-medium">{gettext("Word")}:</span> {@step.question_data[
+              "hint_word_reading"
+            ]} ({@step.question_data["hint_word_meaning"]})
+          </p>
+        <% end %>
       </div>
 
       <%!-- Writing Canvas Container --%>
@@ -274,11 +281,16 @@ defmodule MedoruWeb.LessonTestLive.WritingComponent do
     end
   end
 
-  # Get the first reading of a given type (:on or :kun)
+  # Get the first reading of a given type (:on or :kun) by admin-defined position
   defp first_reading(%{kanji_readings: %Ecto.Association.NotLoaded{}}, _type), do: "—"
 
   defp first_reading(kanji, type) do
-    case Enum.find(kanji.kanji_readings || [], fn r -> r.reading_type == type end) do
+    reading =
+      (kanji.kanji_readings || [])
+      |> Enum.filter(&(&1.reading_type == type))
+      |> Enum.min_by(& &1.position, fn -> nil end)
+
+    case reading do
       nil -> "—"
       reading -> reading.reading
     end

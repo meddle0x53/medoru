@@ -107,6 +107,11 @@
                         :kun
                       )} • {@current_kanji.stroke_count} {gettext("strokes")}
                     </p>
+                    <%= if @current_word do %>
+                      <p class="text-sm text-secondary mt-1">
+                        <span class="font-medium">{gettext("Word")}:</span> {@current_word.reading} ({@current_word.meaning})
+                      </p>
+                    <% end %>
                   </div>
                 </div>
               </div>

@@ -47,6 +47,7 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
         |> Enum.shuffle()
 
       count = length(kanji_list)
+      current_kanji = List.first(kanji_list)
 
       {:noreply,
        socket
@@ -55,7 +56,8 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
        |> assign(:kanji_count, count)
        |> assign(:kanji_list, kanji_list)
        |> assign(:current_index, 1)
-       |> assign(:current_kanji, List.first(kanji_list))
+       |> assign(:current_kanji, current_kanji)
+       |> assign(:current_word, Learning.most_frequent_word_for_kanji(user.id, current_kanji.id))
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, [])
        |> assign(:correct_count, 0)
@@ -122,6 +124,7 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
        socket
        |> assign(:current_index, current_index + 1)
        |> assign(:current_kanji, next_kanji)
+       |> assign(:current_word, Learning.most_frequent_word_for_kanji(user.id, next_kanji.id))
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, results)
        |> assign(:correct_count, correct_count)}
@@ -179,7 +182,12 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
   defp first_reading(%{kanji_readings: %Ecto.Association.NotLoaded{}}, _type), do: "—"
 
   defp first_reading(kanji, type) do
-    case Enum.find(kanji.kanji_readings || [], fn r -> r.reading_type == type end) do
+    reading =
+      (kanji.kanji_readings || [])
+      |> Enum.filter(&(&1.reading_type == type))
+      |> Enum.min_by(& &1.position, fn -> nil end)
+
+    case reading do
       nil -> "—"
       reading -> reading.reading
     end

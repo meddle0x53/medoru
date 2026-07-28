@@ -619,8 +619,92 @@ defmodule Medoru.LearningTest do
   end
 
   # ============================================================================
+  # most_frequent_word_for_kanji/2
+  # ============================================================================
+
+  describe "most_frequent_word_for_kanji/2" do
+    setup do
+      user = user_fixture()
+      kanji = kanji_fixture()
+
+      reading =
+        kanji_reading_fixture(kanji.id, %{reading_type: :on, reading: "テスト", romaji: "tesuto"})
+
+      %{user: user, kanji: kanji, reading: reading}
+    end
+
+    test "returns the most frequent word the user knows with the kanji", %{
+      user: user,
+      kanji: kanji,
+      reading: reading
+    } do
+      less_common = word_for_kanji(kanji, reading, %{meaning: "less common", usage_frequency: 50})
+      more_common = word_for_kanji(kanji, reading, %{meaning: "more common", usage_frequency: 20})
+
+      {:ok, _} = Learning.track_word_learned(user.id, less_common.id)
+      {:ok, _} = Learning.track_word_learned(user.id, more_common.id)
+
+      assert Learning.most_frequent_word_for_kanji(user.id, kanji.id).id == more_common.id
+    end
+
+    test "prefers a known word over a more frequent unknown word", %{
+      user: user,
+      kanji: kanji,
+      reading: reading
+    } do
+      known = word_for_kanji(kanji, reading, %{meaning: "known", usage_frequency: 50})
+      _unknown = word_for_kanji(kanji, reading, %{meaning: "unknown", usage_frequency: 10})
+
+      {:ok, _} = Learning.track_word_learned(user.id, known.id)
+
+      assert Learning.most_frequent_word_for_kanji(user.id, kanji.id).id == known.id
+    end
+
+    test "falls back to the most frequent word in the DB when user knows none", %{
+      user: user,
+      kanji: kanji,
+      reading: reading
+    } do
+      _less_common =
+        word_for_kanji(kanji, reading, %{meaning: "less common", usage_frequency: 50})
+
+      most_common = word_for_kanji(kanji, reading, %{meaning: "most common", usage_frequency: 10})
+
+      assert Learning.most_frequent_word_for_kanji(user.id, kanji.id).id == most_common.id
+    end
+
+    test "returns nil when no word uses the kanji", %{user: user, kanji: kanji} do
+      assert Learning.most_frequent_word_for_kanji(user.id, kanji.id) == nil
+    end
+  end
+
+  # ============================================================================
   # Helpers
   # ============================================================================
+
+  defp word_for_kanji(kanji, reading, attrs) do
+    suffix = <<0x3900 + rem(System.unique_integer([:positive]), 0x1000)::utf8>>
+
+    word_attrs =
+      Map.merge(
+        %{
+          text: kanji.character <> suffix,
+          reading: "てすと",
+          meaning: "test word",
+          difficulty: 5,
+          usage_frequency: 100,
+          word_type: :noun
+        },
+        Map.new(attrs)
+      )
+
+    {:ok, word} =
+      Medoru.Content.create_word_with_kanji(word_attrs, [
+        %{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}
+      ])
+
+    word
+  end
 
   defp create_review_schedule(user_id, user_progress_id, next_review_at, attrs \\ %{}) do
     attrs = Map.new(attrs)

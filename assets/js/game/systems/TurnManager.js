@@ -265,12 +265,11 @@ export default class TurnManager {
 
         const actual = target.takeDamage(finalDamage)
 
-        // Berserk lifesteal on sword attacks
-        const berserk = performer.buffs.find(b => b.type === 'berserk_lifesteal')
+        // Berserk lifesteal on weapon attacks
         let lifesteal = 0
-        if (berserk && skill.equipmentType === 'weapon' && actual > 0) {
-          const ratio = performer.lastKanjiWrongStrokes === 0 ? 0.5 : 0.25
-          lifesteal = Math.floor(actual * ratio)
+        const berserkPercent = performer.getBerserkLifestealPercent ? performer.getBerserkLifestealPercent() : 0
+        if (berserkPercent > 0 && skill.equipmentType === 'weapon' && actual > 0) {
+          lifesteal = Math.floor(actual * (berserkPercent / 100))
           if (lifesteal > 0) performer.heal(lifesteal)
         }
 

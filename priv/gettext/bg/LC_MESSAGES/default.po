@@ -2038,9 +2038,9 @@ msgstr "Вижте канджи"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1017
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:509
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:968
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Word"
-msgstr "Думи"
+msgstr "Дума"
 
 #: lib/medoru_web/live/learn_live.ex:26
 #, elixir-autogen, elixir-format
@@ -14836,9 +14836,9 @@ msgid "Write something on your white board"
 msgstr "Напишете нещо на дъската си..."
 
 #: lib/medoru_web/live/daily_kanji_test_live.ex:116
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Write the kanji for"
-msgstr "Напишете канджи за '%{meanings}'"
+msgstr "Напишете канджи за"
 
 #: lib/medoru_web/live/daily_card_game_live.ex:160
 #, elixir-autogen, elixir-format
@@ -16896,9 +16896,9 @@ msgid "Word Relations"
 msgstr "Думи"
 
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:219
-#, elixir-autogen, elixir-format, fuzzy
+#, elixir-autogen, elixir-format
 msgid "Write the kanji"
-msgstr "Напишете канджи за '%{meanings}'"
+msgstr "Напишете канджи"
 
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:81
 #, elixir-autogen, elixir-format

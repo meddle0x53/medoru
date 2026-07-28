@@ -128,6 +128,11 @@ defmodule MedoruWeb.DailyKanjiTestLive do
                       :kun
                     )} • {@current_kanji.stroke_count} {gettext("strokes")}
                   </p>
+                  <%= if @current_word do %>
+                    <p class="text-sm text-secondary mt-1">
+                      <span class="font-medium">{gettext("Word")}:</span> {@current_word.reading} ({@current_word.meaning})
+                    </p>
+                  <% end %>
                 </div>
 
                 <%!-- Writing Component --%>
@@ -237,6 +242,7 @@ defmodule MedoruWeb.DailyKanjiTestLive do
          |> assign(:results, [])}
       else
         selected_kanji = Enum.take_random(kanji_list, @kanji_count)
+        current_kanji = hd(selected_kanji)
 
         {:ok,
          socket
@@ -246,7 +252,11 @@ defmodule MedoruWeb.DailyKanjiTestLive do
          |> assign(:kanji_count, @kanji_count)
          |> assign(:kanji_list, selected_kanji)
          |> assign(:current_index, 1)
-         |> assign(:current_kanji, hd(selected_kanji))
+         |> assign(:current_kanji, current_kanji)
+         |> assign(
+           :current_word,
+           Learning.most_frequent_word_for_kanji(user.id, current_kanji.id)
+         )
          |> assign(:current_wrong_strokes, 0)
          |> assign(:results, [])
          |> assign(:correct_count, 0)
@@ -353,6 +363,7 @@ defmodule MedoruWeb.DailyKanjiTestLive do
        socket
        |> assign(:current_index, current_index + 1)
        |> assign(:current_kanji, next_kanji)
+       |> assign(:current_word, Learning.most_frequent_word_for_kanji(user.id, next_kanji.id))
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, results)
        |> assign(:correct_count, correct_count)}
@@ -382,7 +393,12 @@ defmodule MedoruWeb.DailyKanjiTestLive do
   defp first_reading(%{kanji_readings: %Ecto.Association.NotLoaded{}}, _type), do: "—"
 
   defp first_reading(kanji, type) do
-    case Enum.find(kanji.kanji_readings || [], fn r -> r.reading_type == type end) do
+    reading =
+      (kanji.kanji_readings || [])
+      |> Enum.filter(&(&1.reading_type == type))
+      |> Enum.min_by(& &1.position, fn -> nil end)
+
+    case reading do
       nil -> "—"
       reading -> reading.reading
     end
