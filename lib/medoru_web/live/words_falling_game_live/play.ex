@@ -269,7 +269,12 @@ defmodule MedoruWeb.WordsFallingGameLive.Play do
           word_id_str = to_string(word_id)
 
           meanings =
-            [word.meaning, Content.get_localized_meaning(word, locale)]
+            [
+              word.meaning,
+              Content.get_localized_meaning(word, locale),
+              # Always accept Bulgarian meanings regardless of the player's locale
+              Content.get_localized_meaning(word, "bg")
+            ]
             |> Enum.reject(&is_nil/1)
             |> Enum.flat_map(&split_alternatives/1)
             |> Enum.map(&String.downcase(String.trim(&1)))

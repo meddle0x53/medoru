@@ -254,19 +254,21 @@ If a focus kanji is set and the 20% focus override triggers, the player draws th
 
 | Ability | STA | Rarity | Single | Type | Mechanics |
 |---------|-----|--------|--------|------|-----------|
-| **Setup Defence** 防御 | 2 | Common | No | Defence | Grants block equal to `baseBlock 5 + shield scaling`; scales with the shield’s effective scaling schedule |
+| **Setup Defence** 防御 | 2 | Common | No | Defence | Grants block equal to `baseBlock 5 + shield scaling`; scales with the shield’s effective scaling schedule; leaves the player **Guarding** |
 | **Shield Parry** 受け流し | 2 | Common | No | Parry | Sets up a parry charge. Parry chance = `15% + LCK/100 + readiness×0.20 + quizBonus ± quality`, capped 5%–60% |
-| **Shield Bash** 盾打 | 2 | Common | Yes | Attack+Defence | Deals `2 + STR×0.5` damage, grants 3 base block, 10% blunt (20% on perfect, 5% on fail) |
+| **Shield Bash** 盾打 | 2 | Common | Yes | Attack+Defence | Deals `2 + STR×0.5` damage, grants 3 base block, 10% blunt (20% on perfect, 5% on fail); applies **Staggered** |
+| **Raise Shield** 盾を上げる | 2 | Uncommon | Yes | Defence | Brace for the next enemy hit; when hit, gains `15 + floor(shieldDefence / 2)` block |
+
 
 ### 6.3 Stances & Utility
 
 | Ability | STA | Rarity | Single | Effect |
 |---------|-----|--------|--------|--------|
 | **Use Item** アイテム | 1 | Common | No | Opens the inventory item menu |
-| **Focus** 集中 | 6 | Common | No | Adds readiness: skipped/fallback +0.5, pass +0.7, fail +0.3 |
+| **Focus** 集中 | 6 | Common | No | Adds readiness: skipped/fallback +0.5, pass +0.7, fail +0.3; leaves the player **Marked** |
 | **Taunt** 挑発 | 5 | Uncommon | Yes | Battle-long stance: player damage ×1.5, enemy damage ×1.5; pass ×1.7/×1.4, fail ×1.3/×1.7 |
 | **Zen** 禅 | 5 | Uncommon | Yes | Battle-long stance: player damage ÷1.5, enemy damage ÷1.5; pass ÷1.7, fail ÷1.3. Cancels Taunt |
-| **Dash** 疾走 | 6 | Rare | Yes | Per-battle reflex: each non-Dash ability used adds miss chance to the enemy turn |
+| **Dash** 疾走 | 6 | Rare | Yes | Per-battle reflex: each non-Dash ability used adds miss chance to the enemy turn; leaves the player **Rushing** |
 
 ### 6.4 Buffs
 
@@ -274,6 +276,7 @@ If a focus kanji is set and the 20% focus override triggers, the player draws th
 |---------|-----|--------|--------|--------|
 | **Sharpen Blade** 鋭気 | 3 | Rare | Yes | Grants a `sword_damage_bonus` buff. Bonus damage scales with SKL, stroke count, and wrong strokes; final bonus is halved. Duration extended by LCK |
 | **Berserk** 狂戦 | 8 | Epic | Yes | Grants stacking lifesteal. Starts at 10%; successful kanji adds `+2% × cleanStrokes`. Multiple uses stack up to 100% |
+| **Sheathe Blade** 居合 | 3 | Rare | Yes | Sheathe the blade. Cannot attack while **Sheathed**; the next enemy melee attack is cancelled and answered with an Iaijutsu counter |
 
 ### 6.5 Family-Locked Attacks
 
@@ -505,6 +508,7 @@ baseDamage  = ability.basePower
 rawDamage   = floor(baseDamage × stanceMultiplier × powerUpMultiplier × weakMultiplier)
 rawDamage   = floor(rawDamage × (1 + damageBonusCharms))
 rawDamage   = floor(rawDamage × infusedDamageMultiplier)
+rawDamage   = floor(rawDamage × comboMultiplier)
 if crit:    rawDamage = floor(rawDamage × 1.5)
 rawDamage  += swordBuffBonus
 
@@ -578,7 +582,9 @@ chance = clamp(0.05, 0.60, chance)
 | Two-Hand Heavy | Reward pool |
 | Sharpen Blade | Reward pool |
 | Shield Bash | Reward pool |
+| Raise Shield | Reward pool + Wooden Shield equipped |
 | Berserk | Reward pool |
+| Sheathe Blade | Reward pool + Long Sword equipped |
 | Gutting Slash | Reward pool + weapon family = **bleed** |
 | Seismic Slam | Reward pool + weapon family = **heavy** |
 | Flame Arc | Reward pool + weapon family = **fire** |
@@ -587,4 +593,86 @@ chance = clamp(0.05, 0.60, chance)
 
 ---
 
-*Document generated from `assets/js/game/data/abilities/warrior.json`, `assets/js/game/data/charms.js`, `assets/js/game/data/socketCharms/`, `assets/js/game/data/abilityRewards.js`, `assets/js/game/systems/TurnManager.js`, `assets/js/game/systems/EffectRegistry.js`, and related battle scene code.*
+## 11. Combo System
+
+The warrior now has a combo layer on top of normal abilities. Every ability has **tags**, and many abilities apply or consume temporary **combo states**. Using the right ability at the right time turns a small opening into a much larger payoff.
+
+### 11.1 Tags & Chain Bonus
+
+Each ability lists one or more tags. During the player turn, every tag used is recorded in a ledger. Abilities with a `chainBonus` config gain extra damage for each distinct tag used beyond a threshold. The engine uses:
+
+```
+multiplier = 1 + bonusPerStep × (distinctTags − threshold + 1)
+```
+
+for `distinctTags ≥ threshold` (default threshold 3, default bonus 0.1 per step). No current warrior ability uses `chainBonus`, but the system is wired for future skills.
+
+### 11.2 Combo States
+
+States are short-lived buffs or debuffs. They are applied by abilities and consumed by later abilities or enemy attacks.
+
+| State | Category | Applied By | Consumed By | Duration | Effect |
+|---|---|---|---|---|---|
+| **Staggered** | Debuff | Guard Break, Shield Bash, Gale Strike | Heavy Slash, Two-Hand Heavy, Seismic Slam | Until end of player turn | +50% damage when consumed by a heavy attack |
+| **Exposed** | Debuff | Quick Stab | Forward Slash, Gutting Slash | Next attack | Guarantees a critical hit |
+| **Off Balance** | Debuff | Gale Strike | Shield Bash | Until end of player turn | +50% damage when consumed by Shield Bash |
+| **Rushing** | Buff | Dash | Any sword/slash attack | Next attack | Guarantees a critical hit |
+| **Guarding** | Buff | Setup Defence | Next enemy attack | Until end of enemy turn | Adds `8 + floor(shieldDefence / 4)` block and triggers a riposte |
+| **Marked** | Buff | Focus | Next infused attack | Next attack | +50% elemental proc chance |
+| **Raised Shield** | Buff | Raise Shield | Next enemy hit | Until hit | Adds `15 + floor(shieldDefence / 2)` block when hit |
+| **Sheathed** | Buff | Sheathe Blade | Next enemy melee attack | Until triggered | Cancels the enemy attack and performs an Iaijutsu counter |
+| **Last Moment** | Buff | *(not currently available)* | Fatal hit while HP ≤ 25% | Start of next turn | Automatically parries a fatal blow |
+| **Deflect** | Buff | *(not currently available)* | Next enemy attack | Until hit | Reduces and reflects part of the damage |
+| **Revenge** | Buff | Auto on taking damage | Next player attack | Start of next turn | +40% damage |
+| **Bloodlust** | Buff | Auto on taking damage | Next player attack | Start of next turn | Next attack heals 30% of damage dealt |
+| **Momentum** | Buff | Auto at start of player turn if not hit | Next player attack | Start of next turn | +80% damage |
+
+**Duration meanings:**
+- **Next attack** — consumed by the player’s next damaging action.
+- **Until end of player turn** — expires when the player ends their turn.
+- **Until end of enemy turn** — expires after the enemy team finishes acting.
+- **Until hit** — expires the first time the player takes damage.
+- **Until triggered** — expires when its special condition occurs.
+- **Start of next turn** — expires at the start of the player’s next turn if still unused.
+
+### 11.3 Ability Combo Reference
+
+| Ability | Tags | Applies | Consumes | Payoff |
+|---|---|---|---|---|
+| Forward Slash | slash, starter | — | exposed (enemy), rushing (self) | guaranteed crit |
+| Heavy Slash | slash, heavy, finisher | — | staggered (enemy), rushing (self) | +50% damage / guaranteed crit |
+| Quick Stab | pierce, starter, bleed | exposed (enemy) | rushing (self) | guaranteed crit |
+| Guard Break | heavy, stagger | staggered (enemy) | — | sets up stagger |
+| Two-Hand Heavy | heavy, two_hand, finisher | — | staggered (enemy), rushing (self) | +50% damage / guaranteed crit |
+| Setup Defence | guard, defence | guarding (self) | — | riposte on next enemy attack |
+| Shield Bash | stagger, bash, defence | staggered (enemy) | off_balance (enemy) | +50% damage |
+| Focus | prepare, focus | marked (self) | — | +50% elemental proc chance on next infused attack |
+| Dash | mobility | rushing (self) | — | guaranteed crit next attack |
+| Gale Strike | wind, slash, mobility | off_balance (enemy) | rushing (self) | guaranteed crit |
+| Seismic Slam | heavy, earth | — | staggered (enemy) | +50% damage |
+| Gutting Slash | bleed, slash | — | rushing (self) | guaranteed crit |
+| Raise Shield | guard, defence, prepare | raised_shield (self) | — | huge block on next hit |
+| Sheathe Blade | prepare, counter | sheathed (self) | — | Iaijutsu counter on next enemy melee attack |
+
+### 11.4 Reactive Defences
+
+Some combo states trigger automatically during the enemy turn:
+
+- **Guarding** — when an enemy attacks, consume the state to gain block and then perform a counter-attack.
+- **Raised Shield** — when hit, consume the state to add a large block bonus before damage is taken.
+- **Sheathed** — when an enemy makes a melee attack, the attack is cancelled and the player performs an Iaijutsu counter.
+- **Last Moment** — if a hit would reduce HP below 25%, the blow is parried.
+- **Deflect** — the next enemy attack is partially reduced and part of the damage is reflected back.
+
+### 11.5 Turn-Transition States
+
+At the end of the enemy turn, the game checks whether the player was hit:
+
+- If the player was hit, they gain **Revenge** (+40% next attack damage) and **Bloodlust** (next attack heals 30% of damage).
+- If the player was not hit, they gain **Momentum** (+80% next attack damage).
+
+These states are consumed by the next player attack or expire at the start of the next player turn.
+
+---
+
+*Document generated from `assets/js/game/data/abilities/warrior.json`, `assets/js/game/data/charms.js`, `assets/js/game/data/socketCharms/`, `assets/js/game/data/abilityRewards.js`, `assets/js/game/systems/TurnManager.js`, `assets/js/game/systems/CombatStateSystem.js`, `assets/js/game/data/combatStates.json`, `assets/js/game/systems/EffectRegistry.js`, and related battle scene code.*

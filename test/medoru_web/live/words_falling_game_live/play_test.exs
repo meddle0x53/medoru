@@ -22,7 +22,13 @@ defmodule MedoruWeb.WordsFallingGameLive.PlayTest do
 
       Classrooms.apply_to_join(classroom.id, student.id)
 
-      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word =
+        word_fixture(%{
+          text: "日本",
+          meaning: "Japan",
+          reading: "にほん",
+          translations: %{"bg" => %{"meaning" => "Япония"}}
+        })
 
       attrs = %{
         "name" => "Words Falling Game",
@@ -102,6 +108,26 @@ defmodule MedoruWeb.WordsFallingGameLive.PlayTest do
 
       # Input buffer should show 'x'
       assert html =~ "x"
+    end
+
+    test "typing Bulgarian meaning works regardless of locale", %{
+      conn: conn,
+      classroom: classroom,
+      game: game
+    } do
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/words-falling-games/#{game.id}")
+
+      view |> element("button", "Start Game") |> render_click()
+
+      # Type 'Япония' (Bulgarian meaning) while the session locale is English
+      html =
+        "Япония"
+        |> String.graphemes()
+        |> Enum.reduce(nil, fn char, _acc -> send_key(view, char) end)
+
+      # Should show score increased
+      assert html =~ "1"
     end
 
     test "redirects non-members", %{classroom: classroom, game: game} do

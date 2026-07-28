@@ -1,5 +1,5 @@
 defmodule MedoruWeb.SlugRoutesTest do
-  use MedoruWeb.ConnCase, async: true
+  use MedoruWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
