@@ -1,0 +1,402 @@
+{
+  "id": "raiju_sekigan",
+  "name": "Raijū",
+  "nameJa": "雷獣・隻眼",
+  "description": "The Beast That Survived Heaven. A wounded thunder-beast that turns its missing eye and foreleg into an unpredictable storm.",
+  "level": 9,
+  "baseGold": 80,
+  "roles": ["boss"],
+  "mapIds": [1, 2],
+  "maxColumn": 10,
+  "sprites": {
+    "default": "enemy_raiju_sekigan_default",
+    "attack": "enemy_danzaburo_attack",
+    "defend": "enemy_danzaburo_defend",
+    "buff": "enemy_danzaburo_buff",
+    "death": "enemy_danzaburo_defeated"
+  },
+  "portrait": "enemy_raiju_sekigan_default",
+  "icon": "enemy_bake_neko_icon",
+  "layout": {
+    "1": [{ "x": 690, "y": 560, "scale": 0.34 }],
+    "2": [{ "x": 600, "y": 475, "scale": 0.20 }, { "x": 780, "y": 475, "scale": 0.20 }],
+    "3": [{ "x": 540, "y": 475, "scale": 0.16 }, { "x": 690, "y": 475, "scale": 0.16 }, { "x": 840, "y": 475, "scale": 0.16 }]
+  },
+  "stats": {
+    "hp": { "min": 520, "max": 560 },
+    "stamina": { "min": 18, "max": 22 },
+    "strength": { "min": 10, "max": 12 },
+    "skill": { "min": 16, "max": 18 },
+    "mana": { "min": 18, "max": 20 },
+    "luck": { "min": 14, "max": 14 },
+    "defense": { "min": 14, "max": 14 },
+    "armor": { "min": 6, "max": 6 }
+  },
+  "abilities": [
+    {
+      "id": "thunder_bite",
+      "name": "Thunder Bite",
+      "type": "attack",
+      "element": "void",
+      "staminaCost": 3,
+      "aiWeight": 10,
+      "maxUsesPerTurn": 5,
+      "basePower": 18,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.0,
+      "sprite": "enemy_danzaburo_attack",
+      "effects": [
+        {
+          "effectId": "electrified",
+          "target": "enemy",
+          "chance": { "base": 0.30, "step": 0, "cap": 0.30 },
+          "duration": { "min": 1, "max": 1 }
+        }
+      ],
+      "minPhaseIndex": 0
+    },
+    {
+      "id": "broken_pounce",
+      "name": "Broken Pounce",
+      "type": "attack",
+      "element": "void",
+      "staminaCost": 4,
+      "aiWeight": 9,
+      "maxUsesPerTurn": 3,
+      "basePower": 14,
+      "scalingStat": "skill",
+      "scalingMultiplier": 1.1,
+      "damageMultiplier": 1.25,
+      "sprite": "enemy_danzaburo_attack",
+      "combo": {
+        "consumesState": {
+          "target": "enemy",
+          "state": "momentum",
+          "damageMultiplier": 1.5,
+          "log": "Broken Pounce rips through Momentum!"
+        }
+      },
+      "minPhaseIndex": 0
+    },
+    {
+      "id": "lightning_howl",
+      "name": "Lightning Howl",
+      "type": "buff",
+      "staminaCost": 3,
+      "aiWeight": 12,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_danzaburo_buff",
+      "buffType": "evasion",
+      "buffValue": 0.20,
+      "effects": [
+        {
+          "effectId": "power_up",
+          "target": "self",
+          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "neutralize",
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 0
+    },
+    {
+      "id": "watchful_eye",
+      "name": "Watchful Eye",
+      "type": "buff",
+      "staminaCost": 2,
+      "aiWeight": 11,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_danzaburo_buff",
+      "effects": [
+        {
+          "effectId": "watchful_charge",
+          "target": "self",
+          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "duration": { "min": 1, "max": 1 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.35,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "cancel",
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 0
+    },
+    {
+      "id": "thunder_dash",
+      "name": "Thunder Dash",
+      "type": "attack",
+      "element": "storm",
+      "staminaCost": 5,
+      "aiWeight": 14,
+      "maxUsesPerTurn": 2,
+      "basePower": 16,
+      "scalingStat": "skill",
+      "scalingMultiplier": 1.2,
+      "isLightning": true,
+      "sprite": "enemy_danzaburo_attack",
+      "challenges": [
+        {
+          "chance": 0.45,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "neutralize",
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 1
+    },
+    {
+      "id": "chain_lightning",
+      "name": "Chain Lightning",
+      "type": "attack",
+      "element": "void",
+      "staminaCost": 6,
+      "aiWeight": 10,
+      "maxUsesPerTurn": 2,
+      "basePower": 24,
+      "scalingStat": "mana",
+      "scalingMultiplier": 0.6,
+      "isLightning": true,
+      "sprite": "enemy_danzaburo_attack",
+      "effects": [
+        {
+          "effectId": "madness",
+          "target": "enemy",
+          "chance": { "base": 0.10, "step": 0, "cap": 0.10 },
+          "duration": { "min": 1, "max": 2 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "halveChance",
+          "onFail": "boostChance",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 1
+    },
+    {
+      "id": "rolling_storm",
+      "name": "Rolling Storm",
+      "type": "heal",
+      "staminaCost": 2,
+      "aiWeight": 8,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_danzaburo_buff",
+      "healPercent": 0,
+      "staminaRecover": 8,
+      "buffEffect": {
+        "effectId": "sake_power",
+        "duration": { "min": 2, "max": 2 }
+      },
+      "challenges": [
+        {
+          "chance": 0.35,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
+          "onSuccess": "weaken",
+          "weakenMultiplier": 0.5,
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 1
+    },
+    {
+      "id": "divine_judgment",
+      "name": "Divine Judgment",
+      "type": "attack",
+      "element": "storm",
+      "staminaCost": 7,
+      "aiWeight": 13,
+      "maxUsesPerTurn": 2,
+      "basePower": 24,
+      "scalingStat": "mana",
+      "scalingMultiplier": 1.3,
+      "isLightning": true,
+      "sprite": "enemy_danzaburo_attack",
+      "challenges": [
+        {
+          "chance": 0.50,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
+          "onSuccess": "weaken",
+          "weakenMultiplier": 0.5,
+          "onFail": "full",
+          "timeLimit": 7000
+        }
+      ],
+      "minPhaseIndex": 2
+    },
+    {
+      "id": "heaven_splitter",
+      "name": "Heaven Splitter",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 6,
+      "aiWeight": 15,
+      "maxUsesPerTurn": 2,
+      "basePower": 20,
+      "scalingStat": "strength",
+      "scalingMultiplier": 1.2,
+      "sprite": "enemy_danzaburo_attack",
+      "consumesEffect": {
+        "effectId": "electrified",
+        "damageMultiplier": 2.0,
+        "log": "Heaven Splitter channels Electrified flesh!"
+      },
+      "challenges": [
+        {
+          "chance": 0.45,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "weaken",
+          "weakenMultiplier": 0.5,
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 2
+    },
+    {
+      "id": "eye_of_heaven",
+      "name": "Eye of Heaven",
+      "type": "buff",
+      "staminaCost": 4,
+      "aiWeight": 12,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_danzaburo_buff",
+      "effects": [
+        {
+          "effectId": "eye_of_heaven",
+          "target": "self",
+          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "duration": { "min": 2, "max": 2 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
+          "onSuccess": "cancel",
+          "onFail": "full",
+          "timeLimit": 6000
+        }
+      ],
+      "minPhaseIndex": 2
+    },
+    {
+      "id": "lightning_arc",
+      "name": "Lightning Arc",
+      "type": "attack",
+      "element": "storm",
+      "staminaCost": 0,
+      "aiWeight": 1,
+      "maxUsesPerTurn": 99,
+      "basePower": 10,
+      "scalingStat": "mana",
+      "scalingMultiplier": 0.5,
+      "isLightning": true,
+      "sprite": "enemy_danzaburo_attack",
+      "effects": [
+        {
+          "effectId": "electrified",
+          "target": "enemy",
+          "chance": { "base": 0.20, "step": 0, "cap": 0.20 },
+          "duration": { "min": 1, "max": 1 }
+        }
+      ],
+      "minPhaseIndex": 3
+    }
+  ],
+  "phases": [
+    {
+      "hpThreshold": 1.0,
+      "name": "The Lame Hunter"
+    },
+    {
+      "hpThreshold": 0.65,
+      "name": "The Empty Eye Opens",
+      "announce": "The empty eye bursts open with divine lightning.",
+      "modifiers": {
+        "gainStaticCharge": true
+      },
+      "sprites": {
+        "default": "enemy_danzaburo_phase2_default",
+        "attack": "enemy_danzaburo_attack",
+        "defend": "enemy_danzaburo_defend",
+        "buff": "enemy_danzaburo_buff"
+      }
+    },
+    {
+      "hpThreshold": 0.30,
+      "name": "The Living Storm",
+      "announce": "The missing leg explodes into divine lightning. The Raijū floats.",
+      "modifiers": {
+        "gainStaticCharge": true
+      },
+      "sprites": {
+        "default": "enemy_danzaburo_default",
+        "attack": "enemy_danzaburo_attack",
+        "defend": "enemy_danzaburo_defend",
+        "buff": "enemy_danzaburo_buff"
+      }
+    },
+    {
+      "hpThreshold": 0.10,
+      "name": "Unstable Ascension",
+      "announce": "The Raijū's lightning spirals out of control!",
+      "modifiers": {
+        "gainStaticCharge": true,
+        "freeActionChance": 0.40,
+        "freeActionId": "lightning_arc"
+      },
+      "sprites": {
+        "default": "enemy_danzaburo_phase2_default",
+        "attack": "enemy_danzaburo_attack",
+        "defend": "enemy_danzaburo_defend",
+        "buff": "enemy_danzaburo_buff"
+      }
+    }
+  ],
+  "firstDefeatRewards": [
+    { "type": "charm", "id": "kaze_charm" }
+  ],
+  "drops": {
+    "warrior": [
+      { "type": "item", "id": "health_potion", "chance": 0.50, "rarity": "normal" },
+      { "type": "item", "id": "stone", "chance": 0.35, "rarity": "normal" },
+      { "type": "charm", "id": "kaze_charm", "chance": 0.05, "rarity": "special" }
+    ],
+    "mage": [],
+    "archer": []
+  }
+}

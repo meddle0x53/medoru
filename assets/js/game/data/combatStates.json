@@ -63,6 +63,15 @@
       "description": "The next enemy attack is heavily blocked.",
       "color": "#95a5a6"
     },
+    "static_charge": {
+      "id": "static_charge",
+      "name": "Static Charge",
+      "nameJa": "帯電",
+      "category": "buff",
+      "duration": "next_attack",
+      "description": "The next lightning ability deals +25% damage.",
+      "color": "#f1c40f"
+    },
     "sheathed": {
       "id": "sheathed",
       "name": "Sheathed",

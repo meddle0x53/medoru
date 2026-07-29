@@ -12,6 +12,7 @@ import hitotsumeKozo from './hitotsume_kozo.json'
 import bakeNeko from './bake_neko.json'
 import danzaburoDanuki from './danzaburo_danuki.json'
 import tanukiClone from './tanuki_clone.json'
+import raijuSekigan from './raiju_sekigan.json'
 
 export const ENEMY_DEFINITIONS = [
   bakeNeko,
@@ -21,6 +22,7 @@ export const ENEMY_DEFINITIONS = [
   hitotsumeKozo,
   danzaburoDanuki,
   tanukiClone,
+  raijuSekigan,
 ]
 
 export function getEnemyDefinition(id) {

@@ -91,12 +91,30 @@ defmodule MedoruWeb.WordSetLive.Test do
   end
 
   @impl true
+  def handle_event("update_meaning", %{"key" => "Enter"} = params, socket) do
+    value = Map.get(params, "meaning_answer", params["value"] || "")
+    socket = assign(socket, :meaning_answer, value)
+
+    # For kana-only words the meaning field is the only one, so Enter submits
+    if socket.assigns.current_step.question_data["is_kana_only"] do
+      handle_event("submit_reading_text", params, socket)
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("update_meaning", params, socket) do
     value = Map.get(params, "meaning_answer", params["value"] || "")
     {:noreply, assign(socket, :meaning_answer, value)}
   end
 
   @impl true
+  def handle_event("update_reading", %{"key" => "Enter"} = params, socket) do
+    value = Map.get(params, "reading_answer", params["value"] || "")
+    socket = assign(socket, :reading_answer, value)
+    handle_event("submit_reading_text", params, socket)
+  end
+
   def handle_event("update_reading", params, socket) do
     value = Map.get(params, "reading_answer", params["value"] || "")
     {:noreply, assign(socket, :reading_answer, value)}

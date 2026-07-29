@@ -3761,59 +3761,13 @@ export default class BattleScene extends Phaser.Scene {
 
         switch (result.type) {
           case 'attack': {
-            this.setEnemySprite(this.getEnemySpriteKey(enemy, 'attack'), enemy)
+            await this._displayEnemyAttackResult(enemy, action, result, { reactionMultiplier: reactionMult, challengeModifier })
             if (result.parried) {
-              this.setPlayerPose('block_idle')
-              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
-              this.addCombatLog(`${enemyName} uses ${action.name}... PARRIED!${reactionText}`)
-              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
-              await this.delay(600)
-              this.setPlayerPose('idle')
-              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
               if (reactive.counterType) {
                 await this.runReactiveCounter(enemy, reactive.counterType)
               } else {
                 await this.runCounterAttack()
               }
-            } else if (result.missed) {
-              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-              this.addCombatLog(`${enemyName} uses ${action.name}... but missed!${reactionText}`)
-              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
-              await this.delay(800)
-              this.setPlayerPose('idle')
-              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
-            } else if (result.blocked) {
-              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-              this.addCombatLog(`${enemyName} uses ${action.name}... BLOCKED by your guard!${reactionText}`)
-              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'BLOCKED!', 0x3498db)
-              await this.delay(800)
-              this.setPlayerPose('idle')
-              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
-            } else {
-              this.setPlayerPose('block_idle')
-              const weakenedText = challengeModifier === 'weaken' ? ' (Weakened!)' : ''
-              const critText = result.isCrit ? ' CRITICAL!' : ''
-              const reactionText = reactionMult !== 1 ? (reactionMult > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
-              this.addCombatLog(`${enemyName} uses ${action.name}${critText}! You take ${result.damage} damage!${reactionText}${weakenedText}`)
-              const dmgColor = this.getDamageColor(result, action.element, 'enemy')
-              this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
-              this.shakeSprite(this.playerSprite)
-              if (action.element && this.isComboElement(action.element)) {
-                this.flashScreen(dmgColor, 120)
-                this.shakeScreen(0.01, 180)
-              }
-              // Trigger socket defend procs now that damage has been taken.
-              this.socketProcSystem.trigger('on_defend', { scene: this, source: enemy, result })
-              this.updateBars()
-
-              // Combo reactive states that trigger on being hit.
-              this.playerHitThisEnemyTurn = true
-              applyComboState(this.player, 'revenge', enemy.id, 'start_of_next_turn')
-              applyComboState(this.player, 'bloodlust', enemy.id, 'start_of_next_turn')
-
-              await this.delay(800)
-              this.setPlayerPose('idle')
-              this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
             }
             break
           }
@@ -3885,6 +3839,14 @@ export default class BattleScene extends Phaser.Scene {
           }
         }
 
+        // Phase free-action follow-up (e.g. Raijū's Lightning Arc in phase 4).
+        const freeResult = enemy.tryFreeAction?.(this.player, (msg) => this.addCombatLog(msg))
+        if (freeResult?.type === 'attack') {
+          const freeAction = enemy.abilities.find(a => a.id === enemy.phaseModifiers?.freeActionId)
+          await this._displayEnemyAttackResult(enemy, freeAction || { name: 'Lightning Arc' }, freeResult, { label: freeAction?.name || 'Lightning Arc' })
+          if (this.turnManager.checkBattleOver(enemy)) break
+        }
+
         anyActionTaken = true
         await this.delay(1000)
 
@@ -3910,6 +3872,67 @@ export default class BattleScene extends Phaser.Scene {
     if (!this.turnManager.battleOver) {
       this.turnManager.endTurn()
     }
+  }
+
+  async _displayEnemyAttackResult(enemy, action, result, { reactionMultiplier = 1, challengeModifier = null, label = null } = {}) {
+    const enemyName = enemy.name || 'The enemy'
+    const actionName = label || action.name || 'Attack'
+
+    this.setEnemySprite(this.getEnemySpriteKey(enemy, 'attack'), enemy)
+
+    if (result.parried) {
+      this.setPlayerPose('block_idle')
+      const reactionText = reactionMultiplier !== 1 ? (reactionMultiplier > 1 ? ' (Reaction bonus!)' : ' (Reaction failed...)') : ''
+      this.addCombatLog(`${enemyName} uses ${actionName}... PARRIED!${reactionText}`)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'PARRIED!', 0x9b59b6)
+      await this.delay(600)
+      this.setPlayerPose('idle')
+      this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+      return
+    }
+
+    if (result.missed) {
+      const reactionText = reactionMultiplier !== 1 ? (reactionMultiplier > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+      this.addCombatLog(`${enemyName} uses ${actionName}... but missed!${reactionText}`)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'MISS', COLORS.warning)
+      await this.delay(800)
+      this.setPlayerPose('idle')
+      this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+      return
+    }
+
+    if (result.blocked) {
+      const reactionText = reactionMultiplier !== 1 ? (reactionMultiplier > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+      this.addCombatLog(`${enemyName} uses ${actionName}... BLOCKED by your guard!${reactionText}`)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, 'BLOCKED!', 0x3498db)
+      await this.delay(800)
+      this.setPlayerPose('idle')
+      this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
+      return
+    }
+
+    this.setPlayerPose('block_idle')
+    const weakenedText = challengeModifier === 'weaken' ? ' (Weakened!)' : ''
+    const critText = result.isCrit ? ' CRITICAL!' : ''
+    const reactionText = reactionMultiplier !== 1 ? (reactionMultiplier > 1 ? ' (PARRY!)' : ' (Reaction failed...)') : ''
+    this.addCombatLog(`${enemyName} uses ${actionName}${critText}! You take ${result.damage} damage!${reactionText}${weakenedText}`)
+    const dmgColor = this.getDamageColor(result, action.element, 'enemy')
+    this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
+    this.shakeSprite(this.playerSprite)
+    if (action.element && this.isComboElement(action.element)) {
+      this.flashScreen(dmgColor, 120)
+      this.shakeScreen(0.01, 180)
+    }
+    this.socketProcSystem.trigger('on_defend', { scene: this, source: enemy, result })
+    this.updateBars()
+
+    this.playerHitThisEnemyTurn = true
+    applyComboState(this.player, 'revenge', enemy.id, 'start_of_next_turn')
+    applyComboState(this.player, 'bloodlust', enemy.id, 'start_of_next_turn')
+
+    await this.delay(800)
+    this.setPlayerPose('idle')
+    this.setEnemySprite(this.getEnemySpriteKey(enemy, 'default'), enemy)
   }
 
   resolveReactiveDefences(enemy, action, context) {

@@ -180,11 +180,86 @@ defmodule MedoruWeb.WordSetLive.TestTest do
       # Can update inputs
       view
       |> element("input[name='meaning_answer']")
-      |> render_change(%{"meaning_answer" => "test meaning"})
+      |> render_keyup(%{"value" => "test meaning"})
 
       view
       |> element("input[name='reading_answer']")
-      |> render_change(%{"reading_answer" => "にほん"})
+      |> render_keyup(%{"value" => "にほん"})
+
+      # Submit button is enabled once both fields are filled
+      assert has_element?(view, "button[phx-click='submit_reading_text']:not([disabled])")
+    end
+
+    test "shows correct feedback after submitting a right answer", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Feedback Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "Japan"})
+
+      view
+      |> element("input[name='reading_answer']")
+      |> render_keyup(%{"value" => "にほん"})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Correct!"
+      assert has_element?(view, "button[phx-click='next_step']")
+      refute has_element?(view, "button[phx-click='submit_reading_text']")
+    end
+
+    test "shows incorrect feedback with the right answer after a wrong answer", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Feedback Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "wrong"})
+
+      view
+      |> element("input[name='reading_answer']")
+      |> render_keyup(%{"value" => "まちがい"})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Incorrect"
+      assert html =~ "Japan / にほん"
+      assert has_element?(view, "button[phx-click='next_step']")
     end
 
     test "shows only meaning input for kana-only words", %{conn: conn} do
@@ -209,6 +284,92 @@ defmodule MedoruWeb.WordSetLive.TestTest do
       assert html =~ "Type the meaning:"
       assert html =~ "Meaning (English)"
       refute html =~ "Reading (Hiragana)"
+    end
+
+    test "Enter in the reading field submits the answer", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Enter Submit Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "Japan"})
+
+      html =
+        view
+        |> element("input[name='reading_answer']")
+        |> render_keyup(%{"key" => "Enter", "value" => "にほん"})
+
+      assert html =~ "Correct!"
+      assert has_element?(view, "button[phx-click='next_step']")
+    end
+
+    test "Enter in the meaning field does not submit when a reading field exists", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Enter Meaning Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      html =
+        view
+        |> element("input[name='meaning_answer']")
+        |> render_keyup(%{"key" => "Enter", "value" => "Japan"})
+
+      refute html =~ "Correct!"
+      refute html =~ "Incorrect"
+      assert has_element?(view, "button[phx-click='submit_reading_text']")
+    end
+
+    test "Enter in the meaning field submits for kana-only words", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "テスト", meaning: "test", reading: "てすと"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Kana Enter Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      html =
+        view
+        |> element("input[name='meaning_answer']")
+        |> render_keyup(%{"key" => "Enter", "value" => "test"})
+
+      assert html =~ "Correct!"
+      assert has_element?(view, "button[phx-click='next_step']")
     end
   end
 end

@@ -132,10 +132,11 @@
                     type="text"
                     name="meaning_answer"
                     value={@meaning_answer}
-                    phx-change="update_meaning"
+                    phx-keyup="update_meaning"
                     phx-debounce="200"
                     placeholder={gettext("Enter meaning...")}
-                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    disabled={not is_nil(@feedback)}
+                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-60"
                   />
                 </div>
                 <%= if not is_kana_only do %>
@@ -147,18 +148,19 @@
                       type="text"
                       name="reading_answer"
                       value={@reading_answer}
-                      phx-change="update_reading"
+                      phx-keyup="update_reading"
                       phx-debounce="200"
                       placeholder={gettext("Enter reading...")}
-                      class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese"
+                      disabled={not is_nil(@feedback)}
+                      class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
                     />
                   </div>
                 <% end %>
               </div>
 
-              <%!-- Actions for Reading Text --%>
-              <div class="flex flex-col sm:flex-row gap-3">
-                <%= if @feedback != :incorrect do %>
+              <%!-- Result / Actions for Reading Text --%>
+              <%= if is_nil(@feedback) do %>
+                <div class="flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     phx-click="submit_reading_text"
@@ -177,16 +179,42 @@
                   >
                     {gettext("Skip →")}
                   </button>
+                </div>
+              <% else %>
+                <%= if @feedback == :correct do %>
+                  <div class="bg-success/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div class="flex items-center gap-3">
+                      <.icon name="hero-check-circle" class="w-8 h-8 text-success" />
+                      <div>
+                        <p class="font-semibold text-success text-lg">{gettext("Correct!")}</p>
+                        <p class="text-success-content/80">{gettext("Well done.")}</p>
+                      </div>
+                    </div>
+                  </div>
                 <% else %>
-                  <button
-                    type="button"
-                    phx-click="next_step"
-                    class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
-                  >
-                    {gettext("Continue →")}
-                  </button>
+                  <div class="bg-error/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div class="flex items-center gap-3">
+                      <.icon name="hero-x-circle" class="w-8 h-8 text-error" />
+                      <div>
+                        <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
+                        <p class="text-error-content/80">
+                          {gettext("The correct answer is: %{answer}",
+                            answer: String.replace(@current_step.correct_answer, "|", " / ")
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 <% end %>
-              </div>
+
+                <button
+                  type="button"
+                  phx-click="next_step"
+                  class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[48px]"
+                >
+                  {gettext("Continue →")}
+                </button>
+              <% end %>
             <% true -> %>
               <%!-- Multichoice Question --%>
               <% question_data = @current_step.question_data || %{}

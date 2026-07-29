@@ -116,6 +116,10 @@ export default class Enemy extends Character {
     if (changed) {
       this.justEnteredPhase = true
       if (phase.announce) log(phase.announce)
+      if (phase.modifiers?.gainStaticCharge) {
+        this.applyComboState('static_charge', 'phase_transition')
+        log(`${this.name || 'The enemy'} builds a static charge!`)
+      }
     }
     return changed
   }
@@ -278,6 +282,17 @@ export default class Enemy extends Character {
     return plan
   }
 
+  tryFreeAction(target, log = () => {}) {
+    const chance = this.phaseModifiers?.freeActionChance ?? 0
+    const actionId = this.phaseModifiers?.freeActionId
+    if (!chance || !actionId) return null
+    if (Math.random() >= chance) return null
+    const ability = this.abilities.find(a => a.id === actionId)
+    if (!ability || !this.canUseAbility(ability)) return null
+    log(`${this.name || 'The enemy'} discharges ${ability.name}!`)
+    return this.performAction(ability, target, { isFreeAction: true }, log)
+  }
+
   resolveDamageMultiplier(ability, context) {
     let multiplier = ability.damageMultiplier || 1
     if (context.valueOverrides && context.valueOverrides.damageMultiplier != null) {
@@ -308,15 +323,17 @@ export default class Enemy extends Character {
         this.nextAttackBonus = 0
 
         const baseMissChance = target.getMissChanceFor(this)
+        const eyeOfHeaven = this.getEffectEntry('eye_of_heaven')
         const readinessMultiplier = 1 + (target.readiness || 0)
         const reactionMultiplier = target.reactionMultiplier || 1
         const dashMiss = target.turnMissChance || 0
-        const missChance = Math.min(1, baseMissChance * readinessMultiplier * reactionMultiplier + dashMiss)
+        let missChance = Math.min(1, baseMissChance * readinessMultiplier * reactionMultiplier + dashMiss)
+        if (eyeOfHeaven) missChance = 0
         if (Math.random() < missChance) {
           return { type: 'attack', damage: 0, isCrit: false, missed: true }
         }
 
-        const isCrit = Math.random() < this.getCritChance()
+        const isCrit = Math.random() < (this.getCritChance() + (eyeOfHeaven ? 0.5 : 0))
         let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
         finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
 
@@ -334,6 +351,20 @@ export default class Enemy extends Character {
         if (damageMultiplier !== 1) {
           finalDamage = Math.floor(finalDamage * damageMultiplier)
         }
+
+        // Static Charge: Raijū phase-2 passive boosts the next lightning ability.
+        if (ability.isLightning && this.hasComboState('static_charge')) {
+          finalDamage = Math.floor(finalDamage * 1.25)
+          this.consumeComboState('static_charge')
+          log('Static Charge discharges!')
+        }
+
+        // Consume a target effect for a damage payoff (e.g. Heaven Splitter on Electrified).
+        if (ability.consumesEffect && target.consumeEffectIfPresent(ability.consumesEffect.effectId)) {
+          finalDamage = Math.floor(finalDamage * ability.consumesEffect.damageMultiplier)
+          if (ability.consumesEffect.log) log(ability.consumesEffect.log)
+        }
+
         const actual = target.takeDamage(finalDamage)
 
         if (effectiveElement === 'fire' && actual > 0) {
@@ -382,14 +413,16 @@ export default class Enemy extends Character {
           this.nextAttackBonus = 0
 
           const baseMissChance = target.getMissChanceFor(this)
+          const eyeOfHeaven = this.getEffectEntry('eye_of_heaven')
           const readinessMultiplier = 1 + (target.readiness || 0)
           const reactionMultiplier = target.reactionMultiplier || 1
-          const missChance = baseMissChance * readinessMultiplier * reactionMultiplier
+          let missChance = baseMissChance * readinessMultiplier * reactionMultiplier
+          if (eyeOfHeaven) missChance = 0
           if (Math.random() < missChance) {
             return { type: 'debuff', damage: 0, isCrit: false, missed: true }
           }
 
-          const isCrit = Math.random() < this.getCritChance()
+          const isCrit = Math.random() < (this.getCritChance() + (eyeOfHeaven ? 0.5 : 0))
           let finalDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
           finalDamage = Math.floor(finalDamage * this.getOutgoingDamageMultiplier())
 
@@ -407,6 +440,18 @@ export default class Enemy extends Character {
           if (damageMultiplier !== 1) {
             finalDamage = Math.floor(finalDamage * damageMultiplier)
           }
+
+          if (ability.isLightning && this.hasComboState('static_charge')) {
+            finalDamage = Math.floor(finalDamage * 1.25)
+            this.consumeComboState('static_charge')
+            log('Static Charge discharges!')
+          }
+
+          if (ability.consumesEffect && target.consumeEffectIfPresent(ability.consumesEffect.effectId)) {
+            finalDamage = Math.floor(finalDamage * ability.consumesEffect.damageMultiplier)
+            if (ability.consumesEffect.log) log(ability.consumesEffect.log)
+          }
+
           const actual = target.takeDamage(finalDamage)
 
           if (ability.effects && ability.effects.length > 0) {
@@ -454,6 +499,11 @@ export default class Enemy extends Character {
         }
         healed = this.heal(healed)
 
+        let staminaRecovered = 0
+        if (ability.staminaRecover) {
+          staminaRecovered = this.recoverStamina(ability.staminaRecover)
+        }
+
         const cleansed = []
         if (ability.cleanseEffects && ability.cleanseEffects.length > 0) {
           for (const effectId of ability.cleanseEffects) {
@@ -471,7 +521,7 @@ export default class Enemy extends Character {
           }
         }
 
-        return { type: 'heal', healed, cleansed, buff }
+        return { type: 'heal', healed, staminaRecovered, cleansed, buff }
       }
       case 'summon': {
         const baseChance = ability.summonChance != null ? ability.summonChance : 1

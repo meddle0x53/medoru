@@ -217,6 +217,11 @@ export default class TurnManager {
     for (const stateConsumer of stateConsumers) {
       const subject = stateConsumer.target === 'self' ? performer : target
       if (hasComboState(subject, stateConsumer.state)) {
+        // Electrified scrambles the player's nerves: Rushing cannot crit.
+        if (stateConsumer.state === 'rushing' && performer.getEffectEntry('electrified')) {
+          this.log('Electrified! Dash cannot build a critical strike.')
+          continue
+        }
         pendingCombo.damageMultiplier *= stateConsumer.damageMultiplier || 1
         if (stateConsumer.guaranteeCritical) pendingCombo.guaranteeCritical = true
         pendingCombo.consumeStates.push({ subject, stateId: stateConsumer.state })
@@ -632,8 +637,13 @@ export default class TurnManager {
         // Dash reflex bonus is applied during the kanji challenge phase in BattleScene.
         result = { type: 'dash' }
         if (combo.appliesState) {
-          const subject = combo.appliesState.target === 'self' ? performer : target
-          applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+          // Electrified: the player's nerves are scrambled, so Dash cannot build Rushing.
+          if (combo.appliesState.state === 'rushing' && performer.getEffectEntry('electrified')) {
+            this.log('Electrified! Dash cannot build Rushing.')
+          } else {
+            const subject = combo.appliesState.target === 'self' ? performer : target
+            applyComboState(subject, combo.appliesState.state, skill.id, combo.appliesState.duration)
+          }
         }
         break
       }

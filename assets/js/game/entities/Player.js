@@ -607,6 +607,8 @@ export default class Player extends Character {
     // Kanji quality bonus for the next charge
     if (quality === 'perfect') chance += 0.15
     else if (quality === 'fail') chance -= 0.10
+    // Electrified nervous system throws off timing.
+    if (this.getEffectEntry('electrified')) chance -= 0.15
     return Math.min(0.60, Math.max(0.05, chance))
   }
 

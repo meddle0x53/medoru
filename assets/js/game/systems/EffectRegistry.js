@@ -135,6 +135,16 @@ export const STATUS_EFFECTS = {
     description: 'Next turn stamina is reduced by 25%.',
   },
 
+  electrified: {
+    id: 'electrified',
+    name: 'Electrified',
+    category: EFFECT_CATEGORIES.DEBUFF,
+    stackRule: 'refresh',
+    duration: { min: 1, max: 1 },
+    staminaMultiplier: 0.5,
+    description: 'Next Dash cannot critically strike. Parry chance -15%. Stamina regen reduced 50%.',
+  },
+
   void_touched: {
     id: 'void_touched',
     name: 'Void Touched',
@@ -297,6 +307,27 @@ export const STATUS_EFFECTS = {
     duration: { min: 3, max: 3 },
     outgoingDamageMultiplier: 1.15,
     description: 'Ancient sake increases damage dealt by 15%.',
+  },
+
+  eye_of_heaven: {
+    id: 'eye_of_heaven',
+    name: 'Eye of Heaven',
+    category: EFFECT_CATEGORIES.BUFF,
+    stackRule: 'refresh',
+    duration: { min: 2, max: 2 },
+    perfectAccuracy: true,
+    critChanceBonus: 0.50,
+    description: 'Perfect accuracy and +50% critical chance.',
+  },
+
+  watchful_charge: {
+    id: 'watchful_charge',
+    name: 'Watchful Charge',
+    category: EFFECT_CATEGORIES.BUFF,
+    stackRule: 'refresh',
+    duration: { min: 1, max: 1 },
+    outgoingDamageMultiplier: 1.5,
+    description: 'Next attack deals 50% more damage.',
   },
 
   blind: {

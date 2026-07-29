@@ -82,7 +82,7 @@
         "short_cascade": 0.2083,
         "mini_boss": 0.1667
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["danzaburo_danuki"] }
     },
     {
       "index": 6,
@@ -96,7 +96,7 @@
         "short_cascade": 0.1667,
         "mini_boss": 0.3334
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["danzaburo_danuki"] }
     },
     {
       "index": 7,
@@ -110,7 +110,7 @@
         "rest_camp": 0.0666,
         "short_cascade": 0.2
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["danzaburo_danuki"] }
     },
     {
       "index": 8,
@@ -124,19 +124,19 @@
         "rest_camp": 0.0333,
         "short_cascade": 0.1
       },
-      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["kasa_obake_elite"] }
+      "enemyPools": { "battle": ["kasa_obake"], "mini_boss": ["danzaburo_danuki"] }
     },
     { "index": 9, "fixedType": "rest_camp" },
     {
       "index": 10,
       "fixedType": "boss",
-      "enemyPools": { "boss": ["kasa_obake_tyrant"] }
+      "enemyPools": { "boss": ["kasa_obake_tyrant", "raiju_sekigan"] }
     }
   ],
   "defaultEnemyPools": {
     "battle": ["kasa_obake"],
-    "mini_boss": ["kasa_obake_elite"],
-    "boss": ["kasa_obake_tyrant"]
+    "mini_boss": ["danzaburo_danuki"],
+    "boss": ["kasa_obake_tyrant", "raiju_sekigan"]
   },
   "tileImages": {}
 }

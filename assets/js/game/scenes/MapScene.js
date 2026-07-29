@@ -21,9 +21,9 @@ const TILE_RADIUS = 22
 const CURRENT_PULSE_RADIUS = 28
 const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fontStyle: 'bold', stroke: '#000000', strokeThickness: 3 }
 
-// Dev test fight picker: Tanuki and his clone first, then the rest in registry order.
+// Dev test fight picker: Raijū first, then Tanuki and his clone, then the rest in registry order.
 const TEST_FIGHT_ENEMIES = [...ENEMY_DEFINITIONS].sort((a, b) => {
-  const rank = { danzaburo_danuki: -2, tanuki_clone: -1 }
+  const rank = { raiju_sekigan: -3, danzaburo_danuki: -2, tanuki_clone: -1 }
   return (rank[a.id] || 0) - (rank[b.id] || 0)
 })
 

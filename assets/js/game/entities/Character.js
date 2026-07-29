@@ -303,6 +303,12 @@ export default class Character {
     return this.activeEffects.length < before
   }
 
+  consumeEffectIfPresent(effectId) {
+    if (!this.getEffectEntry(effectId)) return false
+    this.removeEffect(effectId)
+    return true
+  }
+
   clearActiveEffects() {
     this.activeEffects = []
   }
