@@ -1,6 +1,12 @@
 # Implementation Plan: Medoru 0.10.0 — `/m` TypeScript SPA/PWA + Capacitor Native Packages
 
-**Goal:** Build a standalone TypeScript SPA/PWA at `/m` backed by `/api/v1` REST and Phoenix Channels, then package the same frontend with Capacitor for iOS/Android. The existing site and PWA at `/` remain untouched.
+**Goal:** Build a standalone TypeScript SPA/PWA at `/m` backed by `/api/v1` REST and Phoenix Channels, then package the same frontend with Capacitor as a **fully native app for the iOS App Store and Google Play**. The `/m` app is a **new, separate application** — it is not a mobile skin of the website.
+
+**Critical constraint — the existing web app is not touched:**
+- The existing site and PWA at `/` remain **completely untouched**: no LiveView, template, hook, or desktop-flow changes.
+- The only allowed modifications to existing backend code are **purely additive**: new context functions (e.g. native device management), new modules, and new routes/scopes. Existing functions keep their signatures and behavior.
+- The one exception is `MedoruWeb.AuthController`, which gains an **additive** `mobile=true` redirect branch for the `/m` login flow; existing redirects stay as they are.
+- The mobile app interoperates with the browser chat at `/messages` by calling the same `Medoru.Chat` context functions and by subscribing to the existing `chat:<conversation_id>` Phoenix.PubSub topics through a new, thin channel adapter. Desktop users and mobile users chat with each other transparently.
 
 **Target architecture:**
 - Browser `/m` PWA: Phoenix session-cookie auth, Web Push, service worker.
@@ -10,7 +16,7 @@
 
 **Scope for 0.10.0:** 1-1 and group chats. Classroom chats, full offline sync, and store submission are out of scope for the initial release.
 
-**Critical constraint:** The existing browser chat at `/messages` is **not modified**. The mobile app interoperates with it by calling the same `Medoru.Chat` context functions and by subscribing to the existing `chat:<conversation_id>` Phoenix.PubSub topics through a new, thin channel adapter. Desktop users and mobile users chat with each other transparently.
+**Platform order (decided 2026-07-29):** Android first — target a working **APK for the user's tablet** before anything iOS. The iOS path (Xcode on the user's Mac, signing, TestFlight) comes after the Android build works end-to-end.
 
 ---
 
@@ -24,11 +30,13 @@
 
 Add to `mix.exs`:
 - `{:open_api_spex, "~> 3.21"}` — OpenAPI specs.
-- `{:pigeon, "~> 2.0"}` — APNs/FCM push for native packages.
-- `{:kadabra, "~> 0.6"}` — HTTP/2 adapter for Pigeon (APNs).
 - `{:jose, "~> 1.11"}` — JWT signing/verification.
 - `{:hammer, "~> 6.1"}` — rate limiting.
 - `{:hammer_backend_mnesia, "~> 0.6"}` — default Hammer backend for development. Use `hammer_backend_redis` in production for multi-node deployments.
+
+Defer until the native push phase (Phase 4/5-native) — the existing browser Web Push is hand-rolled in `MedoruWeb.Push` and keeps working without them:
+- `{:pigeon, "~> 2.0"}` — APNs/FCM push for native packages.
+- `{:kadabra, "~> 0.6"}` — HTTP/2 adapter for Pigeon (APNs).
 
 Add to `assets/m/package.json` (new Vite/Svelte mobile project):
 - `vite`, `@sveltejs/vite-plugin-svelte`, `svelte`, `typescript`, `@types/node`, `phoenix`.
@@ -118,7 +126,6 @@ scope "/api/v1", MedoruWeb.API.V1 do
   delete "/conversations/:conversation_id/messages/:message_id/reactions/:emoji", ReactionController, :delete
 
   post "/uploads", UploadController, :create
-  get "/uploads/:id", UploadController, :show
 
   get "/words/lookup", LookupController, :word
   get "/kanji/lookup", LookupController, :kanji
@@ -229,15 +236,14 @@ Create `lib/medoru_web/api/v1/controllers/conversation_controller.ex`:
 
 All conversation endpoints use the same `Medoru.Chat` context functions the desktop LiveViews use, ensuring identical behavior and data.
 
-### 1.9 Message controller with cursor pagination
+### 1.9 Message controller with web-style pagination
 
 Create `lib/medoru_web/api/v1/controllers/message_controller.ex`:
 
-- `index/2` — `GET /api/v1/conversations/:id/messages?after=<cursor>&before=<cursor>&limit=20`.
-  - Cursor is an opaque value (base64-encoded `inserted_at` + message ID).
-  - Uses `Chat.list_messages_cursor/2`.
-  - Returns `{data: [...], next_cursor, prev_cursor}`.
-- `create/2` — plaintext or encrypted, with optional `reply_to_message_id` and `upload_id`. Uses `Chat.store_message/5` and `Chat.store_plaintext_message/4`.
+- `index/2` — `GET /api/v1/conversations/:id/messages?page=1&per_page=50`.
+  - **Reuse the exact listing the web chat uses**: `Chat.list_messages/2` (chat.ex:390, offset-based `limit`/`offset`, newest-first) and `Chat.list_messages_with_attachments/2` where attachment metadata is needed. No new pagination mechanism is introduced; the mobile app paginates the same way the desktop LiveView does ("load older" button / infinite scroll fetching the next page).
+  - Returns `%{data: [...], page: n, per_page: n, has_more: bool}`.
+- `create/2` — plaintext or encrypted, with optional `reply_to_message_id` and attachment fields. Uses `Chat.store_message/5` and `Chat.store_plaintext_message/4`.
 - `update/2` — edit own message via `Chat.edit_message/3`.
 - `delete/2` — soft-delete own message via `Chat.delete_message/2`.
 - `read/2` — `Chat.mark_read/2`.
@@ -246,29 +252,20 @@ These are the same context functions the desktop chat uses, so messages sent fro
 
 ### 1.10 Message IDs
 
-Keep existing UUIDv4 primary keys for 0.10.0. Cursor pagination uses `inserted_at` + `id` rather than relying on ID ordering. Evaluate UUIDv7 or ULID in a future release with a proper migration strategy.
+Keep existing UUIDv4 primary keys. Ordering follows `inserted_at` exactly as in `Chat.list_messages/2`. No ID-strategy change is needed for 0.10.0.
 
 ### 1.11 Reaction controller
 
 Create `lib/medoru_web/api/v1/controllers/reaction_controller.ex`.
 
-### 1.12 Upload controller with upload_id flow
+### 1.12 Upload controller — reuse the existing chat upload flow
 
-Create `lib/medoru_web/api/v1/controllers/upload_controller.ex`:
+**Do not build a new uploads table or `upload_id` flow.** The web chat already has a working upload mechanism; the mobile API mirrors it:
 
-- `create/2` — `POST /api/v1/uploads` with multipart file.
-  - Stores file, creates `Medoru.Chat.Upload` record with `id`, `path`, `type`, `mime_type`, `size`, `name`.
-  - Returns `%{id: upload_id, ...}`.
-- `show/2` — `GET /api/v1/uploads/:id` returns metadata.
-
-Modify message creation:
-- Accept `upload_id` in message payload.
-- Server looks up upload and attaches metadata; client never sends paths.
-- When an upload is attached to a message, mark it `attached_at`.
-
-Add cleanup job:
-- Oban worker or periodic task deletes uploads with `attached_at IS NULL` and `inserted_at < now() - interval '24 hours'`.
-- Also delete the underlying file.
+- Web today: multipart `POST /api/chat/uploads` → `MedoruWeb.ChatUploadController` stores the file at `<uploads_dir>/chat_files/<uuid>.<ext>` and returns the path; the message then stores `attachment_path`, `attachment_type`, `duration_seconds` directly on the `chat_messages` row.
+- Mobile: create `lib/medoru_web/api/v1/controllers/upload_controller.ex` with a single `create/2` action (`POST /api/v1/uploads`, multipart) that uses the **same storage helper/validation rules** as `ChatUploadController` (50MB default, 200MB video for teachers/admins, same directory, same served URL `/uploads/chat_files/...`). Extract the shared store/validate logic into a small module both controllers call — this is additive refactoring of `ChatUploadController` internals only; its route, request, and response shapes stay identical so the web app is unaffected.
+- Message `create/2` accepts `attachment_path`, `attachment_type`, and `duration_seconds` exactly like the web flow and passes them through to `Chat.store_message/5` / `Chat.store_plaintext_message/4`.
+- No cleanup worker is needed (files are referenced by messages immediately, same as the web). No Oban dependency.
 
 ### 1.13 Lookup controller
 
@@ -281,6 +278,8 @@ Create `lib/medoru_web/api/v1/fallback_controller.ex`.
 ---
 
 ## Phase 2: Phoenix Channels
+
+> **Note:** Channels are fully greenfield — the app currently has no `UserSocket`, no `channels/` directory, and only the `/live` LiveView socket in the endpoint. Everything in this phase is new code; no desktop code is modified.
 
 ### 2.1 Socket token auth
 
@@ -424,7 +423,7 @@ assets/m/
 │   │   ├── BottomNav.svelte
 │   │   └── ReactionPicker.svelte
 │   └── utils/
-│       ├── cursor.ts
+│       ├── pagination.ts
 │       └── platform.ts
 └── public/
     ├── manifest.json
@@ -479,7 +478,7 @@ Create:
 - `assets/m/src/services/crypto/decryptor.ts` — message decryption.
 - `assets/m/src/services/crypto/rotation.ts` — re-encryption for other users.
 
-Share low-level primitives with desktop via `assets/js/chat/crypto.js`.
+Share low-level primitives with the desktop crypto code, which lives in **`assets/js/hooks/chat_crypto.js`** (exports `CryptoState` with RSA-OAEP keypair generation and AES-GCM encrypt/decrypt helpers; related hooks: `chat_input.js`, `chat_key_manager.js`, `group_chat_creator.js`).
 
 **Desktop compatibility:** Extract the crypto functions into a shared module without changing the desktop `ChatCrypto` hook's public API or behavior. The desktop chat continues to work exactly as before; the mobile app imports the same primitives.
 
@@ -574,7 +573,7 @@ Create adapters:
 
 ### 5.2 Replace direct push calls
 
-In `Medoru.Chat.maybe_notify_participants/3`, replace `Notifications.send_push_notification/4` with `Notifier.notify/2`.
+In `Medoru.Chat.maybe_notify_participants/3` (currently a **private** function, chat.ex:1111 — the change is an internal call-site swap only, the public context API is unchanged), replace `Notifications.send_push_notification/4` with `Notifier.notify/2`.
 
 Keep existing Web Push subscriptions in `push_subscriptions` table for browser PWA.
 Use `native_devices` table for native push tokens.
@@ -626,7 +625,7 @@ Create `test/medoru_web/api/v1/`:
 - `upload_controller_test.exs`
 - `lookup_controller_test.exs`
 
-Cover session auth, token auth, rate limiting, cursor pagination, upload_id flow.
+Cover session auth, token auth, rate limiting, offset pagination, and the attachment upload flow.
 
 ### 7.2 Channel tests
 
@@ -690,28 +689,32 @@ Add `vitest` in `assets/m` for services and stores.
 - `lib/medoru_web/channels/presence_channel.ex`
 - `lib/medoru_web/controllers/mobile_controller.ex`
 - `lib/medoru_web/components/layouts/mobile.html.heex`
-- `lib/medoru/chat/upload.ex`
-- Migrations for `native_devices` and `uploads` tables.
+- `lib/medoru/chat/file_storage.ex` (or similarly named) — shared store/validate logic extracted from `ChatUploadController`, used by both the existing web controller and the new API upload controller.
+- Migration for the `native_devices` table only (no uploads table — the existing `attachment_path` message fields are reused).
 - `assets/m/` Vite + Svelte project.
 - `clients/mobile/` Capacitor project.
 - `priv/static/mobile/` built output.
 - Tests under `test/medoru_web/api/v1/`, `test/medoru_web/channels/`.
 
 ### Modified files
+
+All modifications are **additive** — existing routes, functions, and behavior are preserved:
+
 - `mix.exs` — deps, aliases, version.
-- `lib/medoru_web/router.ex` — `/api/v1` and `/m` routes.
-- `lib/medoru_web/endpoint.ex` — `/socket` mount.
-- `lib/medoru_web/controllers/auth_controller.ex` — mobile OAuth redirect.
+- `lib/medoru_web/router.ex` — new `/api/v1` scope and `/m` route (existing scopes untouched).
+- `lib/medoru_web/endpoint.ex` — new `/socket` mount alongside `/live`.
+- `lib/medoru_web/controllers/auth_controller.ex` — additive `mobile=true` redirect branch for the `/m` login flow (current redirects unchanged).
+- `lib/medoru_web/controllers/chat_upload_controller.ex` — internals refactored to call the shared storage module; route/request/response unchanged.
 - `lib/medoru_web/components/layouts.ex` — mobile layout.
 - `lib/medoru/accounts.ex` — native device functions.
 - `lib/medoru/accounts/api_token.ex` — unchanged (no refresh/device fields).
-- `lib/medoru/chat.ex` — cursor pagination, upload_id, Notifier integration.
+- `lib/medoru/chat.ex` — Notifier integration inside the private notify call site only; pagination reused as-is.
 - `lib/medoru/chat/message.ex` — unchanged (UUIDv4 retained for 0.10.0).
 - `lib/medoru/notifications.ex` — delegate to Notifier.
 - `config/config.exs` — Hammer, JWT.
 - `config/runtime.exs` — APNs/FCM, JWT secret.
 - `config/dev.exs` — mobile dev server integration.
-- `assets/js/hooks/chat_crypto.js` — extract crypto core.
+- `assets/js/hooks/chat_crypto.js` — extract crypto core into a shared module, hook API/behavior unchanged.
 - `AGENTS.md` — version and state.
 
 ---
@@ -720,13 +723,13 @@ Add `vitest` in `assets/m` for services and stores.
 
 1. Phase 0: deps, version, green tests.
 2. Phase 1.1–1.6: unified auth, JWT, native device schema, rate limiting.
-3. Phase 1.7–1.14: all API controllers with cursor pagination and upload_id.
+3. Phase 1.7–1.14: all API controllers with web-style offset pagination and the reused attachment upload flow.
 4. Phase 2: socket token + split channels.
 5. Phase 5: Notifier abstraction + Web Push wiring.
 6. Phase 3.1–3.5: Vite/Svelte shell, API client, auth, conversation list, chat view.
 7. Phase 3.6–3.8: Web Push, manifest, service worker, build integration.
 8. Phase 6: offline foundation.
-9. Phase 4 + Phase 5 native: Capacitor project, PKCE, native push (APNs/FCM).
+9. Phase 4 + Phase 5 native: Capacitor project, PKCE, native push — **Android (APK) first**, iOS second.
 10. Phase 7–8: tests, validation, docs.
 
 This order ships a working browser PWA first, then layers native packaging and push.

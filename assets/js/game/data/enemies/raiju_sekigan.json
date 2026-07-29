@@ -10,10 +10,10 @@
   "maxColumn": 10,
   "sprites": {
     "default": "enemy_raiju_sekigan_default",
-    "attack": "enemy_danzaburo_attack",
-    "defend": "enemy_danzaburo_defend",
-    "buff": "enemy_danzaburo_buff",
-    "death": "enemy_danzaburo_defeated"
+    "attack": "enemy_raiju_sekigan_attack",
+    "defend": "enemy_raiju_sekigan_defend",
+    "buff": "enemy_raiju_sekigan_buff",
+    "death": "enemy_raiju_sekigan_defeated"
   },
   "portrait": "enemy_raiju_sekigan_default",
   "icon": "enemy_bake_neko_icon",
@@ -350,10 +350,10 @@
         "gainStaticCharge": true
       },
       "sprites": {
-        "default": "enemy_danzaburo_phase2_default",
-        "attack": "enemy_danzaburo_attack",
-        "defend": "enemy_danzaburo_defend",
-        "buff": "enemy_danzaburo_buff"
+        "default": "enemy_raiju_sekigan_phase2_default",
+        "attack": "enemy_raiju_sekigan_attack",
+        "defend": "enemy_raiju_sekigan_defend",
+        "buff": "enemy_raiju_sekigan_buff"
       }
     },
     {
@@ -364,10 +364,10 @@
         "gainStaticCharge": true
       },
       "sprites": {
-        "default": "enemy_danzaburo_default",
-        "attack": "enemy_danzaburo_attack",
-        "defend": "enemy_danzaburo_defend",
-        "buff": "enemy_danzaburo_buff"
+        "default": "enemy_raiju_sekigan_phase3_default",
+        "attack": "enemy_raiju_sekigan_attack",
+        "defend": "enemy_raiju_sekigan_defend",
+        "buff": "enemy_raiju_sekigan_buff"
       }
     },
     {
@@ -380,10 +380,10 @@
         "freeActionId": "lightning_arc"
       },
       "sprites": {
-        "default": "enemy_danzaburo_phase2_default",
-        "attack": "enemy_danzaburo_attack",
-        "defend": "enemy_danzaburo_defend",
-        "buff": "enemy_danzaburo_buff"
+        "default": "enemy_raiju_sekigan_phase3_default",
+        "attack": "enemy_raiju_sekigan_attack",
+        "defend": "enemy_raiju_sekigan_defend",
+        "buff": "enemy_raiju_sekigan_buff"
       }
     }
   ],
