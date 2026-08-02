@@ -36,7 +36,7 @@ export default class WordChallengeSystem {
       title: 'Word Challenge',
       promptForReading: 'Type the reading of this word (latin or kana):',
       promptForMeaning: 'Type the meaning of this word:',
-      timeLimit: 10000,
+      timeLimit: 13000,
       hangOnWrong: 5000,
       hangOnCorrect: 0,
       showCorrectAnswer: true,
@@ -113,7 +113,7 @@ export default class WordChallengeSystem {
       } else if (event.key === 'Backspace') {
         this.input = this.input.slice(0, -1)
       } else if (isTypingKey) {
-        this.input += event.key
+        this.input += event.key.toLowerCase()
       }
       this.updateInputDisplay()
     }
@@ -215,7 +215,7 @@ export default class WordChallengeSystem {
     lockGameWrapper()
 
     this.inputHandler = () => {
-      this.input = this.inputEl.value
+      this.input = this.inputEl.value.toLowerCase()
       this.updateInputDisplay()
     }
     this.inputEl.addEventListener('input', this.inputHandler)
@@ -237,9 +237,9 @@ export default class WordChallengeSystem {
     const startY = 166
 
     const rows = [
-      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-      ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+      ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
     ]
 
     rows.forEach((row, rowIndex) => {
@@ -303,7 +303,7 @@ export default class WordChallengeSystem {
       this.submit(false)
       return
     } else {
-      this.input += key
+      this.input += key.toLowerCase()
     }
     if (this.inputEl) this.inputEl.value = this.input
     this.updateInputDisplay()

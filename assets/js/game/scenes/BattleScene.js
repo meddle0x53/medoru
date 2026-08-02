@@ -1154,7 +1154,7 @@ export default class BattleScene extends Phaser.Scene {
     this.wordChallenge = new WordChallengeSystem(this, {
       title: 'End Turn Challenge',
       promptForMeaning: 'Type the meaning of this word:',
-      timeLimit: 10000,
+      timeLimit: 13000,
       hangOnWrong: 5000,
     })
   }
@@ -1376,7 +1376,15 @@ export default class BattleScene extends Phaser.Scene {
 
   renderSwitchDialog() {
     const maxActive = this.player.maxActiveSlots
-    const combatActive = this.player.activeActions.filter(a => a.id !== 'use_item')
+    const hasChargesLeft = (action) => {
+      if (!action.singleUse) return true
+      return this.player.getAbilityCharges(action.id) > 0
+    }
+    const combatActive = this.player.activeActions.filter(a => a.id !== 'use_item' && hasChargesLeft(a))
+    const combatInactive = this.player.inactiveActions.filter(a => a.id !== 'use_item' && hasChargesLeft(a))
+    if (this.switchDialogSelectedInactive && !combatInactive.some(a => a.id === this.switchDialogSelectedInactive)) {
+      this.switchDialogSelectedInactive = null
+    }
     const activeCount = combatActive.length
     this.switchDialogTitle.setText(`Switch Actions (${activeCount}/${maxActive})`)
 
@@ -1389,7 +1397,6 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     // Render active rows (Use Item is always available and not swappable)
-    const combatInactive = this.player.inactiveActions.filter(a => a.id !== 'use_item')
     this.switchDialogActiveRows.forEach((row, i) => {
       const action = combatActive[i]
       if (action) {
@@ -1743,7 +1750,7 @@ export default class BattleScene extends Phaser.Scene {
     this.wordChallenge.start(wordData, {
       title: 'End Turn Challenge',
       promptType: 'meaning',
-      timeLimit: 10000,
+      timeLimit: 13000,
       hangOnWrong: 5000,
       hangOnCorrect: 900,
       onStart: () => {

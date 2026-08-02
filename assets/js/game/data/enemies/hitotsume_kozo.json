@@ -84,7 +84,7 @@
         },
         "onSuccess": "halveChance",
         "onFail": "boostChance",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -124,7 +124,7 @@
         },
         "onSuccess": "halveChance",
         "onFail": "boostChance",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     }
   ],

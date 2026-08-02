@@ -26,7 +26,7 @@ export default class WinChallengeSystem {
     this.wordChallenge = new WordChallengeSystem(scene, {
       title: 'Word Challenge',
       promptForMeaning: 'Type the meaning of this word:',
-      timeLimit: 8000,
+      timeLimit: 13000,
       hangOnWrong: 5000,
     })
   }

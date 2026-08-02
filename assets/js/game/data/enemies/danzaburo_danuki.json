@@ -55,7 +55,7 @@
         "onSuccess": "weaken",
         "weakenMultiplier": 0.5,
         "onFail": "full",
-        "timeLimit": 9000
+        "timeLimit": 13000
       }]
     },
     {
@@ -86,7 +86,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": "neutralize",
         "onFail": { "type": "setChance", "effectId": "blind", "value": 0.50 },
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -122,7 +122,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": "halveChance",
         "onFail": "boostChance",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -144,7 +144,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"] },
         "onSuccess": "cancel",
         "onFail": "full",
-        "timeLimit": 5000
+        "timeLimit": 13000
       }]
     },
     {
@@ -169,7 +169,7 @@
         "onSuccess": "weaken",
         "weakenMultiplier": 0.5,
         "onFail": "full",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -189,7 +189,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": "cancel",
         "onFail": "full",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     }
   ],

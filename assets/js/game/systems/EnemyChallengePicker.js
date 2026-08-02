@@ -61,7 +61,7 @@ export function buildEnemyChallenge(player, challengeConfig) {
     promptType: 'meaning',
     prompt: 'Type the meaning of this word:',
     hint: word.reading || '',
-    timeLimit: challengeConfig.timeLimit || 6000,
+    timeLimit: challengeConfig.timeLimit || 13000,
     onSuccess: challengeConfig.onSuccess || 'weaken',
     onFail: challengeConfig.onFail || 'full',
     weakenMultiplier: challengeConfig.weakenMultiplier || 0.5,

@@ -58,7 +58,7 @@
         "onSuccess": "weaken",
         "weakenMultiplier": 0.5,
         "onFail": "full",
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -83,7 +83,7 @@
         },
         "onSuccess": "cancel",
         "onFail": "full",
-        "timeLimit": 5000
+        "timeLimit": 13000
       }]
     },
     {

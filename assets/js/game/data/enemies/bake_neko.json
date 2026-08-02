@@ -51,7 +51,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": "neutralize",
         "onFail": { "type": "setValue", "key": "evasion", "value": 0.30 },
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -81,7 +81,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": { "type": "setChance", "effectId": "bleed", "value": 0.20 },
         "onFail": { "type": "setChance", "effectId": "bleed", "value": 0.35 },
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -105,7 +105,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": { "type": "setValue", "key": "damageMultiplier", "value": 1.10 },
         "onFail": { "type": "setValue", "key": "damageMultiplier", "value": 1.30 },
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     },
     {
@@ -135,7 +135,7 @@
         "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
         "onSuccess": { "type": "setChance", "effectId": "burn", "value": 0.10 },
         "onFail": { "type": "setChance", "effectId": "burn", "value": 0.25 },
-        "timeLimit": 6000
+        "timeLimit": 13000
       }]
     }
   ],

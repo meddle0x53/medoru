@@ -14,7 +14,7 @@ export default class EnemyAbilityChallengeSystem {
     this.timerEvent = null
     this.keyboardHandler = null
     this.startTime = 0
-    this.timeLimit = 5000
+    this.timeLimit = 13000
     this.onComplete = null
     this.challenge = null
   }
@@ -24,7 +24,7 @@ export default class EnemyAbilityChallengeSystem {
     this.onComplete = onComplete
     this.input = ''
     this.active = true
-    this.timeLimit = challenge.timeLimit || 5000
+    this.timeLimit = challenge.timeLimit || 13000
     this.startTime = Date.now()
 
     // Enemy ability challenges are always word/meaning prompts.
@@ -51,7 +51,7 @@ export default class EnemyAbilityChallengeSystem {
       } else if (event.key === 'Backspace') {
         this.input = this.input.slice(0, -1)
       } else if (isTypingKey) {
-        this.input += event.key
+        this.input += event.key.toLowerCase()
       }
       this.updateInputDisplay()
     }
@@ -129,7 +129,7 @@ export default class EnemyAbilityChallengeSystem {
     lockGameWrapper()
 
     this.inputHandler = () => {
-      this.input = this.inputEl.value
+      this.input = this.inputEl.value.toLowerCase()
       this.updateInputDisplay()
     }
     this.inputEl.addEventListener('input', this.inputHandler)
@@ -151,9 +151,9 @@ export default class EnemyAbilityChallengeSystem {
     const startY = 162
 
     const rows = [
-      ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-      ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-      ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+      ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
     ]
 
     rows.forEach((row, rowIndex) => {
@@ -217,7 +217,7 @@ export default class EnemyAbilityChallengeSystem {
       this.submit(false)
       return
     } else {
-      this.input += key
+      this.input += key.toLowerCase()
     }
     this.updateInputDisplay()
   }

@@ -104,7 +104,7 @@
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
           "onSuccess": "neutralize",
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 0
@@ -133,7 +133,7 @@
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
           "onSuccess": "cancel",
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 0
@@ -159,7 +159,7 @@
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
           "onSuccess": "neutralize",
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 1
@@ -193,7 +193,7 @@
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
           "onSuccess": "halveChance",
           "onFail": "boostChance",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 1
@@ -221,7 +221,7 @@
           "onSuccess": "weaken",
           "weakenMultiplier": 0.5,
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 1
@@ -248,7 +248,7 @@
           "onSuccess": "weaken",
           "weakenMultiplier": 0.5,
           "onFail": "full",
-          "timeLimit": 7000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 2
@@ -279,7 +279,7 @@
           "onSuccess": "weaken",
           "weakenMultiplier": 0.5,
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 2
@@ -308,7 +308,7 @@
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
           "onSuccess": "cancel",
           "onFail": "full",
-          "timeLimit": 6000
+          "timeLimit": 13000
         }
       ],
       "minPhaseIndex": 2
