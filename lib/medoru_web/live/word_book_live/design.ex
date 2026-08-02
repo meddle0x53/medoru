@@ -77,6 +77,13 @@ defmodule MedoruWeb.WordBookLive.Design do
     {:noreply, assign(socket, :active_side, side)}
   end
 
+  def handle_event("toggle_option", %{"side" => side, "key" => "show_word"}, socket) do
+    config = side_config(socket, side)
+    updated = Map.put(config, "show_word", not show_word?(config))
+
+    {:noreply, assign_side_config(socket, side, updated)}
+  end
+
   def handle_event("toggle_option", %{"side" => side, "key" => key}, socket) do
     config = side_config(socket, side)
     updated = Map.put(config, key, not show?(config, key))
@@ -295,6 +302,19 @@ defmodule MedoruWeb.WordBookLive.Design do
                     {gettext("Show on Card")}
                   </label>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <%= if @active_side == "back" do %>
+                      <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={show_word?(current_config)}
+                          phx-click="toggle_option"
+                          phx-value-side={@active_side}
+                          phx-value-key="show_word"
+                          class="checkbox checkbox-primary checkbox-sm"
+                        />
+                        <span class="text-sm text-base-content">{gettext("Word")}</span>
+                      </label>
+                    <% end %>
                     <%= for {key, label} <- @display_options do %>
                       <label class="flex items-center gap-2 cursor-pointer">
                         <input
@@ -546,6 +566,10 @@ defmodule MedoruWeb.WordBookLive.Design do
 
   defp show?(config, key), do: Map.get(config || %{}, key, false) == true
 
+  # The word text is shown unless explicitly disabled (back face only);
+  # an absent key means show.
+  defp show_word?(config), do: Map.get(config || %{}, "show_word", true) != false
+
   defp config_locales(config, key) do
     config
     |> Kernel.||(%{})
@@ -585,6 +609,7 @@ defmodule MedoruWeb.WordBookLive.Design do
     config = config || %{}
 
     %{
+      "show_word" => show_word?(config),
       "show_image" => show?(config, "show_image"),
       "show_sound" => show?(config, "show_sound"),
       "show_reading" => show?(config, "show_reading"),

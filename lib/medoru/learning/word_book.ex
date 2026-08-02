@@ -19,9 +19,9 @@ defmodule Medoru.Learning.WordBook do
 
   @meaning_locales ~w(en bg ja)
   @example_counts [1, 2, "all"]
-  @side_config_keys ~w(show_image show_sound show_reading show_level show_frequency
+  @side_config_keys ~w(show_word show_image show_sound show_reading show_level show_frequency
                        meanings examples example_count)
-  @side_config_boolean_keys ~w(show_image show_sound show_reading show_level show_frequency)
+  @side_config_boolean_keys ~w(show_word show_image show_sound show_reading show_level show_frequency)
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

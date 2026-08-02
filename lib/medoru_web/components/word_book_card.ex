@@ -191,12 +191,14 @@ defmodule MedoruWeb.WordBookCard do
       <% end %>
 
       <div>
-        <div class={[
-          "font-medium text-base-content font-japanese leading-tight",
-          text_class(@shape)
-        ]}>
-          {@word.text}
-        </div>
+        <%= if show_word?(@config) do %>
+          <div class={[
+            "font-medium text-base-content font-japanese leading-tight",
+            text_class(@shape)
+          ]}>
+            {@word.text}
+          </div>
+        <% end %>
         <%= if show?(@config, "show_reading") && @word.reading do %>
           <div class="mt-1">
             <span class="inline-flex items-center px-2 py-1 bg-secondary text-secondary-content text-xs font-bold shadow-sm font-japanese">
@@ -233,21 +235,21 @@ defmodule MedoruWeb.WordBookCard do
       <% end %>
 
       <%= for locale <- config_locales(@config, "meanings") do %>
-        <div class="w-full">
-          <span class="inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold uppercase shadow-sm">
-            {locale}
+        <div class="w-full flex justify-center">
+          <span class="inline-flex items-baseline gap-1.5 px-2 py-1 bg-primary text-primary-content text-xs shadow-sm">
+            <span class="font-bold uppercase">[{locale}]</span>
+            <span class="line-clamp-3">{meaning_for(@word, locale)}</span>
           </span>
-          <p class="text-sm text-base-content line-clamp-3">
-            {meaning_for(@word, locale)}
-          </p>
         </div>
       <% end %>
 
       <%= for example <- example_blocks(@word, @config) do %>
         <div class="w-full">
-          <p class="text-sm text-base-content font-japanese line-clamp-3">
-            {example.sentence}
-          </p>
+          <%= if example.sentence do %>
+            <p class="text-sm text-base-content font-japanese line-clamp-3">
+              {example.sentence}
+            </p>
+          <% end %>
           <%= for {locale, translation} <- example.translations do %>
             <p class="text-xs text-base-content/70 line-clamp-2">
               <span class="uppercase">{locale}</span>: {translation}
@@ -256,9 +258,11 @@ defmodule MedoruWeb.WordBookCard do
         </div>
       <% end %>
     <% else %>
-      <div class={["font-medium text-base-content font-japanese leading-tight", text_class(@shape)]}>
-        {@word.text}
-      </div>
+      <%= if show_word?(@config) do %>
+        <div class={["font-medium text-base-content font-japanese leading-tight", text_class(@shape)]}>
+          {@word.text}
+        </div>
+      <% end %>
     <% end %>
     """
   end
@@ -279,6 +283,10 @@ defmodule MedoruWeb.WordBookCard do
   defp face_background(key, _word), do: WordBooks.background_path(key)
 
   defp show?(config, key), do: Map.get(config || %{}, key, false) == true
+
+  # The word text is shown unless explicitly disabled (back faces can
+  # hide it via the "show_word" option; absent key means show).
+  defp show_word?(config), do: Map.get(config || %{}, "show_word", true) != false
 
   # True when any display flag or locale list is enabled for the side.
   defp side_config_content?(config) do
@@ -301,36 +309,53 @@ defmodule MedoruWeb.WordBookCard do
   defp meaning_for(%Word{} = word, "en"), do: word.meaning
   defp meaning_for(%Word{} = word, locale), do: Content.get_localized_meaning(word, locale)
 
-  # Builds the example blocks for a face: the Japanese sentences (limited by
-  # "example_count") with per-locale translations aligned by index.
-  # Examples render only when at least one example locale is selected —
-  # otherwise the bare Japanese sentences would leak onto the card even
-  # when examples were never enabled (e.g. a reading-only face).
+  # Builds the example blocks for a face. Each selected locale renders
+  # the example in ITS language: "ja" is the word's Japanese
+  # example_sentence, "en"/"bg" are the translated examples, aligned by
+  # index and limited by "example_count". Nothing renders when no
+  # example locale is selected.
   defp example_blocks(%Word{} = word, config) do
     locales = config_locales(config, "examples")
 
     if locales == [] do
       []
     else
+      count = Map.get(config || %{}, "example_count")
+
       sentences =
-        word.example_sentence
-        |> WordBooks.split_examples()
-        |> take_examples(Map.get(config || %{}, "example_count"))
+        if "ja" in locales do
+          word.example_sentence |> WordBooks.split_examples() |> take_examples(count)
+        else
+          []
+        end
+
+      translation_locales = locales -- ["ja"]
 
       translations =
-        Map.new(locales, fn locale -> {locale, example_translations(word, locale)} end)
+        Map.new(translation_locales, fn locale ->
+          {locale, word |> example_translations(locale) |> take_examples(count)}
+        end)
 
-      sentences
-      |> Enum.with_index()
-      |> Enum.map(fn {sentence, index} ->
-        %{
-          sentence: sentence,
-          translations:
-            locales
-            |> Enum.map(fn locale -> {locale, Enum.at(translations[locale], index)} end)
-            |> Enum.reject(fn {_locale, text} -> text in [nil, ""] end)
-        }
-      end)
+      block_count =
+        max(
+          length(sentences),
+          translations |> Enum.map(fn {_l, list} -> length(list) end) |> Enum.max(fn -> 0 end)
+        )
+
+      if block_count == 0 do
+        []
+      else
+        Enum.map(0..(block_count - 1), fn index ->
+          %{
+            sentence: Enum.at(sentences, index),
+            translations:
+              translation_locales
+              |> Enum.map(fn locale -> {locale, Enum.at(translations[locale], index)} end)
+              |> Enum.reject(fn {_locale, text} -> text in [nil, ""] end)
+          }
+        end)
+        |> Enum.reject(fn block -> is_nil(block.sentence) and block.translations == [] end)
+      end
     end
   end
 

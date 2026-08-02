@@ -29,7 +29,7 @@ defmodule MedoruWeb.WordBookCardTest do
       "show_level" => true,
       "show_frequency" => true,
       "meanings" => ["en", "bg"],
-      "examples" => ["en", "bg"],
+      "examples" => ["en", "bg", "ja"],
       "example_count" => 2
     }
 
@@ -57,6 +57,7 @@ defmodule MedoruWeb.WordBookCardTest do
     assert html =~ "ям"
     assert html =~ "私はりんごを食べる。"
     assert html =~ "彼はパンを食べる。"
+    assert html =~ "I eat an apple."
     assert html =~ "Той яде хляб."
     assert html =~ "N5"
     assert html =~ "Common word"
@@ -89,5 +90,50 @@ defmodule MedoruWeb.WordBookCardTest do
 
     assert html =~ "たべる (taberu)"
     refute html =~ "私はりんごを食べる。"
+  end
+
+  test "english-only examples render no Japanese sentence" do
+    word = %Word{
+      id: Ecto.UUID.generate(),
+      text: "食べる",
+      reading: "たべる",
+      meaning: "to eat",
+      example_sentence: "私はりんごを食べる。",
+      example_meaning: "I eat an apple."
+    }
+
+    html =
+      render_component(&MedoruWeb.WordBookCard.card/1,
+        id: "en-example-card",
+        word: word,
+        front_config: %{"examples" => ["en"]},
+        back_config: %{},
+        card_shape: "rectangle"
+      )
+
+    assert html =~ "I eat an apple."
+    refute html =~ "私はりんごを食べる。"
+  end
+
+  test "face can hide the word text while keeping other content" do
+    word = %Word{
+      id: Ecto.UUID.generate(),
+      text: "食べる",
+      reading: "たべる",
+      meaning: "to eat"
+    }
+
+    html =
+      render_component(&MedoruWeb.WordBookCard.card/1,
+        id: "no-word-card",
+        word: word,
+        front_config: %{"show_word" => false, "show_reading" => true},
+        back_config: %{"show_word" => false, "meanings" => ["en"]},
+        card_shape: "rectangle"
+      )
+
+    refute html =~ "食べる"
+    assert html =~ "たべる (taberu)"
+    assert html =~ "to eat"
   end
 end
