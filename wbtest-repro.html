@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="/priv/static/assets/css/app.css">
+</head>
+<body>
+<div id="word-book-card-grid" class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto" style="width: 600px">
+  <div class="relative">
+    <div class="word-book-card">
+      <div id="c1-inner" class="word-book-card-inner aspect-square">
+        <div id="c1-front" class="word-book-card-face relative bg-base-100 text-base-content border border-base-300 shadow-md">
+          <div class="min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center">
+            <div class="font-medium text-5xl">short</div>
+          </div>
+        </div>
+        <div class="word-book-card-face word-book-card-face-back relative bg-base-100 border border-base-300"></div>
+      </div>
+    </div>
+  </div>
+  <div class="relative">
+    <div class="word-book-card">
+      <div id="c2-inner" class="word-book-card-inner aspect-square">
+        <div id="c2-front" class="word-book-card-face relative bg-base-100 text-base-content border border-base-300 shadow-md">
+          <div class="min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center">
+            <div class="font-medium text-5xl">tall</div>
+            <div class="text-lg">(reading)</div>
+            <p>meaning one is quite long and wraps around several lines to make this card tall</p>
+            <p>meaning two adds even more content to overflow the square</p>
+            <p>and an example sentence for good measure to really push it</p>
+            <div class="mt-auto w-full pt-3 flex justify-center"><span>medoru.net</span></div>
+          </div>
+        </div>
+        <div class="word-book-card-face word-book-card-face-back relative bg-base-100 border border-base-300"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import WordBookCards from "/assets/js/hooks/word_book_cards.js"
+const el = document.getElementById("word-book-card-grid")
+WordBookCards.el = el
+WordBookCards.mounted()
+setTimeout(() => {
+  const lines = ["c1-inner", "c2-inner", "c1-front", "c2-front"].map(id => {
+    const c = document.getElementById(id)
+    return `${id}: w=${c.offsetWidth} h=${c.offsetHeight}`
+  })
+  const pre = document.createElement("pre")
+  pre.id = "result"
+  pre.textContent = lines.join("\n")
+  document.body.appendChild(pre)
+}, 600)
+</script>
+</body>
+</html>

@@ -22,8 +22,15 @@ defmodule MedoruWeb.WordBookCard do
   attr :front_config, :map, default: %{}
   attr :back_config, :map, default: %{}
   attr :card_shape, :string, default: "rectangle", values: ~w(square rectangle)
-  attr :front_background, :string, default: nil, doc: "background image path or nil"
-  attr :back_background, :string, default: nil, doc: "background image path or nil"
+
+  attr :front_background, :string,
+    default: nil,
+    doc: ~s(background key see \(`WordBooks.background_path/1`\) or "word_image")
+
+  attr :back_background, :string,
+    default: nil,
+    doc: ~s(background key \(see `WordBooks.background_path/1`\) or "word_image")
+
   attr :download, :boolean, default: false, doc: "render per-face PNG download buttons"
 
   @doc """
@@ -42,28 +49,28 @@ defmodule MedoruWeb.WordBookCard do
             id={"#{@id}-front"}
             data-share-picture
             class="word-book-card-face relative bg-base-100 text-base-content border border-base-300 shadow-md"
-            style={background_style(@front_background)}
+            style={background_style(face_background(@front_background, @word))}
           >
             <.level_badge word={@word} config={@front_config} />
             <.card_face
               word={@word}
               config={@front_config}
               shape={@card_shape}
-              background={@front_background}
+              background={face_background(@front_background, @word)}
             />
           </div>
           <div
             id={"#{@id}-back"}
             data-share-picture
             class="word-book-card-face word-book-card-face-back relative bg-base-100 text-base-content border border-base-300 shadow-md"
-            style={background_style(@back_background)}
+            style={background_style(face_background(@back_background, @word))}
           >
             <.level_badge word={@word} config={@back_config} />
             <.card_face
               word={@word}
               config={@back_config}
               shape={@card_shape}
-              background={@back_background}
+              background={face_background(@back_background, @word)}
             />
           </div>
         </div>
@@ -96,19 +103,36 @@ defmodule MedoruWeb.WordBookCard do
   defp level_badge(assigns) do
     ~H"""
     <%= if show?(@config, "show_level") && @word.difficulty do %>
-      <span class="absolute top-2 left-2 z-10 inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold shadow-sm">
+      <span class="absolute top-2 left-2 z-10 inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold shadow-sm [backface-visibility:hidden]">
         N{@word.difficulty}
       </span>
     <% end %>
     """
   end
 
-  # Site branding rendered as the final content block of every card
-  # face, so it is always part of downloaded card images. The pill has
-  # its own background so it stays readable over any card background.
+  # Site branding rendered on every card face, so it is always part of
+  # downloaded card images. The pill has its own background so it stays
+  # readable over any card background. For rectangle cards it is the
+  # final content block; square cards use square_watermark/1 (see
+  # card_face/1) so it stays at the bottom edge of the fixed-height face.
   defp watermark(assigns) do
     ~H"""
     <div class="mt-auto w-full pt-3 flex justify-center">
+      <span class="px-3 py-1 bg-base-100 border border-base-300 text-sm font-bold tracking-widest text-base-content shadow-sm">
+        medoru.net
+      </span>
+    </div>
+    """
+  end
+
+  # Square faces have a fixed height and overflowing content, so the
+  # branding is the in-flow footer of a flex column filling the face —
+  # always at the bottom edge, never overflowing, never absolutely
+  # positioned (absolute elements escape the 3D plane and render
+  # mirrored on the back face).
+  defp square_watermark(assigns) do
+    ~H"""
+    <div class="w-full px-4 pb-1.5 pt-3 flex justify-center">
       <span class="px-3 py-1 bg-base-100 border border-base-300 text-sm font-bold tracking-widest text-base-content shadow-sm">
         medoru.net
       </span>
@@ -125,86 +149,112 @@ defmodule MedoruWeb.WordBookCard do
     assigns = assign(assigns, :has_content?, side_config_content?(assigns.config))
 
     ~H"""
-    <div class={[
-      "h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center",
-      if(@background, do: "bg-base-100/80")
-    ]}>
-      <%= if @has_content? do %>
-        <%= if show?(@config, "show_image") && @word.image_path do %>
-          <img
-            src={@word.image_path}
-            alt={@word.text}
-            class="max-h-28 w-auto max-w-full object-contain rounded-lg border border-base-300"
-            loading="lazy"
-          />
-        <% end %>
+    <%= if @shape == "square" do %>
+      <div class={["h-full w-full flex flex-col text-center", if(@background, do: "bg-base-100/60")]}>
+        <div class="flex-1 min-h-0 w-full flex flex-col items-center justify-start gap-2 p-4 pt-10">
+          <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+        </div>
+        <.square_watermark />
+      </div>
+    <% else %>
+      <div class={[
+        "min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center",
+        if(@background, do: "bg-base-100/60")
+      ]}>
+        <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+        <.watermark />
+      </div>
+    <% end %>
+    """
+  end
 
+  attr :word, :any, required: true
+  attr :config, :map, required: true
+  attr :shape, :string, required: true
+  attr :has_content?, :boolean, required: true
+
+  defp card_content(assigns) do
+    ~H"""
+    <%= if @has_content? do %>
+      <%= if show?(@config, "show_image") && @word.image_path do %>
+        <img
+          src={@word.image_path}
+          alt={@word.text}
+          class="max-h-28 w-auto max-w-full object-contain rounded-lg border border-base-300"
+          loading="lazy"
+        />
+      <% end %>
+
+      <div>
         <div class={[
           "font-medium text-base-content font-japanese leading-tight",
           text_class(@shape)
         ]}>
           {@word.text}
-          <%= if show?(@config, "show_reading") && @word.reading do %>
-            <span class="text-lg font-normal text-secondary/80">({@word.reading})</span>
+        </div>
+        <%= if show?(@config, "show_reading") && @word.reading do %>
+          <div class="mt-1">
+            <span class="inline-flex items-center px-2 py-1 bg-secondary text-secondary-content text-xs font-bold shadow-sm font-japanese">
+              {@word.reading} ({Medoru.Content.KanaRomaji.to_romaji(@word.reading)})
+            </span>
+          </div>
+        <% end %>
+      </div>
+
+      <%= if show?(@config, "show_sound") && @word.pronunciation_path do %>
+        <audio
+          controls
+          class="h-8 w-full max-w-[220px]"
+          src={@word.pronunciation_path}
+          onclick="event.stopPropagation()"
+          data-share-exclude
+        >
+          {gettext("Your browser does not support the audio element.")}
+        </audio>
+      <% end %>
+
+      <%= if show?(@config, "show_frequency") && @word.usage_frequency do %>
+        <div class="flex items-center justify-center gap-2 flex-wrap">
+          <%= if @word.usage_frequency <= 100 do %>
+            <span class="px-2 py-0.5 bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded-full text-xs">
+              {gettext("Common word")}
+            </span>
+          <% else %>
+            <span class="text-xs text-base-content/70">
+              {gettext("Freq: %{frequency}", frequency: @word.usage_frequency)}
+            </span>
           <% end %>
         </div>
+      <% end %>
 
-        <%= if show?(@config, "show_sound") && @word.pronunciation_path do %>
-          <audio
-            controls
-            class="h-8 w-full max-w-[220px]"
-            src={@word.pronunciation_path}
-            onclick="event.stopPropagation()"
-            data-share-exclude
-          >
-            {gettext("Your browser does not support the audio element.")}
-          </audio>
-        <% end %>
-
-        <%= if show?(@config, "show_frequency") && @word.usage_frequency do %>
-          <div class="flex items-center justify-center gap-2 flex-wrap">
-            <%= if @word.usage_frequency <= 100 do %>
-              <span class="px-2 py-0.5 bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 rounded-full text-xs">
-                {gettext("Common word")}
-              </span>
-            <% else %>
-              <span class="text-xs text-secondary">
-                {gettext("Freq: %{frequency}", frequency: @word.usage_frequency)}
-              </span>
-            <% end %>
-          </div>
-        <% end %>
-
-        <%= for locale <- config_locales(@config, "meanings") do %>
-          <div class="w-full">
-            <div class="text-[10px] uppercase tracking-wide text-secondary">
-              {locale}
-            </div>
-            <p class="text-sm text-base-content line-clamp-3">
-              {meaning_for(@word, locale)}
-            </p>
-          </div>
-        <% end %>
-
-        <%= for example <- example_blocks(@word, @config) do %>
-          <div class="w-full">
-            <p class="text-sm text-base-content font-japanese line-clamp-3">
-              {example.sentence}
-            </p>
-            <%= for {locale, translation} <- example.translations do %>
-              <p class="text-xs text-secondary line-clamp-2">
-                <span class="uppercase">{locale}</span>: {translation}
-              </p>
-            <% end %>
-          </div>
-        <% end %>
-      <% else %>
-        <div class={["font-medium text-base-content font-japanese leading-tight", text_class(@shape)]}>
-          {@word.text}
+      <%= for locale <- config_locales(@config, "meanings") do %>
+        <div class="w-full">
+          <span class="inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold uppercase shadow-sm">
+            {locale}
+          </span>
+          <p class="text-sm text-base-content line-clamp-3">
+            {meaning_for(@word, locale)}
+          </p>
         </div>
       <% end %>
-      <.watermark />
-    </div>
+
+      <%= for example <- example_blocks(@word, @config) do %>
+        <div class="w-full">
+          <p class="text-sm text-base-content font-japanese line-clamp-3">
+            {example.sentence}
+          </p>
+          <%= for {locale, translation} <- example.translations do %>
+            <p class="text-xs text-base-content/70 line-clamp-2">
+              <span class="uppercase">{locale}</span>: {translation}
+            </p>
+          <% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class={["font-medium text-base-content font-japanese leading-tight", text_class(@shape)]}>
+        {@word.text}
+      </div>
+    <% end %>
     """
   end
 
@@ -217,6 +267,11 @@ defmodule MedoruWeb.WordBookCard do
   defp background_style(nil), do: nil
   defp background_style(""), do: nil
   defp background_style(path), do: "background-image: url('#{path}');"
+
+  # Resolves a face background: "word_image" uses the word's own image
+  # (when available); anything else is a preset gallery key.
+  defp face_background("word_image", %Word{image_path: path}), do: path
+  defp face_background(key, _word), do: WordBooks.background_path(key)
 
   defp show?(config, key), do: Map.get(config || %{}, key, false) == true
 
@@ -243,28 +298,35 @@ defmodule MedoruWeb.WordBookCard do
 
   # Builds the example blocks for a face: the Japanese sentences (limited by
   # "example_count") with per-locale translations aligned by index.
+  # Examples render only when at least one example locale is selected —
+  # otherwise the bare Japanese sentences would leak onto the card even
+  # when examples were never enabled (e.g. a reading-only face).
   defp example_blocks(%Word{} = word, config) do
     locales = config_locales(config, "examples")
 
-    sentences =
-      word.example_sentence
-      |> WordBooks.split_examples()
-      |> take_examples(Map.get(config || %{}, "example_count"))
+    if locales == [] do
+      []
+    else
+      sentences =
+        word.example_sentence
+        |> WordBooks.split_examples()
+        |> take_examples(Map.get(config || %{}, "example_count"))
 
-    translations =
-      Map.new(locales, fn locale -> {locale, example_translations(word, locale)} end)
+      translations =
+        Map.new(locales, fn locale -> {locale, example_translations(word, locale)} end)
 
-    sentences
-    |> Enum.with_index()
-    |> Enum.map(fn {sentence, index} ->
-      %{
-        sentence: sentence,
-        translations:
-          locales
-          |> Enum.map(fn locale -> {locale, Enum.at(translations[locale], index)} end)
-          |> Enum.reject(fn {_locale, text} -> text in [nil, ""] end)
-      }
-    end)
+      sentences
+      |> Enum.with_index()
+      |> Enum.map(fn {sentence, index} ->
+        %{
+          sentence: sentence,
+          translations:
+            locales
+            |> Enum.map(fn locale -> {locale, Enum.at(translations[locale], index)} end)
+            |> Enum.reject(fn {_locale, text} -> text in [nil, ""] end)
+        }
+      end)
+    end
   end
 
   defp take_examples(sentences, count) when count in [1, "1"], do: Enum.take(sentences, 1)

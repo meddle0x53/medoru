@@ -138,7 +138,7 @@ defmodule Medoru.Learning.WordBooksTest do
         description: "Some cards",
         theme: "forest",
         card_shape: "square",
-        cards_per_page: 9,
+        cards_per_page: 6,
         front_background: "grid",
         back_background: "dots",
         cover_image: "fuji",
@@ -149,7 +149,7 @@ defmodule Medoru.Learning.WordBooksTest do
       assert {:ok, %WordBook{} = book} = WordBooks.create_word_book(attrs)
       assert book.title == "My Book"
       assert book.card_shape == "square"
-      assert book.cards_per_page == 9
+      assert book.cards_per_page == 6
       assert book.word_count == 0
     end
 

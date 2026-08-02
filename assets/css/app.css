@@ -915,16 +915,41 @@ body:has(.classroom-chat-tab) footer {
   transform: rotateY(180deg);
 }
 
+/* Square books: strict squares in pure CSS, no JS. Two things are
+   needed together: min-height: 0 so aspect-ratio wins over content
+   (otherwise a taller-than-wide card stops being square), and
+   minmax(0, 1fr) so the face's grid row is capped at the container
+   height — the VISIBLE card (border/background live on the face)
+   cannot grow even when its content overflows. Content spills
+   visibly; the branding stays pinned inside via the face's flex
+   layout (see card_face in word_book_card.ex). All squares in a grid
+   share the same column width, so all cards are the same size. */
+.word-book-card-inner.aspect-square {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* Square faces clip content that overflows the fixed square. Safe here
+   because the face height comes from the capped grid row above, not
+   from content — do NOT add this to faces generally: on rectangle
+   cards overflow:hidden would zero the content's contribution and
+   break card growth. */
+.word-book-card-inner.aspect-square .word-book-card-face {
+  overflow: hidden;
+}
+
 /* Both faces occupy the same grid cell, so the taller face's content
-   determines the card height — no scrollbars. The aspect-ratio class on
-   the inner element acts as a minimum shape; taller content grows the card. */
+   determines the card height — no scrollbars, no clipping. The
+   aspect-ratio class on the inner element acts as a minimum shape;
+   taller content grows the card while keeping the base ratio.
+   NOTE: do not add overflow:hidden here — it zeroes the face's
+   intrinsic minimum size and the card stops growing with content. */
 .word-book-card-face {
   grid-area: 1 / 1;
   width: 100%;
   min-width: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  overflow: hidden;
   background-size: cover;
   background-position: center;
 }

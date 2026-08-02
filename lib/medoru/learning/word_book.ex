@@ -15,7 +15,7 @@ defmodule Medoru.Learning.WordBook do
 
   @max_words 100
   @card_shapes ~w(square rectangle)
-  @cards_per_page_options [1, 2, 4, 9]
+  @cards_per_page_options [1, 2, 4, 6]
 
   @meaning_locales ~w(en bg ja)
   @example_counts [1, 2, "all"]

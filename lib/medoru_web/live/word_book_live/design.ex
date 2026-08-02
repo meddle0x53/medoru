@@ -15,6 +15,11 @@ defmodule MedoruWeb.WordBookLive.Design do
 
   @locales ~w(en bg ja)
 
+  # daisyUI themes hidden from the word book theme picker (e.g. themes
+  # whose palette makes card text unreadable). Names must match
+  # `Medoru.Classrooms.Classroom.allowed_themes/0`.
+  @excluded_themes ~w(cyberpunk aqua acid retro coffee night wireframe cupcake pastel luxury black)
+
   @display_options [
     {"show_image", gettext("Picture")},
     {"show_sound", gettext("Sound")},
@@ -30,7 +35,7 @@ defmodule MedoruWeb.WordBookLive.Design do
      |> assign(:page_title, gettext("Design Word Book"))
      |> assign(:display_options, @display_options)
      |> assign(:locales, @locales)
-     |> assign(:themes, Classroom.allowed_themes())
+     |> assign(:themes, Classroom.allowed_themes() -- @excluded_themes)
      |> assign(:background_options, WordBooks.background_options())
      |> assign(:cover_background_options, WordBooks.cover_background_options())}
   end
@@ -392,6 +397,32 @@ defmodule MedoruWeb.WordBookLive.Design do
                       </div>
                       <span class="text-xs text-secondary text-center">{gettext("None")}</span>
                     </button>
+                    <button
+                      type="button"
+                      phx-click="select_background"
+                      phx-value-side={@active_side}
+                      phx-value-background="word_image"
+                      class={[
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-colors",
+                        if(current_background == "word_image",
+                          do: "border-primary bg-primary/5",
+                          else: "border-base-300 hover:border-primary/50"
+                        )
+                      ]}
+                    >
+                      <%= if @preview_word && @preview_word.image_path do %>
+                        <img
+                          src={@preview_word.image_path}
+                          alt={gettext("Word image")}
+                          class="w-full h-12 object-cover rounded"
+                        />
+                      <% else %>
+                        <div class="w-full h-12 bg-base-200 rounded flex items-center justify-center">
+                          <.icon name="hero-photo" class="w-5 h-5 text-secondary" />
+                        </div>
+                      <% end %>
+                      <span class="text-xs text-secondary text-center">{gettext("Word image")}</span>
+                    </button>
                     <%= for {key, label, path} <- @background_options do %>
                       <button
                         type="button"
@@ -447,15 +478,22 @@ defmodule MedoruWeb.WordBookLive.Design do
                 {gettext("Preview — click the card to flip it")}
               </p>
               <%= if @preview_word do %>
-                <div class="max-w-xs mx-auto">
+                <div
+                  id="word-book-design-preview-container"
+                  phx-hook="WordBookCards"
+                  data-card-shape={@card_shape}
+                  class={
+                    if(@card_shape == "square", do: "max-w-md mx-auto", else: "max-w-xs mx-auto")
+                  }
+                >
                   <WordBookCard.card
                     id="word-book-design-preview"
                     word={@preview_word}
                     front_config={@front_config}
                     back_config={@back_config}
                     card_shape={@card_shape}
-                    front_background={background_path(@background_options, @front_background)}
-                    back_background={background_path(@background_options, @back_background)}
+                    front_background={@front_background}
+                    back_background={@back_background}
                   />
                 </div>
               <% else %>
@@ -524,8 +562,6 @@ defmodule MedoruWeb.WordBookLive.Design do
       _ -> "all"
     end
   end
-
-  defp background_path(_options, key), do: WordBooks.background_path(key)
 
   # --- Save helpers ---
 

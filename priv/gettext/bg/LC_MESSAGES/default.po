@@ -64,8 +64,8 @@ msgstr "Акаунт"
 
 #: lib/medoru_web/live/admin/word_class_live/show/show_template.html.heex:98
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:665
-#: lib/medoru_web/live/word_book_live/design.ex:474
-#: lib/medoru_web/live/word_book_live/show.ex:294
+#: lib/medoru_web/live/word_book_live/design.ex:500
+#: lib/medoru_web/live/word_book_live/show.ex:290
 #: lib/medoru_web/live/word_set_live/show.ex:595
 #, elixir-autogen, elixir-format
 msgid "Add Words"
@@ -1717,8 +1717,8 @@ msgstr "Член"
 #: lib/medoru_web/live/user_live/following.html.heex:155
 #: lib/medoru_web/live/users_live/index.html.heex:235
 #: lib/medoru_web/live/users_live/index.html.heex:239
+#: lib/medoru_web/live/word_book_live/show.ex:369
 #: lib/medoru_web/live/word_book_live/show.ex:373
-#: lib/medoru_web/live/word_book_live/show.ex:377
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:467
@@ -2038,8 +2038,8 @@ msgstr "Сега направете теста, за да завършите у�
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/learn_live.ex:203
+#: lib/medoru_web/live/word_book_live/show.ex:360
 #: lib/medoru_web/live/word_book_live/show.ex:364
-#: lib/medoru_web/live/word_book_live/show.ex:368
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "Назад"
@@ -2601,7 +2601,7 @@ msgstr "Обратно към думи N%{level}"
 msgid "Browse and learn Japanese words organized by JLPT level"
 msgstr "Разгледайте и научете японски думи, организирани по JLPT нива"
 
-#: lib/medoru_web/components/word_book_card.ex:168
+#: lib/medoru_web/components/word_book_card.ex:179
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #, elixir-autogen, elixir-format
@@ -2688,7 +2688,7 @@ msgstr "Няма думи, съвпадащи с търсенето \"%{search}\
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/users_live/index.html.heex:86
-#: lib/medoru_web/live/word_book_live/show.ex:323
+#: lib/medoru_web/live/word_book_live/show.ex:319
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #, elixir-autogen, elixir-format
@@ -8138,8 +8138,8 @@ msgid "Edit Word Set"
 msgstr "Редактиране на дума - %{text}"
 
 #: lib/medoru_web/live/word_book_live/edit_words.ex:19
-#: lib/medoru_web/live/word_book_live/show.ex:226
-#: lib/medoru_web/live/word_book_live/show.ex:334
+#: lib/medoru_web/live/word_book_live/show.ex:222
+#: lib/medoru_web/live/word_book_live/show.ex:330
 #: lib/medoru_web/live/word_set_live/edit_words.ex:17
 #: lib/medoru_web/live/word_set_live/show.ex:455
 #, elixir-autogen, elixir-format
@@ -9484,7 +9484,7 @@ msgstr "примери"
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:64
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:106
 #: lib/medoru_web/live/word_book_live/index.ex:340
-#: lib/medoru_web/live/word_book_live/show.ex:275
+#: lib/medoru_web/live/word_book_live/show.ex:271
 #: lib/medoru_web/live/word_set_live/index.ex:339
 #: lib/medoru_web/live/word_set_live/show.ex:438
 #: lib/medoru_web/live/word_set_live/show.ex:741
@@ -9712,7 +9712,7 @@ msgstr ""
 msgid "Writing Challenge"
 msgstr "Предизвикателство за писане"
 
-#: lib/medoru_web/components/word_book_card.ex:160
+#: lib/medoru_web/components/word_book_card.ex:171
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:196
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:639
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:850
@@ -17341,12 +17341,12 @@ msgstr "Добавяне към книга с думи"
 msgid "Add up to %{max} words to your book. Current: %{count}"
 msgstr "Добавете до %{max} думи в книгата си. Текущ брой: %{count}"
 
-#: lib/medoru_web/live/word_book_live/show.ex:288
+#: lib/medoru_web/live/word_book_live/show.ex:284
 #, elixir-autogen, elixir-format
 msgid "Add words before opening the book."
 msgstr "Добавете думи, преди да отворите книгата."
 
-#: lib/medoru_web/live/word_book_live/design.ex:468
+#: lib/medoru_web/live/word_book_live/design.ex:494
 #, elixir-autogen, elixir-format
 msgid "Add words to see a live preview of your design."
 msgstr "Добавете думи, за да видите преглед на дизайна си на живо."
@@ -17389,7 +17389,7 @@ msgid "Back to Components"
 msgstr "Обратно към игрите"
 
 #: lib/medoru_web/live/word_book_live/design.ex:164
-#: lib/medoru_web/live/word_book_live/show.ex:219
+#: lib/medoru_web/live/word_book_live/show.ex:215
 #, elixir-autogen, elixir-format
 msgid "Back to Word Books"
 msgstr "Обратно към книгите с думи"
@@ -17421,7 +17421,7 @@ msgstr "Стил на картата"
 msgid "Choose a visual theme for the cards. Default uses the site colors."
 msgstr "Изберете визуална тема за картите. По подразбиране се използват цветовете на сайта."
 
-#: lib/medoru_web/live/word_book_live/show.ex:337
+#: lib/medoru_web/live/word_book_live/show.ex:333
 #, elixir-autogen, elixir-format
 msgid "Close book"
 msgstr "Затвори книгата"
@@ -17527,8 +17527,8 @@ msgstr ""
 msgid "Default (first card)"
 msgstr "По подразбиране (първа карта)"
 
-#: lib/medoru_web/live/word_book_live/show.ex:223
-#: lib/medoru_web/live/word_book_live/show.ex:328
+#: lib/medoru_web/live/word_book_live/show.ex:219
+#: lib/medoru_web/live/word_book_live/show.ex:324
 #, elixir-autogen, elixir-format
 msgid "Design"
 msgstr "Дизайн"
@@ -17592,7 +17592,7 @@ msgstr "Неуспешно завършване на урока."
 msgid "Find as many kanji as you can that contain this component"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:172
+#: lib/medoru_web/components/word_book_card.ex:183
 #, elixir-autogen, elixir-format
 msgid "Freq: %{frequency}"
 msgstr "Честота: %{frequency}"
@@ -17701,7 +17701,7 @@ msgstr "Картинка"
 msgid "Please select one of your word sets first."
 msgstr "Първо изберете един от вашите списъци от думи."
 
-#: lib/medoru_web/live/word_book_live/design.ex:447
+#: lib/medoru_web/live/word_book_live/design.ex:473
 #, elixir-autogen, elixir-format
 msgid "Preview — click the card to flip it"
 msgstr "Преглед — щракнете върху картата, за да я обърнете"
@@ -17768,8 +17768,8 @@ msgstr "Квадратна"
 msgid "Students will type kanji that contain the selected component."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:465
-#: lib/medoru_web/live/word_book_live/show.ex:286
+#: lib/medoru_web/live/word_book_live/design.ex:491
+#: lib/medoru_web/live/word_book_live/show.ex:282
 #, elixir-autogen, elixir-format
 msgid "This book has no words yet."
 msgstr "Тази книга все още няма думи."
@@ -17875,17 +17875,23 @@ msgstr ""
 msgid "kanji contain this component"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:414
+#: lib/medoru_web/live/word_book_live/design.ex:440
 #, elixir-autogen, elixir-format
 msgid "Book covers"
 msgstr "Корици на книги"
 
-#: lib/medoru_web/live/word_book_live/show.ex:239
+#: lib/medoru_web/live/word_book_live/show.ex:235
 #, elixir-autogen, elixir-format
 msgid "Click to open the book"
 msgstr "Щракнете, за да отворите книгата"
 
-#: lib/medoru_web/components/word_book_card.ex:79
+#: lib/medoru_web/components/word_book_card.ex:86
 #, elixir-autogen, elixir-format
 msgid "Download card as PNG"
 msgstr "Изтегли картата като PNG"
+
+#: lib/medoru_web/live/word_book_live/design.ex:411
+#: lib/medoru_web/live/word_book_live/design.ex:419
+#, elixir-autogen, elixir-format
+msgid "Word image"
+msgstr "Изображение на думата"

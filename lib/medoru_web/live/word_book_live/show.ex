@@ -12,7 +12,7 @@ defmodule MedoruWeb.WordBookLive.Show do
   alias Medoru.Learning.WordBooks
   alias MedoruWeb.WordBookCard
 
-  @cards_per_page_options [1, 2, 4, 9]
+  @cards_per_page_options [1, 2, 4, 6]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -157,10 +157,6 @@ defmodule MedoruWeb.WordBookLive.Show do
     |> Enum.find_value(fn {key, _label, path} -> if key == cover_image, do: path end)
   end
 
-  # Resolves a stored background key (or "cover:"-prefixed cover key)
-  # to its static path, or nil.
-  defp background_path(key), do: WordBooks.background_path(key)
-
   defp plain_background_path do
     WordBooks.background_options()
     |> Enum.find_value(fn {key, _label, path} -> if key == "plain", do: path end)
@@ -168,17 +164,28 @@ defmodule MedoruWeb.WordBookLive.Show do
 
   # Width caps keep cards roughly the same physical size at every
   # cards-per-page setting instead of stretching to fill the page.
-  defp grid_class(1), do: "grid-cols-1 max-w-sm mx-auto"
-  defp grid_class(2), do: "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
-  defp grid_class(4), do: "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
-  defp grid_class(9), do: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto"
-  defp grid_class(_), do: grid_class(9)
+  # Square books get 1.5x wider columns so each square's side is
+  # width + half of the width a rectangle-mode card would have.
+  defp grid_class(count, "square"), do: square_grid_class(count)
+  defp grid_class(count, _shape), do: rectangle_grid_class(count)
 
-  # Books saved before the 16-per-page option was removed may hold stale
+  defp rectangle_grid_class(1), do: "grid-cols-1 max-w-sm mx-auto"
+  defp rectangle_grid_class(2), do: "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
+  defp rectangle_grid_class(4), do: "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
+  defp rectangle_grid_class(6), do: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto"
+  defp rectangle_grid_class(_), do: rectangle_grid_class(6)
+
+  defp square_grid_class(1), do: "grid-cols-1 max-w-xl mx-auto"
+  defp square_grid_class(2), do: "grid-cols-1 sm:grid-cols-2 max-w-5xl mx-auto"
+  defp square_grid_class(4), do: "grid-cols-1 sm:grid-cols-2 max-w-6xl mx-auto"
+  defp square_grid_class(6), do: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto"
+  defp square_grid_class(_), do: square_grid_class(6)
+
+  # Books saved before some per-page options were removed may hold stale
   # values; coerce anything unsupported to the largest grid.
   defp normalize_cards_per_page(nil), do: 4
   defp normalize_cards_per_page(count) when count in @cards_per_page_options, do: count
-  defp normalize_cards_per_page(_count), do: 9
+  defp normalize_cards_per_page(_count), do: 6
 
   @impl true
   def render(assigns) do
@@ -381,8 +388,13 @@ defmodule MedoruWeb.WordBookLive.Show do
         </div>
       </div>
 
-      <%!-- Card grid --%>
-      <div class={["grid gap-4 sm:gap-6", grid_class(@cards_per_page)]}>
+      <%!-- Card grid (hook keeps every card on the page the same size) --%>
+      <div
+        id="word-book-card-grid"
+        phx-hook="WordBookCards"
+        data-card-shape={@word_book.card_shape || "rectangle"}
+        class={["grid gap-4 sm:gap-6", grid_class(@cards_per_page, @word_book.card_shape)]}
+      >
         <%= for word <- @words do %>
           <WordBookCard.card
             id={"card-#{word.id}"}
@@ -390,8 +402,8 @@ defmodule MedoruWeb.WordBookLive.Show do
             front_config={@word_book.front_config || %{}}
             back_config={@word_book.back_config || %{}}
             card_shape={@word_book.card_shape || "rectangle"}
-            front_background={background_path(@word_book.front_background)}
-            back_background={background_path(@word_book.back_background)}
+            front_background={@word_book.front_background}
+            back_background={@word_book.back_background}
             download={true}
           />
         <% end %>

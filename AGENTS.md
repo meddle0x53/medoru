@@ -5,7 +5,7 @@
 ## Current State
 
 **Version**: 0.10.0 🔄 IN PROGRESS  
-**Status**: 0.10.0 adds **Word Books** — user-created vocabulary card books built from word sets or custom words, with a configurable card designer (front/back content: meanings/examples in en/bg/ja, reading, picture, sound, N-level, frequency), preset backgrounds/covers, daisyUI themes, square/rectangle card shapes, a paged book viewer with flip cards (1/2/4/9 per page), and PNG download of card faces (with medoru.net branding on every card). Entry points from word sets and the word detail page.  
+**Status**: 0.10.0 adds **Word Books** — user-created vocabulary card books built from word sets or custom words, with a configurable card designer (front/back content: meanings/examples in en/bg/ja, reading, picture, sound, N-level, frequency), preset backgrounds/covers, daisyUI themes, square/rectangle card shapes, a paged book viewer with flip cards (1/2/4/6 per page), and PNG download of card faces (with medoru.net branding on every card). Entry points from word sets and the word detail page.  
 **Tests**: 1812 passing  
 **URL**: https://medoru.net
 

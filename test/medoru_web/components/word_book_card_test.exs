@@ -40,7 +40,8 @@ defmodule MedoruWeb.WordBookCardTest do
         front_config: front,
         back_config: %{},
         card_shape: "rectangle",
-        front_background: "/images/word_book/backgrounds/sakura.svg",
+        front_background: "sakura",
+        back_background: "word_image",
         download: true
       )
 
@@ -51,7 +52,7 @@ defmodule MedoruWeb.WordBookCardTest do
     assert html =~ ~s(data-filename="medoru-smoke-card")
     assert html =~ "medoru.net"
     assert html =~ "食べる"
-    assert html =~ "(たべる)"
+    assert html =~ "たべる (taberu)"
     assert html =~ "to eat"
     assert html =~ "ям"
     assert html =~ "私はりんごを食べる。"
@@ -60,7 +61,33 @@ defmodule MedoruWeb.WordBookCardTest do
     assert html =~ "N5"
     assert html =~ "Common word"
     assert html =~ "background-image"
+    assert html =~ "/images/word_book/backgrounds/sakura.svg"
+    # "word_image" resolves to the word's own image as the back background
+    assert html =~ "url(&#39;/images/words/eat.png&#39;)"
     assert html =~ "/audio/eat.mp3"
     assert html =~ "event.stopPropagation()"
+  end
+
+  test "reading-only face does not leak example sentences" do
+    word = %Word{
+      id: Ecto.UUID.generate(),
+      text: "食べる",
+      reading: "たべる",
+      meaning: "to eat",
+      example_sentence: "私はりんごを食べる。",
+      example_meaning: "I eat an apple."
+    }
+
+    html =
+      render_component(&MedoruWeb.WordBookCard.card/1,
+        id: "reading-only-card",
+        word: word,
+        front_config: %{"show_reading" => true},
+        back_config: %{"show_reading" => true, "example_count" => 1},
+        card_shape: "rectangle"
+      )
+
+    assert html =~ "たべる (taberu)"
+    refute html =~ "私はりんごを食べる。"
   end
 end

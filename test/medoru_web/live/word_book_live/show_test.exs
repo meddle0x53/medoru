@@ -120,13 +120,13 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
       assert WordBooks.get_word_book!(word_book.id).cards_per_page == 2
 
       view
-      |> element(~s(button[phx-click="set_cards_per_page"][phx-value-count="9"]))
+      |> element(~s(button[phx-click="set_cards_per_page"][phx-value-count="6"]))
       |> render_click()
 
       html = render(view)
       assert html =~ "lg:grid-cols-3"
-      assert html =~ "Page 1 of 1"
-      assert WordBooks.get_word_book!(word_book.id).cards_per_page == 9
+      assert html =~ "Page 1 of 2"
+      assert WordBooks.get_word_book!(word_book.id).cards_per_page == 6
     end
 
     test "paginates with prev/next across pages", %{conn: conn, user: user} do
@@ -136,7 +136,7 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
 
       word_book =
         word_book_with_words_fixture(
-          %{user_id: user.id, cards_per_page: 9},
+          %{user_id: user.id, cards_per_page: 6},
           [first_word | middle_words] ++ [last_word]
         )
 
