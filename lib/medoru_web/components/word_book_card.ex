@@ -152,7 +152,12 @@ defmodule MedoruWeb.WordBookCard do
     <%= if @shape == "square" do %>
       <div class={["h-full w-full flex flex-col text-center", if(@background, do: "bg-base-100/60")]}>
         <div class="flex-1 min-h-0 w-full flex flex-col items-center justify-start gap-2 p-4 pt-10">
-          <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+          <%!-- my-auto centers the content vertically when it fits; when it
+               is taller than the square the auto margins collapse to 0 and
+               the content top-aligns, clipping only at the bottom. --%>
+          <div class="my-auto w-full flex flex-col items-center gap-2">
+            <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+          </div>
         </div>
         <.square_watermark />
       </div>
