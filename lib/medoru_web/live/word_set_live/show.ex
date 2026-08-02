@@ -6,6 +6,7 @@ defmodule MedoruWeb.WordSetLive.Show do
   use MedoruWeb, :live_view
   use Gettext, backend: MedoruWeb.Gettext
 
+  alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
   alias Medoru.Content
   alias Medoru.Social
@@ -145,6 +146,38 @@ defmodule MedoruWeb.WordSetLive.Show do
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to create lesson."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
+    end
+  end
+
+  @impl true
+  def handle_event("create_word_book", _params, socket) do
+    if socket.assigns.is_owner do
+      user = socket.assigns.current_scope.current_user
+      word_set = socket.assigns.word_set
+
+      case WordBooks.create_word_book_from_word_set(user.id, word_set.id) do
+        {:ok, book} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Word book created successfully."))
+           |> push_navigate(to: ~p"/words/books/#{book.id}/edit-words")}
+
+        {:error, :no_words} ->
+          {:noreply, put_flash(socket, :error, gettext("Add words to the set first."))}
+
+        {:error, :max_words_exceeded} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Word set is too large to convert to a word book.")
+           )}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to create word book."))}
       end
     else
       {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
@@ -438,6 +471,14 @@ defmodule MedoruWeb.WordSetLive.Show do
                     {gettext("Create Vocabulary Lesson")}
                   </button>
                 <% end %>
+                <button
+                  type="button"
+                  phx-click="create_word_book"
+                  class="px-4 py-2 bg-secondary hover:bg-secondary/90 text-secondary-content rounded-lg font-medium transition-colors"
+                >
+                  <.icon name="hero-book-open" class="w-4 h-4 inline mr-1" />
+                  {gettext("Create Word Book")}
+                </button>
                 <button
                   type="button"
                   phx-click="open_copy_modal"

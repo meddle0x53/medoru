@@ -82,7 +82,7 @@
         "short_cascade": 0.2083,
         "mini_boss": 0.1667
       },
-      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"], "mini_boss": ["danzaburo_danuki"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko", "hone_onna"], "mini_boss": ["danzaburo_danuki"] }
     },
     {
       "index": 6,

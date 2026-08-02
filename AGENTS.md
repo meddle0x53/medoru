@@ -4,9 +4,9 @@
 
 ## Current State
 
-**Version**: 0.9.4 🔄 IN PROGRESS  
-**Status**: Stabilizing the 0.9.x release. Recent work fixed crashes in the new chat media folder and made audio playback inside the folder behave like the main chat (only one clip plays at a time). The remaining 0.9.x backlog covers kanji/word UI polish, meaningful admin "last login", link-preview unique-constraint fixes, meaning-language settings bugs, and katakana i18n.  
-**Tests**: 1706 passing  
+**Version**: 0.10.0 🔄 IN PROGRESS  
+**Status**: 0.10.0 adds **Word Books** — user-created vocabulary card books built from word sets or custom words, with a configurable card designer (front/back content: meanings/examples in en/bg/ja, reading, picture, sound, N-level, frequency), preset backgrounds/covers, daisyUI themes, square/rectangle card shapes, a paged book viewer with flip cards (1/2/4/9 per page), and PNG download of card faces (with medoru.net branding on every card). Entry points from word sets and the word detail page.  
+**Tests**: 1812 passing  
 **URL**: https://medoru.net
 
 ### Alpha Game Release Plan
@@ -21,6 +21,16 @@ User-confirmed plan for the first alpha of **The Hollow Ouroboros** (admin game 
 7. **Alpha ending** — level 1 map finishes in a meaningful way; alpha has only one level, later levels built in the admin version.
 
 Weapon/shield socket charms and slot unlock schedule are considered good enough for alpha. Work on them is paused.
+
+### Game Asset Guidelines (The Hollow Ouroboros)
+
+**Enemy sprite target size:** `512×768` pixels.
+
+- Older sprites were authored at `1024×1536` and caused heavy memory use / poor tablet performance.
+- New enemy sprites should be exported/rendered at `512×768` from the start.
+- The `scale` in the enemy JSON `layout` block must be doubled relative to the old `1024×1536` sizing (e.g. `0.5` instead of `0.25`) because Phaser multiplies `scale` against source pixels.
+- If a higher-resolution original is received, resize it to `512×768` with ImageMagick/Photoshop and keep the full-resolution original in `priv/static/images/game/hires/` as a backup. The game only loads sprites referenced by enemy definitions, so `hires/` copies are not loaded.
+- Portraits and icons can stay at their existing smaller sizes.
 
 ### Paused for Alpha — Weapon/Shield Socket 1 Family Abilities
 The reward-pool family map is JSON-driven (`assets/js/game/data/abilityFamilies.json`). These abilities are **not required for the alpha** and are parked here for later:
@@ -57,6 +67,7 @@ For each ability, add a new entry in `assets/js/game/data/abilities/warrior.json
 
 | Version | Focus |
 |---------|-------|
+| 0.10.0 | Word Books (vocabulary cards): creation from word sets/custom words, card designer, book viewer, PNG export |
 | 0.9.4 | Chat media folder fixes (classroom crash, single-audio playback) and ongoing 0.9.x stabilization |
 | 0.9.0 | Release stabilization and regression fixes |
 | 0.8.x | Link previews, English-learning mode, admin impersonation, game meta-progression, classroom/test polish, kanji fixes |

@@ -45,6 +45,21 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Word Books routes (require authentication) - MUST come before /words/:id
+  scope "/words/books", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :word_books,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/", WordBookLive.Index, :index
+      live "/new", WordBookLive.Form, :new
+      live "/:id/edit", WordBookLive.Form, :edit
+      live "/:id/edit-words", WordBookLive.EditWords, :edit_words
+      live "/:id/design", WordBookLive.Design, :design
+      live "/:id", WordBookLive.Show, :show
+    end
+  end
+
   # Public routes
   scope "/", MedoruWeb do
     pipe_through :browser

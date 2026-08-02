@@ -2,8 +2,9 @@ defmodule MedoruWeb.WordLiveTest do
   use MedoruWeb.ConnCase
 
   import Phoenix.LiveViewTest
-  import Medoru.{AccountsFixtures, ContentFixtures}
+  import Medoru.{AccountsFixtures, ContentFixtures, LearningFixtures}
   alias Medoru.Learning
+  alias Medoru.Learning.WordBooks
 
   describe "Index" do
     setup [:create_word, :create_user]
@@ -348,6 +349,102 @@ defmodule MedoruWeb.WordLiveTest do
 
       assert render(view) =~ "Mark as Learned"
       refute Learning.english_word_learned?(user.id, word.id)
+    end
+  end
+
+  describe "Word books on Show" do
+    setup [:create_word]
+
+    test "shows add to word book button only for logged-in users", %{conn: conn, word: word} do
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+      refute html =~ "Add to Word Book"
+
+      user = user_fixture()
+      conn = log_in_user(build_conn(), user)
+      {:ok, _view, html} = live(conn, ~p"/words/#{word.id}")
+
+      assert html =~ "Add to Word Book"
+    end
+
+    test "lists the user's word books in the modal", %{conn: conn, word: word} do
+      user = user_fixture()
+      _book = word_book_fixture(%{user_id: user.id, title: "My N5 Book"})
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/words/#{word.id}")
+
+      html =
+        view
+        |> element("button[phx-click='open_add_to_word_book_modal']")
+        |> render_click()
+
+      assert html =~ "My N5 Book"
+    end
+
+    test "adds the word to a word book", %{conn: conn, word: word} do
+      user = user_fixture()
+      book = word_book_fixture(%{user_id: user.id})
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/words/#{word.id}")
+
+      view
+      |> element("button[phx-click='open_add_to_word_book_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='add_to_word_book'][phx-value-word_book_id='#{book.id}']")
+        |> render_click()
+
+      assert html =~ "Added"
+      assert WordBooks.list_book_ids_for_word(user.id, word.id) == [book.id]
+    end
+
+    test "removes the word from a word book", %{conn: conn, word: word} do
+      user = user_fixture()
+      book = word_book_fixture(%{user_id: user.id})
+      {:ok, _book} = WordBooks.add_word_to_book(book, word.id)
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/words/#{word.id}")
+
+      view
+      |> element("button[phx-click='open_add_to_word_book_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element(
+          "button[phx-click='remove_from_word_book'][phx-value-word_book_id='#{book.id}']"
+        )
+        |> render_click()
+
+      assert html =~ "Removed"
+      assert WordBooks.list_book_ids_for_word(user.id, word.id) == []
+    end
+
+    test "shows an error when the word book is full", %{conn: conn, word: word} do
+      user = user_fixture()
+
+      book =
+        word_book_fixture(%{user_id: user.id, word_count: Medoru.Learning.WordBook.max_words()})
+
+      conn = log_in_user(conn, user)
+
+      {:ok, view, _html} = live(conn, ~p"/words/#{word.id}")
+
+      view
+      |> element("button[phx-click='open_add_to_word_book_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='add_to_word_book'][phx-value-word_book_id='#{book.id}']")
+        |> render_click()
+
+      assert html =~ "Word book is full"
+      assert WordBooks.list_book_ids_for_word(user.id, word.id) == []
     end
   end
 

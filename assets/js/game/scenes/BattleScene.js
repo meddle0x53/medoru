@@ -3629,7 +3629,9 @@ export default class BattleScene extends Phaser.Scene {
 
     // Per-enemy state for the whole enemy-team turn.
     const enemyState = new Map()
+    const enemyTurnCount = this.turnManager.turnCount
     for (const enemy of this.turnManager.enemies) {
+      enemy.enemyTurnCount = enemyTurnCount
       enemyState.set(enemy, { usedBuff: false, actionsTaken: 0 })
     }
 

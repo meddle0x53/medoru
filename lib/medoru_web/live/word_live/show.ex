@@ -6,6 +6,7 @@ defmodule MedoruWeb.WordLive.Show do
   alias Medoru.Content
   alias Medoru.Content.MatureContent
   alias Medoru.Learning
+  alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
 
   embed_templates "show.html"
@@ -22,7 +23,11 @@ defmodule MedoruWeb.WordLive.Show do
      |> assign(:add_to_word_set_modal_open, false)
      |> assign(:word_sets_page, 1)
      |> assign(:word_sets_result, nil)
-     |> assign(:word_set_ids_with_word, [])}
+     |> assign(:word_set_ids_with_word, [])
+     |> assign(:add_to_word_book_modal_open, false)
+     |> assign(:word_books_page, 1)
+     |> assign(:word_books_result, nil)
+     |> assign(:word_book_ids_with_word, [])}
   end
 
   @impl true
@@ -231,6 +236,126 @@ defmodule MedoruWeb.WordLive.Show do
   rescue
     Ecto.NoResultsError ->
       {:noreply, put_flash(socket, :error, gettext("Word set not found."))}
+  end
+
+  @impl true
+  def handle_event("open_add_to_word_book_modal", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      user_id = socket.assigns.current_scope.current_user.id
+      word_id = socket.assigns.word.id
+
+      result = WordBooks.list_user_word_books(user_id, page: 1, per_page: @word_sets_per_page)
+      word_book_ids = WordBooks.list_book_ids_for_word(user_id, word_id)
+
+      {:noreply,
+       socket
+       |> assign(:add_to_word_book_modal_open, true)
+       |> assign(:word_books_page, 1)
+       |> assign(:word_books_result, result)
+       |> assign(:word_book_ids_with_word, word_book_ids)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("close_add_to_word_book_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:add_to_word_book_modal_open, false)
+     |> assign(:word_books_page, 1)
+     |> assign(:word_books_result, nil)
+     |> assign(:word_book_ids_with_word, [])}
+  end
+
+  @impl true
+  def handle_event("change_word_book_page", %{"page" => page}, socket) do
+    page = String.to_integer(page)
+    user_id = socket.assigns.current_scope.current_user.id
+
+    result = WordBooks.list_user_word_books(user_id, page: page, per_page: @word_sets_per_page)
+
+    {:noreply,
+     socket
+     |> assign(:word_books_page, page)
+     |> assign(:word_books_result, result)}
+  end
+
+  @impl true
+  def handle_event("add_to_word_book", %{"word_book_id" => word_book_id}, socket) do
+    word = socket.assigns.word
+    user_id = socket.assigns.current_scope.current_user.id
+
+    case WordBooks.get_user_word_book(user_id, word_book_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Word book not found."))}
+
+      word_book ->
+        case WordBooks.add_word_to_book(word_book, word.id) do
+          {:ok, _} ->
+            socket = refresh_word_book_assigns(socket, user_id, word.id)
+
+            {:noreply,
+             put_flash(socket, :info, gettext("Added '%{word}' to word book.", word: word.text))}
+
+          {:error, :max_words_reached} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Word book is full (max %{max} words)",
+                 max: Medoru.Learning.WordBook.max_words()
+               )
+             )}
+
+          {:error, _} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Failed to add word. It may already be in the book.")
+             )}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("remove_from_word_book", %{"word_book_id" => word_book_id}, socket) do
+    word = socket.assigns.word
+    user_id = socket.assigns.current_scope.current_user.id
+
+    case WordBooks.get_user_word_book(user_id, word_book_id) do
+      nil ->
+        {:noreply, put_flash(socket, :error, gettext("Word book not found."))}
+
+      word_book ->
+        case WordBooks.remove_word_from_book(word_book, word.id) do
+          {:ok, _} ->
+            socket = refresh_word_book_assigns(socket, user_id, word.id)
+
+            {:noreply,
+             put_flash(
+               socket,
+               :info,
+               gettext("Removed '%{word}' from word book.", word: word.text)
+             )}
+
+          {:error, _} ->
+            {:noreply, put_flash(socket, :error, gettext("Failed to remove word."))}
+        end
+    end
+  end
+
+  # Reloads the book list (keeping the modal open) and the set of book IDs
+  # containing the current word after an add/remove.
+  defp refresh_word_book_assigns(socket, user_id, word_id) do
+    page = socket.assigns.word_books_page
+    result = WordBooks.list_user_word_books(user_id, page: page, per_page: @word_sets_per_page)
+    word_book_ids = WordBooks.list_book_ids_for_word(user_id, word_id)
+
+    socket
+    |> assign(:word_books_result, result)
+    |> assign(:word_book_ids_with_word, word_book_ids)
   end
 
   # Helper functions needed for shared templates

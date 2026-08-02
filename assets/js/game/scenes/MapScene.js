@@ -23,7 +23,7 @@ const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fo
 
 // Dev test fight picker: Raijū first, then Tanuki and his clone, then the rest in registry order.
 const TEST_FIGHT_ENEMIES = [...ENEMY_DEFINITIONS].sort((a, b) => {
-  const rank = { raiju_sekigan: -3, danzaburo_danuki: -2, tanuki_clone: -1 }
+  const rank = { hone_onna: -4, raiju_sekigan: -3, danzaburo_danuki: -2, tanuki_clone: -1 }
   return (rank[a.id] || 0) - (rank[b.id] || 0)
 })
 

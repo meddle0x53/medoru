@@ -5,7 +5,7 @@ defmodule Medoru.LearningFixtures do
   """
 
   alias Medoru.Learning
-  alias Medoru.Learning.WordSets
+  alias Medoru.Learning.{WordBooks, WordSets}
 
   @doc """
   Generate a user_progress for kanji.
@@ -78,5 +78,32 @@ defmodule Medoru.LearningFixtures do
 
     {:ok, word_set} = WordSets.create_word_set(attrs)
     word_set
+  end
+
+  @doc """
+  Generate a word_book.
+  """
+  def word_book_fixture(attrs \\ %{}) do
+    attrs =
+      Enum.into(attrs, %{
+        title: "Test Word Book #{System.unique_integer([:positive])}",
+        description: "A test word book",
+        word_count: 0
+      })
+
+    {:ok, word_book} = WordBooks.create_word_book(attrs)
+    word_book
+  end
+
+  @doc """
+  Generate a word_book with the given words added in order.
+  """
+  def word_book_with_words_fixture(book_attrs \\ %{}, words) do
+    word_book = word_book_fixture(book_attrs)
+
+    Enum.reduce(words, word_book, fn word, book ->
+      {:ok, book} = WordBooks.add_word_to_book(book, word.id)
+      book
+    end)
   end
 end

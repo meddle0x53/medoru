@@ -18,6 +18,13 @@
           <.icon name="hero-folder" class="w-4 h-4" />
           {gettext("My Word Sets")}
         </.link>
+        <.link
+          navigate={~p"/words/books"}
+          class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content rounded-xl font-medium transition-all flex items-center gap-2"
+        >
+          <.icon name="hero-book-open" class="w-4 h-4" />
+          {gettext("My Word Books")}
+        </.link>
       </div>
     <% end %>
 

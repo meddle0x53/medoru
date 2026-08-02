@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <pattern id="seigaiha" width="60" height="30" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#99f6e4" stroke-opacity="0.55" stroke-width="1.2">
+        <circle cx="0" cy="30" r="10"/>
+        <circle cx="0" cy="30" r="20"/>
+        <circle cx="0" cy="30" r="30"/>
+        <circle cx="60" cy="30" r="10"/>
+        <circle cx="60" cy="30" r="20"/>
+        <circle cx="60" cy="30" r="30"/>
+        <circle cx="30" cy="15" r="10"/>
+        <circle cx="30" cy="15" r="20"/>
+        <circle cx="30" cy="15" r="30"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="400" height="300" fill="#fbfefd"/>
+  <rect width="400" height="300" fill="url(#seigaiha)"/>
+</svg>

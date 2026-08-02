@@ -7,6 +7,7 @@ defmodule MedoruWeb.WordSetLiveTest do
   import Medoru.LearningFixtures
 
   alias Medoru.Content
+  alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
   alias Medoru.Notifications
   alias Medoru.Social
@@ -61,6 +62,63 @@ defmodule MedoruWeb.WordSetLiveTest do
       assert lesson.word_count == 1
 
       assert_redirect(view, ~p"/teacher/custom-lessons/#{lesson.id}/edit")
+    end
+  end
+
+  describe "Create word book" do
+    test "shows create word book button for owner regardless of user type", %{conn: _conn} do
+      student = user_fixture(%{type: "student"})
+      word_set = word_set_fixture(%{user_id: student.id})
+
+      conn = log_in_user(build_conn(), student)
+      {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}")
+
+      assert html =~ "Create Word Book"
+    end
+
+    test "hides create word book button for non-owner", %{conn: conn} do
+      owner = user_fixture()
+      word_set = word_set_fixture(%{user_id: owner.id})
+
+      {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}")
+
+      refute html =~ "Create Word Book"
+    end
+
+    test "creates a word book from the word set", %{conn: conn, user: user} do
+      word_set = word_set_fixture(%{user_id: user.id})
+      word = word_fixture()
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}")
+
+      view
+      |> element("button[phx-click='create_word_book']")
+      |> render_click()
+
+      # Verify word book was created from the word set
+      %{word_books: books} = WordBooks.list_user_word_books(user.id)
+      assert length(books) == 1
+
+      book = hd(books)
+      assert book.title == word_set.name
+      assert book.word_count == 1
+
+      assert_redirect(view, ~p"/words/books/#{book.id}/edit-words")
+    end
+
+    test "shows an error when the word set has no words", %{conn: conn, user: user} do
+      word_set = word_set_fixture(%{user_id: user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}")
+
+      html =
+        view
+        |> element("button[phx-click='create_word_book']")
+        |> render_click()
+
+      assert html =~ "Add words to the set first."
+      assert WordBooks.list_user_word_books(user.id).word_books == []
     end
   end
 

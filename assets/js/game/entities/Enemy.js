@@ -57,6 +57,7 @@ export default class Enemy extends Character {
     this.nextAttackBonus = 0
     this.usesThisTurn = new Map()
     this.justEnteredPhase = false
+    this.enemyTurnCount = 0
 
     // Default to the full ability list; phase logic will refine it when phases exist.
     this.abilities = (definition.abilities || []).map(a => ({ ...a }))
@@ -203,6 +204,7 @@ export default class Enemy extends Character {
     if (this.stamina < ability.staminaCost) return false
     const max = ability.maxUsesPerTurn
     if (max != null && this.getAbilityUses(ability) >= max) return false
+    if (ability.allowedEnemyTurns && !ability.allowedEnemyTurns.includes(this.enemyTurnCount)) return false
     return true
   }
 

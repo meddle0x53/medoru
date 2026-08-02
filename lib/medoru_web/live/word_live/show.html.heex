@@ -233,6 +233,14 @@
               <.icon name="hero-folder-plus" class="w-5 h-5" />
               {gettext("Add to Word Set")}
             </button>
+
+            <button
+              phx-click="open_add_to_word_book_modal"
+              class="flex-1 inline-flex items-center justify-center gap-2 bg-base-200 hover:bg-base-300 text-base-content px-6 py-4 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] min-h-[56px]"
+            >
+              <.icon name="hero-book-open" class="w-5 h-5" />
+              {gettext("Add to Word Book")}
+            </button>
           </div>
         <% end %>
 
@@ -393,6 +401,113 @@
           <div class="flex justify-end mt-4 pt-4 border-t border-base-300">
             <button
               phx-click="close_add_to_word_set_modal"
+              class="btn btn-ghost"
+            >
+              {gettext("Cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Add to Word Book Modal --%>
+    <%= if @add_to_word_book_modal_open do %>
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+          <h3 class="text-xl font-bold text-base-content mb-4">
+            {gettext("Add to Word Book")}
+          </h3>
+
+          <%= if @word_books_result && @word_books_result.total_count > 0 do %>
+            <div class="space-y-2 mb-4">
+              <%= for wb <- @word_books_result.word_books do %>
+                <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-xl">
+                  <div class="min-w-0">
+                    <div class="font-medium text-base-content truncate">
+                      {wb.title}
+                    </div>
+                    <div class="text-sm text-secondary">
+                      {wb.word_count} {gettext("words")}
+                    </div>
+                  </div>
+                  <%= if wb.id in @word_book_ids_with_word do %>
+                    <button
+                      phx-click="remove_from_word_book"
+                      phx-value-word_book_id={wb.id}
+                      class="btn btn-ghost btn-sm shrink-0 ml-3"
+                    >
+                      {gettext("Remove")}
+                    </button>
+                  <% else %>
+                    <button
+                      phx-click="add_to_word_book"
+                      phx-value-word_book_id={wb.id}
+                      class="btn btn-primary btn-sm shrink-0 ml-3"
+                    >
+                      {gettext("Add")}
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+
+            <%!-- Pagination --%>
+            <%= if @word_books_result.total_pages > 1 do %>
+              <div class="flex justify-center gap-2 mt-4">
+                <%= if @word_books_page > 1 do %>
+                  <button
+                    phx-click="change_word_book_page"
+                    phx-value-page={@word_books_page - 1}
+                    class="btn btn-ghost btn-sm"
+                  >
+                    <.icon name="hero-chevron-left" class="w-4 h-4" />
+                  </button>
+                <% end %>
+
+                <%= for page_num <- 1..@word_books_result.total_pages do %>
+                  <button
+                    phx-click="change_word_book_page"
+                    phx-value-page={page_num}
+                    class={[
+                      "btn btn-sm",
+                      @word_books_page == page_num && "btn-primary",
+                      @word_books_page != page_num && "btn-ghost"
+                    ]}
+                  >
+                    {page_num}
+                  </button>
+                <% end %>
+
+                <%= if @word_books_page < @word_books_result.total_pages do %>
+                  <button
+                    phx-click="change_word_book_page"
+                    phx-value-page={@word_books_page + 1}
+                    class="btn btn-ghost btn-sm"
+                  >
+                    <.icon name="hero-chevron-right" class="w-4 h-4" />
+                  </button>
+                <% end %>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="text-center py-6">
+              <.icon name="hero-book-open" class="w-12 h-12 text-secondary/30 mx-auto mb-3" />
+              <p class="text-secondary mb-4">
+                {gettext("You don't have any word books yet.")}
+              </p>
+              <.link
+                navigate={~p"/words/books/new"}
+                class="btn btn-primary"
+              >
+                <.icon name="hero-plus" class="w-4 h-4 mr-1" />
+                {gettext("Create a word book")}
+              </.link>
+            </div>
+          <% end %>
+
+          <div class="flex justify-end mt-4 pt-4 border-t border-base-300">
+            <button
+              phx-click="close_add_to_word_book_modal"
               class="btn btn-ghost"
             >
               {gettext("Cancel")}

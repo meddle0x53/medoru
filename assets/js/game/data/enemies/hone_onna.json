@@ -1,0 +1,209 @@
+{
+  "id": "hone_onna",
+  "name": "Hone-onna",
+  "nameJa": "骨女",
+  "description": "A beautiful woman whose beauty hides a corpse. She never rushes. She lets her victim destroy himself.",
+  "level": 4,
+  "baseGold": 22,
+  "roles": ["battle"],
+  "mapIds": [1],
+  "maxColumn": 8,
+  "sprites": {
+    "default": "enemy_hone_onna_default",
+    "attack": "enemy_hone_onna_attack",
+    "defend": "enemy_hone_onna_defend",
+    "buff": "enemy_hone_onna_buff",
+    "death": "enemy_hone_onna_defeated"
+  },
+  "portrait": "enemy_hone_onna_default",
+  "icon": "enemy_hone_onna_icon",
+  "layout": {
+    "1": [{ "x": 690, "y": 470, "scale": 0.38 }],
+    "2": [{ "x": 600, "y": 460, "scale": 0.28 }, { "x": 780, "y": 460, "scale": 0.28 }],
+    "3": [{ "x": 540, "y": 455, "scale": 0.24 }, { "x": 690, "y": 455, "scale": 0.24 }, { "x": 840, "y": 455, "scale": 0.24 }]
+  },
+  "stats": {
+    "hp": { "min": 135, "max": 150 },
+    "stamina": { "min": 11, "max": 13 },
+    "strength": { "min": 3, "max": 4 },
+    "skill": { "min": 7, "max": 8 },
+    "mana": { "min": 8, "max": 9 },
+    "luck": { "min": 8, "max": 10 },
+    "defense": { "min": 4, "max": 5 },
+    "armor": { "min": 2, "max": 3 }
+  },
+  "abilities": [
+    {
+      "id": "hollow_smile",
+      "name": "Hollow Smile",
+      "type": "buff",
+      "staminaCost": 1,
+      "allowedEnemyTurns": [1, 3, 5, 7],
+      "aiWeight": 20,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_hone_onna_buff",
+      "buffType": "evasion",
+      "buffValue": 0.25,
+      "effects": [],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "neutralize",
+          "onFail": { "type": "setValue", "key": "evasion", "value": 0.35 },
+          "timeLimit": 13000
+        }
+      ]
+    },
+    {
+      "id": "deathly_kiss",
+      "name": "Deathly Kiss",
+      "type": "debuff",
+      "element": "void",
+      "staminaCost": 4,
+      "aiWeight": 18,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_hone_onna_attack",
+      "basePower": 5,
+      "scalingStat": "mana",
+      "scalingMultiplier": 0.7,
+      "effects": [
+        {
+          "effectId": "weak",
+          "target": "enemy",
+          "chance": { "base": 0.40, "step": 0, "cap": 0.40 },
+          "duration": { "min": 2, "max": 3 }
+        },
+        {
+          "effectId": "void_touched",
+          "target": "enemy",
+          "chance": { "base": 0.20, "step": 0, "cap": 0.20 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "neutralize",
+          "onFail": "full",
+          "timeLimit": 13000
+        }
+      ]
+    },
+    {
+      "id": "empty_embrace",
+      "name": "Empty Embrace",
+      "type": "debuff",
+      "element": "void",
+      "staminaCost": 4,
+      "aiWeight": 14,
+      "maxUsesPerTurn": 1,
+      "sprite": "enemy_hone_onna_attack",
+      "basePower": 4,
+      "scalingStat": "mana",
+      "scalingMultiplier": 0.6,
+      "effects": [
+        {
+          "effectId": "slow",
+          "target": "enemy",
+          "chance": { "base": 0.45, "step": 0, "cap": 0.45 },
+          "duration": { "min": 1, "max": 1 }
+        },
+        {
+          "effectId": "frost",
+          "target": "enemy",
+          "chance": { "base": 0.15, "step": 0, "cap": 0.15 },
+          "duration": { "min": 1, "max": 2 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": "neutralize",
+          "onFail": "full",
+          "timeLimit": 13000
+        }
+      ]
+    },
+    {
+      "id": "bone_claws",
+      "name": "Bone Claws",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 3,
+      "aiWeight": 12,
+      "maxUsesPerTurn": 3,
+      "sprite": "enemy_hone_onna_attack",
+      "basePower": 10,
+      "scalingStat": "skill",
+      "scalingMultiplier": 0.9,
+      "effects": [
+        {
+          "effectId": "bleed",
+          "target": "enemy",
+          "chance": { "base": 0.25, "step": 0, "cap": 0.25 },
+          "duration": { "min": 1, "max": 1 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": { "type": "setChance", "effectId": "bleed", "value": 0.15 },
+          "onFail": { "type": "setChance", "effectId": "bleed", "value": 0.30 },
+          "timeLimit": 13000
+        }
+      ]
+    },
+    {
+      "id": "skeletal_caress",
+      "name": "Skeletal Caress",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 4,
+      "aiWeight": 10,
+      "maxUsesPerTurn": 2,
+      "sprite": "enemy_hone_onna_attack",
+      "basePower": 12,
+      "scalingStat": "skill",
+      "scalingMultiplier": 1.0,
+      "effects": [
+        {
+          "effectId": "bleed",
+          "target": "enemy",
+          "chance": { "base": 0.35, "step": 0, "cap": 0.35 },
+          "duration": { "min": 1, "max": 2 }
+        }
+      ],
+      "challenges": [
+        {
+          "chance": 0.40,
+          "type": "word",
+          "promptType": "meaning",
+          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
+          "onSuccess": { "type": "setChance", "effectId": "bleed", "value": 0.20 },
+          "onFail": { "type": "setChance", "effectId": "bleed", "value": 0.40 },
+          "timeLimit": 13000
+        }
+      ]
+    }
+  ],
+  "drops": {
+    "warrior": [
+      { "type": "item", "id": "health_potion", "chance": 0.15, "rarity": "normal" },
+      { "type": "charm", "id": "kaze_charm", "chance": 0.03, "rarity": "normal" }
+    ],
+    "mage": [],
+    "archer": []
+  }
+}

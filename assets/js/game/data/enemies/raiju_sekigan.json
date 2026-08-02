@@ -18,7 +18,7 @@
   "portrait": "enemy_raiju_sekigan_default",
   "icon": "enemy_bake_neko_icon",
   "layout": {
-    "1": [{ "x": 690, "y": 560, "scale": 0.34 }],
+    "1": [{ "x": 690, "y": 560, "scale": 0.68 }],
     "2": [{ "x": 600, "y": 475, "scale": 0.20 }, { "x": 780, "y": 475, "scale": 0.20 }],
     "3": [{ "x": 540, "y": 475, "scale": 0.16 }, { "x": 690, "y": 475, "scale": 0.16 }, { "x": 840, "y": 475, "scale": 0.16 }]
   },
