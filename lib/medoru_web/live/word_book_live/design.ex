@@ -269,27 +269,29 @@ defmodule MedoruWeb.WordBookLive.Design do
                   </p>
                 </div>
 
-                <div class="pt-2">
-                  <label class="block text-sm font-medium text-base-content mb-2">
-                    {gettext("Custom Text")}
-                  </label>
-                  <input
-                    type="text"
-                    name="custom_text"
-                    value={@custom_text}
-                    phx-change="set_custom_text"
-                    phx-debounce="300"
-                    maxlength="32"
-                    placeholder={gettext("e.g., Word Of The Day")}
-                    class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                  <div class="flex justify-between mt-1">
-                    <p class="text-xs text-secondary">
-                      {gettext("Shown above the word on every card.")}
-                    </p>
-                    <span class="text-xs text-secondary">{String.length(@custom_text)}/32</span>
+                <form>
+                  <div class="pt-2">
+                    <label class="block text-sm font-medium text-base-content mb-2">
+                      {gettext("Custom Text")}
+                    </label>
+                    <input
+                      type="text"
+                      name="custom_text"
+                      value={@custom_text}
+                      phx-change="set_custom_text"
+                      phx-debounce="300"
+                      maxlength="32"
+                      placeholder={gettext("e.g., Word Of The Day")}
+                      class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    <div class="flex justify-between mt-1">
+                      <p class="text-xs text-secondary">
+                        {gettext("Shown above the word on every card.")}
+                      </p>
+                      <span class="text-xs text-secondary">{String.length(@custom_text)}/32</span>
+                    </div>
                   </div>
-                </div>
+                </form>
               </div>
             </div>
 
