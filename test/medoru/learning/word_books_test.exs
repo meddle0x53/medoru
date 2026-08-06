@@ -282,6 +282,26 @@ defmodule Medoru.Learning.WordBooksTest do
 
       assert %{word_count: _} = errors_on(changeset)
     end
+
+    test "validates custom_text max length of 32", %{user: user} do
+      assert {:error, changeset} =
+               WordBooks.create_word_book(%{
+                 user_id: user.id,
+                 title: "Book",
+                 custom_text: String.duplicate("a", 33)
+               })
+
+      assert %{custom_text: _} = errors_on(changeset)
+
+      assert {:ok, book} =
+               WordBooks.create_word_book(%{
+                 user_id: user.id,
+                 title: "Book",
+                 custom_text: String.duplicate("a", 32)
+               })
+
+      assert book.custom_text == String.duplicate("a", 32)
+    end
   end
 
   describe "add_word_to_book/2" do

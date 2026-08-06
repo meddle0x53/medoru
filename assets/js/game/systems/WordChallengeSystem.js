@@ -1,6 +1,7 @@
 import { COLORS, FONTS, GAME_CONFIG } from '../config.js'
 import { getAcceptedReadings, normalizeReadingInput } from './kanaUtils.js'
 import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
+import { getWordChallengeTimeLimit } from './challengeTime.js'
 
 /**
  * Normalize a verb meaning by stripping any leading "to " tokens.
@@ -93,6 +94,9 @@ export default class WordChallengeSystem {
     }
     // For now every word challenge asks for meaning.
     this.currentOptions.promptType = 'meaning'
+
+    // Give touch players more time to type on the on-screen keyboard.
+    this.currentOptions.timeLimit = getWordChallengeTimeLimit(this.scene, this.currentOptions.timeLimit)
 
     this.createOverlay()
 

@@ -1670,6 +1670,16 @@ export default class BattleScene extends Phaser.Scene {
       this.flashPlayerSprite()
       this.addCombatLog(`${item.name} -> +${actual} HP!`)
       this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `+${actual}`, COLORS.success)
+
+      if (item.cleanseEffects && item.cleanseEffects.length > 0) {
+        const cleansed = []
+        for (const effectId of item.cleanseEffects) {
+          if (this.player.removeEffect(effectId)) cleansed.push(effectId)
+        }
+        if (cleansed.length > 0) {
+          this.addCombatLog(`${item.name} cleansed ${cleansed.join(', ')}!`)
+        }
+      }
     } else if (item.type === 'damage') {
       const aliveEnemies = this.turnManager.getAliveEnemies()
       if (aliveEnemies.length > 1) {

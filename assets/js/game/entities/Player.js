@@ -5,7 +5,7 @@ import { getCharmById, canEquipCharm, CHARM_TYPES, CHARMS } from '../data/charms
 import { gradeForSchedule, getSocketCharmById, ALL_SOCKET_CHARMS } from '../data/socketCharms.js'
 import metaUnlocks from '../data/metaUnlocks.json'
 import { generateMap } from '../systems/MapGenerator.js'
-import { getMapDefinition } from '../data/maps/index.js'
+import { getMapDefinition, MAP_DEFINITIONS } from '../data/maps/index.js'
 import { clearTags, expireStates } from '../systems/CombatStateSystem.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
@@ -1347,7 +1347,7 @@ export default class Player extends Character {
   advanceMap() {
     const ms = this.loadout.mapState
     if (!ms) return
-    ms.currentMapIndex = (ms.currentMapIndex + 1) % 2
+    ms.currentMapIndex = (ms.currentMapIndex + 1) % MAP_DEFINITIONS.length
     ms.maps[ms.currentMapIndex] = generateMap(ms.currentMapIndex)
     ms.currentTileId = ms.maps[ms.currentMapIndex].columns[0][0].id
     this.saveLoadout()
@@ -1599,18 +1599,15 @@ export default class Player extends Character {
   rollMiniBossEssence() {
     this.loadout.lifetimeMiniBossesDefeated = (this.loadout.lifetimeMiniBossesDefeated || 0) + 1
     const roll = Math.random()
-    let gained = 0
-    if (roll < 0.10) {
-      gained = 0
-    } else if (roll < 0.30) {
-      gained = 1
-    } else if (roll < 0.80) {
-      gained = 2
-    } else {
+    let gained = 1
+    if (roll < 0.20) {
+      gained = 8
+    } else if (roll < 0.70) {
       gained = 4
+    } else if (roll < 0.90) {
+      gained = 2
     }
-    if (gained > 0) return this.addOuroEssence(gained)
-    return 0
+    return this.addOuroEssence(gained)
   }
 
   rollMapBossEssence(level) {

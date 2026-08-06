@@ -6,7 +6,7 @@
   "level": 1,
   "baseGold": 25,
   "roles": ["mini_boss"],
-  "mapIds": [1, 2],
+  "mapIds": [1],
   "maxColumn": 10,
   "sprites": {
     "default": "enemy_danzaburo_default",
@@ -218,7 +218,7 @@
   ],
   "drops": {
     "warrior": [
-      { "type": "item", "id": "health_potion", "chance": 0.25, "rarity": "normal" },
+      { "type": "item", "id": "large_health_potion", "chance": 0.20, "rarity": "normal" },
       { "type": "item", "id": "stone", "chance": 0.35, "rarity": "normal" },
       { "type": "charm", "id": "kaze_charm", "chance": 0.05, "rarity": "normal" },
       { "type": "charm", "id": "tetsu_charm", "chance": 0.05, "rarity": "normal" },

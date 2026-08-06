@@ -23,7 +23,7 @@ const FONT_LABEL = { fontFamily: 'Arial', fontSize: '11px', color: '#ffffff', fo
 
 // Dev test fight picker: Raijū first, then Tanuki and his clone, then the rest in registry order.
 const TEST_FIGHT_ENEMIES = [...ENEMY_DEFINITIONS].sort((a, b) => {
-  const rank = { hone_onna: -4, raiju_sekigan: -3, danzaburo_danuki: -2, tanuki_clone: -1 }
+  const rank = { kyubi_kitsune: -5, hone_onna: -4, raiju_sekigan: -3, danzaburo_danuki: -2, tanuki_clone: -1 }
   return (rank[a.id] || 0) - (rank[b.id] || 0)
 })
 
@@ -220,6 +220,8 @@ export default class MapScene extends Phaser.Scene {
       padding: { left: 8, right: 8, top: 4, bottom: 4 },
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     this.hud.testFightBtn.on('pointerdown', () => this.showTestFightDialog())
+
+    this.createFullscreenButton()
   }
 
   updateHud() {
@@ -228,6 +230,48 @@ export default class MapScene extends Phaser.Scene {
     this.hud.hp.setText(`HP: ${this.player.hp}/${this.player.maxHp}`)
     this.hud.gold.setText(`Gold: ${this.player.loadout.gold || 0}`)
     this.hud.essence.setText(String(this.player.loadout.ouroEssence || 0))
+  }
+
+  createFullscreenButton() {
+    const label = document.fullscreenElement ? '⛶ Exit' : '⛶ Fullscreen'
+    this.hud.fullscreenBtn = this.add.text(16, GAME_CONFIG.height - 16, label, {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#2c3e50',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(0, 1).setInteractive({ useHandCursor: true }).setDepth(100)
+
+    this.hud.fullscreenBtn.on('pointerdown', () => this.toggleFullscreen())
+    this.setupFullscreenListeners()
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      const wrapper = document.getElementById('game-wrapper')
+      if (wrapper?.requestFullscreen) {
+        wrapper.requestFullscreen().catch(() => {})
+      } else {
+        this.game.canvas.requestFullscreen?.().catch(() => {})
+      }
+    } else {
+      document.exitFullscreen?.().catch(() => {})
+    }
+  }
+
+  setupFullscreenListeners() {
+    this.fullscreenChangeHandler = () => {
+      const text = this.hud.fullscreenBtn?.list?.find(c => c.type === 'Text')
+      if (text) text.setText(document.fullscreenElement ? '⛶ Exit' : '⛶ Fullscreen')
+    }
+    document.addEventListener('fullscreenchange', this.fullscreenChangeHandler)
+  }
+
+  shutdown() {
+    if (this.fullscreenChangeHandler) {
+      document.removeEventListener('fullscreenchange', this.fullscreenChangeHandler)
+      this.fullscreenChangeHandler = null
+    }
   }
 
   showTestFightDialog() {

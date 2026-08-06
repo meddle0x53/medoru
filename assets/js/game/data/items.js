@@ -6,5 +6,6 @@ export const ITEMS = [
   { id: 'smoke_bomb', name: 'Smoke Bomb', type: 'buff', baseValue: 0, staminaCost: 1, icon: '💨', rarity: 'rare', description: 'Grants +1 readiness for the next turn.' },
   { id: 'strength_elixir', name: 'Strength Elixir', type: 'buff', baseValue: 0, staminaCost: 2, icon: '🧃', rarity: 'uncommon', description: 'Increases strength by 3 for this battle.' },
   { id: 'antidote', name: 'Antidote', type: 'heal', baseValue: 0, staminaCost: 1, icon: '💊', rarity: 'common', description: 'Cures poison and restores 5 HP.' },
+  { id: 'burn_heal_potion', name: 'Burn Salve', type: 'heal', baseValue: 5, staminaCost: 1, icon: '🧯', rarity: 'common', description: 'Removes burn and restores 5 HP.', cleanseEffects: ['burn'] },
   { id: 'throwing_knife', name: 'Throwing Knife', type: 'damage', baseValue: 8, staminaCost: 1, icon: '🗡️', rarity: 'common', description: 'A quick ranged attack.', scaling: { skill: 'C' } },
 ]

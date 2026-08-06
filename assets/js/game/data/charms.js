@@ -69,6 +69,17 @@ export const CHARMS = [
     effect: { stat: 'maxHpMultiplier', value: 0.10 },
   },
   {
+    id: 'kitsune_tail_charm',
+    name: 'Kitsune Tail Charm',
+    nameJa: '狐尾の護符',
+    kanji: '尾',
+    color: 0xe0e0ff, // pale foxfire glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'rare',
+    firstDefeatReward: true,
+    effect: { stat: 'staminaRegen', value: 1 },
+  },
+  {
     id: 'hi_charm',
     name: 'Charm of Fire',
     nameJa: '火の護符',

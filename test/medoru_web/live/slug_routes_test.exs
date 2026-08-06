@@ -80,5 +80,30 @@ defmodule MedoruWeb.SlugRoutesTest do
 
       assert html =~ lesson.title
     end
+
+    test "lesson slug that is exactly 16 bytes is not mistaken for a UUID", %{
+      conn: conn,
+      classroom: classroom,
+      lesson: _lesson
+    } do
+      # Regression: Ecto.UUID.cast/1 accepts any raw 16-byte binary as an
+      # already-dumped UUID, so a 16-byte slug like "iv-grammar-notes" used to
+      # crash with Ecto.Query.CastError instead of hitting the slug lookup.
+      lesson16 =
+        custom_lesson_fixture(%{
+          title: "Sixteen Byte Slug Lesson",
+          slug: "iv-grammar-notes",
+          creator_id: classroom.teacher_id,
+          status: "published"
+        })
+
+      {:ok, _} =
+        Content.publish_lesson_to_classroom(lesson16.id, classroom.id, classroom.teacher_id)
+
+      path = "/classrooms/#{classroom.slug}/custom-lessons/#{lesson16.slug}"
+      {:ok, _view, html} = live(conn, path)
+
+      assert html =~ lesson16.title
+    end
   end
 end

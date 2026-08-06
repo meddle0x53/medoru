@@ -33,6 +33,10 @@ defmodule MedoruWeb.WordBookCard do
 
   attr :download, :boolean, default: false, doc: "render per-face PNG download buttons"
 
+  attr :custom_text, :string,
+    default: nil,
+    doc: "optional book-level text shown above the word on every card face"
+
   @doc """
   Renders one flippable vocabulary card for the given word.
   """
@@ -57,6 +61,7 @@ defmodule MedoruWeb.WordBookCard do
               config={@front_config}
               shape={@card_shape}
               background={face_background(@front_background, @word)}
+              custom_text={@custom_text}
             />
           </div>
           <div
@@ -71,11 +76,15 @@ defmodule MedoruWeb.WordBookCard do
               config={@back_config}
               shape={@card_shape}
               background={face_background(@back_background, @word)}
+              custom_text={@custom_text}
             />
           </div>
         </div>
       </div>
       <%= if @download do %>
+        <%!-- Explicit fixed-size icon button instead of .btn: the global
+             mobile rules (min 44px, .btn-primary full-width) would stretch
+             this overlay across the card. --%>
         <button
           id={"#{@id}-download"}
           type="button"
@@ -84,10 +93,10 @@ defmodule MedoruWeb.WordBookCard do
           data-share-back={"#{@id}-back"}
           data-filename={"medoru-#{@id}"}
           title={gettext("Download card as PNG")}
-          class="absolute top-2 right-2 z-20 btn btn-xs btn-primary shadow-md"
+          class="absolute top-2 right-2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-content shadow-md hover:bg-primary/90 transition-colors"
           data-share-exclude
         >
-          <.icon name="hero-arrow-down-tray" class="w-4 h-4" />
+          <.icon name="hero-arrow-down-tray" class="w-5 h-5" />
         </button>
       <% end %>
     </div>
@@ -144,6 +153,7 @@ defmodule MedoruWeb.WordBookCard do
   attr :config, :map, required: true
   attr :shape, :string, required: true
   attr :background, :string, required: true
+  attr :custom_text, :string, default: nil
 
   defp card_face(assigns) do
     assigns = assign(assigns, :has_content?, side_config_content?(assigns.config))
@@ -156,7 +166,13 @@ defmodule MedoruWeb.WordBookCard do
                is taller than the square the auto margins collapse to 0 and
                the content top-aligns, clipping only at the bottom. --%>
           <div class="my-auto w-full flex flex-col items-center gap-2">
-            <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+            <.card_content
+              word={@word}
+              config={@config}
+              shape={@shape}
+              has_content?={@has_content?}
+              custom_text={@custom_text}
+            />
           </div>
         </div>
         <.square_watermark />
@@ -166,8 +182,28 @@ defmodule MedoruWeb.WordBookCard do
         "min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center",
         if(@background, do: "bg-base-100/60")
       ]}>
-        <.card_content word={@word} config={@config} shape={@shape} has_content?={@has_content?} />
+        <.card_content
+          word={@word}
+          config={@config}
+          shape={@shape}
+          has_content?={@has_content?}
+          custom_text={@custom_text}
+        />
         <.watermark />
+      </div>
+    <% end %>
+    """
+  end
+
+  # Optional book-level header shown above the Japanese word on every
+  # face; clamped to one line so it can't distort square cards.
+  attr :text, :string, default: nil
+
+  defp custom_header(assigns) do
+    ~H"""
+    <%= if @text not in [nil, ""] do %>
+      <div class="w-full text-xs font-bold uppercase tracking-widest text-base-content/70 line-clamp-1">
+        {@text}
       </div>
     <% end %>
     """
@@ -177,6 +213,7 @@ defmodule MedoruWeb.WordBookCard do
   attr :config, :map, required: true
   attr :shape, :string, required: true
   attr :has_content?, :boolean, required: true
+  attr :custom_text, :string, default: nil
 
   defp card_content(assigns) do
     ~H"""
@@ -189,6 +226,8 @@ defmodule MedoruWeb.WordBookCard do
           loading="lazy"
         />
       <% end %>
+
+      <.custom_header text={@custom_text} />
 
       <div>
         <%= if show_word?(@config) do %>
@@ -258,6 +297,7 @@ defmodule MedoruWeb.WordBookCard do
         </div>
       <% end %>
     <% else %>
+      <.custom_header text={@custom_text} />
       <%= if show_word?(@config) do %>
         <div class={["font-medium text-base-content font-japanese leading-tight", text_class(@shape)]}>
           {@word.text}

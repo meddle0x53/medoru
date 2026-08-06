@@ -67,8 +67,8 @@ msgstr ""
 
 #: lib/medoru_web/live/admin/word_class_live/show/show_template.html.heex:98
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:665
-#: lib/medoru_web/live/word_book_live/design.ex:532
-#: lib/medoru_web/live/word_book_live/show.ex:301
+#: lib/medoru_web/live/word_book_live/design.ex:577
+#: lib/medoru_web/live/word_book_live/show.ex:312
 #: lib/medoru_web/live/word_set_live/show.ex:595
 #, elixir-autogen, elixir-format
 msgid "Add Words"
@@ -283,7 +283,7 @@ msgstr ""
 #: lib/medoru_web/live/user_white_board_live.ex:160
 #: lib/medoru_web/live/user_white_board_live.ex:435
 #: lib/medoru_web/live/user_white_board_live.ex:692
-#: lib/medoru_web/live/word_book_live/form.ex:256
+#: lib/medoru_web/live/word_book_live/form.ex:255
 #: lib/medoru_web/live/word_live/show.html.heex:406
 #: lib/medoru_web/live/word_live/show.html.heex:406
 #: lib/medoru_web/live/word_live/show.html.heex:513
@@ -387,7 +387,7 @@ msgid "Could not start test: %{reason}"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/custom_lesson_live/new.ex:204
-#: lib/medoru_web/live/word_book_live/form.ex:249
+#: lib/medoru_web/live/word_book_live/form.ex:248
 #: lib/medoru_web/live/word_set_live/form.ex:190
 #, elixir-autogen, elixir-format
 msgid "Create & Add Words"
@@ -1717,8 +1717,9 @@ msgstr ""
 #: lib/medoru_web/live/user_live/following.html.heex:155
 #: lib/medoru_web/live/users_live/index.html.heex:235
 #: lib/medoru_web/live/users_live/index.html.heex:239
-#: lib/medoru_web/live/word_book_live/show.ex:380
-#: lib/medoru_web/live/word_book_live/show.ex:384
+#: lib/medoru_web/live/word_book_live/show.ex:412
+#: lib/medoru_web/live/word_book_live/show.ex:414
+#: lib/medoru_web/live/word_book_live/show.ex:419
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:467
@@ -2038,8 +2039,9 @@ msgstr ""
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/learn_live.ex:203
-#: lib/medoru_web/live/word_book_live/show.ex:371
-#: lib/medoru_web/live/word_book_live/show.ex:375
+#: lib/medoru_web/live/word_book_live/show.ex:397
+#: lib/medoru_web/live/word_book_live/show.ex:400
+#: lib/medoru_web/live/word_book_live/show.ex:405
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr ""
@@ -2072,7 +2074,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1017
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:509
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:968
-#: lib/medoru_web/live/word_book_live/design.ex:315
+#: lib/medoru_web/live/word_book_live/design.ex:348
 #, elixir-autogen, elixir-format
 msgid "Word"
 msgstr ""
@@ -2114,7 +2116,7 @@ msgstr ""
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:190
-#: lib/medoru_web/live/word_book_live/design.ex:337
+#: lib/medoru_web/live/word_book_live/design.ex:370
 #: lib/medoru_web/live/word_live/show.html.heex:127
 #: lib/medoru_web/live/word_live/show.html.heex:127
 #, elixir-autogen, elixir-format
@@ -2602,7 +2604,7 @@ msgstr ""
 msgid "Browse and learn Japanese words organized by JLPT level"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:227
+#: lib/medoru_web/components/word_book_card.ex:266
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #, elixir-autogen, elixir-format
@@ -2689,7 +2691,7 @@ msgstr ""
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/users_live/index.html.heex:86
-#: lib/medoru_web/live/word_book_live/show.ex:330
+#: lib/medoru_web/live/word_book_live/show.ex:341
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #, elixir-autogen, elixir-format
@@ -3763,7 +3765,7 @@ msgid "Was live"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/new.ex:164
-#: lib/medoru_web/live/word_book_live/form.ex:269
+#: lib/medoru_web/live/word_book_live/form.ex:268
 #: lib/medoru_web/live/word_set_live/form.ex:210
 #, elixir-autogen, elixir-format
 msgid "What's next?"
@@ -3852,7 +3854,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:735
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2971
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:534
-#: lib/medoru_web/live/word_book_live/edit_words.ex:384
+#: lib/medoru_web/live/word_book_live/edit_words.ex:388
 #: lib/medoru_web/live/word_live/show.html.heex:340
 #: lib/medoru_web/live/word_live/show.html.heex:340
 #: lib/medoru_web/live/word_live/show.html.heex:447
@@ -4758,7 +4760,7 @@ msgstr ""
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:596
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1421
 #: lib/medoru_web/live/teacher/game_live/form.ex:800
-#: lib/medoru_web/live/word_book_live/form.ex:247
+#: lib/medoru_web/live/word_book_live/form.ex:246
 #: lib/medoru_web/live/word_set_live/form.ex:188
 #, elixir-autogen, elixir-format
 msgid "Save Changes"
@@ -8137,8 +8139,10 @@ msgid "Edit Word Set"
 msgstr ""
 
 #: lib/medoru_web/live/word_book_live/edit_words.ex:19
-#: lib/medoru_web/live/word_book_live/show.ex:233
-#: lib/medoru_web/live/word_book_live/show.ex:341
+#: lib/medoru_web/live/word_book_live/show.ex:241
+#: lib/medoru_web/live/word_book_live/show.ex:244
+#: lib/medoru_web/live/word_book_live/show.ex:356
+#: lib/medoru_web/live/word_book_live/show.ex:359
 #: lib/medoru_web/live/word_set_live/edit_words.ex:17
 #: lib/medoru_web/live/word_set_live/show.ex:455
 #, elixir-autogen, elixir-format
@@ -8210,7 +8214,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/edit.ex:3168
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:591
 #: lib/medoru_web/live/teacher/test_live/writing_fill_in_step_form.ex:47
-#: lib/medoru_web/live/word_book_live/design.ex:360
+#: lib/medoru_web/live/word_book_live/design.ex:393
 #: lib/medoru_web/live/writing_fill_in_components.ex:37
 #, elixir-autogen, elixir-format
 msgid "Examples"
@@ -8715,7 +8719,7 @@ msgstr ""
 msgid "No word sets yet"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:393
+#: lib/medoru_web/live/word_book_live/edit_words.ex:397
 #: lib/medoru_web/live/word_set_live/edit_words.ex:286
 #, elixir-autogen, elixir-format
 msgid "No words found matching '%{query}'"
@@ -8726,7 +8730,7 @@ msgstr ""
 msgid "No words in this class yet"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:420
+#: lib/medoru_web/live/word_book_live/edit_words.ex:424
 #: lib/medoru_web/live/word_set_live/edit_words.ex:313
 #: lib/medoru_web/live/word_set_live/show.ex:588
 #, elixir-autogen, elixir-format
@@ -9481,7 +9485,7 @@ msgstr ""
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:64
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:106
 #: lib/medoru_web/live/word_book_live/index.ex:340
-#: lib/medoru_web/live/word_book_live/show.ex:282
+#: lib/medoru_web/live/word_book_live/show.ex:293
 #: lib/medoru_web/live/word_set_live/index.ex:339
 #: lib/medoru_web/live/word_set_live/show.ex:438
 #: lib/medoru_web/live/word_set_live/show.ex:741
@@ -9567,7 +9571,7 @@ msgstr ""
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:238
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:238
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:936
-#: lib/medoru_web/live/word_book_live/design.ex:281
+#: lib/medoru_web/live/word_book_live/design.ex:314
 #: lib/medoru_web/live/word_set_live/show.ex:781
 #, elixir-autogen, elixir-format
 msgid "Back"
@@ -9709,7 +9713,7 @@ msgstr ""
 msgid "Writing Challenge"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:219
+#: lib/medoru_web/components/word_book_card.ex:258
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:196
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:639
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:850
@@ -12321,7 +12325,7 @@ msgstr ""
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:116
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1469
-#: lib/medoru_web/live/word_book_live/design.ex:228
+#: lib/medoru_web/live/word_book_live/design.ex:239
 #, elixir-autogen, elixir-format
 msgid "Theme"
 msgstr ""
@@ -15478,7 +15482,7 @@ msgstr ""
 
 #: lib/medoru_web/live/messages_live/settings.html.heex:35
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1394
-#: lib/medoru_web/live/word_book_live/design.ex:240
+#: lib/medoru_web/live/word_book_live/design.ex:251
 #, elixir-autogen, elixir-format
 msgid "Default"
 msgstr ""
@@ -17313,12 +17317,12 @@ msgstr ""
 msgid "Voice"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:384
+#: lib/medoru_web/live/word_book_live/design.ex:417
 #, elixir-autogen, elixir-format
 msgid "1 example"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:387
+#: lib/medoru_web/live/word_book_live/design.ex:418
 #, elixir-autogen, elixir-format
 msgid "2 examples"
 msgstr ""
@@ -17336,12 +17340,12 @@ msgstr ""
 msgid "Add up to %{max} words to your book. Current: %{count}"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/show.ex:295
+#: lib/medoru_web/live/word_book_live/show.ex:306
 #, elixir-autogen, elixir-format
 msgid "Add words before opening the book."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:526
+#: lib/medoru_web/live/word_book_live/design.ex:571
 #, elixir-autogen, elixir-format
 msgid "Add words to see a live preview of your design."
 msgstr ""
@@ -17356,12 +17360,12 @@ msgstr ""
 msgid "Adds all words from the selected set, skipping words already in the book."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/form.ex:271
+#: lib/medoru_web/live/word_book_live/form.ex:270
 #, elixir-autogen, elixir-format
 msgid "After creating your word book, you'll be able to add up to 100 words from our vocabulary database and design how the cards look."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:390
+#: lib/medoru_web/live/word_book_live/design.ex:419
 #, elixir-autogen, elixir-format
 msgid "All examples"
 msgstr ""
@@ -17371,7 +17375,7 @@ msgstr ""
 msgid "Are you sure you want to delete this word book? This action cannot be undone."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:295
+#: lib/medoru_web/live/word_book_live/design.ex:328
 #, elixir-autogen, elixir-format
 msgid "Back Side"
 msgstr ""
@@ -17383,8 +17387,8 @@ msgstr ""
 msgid "Back to Components"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:176
-#: lib/medoru_web/live/word_book_live/show.ex:226
+#: lib/medoru_web/live/word_book_live/design.ex:187
+#: lib/medoru_web/live/word_book_live/show.ex:227
 #, elixir-autogen, elixir-format
 msgid "Back to Word Books"
 msgstr ""
@@ -17396,27 +17400,28 @@ msgstr ""
 msgid "Browse kanji components extracted from decomposition strings"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:399
+#: lib/medoru_web/live/word_book_live/design.ex:443
 #, elixir-autogen, elixir-format
 msgid "Card Background"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:198
+#: lib/medoru_web/live/word_book_live/design.ex:209
 #, elixir-autogen, elixir-format
 msgid "Card Shape"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:194
+#: lib/medoru_web/live/word_book_live/design.ex:205
 #, elixir-autogen, elixir-format
 msgid "Card Style"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:257
+#: lib/medoru_web/live/word_book_live/design.ex:268
 #, elixir-autogen, elixir-format
 msgid "Choose a visual theme for the cards. Default uses the site colors."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/show.ex:344
+#: lib/medoru_web/live/word_book_live/show.ex:365
+#: lib/medoru_web/live/word_book_live/show.ex:368
 #, elixir-autogen, elixir-format
 msgid "Close book"
 msgstr ""
@@ -17462,12 +17467,12 @@ msgstr ""
 msgid "Components"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:160
+#: lib/medoru_web/live/word_book_live/design.ex:171
 #, elixir-autogen, elixir-format
 msgid "Could not save design: %{errors}"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/form.ex:196
+#: lib/medoru_web/live/word_book_live/form.ex:195
 #, elixir-autogen, elixir-format
 msgid "Cover Image"
 msgstr ""
@@ -17504,7 +17509,7 @@ msgstr ""
 msgid "Create your first word book to start organizing vocabulary cards."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:180
+#: lib/medoru_web/live/word_book_live/design.ex:191
 #, elixir-autogen, elixir-format
 msgid "Customize how the vocabulary cards in this book look."
 msgstr ""
@@ -17517,13 +17522,15 @@ msgstr ""
 msgid "Daily Component Hunt"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/form.ex:217
+#: lib/medoru_web/live/word_book_live/form.ex:216
 #, elixir-autogen, elixir-format
 msgid "Default (first card)"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/show.ex:230
-#: lib/medoru_web/live/word_book_live/show.ex:335
+#: lib/medoru_web/live/word_book_live/show.ex:233
+#: lib/medoru_web/live/word_book_live/show.ex:236
+#: lib/medoru_web/live/word_book_live/show.ex:348
+#: lib/medoru_web/live/word_book_live/show.ex:351
 #, elixir-autogen, elixir-format
 msgid "Design"
 msgstr ""
@@ -17533,7 +17540,7 @@ msgstr ""
 msgid "Design Word Book"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:151
+#: lib/medoru_web/live/word_book_live/design.ex:162
 #, elixir-autogen, elixir-format
 msgid "Design saved."
 msgstr ""
@@ -17587,17 +17594,17 @@ msgstr ""
 msgid "Find as many kanji as you can that contain this component"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:231
+#: lib/medoru_web/components/word_book_card.ex:270
 #, elixir-autogen, elixir-format
 msgid "Freq: %{frequency}"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:272
+#: lib/medoru_web/live/word_book_live/design.ex:305
 #, elixir-autogen, elixir-format
 msgid "Front"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:293
+#: lib/medoru_web/live/word_book_live/design.ex:326
 #, elixir-autogen, elixir-format
 msgid "Front Side"
 msgstr ""
@@ -17664,7 +17671,7 @@ msgstr ""
 msgid "No word books yet"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:418
+#: lib/medoru_web/live/word_book_live/design.ex:462
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr ""
@@ -17681,7 +17688,7 @@ msgstr ""
 msgid "Open book"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/form.ex:169
+#: lib/medoru_web/live/word_book_live/form.ex:168
 #, elixir-autogen, elixir-format
 msgid "Optional description of this word book..."
 msgstr ""
@@ -17696,17 +17703,17 @@ msgstr ""
 msgid "Please select one of your word sets first."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:498
+#: lib/medoru_web/live/word_book_live/design.ex:542
 #, elixir-autogen, elixir-format
 msgid "Preview — click the card to flip it"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:221
+#: lib/medoru_web/live/word_book_live/design.ex:232
 #, elixir-autogen, elixir-format
 msgid "Rectangle"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:472
+#: lib/medoru_web/live/word_book_live/edit_words.ex:476
 #, elixir-autogen, elixir-format
 msgid "Remove this word from the book?"
 msgstr ""
@@ -17716,12 +17723,12 @@ msgstr ""
 msgid "Removed '%{word}' from word book."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:184
+#: lib/medoru_web/live/word_book_live/design.ex:195
 #, elixir-autogen, elixir-format
 msgid "Save design"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:423
+#: lib/medoru_web/live/word_book_live/edit_words.ex:427
 #, elixir-autogen, elixir-format
 msgid "Search above to add words to your book."
 msgstr ""
@@ -17742,7 +17749,7 @@ msgstr ""
 msgid "Select a component"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:302
+#: lib/medoru_web/live/word_book_live/design.ex:335
 #, elixir-autogen, elixir-format
 msgid "Show on Card"
 msgstr ""
@@ -17752,7 +17759,7 @@ msgstr ""
 msgid "Sound"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:210
+#: lib/medoru_web/live/word_book_live/design.ex:221
 #, elixir-autogen, elixir-format
 msgid "Square"
 msgstr ""
@@ -17763,8 +17770,8 @@ msgstr ""
 msgid "Students will type kanji that contain the selected component."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:523
-#: lib/medoru_web/live/word_book_live/show.ex:293
+#: lib/medoru_web/live/word_book_live/design.ex:568
+#: lib/medoru_web/live/word_book_live/show.ex:304
 #, elixir-autogen, elixir-format
 msgid "This book has no words yet."
 msgstr ""
@@ -17797,7 +17804,7 @@ msgstr ""
 msgid "Word book is full (max %{max} words)"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:403
+#: lib/medoru_web/live/word_book_live/edit_words.ex:407
 #, elixir-autogen, elixir-format
 msgid "Word book is full. Remove some words to add more."
 msgstr ""
@@ -17818,7 +17825,7 @@ msgstr ""
 msgid "Word set is too large to convert to a word book."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/edit_words.ex:413
+#: lib/medoru_web/live/word_book_live/edit_words.ex:417
 #, elixir-autogen, elixir-format
 msgid "Words in Book (%{count})"
 msgstr ""
@@ -17870,23 +17877,38 @@ msgstr ""
 msgid "kanji contain this component"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:465
+#: lib/medoru_web/live/word_book_live/design.ex:509
 #, elixir-autogen, elixir-format
 msgid "Book covers"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/show.ex:246
+#: lib/medoru_web/live/word_book_live/show.ex:257
 #, elixir-autogen, elixir-format
 msgid "Click to open the book"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:86
+#: lib/medoru_web/components/word_book_card.ex:95
 #, elixir-autogen, elixir-format
 msgid "Download card as PNG"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:436
-#: lib/medoru_web/live/word_book_live/design.ex:444
+#: lib/medoru_web/live/word_book_live/design.ex:480
+#: lib/medoru_web/live/word_book_live/design.ex:488
 #, elixir-autogen, elixir-format
 msgid "Word image"
+msgstr ""
+
+#: lib/medoru_web/live/word_book_live/design.ex:274
+#, elixir-autogen, elixir-format
+msgid "Custom Text"
+msgstr ""
+
+#: lib/medoru_web/live/word_book_live/design.ex:288
+#, elixir-autogen, elixir-format
+msgid "Shown above the word on every card."
+msgstr ""
+
+#: lib/medoru_web/live/word_book_live/design.ex:283
+#, elixir-autogen, elixir-format
+msgid "e.g., Word Of The Day"
 msgstr ""

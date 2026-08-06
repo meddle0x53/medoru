@@ -252,10 +252,12 @@
     min-height: 48px;
   }
   
-  /* Full-width buttons on mobile for primary actions */
-  .btn-primary,
-  .btn-success,
-  .btn-error {
+  /* Full-width buttons on mobile for primary actions.
+     Joined button groups (e.g. the word book cards-per-page selector)
+     are excluded — stretching one segment breaks the group layout. */
+  .btn-primary:not(.join-item),
+  .btn-success:not(.join-item),
+  .btn-error:not(.join-item) {
     width: 100%;
   }
   

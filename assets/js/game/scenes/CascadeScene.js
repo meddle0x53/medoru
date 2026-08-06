@@ -297,9 +297,10 @@ export default class CascadeScene extends Phaser.Scene {
     this.keyboardContainer = this.add.container(0, 0)
     this.keyboardKeys = []
 
-    const keySize = 30
-    const keyGap = 5
-    this.keyboardStartY = GAME_CONFIG.height - 170
+    // Compact layout so all rows + the control bar fit inside a 540px canvas.
+    const keySize = 22
+    const keyGap = 3
+    this.keyboardStartY = GAME_CONFIG.height - 155
 
     KEYBOARD_ROWS.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
@@ -311,11 +312,21 @@ export default class CascadeScene extends Phaser.Scene {
       })
     })
 
-    // Control row: backspace, space, enter.
-    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 10
-    this.createKey('⌫', 120, controlY, keySize, keySize, 'BACKSPACE')
-    this.createKey('SPACE', GAME_CONFIG.width / 2, controlY, 140, keySize, 'SPACE')
-    this.createKey('⏎', GAME_CONFIG.width - 160, controlY, keySize, keySize, 'ENTER')
+    // Control row: backspace, space, enter, delete (clear).
+    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 6
+    const controls = [
+      { label: '⌫', width: 40, key: 'BACKSPACE' },
+      { label: 'SPACE', width: 100, key: 'SPACE' },
+      { label: '⏎', width: 40, key: 'ENTER' },
+      { label: 'DEL', width: 40, key: 'DELETE' },
+    ]
+    const controlGap = 5
+    const controlsWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * controlGap
+    let controlX = (GAME_CONFIG.width - controlsWidth) / 2
+    controls.forEach(({ label, width, key }) => {
+      this.createKey(label, controlX + width / 2, controlY, width, keySize, key)
+      controlX += width + controlGap
+    })
   }
 
   createKey(label, x, y, width, height, emitKey = null) {
@@ -351,7 +362,7 @@ export default class CascadeScene extends Phaser.Scene {
     const width = 80
     const height = 28
     const x = GAME_CONFIG.width - width / 2 - 10
-    const y = this.keyboardStartY - 24
+    const y = this.keyboardStartY - 28
 
     const bg = this.add.rectangle(0, 0, width, height, 0x2c3e50)
       .setStrokeStyle(1, 0x5d6d7e)
@@ -382,6 +393,8 @@ export default class CascadeScene extends Phaser.Scene {
 
     if (key === 'BACKSPACE') {
       this.inputBuffer = this.inputBuffer.slice(0, -1)
+    } else if (key === 'DELETE') {
+      this.inputBuffer = ''
     } else if (key === 'SPACE') {
       this.inputBuffer += ' '
     } else if (key === 'ENTER') {
@@ -429,14 +442,14 @@ export default class CascadeScene extends Phaser.Scene {
     const textObj = this.keyboardToggleButton.list.find(c => c.type === 'Text')
     if (textObj) textObj.setText(this.keyboardVisible ? 'Hide' : 'Show')
     this.keyboardToggleButton.y = this.keyboardVisible
-      ? this.keyboardStartY - 24
+      ? this.keyboardStartY - 28
       : GAME_CONFIG.height - 40
   }
 
   recalculateGeometry() {
-    this.dangerY = GAME_CONFIG.height - (this.keyboardVisible ? 180 : 60)
+    this.dangerY = this.keyboardVisible ? this.keyboardStartY - 12 : GAME_CONFIG.height - 60
     this.rowHeight = (this.dangerY - 90) / (ROWS_TO_DANGER - 1)
-    this.inputText.y = this.keyboardVisible ? this.keyboardStartY - 36 : GAME_CONFIG.height - 50
+    this.inputText.y = this.keyboardVisible ? this.keyboardStartY - 50 : GAME_CONFIG.height - 50
     this.updateKeyboardToggleButton()
 
     // Reposition the current word by its row.

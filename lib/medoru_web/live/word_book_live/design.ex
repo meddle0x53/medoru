@@ -67,6 +67,7 @@ defmodule MedoruWeb.WordBookLive.Design do
        |> assign(:selected_theme, word_book.theme || "")
        |> assign(:front_background, word_book.front_background || "")
        |> assign(:back_background, word_book.back_background || "")
+       |> assign(:custom_text, word_book.custom_text || "")
        |> assign(:front_config, word_book.front_config || %{})
        |> assign(:back_config, word_book.back_config || %{})}
     end
@@ -108,7 +109,9 @@ defmodule MedoruWeb.WordBookLive.Design do
     {:noreply, assign_side_config(socket, side, Map.put(config, group, locales))}
   end
 
-  def handle_event("set_example_count", %{"side" => side, "example_count" => count}, socket) do
+  # The count control is a segmented button group for the active side
+  # (see the template note), so the side comes from the assigns.
+  def handle_event("set_example_count", %{"count" => count}, socket) do
     count =
       case count do
         "1" -> 1
@@ -116,6 +119,7 @@ defmodule MedoruWeb.WordBookLive.Design do
         _ -> "all"
       end
 
+    side = socket.assigns.active_side
     config = side_config(socket, side)
     {:noreply, assign_side_config(socket, side, Map.put(config, "example_count", count))}
   end
@@ -133,12 +137,19 @@ defmodule MedoruWeb.WordBookLive.Design do
     {:noreply, assign(socket, :selected_theme, theme)}
   end
 
+  # Text input with a plain name-based phx-change (same proven pattern as
+  # the edit-words search); clamped server-side to the schema's 32 max.
+  def handle_event("set_custom_text", %{"custom_text" => text}, socket) do
+    {:noreply, assign(socket, :custom_text, String.slice(text || "", 0, 32))}
+  end
+
   def handle_event("save", _params, socket) do
     attrs = %{
       "card_shape" => socket.assigns.card_shape,
       "theme" => nil_if_empty(socket.assigns.selected_theme),
       "front_background" => nil_if_empty(socket.assigns.front_background),
       "back_background" => nil_if_empty(socket.assigns.back_background),
+      "custom_text" => nil_if_empty(socket.assigns.custom_text),
       "front_config" => normalize_side_config(socket.assigns.front_config),
       "back_config" => normalize_side_config(socket.assigns.back_config)
     }
@@ -197,13 +208,13 @@ defmodule MedoruWeb.WordBookLive.Design do
                   <label class="block text-sm font-medium text-base-content mb-2">
                     {gettext("Card Shape")}
                   </label>
-                  <div class="flex gap-2">
+                  <div class="join">
                     <button
                       type="button"
                       phx-click="select_shape"
                       phx-value-shape="square"
                       class={[
-                        "btn btn-sm",
+                        "join-item btn btn-sm",
                         if(@card_shape == "square", do: "btn-primary", else: "btn-ghost")
                       ]}
                     >
@@ -214,7 +225,7 @@ defmodule MedoruWeb.WordBookLive.Design do
                       phx-click="select_shape"
                       phx-value-shape="rectangle"
                       class={[
-                        "btn btn-sm",
+                        "join-item btn btn-sm",
                         if(@card_shape == "rectangle", do: "btn-primary", else: "btn-ghost")
                       ]}
                     >
@@ -227,13 +238,13 @@ defmodule MedoruWeb.WordBookLive.Design do
                   <label class="block text-sm font-medium text-base-content mb-2">
                     {gettext("Theme")}
                   </label>
-                  <div class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
                     <button
                       type="button"
                       phx-click="select_theme"
                       phx-value-theme=""
                       class={[
-                        "btn btn-xs btn-outline",
+                        "btn btn-xs btn-outline truncate w-full",
                         if(@selected_theme == "", do: "btn-primary", else: "")
                       ]}
                     >
@@ -245,7 +256,7 @@ defmodule MedoruWeb.WordBookLive.Design do
                         phx-click="select_theme"
                         phx-value-theme={theme}
                         class={[
-                          "btn btn-xs",
+                          "btn btn-xs truncate w-full",
                           if(@selected_theme == theme, do: "btn-primary", else: "btn-ghost")
                         ]}
                       >
@@ -256,6 +267,28 @@ defmodule MedoruWeb.WordBookLive.Design do
                   <p class="text-xs text-secondary mt-1">
                     {gettext("Choose a visual theme for the cards. Default uses the site colors.")}
                   </p>
+                </div>
+
+                <div class="pt-2">
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Custom Text")}
+                  </label>
+                  <input
+                    type="text"
+                    name="custom_text"
+                    value={@custom_text}
+                    phx-change="set_custom_text"
+                    phx-debounce="300"
+                    maxlength="32"
+                    placeholder={gettext("e.g., Word Of The Day")}
+                    class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content placeholder-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <div class="flex justify-between mt-1">
+                    <p class="text-xs text-secondary">
+                      {gettext("Shown above the word on every card.")}
+                    </p>
+                    <span class="text-xs text-secondary">{String.length(@custom_text)}/32</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -374,22 +407,33 @@ defmodule MedoruWeb.WordBookLive.Design do
                         <span class="text-sm text-base-content uppercase">{locale}</span>
                       </label>
                     <% end %>
-                    <select
-                      phx-change="set_example_count"
-                      phx-value-side={@active_side}
-                      name="example_count"
-                      class="select select-bordered select-sm"
-                    >
-                      <option value="1" selected={example_count_value(current_config) == "1"}>
-                        {gettext("1 example")}
-                      </option>
-                      <option value="2" selected={example_count_value(current_config) == "2"}>
-                        {gettext("2 examples")}
-                      </option>
-                      <option value="all" selected={example_count_value(current_config) == "all"}>
-                        {gettext("All examples")}
-                      </option>
-                    </select>
+                    <%!-- Segmented buttons instead of a <select>: click
+                         events reliably carry phx-value-* and the active
+                         state is pure server-rendered markup, so patches
+                         from other controls can never revert it (unlike a
+                         dirty/focused select being morphed). --%>
+                    <div class="join">
+                      <%= for {value, label} <- [
+                            {"1", gettext("1 example")},
+                            {"2", gettext("2 examples")},
+                            {"all", gettext("All examples")}
+                          ] do %>
+                        <button
+                          type="button"
+                          phx-click="set_example_count"
+                          phx-value-count={value}
+                          class={[
+                            "join-item btn btn-xs sm:btn-sm",
+                            if(example_count_value(current_config) == value,
+                              do: "btn-primary",
+                              else: "btn-ghost"
+                            )
+                          ]}
+                        >
+                          {label}
+                        </button>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
 
@@ -514,6 +558,7 @@ defmodule MedoruWeb.WordBookLive.Design do
                     card_shape={@card_shape}
                     front_background={@front_background}
                     back_background={@back_background}
+                    custom_text={@custom_text}
                   />
                 </div>
               <% else %>

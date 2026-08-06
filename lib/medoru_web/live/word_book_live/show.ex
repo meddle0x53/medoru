@@ -218,19 +218,30 @@ defmodule MedoruWeb.WordBookLive.Show do
     ~H"""
     <div class="max-w-3xl mx-auto px-4 py-8">
       <%!-- Header --%>
-      <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="mb-8 flex items-center justify-between gap-2">
         <.link
           navigate={~p"/words/books"}
           class="inline-flex items-center gap-1 text-secondary hover:text-primary text-sm transition-colors"
         >
-          <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Books")}
+          <.icon name="hero-arrow-left" class="w-4 h-4" />
+          <span class="hidden sm:inline">{gettext("Back to Word Books")}</span>
         </.link>
-        <div class="flex items-center gap-2">
-          <.link navigate={~p"/words/books/#{@word_book.id}/design"} class="btn btn-sm btn-ghost">
-            <.icon name="hero-paint-brush" class="w-4 h-4" /> {gettext("Design")}
+        <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <.link
+            navigate={~p"/words/books/#{@word_book.id}/design"}
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Design")}
+          >
+            <.icon name="hero-paint-brush" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Design")}</span>
           </.link>
-          <.link navigate={~p"/words/books/#{@word_book.id}/edit-words"} class="btn btn-sm btn-ghost">
-            <.icon name="hero-pencil-square" class="w-4 h-4" /> {gettext("Edit Words")}
+          <.link
+            navigate={~p"/words/books/#{@word_book.id}/edit-words"}
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Edit Words")}
+          >
+            <.icon name="hero-pencil-square" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Edit Words")}</span>
           </.link>
         </div>
       </div>
@@ -319,34 +330,47 @@ defmodule MedoruWeb.WordBookLive.Show do
   defp viewer(assigns) do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-6" phx-window-keydown="handle_key">
-      <%!-- Persistent header --%>
-      <div class="mb-6 flex flex-col gap-4">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <%!-- Persistent header (compact on mobile: icon-only buttons, text from sm up) --%>
+      <div class="mb-6 flex flex-col gap-3">
+        <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold text-base-content truncate">
+            <h1 class="text-lg sm:text-2xl font-bold text-base-content truncate">
               {@word_book.title}
             </h1>
-            <p class="text-secondary text-sm">
+            <p class="text-secondary text-xs sm:text-sm">
               {gettext("Page %{page} of %{total}", page: @page, total: @total_pages)}
             </p>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <.link navigate={~p"/words/books/#{@word_book.id}/design"} class="btn btn-sm btn-ghost">
-              <.icon name="hero-paint-brush" class="w-4 h-4" /> {gettext("Design")}
+          <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+            <.link
+              navigate={~p"/words/books/#{@word_book.id}/design"}
+              class="btn btn-sm btn-ghost px-2 sm:px-3"
+              title={gettext("Design")}
+            >
+              <.icon name="hero-paint-brush" class="w-4 h-4" />
+              <span class="hidden sm:inline">{gettext("Design")}</span>
             </.link>
             <.link
               navigate={~p"/words/books/#{@word_book.id}/edit-words"}
-              class="btn btn-sm btn-ghost"
+              class="btn btn-sm btn-ghost px-2 sm:px-3"
+              title={gettext("Edit Words")}
             >
-              <.icon name="hero-pencil-square" class="w-4 h-4" /> {gettext("Edit Words")}
+              <.icon name="hero-pencil-square" class="w-4 h-4" />
+              <span class="hidden sm:inline">{gettext("Edit Words")}</span>
             </.link>
-            <button type="button" phx-click="close_book" class="btn btn-sm btn-outline">
-              <.icon name="hero-x-mark" class="w-4 h-4" /> {gettext("Close book")}
+            <button
+              type="button"
+              phx-click="close_book"
+              class="btn btn-sm btn-outline px-2 sm:px-3"
+              title={gettext("Close book")}
+            >
+              <.icon name="hero-x-mark" class="w-4 h-4" />
+              <span class="hidden sm:inline">{gettext("Close book")}</span>
             </button>
           </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex items-center justify-between gap-2">
           <%!-- Cards per page selector --%>
           <div class="join">
             <%= for count <- @cards_per_page_options do %>
@@ -355,7 +379,7 @@ defmodule MedoruWeb.WordBookLive.Show do
                 phx-click="set_cards_per_page"
                 phx-value-count={count}
                 class={[
-                  "join-item btn btn-sm",
+                  "join-item btn btn-xs sm:btn-sm",
                   if(@cards_per_page == count, do: "btn-primary", else: "btn-ghost")
                 ]}
               >
@@ -365,23 +389,35 @@ defmodule MedoruWeb.WordBookLive.Show do
           </div>
 
           <%!-- Prev / next --%>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1 sm:gap-2 shrink-0">
             <%= if @page > 1 do %>
-              <.link patch={~p"/words/books/#{@word_book.id}?page=#{@page - 1}"} class="btn btn-sm">
-                <.icon name="hero-chevron-left" class="w-4 h-4" /> {gettext("Previous")}
+              <.link
+                patch={~p"/words/books/#{@word_book.id}?page=#{@page - 1}"}
+                class="btn btn-xs sm:btn-sm px-2 sm:px-3"
+                title={gettext("Previous")}
+              >
+                <.icon name="hero-chevron-left" class="w-4 h-4" />
+                <span class="hidden sm:inline">{gettext("Previous")}</span>
               </.link>
             <% else %>
-              <button type="button" class="btn btn-sm" disabled>
-                <.icon name="hero-chevron-left" class="w-4 h-4" /> {gettext("Previous")}
+              <button type="button" class="btn btn-xs sm:btn-sm px-2 sm:px-3" disabled>
+                <.icon name="hero-chevron-left" class="w-4 h-4" />
+                <span class="hidden sm:inline">{gettext("Previous")}</span>
               </button>
             <% end %>
             <%= if @page < @total_pages do %>
-              <.link patch={~p"/words/books/#{@word_book.id}?page=#{@page + 1}"} class="btn btn-sm">
-                {gettext("Next")} <.icon name="hero-chevron-right" class="w-4 h-4" />
+              <.link
+                patch={~p"/words/books/#{@word_book.id}?page=#{@page + 1}"}
+                class="btn btn-xs sm:btn-sm px-2 sm:px-3"
+                title={gettext("Next")}
+              >
+                <span class="hidden sm:inline">{gettext("Next")}</span>
+                <.icon name="hero-chevron-right" class="w-4 h-4" />
               </.link>
             <% else %>
-              <button type="button" class="btn btn-sm" disabled>
-                {gettext("Next")} <.icon name="hero-chevron-right" class="w-4 h-4" />
+              <button type="button" class="btn btn-xs sm:btn-sm px-2 sm:px-3" disabled>
+                <span class="hidden sm:inline">{gettext("Next")}</span>
+                <.icon name="hero-chevron-right" class="w-4 h-4" />
               </button>
             <% end %>
           </div>
@@ -404,6 +440,7 @@ defmodule MedoruWeb.WordBookLive.Show do
             card_shape={@word_book.card_shape || "rectangle"}
             front_background={@word_book.front_background}
             back_background={@word_book.back_background}
+            custom_text={@word_book.custom_text}
             download={true}
           />
         <% end %>

@@ -3,8 +3,9 @@ defmodule Medoru.Learning.WordBook do
   Schema for Word Books - user-created vocabulary card collections.
 
   A word book can contain up to 100 words and defines how the vocabulary
-  cards look: card shape, cards per page, backgrounds, theme, and per-side
-  (front/back) display configuration.
+  cards look: card shape, cards per page, backgrounds, theme, an optional
+  custom text shown above the word, and per-side (front/back) display
+  configuration.
   """
   use Ecto.Schema
   import Ecto.Changeset
@@ -34,6 +35,7 @@ defmodule Medoru.Learning.WordBook do
     field :cards_per_page, :integer, default: 4
     field :front_background, :string
     field :back_background, :string
+    field :custom_text, :string
     field :front_config, :map, default: %{}
     field :back_config, :map, default: %{}
     field :word_count, :integer, default: 0
@@ -57,6 +59,7 @@ defmodule Medoru.Learning.WordBook do
       :cards_per_page,
       :front_background,
       :back_background,
+      :custom_text,
       :front_config,
       :back_config,
       :word_count,
@@ -65,6 +68,7 @@ defmodule Medoru.Learning.WordBook do
     |> validate_required([:title, :user_id, :card_shape, :cards_per_page])
     |> validate_length(:title, max: 100)
     |> validate_length(:description, max: 500)
+    |> validate_length(:custom_text, max: 32)
     |> validate_inclusion(:card_shape, @card_shapes)
     |> validate_inclusion(:cards_per_page, @cards_per_page_options)
     |> validate_theme()

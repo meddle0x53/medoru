@@ -63,8 +63,13 @@ defmodule MedoruWeb.SlugRoutes do
     {classroom, game}
   end
 
+  # NOTE: `Ecto.UUID.cast/1` also accepts any raw 16-byte binary as an
+  # already-dumped UUID, so a 16-character slug like "iv-grammar-notes" would
+  # be misclassified as a UUID. Only accept canonical hex formats here.
+  @uuid_format ~r/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
+
   defp uuid?(value) when is_binary(value) do
-    Ecto.UUID.cast(value) != :error
+    Regex.match?(@uuid_format, value) && Ecto.UUID.cast(value) != :error
   end
 
   defp uuid?(_), do: false

@@ -370,16 +370,20 @@ defmodule MedoruWeb.WordBookLive.EditWords do
               <%= if length(@search_results) > 0 do %>
                 <div class="mt-4 space-y-2 max-h-64 overflow-y-auto">
                   <%= for word <- @search_results do %>
-                    <div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">
-                      <div class="flex items-center gap-3">
-                        <span class="text-lg font-medium text-base-content">{word.text}</span>
-                        <span class="text-secondary">{word.reading}</span>
-                        <span class="text-sm text-secondary">- {word.meaning}</span>
+                    <div class="flex items-center justify-between gap-2 p-3 bg-base-200 rounded-lg">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-lg font-medium text-base-content shrink-0">
+                          {word.text}
+                        </span>
+                        <span class="text-secondary truncate">{word.reading}</span>
+                        <span class="hidden sm:inline text-sm text-secondary truncate">
+                          - {word.meaning}
+                        </span>
                       </div>
                       <button
                         phx-click="add_word"
                         phx-value-word_id={word.id}
-                        class="px-3 py-1 bg-primary hover:bg-primary/90 text-primary-content rounded-lg text-sm font-medium transition-colors"
+                        class="shrink-0 px-3 py-1 bg-primary hover:bg-primary/90 text-primary-content rounded-lg text-sm font-medium transition-colors"
                       >
                         {gettext("Add")}
                       </button>

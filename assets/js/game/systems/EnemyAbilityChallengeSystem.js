@@ -1,5 +1,6 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
+import { getWordChallengeTimeLimit } from './challengeTime.js'
 
 function normalize(input) {
   return input.trim().toLowerCase()
@@ -24,7 +25,7 @@ export default class EnemyAbilityChallengeSystem {
     this.onComplete = onComplete
     this.input = ''
     this.active = true
-    this.timeLimit = challenge.timeLimit || 13000
+    this.timeLimit = getWordChallengeTimeLimit(this.scene, challenge.timeLimit || 13000)
     this.startTime = Date.now()
 
     // Enemy ability challenges are always word/meaning prompts.

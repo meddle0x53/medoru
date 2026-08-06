@@ -165,7 +165,6 @@ defmodule MedoruWeb.WordBookLive.Form do
                 </label>
                 <textarea
                   name={@form[:description].name}
-                  value={@form[:description].value}
                   placeholder={gettext("Optional description of this word book...")}
                   maxlength="500"
                   rows="3"

@@ -1,5 +1,4 @@
 import { LEVEL_1_MAPS } from './level_1/index.js'
-import { LEVEL_2_MAPS } from './level_2/index.js'
 
 /**
  * Central registry for all map definitions.
@@ -9,7 +8,7 @@ import { LEVEL_2_MAPS } from './level_2/index.js'
  * future level selector can pick the right pool.
  */
 
-export const MAP_DEFINITIONS = [...LEVEL_1_MAPS, ...LEVEL_2_MAPS]
+export const MAP_DEFINITIONS = [...LEVEL_1_MAPS]
 
 MAP_DEFINITIONS.forEach((definition, index) => {
   if (definition.index === undefined) {

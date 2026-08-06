@@ -82,7 +82,7 @@
         "short_cascade": 0.2083,
         "mini_boss": 0.1667
       },
-      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko", "hone_onna"], "mini_boss": ["danzaburo_danuki"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko", "hone_onna"], "mini_boss": ["danzaburo_danuki", "kyubi_kitsune"] }
     },
     {
       "index": 6,
@@ -96,7 +96,7 @@
         "short_cascade": 0.1667,
         "mini_boss": 0.3334
       },
-      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"], "mini_boss": ["danzaburo_danuki"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"], "mini_boss": ["danzaburo_danuki", "kyubi_kitsune"] }
     },
     {
       "index": 7,
@@ -110,7 +110,7 @@
         "rest_camp": 0.0666,
         "short_cascade": 0.2
       },
-      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["danzaburo_danuki"] }
+      "enemyPools": { "battle": ["kasa_obake", "hitotsume_kozo"], "mini_boss": ["danzaburo_danuki", "kyubi_kitsune"] }
     },
     {
       "index": 8,
@@ -124,7 +124,7 @@
         "rest_camp": 0.0333,
         "short_cascade": 0.1
       },
-      "enemyPools": { "battle": ["kasa_obake", "bake_neko"], "mini_boss": ["danzaburo_danuki"] }
+      "enemyPools": { "battle": ["kasa_obake", "bake_neko"], "mini_boss": ["danzaburo_danuki", "kyubi_kitsune"] }
     },
     { "index": 9, "fixedType": "rest_camp" },
     {
@@ -135,7 +135,7 @@
   ],
   "defaultEnemyPools": {
     "battle": ["kasa_obake", "hitotsume_kozo", "bake_neko"],
-    "mini_boss": ["danzaburo_danuki"],
+    "mini_boss": ["danzaburo_danuki", "kyubi_kitsune"],
     "boss": ["kasa_obake_tyrant", "raiju_sekigan"]
   },
   "tileImages": {

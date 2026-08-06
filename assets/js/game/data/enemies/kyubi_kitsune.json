@@ -1,0 +1,186 @@
+{
+  "id": "kyubi_kitsune",
+  "name": "Kyūbi Kitsune",
+  "nameJa": "九尾の狐",
+  "description": "An ancient shrine spirit of cold beauty and colder cunning. She manipulates the battlefield with foxfire and void magic, then punishes a single mistake with infernal force.",
+  "level": 6,
+  "baseGold": 50,
+  "roles": ["mini_boss"],
+  "mapIds": [1],
+  "maxColumn": 10,
+  "sprites": {
+    "_comment": "All Kitsune sprites are now in place.",
+    "default": "enemy_kitsune_default",
+    "attack": "enemy_kitsune_attack",
+    "defend": "enemy_kitsune_defend",
+    "buff": "enemy_kitsune_buff",
+    "death": "enemy_kitsune_defeated"
+  },
+  "portrait": "enemy_kitsune_default",
+  "icon": "enemy_bake_neko_icon",
+  "layout": {
+    "1": [{ "x": 690, "y": 475, "scale": 0.44 }],
+    "2": [{ "x": 690, "y": 475, "scale": 0.18 }, { "x": 810, "y": 475, "scale": 0.18 }],
+    "3": [{ "x": 690, "y": 475, "scale": 0.18 }, { "x": 570, "y": 475, "scale": 0.18 }, { "x": 810, "y": 475, "scale": 0.18 }]
+  },
+  "stats": {
+    "hp": { "min": 220, "max": 250 },
+    "stamina": { "min": 16, "max": 16 },
+    "strength": { "min": 4, "max": 4 },
+    "skill": { "min": 9, "max": 9 },
+    "mana": { "min": 15, "max": 15 },
+    "luck": { "min": 16, "max": 16 },
+    "defense": { "min": 7, "max": 7 },
+    "armor": { "min": 3, "max": 3 }
+  },
+  "abilities": [
+    {
+      "id": "foxfire",
+      "name": "Foxfire",
+      "type": "attack",
+      "element": "fire",
+      "staminaCost": 4,
+      "sprite": "enemy_kitsune_attack",
+      "aiWeight": 12,
+      "maxUsesPerTurn": 1,
+      "basePower": 16,
+      "scalingStat": "mana",
+      "scalingMultiplier": 0.3,
+      "effects": [
+        {
+          "effectId": "burn",
+          "target": "enemy",
+          "chance": { "base": 0.35, "step": 0, "cap": 0.35 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ]
+    },
+    {
+      "id": "bewitching_gaze",
+      "name": "Bewitching Gaze",
+      "type": "debuff",
+      "element": "void",
+      "staminaCost": 4,
+      "sprite": "enemy_kitsune_buff",
+      "aiWeight": 14,
+      "maxUsesPerTurn": 1,
+      "basePower": 0,
+      "effects": [
+        {
+          "effectId": "weak",
+          "target": "enemy",
+          "chance": { "base": 0.40, "step": 0, "cap": 0.40 },
+          "duration": { "min": 2, "max": 3 }
+        },
+        {
+          "effectId": "void_touched",
+          "target": "enemy",
+          "chance": { "base": 0.30, "step": 0, "cap": 0.30 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ]
+    },
+    {
+      "id": "illusory_step",
+      "name": "Illusory Step",
+      "type": "buff",
+      "staminaCost": 3,
+      "sprite": "enemy_kitsune_buff",
+      "aiWeight": 16,
+      "maxUsesPerTurn": 1,
+      "buffType": "evasion",
+      "buffValue": 0.25,
+      "effects": [
+        {
+          "effectId": "eye_of_heaven",
+          "target": "self",
+          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "duration": { "min": 2, "max": 2 }
+        }
+      ]
+    },
+    {
+      "id": "spirit_claws",
+      "name": "Spirit Claws",
+      "type": "attack",
+      "element": "physical",
+      "staminaCost": 3,
+      "sprite": "enemy_kitsune_attack",
+      "aiWeight": 12,
+      "maxUsesPerTurn": 1,
+      "basePower": 14,
+      "scalingStat": "skill",
+      "scalingMultiplier": 1.0,
+      "effects": [
+        {
+          "effectId": "bleed",
+          "target": "enemy",
+          "chance": { "base": 0.25, "step": 0, "cap": 0.25 }
+        }
+      ]
+    },
+    {
+      "id": "nine_tailed_inferno",
+      "name": "Nine-Tailed Inferno",
+      "type": "attack",
+      "element": "fire",
+      "staminaCost": 6,
+      "sprite": "enemy_kitsune_attack",
+      "aiWeight": 12,
+      "maxUsesPerTurn": 1,
+      "basePower": 24,
+      "scalingStat": "mana",
+      "scalingMultiplier": 1.4,
+      "effects": [
+        {
+          "effectId": "burn",
+          "target": "enemy",
+          "chance": { "base": 0.50, "step": 0, "cap": 0.50 },
+          "duration": { "min": 2, "max": 3 }
+        }
+      ],
+      "consumesEffect": {
+        "effectId": "void_touched",
+        "damageMultiplier": 1.5,
+        "log": "The inferno feeds on the void mark!"
+      }
+    }
+  ],
+  "phases": [
+    {
+      "hpThreshold": 1.0,
+      "name": "Calm Priestess"
+    },
+    {
+      "hpThreshold": 0.5,
+      "name": "Nine-Tails Unveiled",
+      "announce": "The Kitsune's nine tails fan out in cold light!",
+      "sprites": {
+        "default": "enemy_kitsune_phase2_default",
+        "attack": "enemy_kitsune_phase2_default",
+        "buff": "enemy_kitsune_buff",
+        "defend": "enemy_kitsune_defend",
+        "death": "enemy_kitsune_defeated"
+      },
+      "modifiers": {
+        "basicAttackDamageMultiplier": 1.25
+      }
+    }
+  ],
+  "firstDefeatRewards": [
+    { "type": "socketCharm", "id": "sharp_charm_sword" },
+    { "type": "charm", "id": "kitsune_tail_charm" }
+  ],
+  "drops": {
+    "warrior": [
+      { "type": "socketCharm", "id": "sharp_charm_sword", "chance": 0.15, "rarity": "rare" },
+      { "type": "charm", "id": "kitsune_tail_charm", "chance": 0.08, "rarity": "rare" },
+      { "type": "item", "id": "health_potion", "chance": 0.25, "rarity": "normal" },
+      { "type": "item", "id": "burn_heal_potion", "chance": 0.20, "rarity": "normal" },
+      { "type": "charm", "id": "kaze_charm", "chance": 0.05, "rarity": "normal" },
+      { "type": "charm", "id": "hi_charm", "chance": 0.05, "rarity": "normal" }
+    ],
+    "mage": [],
+    "archer": []
+  }
+}

@@ -92,5 +92,61 @@ defmodule MedoruWeb.WordBookLive.DesignTest do
       assert word_book.front_config["example_count"] == "all"
       assert word_book.back_config["show_reading"] == false
     end
+
+    test "example count change sticks through other events and save", %{
+      conn: conn,
+      user: user
+    } do
+      # Regression: the example-count control used to be a <select> whose
+      # phx-change payload didn't match the handler (crashing the view) and
+      # whose displayed value could be reverted by unrelated patches. It is
+      # now a segmented button group.
+      word = word_fixture()
+      word_book = word_book_with_words_fixture(%{user_id: user.id}, [word])
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}/design")
+
+      view
+      |> element(~s(button[phx-click="set_example_count"][phx-value-count="1"]))
+      |> render_click()
+
+      assert has_element?(
+               view,
+               ~s(button[phx-click="set_example_count"][phx-value-count="1"].btn-primary)
+             )
+
+      # Other events must not revert the selection
+      view
+      |> element(~s(input[phx-click="toggle_option"][phx-value-key="show_reading"]))
+      |> render_click()
+
+      assert has_element?(
+               view,
+               ~s(button[phx-click="set_example_count"][phx-value-count="1"].btn-primary)
+             )
+
+      view |> element("button[phx-click='save']") |> render_click()
+
+      assert WordBooks.get_word_book!(word_book.id).front_config["example_count"] == 1
+    end
+
+    test "sets custom text, previews it, and saves it", %{conn: conn, user: user} do
+      word = word_fixture()
+      word_book = word_book_with_words_fixture(%{user_id: user.id}, [word])
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}/design")
+
+      html =
+        view
+        |> element(~s(input[name="custom_text"]))
+        |> render_change(%{"custom_text" => "Word Of The Day"})
+
+      # Live preview shows the text
+      assert html =~ "Word Of The Day"
+
+      view |> element("button[phx-click='save']") |> render_click()
+
+      assert WordBooks.get_word_book!(word_book.id).custom_text == "Word Of The Day"
+    end
   end
 end

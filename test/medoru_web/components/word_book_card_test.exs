@@ -136,4 +136,45 @@ defmodule MedoruWeb.WordBookCardTest do
     assert html =~ "たべる (taberu)"
     assert html =~ "to eat"
   end
+
+  test "custom text renders above the word on both faces" do
+    word = %Word{
+      id: Ecto.UUID.generate(),
+      text: "食べる",
+      reading: "たべる",
+      meaning: "to eat"
+    }
+
+    html =
+      render_component(&MedoruWeb.WordBookCard.card/1,
+        id: "custom-text-card",
+        word: word,
+        front_config: %{},
+        back_config: %{},
+        card_shape: "rectangle",
+        custom_text: "Word Of The Day"
+      )
+
+    # Both faces show the header, and it sits above the Japanese word
+    assert html |> String.split("Word Of The Day") |> length() == 3
+
+    {header_pos, _} = :binary.match(html, "Word Of The Day")
+    {word_pos, _} = :binary.match(html, "食べる")
+    assert header_pos < word_pos
+  end
+
+  test "no custom text header when not set" do
+    word = %Word{id: Ecto.UUID.generate(), text: "食べる", meaning: "to eat"}
+
+    html =
+      render_component(&MedoruWeb.WordBookCard.card/1,
+        id: "no-custom-text-card",
+        word: word,
+        front_config: %{},
+        back_config: %{},
+        card_shape: "rectangle"
+      )
+
+    refute html =~ "uppercase tracking-widest"
+  end
 end
