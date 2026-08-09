@@ -5,6 +5,7 @@ import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
+import AbilityTooltip from '../ui/AbilityTooltip.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 export default class WinScene extends Phaser.Scene {
@@ -22,6 +23,7 @@ export default class WinScene extends Phaser.Scene {
 
     this.challengeSystem = null
     this.replaceDialog = null
+    this.abilityTooltip = new AbilityTooltip(this)
     this.abilitySelected = false
     this.selectedAbilityAction = null
     this.bonusAbilityPending = false
@@ -220,7 +222,15 @@ export default class WinScene extends Phaser.Scene {
       const x = startX + i * (cardW + gap)
       const y = startY + 60
       const card = this.createAbilityCard(x, y, cardW, cardH, action)
-      card.hitArea.on('pointerdown', () => this.onAbilitySelected(action))
+      this.abilityTooltip.attach(card.hitArea, action)
+      card.hitArea.on('pointerup', (pointer) => {
+        const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+        if (card.hitArea.getData('abilityTooltipSuppressClick')) {
+          card.hitArea.setData('abilityTooltipSuppressClick', false)
+          return
+        }
+        if (moveDist < 8) this.onAbilitySelected(action)
+      })
       this.abilityRewardsContainer.add(card.container)
     })
   }

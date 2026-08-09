@@ -115,6 +115,68 @@ defmodule Medoru.Grammar.ValidatorTest do
     end
   end
 
+  describe "polite (masu) paradigm forms" do
+    setup do
+      benkyou =
+        ContentFixtures.word_fixture(%{
+          text: "勉強する",
+          reading: "べんきょうする",
+          word_type: :verb
+        })
+
+      for {name, conjugated} <- [
+            {"masu-form", "勉強します"},
+            {"masu-past", "勉強しました"},
+            {"masu-negative", "勉強しません"},
+            {"masu-negative-past", "勉強しませんでした"}
+          ] do
+        form = ContentFixtures.grammar_form_fixture(%{name: name, word_type: "verb"})
+
+        {:ok, _} =
+          Content.create_word_conjugation(%{
+            word_id: benkyou.id,
+            grammar_form_id: form.id,
+            conjugated_form: conjugated
+          })
+      end
+
+      %{benkyou: benkyou}
+    end
+
+    defp verb_pattern(form) do
+      [%{"type" => "word_slot", "word_type" => "verb", "forms" => [form]}]
+    end
+
+    test "validates polite past with time prefix and question particle" do
+      assert {:ok, breakdown} =
+               Validator.validate_sentence("きのう勉強しましたか。", verb_pattern("masu-past"))
+
+      verb = Enum.find(breakdown, &(&1.type == "verb"))
+      assert verb.text == "勉強しました"
+      assert verb.form == "masu-past"
+    end
+
+    test "polite forms are distinct from each other" do
+      assert {:error, _} =
+               Validator.validate_sentence("きのう勉強します。", verb_pattern("masu-past"))
+
+      assert {:error, _} =
+               Validator.validate_sentence("きのう勉強しました。", verb_pattern("masu-form"))
+
+      assert {:ok, _} =
+               Validator.validate_sentence(
+                 "きのう勉強しませんでした。",
+                 verb_pattern("masu-negative-past")
+               )
+
+      assert {:error, _} =
+               Validator.validate_sentence(
+                 "きのう勉強しませんでした。",
+                 verb_pattern("masu-past")
+               )
+    end
+  end
+
   describe "validate_with_details/2" do
     setup do
       taberu = ContentFixtures.word_fixture(%{text: "食べる", word_type: :verb})

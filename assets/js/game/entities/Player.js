@@ -1588,9 +1588,9 @@ export default class Player extends Character {
     if (roll < 0.20) {
       gained = 0
     } else if (roll < 0.70) {
-      gained = 1
-    } else {
       gained = 2
+    } else {
+      gained = 4
     }
     if (gained > 0) return this.addOuroEssence(gained)
     return 0
@@ -1615,11 +1615,11 @@ export default class Player extends Character {
     if (level === 1) {
       const roll = Math.random()
       if (roll < 0.30) {
-        gained = 4
-      } else if (roll < 0.80) {
         gained = 6
-      } else {
+      } else if (roll < 0.80) {
         gained = 8
+      } else {
+        gained = 10
       }
     }
     if (gained > 0) return this.addOuroEssence(gained)

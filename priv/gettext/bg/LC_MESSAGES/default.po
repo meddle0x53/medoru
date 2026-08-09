@@ -64,8 +64,8 @@ msgstr "Акаунт"
 
 #: lib/medoru_web/live/admin/word_class_live/show/show_template.html.heex:98
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:665
-#: lib/medoru_web/live/word_book_live/design.ex:577
-#: lib/medoru_web/live/word_book_live/show.ex:312
+#: lib/medoru_web/live/word_book_live/design.ex:579
+#: lib/medoru_web/live/word_book_live/show.ex:326
 #: lib/medoru_web/live/word_set_live/show.ex:595
 #, elixir-autogen, elixir-format
 msgid "Add Words"
@@ -277,9 +277,9 @@ msgstr "Български"
 #: lib/medoru_web/live/teacher/test_live/show.ex:195
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:344
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:344
-#: lib/medoru_web/live/user_white_board_live.ex:160
-#: lib/medoru_web/live/user_white_board_live.ex:435
-#: lib/medoru_web/live/user_white_board_live.ex:692
+#: lib/medoru_web/live/user_white_board_live.ex:161
+#: lib/medoru_web/live/user_white_board_live.ex:436
+#: lib/medoru_web/live/user_white_board_live.ex:697
 #: lib/medoru_web/live/word_book_live/form.ex:255
 #: lib/medoru_web/live/word_live/show.html.heex:406
 #: lib/medoru_web/live/word_live/show.html.heex:406
@@ -1717,9 +1717,9 @@ msgstr "Член"
 #: lib/medoru_web/live/user_live/following.html.heex:155
 #: lib/medoru_web/live/users_live/index.html.heex:235
 #: lib/medoru_web/live/users_live/index.html.heex:239
-#: lib/medoru_web/live/word_book_live/show.ex:412
-#: lib/medoru_web/live/word_book_live/show.ex:414
-#: lib/medoru_web/live/word_book_live/show.ex:419
+#: lib/medoru_web/live/word_book_live/show.ex:426
+#: lib/medoru_web/live/word_book_live/show.ex:428
+#: lib/medoru_web/live/word_book_live/show.ex:433
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:463
 #: lib/medoru_web/live/word_live/index.html.heex:467
@@ -2039,9 +2039,9 @@ msgstr "Сега направете теста, за да завършите у�
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/kanji_live/show.html.heex:415
 #: lib/medoru_web/live/learn_live.ex:203
-#: lib/medoru_web/live/word_book_live/show.ex:397
-#: lib/medoru_web/live/word_book_live/show.ex:400
-#: lib/medoru_web/live/word_book_live/show.ex:405
+#: lib/medoru_web/live/word_book_live/show.ex:411
+#: lib/medoru_web/live/word_book_live/show.ex:414
+#: lib/medoru_web/live/word_book_live/show.ex:419
 #, elixir-autogen, elixir-format
 msgid "Previous"
 msgstr "Назад"
@@ -2074,7 +2074,7 @@ msgstr "Вижте канджи"
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form.ex:1017
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:509
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:968
-#: lib/medoru_web/live/word_book_live/design.ex:348
+#: lib/medoru_web/live/word_book_live/design.ex:350
 #, elixir-autogen, elixir-format
 msgid "Word"
 msgstr "Дума"
@@ -2116,7 +2116,7 @@ msgstr "Грешно - Проучете правилните черти"
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/kanji_live/show.html.heex:58
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:190
-#: lib/medoru_web/live/word_book_live/design.ex:370
+#: lib/medoru_web/live/word_book_live/design.ex:372
 #: lib/medoru_web/live/word_live/show.html.heex:127
 #: lib/medoru_web/live/word_live/show.html.heex:127
 #, elixir-autogen, elixir-format
@@ -2604,7 +2604,7 @@ msgstr "Обратно към думи N%{level}"
 msgid "Browse and learn Japanese words organized by JLPT level"
 msgstr "Разгледайте и научете японски думи, организирани по JLPT нива"
 
-#: lib/medoru_web/components/word_book_card.ex:266
+#: lib/medoru_web/components/word_book_card.ex:320
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #: lib/medoru_web/live/word_live/show.html.heex:106
 #, elixir-autogen, elixir-format
@@ -2691,7 +2691,7 @@ msgstr "Няма думи, съвпадащи с търсенето \"%{search}\
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/radical_live/index.html.heex:22
 #: lib/medoru_web/live/users_live/index.html.heex:86
-#: lib/medoru_web/live/word_book_live/show.ex:341
+#: lib/medoru_web/live/word_book_live/show.ex:355
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #: lib/medoru_web/live/word_live/index.html.heex:248
 #, elixir-autogen, elixir-format
@@ -4437,7 +4437,7 @@ msgstr "Показвано име"
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:30
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:101
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:101
-#: lib/medoru_web/live/user_white_board_live.ex:399
+#: lib/medoru_web/live/user_white_board_live.ex:400
 #: lib/medoru_web/live/word_book_live/index.ex:362
 #: lib/medoru_web/live/word_set_live/index.ex:368
 #, elixir-autogen, elixir-format
@@ -5088,8 +5088,8 @@ msgstr "Дневно ревю"
 #: lib/medoru_web/live/teacher/test_live/index.ex:387
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:108
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:108
-#: lib/medoru_web/live/user_white_board_live.ex:409
-#: lib/medoru_web/live/user_white_board_live.ex:637
+#: lib/medoru_web/live/user_white_board_live.ex:410
+#: lib/medoru_web/live/user_white_board_live.ex:642
 #: lib/medoru_web/live/word_book_live/index.ex:375
 #: lib/medoru_web/live/word_set_live/index.ex:381
 #: lib/medoru_web/live/word_set_live/show.ex:536
@@ -5928,7 +5928,7 @@ msgstr "Ромаджи"
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:502
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:772
 #: lib/medoru_web/live/teacher/test_live/show.ex:202
-#: lib/medoru_web/live/user_white_board_live.ex:438
+#: lib/medoru_web/live/user_white_board_live.ex:439
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr "Запазете"
@@ -7197,7 +7197,7 @@ msgid "Image to Meaning"
 msgstr "Изображение към значение"
 
 #: lib/medoru_web/live/user_live/show.ex:129
-#: lib/medoru_web/live/user_white_board_live.ex:800
+#: lib/medoru_web/live/user_white_board_live.ex:805
 #, elixir-autogen, elixir-format
 msgid "Invalid user ID."
 msgstr ""
@@ -7250,7 +7250,7 @@ msgid "Picture Multiple Choice"
 msgstr ""
 
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:191
-#: lib/medoru_web/live/user_white_board_live.ex:37
+#: lib/medoru_web/live/user_white_board_live.ex:38
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Profile"
 msgstr "Профил"
@@ -8141,10 +8141,10 @@ msgid "Edit Word Set"
 msgstr "Редактиране на дума - %{text}"
 
 #: lib/medoru_web/live/word_book_live/edit_words.ex:19
-#: lib/medoru_web/live/word_book_live/show.ex:241
-#: lib/medoru_web/live/word_book_live/show.ex:244
-#: lib/medoru_web/live/word_book_live/show.ex:356
-#: lib/medoru_web/live/word_book_live/show.ex:359
+#: lib/medoru_web/live/word_book_live/show.ex:255
+#: lib/medoru_web/live/word_book_live/show.ex:258
+#: lib/medoru_web/live/word_book_live/show.ex:370
+#: lib/medoru_web/live/word_book_live/show.ex:373
 #: lib/medoru_web/live/word_set_live/edit_words.ex:17
 #: lib/medoru_web/live/word_set_live/show.ex:455
 #, elixir-autogen, elixir-format
@@ -8216,7 +8216,7 @@ msgstr "Примерът е валиден!"
 #: lib/medoru_web/live/teacher/test_live/edit.ex:3168
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:591
 #: lib/medoru_web/live/teacher/test_live/writing_fill_in_step_form.ex:47
-#: lib/medoru_web/live/word_book_live/design.ex:393
+#: lib/medoru_web/live/word_book_live/design.ex:395
 #: lib/medoru_web/live/writing_fill_in_components.ex:37
 #, elixir-autogen, elixir-format
 msgid "Examples"
@@ -9489,7 +9489,7 @@ msgstr "примери"
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:64
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:106
 #: lib/medoru_web/live/word_book_live/index.ex:340
-#: lib/medoru_web/live/word_book_live/show.ex:293
+#: lib/medoru_web/live/word_book_live/show.ex:307
 #: lib/medoru_web/live/word_set_live/index.ex:339
 #: lib/medoru_web/live/word_set_live/show.ex:438
 #: lib/medoru_web/live/word_set_live/show.ex:741
@@ -9575,7 +9575,7 @@ msgstr "Думите са копирани в нов списък: %{name}"
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:238
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:238
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:936
-#: lib/medoru_web/live/word_book_live/design.ex:314
+#: lib/medoru_web/live/word_book_live/design.ex:316
 #: lib/medoru_web/live/word_set_live/show.ex:781
 #, elixir-autogen, elixir-format
 msgid "Back"
@@ -9717,7 +9717,7 @@ msgstr ""
 msgid "Writing Challenge"
 msgstr "Предизвикателство за писане"
 
-#: lib/medoru_web/components/word_book_card.ex:258
+#: lib/medoru_web/components/word_book_card.ex:312
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:196
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:639
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:850
@@ -11014,8 +11014,8 @@ msgstr "Произношение (четене)"
 #: lib/medoru_web/live/classroom_live/index.ex:257
 #: lib/medoru_web/live/classroom_live/index.ex:538
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:1461
-#: lib/medoru_web/live/user_white_board_live.ex:202
-#: lib/medoru_web/live/user_white_board_live.ex:378
+#: lib/medoru_web/live/user_white_board_live.ex:203
+#: lib/medoru_web/live/user_white_board_live.ex:379
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Public"
 msgstr "Публично"
@@ -12208,7 +12208,7 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:467
 #: lib/medoru_web/live/dashboard_live.html.heex:467
 #: lib/medoru_web/live/messages_live/show.html.heex:617
-#: lib/medoru_web/live/user_white_board_live.ex:628
+#: lib/medoru_web/live/user_white_board_live.ex:633
 #, elixir-autogen, elixir-format
 msgid "Reply"
 msgstr "Отговор"
@@ -12542,8 +12542,8 @@ msgstr ""
 msgid "%{name} hasn't set up encryption yet."
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:40
-#: lib/medoru_web/live/user_white_board_live.ex:764
+#: lib/medoru_web/live/user_white_board_live.ex:41
+#: lib/medoru_web/live/user_white_board_live.ex:769
 #, elixir-autogen, elixir-format
 msgid "%{name}'s White Board"
 msgstr "Бялата дъска на %{name}"
@@ -12722,9 +12722,9 @@ msgstr "Сигурни ли сте, че искате да затворите т
 
 #: lib/medoru_web/live/dashboard_live.html.heex:520
 #: lib/medoru_web/live/dashboard_live.html.heex:520
-#: lib/medoru_web/live/user_white_board_live.ex:297
-#: lib/medoru_web/live/user_white_board_live.ex:681
-#: lib/medoru_web/live/user_white_board_post_live.ex:258
+#: lib/medoru_web/live/user_white_board_live.ex:298
+#: lib/medoru_web/live/user_white_board_live.ex:686
+#: lib/medoru_web/live/user_white_board_post_live.ex:263
 #, elixir-autogen, elixir-format
 msgid "Attach file"
 msgstr "Прикачете файл"
@@ -12789,12 +12789,12 @@ msgstr "Обратно към канджи N%{level}"
 msgid "Back to Radicals"
 msgstr "Обратно към списъка"
 
-#: lib/medoru_web/live/user_white_board_post_live.ex:24
+#: lib/medoru_web/live/user_white_board_post_live.ex:25
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Back to White Board"
 msgstr "Обратно към списъците от думи"
 
-#: lib/medoru_web/live/user_white_board_live.ex:111
+#: lib/medoru_web/live/user_white_board_live.ex:112
 #, elixir-autogen, elixir-format
 msgid "Background image"
 msgstr "Фоново изображение"
@@ -12929,7 +12929,7 @@ msgstr "Класни стаи"
 msgid "Classroom closed."
 msgstr "Класни стаи"
 
-#: lib/medoru_web/live/user_white_board_live.ex:124
+#: lib/medoru_web/live/user_white_board_live.ex:125
 #, elixir-autogen, elixir-format
 msgid "Clear background"
 msgstr "Премахнете фона"
@@ -12973,8 +12973,8 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:268
 #: lib/medoru_web/live/dashboard_live.html.heex:268
-#: lib/medoru_web/live/user_white_board_live.ex:366
-#: lib/medoru_web/live/user_white_board_post_live.ex:63
+#: lib/medoru_web/live/user_white_board_live.ex:367
+#: lib/medoru_web/live/user_white_board_post_live.ex:64
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Copy link to post"
 msgstr "Копирайте в"
@@ -12985,13 +12985,13 @@ msgid "Copy to Clipboard"
 msgstr "Копирай в клипборда"
 
 #: lib/medoru_web/live/dashboard_live.ex:179
-#: lib/medoru_web/live/user_white_board_live.ex:1079
-#: lib/medoru_web/live/user_white_board_post_live.ex:384
+#: lib/medoru_web/live/user_white_board_live.ex:1084
+#: lib/medoru_web/live/user_white_board_post_live.ex:389
 #, elixir-autogen, elixir-format
 msgid "Could not add comment."
 msgstr "Неуспешно добавяне на коментар."
 
-#: lib/medoru_web/live/user_white_board_live.ex:855
+#: lib/medoru_web/live/user_white_board_live.ex:860
 #, elixir-autogen, elixir-format
 msgid "Could not create post."
 msgstr "Неуспешно създаване на публикация."
@@ -13004,17 +13004,17 @@ msgstr "Неуспешно създаване на публикация."
 msgid "Could not follow user."
 msgstr "Неуспешно блокиране на потребител."
 
-#: lib/medoru_web/live/user_white_board_live.ex:897
+#: lib/medoru_web/live/user_white_board_live.ex:902
 #, elixir-autogen, elixir-format
 msgid "Could not post drawing."
 msgstr "Неуспешно публикуване на рисунката."
 
-#: lib/medoru_web/live/user_white_board_live.ex:928
+#: lib/medoru_web/live/user_white_board_live.ex:933
 #, elixir-autogen, elixir-format
 msgid "Could not update post."
 msgstr "Неуспешно обновяване на публикацията."
 
-#: lib/medoru_web/live/user_white_board_live.ex:962
+#: lib/medoru_web/live/user_white_board_live.ex:967
 #, elixir-autogen, elixir-format
 msgid "Could not update visibility."
 msgstr "Неуспешно обновяване на видимостта."
@@ -13117,7 +13117,7 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:473
 #: lib/medoru_web/live/dashboard_live.html.heex:473
-#: lib/medoru_web/live/user_white_board_live.ex:634
+#: lib/medoru_web/live/user_white_board_live.ex:639
 #, elixir-autogen, elixir-format
 msgid "Delete this comment?"
 msgstr "Изтрийте този коментар?"
@@ -13140,7 +13140,7 @@ msgstr "Изтрийте тази граматична форма?"
 msgid "Delete this message?"
 msgstr "Изтрийте този урок?"
 
-#: lib/medoru_web/live/user_white_board_live.ex:406
+#: lib/medoru_web/live/user_white_board_live.ex:407
 #, elixir-autogen, elixir-format
 msgid "Delete this post?"
 msgstr "Изтрийте тази публикация?"
@@ -13182,7 +13182,7 @@ msgstr "Описание"
 msgid "Description (Japanese)"
 msgstr "Описание"
 
-#: lib/medoru_web/live/user_white_board_live.ex:152
+#: lib/medoru_web/live/user_white_board_live.ex:153
 #, elixir-autogen, elixir-format
 msgid "Description..."
 msgstr "Описание..."
@@ -13218,7 +13218,7 @@ msgstr ""
 msgid "Download"
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:314
+#: lib/medoru_web/live/user_white_board_live.ex:315
 #, elixir-autogen, elixir-format
 msgid "Draw"
 msgstr "Рисувайте"
@@ -13228,7 +13228,7 @@ msgstr "Рисувайте"
 msgid "Draw the kanji stroke by stroke. Wrong strokes:"
 msgstr "Рисувайте канджи черта по черта. Червената спомагателна черта показва следващата вярна черта."
 
-#: lib/medoru_web/live/user_white_board_live.ex:894
+#: lib/medoru_web/live/user_white_board_live.ex:899
 #, elixir-autogen, elixir-format
 msgid "Drawing posted!"
 msgstr "Рисунката е публикувана!"
@@ -13265,7 +13265,7 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/show.ex:2781
 #: lib/medoru_web/live/messages_live/show.html.heex:1000
 #: lib/medoru_web/live/messages_live/show.html.heex:1227
-#: lib/medoru_web/live/user_white_board_live.ex:227
+#: lib/medoru_web/live/user_white_board_live.ex:228
 #, elixir-autogen, elixir-format
 msgid "Emoji"
 msgstr "Емоджи"
@@ -13492,13 +13492,13 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:255
 #: lib/medoru_web/live/user_live/followers.ex:39
 #: lib/medoru_web/live/user_live/followers.html.heex:13
-#: lib/medoru_web/live/user_white_board_live.ex:354
-#: lib/medoru_web/live/user_white_board_post_live.ex:52
+#: lib/medoru_web/live/user_white_board_live.ex:355
+#: lib/medoru_web/live/user_white_board_post_live.ex:53
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Followers"
 msgstr "Само последователи"
 
-#: lib/medoru_web/live/user_white_board_live.ex:379
+#: lib/medoru_web/live/user_white_board_live.ex:380
 #, elixir-autogen, elixir-format
 msgid "Followers only"
 msgstr "Само последователи"
@@ -13637,7 +13637,7 @@ msgstr "Важно"
 msgid "Invalid image format. Only JPEG, PNG, GIF, and WebP are supported."
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_post_live.ex:324
+#: lib/medoru_web/live/user_white_board_post_live.ex:329
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Invalid post ID."
 msgstr ""
@@ -13716,7 +13716,7 @@ msgstr "Канджи знак"
 msgid "Kanji Radicals"
 msgstr "Канджи знак"
 
-#: lib/medoru_web/live/user_white_board_live.ex:156
+#: lib/medoru_web/live/user_white_board_live.ex:157
 #, elixir-autogen, elixir-format
 msgid "Keep grid in final image"
 msgstr "Запазете мрежата в крайното изображение"
@@ -13738,7 +13738,7 @@ msgstr ""
 msgid "Known score from daily challenges"
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:83
+#: lib/medoru_web/live/user_white_board_live.ex:84
 #, elixir-autogen, elixir-format
 msgid "Large grid"
 msgstr "Голяма мрежа"
@@ -13772,7 +13772,7 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:550
 #: lib/medoru_web/live/dashboard_live.html.heex:550
-#: lib/medoru_web/live/user_white_board_live.ex:711
+#: lib/medoru_web/live/user_white_board_live.ex:716
 #, elixir-autogen, elixir-format
 msgid "Load more"
 msgstr "Заредете още"
@@ -13918,7 +13918,7 @@ msgstr "Значения"
 msgid "Meaning: %{meaning_hint}..."
 msgstr "Значение: %{meaning_hint}... / Четене: %{reading_hint}..."
 
-#: lib/medoru_web/live/user_white_board_live.ex:82
+#: lib/medoru_web/live/user_white_board_live.ex:83
 #, elixir-autogen, elixir-format
 msgid "Medium grid"
 msgstr "Средна мрежа"
@@ -13991,7 +13991,7 @@ msgstr ""
 msgid "No grammar points yet"
 msgstr "Все още няма граматични уроци"
 
-#: lib/medoru_web/live/user_white_board_live.ex:80
+#: lib/medoru_web/live/user_white_board_live.ex:81
 #, elixir-autogen, elixir-format
 msgid "No grid"
 msgstr "Без мрежа"
@@ -14023,7 +14023,7 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:560
 #: lib/medoru_web/live/dashboard_live.html.heex:560
-#: lib/medoru_web/live/user_white_board_live.ex:721
+#: lib/medoru_web/live/user_white_board_live.ex:726
 #, elixir-autogen, elixir-format
 msgid "No posts yet"
 msgstr "Все още няма публикации"
@@ -14196,24 +14196,24 @@ msgstr "Моля, изберете отговор"
 msgid "Possible Kanji"
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:163
-#: lib/medoru_web/live/user_white_board_live.ex:317
-#: lib/medoru_web/live/user_white_board_post_live.ex:296
+#: lib/medoru_web/live/user_white_board_live.ex:164
+#: lib/medoru_web/live/user_white_board_live.ex:318
+#: lib/medoru_web/live/user_white_board_post_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Post"
 msgstr "Публикувайте"
 
-#: lib/medoru_web/live/user_white_board_live.ex:852
+#: lib/medoru_web/live/user_white_board_live.ex:857
 #, elixir-autogen, elixir-format
 msgid "Post created!"
 msgstr "Публикацията е създадена!"
 
-#: lib/medoru_web/live/user_white_board_live.ex:942
+#: lib/medoru_web/live/user_white_board_live.ex:947
 #, elixir-autogen, elixir-format
 msgid "Post deleted."
 msgstr "Публикацията е изтрита."
 
-#: lib/medoru_web/live/user_white_board_post_live.ex:317
+#: lib/medoru_web/live/user_white_board_post_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Post not found."
 msgstr ""
@@ -14330,7 +14330,7 @@ msgstr "Четене (на хирагана):"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:430
 #: lib/medoru_web/live/dashboard_live.html.heex:430
-#: lib/medoru_web/live/user_white_board_live.ex:591
+#: lib/medoru_web/live/user_white_board_live.ex:596
 #, elixir-autogen, elixir-format
 msgid "Replying to %{name}"
 msgstr "Отговор на %{name}"
@@ -14484,7 +14484,7 @@ msgstr "Пропуснете"
 msgid "Slug: lowercase letters, numbers, and hyphens only"
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:81
+#: lib/medoru_web/live/user_white_board_live.ex:82
 #, elixir-autogen, elixir-format
 msgid "Small grid"
 msgstr "Малка мрежа"
@@ -14582,7 +14582,7 @@ msgstr "Чатът на класната стая не може да бъде з
 msgid "This message was deleted"
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:727
+#: lib/medoru_web/live/user_white_board_live.ex:732
 #, elixir-autogen, elixir-format
 msgid "This user hasn't posted anything yet."
 msgstr "Този потребител все още не е публикувал нищо."
@@ -14617,8 +14617,8 @@ msgstr ""
 msgid "Timeout"
 msgstr "Часова зона"
 
-#: lib/medoru_web/live/user_white_board_live.ex:145
-#: lib/medoru_web/live/user_white_board_live.ex:186
+#: lib/medoru_web/live/user_white_board_live.ex:146
+#: lib/medoru_web/live/user_white_board_live.ex:187
 #, elixir-autogen, elixir-format
 msgid "Title (optional)..."
 msgstr "Заглавие (по желание)..."
@@ -14778,7 +14778,7 @@ msgstr "Влезте"
 #: lib/medoru_web/live/classroom_live/show.ex:2741
 #: lib/medoru_web/live/messages_live/show.html.heex:960
 #: lib/medoru_web/live/messages_live/show.html.heex:1185
-#: lib/medoru_web/live/user_white_board_live.ex:210
+#: lib/medoru_web/live/user_white_board_live.ex:211
 #, elixir-autogen, elixir-format
 msgid "Voice message"
 msgstr "Гласово съобщение"
@@ -14828,15 +14828,15 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:511
 #: lib/medoru_web/live/dashboard_live.html.heex:511
-#: lib/medoru_web/live/user_white_board_live.ex:672
-#: lib/medoru_web/live/user_white_board_post_live.ex:249
+#: lib/medoru_web/live/user_white_board_live.ex:677
+#: lib/medoru_web/live/user_white_board_post_live.ex:254
 #, elixir-autogen, elixir-format
 msgid "Write a comment..."
 msgstr "Напишете коментар..."
 
 #: lib/medoru_web/live/dashboard_live.html.heex:510
 #: lib/medoru_web/live/dashboard_live.html.heex:510
-#: lib/medoru_web/live/user_white_board_live.ex:671
+#: lib/medoru_web/live/user_white_board_live.ex:676
 #, elixir-autogen, elixir-format
 msgid "Write a reply..."
 msgstr "Напишете отговор..."
@@ -14847,12 +14847,12 @@ msgstr "Напишете отговор..."
 msgid "Write a sentence that follows this grammar pattern and validate it."
 msgstr ""
 
-#: lib/medoru_web/live/user_white_board_live.ex:725
+#: lib/medoru_web/live/user_white_board_live.ex:730
 #, elixir-autogen, elixir-format
 msgid "Write something on your board or draw!"
 msgstr "Напишете нещо на дъската си или нарисувайте!"
 
-#: lib/medoru_web/live/user_white_board_live.ex:192
+#: lib/medoru_web/live/user_white_board_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Write something on your board..."
 msgstr "Напишете нещо на дъската си..."
@@ -15110,7 +15110,7 @@ msgstr ""
 
 #: lib/medoru_web/live/dashboard_live.html.heex:195
 #: lib/medoru_web/live/dashboard_live.html.heex:195
-#: lib/medoru_web/live/user_white_board_live.ex:46
+#: lib/medoru_web/live/user_white_board_live.ex:47
 #, elixir-autogen, elixir-format
 msgid "posts"
 msgstr "публикации"
@@ -17323,12 +17323,12 @@ msgstr "Видео"
 msgid "Voice"
 msgstr "Глас"
 
-#: lib/medoru_web/live/word_book_live/design.ex:417
+#: lib/medoru_web/live/word_book_live/design.ex:419
 #, elixir-autogen, elixir-format
 msgid "1 example"
 msgstr "1 пример"
 
-#: lib/medoru_web/live/word_book_live/design.ex:418
+#: lib/medoru_web/live/word_book_live/design.ex:420
 #, elixir-autogen, elixir-format
 msgid "2 examples"
 msgstr "2 примера"
@@ -17346,12 +17346,12 @@ msgstr "Добавяне към книга с думи"
 msgid "Add up to %{max} words to your book. Current: %{count}"
 msgstr "Добавете до %{max} думи в книгата си. Текущ брой: %{count}"
 
-#: lib/medoru_web/live/word_book_live/show.ex:306
+#: lib/medoru_web/live/word_book_live/show.ex:320
 #, elixir-autogen, elixir-format
 msgid "Add words before opening the book."
 msgstr "Добавете думи, преди да отворите книгата."
 
-#: lib/medoru_web/live/word_book_live/design.ex:571
+#: lib/medoru_web/live/word_book_live/design.ex:573
 #, elixir-autogen, elixir-format
 msgid "Add words to see a live preview of your design."
 msgstr "Добавете думи, за да видите преглед на дизайна си на живо."
@@ -17371,7 +17371,7 @@ msgstr "Добавя всички думи от избрания списък, �
 msgid "After creating your word book, you'll be able to add up to 100 words from our vocabulary database and design how the cards look."
 msgstr "След като създадете книгата си с думи, ще можете да добавите до 100 думи от нашата база данни и да оформите картите."
 
-#: lib/medoru_web/live/word_book_live/design.ex:419
+#: lib/medoru_web/live/word_book_live/design.ex:421
 #, elixir-autogen, elixir-format
 msgid "All examples"
 msgstr "Всички примери"
@@ -17381,7 +17381,7 @@ msgstr "Всички примери"
 msgid "Are you sure you want to delete this word book? This action cannot be undone."
 msgstr "Сигурни ли сте, че искате да изтриете тази книга с думи? Това действие не може да бъде отменено."
 
-#: lib/medoru_web/live/word_book_live/design.ex:328
+#: lib/medoru_web/live/word_book_live/design.ex:330
 #, elixir-autogen, elixir-format
 msgid "Back Side"
 msgstr "Задна страна"
@@ -17394,7 +17394,7 @@ msgid "Back to Components"
 msgstr "Обратно към игрите"
 
 #: lib/medoru_web/live/word_book_live/design.ex:187
-#: lib/medoru_web/live/word_book_live/show.ex:227
+#: lib/medoru_web/live/word_book_live/show.ex:241
 #, elixir-autogen, elixir-format
 msgid "Back to Word Books"
 msgstr "Обратно към книгите с думи"
@@ -17406,7 +17406,7 @@ msgstr "Обратно към книгите с думи"
 msgid "Browse kanji components extracted from decomposition strings"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:443
+#: lib/medoru_web/live/word_book_live/design.ex:445
 #, elixir-autogen, elixir-format
 msgid "Card Background"
 msgstr "Фон на картата"
@@ -17426,8 +17426,8 @@ msgstr "Стил на картата"
 msgid "Choose a visual theme for the cards. Default uses the site colors."
 msgstr "Изберете визуална тема за картите. По подразбиране се използват цветовете на сайта."
 
-#: lib/medoru_web/live/word_book_live/show.ex:365
-#: lib/medoru_web/live/word_book_live/show.ex:368
+#: lib/medoru_web/live/word_book_live/show.ex:379
+#: lib/medoru_web/live/word_book_live/show.ex:382
 #, elixir-autogen, elixir-format
 msgid "Close book"
 msgstr "Затвори книгата"
@@ -17533,10 +17533,10 @@ msgstr ""
 msgid "Default (first card)"
 msgstr "По подразбиране (първа карта)"
 
-#: lib/medoru_web/live/word_book_live/show.ex:233
-#: lib/medoru_web/live/word_book_live/show.ex:236
-#: lib/medoru_web/live/word_book_live/show.ex:348
-#: lib/medoru_web/live/word_book_live/show.ex:351
+#: lib/medoru_web/live/word_book_live/show.ex:247
+#: lib/medoru_web/live/word_book_live/show.ex:250
+#: lib/medoru_web/live/word_book_live/show.ex:362
+#: lib/medoru_web/live/word_book_live/show.ex:365
 #, elixir-autogen, elixir-format
 msgid "Design"
 msgstr "Дизайн"
@@ -17600,17 +17600,17 @@ msgstr "Неуспешно завършване на урока."
 msgid "Find as many kanji as you can that contain this component"
 msgstr ""
 
-#: lib/medoru_web/components/word_book_card.ex:270
+#: lib/medoru_web/components/word_book_card.ex:324
 #, elixir-autogen, elixir-format
 msgid "Freq: %{frequency}"
 msgstr "Честота: %{frequency}"
 
-#: lib/medoru_web/live/word_book_live/design.ex:305
+#: lib/medoru_web/live/word_book_live/design.ex:307
 #, elixir-autogen, elixir-format
 msgid "Front"
 msgstr "Лице"
 
-#: lib/medoru_web/live/word_book_live/design.ex:326
+#: lib/medoru_web/live/word_book_live/design.ex:328
 #, elixir-autogen, elixir-format
 msgid "Front Side"
 msgstr "Предна страна"
@@ -17677,7 +17677,7 @@ msgstr ""
 msgid "No word books yet"
 msgstr "Все още няма книги с думи"
 
-#: lib/medoru_web/live/word_book_live/design.ex:462
+#: lib/medoru_web/live/word_book_live/design.ex:464
 #, elixir-autogen, elixir-format
 msgid "None"
 msgstr "Няма"
@@ -17709,7 +17709,7 @@ msgstr "Картинка"
 msgid "Please select one of your word sets first."
 msgstr "Първо изберете един от вашите списъци от думи."
 
-#: lib/medoru_web/live/word_book_live/design.ex:542
+#: lib/medoru_web/live/word_book_live/design.ex:544
 #, elixir-autogen, elixir-format
 msgid "Preview — click the card to flip it"
 msgstr "Преглед — щракнете върху картата, за да я обърнете"
@@ -17755,7 +17755,7 @@ msgstr ""
 msgid "Select a component"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:335
+#: lib/medoru_web/live/word_book_live/design.ex:337
 #, elixir-autogen, elixir-format
 msgid "Show on Card"
 msgstr "Показване на картата"
@@ -17776,8 +17776,8 @@ msgstr "Квадратна"
 msgid "Students will type kanji that contain the selected component."
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:568
-#: lib/medoru_web/live/word_book_live/show.ex:304
+#: lib/medoru_web/live/word_book_live/design.ex:570
+#: lib/medoru_web/live/word_book_live/show.ex:318
 #, elixir-autogen, elixir-format
 msgid "This book has no words yet."
 msgstr "Тази книга все още няма думи."
@@ -17854,7 +17854,7 @@ msgstr "Нямате право да изтриете тази книга с д�
 msgid "You don't have permission to edit this word book."
 msgstr "Нямате право да редактирате тази книга с думи."
 
-#: lib/medoru_web/live/word_book_live/show.ex:36
+#: lib/medoru_web/live/word_book_live/show.ex:37
 #, elixir-autogen, elixir-format
 msgid "You don't have permission to view this word book."
 msgstr "Нямате право да прегледате тази книга с думи."
@@ -17883,38 +17883,58 @@ msgstr ""
 msgid "kanji contain this component"
 msgstr ""
 
-#: lib/medoru_web/live/word_book_live/design.ex:509
+#: lib/medoru_web/live/word_book_live/design.ex:511
 #, elixir-autogen, elixir-format
 msgid "Book covers"
 msgstr "Корици на книги"
 
-#: lib/medoru_web/live/word_book_live/show.ex:257
+#: lib/medoru_web/live/word_book_live/show.ex:271
 #, elixir-autogen, elixir-format
 msgid "Click to open the book"
 msgstr "Щракнете, за да отворите книгата"
 
-#: lib/medoru_web/components/word_book_card.ex:95
+#: lib/medoru_web/components/word_book_card.ex:115
 #, elixir-autogen, elixir-format
 msgid "Download card as PNG"
 msgstr "Изтегли картата като PNG"
 
-#: lib/medoru_web/live/word_book_live/design.ex:480
-#: lib/medoru_web/live/word_book_live/design.ex:488
+#: lib/medoru_web/live/word_book_live/design.ex:482
+#: lib/medoru_web/live/word_book_live/design.ex:490
 #, elixir-autogen, elixir-format
 msgid "Word image"
 msgstr "Изображение на думата"
 
-#: lib/medoru_web/live/word_book_live/design.ex:274
+#: lib/medoru_web/live/word_book_live/design.ex:275
 #, elixir-autogen, elixir-format
 msgid "Custom Text"
 msgstr "Собствен текст"
 
-#: lib/medoru_web/live/word_book_live/design.ex:288
+#: lib/medoru_web/live/word_book_live/design.ex:289
 #, elixir-autogen, elixir-format
 msgid "Shown above the word on every card."
 msgstr "Показва се над думата на всяка карта."
 
-#: lib/medoru_web/live/word_book_live/design.ex:283
+#: lib/medoru_web/live/word_book_live/design.ex:284
 #, elixir-autogen, elixir-format
 msgid "e.g., Word Of The Day"
 msgstr "напр. Дума на деня"
+
+#: lib/medoru_web/live/word_book_live/show.ex:76
+#, elixir-autogen, elixir-format
+msgid "Card posted to your White Board."
+msgstr "Картата е публикувана във вашия White Board."
+
+#: lib/medoru_web/live/word_book_live/show.ex:79
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Could not post the card."
+msgstr "Неуспешно създаване на публикация."
+
+#: lib/medoru_web/components/word_book_card.ex:198
+#, elixir-autogen, elixir-format
+msgid "From word book: %{title}"
+msgstr "От книга с думи: %{title}"
+
+#: lib/medoru_web/components/word_book_card.ex:97
+#, elixir-autogen, elixir-format
+msgid "Post to White Board"
+msgstr "Публикувай в White Board"

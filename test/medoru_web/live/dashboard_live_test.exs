@@ -39,6 +39,23 @@ defmodule MedoruWeb.DashboardLiveTest do
       assert html =~ "Write something on your white board"
     end
 
+    test "renders a word card post as a flippable card in the stream", %{conn: conn} do
+      user = owner_fixture()
+
+      word =
+        Medoru.ContentFixtures.word_fixture(%{text: "読む", reading: "よむ", meaning: "to read"})
+
+      word_book = Medoru.LearningFixtures.word_book_fixture(%{user_id: user.id})
+
+      {:ok, _post} = WhiteBoard.create_word_card_post(user, word_book, word)
+
+      {:ok, _view, html} = conn |> log_in_user(user) |> live(~p"/dashboard")
+
+      assert html =~ "読む"
+      assert html =~ "word-book-card-inner"
+      assert html =~ "medoru.net"
+    end
+
     test "renders posts from followed users", %{conn: conn} do
       viewer = owner_fixture()
       followed = owner_fixture(%{name: "FollowedUser"})

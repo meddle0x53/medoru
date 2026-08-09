@@ -7,6 +7,7 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
   import Medoru.LearningFixtures
 
   alias Medoru.Learning.WordBooks
+  alias Medoru.WhiteBoard
 
   setup %{conn: conn} do
     user = user_fixture()
@@ -172,6 +173,29 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
 
       assert html =~ ~s(phx-click="open_book")
       assert html =~ word_book.title
+    end
+
+    test "posting a card creates a white board post with a snapshot", %{
+      conn: conn,
+      user: user
+    } do
+      word = word_fixture(%{text: "読む", meaning: "to read"})
+
+      word_book =
+        word_book_with_words_fixture(%{user_id: user.id, custom_text: "Word Of The Day"}, [word])
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}")
+      view |> element(~s([phx-click="open_book"])) |> render_click()
+
+      html = view |> element(~s(button[phx-click="post_card_to_board"])) |> render_click()
+
+      assert html =~ "Card posted to your White Board."
+
+      [post] = WhiteBoard.list_posts(user.id, user.id)
+      assert post.post_type == "word_card"
+      assert post.card_data["word"]["text"] == "読む"
+      assert post.card_data["custom_text"] == "Word Of The Day"
+      assert post.card_data["book_title"] == word_book.title
     end
   end
 end

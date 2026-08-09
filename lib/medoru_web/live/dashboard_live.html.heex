@@ -303,6 +303,10 @@
                 </div>
               <% end %>
 
+              <%= if post.post_type == "word_card" && post.card_data do %>
+                <WordBookCard.board_card post={post} />
+              <% end %>
+
               <%= if post.content do %>
                 <%= if WhiteBoardPostRenderer.emoji_only?(post.content) do %>
                   <div class="mt-2 text-center text-5xl leading-none py-2">

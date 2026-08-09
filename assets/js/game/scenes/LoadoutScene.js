@@ -1,7 +1,8 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
+import AbilityTooltip from '../ui/AbilityTooltip.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
-import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions } from '../data/actions.js'
+import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions, formatAbilityRequirements } from '../data/actions.js'
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
@@ -35,6 +36,8 @@ export default class LoadoutScene extends Phaser.Scene {
     this.dragItem = null
     this.dragClone = null
     this.currentTab = 'items'
+
+    this.abilityTooltip = new AbilityTooltip(this)
 
     this.createBackground()
     this.createLeftPanel()
@@ -1333,8 +1336,14 @@ export default class LoadoutScene extends Phaser.Scene {
     const hitArea = this.add.rectangle(0, 0, rowW, rowH, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
 
+    this.abilityTooltip.attach(hitArea, action)
+
     hitArea.on('pointerup', (pointer) => {
       const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+      if (hitArea.getData('abilityTooltipSuppressClick')) {
+        hitArea.setData('abilityTooltipSuppressClick', false)
+        return
+      }
       if (moveDist < 8) {
         this.showAbilityDetailDialog(action, isAvailable)
       }
@@ -1415,15 +1424,6 @@ export default class LoadoutScene extends Phaser.Scene {
     bg.setInteractive({ useHandCursor: true })
     bg.on('pointerup', () => onClick())
     return container
-  }
-
-  formatAbilityRequirements(action) {
-    const parts = []
-    if (action.requiredClass) parts.push(`Class: ${action.requiredClass}`)
-    if (action.requiredEquipment) parts.push(`${action.equipmentType || 'Equipment'}: ${action.requiredEquipment}`)
-    if (action.requiredSocketCharm) parts.push(`Socket charm: ${action.requiredSocketCharm}`)
-    if (action.requiredCharmFamily) parts.push(`Charm family: ${action.requiredCharmFamily}`)
-    return parts.join(' · ') || 'None'
   }
 
   showAbilityDetailDialog(action, isAvailable = true) {

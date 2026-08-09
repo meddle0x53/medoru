@@ -12,6 +12,7 @@ defmodule MedoruWeb.DashboardLive do
   alias Medoru.{Accounts, Learning, Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.BoardComment
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
+  alias MedoruWeb.WordBookCard
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 

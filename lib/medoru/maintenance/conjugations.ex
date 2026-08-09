@@ -6,6 +6,7 @@ defmodule Medoru.Maintenance.Conjugations do
   - Godan (五段) verbs with proper stem changes (e.g., 書く → 書かない)
   - Ichidan (一段) verbs (e.g., 食べる → 食べない)
   - Irregular verbs (くる/来る, する, 為る)
+  - Compound suru-verbs (e.g., 勉強する → 勉強します)
   - い-adjectives (e.g., 高い → 高くない)
   - な-adjectives (e.g., 静かだ → 静かではない)
 
@@ -62,7 +63,7 @@ defmodule Medoru.Maintenance.Conjugations do
 
     IO.puts("Seeding grammar forms...")
 
-    # Verb forms (13 forms)
+    # Verb forms (16 forms)
     verb_forms = [
       %{
         name: "dictionary",
@@ -77,6 +78,27 @@ defmodule Medoru.Maintenance.Conjugations do
         word_type: "verb",
         suffix_pattern: "ます",
         description: "Polite present/future"
+      },
+      %{
+        name: "masu-past",
+        display_name: "ました",
+        word_type: "verb",
+        suffix_pattern: "ました",
+        description: "Polite past"
+      },
+      %{
+        name: "masu-negative",
+        display_name: "ません",
+        word_type: "verb",
+        suffix_pattern: "ません",
+        description: "Polite negative"
+      },
+      %{
+        name: "masu-negative-past",
+        display_name: "ませんでした",
+        word_type: "verb",
+        suffix_pattern: "ませんでした",
+        description: "Polite negative past"
       },
       %{
         name: "te-form",
@@ -858,6 +880,11 @@ defmodule Medoru.Maintenance.Conjugations do
       text in ["する", "為る"] ->
         :suru
 
+      # Compound suru-verbs (勉強する, 予約する, ...) conjugate as
+      # prefix + the する paradigm (します, して, した, ...), not as godan.
+      String.ends_with?(text, "する") ->
+        :suru_compound
+
       # Godan exceptions: verbs ending in -iru/-eru that are NOT ichidan
       text in @godan_iru_exceptions ->
         :godan
@@ -960,6 +987,7 @@ defmodule Medoru.Maintenance.Conjugations do
           :godan -> conjugate_godan(text, form_name)
           :kuru -> conjugate_kuru(form_name)
           :suru -> conjugate_suru(form_name)
+          :suru_compound -> conjugate_suru_compound(text, form_name)
         end
 
       conjugated ->
@@ -974,6 +1002,9 @@ defmodule Medoru.Maintenance.Conjugations do
     case form_name do
       "dictionary" -> "いる"
       "masu-form" -> "います"
+      "masu-past" -> "いました"
+      "masu-negative" -> "いません"
+      "masu-negative-past" -> "いませんでした"
       "te-form" -> "いて"
       "ta-form" -> "いた"
       "nai-form" -> "いない"
@@ -998,6 +1029,9 @@ defmodule Medoru.Maintenance.Conjugations do
     case form_name do
       "dictionary" -> text
       "masu-form" -> stem <> "ます"
+      "masu-past" -> stem <> "ました"
+      "masu-negative" -> stem <> "ません"
+      "masu-negative-past" -> stem <> "ませんでした"
       "te-form" -> stem <> "て"
       "ta-form" -> stem <> "た"
       "nai-form" -> stem <> "ない"
@@ -1021,6 +1055,15 @@ defmodule Medoru.Maintenance.Conjugations do
 
       "masu-form" ->
         godan_stem(text, "i") <> "ます"
+
+      "masu-past" ->
+        godan_stem(text, "i") <> "ました"
+
+      "masu-negative" ->
+        godan_stem(text, "i") <> "ません"
+
+      "masu-negative-past" ->
+        godan_stem(text, "i") <> "ませんでした"
 
       "te-form" ->
         last = String.last(text)
@@ -1117,6 +1160,9 @@ defmodule Medoru.Maintenance.Conjugations do
     case form_name do
       "dictionary" -> ["来る", "くる"]
       "masu-form" -> ["来ます", "きます"]
+      "masu-past" -> ["来ました", "きました"]
+      "masu-negative" -> ["来ません", "きません"]
+      "masu-negative-past" -> ["来ませんでした", "きませんでした"]
       "te-form" -> ["来て", "きて"]
       "ta-form" -> ["来た", "きた"]
       "nai-form" -> ["来ない", "こない"]
@@ -1138,6 +1184,9 @@ defmodule Medoru.Maintenance.Conjugations do
     case form_name do
       "dictionary" -> ["為る", "する"]
       "masu-form" -> ["為ます", "します"]
+      "masu-past" -> ["為ました", "しました"]
+      "masu-negative" -> ["為ません", "しません"]
+      "masu-negative-past" -> ["為ませんでした", "しませんでした"]
       "te-form" -> ["為て", "して"]
       "ta-form" -> ["為た", "した"]
       "nai-form" -> ["為ない", "しない"]
@@ -1149,6 +1198,33 @@ defmodule Medoru.Maintenance.Conjugations do
       "imperative" -> ["為ろ", "しろ"]
       "volitional" -> ["為よう", "しよう"]
       "conditional" -> ["為れば", "すれば"]
+      _ -> nil
+    end
+  end
+
+  # Compound suru-verbs (勉強する, 予約する, ...): the noun prefix stays
+  # untouched and する conjugates with its irregular paradigm. Applied to
+  # both the kanji text and the kana reading by the caller.
+  defp conjugate_suru_compound(text, form_name) do
+    prefix = String.replace_suffix(text, "する", "")
+
+    case form_name do
+      "dictionary" -> text
+      "masu-form" -> prefix <> "します"
+      "masu-past" -> prefix <> "しました"
+      "masu-negative" -> prefix <> "しません"
+      "masu-negative-past" -> prefix <> "しませんでした"
+      "te-form" -> prefix <> "して"
+      "ta-form" -> prefix <> "した"
+      "nai-form" -> prefix <> "しない"
+      "nakute-form" -> prefix <> "しなくて"
+      "nakatta-form" -> prefix <> "しなかった"
+      "potential" -> prefix <> "できる"
+      "passive" -> prefix <> "される"
+      "causative" -> prefix <> "させる"
+      "imperative" -> prefix <> "しろ"
+      "volitional" -> prefix <> "しよう"
+      "conditional" -> prefix <> "すれば"
       _ -> nil
     end
   end

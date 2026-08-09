@@ -108,6 +108,51 @@ defmodule Medoru.WhiteBoard do
     |> Repo.insert()
   end
 
+  # Word fields snapshotted into word-card posts. A snapshot (instead of a
+  # word_id reference) keeps posted cards renderable without extra queries
+  # and immune to word edits/deletes.
+  @card_word_fields ~w(text reading meaning image_path pronunciation_path difficulty
+                       usage_frequency example_sentence example_meaning translations)a
+
+  @doc """
+  Creates a white board post holding a word book card: a snapshot of the
+  word plus the book's current card design (shape, backgrounds, per-side
+  configs, custom text).
+  """
+  def create_word_card_post(user, word_book, word) do
+    word_snapshot =
+      Map.new(@card_word_fields, fn field -> {to_string(field), Map.get(word, field)} end)
+
+    card_data = %{
+      "word" => word_snapshot,
+      "card_shape" => word_book.card_shape,
+      "front_background" => word_book.front_background,
+      "back_background" => word_book.back_background,
+      "front_config" => word_book.front_config || %{},
+      "back_config" => word_book.back_config || %{},
+      "custom_text" => word_book.custom_text,
+      "book_title" => word_book.title
+    }
+
+    create_post(%{
+      user_id: user.id,
+      post_type: "word_card",
+      visibility: "public",
+      card_data: card_data
+    })
+  end
+
+  @doc """
+  Rebuilds a `%Medoru.Content.Word{}` struct from a word-card post's
+  `card_data` snapshot for rendering. Returns nil for invalid data.
+  """
+  def card_word(%{"word" => word_map}) when is_map(word_map) do
+    attrs = Map.new(@card_word_fields, fn field -> {field, word_map[to_string(field)]} end)
+    struct(Medoru.Content.Word, attrs)
+  end
+
+  def card_word(_), do: nil
+
   @doc """
   Updates a post.
   """

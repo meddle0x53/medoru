@@ -5,6 +5,7 @@ import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
 import SocketProcSystem from '../systems/SocketProcSystem.js'
 import ChallengeSystem from '../systems/ChallengeSystem.js'
+import AbilityTooltip from '../ui/AbilityTooltip.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import WeaponKanjiChallengeSystem from '../systems/WeaponKanjiChallengeSystem.js'
@@ -123,6 +124,8 @@ export default class BattleScene extends Phaser.Scene {
     this.pendingInfusion = null
     this.infusionPrompt = null
     this.infusionCancelBtn = null
+
+    this.abilityTooltip = new AbilityTooltip(this)
 
     this.createBackground()
     this.createCharacters()
@@ -548,6 +551,7 @@ export default class BattleScene extends Phaser.Scene {
     hit.on('pointerdown', () => this.togglePlayerStatusBubble())
 
     this.playerStatusBtn = btn
+    this.playerStatusBg = bg
     this.playerStatusValueText = text
     this.updatePlayerStatusButton()
   }
@@ -559,7 +563,8 @@ export default class BattleScene extends Phaser.Scene {
     const block = this.player.block || 0
     const hasBuffs = (this.player.buffs?.length > 0) || (this.player.activeEffects?.length > 0)
     const parryCharges = this.player.parryCharges?.length || 0
-    const visible = tempDef > 0 || block > 0 || hasBuffs || parryCharges > 0
+    const berserkPercent = this.player.berserkLifestealPercent || 0
+    const visible = tempDef > 0 || block > 0 || hasBuffs || parryCharges > 0 || berserkPercent > 0
 
     this.playerStatusBtn.setVisible(visible)
     if (!visible) {
@@ -567,16 +572,29 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    const isBerserk = berserkPercent > 0
+    if (isBerserk) {
+      this.playerStatusBg.setFillStyle(0xc0392b)
+      this.playerStatusBg.setStrokeStyle(2, 0x922b21)
+    } else {
+      this.playerStatusBg.setFillStyle(0x1e8449)
+      this.playerStatusBg.setStrokeStyle(2, 0x145a32)
+    }
+
     let value
     if (parryCharges > 0) {
       value = parryCharges
     } else if (tempDef > 0) {
       value = tempDef
-    } else {
+    } else if (block > 0) {
       value = block
+    } else if (isBerserk) {
+      value = `${berserkPercent.toFixed(0)}%`
+    } else {
+      value = ''
     }
     this.playerStatusValueText.setText(String(value))
-    this.playerStatusValueText.setFontSize(value >= 100 ? '9px' : '11px')
+    this.playerStatusValueText.setFontSize(String(value).length > 3 ? '9px' : '11px')
   }
 
   updatePlayerStatusButtonPosition(time) {
@@ -991,7 +1009,8 @@ export default class BattleScene extends Phaser.Scene {
       const y = 155 + i * 44
       const colors = getAbilityRarityColor(action.rarity)
       const label = this.getSkillButtonLabel(action)
-      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover, 'pointerup')
+      this.abilityTooltip.attach(btn.hitArea, action)
       this.skillButtons.push({ btn, skill: action })
     })
 
@@ -1074,7 +1093,7 @@ export default class BattleScene extends Phaser.Scene {
     return g
   }
 
-  createButton(x, y, label, onClick, w = 140, h = 36, color = COLORS.button, hoverColor = COLORS.buttonHover) {
+  createButton(x, y, label, onClick, w = 140, h = 36, color = COLORS.button, hoverColor = COLORS.buttonHover, clickEvent = 'pointerdown') {
     const radius = Math.min(h / 2, 10)
 
     // Shadow
@@ -1107,7 +1126,13 @@ export default class BattleScene extends Phaser.Scene {
       redraw(color)
       text.setScale(1)
     })
-    hitArea.on('pointerdown', onClick)
+    hitArea.on(clickEvent, () => {
+      if (hitArea.getData('abilityTooltipSuppressClick')) {
+        hitArea.setData('abilityTooltipSuppressClick', false)
+        return
+      }
+      onClick()
+    })
 
     return {
       bg, shadow, hitArea, text, redraw, color, hoverColor,
@@ -1546,7 +1571,8 @@ export default class BattleScene extends Phaser.Scene {
       const y = 155 + i * 44
       const colors = getAbilityRarityColor(action.rarity)
       const label = this.getSkillButtonLabel(action)
-      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover)
+      const btn = this.createButton(120, y, label, () => this.onSkillClick(action), 160, 40, colors.main, colors.hover, 'pointerup')
+      this.abilityTooltip.attach(btn.hitArea, action)
       this.skillButtons.push({ btn, skill: action })
     })
 

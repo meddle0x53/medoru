@@ -1,6 +1,7 @@
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
 import { getWordChallengeTimeLimit } from './challengeTime.js'
+import { evaluateMeaningAnswer } from './wordChallengeUtils.js'
 
 function normalize(input) {
   return input.trim().toLowerCase()
@@ -238,13 +239,7 @@ export default class EnemyAbilityChallengeSystem {
   }
 
   evaluate() {
-    const word = this.challenge.word
-    const input = normalize(this.input)
-    const accepted = String(word.meaning || '')
-      .split('/')
-      .map(s => s.trim().toLowerCase())
-      .filter(Boolean)
-    return accepted.includes(input)
+    return evaluateMeaningAnswer(this.challenge.word, this.input)
   }
 
   submit(timedOut = false) {

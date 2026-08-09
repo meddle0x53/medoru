@@ -56,9 +56,11 @@ defmodule Medoru.Grammar.Tokenizer do
   # Private functions
 
   defp normalize_sentence(sentence) do
+    # NOTE: the `u` flag is required — without it the character class is
+    # interpreted as raw bytes and mangles multibyte Japanese text.
     sentence
-    |> String.replace(~r/\s+/, "")
-    |> String.replace(~r/[。、！？.,!?]/, "")
+    |> String.replace(~r/\s+/u, "")
+    |> String.replace(~r/[。、！？.,!?]/u, "")
   end
 
   defp do_tokenize("", tokens, _position), do: Enum.reverse(tokens)

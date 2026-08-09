@@ -14,6 +14,7 @@ defmodule MedoruWeb.WordBookCard do
   alias Medoru.Content
   alias Medoru.Content.Word
   alias Medoru.Learning.WordBooks
+  alias Medoru.WhiteBoard
 
   @locales ~w(en bg ja)
 
@@ -32,6 +33,10 @@ defmodule MedoruWeb.WordBookCard do
     doc: ~s(background key \(see `WordBooks.background_path/1`\) or "word_image")
 
   attr :download, :boolean, default: false, doc: "render per-face PNG download buttons"
+
+  attr :post, :boolean,
+    default: false,
+    doc: "render a button posting the card to the current user's white board"
 
   attr :custom_text, :string,
     default: nil,
@@ -81,6 +86,21 @@ defmodule MedoruWeb.WordBookCard do
           </div>
         </div>
       </div>
+      <%= if @post do %>
+        <%!-- Same explicit fixed-size style as the download button (see
+             below); sits just left of it. --%>
+        <button
+          id={"#{@id}-post"}
+          type="button"
+          phx-click="post_card_to_board"
+          phx-value-word_id={@word.id}
+          title={gettext("Post to White Board")}
+          class="absolute top-2 right-14 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-content shadow-md hover:bg-secondary/90 transition-colors"
+          data-share-exclude
+        >
+          <.icon name="hero-share" class="w-5 h-5" />
+        </button>
+      <% end %>
       <%= if @download do %>
         <%!-- Explicit fixed-size icon button instead of .btn: the global
              mobile rules (min 44px, .btn-primary full-width) would stretch
@@ -146,6 +166,40 @@ defmodule MedoruWeb.WordBookCard do
         medoru.net
       </span>
     </div>
+    """
+  end
+
+  attr :post, :any, required: true, doc: "a `%BoardPost{}` with post_type \"word_card\""
+
+  @doc """
+  Renders a white board word-card post from its `card_data` snapshot.
+  The flip animation is pure CSS + `JS.toggle_class`, so it works in any
+  LiveView without hooks.
+  """
+  def board_card(assigns) do
+    assigns = assign(assigns, :card_word, WhiteBoard.card_word(assigns.post.card_data))
+
+    ~H"""
+    <%= if @card_word do %>
+      <div class="mt-3 max-w-xs mx-auto">
+        <.card
+          id={"board-card-#{@post.id}"}
+          word={@card_word}
+          front_config={@post.card_data["front_config"] || %{}}
+          back_config={@post.card_data["back_config"] || %{}}
+          card_shape={@post.card_data["card_shape"] || "rectangle"}
+          front_background={@post.card_data["front_background"]}
+          back_background={@post.card_data["back_background"]}
+          custom_text={@post.card_data["custom_text"]}
+          download={true}
+        />
+        <%= if @post.card_data["book_title"] do %>
+          <p class="mt-2 text-center text-xs text-base-content/60">
+            {gettext("From word book: %{title}", title: @post.card_data["book_title"])}
+          </p>
+        <% end %>
+      </div>
+    <% end %>
     """
   end
 

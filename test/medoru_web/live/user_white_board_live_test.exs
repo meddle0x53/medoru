@@ -52,6 +52,30 @@ defmodule MedoruWeb.UserWhiteBoardLiveTest do
     test "redirects on invalid user id", %{conn: conn} do
       assert {:error, {:live_redirect, %{to: "/"}}} = live(conn, ~p"/users/invalid/white-board")
     end
+
+    test "renders a word card post as a flippable card", %{conn: conn} do
+      owner = owner_fixture()
+
+      word =
+        Medoru.ContentFixtures.word_fixture(%{text: "読む", reading: "よむ", meaning: "to read"})
+
+      word_book =
+        Medoru.LearningFixtures.word_book_fixture(%{
+          user_id: owner.id,
+          front_config: %{"show_reading" => true}
+        })
+
+      {:ok, _post} = WhiteBoard.create_word_card_post(owner, word_book, word)
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{owner.id}/white-board")
+
+      # Card renders with both flip faces, branding and the source book
+      assert html =~ "読む"
+      assert html =~ "よむ (yomu)"
+      assert html =~ "word-book-card-inner"
+      assert html =~ "medoru.net"
+      assert html =~ "From word book: #{word_book.title}"
+    end
   end
 
   describe "link previews" do

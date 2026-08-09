@@ -72,9 +72,9 @@ export default class ChestScene extends Phaser.Scene {
             const roll = Math.random()
             let essenceAmount = 0
             if (roll < 0.10) {
-              essenceAmount = this.player.addOuroEssence(1)
-            } else if (roll < 0.30) {
               essenceAmount = this.player.addOuroEssence(2)
+            } else if (roll < 0.30) {
+              essenceAmount = this.player.addOuroEssence(4)
             }
             if (essenceAmount > 0) {
               this.pendingRewards.push({ type: 'ouro_essence', amount: essenceAmount })

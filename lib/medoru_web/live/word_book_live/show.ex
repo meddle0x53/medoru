@@ -10,6 +10,7 @@ defmodule MedoruWeb.WordBookLive.Show do
   use MedoruWeb, :live_view
 
   alias Medoru.Learning.WordBooks
+  alias Medoru.WhiteBoard
   alias MedoruWeb.WordBookCard
 
   @cards_per_page_options [1, 2, 4, 6]
@@ -64,6 +65,19 @@ defmodule MedoruWeb.WordBookLive.Show do
 
   def handle_event("close_book", _params, socket) do
     {:noreply, assign(socket, :view_state, :cover)}
+  end
+
+  def handle_event("post_card_to_board", %{"word_id" => word_id}, socket) do
+    word = Enum.find(socket.assigns.words, &(&1.id == word_id))
+    user = socket.assigns.current_scope.current_user
+
+    case word && WhiteBoard.create_word_card_post(user, socket.assigns.word_book, word) do
+      {:ok, _post} ->
+        {:noreply, put_flash(socket, :info, gettext("Card posted to your White Board."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Could not post the card."))}
+    end
   end
 
   def handle_event("set_cards_per_page", %{"count" => count}, socket) do
@@ -442,6 +456,7 @@ defmodule MedoruWeb.WordBookLive.Show do
             back_background={@word_book.back_background}
             custom_text={@word_book.custom_text}
             download={true}
+            post={true}
           />
         <% end %>
       </div>

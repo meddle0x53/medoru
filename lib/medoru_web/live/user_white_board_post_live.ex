@@ -10,6 +10,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
   alias Medoru.{Repo, WhiteBoard}
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
+  alias MedoruWeb.WordBookCard
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
@@ -88,6 +89,10 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                 >
                 </div>
               </div>
+            <% end %>
+
+            <%= if @post.post_type == "word_card" && @post.card_data do %>
+              <WordBookCard.board_card post={@post} />
             <% end %>
 
             <%= if @post.content do %>

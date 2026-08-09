@@ -2,6 +2,8 @@ defmodule Medoru.WhiteBoardTest do
   use Medoru.DataCase, async: true
 
   import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
+  import Medoru.LearningFixtures
 
   alias Medoru.{Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.{BoardComment, BoardPost, BoardReaction}
@@ -60,6 +62,43 @@ defmodule Medoru.WhiteBoardTest do
       assert {:ok, %BoardPost{} = post} = WhiteBoard.create_post(attrs)
       assert post.post_type == "canvas"
       assert post.canvas_data["strokes"] != []
+    end
+
+    test "create_word_card_post/3 snapshots the word and the book design" do
+      user = owner_fixture()
+      word = word_fixture(%{text: "読む", reading: "よむ", meaning: "to read"})
+
+      word_book =
+        word_book_fixture(%{user_id: user.id, card_shape: "square", custom_text: "WOTD"})
+
+      assert {:ok, %BoardPost{} = post} = WhiteBoard.create_word_card_post(user, word_book, word)
+      assert post.post_type == "word_card"
+      assert post.visibility == "public"
+      assert post.card_data["word"]["text"] == "読む"
+      assert post.card_data["word"]["meaning"] == "to read"
+      assert post.card_data["card_shape"] == "square"
+      assert post.card_data["custom_text"] == "WOTD"
+      assert post.card_data["book_title"] == word_book.title
+
+      assert %Medoru.Content.Word{text: "読む", reading: "よむ"} =
+               WhiteBoard.card_word(post.card_data)
+
+      assert WhiteBoard.card_word(%{}) == nil
+      assert WhiteBoard.card_word(nil) == nil
+    end
+
+    test "create_post/1 requires a word snapshot for word_card posts" do
+      user = owner_fixture()
+
+      assert {:error, changeset} =
+               WhiteBoard.create_post(%{
+                 user_id: user.id,
+                 visibility: "public",
+                 post_type: "word_card",
+                 card_data: %{"foo" => "bar"}
+               })
+
+      assert %{card_data: _} = errors_on(changeset)
     end
 
     test "create_post/1 validates visibility" do

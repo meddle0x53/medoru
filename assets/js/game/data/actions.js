@@ -171,6 +171,19 @@ export function getActionTypeColor(type) {
  * Get the color config for an ability based on its rarity.
  * Common = purple, uncommon = copper, rare = silver, epic = gold.
  */
+/**
+ * Format an action's equipment/class/charm requirements as a readable string.
+ */
+export function formatAbilityRequirements(action) {
+  if (!action) return 'None'
+  const parts = []
+  if (action.requiredClass) parts.push(`Class: ${action.requiredClass}`)
+  if (action.requiredEquipment) parts.push(`${action.equipmentType || 'Equipment'}: ${action.requiredEquipment}`)
+  if (action.requiredSocketCharm) parts.push(`Socket charm: ${action.requiredSocketCharm}`)
+  if (action.requiredCharmFamily) parts.push(`Charm family: ${action.requiredCharmFamily}`)
+  return parts.join(' · ') || 'None'
+}
+
 export function getAbilityRarityColor(rarity) {
   switch (rarity) {
     case 'uncommon': return { main: 0xb87333, hover: 0xd98c52 }
