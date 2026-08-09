@@ -189,7 +189,7 @@ export default class BattleScene extends Phaser.Scene {
       const definition = this.tile?.enemyId
         ? getEnemyDefinition(this.tile.enemyId)
         : pickEnemyForTile(this.tile, this.mapIndex)
-      const enemy = new Enemy(definition)
+      const enemy = new Enemy(definition, { ngPlusMultiplier: this.player.getNgPlusMultiplier() })
       if (multiplier !== 1.0) {
         enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * multiplier))
         enemy.hp = enemy.maxHp
@@ -793,7 +793,7 @@ export default class BattleScene extends Phaser.Scene {
       const id = pool[Math.floor(Math.random() * pool.length)]
       const def = getEnemyDefinition(id)
       if (!def) continue
-      const enemy = new Enemy(def)
+      const enemy = new Enemy(def, { ngPlusMultiplier: this.player.getNgPlusMultiplier() })
       if (result.summonHpMultiplier != null) {
         enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * result.summonHpMultiplier))
         enemy.hp = enemy.maxHp
@@ -839,7 +839,7 @@ export default class BattleScene extends Phaser.Scene {
   transformEnemy(enemy, result) {
     const def = result.transformDef
     if (!def) return
-    const transformed = new Enemy(def)
+    const transformed = new Enemy(def, { ngPlusMultiplier: this.player.getNgPlusMultiplier() })
     const keepRatio = result.keepHpRatio !== false
     const hpRatio = keepRatio ? enemy.hp / Math.max(1, enemy.maxHp) : 1
 
@@ -4439,7 +4439,7 @@ export default class BattleScene extends Phaser.Scene {
           const beforeSource = this.player.loadout.ouroSource || 0
           const beforeUnlocked = new Set(this.player.loadout.unlockedAbilityIds || [])
 
-          this.player.endRun(true)
+          this.player.grantEndRunMetaRewards()
 
           const rewards = {
             ouroScales: (this.player.loadout.ouroScales || 0) - beforeScales,
@@ -4449,7 +4449,7 @@ export default class BattleScene extends Phaser.Scene {
           const unlockedId = (this.player.loadout.unlockedAbilityIds || []).find(id => !beforeUnlocked.has(id))
           rewards.unlockedAbility = unlockedId ? ALL_ACTIONS.find(a => a.id === unlockedId) : null
 
-          this.scene.start('RunVictoryScene', { player: this.player, rewards })
+          this.scene.start('RunVictoryScene', { player: this.player, rewards, mapIndex: this.mapIndex })
         } else {
           this.player.completeTile(this.tile.id)
           this.player.advanceMap()

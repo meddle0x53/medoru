@@ -153,20 +153,27 @@ export default class MapScene extends Phaser.Scene {
       fontStyle: 'bold',
     })
 
-    this.hud.hp = this.add.text(20, 50, '', {
+    this.hud.ngPlus = this.add.text(20, 44, '', {
+      fontFamily: 'Arial',
+      fontSize: '14px',
+      color: '#e67e22',
+      fontStyle: 'bold',
+    })
+
+    this.hud.hp = this.add.text(20, 64, '', {
       fontFamily: 'Arial',
       fontSize: '16px',
       color: '#e74c3c',
     })
 
-    this.hud.gold = this.add.text(20, 74, '', {
+    this.hud.gold = this.add.text(20, 88, '', {
       fontFamily: 'Arial',
       fontSize: '16px',
       color: '#f1c40f',
     })
 
-    this.hud.essenceIcon = this.add.image(20, 119, 'ouro_essence').setDisplaySize(18, 18).setOrigin(0, 0.5)
-    this.hud.essence = this.add.text(42, 108, '', {
+    this.hud.essenceIcon = this.add.image(20, 125, 'ouro_essence').setDisplaySize(18, 18).setOrigin(0, 0.5)
+    this.hud.essence = this.add.text(42, 114, '', {
       fontFamily: 'Arial',
       fontSize: '16px',
       color: '#f1c40f',
@@ -230,6 +237,8 @@ export default class MapScene extends Phaser.Scene {
     this.hud.hp.setText(`HP: ${this.player.hp}/${this.player.maxHp}`)
     this.hud.gold.setText(`Gold: ${this.player.loadout.gold || 0}`)
     this.hud.essence.setText(String(this.player.loadout.ouroEssence || 0))
+    const ngLevel = this.player.loadout?.ngPlusLevel || 0
+    this.hud.ngPlus.setText(ngLevel > 0 ? `NG+${ngLevel} (×${Math.pow(1.5, ngLevel).toFixed(2)})` : '')
   }
 
   createFullscreenButton() {

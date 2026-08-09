@@ -128,12 +128,11 @@ defmodule Medoru.Tests.GrammarLessonTestGeneratorTest do
       {:ok, test} = GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
       test_steps = Medoru.Tests.list_test_steps(test.id)
 
-      # Group steps by title
-      steps_by_title = Enum.group_by(test_steps, & &1.question)
-
-      # Each lesson step should have exactly 2 test steps
+      # Each lesson step should produce 2 numbered test step titles
       for step <- steps do
-        assert length(steps_by_title[step.title]) == 2
+        titles = Enum.map(test_steps, & &1.question)
+        assert "#{step.title} 1" in titles
+        assert "#{step.title} 2" in titles
       end
     end
 
@@ -147,7 +146,7 @@ defmodule Medoru.Tests.GrammarLessonTestGeneratorTest do
         assert qd["grammar_step"] == true
         assert qd["show_pattern"] == false, "Pattern should be hidden"
         assert is_list(qd["pattern"]), "Pattern should be a list"
-        assert qd["lesson_step_title"] == step.question
+        assert String.starts_with?(step.question, qd["lesson_step_title"])
       end
     end
 
@@ -156,7 +155,10 @@ defmodule Medoru.Tests.GrammarLessonTestGeneratorTest do
       test_steps = Medoru.Tests.list_test_steps(test.id)
 
       # Group by lesson step title
-      steps_by_title = Enum.group_by(test_steps, & &1.question)
+      steps_by_title =
+        Enum.group_by(test_steps, fn step ->
+          step.question_data["lesson_step_title"]
+        end)
 
       for grammar_step <- grammar_steps do
         test_steps_for_grammar = steps_by_title[grammar_step.title]

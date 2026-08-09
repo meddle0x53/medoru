@@ -31,15 +31,15 @@ export default class WinScene extends Phaser.Scene {
     // Calculate base rewards
     this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.luck || 0) / 50 ? 1 : 0)
     this.baseGold = Math.round((this.monster?.baseGold || 5) * (1 + (this.player.luck || 0) / 200))
-    this.attributePoints = this.baseAttributePoints
-    this.goldReward = this.baseGold
+    this.attributePoints = this.player.applyNgPlusMultiplier(this.baseAttributePoints)
+    this.goldReward = this.player.applyNgPlusMultiplier(this.baseGold)
 
     this.challengePlayed = false
     this.challengeMultiplier = 1
     this.essenceGained = data.essenceGained || 0
 
     // Roll drops immediately
-    this.drops = rollEnemyDrops(this.enemy, this.player.loadout.class || 'warrior')
+    this.drops = rollEnemyDrops(this.enemy, this.player.loadout.class || 'warrior', this.player.getNgPlusMultiplier())
     this.applyDrops()
 
     // Pick ability rewards
@@ -67,8 +67,8 @@ export default class WinScene extends Phaser.Scene {
 
   generateAbilityRewards() {
     const pool = getRewardPool(this.player)
-    const count = 3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0)
-    return pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [], this.tile)
+    const count = this.player.applyNgPlusMultiplier(3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0))
+    return pickRewardAbilities(pool, Math.min(count, 6), this.player.loadout.knownActionIds || [], this.tile)
   }
 
   applyDrops() {
@@ -637,8 +637,8 @@ export default class WinScene extends Phaser.Scene {
     this.challengeSystem = new WinChallengeSystem(this, this.player)
     this.challengeSystem.run((result) => {
       this.challengeMultiplier = result.multiplier
-      this.attributePoints = Math.round(this.baseAttributePoints * this.challengeMultiplier)
-      this.goldReward = Math.round(this.baseGold * this.challengeMultiplier)
+      this.attributePoints = this.player.applyNgPlusMultiplier(Math.round(this.baseAttributePoints * this.challengeMultiplier))
+      this.goldReward = this.player.applyNgPlusMultiplier(Math.round(this.baseGold * this.challengeMultiplier))
 
       this.pointsText.setText(`+${this.attributePoints}`)
       this.goldText.setText(`+${this.goldReward}`)

@@ -66,7 +66,8 @@ export function pickEnemyForTile(tile, mapIndex) {
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-export function rollEnemyDrops(enemy, playerClass = 'warrior') {
+export function rollEnemyDrops(enemy, playerClass = 'warrior', ngPlusMultiplier = 1) {
   const table = (enemy?.definition?.drops && enemy.definition.drops[playerClass]) || []
-  return table.filter(drop => Math.random() < drop.chance)
+  const scaleChance = (c) => Math.min(1, c * ngPlusMultiplier)
+  return table.filter(drop => Math.random() < scaleChance(drop.chance))
 }

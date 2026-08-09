@@ -106,11 +106,11 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
     ]
   end
 
-  defp build_step(lesson_step, _index, hint, pattern) do
+  defp build_step(lesson_step, index, hint, pattern) do
     %{
       step_type: :grammar,
       question_type: :sentence_validation,
-      question: lesson_step.title,
+      question: "#{lesson_step.title} #{index}",
       # Validation is pattern-based, not exact match
       correct_answer: "",
       points: 5,

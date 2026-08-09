@@ -393,4 +393,58 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       assert html =~ "When you put"
     end
   end
+
+  describe "practice mode" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{type: "teacher"})
+      student = user_fixture(%{type: "student"})
+
+      classroom = classroom_fixture(%{teacher_id: teacher.id, should_approve_memberships: false})
+      {:ok, _} = Classrooms.apply_to_join(classroom.id, student.id)
+
+      word = word_fixture(%{text: "たべる"})
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          lesson_subtype: "vocabulary",
+          title: "Vocabulary Lesson",
+          status: "published"
+        })
+
+      {:ok, _} = Content.add_word_to_lesson(lesson.id, word.id, %{position: 0})
+      {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+      {:ok, _} = Classrooms.complete_custom_lesson(classroom.id, student.id, lesson.id)
+
+      %{
+        conn: conn,
+        student: student,
+        classroom: classroom,
+        lesson: lesson
+      }
+    end
+
+    test "?practice=true shows finish review button and redirects to practice completion", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?practice=true")
+
+      assert html =~ "Finish Review"
+
+      view
+      |> element("button", "Finish Review")
+      |> render_click()
+
+      assert_redirect(
+        view,
+        ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}/complete?practice=true"
+      )
+    end
+  end
 end

@@ -80,10 +80,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   end
 
   @impl true
-  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id}, session, socket) do
+  def mount(%{"id" => classroom_id, "lesson_id" => lesson_id} = params, session, socket) do
     locale = session["locale"] || "en"
     user = socket.assigns.current_scope.current_user
-    practice = session["practice"] == true
+    practice = params["practice"] == "true"
 
     # Store step from query param (will be processed in handle_params)
     step = session["step"] || 0

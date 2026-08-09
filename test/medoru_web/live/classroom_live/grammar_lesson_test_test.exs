@@ -143,30 +143,35 @@ defmodule MedoruWeb.ClassroomLive.GrammarLessonTestTest do
       # ============================================
       # STEP 4: Verify test step titles
       # ============================================
-      # Steps should have titles from lesson steps
+      # Steps should have numbered titles from lesson steps
       titles = Enum.map(test_steps, & &1.question) |> Enum.uniq() |> Enum.sort()
 
       expected_titles = [
-        "Adjective in past form",
-        "Negative verb form",
-        "Noun AND Noun",
-        "To want something"
+        "Adjective in past form 1",
+        "Adjective in past form 2",
+        "Negative verb form 1",
+        "Negative verb form 2",
+        "Noun AND Noun 1",
+        "Noun AND Noun 2",
+        "To want something 1",
+        "To want something 2"
       ]
 
       assert titles == expected_titles
 
       # Each lesson step should have exactly 2 test steps
-      steps_by_title = Enum.group_by(test_steps, & &1.question)
+      steps_by_lesson_title =
+        Enum.group_by(test_steps, & &1.question_data["lesson_step_title"])
 
-      for title <- expected_titles do
-        assert length(steps_by_title[title]) == 2
+      for step_data <- steps_data do
+        assert length(steps_by_lesson_title[step_data.title]) == 2
       end
 
       # ============================================
       # STEP 5: Verify hints from first example
       # ============================================
       for {step_data, _index} <- Enum.with_index(steps_data) do
-        test_steps_for_title = steps_by_title[step_data.title]
+        test_steps_for_title = steps_by_lesson_title[step_data.title]
         assert length(test_steps_for_title) == 2
 
         # Hint should be the first example's kanji sentence

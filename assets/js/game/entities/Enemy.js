@@ -16,13 +16,26 @@ const AI_PHASE_PRIORITY = {
 
 const SETUP_ACTION_TYPES = new Set(['buff', 'debuff', 'summon', 'transform'])
 
+const NG_PLUS_ABILITY_NUMERIC_KEYS = new Set([
+  'basePower', 'buffValue', 'defenseBonus', 'healValue', 'damage', 'power',
+])
+
+function scaleAbilityFields(ability, ngMult) {
+  if (ngMult === 1 || !ability) return
+  for (const key of Object.keys(ability)) {
+    if (NG_PLUS_ABILITY_NUMERIC_KEYS.has(key) && typeof ability[key] === 'number') {
+      ability[key] = Math.ceil(ability[key] * ngMult)
+    }
+  }
+}
+
 function rollStat(min, max) {
   if (min >= max) return min
   return Math.floor(min + Math.random() * (max - min + 1))
 }
 
 export default class Enemy extends Character {
-  constructor(definitionOrId = 'kasa_obake') {
+  constructor(definitionOrId = 'kasa_obake', options = {}) {
     const definition = typeof definitionOrId === 'string'
       ? getEnemyDefinition(definitionOrId)
       : definitionOrId
@@ -31,17 +44,20 @@ export default class Enemy extends Character {
       throw new Error(`Unknown enemy: ${definitionOrId}`)
     }
 
+    const ngMult = options.ngPlusMultiplier || 1
+    const scale = (v) => (ngMult === 1 ? v : Math.ceil(v * ngMult))
+
     super({
       name: definition.name,
       nameJa: definition.nameJa,
-      maxHp: rollStat(definition.stats.hp.min, definition.stats.hp.max),
-      maxStamina: rollStat(definition.stats.stamina.min, definition.stats.stamina.max),
-      strength: rollStat(definition.stats.strength.min, definition.stats.strength.max),
-      skill: rollStat(definition.stats.skill.min, definition.stats.skill.max),
-      mana: rollStat(definition.stats.mana.min, definition.stats.mana.max),
-      luck: rollStat(definition.stats.luck.min, definition.stats.luck.max),
-      defense: rollStat(definition.stats.defense.min, definition.stats.defense.max),
-      armor: rollStat(definition.stats.armor.min, definition.stats.armor.max),
+      maxHp: scale(rollStat(definition.stats.hp.min, definition.stats.hp.max)),
+      maxStamina: scale(rollStat(definition.stats.stamina.min, definition.stats.stamina.max)),
+      strength: scale(rollStat(definition.stats.strength.min, definition.stats.strength.max)),
+      skill: scale(rollStat(definition.stats.skill.min, definition.stats.skill.max)),
+      mana: scale(rollStat(definition.stats.mana.min, definition.stats.mana.max)),
+      luck: scale(rollStat(definition.stats.luck.min, definition.stats.luck.max)),
+      defense: scale(rollStat(definition.stats.defense.min, definition.stats.defense.max)),
+      armor: scale(rollStat(definition.stats.armor.min, definition.stats.armor.max)),
       equippedSkills: [],
     })
 
@@ -58,9 +74,14 @@ export default class Enemy extends Character {
     this.usesThisTurn = new Map()
     this.justEnteredPhase = false
     this.enemyTurnCount = 0
+    this.ngPlusMultiplier = ngMult
 
     // Default to the full ability list; phase logic will refine it when phases exist.
-    this.abilities = (definition.abilities || []).map(a => ({ ...a }))
+    this.abilities = (definition.abilities || []).map(a => {
+      const copy = { ...a }
+      scaleAbilityFields(copy, ngMult)
+      return copy
+    })
 
     this.applyPhase(0, () => {})
     this.resetAbilityUses()
@@ -147,6 +168,7 @@ export default class Enemy extends Character {
       if (overrides) {
         Object.assign(ability, overrides)
       }
+      scaleAbilityFields(ability, this.ngPlusMultiplier)
     }
   }
 

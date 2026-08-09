@@ -217,6 +217,7 @@ export default class Player extends Character {
       savedSiteLevel: this.level,
       ouroSource: 0,
       ouroEssence: 0,
+      ngPlusLevel: 0,
       startingGoldBonus: 0,
       startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
@@ -823,6 +824,9 @@ export default class Player extends Character {
         if (typeof loadout.permanentShieldLevel !== 'number') {
           loadout.permanentShieldLevel = 0
         }
+        if (typeof loadout.ngPlusLevel !== 'number') {
+          loadout.ngPlusLevel = 0
+        }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
           loadout.mapState = null
@@ -1372,6 +1376,7 @@ export default class Player extends Character {
       savedSiteLevel: this.loadout?.savedSiteLevel ?? this.level,
       ouroSource: this.loadout?.ouroSource ?? this.loadout?.rareGameTokens ?? 0,
       ouroEssence: this.loadout?.ouroEssence ?? 0,
+      ngPlusLevel: 0,
       startingGoldBonus: this.loadout?.startingGoldBonus ?? 0,
       startingPotionBonus: Math.min(4, this.loadout?.startingPotionBonus ?? 0),
       lifetimeNormalEnemiesDefeated: this.loadout?.lifetimeNormalEnemiesDefeated ?? 0,
@@ -1472,12 +1477,9 @@ export default class Player extends Character {
 
   endRun(victory = true) {
     if (victory) {
-      this.loadout.ouroScales = (this.loadout.ouroScales || 0) + 1
-      if (Math.random() < 0.05) {
-        this.loadout.ouroSource = (this.loadout.ouroSource || 0) + 1
-      }
-      this.unlockNextLockedItems()
+      this.grantEndRunMetaRewards()
     }
+    this.loadout.ngPlusLevel = 0
     this.resetToFreshHero()
   }
 
@@ -1517,6 +1519,60 @@ export default class Player extends Character {
     this.loadout.ouroEssence -= amount
     this.saveLoadout()
     return true
+  }
+
+  // ---------- New Game+ ----------
+
+  getNgPlusMultiplier() {
+    return Math.pow(1.5, this.loadout?.ngPlusLevel || 0)
+  }
+
+  applyNgPlusMultiplier(value) {
+    const mult = this.getNgPlusMultiplier()
+    return Math.ceil((value || 0) * mult)
+  }
+
+  getNgPlusCost() {
+    const level = this.loadout?.ngPlusLevel || 0
+    return {
+      essence: 10 * Math.pow(2, level),
+      scales: 1 * Math.pow(2, level),
+    }
+  }
+
+  resetMapState() {
+    this.loadout.mapState = null
+    this.loadout.mapVersion = MAP_VERSION
+    this.saveLoadout()
+  }
+
+  enterNgPlus() {
+    this.loadout.ngPlusLevel = (this.loadout.ngPlusLevel || 0) + 1
+    this.resetMapState()
+
+    // Fully restore the hero and clear any per-battle state before the next run.
+    this.hp = this.maxHp
+    this.stamina = this.maxStamina
+    this.buffs = []
+    this.clearActiveEffects()
+    this.resetStanceMultipliers()
+    this.resetDashBonus()
+    this.resetTurnMissChance()
+    this.resetBerserkLifesteal()
+    this.clearAllAbilityInfusions()
+    this.potionUsesLeft = 3 + (this.loadout.startingPotionBonus || 0)
+
+    this.saveLoadout()
+  }
+
+  grantEndRunMetaRewards() {
+    const mult = this.getNgPlusMultiplier()
+    this.loadout.ouroScales = (this.loadout.ouroScales || 0) + this.applyNgPlusMultiplier(1)
+    if (Math.random() < Math.min(1, 0.05 * mult)) {
+      this.loadout.ouroSource = (this.loadout.ouroSource || 0) + this.applyNgPlusMultiplier(1)
+    }
+    this.unlockNextLockedItems()
+    this.saveLoadout()
   }
 
   // ---------- Single-Use Ability Charges ----------
@@ -1592,7 +1648,7 @@ export default class Player extends Character {
     } else {
       gained = 4
     }
-    if (gained > 0) return this.addOuroEssence(gained)
+    if (gained > 0) return this.addOuroEssence(this.applyNgPlusMultiplier(gained))
     return 0
   }
 
@@ -1607,7 +1663,7 @@ export default class Player extends Character {
     } else if (roll < 0.90) {
       gained = 2
     }
-    return this.addOuroEssence(gained)
+    return this.addOuroEssence(this.applyNgPlusMultiplier(gained))
   }
 
   rollMapBossEssence(level) {
@@ -1622,7 +1678,7 @@ export default class Player extends Character {
         gained = 10
       }
     }
-    if (gained > 0) return this.addOuroEssence(gained)
+    if (gained > 0) return this.addOuroEssence(this.applyNgPlusMultiplier(gained))
     return 0
   }
 

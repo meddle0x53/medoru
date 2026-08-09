@@ -14,17 +14,21 @@ const UPGRADE_CHANCE = 0.10
 const STAT_POINT_CHANCE = 0.05
 
 export function openChest(player) {
+  const mult = player.getNgPlusMultiplier()
+  const scaleValue = (v) => (mult === 1 ? v : Math.ceil(v * mult))
+  const scaleChance = (c) => Math.min(1, c * mult)
+
   const rewards = []
 
   // 1. Gold: 20-80, divisible by 10.
-  const gold = rollGold()
+  const gold = scaleValue(rollGold())
   player.addGold(gold)
   rewards.push({ type: 'gold', value: gold })
 
   // 2. Items: 1-3 random items with weighted rarity.
-  const itemCount = rollItemCount()
+  const itemCount = Math.min(5, scaleValue(rollItemCount()))
   for (let i = 0; i < itemCount; i++) {
-    const rarity = rollRarity()
+    const rarity = rollRarity(mult)
     const item = pickRandom(ITEMS.filter(it => it.rarity === rarity))
     if (item) {
       player.addItem(item.id, 1)
@@ -33,22 +37,25 @@ export function openChest(player) {
   }
 
   // 3. Ability or weapon charm.
-  if (Math.random() < ABILITY_CHARM_CHANCE) {
-    grantAbilityOrCharmReward(player, rewards)
+  if (Math.random() < scaleChance(ABILITY_CHARM_CHANCE)) {
+    grantAbilityOrCharmReward(player, rewards, mult)
   }
 
   // 4. Stat point.
-  if (Math.random() < STAT_POINT_CHANCE) {
-    player.loadout.statPoints = (player.loadout.statPoints || 0) + 1
+  if (Math.random() < scaleChance(STAT_POINT_CHANCE)) {
+    const points = scaleValue(1)
+    player.loadout.statPoints = (player.loadout.statPoints || 0) + points
     player.saveLoadout()
-    rewards.push({ type: 'statPoint', value: 1 })
+    rewards.push({ type: 'statPoint', value: points })
   }
 
   return rewards
 }
 
 export function getUpgradeOptions(player) {
-  if (Math.random() >= UPGRADE_CHANCE) return []
+  const mult = player.getNgPlusMultiplier()
+  const scaleChance = (c) => Math.min(1, c * mult)
+  if (Math.random() >= scaleChance(UPGRADE_CHANCE)) return []
 
   const options = []
   if (player.weapon && player.weapon.level < (player.weapon.maxLevel || 10)) {
@@ -83,9 +90,9 @@ export function applyUpgrade(player, option) {
   player.saveLoadout()
 }
 
-function grantAbilityOrCharmReward(player, rewards) {
-  const rarity = rollRarity()
-  const giveAbility = Math.random() < 0.5
+function grantAbilityOrCharmReward(player, rewards, mult = 1) {
+  const rarity = rollRarity(mult)
+  const giveAbility = Math.random() < (mult === 1 ? 0.5 : Math.min(1, 0.5 * mult))
 
   if (giveAbility) {
     const ability = pickUnknownAbility(player, rarity)
@@ -154,10 +161,23 @@ function rollItemCount() {
   return Math.floor(Math.random() * 3) + 1
 }
 
-function rollRarity() {
+function rollRarity(mult = 1) {
+  let weights = { ...RARITY_WEIGHTS }
+  if (mult > 1) {
+    // Shift weights toward higher rarities on higher NG+ levels.
+    weights.uncommon = Math.min(0.60, weights.uncommon * mult)
+    weights.rare = Math.min(0.50, weights.rare * mult)
+    weights.epic = Math.min(0.40, weights.epic * mult)
+    const total = Object.values(weights).reduce((sum, w) => sum + w, 0)
+    if (total > 0) {
+      for (const key of Object.keys(weights)) {
+        weights[key] /= total
+      }
+    }
+  }
   const roll = Math.random()
   let cumulative = 0
-  for (const [rarity, weight] of Object.entries(RARITY_WEIGHTS)) {
+  for (const [rarity, weight] of Object.entries(weights)) {
     cumulative += weight
     if (roll < cumulative) return rarity
   }
