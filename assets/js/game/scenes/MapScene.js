@@ -228,6 +228,16 @@ export default class MapScene extends Phaser.Scene {
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     this.hud.testFightBtn.on('pointerdown', () => this.showTestFightDialog())
 
+    // DEV ONLY: teleport to any forward column.
+    this.hud.teleportBtn = this.add.text(GAME_CONFIG.width - 16, 106, 'DEV: TELEPORT', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#16a085',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    this.hud.teleportBtn.on('pointerdown', () => this.showTeleportDialog())
+
     this.createFullscreenButton()
   }
 
@@ -377,6 +387,146 @@ export default class MapScene extends Phaser.Scene {
     }
 
     this.scene.start('BattleScene', { player: this.player, tile, mapIndex: this.map.index })
+  }
+
+  // ---------- Dev teleport dialog ----------
+
+  showTeleportDialog() {
+    if (this.teleportDialog) return
+
+    const currentTile = findTileById(this.map, this.player.loadout.mapState.currentTileId)
+    const currentCol = currentTile?.col ?? 0
+    const maxCol = this.map.columns.length - 1
+
+    const container = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    container.setDepth(100)
+
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
+    backdrop.setInteractive()
+    backdrop.on('pointerdown', () => this.hideTeleportDialog())
+    container.add(backdrop)
+
+    const panel = this.add.rectangle(0, 0, 360, 420, 0x1a1a2e).setStrokeStyle(2, 0xf1c40f).setOrigin(0.5)
+    container.add(panel)
+
+    const title = this.add.text(0, -180, 'DEV: TELEPORT', {
+      fontFamily: 'Arial', fontSize: '20px', color: '#f1c40f', fontStyle: 'bold',
+    }).setOrigin(0.5)
+    container.add(title)
+
+    const subtitle = this.add.text(0, -150, `Current column: ${currentCol}`, {
+      fontFamily: 'Arial', fontSize: '14px', color: '#bdc3c7',
+    }).setOrigin(0.5)
+    container.add(subtitle)
+
+    const content = this.add.container(0, 0)
+    container.add(content)
+    this.teleportContent = content
+
+    const closeBtn = this.add.rectangle(0, 180, 120, 36, 0x7f8c8d).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const closeText = this.add.text(0, 180, 'CLOSE', { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5)
+    closeBtn.on('pointerdown', () => this.hideTeleportDialog())
+    closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x95a5a6))
+    closeBtn.on('pointerout', () => closeBtn.setFillStyle(0x7f8c8d))
+    container.add(closeBtn)
+    container.add(closeText)
+
+    this.teleportDialog = container
+    this.showTeleportColumns(currentCol, maxCol)
+  }
+
+  showTeleportColumns(currentCol, maxCol) {
+    const content = this.teleportContent
+    if (!content) return
+    content.removeAll(true)
+
+    const startCol = currentCol + 1
+    if (startCol > maxCol) {
+      const msg = this.add.text(0, -20, 'No forward columns available.', {
+        fontFamily: 'Arial', fontSize: '14px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      content.add(msg)
+      return
+    }
+
+    const createBtn = (y, label, onClick) => {
+      const bg = this.add.rectangle(0, y, 280, 28, 0x2c3e50).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+      const text = this.add.text(0, y, label, {
+        fontFamily: 'Arial', fontSize: '14px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      bg.on('pointerdown', onClick)
+      bg.on('pointerover', () => bg.setFillStyle(0x34495e))
+      bg.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+      content.add(bg)
+      content.add(text)
+    }
+
+    let y = -130
+    for (let col = startCol; col <= maxCol; col++) {
+      const tileCount = this.map.columns[col].length
+      createBtn(y, `Column ${col} (${tileCount} tiles)`, () => this.showTeleportTiles(col))
+      y += 34
+    }
+  }
+
+  showTeleportTiles(col) {
+    const content = this.teleportContent
+    if (!content) return
+    content.removeAll(true)
+
+    const createBtn = (y, label, onClick) => {
+      const bg = this.add.rectangle(0, y, 280, 28, 0x2c3e50).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+      const text = this.add.text(0, y, label, {
+        fontFamily: 'Arial', fontSize: '14px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      bg.on('pointerdown', onClick)
+      bg.on('pointerover', () => bg.setFillStyle(0x34495e))
+      bg.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+      content.add(bg)
+      content.add(text)
+    }
+
+    const header = this.add.text(0, -150, `Column ${col}`, {
+      fontFamily: 'Arial', fontSize: '16px', color: '#f1c40f', fontStyle: 'bold',
+    }).setOrigin(0.5)
+    content.add(header)
+
+    const tiles = this.map.columns[col]
+    let y = -110
+    tiles.forEach((tile, idx) => {
+      const config = getTileConfig(tile.type)
+      createBtn(y, `${config.label} ${idx + 1}`, () => this.teleportToTile(tile))
+      y += 34
+    })
+
+    const backBtn = this.add.rectangle(0, 140, 120, 32, 0x7f8c8d).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const backText = this.add.text(0, 140, 'BACK', { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5)
+    backBtn.on('pointerdown', () => {
+      const currentTile = findTileById(this.map, this.player.loadout.mapState.currentTileId)
+      const currentCol = currentTile?.col ?? 0
+      this.showTeleportColumns(currentCol, this.map.columns.length - 1)
+    })
+    backBtn.on('pointerover', () => backBtn.setFillStyle(0x95a5a6))
+    backBtn.on('pointerout', () => backBtn.setFillStyle(0x7f8c8d))
+    content.add(backBtn)
+    content.add(backText)
+  }
+
+  teleportToTile(tile) {
+    this.hideTeleportDialog()
+    this.player.loadout.mapState.currentTileId = tile.id
+    this.player.saveLoadout()
+    updateReachability(this.map, tile.id)
+    this.drawMap()
+    this.updateHud()
+  }
+
+  hideTeleportDialog() {
+    if (this.teleportDialog) {
+      this.teleportDialog.destroy()
+      this.teleportDialog = null
+      this.teleportContent = null
+    }
   }
 
   drawMap() {
@@ -627,6 +777,12 @@ export default class MapScene extends Phaser.Scene {
     }
     if (this.hud.hardResetBtn) {
       this.hud.hardResetBtn.disableInteractive()
+    }
+    if (this.hud.testFightBtn) {
+      this.hud.testFightBtn.disableInteractive()
+    }
+    if (this.hud.teleportBtn) {
+      this.hud.teleportBtn.disableInteractive()
     }
     this.input.setDefaultCursor('default')
 

@@ -997,9 +997,9 @@ export default class BattleScene extends Phaser.Scene {
     // Action panel — modern rounded glass panel behind hero sprite
     this.actionPanel = this.createModernPanel(120, 305, 180, 360, 16)
 
-    // TEMPORARY: Win Battle button for testing the reward loop (hidden on boss tiles)
+    // DEV: Win Battle button — triggers the normal victory flow for the current battle.
     this.winBattleBtn = this.createButton(120, 95, 'Win Battle', () => {
-      this.scene.start('WinScene', { player: this.player, enemy: this.enemies[0], tile: this.tile })
+      this.onBattleEnd('player')
     }, 160, 36, 0x27ae60, 0x2ecc71)
 
     this.skillButtons = []
