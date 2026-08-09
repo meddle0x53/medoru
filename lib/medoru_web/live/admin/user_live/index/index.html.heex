@@ -172,7 +172,7 @@
                 </td>
                 <td>
                   <span class="font-medium">
-                    {(user.stats && user.stats.total_kanji_learned) || 0}
+                    {@kanji_counts[user.id] || 0}
                   </span>
                 </td>
                 <td class="text-base-content/70">
@@ -260,7 +260,7 @@
                 <div class="text-sm text-base-content/60 truncate">{user.email}</div>
                 <div class="flex items-center gap-3 mt-2 text-sm text-secondary">
                   <span class="font-medium">
-                    {(user.stats && user.stats.total_kanji_learned) || 0}
+                    {@kanji_counts[user.id] || 0}
                   </span>
                   <div class="flex items-center gap-1">
                     <.icon name="hero-calendar" class="w-4 h-4" />

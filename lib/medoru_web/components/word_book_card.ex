@@ -181,7 +181,7 @@ defmodule MedoruWeb.WordBookCard do
 
     ~H"""
     <%= if @card_word do %>
-      <div class="mt-3 max-w-xs mx-auto">
+      <div class="mt-3 w-full">
         <.card
           id={"board-card-#{@post.id}"}
           word={@card_word}

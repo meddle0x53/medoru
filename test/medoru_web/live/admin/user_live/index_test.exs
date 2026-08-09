@@ -3,6 +3,8 @@ defmodule MedoruWeb.Admin.UserLive.IndexTest do
 
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
+  import Medoru.ContentFixtures
+  import Medoru.LearningFixtures
 
   setup %{conn: conn} do
     admin = user_fixture(%{type: "admin", email: "admin@example.com"})
@@ -30,6 +32,24 @@ defmodule MedoruWeb.Admin.UserLive.IndexTest do
 
       assert html =~ "User Management"
       assert html =~ "Never"
+    end
+
+    test "shows the real learned kanji count instead of the cached stats counter",
+         %{conn: conn} do
+      user = user_fixture_with_stats(%{email: "student@example.com"})
+      kanji = kanji_fixture()
+      user_progress_fixture(%{user_id: user.id, kanji_id: kanji.id})
+
+      # Corrupt the cached counter to prove the list uses the source of truth
+      {:ok, _} =
+        Medoru.Accounts.update_stats(user.stats, %{total_kanji_learned: 999})
+
+      {:ok, _view, html} = live(conn, ~p"/admin/users")
+
+      assert html =~ "User Management"
+      assert html =~ user.email
+      refute html =~ "999"
+      assert html =~ "1"
     end
 
     test "non-admin users are redirected away", %{conn: conn} do

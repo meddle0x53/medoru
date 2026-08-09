@@ -6,6 +6,7 @@ defmodule MedoruWeb.Admin.UserLive.Index do
 
   alias Medoru.Accounts
   alias Medoru.Accounts.User
+  alias Medoru.Learning
 
   embed_templates "index/*"
 
@@ -39,12 +40,14 @@ defmodule MedoruWeb.Admin.UserLive.Index do
         show_deleted: show_deleted
       )
 
+    kanji_counts = Learning.count_learned_kanji_for_users(Enum.map(users, & &1.id))
     total_pages = safe_ceil(total_count)
 
     {:noreply,
      socket
      |> assign(:page_title, gettext("Admin - Users"))
      |> assign(:users, users)
+     |> assign(:kanji_counts, kanji_counts)
      |> assign(:page, page)
      |> assign(:total_pages, total_pages)
      |> assign(:total_count, total_count)

@@ -671,6 +671,26 @@ defmodule Medoru.Learning do
   end
 
   @doc """
+  Counts learned kanji for a list of users.
+
+  Returns a map of `%{user_id => count}`.
+
+  ## Examples
+
+      iex> count_learned_kanji_for_users([user_id1, user_id2])
+      %{user_id1 => 10, user_id2 => 5}
+
+  """
+  def count_learned_kanji_for_users(user_ids) when is_list(user_ids) do
+    UserProgress
+    |> where([up], up.user_id in ^user_ids and not is_nil(up.kanji_id))
+    |> group_by([up], up.user_id)
+    |> select([up], {up.user_id, count(up.id)})
+    |> Repo.all()
+    |> Map.new()
+  end
+
+  @doc """
   Gets the list of learned words for a user with pagination.
 
   ## Examples
