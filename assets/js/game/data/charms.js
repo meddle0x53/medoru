@@ -86,7 +86,7 @@ export const CHARMS = [
     kanji: '火',
     color: 0xff6600, // orange glow
     type: CHARM_TYPES.HERO,
-    rarity: 'uncommon',
+    rarity: 'rare',
     effect: { stat: 'damageBonus', value: 0.08 }, // +8% damage
   },
   {
@@ -98,6 +98,91 @@ export const CHARMS = [
     type: CHARM_TYPES.HERO,
     rarity: 'uncommon',
     effect: { stat: 'staminaRegen', value: 1 },
+  },
+  {
+    id: 'small_void_charm',
+    name: 'Small Void Charm',
+    nameJa: '小空虚の護符',
+    kanji: '空',
+    color: 0x8e44ad, // muted purple glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'common',
+    effect: { stats: ['skill', 'strength', 'mana', 'luck'], value: 1 },
+  },
+  {
+    id: 'ancient_void_charm',
+    name: 'Ancient Void Charm',
+    nameJa: '古代空虚の護符',
+    kanji: '虚',
+    color: 0x5b2c6f, // deep purple glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'rare',
+    effect: { stats: ['skill', 'strength', 'mana', 'luck'], value: 2 },
+    unlockCondition: 'bossReached',
+  },
+  {
+    id: 'abyss_charm',
+    name: 'Abyss Charm',
+    nameJa: '渕の護符',
+    kanji: '渕',
+    color: 0x1a1a2e, // dark abyss glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'epic',
+    effect: { stats: ['skill', 'strength', 'mana', 'luck', 'capacity', 'vitality', 'stamina'], value: 3 },
+    unlockCondition: 'bossDefeated',
+  },
+  {
+    id: 'wind_charm',
+    name: 'Wind Charm',
+    nameJa: '風の護符',
+    kanji: '風',
+    color: 0xccffcc, // pale green glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'rare',
+    effect: { stats: ['skill', 'mana'], value: 2 },
+    unlockCondition: 'column7Reached',
+  },
+  {
+    id: 'earth_charm',
+    name: 'Earth Charm',
+    nameJa: '地の護符',
+    kanji: '地',
+    color: 0x8b4513, // brown glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'common',
+    effect: { stats: ['strength', 'stamina', 'vitality'], value: 1 },
+  },
+  {
+    id: 'charm_of_the_sword',
+    name: 'Charm of the Sword',
+    nameJa: '剣の護符',
+    kanji: '剣',
+    color: 0xff2222, // red glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'uncommon',
+    effect: { stat: 'strength', value: 5 },
+    unlockCondition: 'column5Reached',
+  },
+  {
+    id: 'backpack_charm',
+    name: 'Backpack Charm',
+    nameJa: '袋の護符',
+    kanji: '袋',
+    color: 0xd4a017, // tan/gold glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'epic',
+    effect: { stat: 'capacity', value: 7 },
+    unlockCondition: 'bossDefeatedTwice',
+  },
+  {
+    id: 'magi_charm',
+    name: 'Magi Charm',
+    nameJa: '魔の護符',
+    kanji: '魔',
+    color: 0x9b59b6, // purple glow
+    type: CHARM_TYPES.HERO,
+    rarity: 'common',
+    effect: { stat: 'mana', value: 2 },
   },
   {
     id: 'ken_no_mai_charm',

@@ -1747,7 +1747,9 @@ defmodule Medoru.Content do
   """
   def delete_word_relation(%WordRelation{} = relation) do
     Repo.transaction(fn ->
-      if relation.relation_type in [:synonym, :antonym] and not is_nil(relation.related_word_id) do
+      if relation.relation_type in [:synonym, :antonym] and
+           not is_nil(relation.related_word_id) and
+           relation.word_id != relation.related_word_id do
         inverse_query =
           from(wr in WordRelation,
             where:

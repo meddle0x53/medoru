@@ -690,7 +690,7 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
              explanation: "",
              explanation_sections: step.explanation_sections || [],
              pattern_elements: [],
-             examples: [],
+             examples: step.examples || [],
              word_colors: step.word_colors || [],
              difficulty: step.difficulty || 1,
              include_in_test: false,

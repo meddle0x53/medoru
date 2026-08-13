@@ -13,7 +13,7 @@ defmodule ConjugationHelper do
   def conjugate_verb(dictionary_form, form_name) when is_binary(dictionary_form) do
     if String.ends_with?(dictionary_form, "る") do
       stem = String.replace_suffix(dictionary_form, "る", "")
-      
+
       case form_name do
         "dictionary" -> dictionary_form
         "masu-form" -> stem <> "ます"
@@ -42,7 +42,7 @@ defmodule ConjugationHelper do
   # Conjugate い-adjectives
   def conjugate_i_adjective(dictionary_form, form_name) when is_binary(dictionary_form) do
     stem = String.replace_suffix(dictionary_form, "い", "")
-    
+
     case form_name do
       "dictionary" -> dictionary_form
       "ku-form" -> stem <> "く"
@@ -50,16 +50,18 @@ defmodule ConjugationHelper do
       "katta-form" -> stem <> "かった"
       "kunai-form" -> stem <> "くない"
       "kunakatta-form" -> stem <> "くなかった"
+      "conditional" -> stem <> "ければ"
       _ -> nil
     end
   end
 
   # Conjugate な-adjectives
   def conjugate_na_adjective(dictionary_form, form_name) when is_binary(dictionary_form) do
-    base = dictionary_form
-    |> String.replace_suffix("だ", "")
-    |> String.replace_suffix("な", "")
-    
+    base =
+      dictionary_form
+      |> String.replace_suffix("だ", "")
+      |> String.replace_suffix("な", "")
+
     case form_name do
       "dictionary" -> base <> "だ"
       "na-form" -> base <> "な"
@@ -67,6 +69,7 @@ defmodule ConjugationHelper do
       "deshita-form" -> base <> "でした"
       "dewa-nai-form" -> base <> "ではない"
       "dewa-nakatta-form" -> base <> "ではなかった"
+      "conditional" -> base <> "なら"
       _ -> nil
     end
   end
@@ -83,11 +86,11 @@ IO.puts("\nProcessing verbs...")
 verbs = Repo.all(from w in Word, where: w.word_type == :verb)
 verb_forms = Map.get(forms, "verb", [])
 
-{verb_count, verb_errors} = 
+{verb_count, verb_errors} =
   Enum.reduce(verbs, {0, 0}, fn word, {count, errors} ->
     Enum.reduce(verb_forms, {count, errors}, fn form, {c, e} ->
       conjugated = ConjugationHelper.conjugate_verb(word.text, form.name)
-      
+
       if conjugated do
         attrs = %{
           word_id: word.id,
@@ -95,10 +98,11 @@ verb_forms = Map.get(forms, "verb", [])
           conjugated_form: conjugated,
           is_regular: true
         }
-        
+
         case Repo.insert(WordConjugation.changeset(%WordConjugation{}, attrs),
                on_conflict: {:replace, [:conjugated_form, :updated_at]},
-               conflict_target: [:word_id, :grammar_form_id]) do
+               conflict_target: [:word_id, :grammar_form_id]
+             ) do
           {:ok, _} -> {c + 1, e}
           {:error, _} -> {c, e + 1}
         end
@@ -113,27 +117,47 @@ IO.puts("  Created #{verb_count} verb conjugations (#{verb_errors} errors)")
 # Process い-adjectives (heuristic: ends with い)
 IO.puts("\nProcessing い-adjectives...")
 
-i_adjectives = Repo.all(from w in Word, 
-  where: w.word_type == :adjective and like(w.text, "%い"))
-adj_forms = Map.get(forms, "adjective", [])
-i_adj_forms = Enum.filter(adj_forms, &String.starts_with?(&1.name, "k"))
+i_adjectives =
+  Repo.all(
+    from w in Word,
+      where: w.word_type == :adjective and like(w.text, "%い")
+  )
 
-{i_adj_count, i_adj_errors} = 
+adj_forms = Map.get(forms, "adjective", [])
+
+i_adj_forms =
+  Enum.filter(adj_forms, &(&1.name == "conditional" or String.starts_with?(&1.name, "k")))
+
+{i_adj_count, i_adj_errors} =
   Enum.reduce(i_adjectives, {0, 0}, fn word, {count, errors} ->
     Enum.reduce(i_adj_forms, {count, errors}, fn form, {c, e} ->
       conjugated = ConjugationHelper.conjugate_i_adjective(word.text, form.name)
-      
+
       if conjugated do
-        attrs = %{
-          word_id: word.id,
-          grammar_form_id: form.id,
-          conjugated_form: conjugated,
-          is_regular: true
-        }
-        
+        attrs =
+          case conjugated do
+            %{conjugated_form: cf, alternative_forms: af} ->
+              %{
+                word_id: word.id,
+                grammar_form_id: form.id,
+                conjugated_form: cf,
+                alternative_forms: af,
+                is_regular: true
+              }
+
+            cf when is_binary(cf) ->
+              %{
+                word_id: word.id,
+                grammar_form_id: form.id,
+                conjugated_form: cf,
+                is_regular: true
+              }
+          end
+
         case Repo.insert(WordConjugation.changeset(%WordConjugation{}, attrs),
                on_conflict: {:replace, [:conjugated_form, :updated_at]},
-               conflict_target: [:word_id, :grammar_form_id]) do
+               conflict_target: [:word_id, :grammar_form_id]
+             ) do
           {:ok, _} -> {c + 1, e}
           {:error, _} -> {c, e + 1}
         end
@@ -148,26 +172,49 @@ IO.puts("  Created #{i_adj_count} い-adjective conjugations (#{i_adj_errors} er
 # Process な-adjectives (heuristic: ends with だ or な)
 IO.puts("\nProcessing な-adjectives...")
 
-na_adjectives = Repo.all(from w in Word, 
-  where: w.word_type == :adjective and (like(w.text, "%だ") or like(w.text, "%な")))
-na_adj_forms = Enum.filter(adj_forms, &String.starts_with?(&1.name, "d") or &1.name in ["dictionary", "na-form"])
+na_adjectives =
+  Repo.all(
+    from w in Word,
+      where: w.word_type == :adjective and (like(w.text, "%だ") or like(w.text, "%な"))
+  )
 
-{na_adj_count, na_adj_errors} = 
+na_adj_forms =
+  Enum.filter(
+    adj_forms,
+    &(&1.name == "conditional" or String.starts_with?(&1.name, "d") or
+        &1.name in ["dictionary", "na-form"])
+  )
+
+{na_adj_count, na_adj_errors} =
   Enum.reduce(na_adjectives, {0, 0}, fn word, {count, errors} ->
     Enum.reduce(na_adj_forms, {count, errors}, fn form, {c, e} ->
       conjugated = ConjugationHelper.conjugate_na_adjective(word.text, form.name)
-      
+
       if conjugated do
-        attrs = %{
-          word_id: word.id,
-          grammar_form_id: form.id,
-          conjugated_form: conjugated,
-          is_regular: true
-        }
-        
+        attrs =
+          case conjugated do
+            %{conjugated_form: cf, alternative_forms: af} ->
+              %{
+                word_id: word.id,
+                grammar_form_id: form.id,
+                conjugated_form: cf,
+                alternative_forms: af,
+                is_regular: true
+              }
+
+            cf when is_binary(cf) ->
+              %{
+                word_id: word.id,
+                grammar_form_id: form.id,
+                conjugated_form: cf,
+                is_regular: true
+              }
+          end
+
         case Repo.insert(WordConjugation.changeset(%WordConjugation{}, attrs),
                on_conflict: {:replace, [:conjugated_form, :updated_at]},
-               conflict_target: [:word_id, :grammar_form_id]) do
+               conflict_target: [:word_id, :grammar_form_id]
+             ) do
           {:ok, _} -> {c + 1, e}
           {:error, _} -> {c, e + 1}
         end

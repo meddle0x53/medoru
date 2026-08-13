@@ -75,8 +75,18 @@ defmodule MedoruWeb.GameApiController do
       )
     end
 
-    # Mark the run's focus kanji as learned when the run is completed.
-    if params["winner"] == "player" && is_binary(params["focus_kanji"]) do
+    # Mark any words learned during the run as learned. This is idempotent, so
+    # duplicate calls are safe.
+    learned_word_ids = params["learned_word_ids"] || []
+
+    if is_list(learned_word_ids) do
+      for word_id <- learned_word_ids do
+        Learning.track_word_learned_for_user(user, word_id)
+      end
+    end
+
+    # Mark the run's focus kanji as learned when the run ends.
+    if is_binary(params["focus_kanji"]) do
       case Content.get_kanji_by_character(params["focus_kanji"]) do
         nil -> :ok
         kanji -> Learning.track_kanji_learned(user.id, kanji.id)

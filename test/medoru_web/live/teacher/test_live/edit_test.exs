@@ -28,25 +28,101 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       assert has_element?(view, "button", "Add First Step")
     end
 
-    test "redirects if test is not_in_progress", %{
+    test "redirects if test is archived", %{
       conn: conn,
       teacher: teacher,
       teacher_test: _teacher_test
     } do
-      # Create a test that's already ready
-      ready_test = teacher_test_fixture(teacher.id, %{setup_state: "ready"})
+      archived_test = teacher_test_fixture(teacher.id)
+      {:ok, archived_test} = Tests.transition_test_state(archived_test, "archived")
+      expected_path = "/teacher/tests/#{archived_test.id}"
 
-      # When accessing an already-ready test, the LiveView redirects
-      # This is handled via push_navigate in mount which sends a redirect message
-      result =
+      assert {:error, {:live_redirect, %{to: ^expected_path}}} =
+               conn
+               |> log_in_user(teacher)
+               |> live(~p"/teacher/tests/#{archived_test.id}/edit")
+    end
+
+    test "allows editing published tests", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: _teacher_test
+    } do
+      published_test = teacher_test_fixture(teacher.id)
+      {:ok, published_test} = Tests.transition_test_state(published_test, "published")
+
+      {:ok, _view, html} =
         conn
         |> log_in_user(teacher)
-        |> live(~p"/teacher/tests/#{ready_test.id}/edit")
+        |> live(~p"/teacher/tests/#{published_test.id}/edit")
 
-      # The result should either be an error (redirect) or contain redirect info
-      # Due to LiveView testing quirks with mount-time redirects, we just verify
-      # the view was created (the redirect happens client-side)
-      assert {:ok, _view, _html} = result
+      assert html =~ published_test.title
+      assert html =~ "Test Steps"
+      assert html =~ "student attempts"
+    end
+
+    test "adding a step to a published test resets existing attempts", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: _teacher_test
+    } do
+      import Medoru.Classrooms
+      import Medoru.AccountsFixtures
+
+      published_test = teacher_test_fixture(teacher.id)
+      {:ok, published_test} = Tests.transition_test_state(published_test, "published")
+
+      {:ok, classroom} =
+        create_classroom(%{name: "Published Edit Classroom", teacher_id: teacher.id})
+
+      student = user_fixture(%{email: "published_edit_student@example.com"})
+      {:ok, membership} = apply_to_join(classroom.id, student.id)
+      {:ok, _} = approve_membership(membership)
+
+      {:ok, _} = publish_test_to_classroom(classroom.id, published_test.id, teacher.id)
+
+      {:ok, attempt} =
+        start_test_attempt(
+          classroom.id,
+          student.id,
+          published_test.id,
+          600,
+          published_test.total_points
+        )
+
+      assert attempt.reset_count == 0
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{published_test.id}/edit")
+
+      # Open selector and select multichoice type
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='multichoice']")
+      |> render_click()
+
+      # Fill and submit the form
+      view
+      |> form("#step-form", %{
+        "step" => %{
+          "question" => "Published test question?",
+          "correct_answer" => "Correct",
+          "options" => "Correct\nWrong 1\nWrong 2\nWrong 3"
+        }
+      })
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully"
+      assert render(view) =~ "1 student attempt(s) have been reset"
+
+      updated_attempt = get_test_attempt!(attempt.id)
+      assert updated_attempt.reset_count == 1
+      assert is_nil(updated_attempt.test_session_id)
     end
 
     test "redirects if user doesn't own the test", %{conn: conn} do

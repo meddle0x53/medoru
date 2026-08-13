@@ -75,6 +75,7 @@ defmodule MedoruWeb.Admin.GameLive do
         }
       end)
 
+
     # Locale for localized kanji meanings.
     locale = session["locale"] || "en"
 
@@ -121,6 +122,33 @@ defmodule MedoruWeb.Admin.GameLive do
         %UserStats{level: level} -> level
         _ -> 1
       end
+
+    # Vocabulary the player has not learned yet, capped by site level and sorted
+    # by usage frequency ascending, so events like "lost memories" can pick the
+    # rarest unknown words first.
+    learned_word_ids = Enum.map(learned_words, & &1.id)
+
+    vocabulary =
+      Content.Word
+      |> where([w], w.difficulty <= ^user_level and w.id not in ^learned_word_ids)
+      |> where([w], not is_nil(w.meaning) and not is_nil(w.reading))
+      |> order_by([w], asc: w.usage_frequency)
+      |> limit(200)
+      |> Repo.all()
+      |> Enum.map(fn w ->
+        %{
+          id: w.id,
+          word: w.text,
+          reading: w.reading,
+          meaning: Content.get_localized_meaning(w, locale),
+          usage_frequency: w.usage_frequency,
+          difficulty: w.difficulty,
+          word_type: w.word_type,
+          image_path: w.image_path,
+          example_reading: w.example_reading,
+          example_meaning: w.example_meaning
+        }
+      end)
 
     # Fetch stroke data for weapon kanji (力 - chikara)
     weapon_kanji = Content.get_kanji_by_character("力")
@@ -187,6 +215,7 @@ defmodule MedoruWeb.Admin.GameLive do
       all_kanji: all_kanji,
       learned_kanji_chars: learned_kanji_chars,
       word_list: word_list,
+      vocabulary: vocabulary,
       weapon_kanji_strokes: weapon_kanji_strokes,
       shield_kanji_strokes: shield_kanji_strokes,
       shield_kanji_pool_strokes: shield_kanji_pool_strokes

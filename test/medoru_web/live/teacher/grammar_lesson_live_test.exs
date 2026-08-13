@@ -4,6 +4,8 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
   import Phoenix.LiveViewTest
   import Medoru.ContentFixtures
 
+  alias Medoru.Content
+
   setup %{conn: conn} do
     user = user_fixture(%{type: "teacher"})
     conn = log_in_user(conn, user)
@@ -388,6 +390,61 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
         })
 
       assert html =~ "Explanation only"
+    end
+
+    test "text step can have examples without pattern validation", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Test Lesson"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      view
+      |> element("button[phx-click='add_step'][phx-value-type='text']", "Text")
+      |> render_click()
+
+      # Example editor should be visible for text steps
+      assert render(view) =~ "Examples (Max 5)"
+
+      view
+      |> element("button[phx-click='add_example']", "Add")
+      |> render_click()
+
+      render_hook(view, "update_example", %{
+        index: "0",
+        field: "sentence",
+        value: "今日は寒いです"
+      })
+
+      render_hook(view, "update_example", %{
+        index: "0",
+        field: "reading",
+        value: "きょうはさむいです"
+      })
+
+      render_hook(view, "update_example", %{
+        index: "0",
+        field: "meaning",
+        value: "Today is cold"
+      })
+
+      # Save the step
+      view
+      |> element("button[phx-click='save_step']", "Save Step")
+      |> render_click()
+
+      assert render(view) =~ "Step saved successfully"
+
+      # Verify the step was saved with the example
+      [step] = Content.list_grammar_lesson_steps(lesson.id)
+      assert step.step_type == "text"
+      assert length(step.examples) == 1
+      assert hd(step.examples)["sentence"] == "今日は寒いです"
+      assert hd(step.examples)["reading"] == "きょうはさむいです"
+      assert hd(step.examples)["meaning"] == "Today is cold"
     end
   end
 end

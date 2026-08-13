@@ -4,7 +4,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
 
-  alias Medoru.{Repo, WhiteBoard}
+  alias Medoru.{Notifications, Repo, WhiteBoard}
 
   defp owner_fixture(attrs \\ %{}) do
     user_fixture_with_registration(attrs)
@@ -121,6 +121,25 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
         |> render_submit()
 
       assert html =~ "Nice post!"
+    end
+
+    test "commenting notifies the post owner", %{conn: conn} do
+      owner = owner_fixture()
+      commenter = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(commenter)
+        |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+
+      view
+      |> form("form[phx-submit='add_comment']", %{post_id: post.id, content: "Notifying comment!"})
+      |> render_submit()
+
+      assert Notifications.count_notifications(owner.id) == 1
+      notification = hd(Notifications.list_notifications(owner.id))
+      assert notification.type == "white_board_comment"
     end
 
     test "guest cannot see comment form", %{conn: conn} do

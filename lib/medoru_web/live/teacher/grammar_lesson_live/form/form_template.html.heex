@@ -723,7 +723,7 @@
                   />
                 </div>
 
-                <%= if @current_step.step_type == "grammar" do %>
+                <%= if @current_step.step_type in ["grammar", "text"] do %>
                   <%!-- Examples --%>
                   <div>
                     <div class="flex items-center justify-between mb-3">
@@ -793,15 +793,17 @@
                               placeholder={gettext("English meaning (e.g., 'won't come')")}
                             />
                           </div>
-                          <button
-                            phx-click="validate_example"
-                            phx-value-index={idx}
-                            class="btn btn-ghost btn-xs mt-2"
-                          >
-                            <.icon name="hero-check-circle" class="w-3 h-3 mr-1" /> {gettext(
-                              "Validate"
-                            )}
-                          </button>
+                          <%= if @current_step.step_type == "grammar" do %>
+                            <button
+                              phx-click="validate_example"
+                              phx-value-index={idx}
+                              class="btn btn-ghost btn-xs mt-2"
+                            >
+                              <.icon name="hero-check-circle" class="w-3 h-3 mr-1" /> {gettext(
+                                "Validate"
+                              )}
+                            </button>
+                          <% end %>
                         </div>
                       <% end %>
                     </div>

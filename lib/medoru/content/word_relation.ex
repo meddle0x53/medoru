@@ -52,14 +52,22 @@ defmodule Medoru.Content.WordRelation do
   end
 
   # Expressions may be text-only; synonyms and antonyms must link to another word.
+  # A word cannot be related to itself.
   defp validate_relation_type(changeset) do
     relation_type = get_field(changeset, :relation_type)
+    word_id = get_field(changeset, :word_id)
     related_word_id = get_field(changeset, :related_word_id)
     expression_text = get_field(changeset, :expression_text)
 
     cond do
       relation_type in [:synonym, :antonym] and is_nil(related_word_id) ->
         add_error(changeset, :related_word_id, "is required for synonyms and antonyms")
+
+      relation_type in [:synonym, :antonym] and word_id == related_word_id ->
+        add_error(changeset, :related_word_id, "cannot be the same word")
+
+      relation_type == :expression and not is_nil(related_word_id) and word_id == related_word_id ->
+        add_error(changeset, :related_word_id, "cannot be the same word")
 
       relation_type == :expression and is_nil(related_word_id) and is_nil(expression_text) ->
         add_error(

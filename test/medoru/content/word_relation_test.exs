@@ -5,6 +5,7 @@ defmodule Medoru.Content.WordRelationTest do
 
   alias Medoru.Content
   alias Medoru.Content.WordRelation
+  alias Medoru.Repo
 
   describe "WordRelation changeset" do
     test "validates required fields" do
@@ -51,6 +52,45 @@ defmodule Medoru.Content.WordRelationTest do
       }
 
       assert %Ecto.Changeset{valid?: true} = WordRelation.changeset(%WordRelation{}, attrs)
+    end
+
+    test "rejects self-link for synonyms" do
+      word = word_fixture()
+
+      attrs = %{
+        word_id: word.id,
+        relation_type: :synonym,
+        related_word_id: word.id
+      }
+
+      changeset = WordRelation.changeset(%WordRelation{}, attrs)
+      assert "cannot be the same word" in errors_on(changeset).related_word_id
+    end
+
+    test "rejects self-link for antonyms" do
+      word = word_fixture()
+
+      attrs = %{
+        word_id: word.id,
+        relation_type: :antonym,
+        related_word_id: word.id
+      }
+
+      changeset = WordRelation.changeset(%WordRelation{}, attrs)
+      assert "cannot be the same word" in errors_on(changeset).related_word_id
+    end
+
+    test "rejects self-link for linked expressions" do
+      word = word_fixture()
+
+      attrs = %{
+        word_id: word.id,
+        relation_type: :expression,
+        related_word_id: word.id
+      }
+
+      changeset = WordRelation.changeset(%WordRelation{}, attrs)
+      assert "cannot be the same word" in errors_on(changeset).related_word_id
     end
   end
 
@@ -267,6 +307,21 @@ defmodule Medoru.Content.WordRelationTest do
           word_id: word.id,
           relation_type: :expression,
           expression_text: "テスト表現",
+          status: :approved
+        })
+
+      assert {:ok, _} = Content.delete_word_relation(relation)
+      assert Content.list_word_relations_for_word(word.id) == %{}
+    end
+
+    test "delete_word_relation/1 can delete an existing self-link" do
+      word = word_fixture()
+
+      relation =
+        Repo.insert!(%WordRelation{
+          word_id: word.id,
+          related_word_id: word.id,
+          relation_type: :synonym,
           status: :approved
         })
 

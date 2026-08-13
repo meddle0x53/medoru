@@ -1036,6 +1036,25 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
                   {raw(markdown_with_colors(section, @step_word_colors, :explanation))}
                 </div>
               <% end %>
+
+              <%= if @current_step.examples && @current_step.examples != [] do %>
+                <div class="border-t border-base-200 pt-6">
+                  <h3 class="text-sm font-medium text-secondary mb-4">{gettext("Examples:")}</h3>
+                  <div class="space-y-4">
+                    <%= for example <- @current_step.examples do %>
+                      <div class="bg-base-100 border border-base-300 rounded-lg p-4">
+                        <p class="text-xl font-jp mb-1">
+                          <.colored_segments segments={apply_word_colors(example["sentence"], @step_word_colors, :examples)} />
+                        </p>
+                        <p class="text-sm text-secondary font-jp mb-1">
+                          <.colored_segments segments={apply_word_colors(example["reading"], @step_word_colors, :examples)} />
+                        </p>
+                        <p class="text-secondary">{example["meaning"]}</p>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
             </div>
           <% else %>
             <%!-- Grammar Pattern --%>

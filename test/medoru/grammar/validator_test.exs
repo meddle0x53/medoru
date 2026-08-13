@@ -880,4 +880,87 @@ defmodule Medoru.Grammar.ValidatorTest do
       assert second_literal != nil
     end
   end
+
+  describe "adjective conditional forms" do
+    setup do
+      yasui =
+        ContentFixtures.word_fixture(%{
+          text: "安い",
+          reading: "やすい",
+          word_type: :adjective
+        })
+
+      shizuka =
+        ContentFixtures.word_fixture(%{
+          text: "静かだ",
+          reading: "しずかだ",
+          word_type: :adjective
+        })
+
+      conditional =
+        case Content.get_grammar_form_by_name("conditional", "adjective") do
+          nil ->
+            {:ok, form} =
+              Content.create_grammar_form(%{
+                name: "conditional",
+                display_name: "ければ/なら",
+                word_type: "adjective",
+                suffix_pattern: "ければ/なら",
+                description: "Conditional form (if) for adjectives"
+              })
+
+            form
+
+          form ->
+            form
+        end
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: yasui.id,
+          grammar_form_id: conditional.id,
+          conjugated_form: "安ければ"
+        })
+
+      {:ok, _} =
+        Content.create_word_conjugation(%{
+          word_id: shizuka.id,
+          grammar_form_id: conditional.id,
+          conjugated_form: "静かなら"
+        })
+
+      %{yasui: yasui, shizuka: shizuka, conditional: conditional}
+    end
+
+    test "validates i-adjective conditional in もし...ば pattern", %{conditional: conditional} do
+      pattern = [
+        %{"type" => "literal", "text" => "もし"},
+        %{"type" => "word_slot", "word_type" => "expression", "optional" => true},
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => [conditional.name]}
+      ]
+
+      result = Validator.validate_with_details("もし値段が安ければ", pattern)
+
+      unless result.valid do
+        flunk(
+          "Expected valid but got error at #{result.error_at}: expected '#{result.expected}' but got '#{result.got}'"
+        )
+      end
+
+      adj = Enum.find(result.breakdown, &(&1.type == "adjective"))
+      assert adj.text == "安ければ"
+      assert adj.form == "conditional"
+    end
+
+    test "validates na-adjective conditional form", %{conditional: conditional} do
+      pattern = [
+        %{"type" => "word_slot", "word_type" => "adjective", "forms" => [conditional.name]}
+      ]
+
+      assert {:ok, breakdown} = Validator.validate_sentence("静かなら", pattern)
+      adj = hd(breakdown)
+      assert adj.text == "静かなら"
+      assert adj.form == "conditional"
+    end
+  end
 end

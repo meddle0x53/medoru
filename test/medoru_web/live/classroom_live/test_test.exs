@@ -287,6 +287,115 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
     end
   end
 
+  describe "Listening step audio" do
+    setup do
+      teacher = user_fixture(%{email: "listening_teacher@example.com"})
+      student = user_fixture(%{email: "listening_student@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Listening Audio Classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      test =
+        test_fixture(%{
+          title: "Listening Test",
+          created_by_id: teacher.id,
+          status: :published,
+          time_limit_seconds: 600,
+          total_points: 20
+        })
+
+      step1 =
+        test_step_fixture(test, %{
+          question: "Listen and select 1",
+          step_type: :listening,
+          question_type: :listening,
+          correct_answer: "Answer 1",
+          options: ["Answer 1", "Wrong 1"],
+          points: 10,
+          order_index: 0,
+          question_data: %{"audio_path" => "/audio/listening-step-1.mp3"}
+        })
+
+      step2 =
+        test_step_fixture(test, %{
+          question: "Listen and select 2",
+          step_type: :listening,
+          question_type: :listening,
+          correct_answer: "Answer 2",
+          options: ["Answer 2", "Wrong 2"],
+          points: 10,
+          order_index: 1,
+          question_data: %{"audio_path" => "/audio/listening-step-2.mp3"}
+        })
+
+      {:ok, _} =
+        Classrooms.publish_test_to_classroom(
+          classroom.id,
+          test.id,
+          teacher.id,
+          %{max_attempts: 1}
+        )
+
+      %{
+        teacher: teacher,
+        student: student,
+        classroom: classroom,
+        test_resource: test,
+        step1: step1,
+        step2: step2
+      }
+    end
+
+    test "each listening step renders its own audio source", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      step1: step1,
+      step2: step2
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      assert html =~ "Question 1 of 2"
+      assert html =~ "listening-step-1.mp3"
+      assert html =~ "id=\"listening-audio-#{step1.id}\""
+      refute html =~ "listening-step-2.mp3"
+
+      view
+      |> form("form", %{answer: "Answer 1"})
+      |> render_submit()
+
+      html = render(view)
+
+      assert html =~ "Question 2 of 2"
+      assert html =~ "listening-step-2.mp3"
+      assert html =~ "id=\"listening-audio-#{step2.id}\""
+      refute html =~ "listening-step-1.mp3"
+    end
+
+    test "listening step options are shuffled so the correct answer is not always first" do
+      step = %Medoru.Tests.TestStep{
+        question_type: :listening,
+        options: ["Correct", "Wrong 1", "Wrong 2", "Wrong 3"]
+      }
+
+      results = Enum.map(1..50, fn _ -> MedoruWeb.ClassroomLive.Test.shuffled_options(step) end)
+      distinct = Enum.uniq(results)
+
+      assert length(distinct) > 1
+      assert Enum.all?(results, &(Enum.sort(&1) == Enum.sort(step.options)))
+    end
+  end
+
   describe "Test results page" do
     setup do
       teacher = user_fixture(%{email: "teacher2@example.com"})

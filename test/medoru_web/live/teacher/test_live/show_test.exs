@@ -96,5 +96,21 @@ defmodule MedoruWeb.Teacher.TestLive.ShowTest do
 
       assert {:error, {:live_redirect, %{to: "/teacher/tests"}}} = result
     end
+
+    test "shows edit links for published tests", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: _teacher_test
+    } do
+      published_test = teacher_test_fixture(teacher.id)
+      {:ok, published_test} = Tests.transition_test_state(published_test, "published")
+
+      {:ok, _view, html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{published_test.id}")
+
+      assert html =~ "Add Your First Step"
+    end
   end
 end

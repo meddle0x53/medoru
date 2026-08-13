@@ -1298,6 +1298,45 @@ defmodule Medoru.Classrooms do
   end
 
   @doc """
+  Resets all attempts for a given test across every classroom it was published to.
+  Used when a published test is edited so students take the updated version.
+  Returns the number of attempts reset.
+  """
+  def reset_all_attempts_for_test(test_id, teacher_id) do
+    attempts =
+      ClassroomTestAttempt
+      |> where([a], a.test_id == ^test_id)
+      |> Repo.all()
+
+    Enum.each(attempts, fn attempt ->
+      Repo.transaction(fn ->
+        if attempt.test_session_id do
+          Medoru.Tests.complete_test_session(attempt.test_session_id)
+        end
+
+        if attempt.points_earned && attempt.points_earned > 0 do
+          remove_member_points(
+            attempt.classroom_id,
+            attempt.user_id,
+            attempt.points_earned
+          )
+        end
+
+        attempt
+        |> ClassroomTestAttempt.reset_changeset(%{
+          reset_count: attempt.reset_count + 1,
+          reset_at: DateTime.utc_now(),
+          reset_by_id: teacher_id,
+          test_session_id: nil
+        })
+        |> Repo.update!()
+      end)
+    end)
+
+    length(attempts)
+  end
+
+  @doc """
   Lists all test attempts for a classroom.
   """
   def list_classroom_test_attempts(classroom_id, opts \\ []) do

@@ -33,7 +33,12 @@ defmodule MedoruWeb.StepBuilderComponents do
           data-test-id={@test.id}
         >
           <%= for {step, index} <- Enum.with_index(@steps) do %>
-            <.step_card step={step} index={index} myself={@myself} />
+            <.step_card
+              step={step}
+              index={index}
+              myself={@myself}
+              test_setup_state={@test.setup_state}
+            />
           <% end %>
         </div>
       <% end %>
@@ -47,6 +52,7 @@ defmodule MedoruWeb.StepBuilderComponents do
   attr :step, TestStep, required: true
   attr :index, :integer, required: true
   attr :myself, :any, default: nil
+  attr :test_setup_state, :string, default: "in_progress"
 
   def step_card(assigns) do
     ~H"""
@@ -100,7 +106,12 @@ defmodule MedoruWeb.StepBuilderComponents do
             type="button"
             phx-click="delete_step"
             phx-value-step-id={@step.id}
-            data-confirm="Are you sure you want to delete this step?"
+            data-confirm={
+              if @test_setup_state in ["ready", "published"],
+                do:
+                  "Deleting this step will remove existing student answers for it and reset all attempts. Are you sure?",
+                else: "Are you sure you want to delete this step?"
+            }
             class="p-2 text-secondary hover:text-error hover:bg-error/10 rounded-lg transition-colors"
             title="Delete step"
           >

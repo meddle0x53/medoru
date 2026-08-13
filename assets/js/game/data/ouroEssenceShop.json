@@ -7,5 +7,16 @@
     "ouroScale": 200,
     "ouroSource": 1000
   },
-  "overrides": {}
+  "overrides": {
+    "small_void_charm": 100,
+    "ancient_void_charm": 200,
+    "abyss_charm": 300,
+    "wind_charm": 200,
+    "earth_charm": 150,
+    "charm_of_the_sword": 150,
+    "backpack_charm": 300,
+    "magi_charm": 100,
+    "tanuki_fur_charm": 250,
+    "kitsune_tail_charm": 250
+  }
 }

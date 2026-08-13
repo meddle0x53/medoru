@@ -1068,7 +1068,7 @@ defmodule MedoruWeb.UserWhiteBoardLive do
           WhiteBoard.broadcast_comment(socket.assigns.user.id, comment, self())
 
           # Notify post author and other commenters
-          notify_comment_participants(comment, user_id)
+          Notifications.notify_comment_participants(comment, user_id)
 
           comments =
             Map.update(socket.assigns.comments, post_id, [comment], fn existing ->
@@ -1419,39 +1419,6 @@ defmodule MedoruWeb.UserWhiteBoardLive do
         # Don't notify users who have blocked the poster
         unless Social.blocked_by?(follower_id, poster.id) do
           Notifications.notify_white_board_post(follower_id, poster.name, poster.id, post.id)
-        end
-      end,
-      timeout: :infinity
-    )
-    |> Stream.run()
-  end
-
-  defp notify_comment_participants(comment, commenter_id) do
-    post = WhiteBoard.get_post!(comment.post_id, commenter_id)
-    post_owner = Accounts.get_user!(post.user_id)
-    commenter = Accounts.get_user!(commenter_id)
-
-    # Get all unique users who commented on this post
-    commenter_ids = WhiteBoard.list_commenter_ids_for_post(comment.post_id)
-
-    # Combine post owner + commenters, remove the commenter themselves
-    recipient_ids =
-      [post.user_id | commenter_ids]
-      |> Enum.uniq()
-      |> List.delete(commenter_id)
-
-    Task.async_stream(
-      recipient_ids,
-      fn recipient_id ->
-        # Don't notify users who have blocked the commenter
-        unless Social.blocked_by?(recipient_id, commenter_id) do
-          Notifications.notify_white_board_comment(
-            recipient_id,
-            commenter.name,
-            comment.post_id,
-            post_owner.id,
-            post_owner.name
-          )
         end
       end,
       timeout: :infinity

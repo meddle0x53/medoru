@@ -148,8 +148,7 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   buildWordList() {
-    const userData = getWindowGameData() || {}
-    const rawWords = userData.word_list || []
+    const rawWords = this.player?.getChallengeWordList?.() || getWindowGameData()?.word_list || []
     const words = rawWords
       .filter(w => w && (w.word || w.text) && w.meaning && isChallengeWord(w))
       .map(w => ({

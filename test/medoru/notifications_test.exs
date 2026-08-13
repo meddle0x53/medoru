@@ -276,6 +276,127 @@ defmodule Medoru.NotificationsTest do
     end
   end
 
+  describe "notify_comment_participants/2" do
+    setup do
+      owner = user_fixture_with_registration(%{name: "PostOwner"})
+      commenter = user_fixture_with_registration(%{name: "Commenter"})
+
+      {:ok, post} =
+        Medoru.WhiteBoard.create_post(%{
+          user_id: owner.id,
+          title: "Test Post",
+          content: "Test content",
+          visibility: "public",
+          post_type: "text"
+        })
+
+      {:ok, owner: owner, commenter: commenter, post: post}
+    end
+
+    test "notifies post owner when another user comments", %{
+      owner: owner,
+      commenter: commenter,
+      post: post
+    } do
+      {:ok, comment} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: commenter.id,
+          content: "Nice post!"
+        })
+
+      Notifications.notify_comment_participants(comment, commenter.id)
+
+      assert Notifications.count_notifications(owner.id) == 1
+      notification = hd(Notifications.list_notifications(owner.id))
+      assert notification.type == "white_board_comment"
+      assert notification.title == "💬 New Comment on PostOwner's Post"
+      assert notification.data["commenter_name"] == "Commenter"
+    end
+
+    test "does not notify the commenter themselves", %{
+      owner: owner,
+      post: post
+    } do
+      {:ok, comment} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: owner.id,
+          content: "My own comment"
+        })
+
+      Notifications.notify_comment_participants(comment, owner.id)
+
+      assert Notifications.count_notifications(owner.id) == 0
+    end
+
+    test "notifies previous commenters about new comments", %{
+      owner: owner,
+      commenter: commenter,
+      post: post
+    } do
+      first_commenter = user_fixture_with_registration(%{name: "FirstCommenter"})
+
+      {:ok, _} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: first_commenter.id,
+          content: "First!"
+        })
+
+      {:ok, comment} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: commenter.id,
+          content: "Second!"
+        })
+
+      Notifications.notify_comment_participants(comment, commenter.id)
+
+      assert Notifications.count_notifications(owner.id) == 1
+      assert Notifications.count_notifications(first_commenter.id) == 1
+      assert Notifications.count_notifications(commenter.id) == 0
+    end
+
+    test "does not notify users who have blocked the commenter", %{
+      owner: owner,
+      commenter: commenter,
+      post: post
+    } do
+      Medoru.Social.block_user(owner.id, commenter.id)
+
+      {:ok, comment} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: commenter.id,
+          content: "Blocked comment"
+        })
+
+      Notifications.notify_comment_participants(comment, commenter.id)
+
+      assert Notifications.count_notifications(owner.id) == 0
+    end
+
+    test "respects white board notification preference", %{
+      owner: owner,
+      commenter: commenter,
+      post: post
+    } do
+      Medoru.Accounts.update_profile(owner.profile, %{notify_white_board: false})
+
+      {:ok, comment} =
+        Medoru.WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: commenter.id,
+          content: "Quiet comment"
+        })
+
+      Notifications.notify_comment_participants(comment, commenter.id)
+
+      assert Notifications.count_notifications(owner.id) == 0
+    end
+  end
+
   describe "notification preferences" do
     test "does not create messaging notification when disabled" do
       user = user_fixture_with_registration()

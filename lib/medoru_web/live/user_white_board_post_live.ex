@@ -8,7 +8,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
   require Logger
 
-  alias Medoru.{Repo, WhiteBoard}
+  alias Medoru.{Notifications, Repo, WhiteBoard}
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
   alias MedoruWeb.WordBookCard
 
@@ -381,6 +381,9 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
         {:ok, comment} ->
           comment = Repo.preload(comment, user: [:profile])
           WhiteBoard.broadcast_comment(socket.assigns.post.user_id, comment, self())
+
+          # Notify post author and other commenters
+          Notifications.notify_comment_participants(comment, user_id)
 
           comments = socket.assigns.comments ++ [comment]
           {:noreply, assign(socket, :comments, comments)}

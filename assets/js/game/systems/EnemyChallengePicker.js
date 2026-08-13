@@ -37,8 +37,18 @@ function matchesWordFilters(word, filters = {}) {
 const MIN_FILTERED_WORD_POOL = 20
 
 export function pickWordForChallenge(player, filters = {}) {
+  // Words currently being learned have a 50% chance to override the normal pool.
+  const beingLearned = player?.getBeingLearnedWords?.() || []
+  if (beingLearned.length > 0 && Math.random() < 0.5) {
+    const overridePool = filterChallengeWords(beingLearned).filter(w => matchesWordFilters(w, filters))
+    if (overridePool.length > 0) {
+      const shuffled = shuffle(overridePool)
+      return shuffled[0]
+    }
+  }
+
   // Exclude expressions and other non-challenge word types first.
-  const allowedPool = filterChallengeWords(player?.wordList)
+  const allowedPool = filterChallengeWords(player?.getChallengeWordList?.() || player?.wordList)
   const candidates = allowedPool.filter(w => matchesWordFilters(w, filters))
 
   // If the filtered pool is too small, fall back to the full allowed pool so challenges stay varied.

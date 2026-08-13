@@ -11,7 +11,7 @@ defmodule Medoru.Notifications do
 
   import Ecto.Query, warn: false
   alias Medoru.Repo
-  alias Medoru.Accounts
+  alias Medoru.{Accounts, Social, WhiteBoard}
   alias Medoru.Notifications.Notification
 
   # ============================================================================
@@ -660,6 +660,44 @@ defmodule Medoru.Notifications do
       }
     })
     |> maybe_broadcast_notification(user_id)
+  end
+
+  @doc """
+  Notifies the post owner and other commenters about a new white board comment.
+  The commenter themselves is excluded, and users who have blocked the commenter
+  are skipped.
+  """
+  def notify_comment_participants(comment, commenter_id) do
+    post = Repo.get!(WhiteBoard.BoardPost, comment.post_id)
+    post_owner = Accounts.get_user!(post.user_id)
+    commenter = Accounts.get_user!(commenter_id)
+
+    # Get all unique users who commented on this post
+    commenter_ids = WhiteBoard.list_commenter_ids_for_post(comment.post_id)
+
+    # Combine post owner + commenters, remove the commenter themselves
+    recipient_ids =
+      [post.user_id | commenter_ids]
+      |> Enum.uniq()
+      |> List.delete(commenter_id)
+
+    Task.async_stream(
+      recipient_ids,
+      fn recipient_id ->
+        # Don't notify users who have blocked the commenter
+        unless Social.blocked_by?(recipient_id, commenter_id) do
+          notify_white_board_comment(
+            recipient_id,
+            commenter.name,
+            comment.post_id,
+            post_owner.id,
+            post_owner.name
+          )
+        end
+      end,
+      timeout: :infinity
+    )
+    |> Stream.run()
   end
 
   defp maybe_broadcast_notification({:ok, notification}, user_id) do

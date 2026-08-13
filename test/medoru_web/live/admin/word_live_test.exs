@@ -13,6 +13,19 @@ defmodule MedoruWeb.Admin.WordLiveTest do
     %{conn: conn, user: user}
   end
 
+  describe "Word list" do
+    test "shows star icon for mature words", %{conn: conn} do
+      word_fixture(%{text: "本", reading: "ほん", meaning: "book", mature: true})
+      word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat", mature: false})
+
+      {:ok, _view, html} = live(conn, ~p"/admin/words")
+
+      assert html =~ "本"
+      assert html =~ "hero-star-solid"
+      assert html =~ "猫"
+    end
+  end
+
   describe "New word form" do
     test "renders form with enrich and tts buttons", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/admin/words/new")

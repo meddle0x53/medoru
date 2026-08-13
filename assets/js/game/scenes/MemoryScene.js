@@ -145,7 +145,7 @@ export default class MemoryScene extends Phaser.Scene {
   }
 
   selectWords() {
-    const list = this.player?.wordList || []
+    const list = this.player?.getChallengeWordList?.() || this.player?.wordList || []
     if (list.length < this.totalPairs) {
       this.showNoWordsOverlay()
       return null

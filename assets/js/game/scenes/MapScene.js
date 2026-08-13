@@ -47,6 +47,36 @@ export default class MapScene extends Phaser.Scene {
     this.updateHud()
   }
 
+  applyMandatoryEvents() {
+    // New players with very few known words are guaranteed Lost Memories events
+    // in every row of column 1 (the first column after home) so they can build
+    // a vocabulary pool quickly.
+    if ((this.player.wordList || []).length >= 10) return
+    const column1 = this.map.columns[1]
+    if (!column1) return
+    for (const tile of column1) {
+      tile.type = TILE_TYPES.EVENT
+      tile.enemyPool = null
+    }
+  }
+
+  checkBossReachUnlocks() {
+    const bossReachable = this.map.columns.flat().some(t => t.type === TILE_TYPES.BOSS && t.reachable)
+    if (bossReachable) {
+      this.player.unlockCharmsForBossReached()
+    }
+  }
+
+  checkColumnReachUnlocks() {
+    for (const columnIndex of [5, 7]) {
+      const column = this.map.columns[columnIndex]
+      if (!column) continue
+      if (column.some(t => t.reachable)) {
+        this.player.unlockCharmsForColumnReached(columnIndex)
+      }
+    }
+  }
+
   createBackground() {
     const bgCfg = this.map.background
     if (bgCfg?.image && this.textures.exists(bgCfg.image)) {
@@ -78,6 +108,8 @@ export default class MapScene extends Phaser.Scene {
   setupMap() {
     this.player.ensureMapState()
     this.map = this.player.getCurrentMap()
+
+    this.applyMandatoryEvents()
 
     computeLayout(this.map)
     updateReachability(this.map, this.player.loadout.mapState.currentTileId)
@@ -115,6 +147,9 @@ export default class MapScene extends Phaser.Scene {
         updateReachability(this.map, this.player.loadout.mapState.currentTileId)
       }
     }
+
+    this.checkBossReachUnlocks()
+    this.checkColumnReachUnlocks()
   }
 
   findFirstUncompletedTile(startId, visited = new Set()) {
@@ -237,6 +272,16 @@ export default class MapScene extends Phaser.Scene {
       padding: { left: 8, right: 8, top: 4, bottom: 4 },
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
     this.hud.teleportBtn.on('pointerdown', () => this.showTeleportDialog())
+
+    // DEV ONLY: trigger an event scene directly for testing.
+    this.hud.eventBtn = this.add.text(GAME_CONFIG.width - 16, 136, 'DEV: EVENT', {
+      fontFamily: 'Arial',
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#d35400',
+      padding: { left: 8, right: 8, top: 4, bottom: 4 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+    this.hud.eventBtn.on('pointerdown', () => this.showEventDialog())
 
     this.createFullscreenButton()
   }
@@ -517,6 +562,7 @@ export default class MapScene extends Phaser.Scene {
     this.player.loadout.mapState.currentTileId = tile.id
     this.player.saveLoadout()
     updateReachability(this.map, tile.id)
+    this.checkColumnReachUnlocks()
     this.drawMap()
     this.updateHud()
   }
@@ -526,6 +572,70 @@ export default class MapScene extends Phaser.Scene {
       this.teleportDialog.destroy()
       this.teleportDialog = null
       this.teleportContent = null
+    }
+  }
+
+  showEventDialog() {
+    if (this.eventDialog) return
+
+    const container = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2)
+    container.setDepth(100)
+
+    const backdrop = this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setOrigin(0.5)
+    backdrop.setInteractive()
+    backdrop.on('pointerdown', () => this.hideEventDialog())
+    container.add(backdrop)
+
+    const panel = this.add.rectangle(0, 0, 360, 260, 0x1a1a2e).setStrokeStyle(2, 0xd35400).setOrigin(0.5)
+    container.add(panel)
+
+    const title = this.add.text(0, -80, 'DEV: TRIGGER EVENT', {
+      fontFamily: 'Arial', fontSize: '20px', color: '#f1c40f', fontStyle: 'bold',
+    }).setOrigin(0.5)
+    container.add(title)
+
+    const eventTypes = [
+      { id: 'lost_memories', label: 'Lost Memories' },
+    ]
+
+    eventTypes.forEach((type, i) => {
+      const y = -20 + i * 44
+      const bg = this.add.rectangle(0, y, 280, 34, 0x2c3e50).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+      const text = this.add.text(0, y, type.label, {
+        fontFamily: 'Arial', fontSize: '14px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      bg.on('pointerdown', () => {
+        this.hideEventDialog()
+        const currentTile = findTileById(this.map, this.player.loadout.mapState.currentTileId)
+        this.scene.start('EventScene', {
+          player: this.player,
+          tile: { type: TILE_TYPES.EVENT, col: currentTile?.col ?? 1 },
+          mapIndex: this.map.index,
+          eventType: type.id,
+          devMode: true,
+        })
+      })
+      bg.on('pointerover', () => bg.setFillStyle(0x34495e))
+      bg.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+      container.add(bg)
+      container.add(text)
+    })
+
+    const closeBtn = this.add.rectangle(0, 90, 120, 36, 0x7f8c8d).setInteractive({ useHandCursor: true }).setOrigin(0.5)
+    const closeText = this.add.text(0, 90, 'CLOSE', { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }).setOrigin(0.5)
+    closeBtn.on('pointerdown', () => this.hideEventDialog())
+    closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x95a5a6))
+    closeBtn.on('pointerout', () => closeBtn.setFillStyle(0x7f8c8d))
+    container.add(closeBtn)
+    container.add(closeText)
+
+    this.eventDialog = container
+  }
+
+  hideEventDialog() {
+    if (this.eventDialog) {
+      this.eventDialog.destroy()
+      this.eventDialog = null
     }
   }
 
@@ -784,6 +894,9 @@ export default class MapScene extends Phaser.Scene {
     if (this.hud.teleportBtn) {
       this.hud.teleportBtn.disableInteractive()
     }
+    if (this.hud.eventBtn) {
+      this.hud.eventBtn.disableInteractive()
+    }
     this.input.setDefaultCursor('default')
 
     // Bring the chosen tile to the front and hide its label so it doesn't
@@ -848,6 +961,11 @@ export default class MapScene extends Phaser.Scene {
 
     if (tile.type === TILE_TYPES.HOME) {
       this.scene.start('HomeShopScene', { player: this.player, tile, mapIndex: this.map.index })
+      return
+    }
+
+    if (tile.type === TILE_TYPES.EVENT) {
+      this.scene.start('EventScene', { player: this.player, tile, mapIndex: this.map.index })
       return
     }
 

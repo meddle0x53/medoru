@@ -9,7 +9,7 @@ defmodule MedoruWeb.DashboardLive do
 
   import Ecto.Query, warn: false
 
-  alias Medoru.{Accounts, Learning, Repo, Social, WhiteBoard}
+  alias Medoru.{Accounts, Learning, Notifications, Repo, Social, WhiteBoard}
   alias Medoru.WhiteBoard.BoardComment
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
   alias MedoruWeb.WordBookCard
@@ -157,6 +157,9 @@ defmodule MedoruWeb.DashboardLive do
       case WhiteBoard.create_comment(attrs) do
         {:ok, comment} ->
           comment = Repo.preload(comment, user: [:profile], parent_comment: [user: [:profile]])
+
+          # Notify post author and other commenters
+          Notifications.notify_comment_participants(comment, user_id)
 
           comments =
             Map.update(socket.assigns.stream_comments, post_id, [comment], fn existing ->

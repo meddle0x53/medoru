@@ -4,7 +4,7 @@ defmodule MedoruWeb.DashboardLiveTest do
   import Phoenix.LiveViewTest
   import Medoru.AccountsFixtures
 
-  alias Medoru.{Repo, Social, WhiteBoard}
+  alias Medoru.{Notifications, Repo, Social, WhiteBoard}
 
   defp owner_fixture(attrs \\ %{}) do
     user_fixture_with_registration(attrs)
@@ -128,6 +128,27 @@ defmodule MedoruWeb.DashboardLiveTest do
         |> render_submit()
 
       assert html =~ "Stream comment!"
+    end
+
+    test "commenting in the stream notifies the post owner", %{conn: conn} do
+      viewer = owner_fixture()
+      followed = owner_fixture()
+
+      Social.follow_user(viewer.id, followed.id)
+      post = post_fixture(%{user: followed, visibility: "public"})
+
+      {:ok, view, _html} = conn |> log_in_user(viewer) |> live(~p"/dashboard")
+
+      view
+      |> form("form[phx-submit='stream_add_comment']", %{
+        post_id: post.id,
+        content: "Notifying comment!"
+      })
+      |> render_submit()
+
+      assert Notifications.count_notifications(followed.id) == 1
+      notification = hd(Notifications.list_notifications(followed.id))
+      assert notification.type == "white_board_comment"
     end
 
     test "user can delete their own comment in the stream", %{conn: conn} do

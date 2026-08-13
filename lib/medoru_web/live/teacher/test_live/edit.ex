@@ -15,6 +15,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   alias Medoru.Tests
   alias Medoru.Tests.TestStep
   alias Medoru.Content
+  alias Medoru.Classrooms
   alias MedoruWeb.StepBuilderComponents
   alias MedoruWeb.Teacher.TestLive.GrammarStepForm
   alias MedoruWeb.Teacher.TestLive.WritingFillInStepForm
@@ -33,8 +34,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
        |> put_flash(:error, gettext("You can only edit your own tests."))
        |> push_navigate(to: ~p"/teacher/tests")}
     else
-      # Only allow editing in_progress tests
-      if test.setup_state != "in_progress" do
+      # Only allow editing tests that are not archived
+      if test.setup_state == "archived" do
         {:ok,
          socket
          |> put_flash(:info, gettext("This test can no longer be edited."))
@@ -630,7 +631,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
              |> assign(:option_word_ids, [])
              |> assign(:option_word_search_query, "")
              |> assign(:available_option_words, [])
-             |> put_flash(:info, gettext("Step added successfully."))}
+             |> reset_attempts_flash(test, gettext("Step added successfully."))}
 
           {:error, changeset} ->
             require Logger
@@ -795,7 +796,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          |> assign(:editing_step, nil)
          |> assign(:step_changeset, nil)
          |> assign(:step_form, nil)
-         |> put_flash(:info, gettext("Step updated successfully."))}
+         |> reset_attempts_flash(test, gettext("Step updated successfully."))}
 
       {:error, changeset} ->
         {:noreply,
@@ -821,7 +822,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
            |> assign(:steps, steps)
            |> assign(:step_count, length(steps))
            |> assign(:test, test)
-           |> put_flash(:info, gettext("Step deleted."))}
+           |> reset_attempts_flash(test, gettext("Step deleted."))}
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete step."))}
@@ -838,13 +839,15 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     # Update order in database
     Tests.reorder_steps(test_id, step_ids)
 
-    # Reload steps
+    # Reload steps and test
     steps = Tests.list_test_steps(test_id)
+    test = Tests.get_test!(test_id)
 
     {:noreply,
      socket
      |> assign(:steps, steps)
-     |> put_flash(:info, gettext("Steps reordered."))}
+     |> assign(:test, test)
+     |> reset_attempts_flash(test, gettext("Steps reordered."))}
   end
 
   @impl true
@@ -2197,6 +2200,18 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           test={@test}
           step_count={@step_count}
         />
+
+        <%= if @test.setup_state in ["ready", "published"] do %>
+          <div class="alert alert-warning mb-6">
+            <.icon name="hero-exclamation-triangle" class="w-6 h-6" />
+            <span>
+              {gettext(
+                "This test is %{state}. Saving changes here will reset all existing student attempts so they take the updated version.",
+                state: @test.setup_state
+              )}
+            </span>
+          </div>
+        <% end %>
 
         <%!-- Step Builder --%>
         <div class="bg-base-100 rounded-2xl border border-base-200 p-6">
@@ -3722,5 +3737,31 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:grammar_pattern_elements, elements)
      |> assign(:step_changeset, changeset)
      |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  # When a published/ready test is edited, reset all student attempts so they
+  # take the updated version on their next try.
+  defp reset_attempts_flash(socket, test, base_message) do
+    if test.setup_state in ["ready", "published"] do
+      count =
+        Classrooms.reset_all_attempts_for_test(
+          test.id,
+          socket.assigns.current_scope.current_user.id
+        )
+
+      if count > 0 do
+        put_flash(
+          socket,
+          :info,
+          base_message <>
+            " " <>
+            gettext("%{count} student attempt(s) have been reset.", count: count)
+        )
+      else
+        put_flash(socket, :info, base_message)
+      end
+    else
+      put_flash(socket, :info, base_message)
+    end
   end
 end

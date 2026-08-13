@@ -116,7 +116,14 @@
             <%= for word <- @words do %>
               <tr class="hover:bg-base-200/50">
                 <td>
-                  <span class="text-xl font-medium">{word.text}</span>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xl font-medium">{word.text}</span>
+                    <%= if word.mature do %>
+                      <span class="inline-flex" title={gettext("Mature word")}>
+                        <.icon name="hero-star-solid" class="w-4 h-4 text-amber-500" />
+                      </span>
+                    <% end %>
+                  </div>
                 </td>
                 <td class="text-base-content/70">
                   {word.reading}
@@ -173,6 +180,11 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1 flex-wrap">
                   <span class="text-xl font-medium font-japanese">{word.text}</span>
+                  <%= if word.mature do %>
+                    <span class="inline-flex" title={gettext("Mature word")}>
+                      <.icon name="hero-star-solid" class="w-4 h-4 text-amber-500" />
+                    </span>
+                  <% end %>
                   <span class={["badge badge-sm", difficulty_badge_color(word.difficulty)]}>
                     N{word.difficulty}
                   </span>

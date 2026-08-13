@@ -773,7 +773,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                     <div class="space-y-4">
                       <%= if @current_step.question_data["audio_path"] do %>
                         <div class="bg-base-200 rounded-xl p-4">
-                          <audio controls class="w-full">
+                          <audio controls class="w-full" id={"listening-audio-#{@current_step.id}"}>
                             <source src={@current_step.question_data["audio_path"]} />
                             {gettext("Your browser does not support the audio element.")}
                           </audio>

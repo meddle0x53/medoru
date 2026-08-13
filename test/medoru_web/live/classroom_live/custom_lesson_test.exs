@@ -247,6 +247,38 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       refute html =~ "Copy To Grammar"
     end
 
+    test "text step renders examples", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      lesson: lesson
+    } do
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        title: "Introduction",
+        position: 1,
+        step_type: "text",
+        explanation_sections: ["Welcome to the lesson"],
+        examples: [
+          %{
+            "sentence" => "今日は寒いです",
+            "reading" => "きょうはさむいです",
+            "meaning" => "Today is cold"
+          }
+        ]
+      })
+
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?step=1")
+
+      assert html =~ "今日は寒いです"
+      assert html =~ "きょうはさむいです"
+      assert html =~ "Today is cold"
+      assert html =~ "Examples:"
+    end
+
     test "admin can copy from preview mode", %{
       conn: conn,
       teacher: teacher,

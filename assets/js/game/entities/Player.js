@@ -7,6 +7,7 @@ import metaUnlocks from '../data/metaUnlocks.json'
 import { generateMap } from '../systems/MapGenerator.js'
 import { getMapDefinition, MAP_DEFINITIONS } from '../data/maps/index.js'
 import { clearTags, expireStates } from '../systems/CombatStateSystem.js'
+import { sendRunResult } from '../api.js'
 
 const LOADOUT_KEY = 'medoru_loadout_v1'
 const MAP_VERSION = 4
@@ -85,7 +86,12 @@ function getDefaultUnlockedHeroCharmIds() {
   const locked = getLockedIds('heroCharms')
   const eventLocked = getLockedIds('heroCharms', 'eventLocked')
   return CHARMS.filter(
-    c => c.type === CHARM_TYPES.HERO && !locked.has(c.id) && !eventLocked.has(c.id) && !c.firstDefeatReward
+    c =>
+      c.type === CHARM_TYPES.HERO &&
+      !locked.has(c.id) &&
+      !eventLocked.has(c.id) &&
+      !c.firstDefeatReward &&
+      !c.unlockCondition
   ).map(c => c.id)
 }
 
@@ -222,6 +228,7 @@ export default class Player extends Character {
       startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
       lifetimeMiniBossesDefeated: 0,
+      bossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
@@ -243,6 +250,7 @@ export default class Player extends Character {
       inventory: {},
       ownedCharmIds: [],
       ownedSocketCharmIds: [],
+      beingLearnedWords: [],
       mapState: null,
       mapVersion: MAP_VERSION,
       focusKanji: null,
@@ -312,6 +320,9 @@ export default class Player extends Character {
 
     // Word list for readiness challenge
     this.wordList = userData.word_list || []
+
+    // Unknown vocabulary pool for events.
+    this.vocabulary = userData.vocabulary || []
 
     // Inventory (demo: health potion + stone)
     this.inventory = [...ITEMS]
@@ -806,6 +817,9 @@ export default class Player extends Character {
         if (typeof loadout.lifetimeMiniBossesDefeated !== 'number') {
           loadout.lifetimeMiniBossesDefeated = 0
         }
+        if (typeof loadout.bossesDefeated !== 'number') {
+          loadout.bossesDefeated = 0
+        }
         if (!Array.isArray(loadout.unlockedSocketCharmIds)) {
           loadout.unlockedSocketCharmIds = getDefaultUnlockedSocketCharmIds()
         }
@@ -826,6 +840,9 @@ export default class Player extends Character {
         }
         if (typeof loadout.ngPlusLevel !== 'number') {
           loadout.ngPlusLevel = 0
+        }
+        if (!Array.isArray(loadout.beingLearnedWords)) {
+          loadout.beingLearnedWords = []
         }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
@@ -983,21 +1000,60 @@ export default class Player extends Character {
     if (this._charmEffects) return this._charmEffects
     const effects = {}
     for (const charm of this.getEquippedCharms()) {
-      const { stat, value } = charm.effect || {}
-      if (!stat || value === undefined) continue
-      if (typeof value === 'number') {
-        effects[stat] = (effects[stat] || 0) + value
-      }
+      this.applyCharmEffect(effects, charm.effect)
     }
     for (const charm of this.getEquippedSocketCharms()) {
-      const { stat, value } = charm.effect || {}
-      if (!stat || value === undefined) continue
-      if (typeof value === 'number') {
-        effects[stat] = (effects[stat] || 0) + value
-      }
+      this.applyCharmEffect(effects, charm.effect)
     }
     this._charmEffects = effects
     return effects
+  }
+
+  applyCharmEffect(effects, effect) {
+    if (!effect || effect.value === undefined) return
+    if (Array.isArray(effect.stats)) {
+      for (const stat of effect.stats) {
+        effects[stat] = (effects[stat] || 0) + effect.value
+      }
+    } else if (effect.stat) {
+      effects[effect.stat] = (effects[effect.stat] || 0) + effect.value
+    }
+  }
+
+  // ---------- Conditional hero charm unlocks ----------
+
+  unlockHeroCharm(charmId) {
+    if (!Array.isArray(this.loadout.unlockedHeroCharmIds)) {
+      this.loadout.unlockedHeroCharmIds = getDefaultUnlockedHeroCharmIds()
+    }
+    if (!this.loadout.unlockedHeroCharmIds.includes(charmId)) {
+      this.loadout.unlockedHeroCharmIds.push(charmId)
+      this.saveLoadout()
+      return true
+    }
+    return false
+  }
+
+  unlockCharmsForBossReached() {
+    this.unlockHeroCharm('ancient_void_charm')
+  }
+
+  unlockCharmsForBossDefeated() {
+    this.loadout.bossesDefeated = (this.loadout.bossesDefeated || 0) + 1
+    this.unlockHeroCharm('abyss_charm')
+    if (this.loadout.bossesDefeated >= 2) {
+      this.unlockHeroCharm('backpack_charm')
+    }
+    this.saveLoadout()
+  }
+
+  unlockCharmsForColumnReached(columnIndex) {
+    if (columnIndex >= 5) {
+      this.unlockHeroCharm('charm_of_the_sword')
+    }
+    if (columnIndex >= 7) {
+      this.unlockHeroCharm('wind_charm')
+    }
   }
 
   // ---------- Inventory & Gold ----------
@@ -1365,7 +1421,10 @@ export default class Player extends Character {
     this.saveLoadout()
   }
 
-  resetToFreshHero() {
+  resetToFreshHero(winner = null) {
+    // Persist any words learned during the run before wiping run-scoped state.
+    this.persistRunProgress(winner)
+
     const starterActionIds = [
       'forward_slash', 'setup_defence', 'shield_parry', 'use_item',
     ]
@@ -1381,6 +1440,7 @@ export default class Player extends Character {
       startingPotionBonus: Math.min(4, this.loadout?.startingPotionBonus ?? 0),
       lifetimeNormalEnemiesDefeated: this.loadout?.lifetimeNormalEnemiesDefeated ?? 0,
       lifetimeMiniBossesDefeated: this.loadout?.lifetimeMiniBossesDefeated ?? 0,
+      bossesDefeated: this.loadout?.bossesDefeated ?? 0,
       unlockedSocketCharmIds: this.loadout?.unlockedSocketCharmIds ?? getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: this.loadout?.unlockedHeroCharmIds ?? getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: this.loadout?.unlockedAbilityIds ?? getDefaultUnlockedAbilityIds(),
@@ -1388,6 +1448,9 @@ export default class Player extends Character {
       permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
       permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
     }
+
+    // Run-scoped being-learned words are reset after persistence.
+    meta.beingLearnedWords = []
 
     const previousLevel = meta.savedSiteLevel || this.level
     const levelDiff = Math.max(0, this.level - previousLevel)
@@ -1465,6 +1528,7 @@ export default class Player extends Character {
       startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
       lifetimeMiniBossesDefeated: 0,
+      bossesDefeated: 0,
       unlockedSocketCharmIds: getDefaultUnlockedSocketCharmIds(),
       unlockedHeroCharmIds: getDefaultUnlockedHeroCharmIds(),
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
@@ -1480,7 +1544,7 @@ export default class Player extends Character {
       this.grantEndRunMetaRewards()
     }
     this.loadout.ngPlusLevel = 0
-    this.resetToFreshHero()
+    this.resetToFreshHero(victory ? 'player' : 'enemy')
   }
 
   addOuroScales(amount) {
@@ -1519,6 +1583,54 @@ export default class Player extends Character {
     this.loadout.ouroEssence -= amount
     this.saveLoadout()
     return true
+  }
+
+  // ---------- Vocabulary / Event Words ----------
+
+  getCandidateEventWords(maxCount = 4) {
+    const knownIds = new Set((this.wordList || []).map(w => w.id || w.word))
+    const beingLearnedIds = new Set((this.loadout.beingLearnedWords || []).map(w => w.id))
+
+    const candidates = (this.vocabulary || [])
+      .filter(w => {
+        const key = w.id || w.word
+        return key && !knownIds.has(key) && !beingLearnedIds.has(key)
+      })
+      .slice(0, maxCount)
+
+    return candidates
+  }
+
+  addBeingLearnedWord(word) {
+    if (!word || !word.id) return false
+    if (!Array.isArray(this.loadout.beingLearnedWords)) {
+      this.loadout.beingLearnedWords = []
+    }
+    if (this.loadout.beingLearnedWords.some(w => w.id === word.id)) return false
+    this.loadout.beingLearnedWords.push(word)
+    this.saveLoadout()
+    return true
+  }
+
+  getBeingLearnedWords() {
+    return this.loadout.beingLearnedWords || []
+  }
+
+  getChallengeWordList() {
+    return [...(this.wordList || []), ...(this.loadout.beingLearnedWords || [])]
+  }
+
+  persistRunProgress(winner = null) {
+    const learnedWordIds = (this.loadout.beingLearnedWords || [])
+      .map(w => w.id)
+      .filter(Boolean)
+
+    sendRunResult({
+      winner,
+      learned_word_ids: learnedWordIds,
+      focus_kanji: this.loadout.focusKanji || null,
+      timestamp: new Date().toISOString(),
+    })
   }
 
   // ---------- New Game+ ----------
@@ -1571,6 +1683,7 @@ export default class Player extends Character {
     if (Math.random() < Math.min(1, 0.05 * mult)) {
       this.loadout.ouroSource = (this.loadout.ouroSource || 0) + this.applyNgPlusMultiplier(1)
     }
+    this.unlockCharmsForBossDefeated()
     this.unlockNextLockedItems()
     this.saveLoadout()
   }

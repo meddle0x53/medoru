@@ -67,6 +67,9 @@ defmodule Medoru.Content.GrammarLessonStep do
         |> validate_examples()
         |> validate_pattern_elements()
 
+      "text" ->
+        validate_examples(changeset)
+
       _ ->
         changeset
     end

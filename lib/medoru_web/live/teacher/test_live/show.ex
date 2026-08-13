@@ -295,7 +295,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
               <div class="card-body">
                 <div class="flex justify-between items-center mb-4">
                   <h2 class="card-title text-base-content">{gettext("Test Steps")}</h2>
-                  <%= if @test.setup_state == "in_progress" do %>
+                  <%= if @test.setup_state != "archived" do %>
                     <.link
                       navigate={~p"/teacher/tests/#{@test.id}/edit"}
                       class="btn btn-primary btn-sm"
@@ -312,7 +312,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                       class="w-12 h-12 mx-auto mb-3 opacity-50"
                     />
                     <p>{gettext("No steps yet.")}</p>
-                    <%= if @test.setup_state == "in_progress" do %>
+                    <%= if @test.setup_state != "archived" do %>
                       <.link
                         navigate={~p"/teacher/tests/#{@test.id}/edit"}
                         class="btn btn-primary btn-sm mt-4"
@@ -326,7 +326,7 @@ defmodule MedoruWeb.Teacher.TestLive.Show do
                     {gettext("This test has %{count} step", count: @step_count)}{if @step_count != 1,
                       do: gettext("s")}.
                   </p>
-                  <%= if @test.setup_state == "in_progress" do %>
+                  <%= if @test.setup_state != "archived" do %>
                     <.link
                       navigate={~p"/teacher/tests/#{@test.id}/edit"}
                       class="btn btn-ghost btn-sm mt-4"

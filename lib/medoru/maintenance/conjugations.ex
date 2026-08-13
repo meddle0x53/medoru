@@ -264,7 +264,18 @@ defmodule Medoru.Maintenance.Conjugations do
       }
     ]
 
-    all_forms = verb_forms ++ i_adjective_forms ++ na_adjective_forms
+    # Shared adjective form (used by both い and な adjectives)
+    shared_adjective_forms = [
+      %{
+        name: "conditional",
+        display_name: "ければ/なら",
+        word_type: "adjective",
+        suffix_pattern: "ければ/なら",
+        description: "Conditional form (if) for adjectives"
+      }
+    ]
+
+    all_forms = verb_forms ++ i_adjective_forms ++ na_adjective_forms ++ shared_adjective_forms
 
     results =
       Enum.map(all_forms, fn form_attrs ->
@@ -478,7 +489,8 @@ defmodule Medoru.Maintenance.Conjugations do
             "ku-form",
             "kute-form",
             "katta-form",
-            "kunai-form"
+            "kunai-form",
+            "conditional"
           ])
       )
 
@@ -535,7 +547,8 @@ defmodule Medoru.Maintenance.Conjugations do
             "te-form-adj",
             "te-form-na",
             "past-i",
-            "negative-na"
+            "negative-na",
+            "conditional"
           ])
       )
 
@@ -1284,6 +1297,9 @@ defmodule Medoru.Maintenance.Conjugations do
       "kunakatta-form" ->
         {stem <> "くなかった", base_reading <> "くなかった"}
 
+      "conditional" ->
+        {stem <> "ければ", base_reading <> "ければ"}
+
       _ ->
         nil
     end
@@ -1340,6 +1356,9 @@ defmodule Medoru.Maintenance.Conjugations do
 
       "negative-na" ->
         {base <> "ではない", base_reading <> "ではない"}
+
+      "conditional" ->
+        {base <> "なら", base_reading <> "なら"}
 
       _ ->
         nil

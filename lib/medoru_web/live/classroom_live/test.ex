@@ -144,7 +144,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:session, session)
            |> assign(:steps, steps)
            |> assign(:current_step_index, 0)
-           |> assign(:current_step, first_step)
+           |> assign_current_step(first_step)
            |> assign(:total_steps, length(steps))
            |> assign(:time_remaining, time_limit)
            |> assign(:answer, initial_answer_for_step(first_step))
@@ -200,7 +200,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
            |> assign(:session, new_session)
            |> assign(:steps, steps)
            |> assign(:current_step_index, 0)
-           |> assign(:current_step, first_step)
+           |> assign_current_step(first_step)
            |> assign(:total_steps, length(steps))
            |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
            |> assign(:answer, initial_answer_for_step(first_step))
@@ -241,7 +241,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
        |> assign(:session, session)
        |> assign(:steps, steps)
        |> assign(:current_step_index, current_step_index)
-       |> assign(:current_step, current_step)
+       |> assign_current_step(current_step)
        |> assign(:total_steps, length(steps))
        |> assign(:time_remaining, attempt.time_remaining_seconds)
        |> assign(:answer, initial_answer_for_step(current_step))
@@ -299,7 +299,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
              |> assign(:session, session)
              |> assign(:steps, steps)
              |> assign(:current_step_index, 0)
-             |> assign(:current_step, first_step)
+             |> assign_current_step(first_step)
              |> assign(:total_steps, length(steps))
              |> assign(:time_remaining, updated_attempt.time_remaining_seconds)
              |> assign(:answer, initial_answer_for_step(first_step))
@@ -424,7 +424,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           {:noreply,
            socket
            |> assign(:current_step_index, next_index)
-           |> assign(:current_step, next_step)
+           |> assign_current_step(next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)
            |> assign(:writing_start_time, writing_start_time(next_step))
@@ -526,7 +526,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
           {:noreply,
            socket
            |> assign(:current_step_index, next_index)
-           |> assign(:current_step, next_step)
+           |> assign_current_step(next_step)
            |> assign(:answer, initial_answer_for_step(next_step))
            |> assign(:show_hint, false)
            |> assign(:writing_start_time, writing_start_time(next_step))
@@ -1170,7 +1170,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
       {:noreply,
        socket
        |> assign(:current_step_index, next_index)
-       |> assign(:current_step, next_step)
+       |> assign_current_step(next_step)
        |> assign(:answer, initial_answer_for_step(next_step))
        |> assign(:show_hint, false)
        |> assign(:writing_start_time, writing_start_time(next_step))
@@ -1231,7 +1231,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
         {:noreply,
          socket
          |> assign(:current_step_index, next_index)
-         |> assign(:current_step, next_step)
+         |> assign_current_step(next_step)
          |> assign(:answer, initial_answer_for_step(next_step))
          |> assign(:show_hint, false)
          |> assign(:writing_start_time, nil)
@@ -1318,7 +1318,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
             {:noreply,
              socket
              |> assign(:current_step_index, next_index)
-             |> assign(:current_step, next_step)
+             |> assign_current_step(next_step)
              |> assign(:answer, initial_answer_for_step(next_step))
              |> assign(:show_hint, false)
              |> assign(:writing_start_time, nil)
@@ -1688,7 +1688,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       <%!-- Audio Player --%>
                       <%= if @current_step.question_data["audio_path"] do %>
                         <div class="bg-base-200 rounded-xl p-4">
-                          <audio controls class="w-full">
+                          <audio controls class="w-full" id={"listening-audio-#{@current_step.id}"}>
                             <source src={@current_step.question_data["audio_path"]} />
                             {gettext("Your browser does not support the audio element.")}
                           </audio>
@@ -1697,7 +1697,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
                       <%!-- Options --%>
                       <div class="space-y-2">
-                        <%= for option <- @current_step.options do %>
+                        <%= for option <- @current_options do %>
                           <label class="flex items-center gap-3 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
                             <input
                               type="radio"
@@ -1931,4 +1931,16 @@ defmodule MedoruWeb.ClassroomLive.Test do
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
   end
+
+  # Assigns the current step plus a shuffled option list for listening steps so
+  # the correct answer is not always shown in the first position.
+  defp assign_current_step(socket, step) do
+    socket
+    |> assign(:current_step, step)
+    |> assign(:current_options, shuffled_options(step))
+  end
+
+  @doc false
+  def shuffled_options(%{question_type: :listening} = step), do: Enum.shuffle(step.options)
+  def shuffled_options(step), do: step.options
 end

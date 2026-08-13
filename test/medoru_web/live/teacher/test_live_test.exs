@@ -146,19 +146,15 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
       assert has_element?(view, "button[phx-value-type='writing']")
     end
 
-    test "cannot edit published test", %{conn: conn, teacher: teacher} do
+    test "cannot edit archived test", %{conn: conn, teacher: teacher} do
       test = teacher_test_fixture(teacher.id)
       _step = test_step_fixture(test)
 
-      # First mark as ready
-      {:ok, _} = Tests.mark_test_ready(test)
+      # Archive the test
+      {:ok, _} = Tests.archive_teacher_test(test)
       test = Tests.get_test!(test.id)
 
-      # Then publish
-      {:ok, _} = Tests.publish_teacher_test(test)
-      test = Tests.get_test!(test.id)
-
-      assert test.setup_state == "published"
+      assert test.setup_state == "archived"
 
       # Now try to edit
       {:error, {:live_redirect, %{to: path, flash: flash}}} =
@@ -166,6 +162,25 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
 
       assert path == "/teacher/tests/#{test.id}"
       assert flash["info"] == "This test can no longer be edited."
+    end
+
+    test "can edit published test", %{conn: conn, teacher: teacher} do
+      test = teacher_test_fixture(teacher.id)
+      _step = test_step_fixture(test)
+
+      # Mark ready and publish
+      {:ok, _} = Tests.mark_test_ready(test)
+      {:ok, _} = Tests.publish_teacher_test(Tests.get_test!(test.id))
+      test = Tests.get_test!(test.id)
+
+      assert test.setup_state == "published"
+
+      {:ok, view, html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      assert html =~ test.title
+      assert html =~ "student attempts"
+      assert has_element?(view, "button", "Add Step")
     end
 
     test "grammar_pattern form renders example, words, and correct answer fields", %{

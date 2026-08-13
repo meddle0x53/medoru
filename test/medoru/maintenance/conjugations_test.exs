@@ -62,4 +62,36 @@ defmodule Medoru.Maintenance.ConjugationsTest do
       end
     end
   end
+
+  describe "generate_for_type(:adjective)" do
+    test "creates conditional form for i-adjectives" do
+      ContentFixtures.word_fixture(%{
+        text: "安い",
+        reading: "やすい",
+        word_type: :adjective
+      })
+
+      Conjugations.seed_grammar_forms()
+      Conjugations.generate_for_type(:adjective)
+
+      conjs = conjugation_map("安い")
+      assert conjs["conditional"].text == "安ければ"
+      assert conjs["conditional"].reading == "やすければ"
+    end
+
+    test "creates conditional form for na-adjectives" do
+      ContentFixtures.word_fixture(%{
+        text: "静かだ",
+        reading: "しずかだ",
+        word_type: :adjective
+      })
+
+      Conjugations.seed_grammar_forms()
+      Conjugations.generate_for_type(:adjective)
+
+      conjs = conjugation_map("静かだ")
+      assert conjs["conditional"].text == "静かなら"
+      assert conjs["conditional"].reading == "しずかなら"
+    end
+  end
 end

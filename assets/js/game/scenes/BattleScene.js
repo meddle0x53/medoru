@@ -3352,9 +3352,10 @@ export default class BattleScene extends Phaser.Scene {
 
     for (const reward of rewards) {
       if (reward.type === 'charm') {
-        const result = this.player.addCharm(reward.id)
-        if (result.owned) {
-          this.addCombatLog(`First defeat reward: ${getCharmById(reward.id)?.name || reward.id} unlocked!`)
+        const newlyUnlocked = this.player.unlockHeroCharm(reward.id)
+        if (newlyUnlocked) {
+          const charmName = getCharmById(reward.id)?.name || reward.id
+          this.addCombatLog(`First defeat reward: ${charmName} now available in the Ouro Essence shop!`)
         }
       } else if (reward.type === 'socketCharm') {
         if (this.player.addSocketCharm(reward.id)) {

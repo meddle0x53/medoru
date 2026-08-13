@@ -967,7 +967,11 @@ export default class LoadoutScene extends Phaser.Scene {
     // Effect / description
     let effectText = ''
     if (charm.effect) {
-      effectText = charm.effect.stat + ' +' + charm.effect.value
+      if (Array.isArray(charm.effect.stats)) {
+        effectText = charm.effect.stats.join('/') + ' +' + charm.effect.value
+      } else {
+        effectText = charm.effect.stat + ' +' + charm.effect.value
+      }
     } else if (charm.description) {
       effectText = charm.description
     }
