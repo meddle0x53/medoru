@@ -35,35 +35,43 @@ defmodule Medoru.Tests.GrammarLessonTestGenerator do
 
     grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
 
-    if length(grammar_steps) == 0 do
-      {:error, :no_steps_in_lesson}
-    else
-      # Archive existing test if present
-      if lesson.test_id do
-        old_test = Tests.get_test!(lesson.test_id)
-        Tests.archive_test(old_test)
-      end
+    testable_steps =
+      Enum.filter(grammar_steps, &(&1.include_in_test == true and has_examples?(&1)))
 
-      # Create new test
-      test_attrs = %{
-        title: "#{lesson.title} - Grammar Test",
-        description: "Test your understanding of #{length(steps)} grammar patterns",
-        test_type: :lesson,
-        status: :published,
-        is_system: true,
-        creator_id: lesson.creator_id
-      }
+    cond do
+      length(grammar_steps) == 0 ->
+        {:error, :no_steps_in_lesson}
 
-      with {:ok, test} <- Tests.create_test(test_attrs),
-           {:ok, _steps} <- generate_steps(test, steps),
-           {:ok, updated_test} <- Tests.ready_test(test) do
-        # Update lesson with test reference and requires_test flag
-        lesson
-        |> Ecto.Changeset.change(test_id: test.id, requires_test: true)
-        |> Repo.update()
+      Enum.empty?(testable_steps) ->
+        {:error, :no_testable_steps}
 
-        {:ok, updated_test}
-      end
+      true ->
+        # Archive existing test if present
+        if lesson.test_id do
+          old_test = Tests.get_test!(lesson.test_id)
+          Tests.archive_test(old_test)
+        end
+
+        # Create new test
+        test_attrs = %{
+          title: "#{lesson.title} - Grammar Test",
+          description: "Test your understanding of #{length(steps)} grammar patterns",
+          test_type: :lesson,
+          status: :published,
+          is_system: true,
+          creator_id: lesson.creator_id
+        }
+
+        with {:ok, test} <- Tests.create_test(test_attrs),
+             {:ok, _steps} <- generate_steps(test, steps),
+             {:ok, updated_test} <- Tests.ready_test(test) do
+          # Update lesson with test reference and requires_test flag
+          lesson
+          |> Ecto.Changeset.change(test_id: test.id, requires_test: true)
+          |> Repo.update()
+
+          {:ok, updated_test}
+        end
     end
   end
 

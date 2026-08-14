@@ -67,7 +67,14 @@ defmodule Medoru.Tests.TestStepAnswer do
   @doc """
   Changeset for recording an answer to a test step.
   """
-  def answer_changeset(test_step_answer, attrs, correct_answer, max_points, question_data \\ %{}) do
+  def answer_changeset(
+        test_step_answer,
+        attrs,
+        correct_answer,
+        max_points,
+        question_data \\ %{},
+        step_question_type \\ nil
+      ) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     changeset =
@@ -94,7 +101,7 @@ defmodule Medoru.Tests.TestStepAnswer do
     # Calculate points with penalties
     points_earned =
       if is_correct do
-        apply_penalties(max_points, attempts, hints_used)
+        apply_penalties(max_points, attempts, hints_used, step_question_type)
       else
         0
       end
@@ -171,15 +178,19 @@ defmodule Medoru.Tests.TestStepAnswer do
   @doc """
   Applies penalties to points based on attempts and hints used.
   - Each extra attempt: -25% of points
-  - Each hint: -10% of points
+  - Each hint: -10% of points (non-listening steps)
+  - Listening hint: -50% of points (single hint halves the earned points)
   - Minimum: 10% of original points (if correct)
   """
-  def apply_penalties(max_points, attempts, hints_used) do
+  def apply_penalties(max_points, attempts, hints_used, step_question_type \\ nil) do
     attempt_penalty = (attempts - 1) * 0.25
-    hint_penalty = hints_used * 0.10
+    hint_penalty = calculate_hint_penalty(hints_used, step_question_type)
     total_penalty = min(attempt_penalty + hint_penalty, 0.90)
 
     rounded_points = round(max_points * (1 - total_penalty))
     max(rounded_points, 1)
   end
+
+  defp calculate_hint_penalty(hints_used, :listening) when hints_used > 0, do: 0.5
+  defp calculate_hint_penalty(hints_used, _), do: hints_used * 0.10
 end

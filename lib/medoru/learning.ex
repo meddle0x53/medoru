@@ -1971,7 +1971,8 @@ defmodule Medoru.Learning do
       daily_test_completed: Map.has_key?(challenges, "daily_test"),
       daily_kanji_completed: Map.has_key?(challenges, "daily_kanji"),
       daily_cards_completed: Map.has_key?(challenges, "daily_cards"),
-      daily_radical_hunt_completed: Map.has_key?(challenges, "daily_radical_hunt")
+      daily_radical_hunt_completed: Map.has_key?(challenges, "daily_radical_hunt"),
+      ouroboros_run_completed: Map.has_key?(challenges, "ouroboros_run")
     }
   end
 

@@ -34,8 +34,8 @@ echo "✓ Updated mix.exs (project version)"
 sed -i "s/version: \"$CURRENT_VERSION\"/version: \"$VERSION\"/g" mix.exs
 echo "✓ Updated mix.exs (release version)"
 
-# Update version in home.html.heex (Early Access badge)
-sed -i "s/[0-9]\+\.[0-9]\+\.[0-9]\+ Early Access/$VERSION Early Access/g" lib/medoru_web/controllers/page_html/home.html.heex
+# Update version in home.html.heex
+sed -i "s/[0-9]\+\.[0-9]\+\.[0-9]\+/$VERSION/g" lib/medoru_web/controllers/page_html/home.html.heex
 echo "✓ Updated home.html.heex"
 
 # Update version examples in RELEASE.md

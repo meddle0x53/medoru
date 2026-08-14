@@ -167,6 +167,98 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Lists kanji for the public API with cursor-based pagination.
+
+  Accepts the following options:
+    * `:jlpt_level` - filter by JLPT level (1-5)
+    * `:limit` - page size (default 50, max 100)
+    * `:cursor` - base64url-encoded cursor from a previous response
+
+  Returns `{:ok, {items, next_cursor}}` or `{:error, reason}`.
+  """
+  def list_kanji_for_api(opts \\ []) do
+    jlpt_level = opts[:jlpt_level]
+    limit = clamp(opts[:limit] || 50, 1, 100)
+    cursor = opts[:cursor]
+
+    with {:ok, cursor_payload} <- parse_cursor(cursor, jlpt_level) do
+      last_character = cursor_payload["character"]
+
+      query =
+        Kanji
+        |> select([k], %{
+          character: k.character,
+          meanings: k.meanings,
+          stroke_count: k.stroke_count,
+          jlpt_level: k.jlpt_level,
+          radicals: k.radicals,
+          frequency: k.frequency,
+          school_level: k.school_level,
+          translations: k.translations
+        })
+        |> maybe_filter_jlpt_level(jlpt_level)
+        |> maybe_filter_cursor(last_character)
+        |> order_by([k], asc: k.character)
+        |> limit(^(limit + 1))
+
+      items = Repo.all(query)
+      has_next = length(items) > limit
+      items = Enum.take(items, limit)
+      next_cursor = if has_next, do: build_next_cursor(items, jlpt_level), else: nil
+
+      {:ok, {items, next_cursor}}
+    end
+  end
+
+  defp clamp(value, min, max) when is_integer(value) and value >= min and value <= max, do: value
+  defp clamp(value, _min, _max) when is_integer(value) and value < 1, do: 1
+  defp clamp(value, _min, _max) when is_integer(value) and value > 100, do: 100
+  defp clamp(value, _min, _max) when is_integer(value), do: value
+  defp clamp(_, _min, _max), do: 50
+
+  defp parse_cursor(nil, _jlpt_level), do: {:ok, %{}}
+
+  defp parse_cursor(cursor, jlpt_level) do
+    case Medoru.Api.Cursor.decode(cursor) do
+      {:ok, payload} ->
+        if payload["jlpt_level"] == jlpt_level do
+          {:ok, payload}
+        else
+          {:error, :cursor_mismatch}
+        end
+
+      {:error, _reason} ->
+        {:error, :invalid_cursor}
+    end
+  end
+
+  defp maybe_filter_jlpt_level(query, nil), do: query
+
+  defp maybe_filter_jlpt_level(query, jlpt_level) when jlpt_level in 1..5 do
+    where(query, [k], k.jlpt_level == ^jlpt_level)
+  end
+
+  defp maybe_filter_cursor(query, nil), do: query
+  defp maybe_filter_cursor(query, character), do: where(query, [k], k.character > ^character)
+
+  defp build_next_cursor(items, jlpt_level) do
+    last = List.last(items)
+    Medoru.Api.Cursor.encode(%{"character" => last.character, "jlpt_level" => jlpt_level})
+  end
+
+  @doc """
+  Gets a single kanji by character for the public API.
+
+  Returns `nil` if the Kanji does not exist.
+  """
+  def get_kanji_by_character_for_api(character) do
+    Kanji
+    |> where(character: ^character)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
   Creates a kanji.
 
   ## Examples

@@ -86,6 +86,60 @@ defmodule MedoruWeb.UserLiveTest do
       refute html =~ "href=\"/users/#{user.id}/followers\""
       refute html =~ "href=\"/users/#{user.id}/following\""
     end
+
+    test "records a visit when an authenticated user views another profile", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      viewer = user_with_display_name(%{display_name: "Viewer"})
+
+      {:ok, _view, _html} = conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}")
+
+      assert Social.count_visitors(owner.id) == 1
+    end
+
+    test "does not record a visit for self views", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+
+      {:ok, _view, _html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}")
+
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "does not record a visit when blocked", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      viewer = user_with_display_name(%{display_name: "Viewer"})
+
+      Social.block_user(owner.id, viewer.id)
+
+      {:error, {:live_redirect, _}} =
+        conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}")
+
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "shows visitors link for teacher owner", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Teacher", type: "teacher"})
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}")
+
+      assert html =~ "href=\"/users/#{owner.id}/visitors\""
+    end
+
+    test "shows visitors link for moderator owner", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Moderator"})
+      {:ok, owner} = Accounts.update_user(owner, %{moderator: true})
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}")
+
+      assert html =~ "href=\"/users/#{owner.id}/visitors\""
+    end
+
+    test "hides visitors link for student owner", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Student", type: "student"})
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}")
+
+      refute html =~ "href=\"/users/#{owner.id}/visitors\""
+    end
   end
 
   describe "UserLive.Followers" do
@@ -185,6 +239,71 @@ defmodule MedoruWeb.UserLiveTest do
 
       {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
         conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}/following")
+    end
+  end
+
+  describe "UserLive.Visitors" do
+    test "renders visitors for the profile owner (teacher)", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner", type: "teacher"})
+      visitor = user_with_display_name(%{display_name: "VisitorOne"})
+
+      Social.record_profile_visit(visitor.id, owner.id)
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/visitors")
+
+      assert html =~ "Visitors"
+      assert html =~ "VisitorOne"
+    end
+
+    test "renders visitors for the profile owner (moderator)", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner"})
+      {:ok, owner} = Accounts.update_user(owner, %{moderator: true})
+      visitor = user_with_display_name(%{display_name: "VisitorOne"})
+
+      Social.record_profile_visit(visitor.id, owner.id)
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/visitors")
+
+      assert html =~ "Visitors"
+      assert html =~ "VisitorOne"
+    end
+
+    test "does not show blocked visitors", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner", type: "teacher"})
+      visitor = user_with_display_name(%{display_name: "BlockedVisitor"})
+
+      Social.record_profile_visit(visitor.id, owner.id)
+      Social.block_user(owner.id, visitor.id)
+
+      {:ok, _view, html} = conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/visitors")
+
+      assert html =~ "Visitors"
+      refute html =~ "BlockedVisitor"
+    end
+
+    test "redirects non-owner to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner", type: "teacher"})
+      viewer = user_with_display_name()
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        conn |> log_in_user(viewer) |> live(~p"/users/#{owner.id}/visitors")
+    end
+
+    test "redirects student owner to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner", type: "student"})
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/visitors")
+    end
+
+    test "redirects anonymous viewer to the profile page", %{conn: conn} do
+      owner = user_with_display_name(%{display_name: "Owner", type: "teacher"})
+      expected_path = "/users/#{owner.id}"
+
+      {:error, {:live_redirect, %{to: ^expected_path, flash: %{"error" => _}}}} =
+        live(conn, ~p"/users/#{owner.id}/visitors")
     end
   end
 end

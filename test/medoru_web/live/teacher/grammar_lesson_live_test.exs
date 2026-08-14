@@ -446,5 +446,32 @@ defmodule MedoruWeb.Teacher.GrammarLessonLiveTest do
       assert hd(step.examples)["reading"] == "きょうはさむいです"
       assert hd(step.examples)["meaning"] == "Today is cold"
     end
+
+    test "cannot publish grammar lesson with no testable steps", %{conn: conn, user: user} do
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: user.id,
+          lesson_subtype: "grammar",
+          title: "Lesson Without Testable Steps",
+          requires_test: true
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        position: 0,
+        title: "Excluded Step",
+        include_in_test: false,
+        examples: [%{"sentence" => "猫", "reading" => "ねこ", "meaning" => "cat"}]
+      })
+
+      {:ok, view, _html} = live(conn, ~p"/teacher/grammar-lessons/#{lesson.id}/edit")
+
+      html =
+        view
+        |> element("button", "Publish Lesson")
+        |> render_click()
+
+      assert html =~ "At least 1 grammar step must be included in the test and have examples."
+    end
   end
 end

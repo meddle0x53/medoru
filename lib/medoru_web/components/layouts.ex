@@ -139,6 +139,13 @@ defmodule MedoruWeb.Layouts do
               class="hidden xl:block"
             />
             <.nav_link
+              path="/the-hollow-ouroboros"
+              icon="hero-fire"
+              label={gettext("Hollow Ouroboros")}
+              locale={@current_scope[:locale]}
+              class="hidden xl:block"
+            />
+            <.nav_link
               path="/users"
               icon="hero-users"
               label={gettext("Users")}
@@ -270,6 +277,12 @@ defmodule MedoruWeb.Layouts do
                     path="/games"
                     icon="hero-puzzle-piece"
                     label={gettext("Games")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
+                    path="/the-hollow-ouroboros"
+                    icon="hero-fire"
+                    label={gettext("Hollow Ouroboros")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link

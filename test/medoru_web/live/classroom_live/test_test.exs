@@ -396,6 +396,138 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
     end
   end
 
+  describe "Listening step hints" do
+    setup do
+      teacher = user_fixture(%{email: "listening_hint_teacher@example.com"})
+      student = user_fixture(%{email: "listening_hint_student@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Listening Hint Classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      test =
+        test_fixture(%{
+          title: "Listening Hint Test",
+          created_by_id: teacher.id,
+          status: :published,
+          time_limit_seconds: 600,
+          total_points: 10
+        })
+
+      step =
+        test_step_fixture(test, %{
+          question: "Listen and select",
+          step_type: :listening,
+          question_type: :listening,
+          correct_answer: "Answer 1",
+          options: ["Answer 1", "Wrong 1"],
+          points: 10,
+          order_index: 0,
+          hints: ["This is a helpful hint"],
+          question_data: %{"audio_path" => "/audio/listening-hint.mp3"}
+        })
+
+      {:ok, _} =
+        Classrooms.publish_test_to_classroom(
+          classroom.id,
+          test.id,
+          teacher.id,
+          %{max_attempts: 1}
+        )
+
+      %{
+        teacher: teacher,
+        student: student,
+        classroom: classroom,
+        test_resource: test,
+        step: step
+      }
+    end
+
+    test "renders hint button for listening step with hint", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      assert html =~ "Show Hint"
+      refute html =~ "This is a helpful hint"
+    end
+
+    test "clicking hint button shows the hint and halves earned points", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      step: step
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      view
+      |> element("button", "Show Hint")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "This is a helpful hint"
+
+      view
+      |> form("form", %{answer: "Answer 1"})
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      answer =
+        Medoru.Tests.TestStepAnswer
+        |> where([a], a.test_step_id == ^step.id)
+        |> Medoru.Repo.one!()
+
+      assert answer.is_correct
+      assert answer.hints_used == 1
+      assert answer.points_earned == 5
+    end
+
+    test "answering without using hint earns full points", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      step: step
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      view
+      |> form("form", %{answer: "Answer 1"})
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      answer =
+        Medoru.Tests.TestStepAnswer
+        |> where([a], a.test_step_id == ^step.id)
+        |> Medoru.Repo.one!()
+
+      assert answer.is_correct
+      assert answer.hints_used == 0
+      assert answer.points_earned == 10
+    end
+  end
+
   describe "Test results page" do
     setup do
       teacher = user_fixture(%{email: "teacher2@example.com"})

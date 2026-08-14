@@ -821,6 +821,9 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
 
     grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
 
+    testable_grammar_steps =
+      Enum.filter(grammar_steps, &(&1.include_in_test == true and length(&1.examples || []) > 0))
+
     cond do
       length(steps) < 1 ->
         {:noreply, put_flash(socket, :error, gettext("Add at least 1 step before publishing."))}
@@ -831,6 +834,14 @@ defmodule MedoruWeb.Teacher.GrammarLessonLive.Form do
            socket,
            :error,
            gettext("Add at least 1 grammar step to generate a test.")
+         )}
+
+      lesson.requires_test and Enum.empty?(testable_grammar_steps) ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("At least 1 grammar step must be included in the test and have examples.")
          )}
 
       true ->

@@ -90,6 +90,36 @@ defmodule Medoru.Tests.TestStepAnswerTest do
       assert Ecto.Changeset.get_field(changeset, :points_earned) == 8
     end
 
+    test "halves points for listening hint" do
+      attrs = %{
+        "answer" => "correct",
+        "step_index" => 0,
+        "attempts" => 1,
+        "hints_used" => 1
+      }
+
+      changeset =
+        TestStepAnswer.answer_changeset(%TestStepAnswer{}, attrs, "correct", 10, %{}, :listening)
+
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 5
+    end
+
+    test "listening hint with extra attempts caps at 90% penalty" do
+      attrs = %{
+        "answer" => "correct",
+        "step_index" => 0,
+        "attempts" => 3,
+        "hints_used" => 1
+      }
+
+      # 2 extra attempts * 25% = 50% + listening hint 50% = 100%, capped at 90%
+      # 10 * 0.1 = 1 point (also enforced by max(..., 1))
+      changeset =
+        TestStepAnswer.answer_changeset(%TestStepAnswer{}, attrs, "correct", 10, %{}, :listening)
+
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 1
+    end
+
     test "minimum points is 1 when correct" do
       attrs = %{
         "answer" => "correct",

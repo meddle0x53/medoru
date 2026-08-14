@@ -9,7 +9,9 @@ import { getMapDefinition, MAP_DEFINITIONS } from '../data/maps/index.js'
 import { clearTags, expireStates } from '../systems/CombatStateSystem.js'
 import { sendRunResult } from '../api.js'
 
-const LOADOUT_KEY = 'medoru_loadout_v1'
+export function loadoutKey() {
+  return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
+}
 const MAP_VERSION = 4
 
 const BASE_STAT_POINTS = 0
@@ -223,6 +225,7 @@ export default class Player extends Character {
       savedSiteLevel: this.level,
       ouroSource: 0,
       ouroEssence: 0,
+      startingOuroEssenceForRun: 0,
       ngPlusLevel: 0,
       startingGoldBonus: 0,
       startingPotionBonus: 0,
@@ -671,7 +674,7 @@ export default class Player extends Character {
 
   loadLoadout() {
     try {
-      const raw = localStorage.getItem(LOADOUT_KEY)
+      const raw = localStorage.getItem(loadoutKey())
       if (raw) {
         const loadout = JSON.parse(raw)
         // Migration: ensure permanent bonus field exists
@@ -861,7 +864,7 @@ export default class Player extends Character {
     try {
       this.loadout.weapon = this.weapon
       this.loadout.shield = this.shield
-      localStorage.setItem(LOADOUT_KEY, JSON.stringify(this.loadout))
+      localStorage.setItem(loadoutKey(), JSON.stringify(this.loadout))
     } catch (e) {
       console.warn('[Player] Failed to save loadout:', e)
     }
@@ -1435,6 +1438,7 @@ export default class Player extends Character {
       savedSiteLevel: this.loadout?.savedSiteLevel ?? this.level,
       ouroSource: this.loadout?.ouroSource ?? this.loadout?.rareGameTokens ?? 0,
       ouroEssence: this.loadout?.ouroEssence ?? 0,
+      startingOuroEssenceForRun: this.loadout?.startingOuroEssenceForRun ?? 0,
       ngPlusLevel: 0,
       startingGoldBonus: this.loadout?.startingGoldBonus ?? 0,
       startingPotionBonus: Math.min(4, this.loadout?.startingPotionBonus ?? 0),
@@ -1515,6 +1519,10 @@ export default class Player extends Character {
     this.clearShieldBonus()
     this.refreshActions()
     this.saveLoadout()
+
+    // Snapshot essence at the start of the next run so we can compute
+    // how much was earned when the run ends.
+    this.loadout.startingOuroEssenceForRun = this.loadout.ouroEssence || 0
   }
 
   hardReset() {
@@ -1524,6 +1532,7 @@ export default class Player extends Character {
       savedSiteLevel: this.level,
       ouroSource: 0,
       ouroEssence: 0,
+      startingOuroEssenceForRun: 0,
       startingGoldBonus: 0,
       startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,
@@ -1621,14 +1630,24 @@ export default class Player extends Character {
   }
 
   persistRunProgress(winner = null) {
+    // Don't report a "run end" when we are just initializing a fresh hero
+    // before any map has been generated.
+    if (!this.loadout?.mapState) return
+
     const learnedWordIds = (this.loadout.beingLearnedWords || [])
       .map(w => w.id)
       .filter(Boolean)
+
+    const startingEssence = this.loadout.startingOuroEssenceForRun || 0
+    const currentEssence = this.loadout.ouroEssence || 0
+    const earnedOuroEssence = Math.max(0, currentEssence - startingEssence)
 
     sendRunResult({
       winner,
       learned_word_ids: learnedWordIds,
       focus_kanji: this.loadout.focusKanji || null,
+      daily_challenge_mode: Boolean(window.gameData?.dailyChallengeMode),
+      earned_ouro_essence: earnedOuroEssence,
       timestamp: new Date().toISOString(),
     })
   }

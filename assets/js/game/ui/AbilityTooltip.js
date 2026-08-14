@@ -89,10 +89,17 @@ export default class AbilityTooltip {
     container.add(nameText)
     let nextY = pad + nameText.height + 4
 
+    const subParts = [
+      `${(action.type || 'ability').toUpperCase()}`,
+      `${action.rarity || 'normal'}`,
+    ]
+    if (typeof action.staminaCost === 'number') {
+      subParts.push(`${action.staminaCost} STA`)
+    }
     const subText = scene.add.text(
       pad,
       nextY,
-      `${(action.type || 'ability').toUpperCase()} · ${action.rarity || 'normal'} · ${action.staminaCost ?? '-'} STA`,
+      subParts.join(' · '),
       { ...FONTS.default, fontSize: '10px', color: '#bdc3c7' }
     )
     container.add(subText)

@@ -360,7 +360,12 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   @impl true
   def handle_event("show_hint", _, socket) do
-    {:noreply, assign(socket, :show_hint, true)}
+    hint_used = socket.assigns.current_step.question_type == :listening
+
+    {:noreply,
+     socket
+     |> assign(:show_hint, true)
+     |> assign(:hint_used, hint_used)}
   end
 
   @impl true
@@ -712,12 +717,20 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
   # Standard answer handler for multichoice questions
   defp handle_standard_answer(socket, answer, step, session) do
-    result =
-      Tests.record_step_answer(session.id, step.id, %{
-        "answer" => answer,
-        "time_spent_seconds" => 30,
-        "step_index" => step.order_index
-      })
+    attrs = %{
+      "answer" => answer,
+      "time_spent_seconds" => 30,
+      "step_index" => step.order_index
+    }
+
+    attrs =
+      if step.question_type == :listening && socket.assigns.hint_used do
+        Map.put(attrs, "hints_used", 1)
+      else
+        attrs
+      end
+
+    result = Tests.record_step_answer(session.id, step.id, attrs)
 
     case result do
       {:ok, step_answer} ->
@@ -1695,6 +1708,25 @@ defmodule MedoruWeb.ClassroomLive.Test do
                         </div>
                       <% end %>
 
+                      <%!-- Hint --%>
+                      <%= if @current_step.hints != [] do %>
+                        <%= if not @show_hint do %>
+                          <button
+                            type="button"
+                            phx-click="show_hint"
+                            class="btn btn-outline btn-sm btn-info"
+                          >
+                            <.icon name="hero-light-bulb" class="h-4 w-4" />
+                            {gettext("Show Hint")}
+                          </button>
+                        <% else %>
+                          <div class="alert alert-info alert-soft">
+                            <.icon name="hero-light-bulb" class="h-5 w-5" />
+                            <span>{gettext("Hint:")} {List.first(@current_step.hints)}</span>
+                          </div>
+                        <% end %>
+                      <% end %>
+
                       <%!-- Options --%>
                       <div class="space-y-2">
                         <%= for option <- @current_options do %>
@@ -1938,6 +1970,8 @@ defmodule MedoruWeb.ClassroomLive.Test do
     socket
     |> assign(:current_step, step)
     |> assign(:current_options, shuffled_options(step))
+    |> assign(:show_hint, false)
+    |> assign(:hint_used, false)
   end
 
   @doc false

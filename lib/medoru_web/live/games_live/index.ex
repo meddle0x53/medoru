@@ -100,6 +100,38 @@ defmodule MedoruWeb.GamesLive.Index do
           </p>
         </div>
 
+        <%= if @current_scope.current_user do %>
+          <div class="mb-8">
+            <h2 class="text-lg font-semibold text-base-content mb-3 flex items-center gap-2">
+              <.icon name="hero-sparkles" class="w-5 h-5 text-secondary" />
+              {gettext("The Hollow Ouroboros")}
+            </h2>
+
+            <.link
+              navigate={~p"/the-hollow-ouroboros"}
+              class="card shadow-sm hover:shadow-md transition-all bg-secondary/5 border-secondary/20 hover:border-secondary/40"
+            >
+              <div class="card-body p-4">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center border bg-secondary/10 text-secondary border-secondary/20">
+                      <.icon name="hero-bolt" class="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div class="font-semibold text-base-content">
+                        {gettext("Play The Hollow Ouroboros")}
+                      </div>
+                      <div class="text-sm text-base-content/60">
+                        {gettext("Roguelike Japanese vocabulary adventure")}
+                      </div>
+                    </div>
+                  </div>
+                  <.icon name="hero-play-circle" class="w-6 h-6 text-secondary" />
+                </div>
+              </div>
+            </.link>
+          </div>
+        <% end %>
         <%= if @games == [] do %>
           <%!-- Empty State --%>
           <div class="text-center py-16 bg-base-100 rounded-xl border border-base-300 border-dashed">

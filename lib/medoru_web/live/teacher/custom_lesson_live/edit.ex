@@ -414,8 +414,23 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
     min_content =
       if lesson.lesson_subtype == "grammar" do
         # For grammar lessons, check grammar steps
-        steps_count = length(Content.list_grammar_lesson_steps(lesson.id))
-        if steps_count < 1, do: {:error, :no_steps}, else: {:ok, steps_count}
+        steps = Content.list_grammar_lesson_steps(lesson.id)
+        grammar_steps = Enum.filter(steps, &(&1.step_type == "grammar"))
+
+        cond do
+          length(grammar_steps) < 1 ->
+            {:error, :no_steps}
+
+          lesson.requires_test and
+              not Enum.any?(
+                grammar_steps,
+                &(&1.include_in_test == true and length(&1.examples || []) > 0)
+              ) ->
+            {:error, :no_testable_steps}
+
+          true ->
+            {:ok, length(grammar_steps)}
+        end
       else
         # For vocabulary lessons, check word count
         if lesson.word_count < 1, do: {:error, :no_words}, else: {:ok, lesson.word_count}
@@ -425,6 +440,14 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
       {:error, :no_steps} ->
         {:noreply,
          put_flash(socket, :error, gettext("Add at least 1 grammar step before publishing."))}
+
+      {:error, :no_testable_steps} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("At least 1 grammar step must be included in the test and have examples.")
+         )}
 
       {:error, :no_words} ->
         {:noreply, put_flash(socket, :error, gettext("Add at least 1 word before publishing."))}
@@ -477,7 +500,7 @@ defmodule MedoruWeb.Teacher.CustomLessonLive.Edit do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={%{}} current_scope={@current_scope}>
+    <Layouts.app flash={@flash} current_scope={@current_scope}>
       <div class="max-w-4xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">

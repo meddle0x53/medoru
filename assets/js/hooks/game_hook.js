@@ -31,6 +31,32 @@ function tryEnterFullscreen() {
   }
 }
 
+function gameLoadoutKey() {
+  return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
+}
+
+function abandonActiveDailyRun() {
+  try {
+    const key = gameLoadoutKey()
+    const raw = localStorage.getItem(key)
+    if (!raw) return
+
+    const loadout = JSON.parse(raw)
+    const map = loadout.mapState?.maps?.[loadout.mapState?.currentMapIndex]
+    if (!map) return
+
+    // Daily challenge runs must start fresh: wipe the in-progress map and
+    // any run-scoped learning state so the player cannot continue an old run.
+    loadout.mapState = null
+    loadout.beingLearnedWords = []
+    loadout.focusKanji = null
+    loadout.focusKanjiData = null
+    localStorage.setItem(key, JSON.stringify(loadout))
+  } catch (e) {
+    console.warn('[GameHook] Failed to abandon active daily run:', e)
+  }
+}
+
 const GameHook = {
   mounted() {
     this.fullscreenHandler = () => {
@@ -60,6 +86,13 @@ const GameHook = {
     } catch (e) {
       console.error('[GameHook] Failed to parse game data:', e)
       window.gameData = {}
+    }
+
+    window.gameData.devMode = el.dataset.devMode === 'true'
+    window.gameData.dailyChallengeMode = el.dataset.dailyChallengeMode === 'true'
+
+    if (window.gameData.dailyChallengeMode) {
+      abandonActiveDailyRun()
     }
 
     this.startIfReady()

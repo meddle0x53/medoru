@@ -4,7 +4,6 @@ defmodule MedoruWeb.GameApiController do
   """
   use MedoruWeb, :controller
 
-  alias Medoru.Accounts
   alias Medoru.Accounts.UserStats
   alias Medoru.Content
   alias Medoru.Learning
@@ -67,14 +66,6 @@ defmodule MedoruWeb.GameApiController do
     require Logger
     Logger.info("Game run result for user #{user.id}: #{inspect(params)}")
 
-    # Grant a small XP reward for winning
-    if params["winner"] == "player" do
-      Accounts.add_xp(user, 50,
-        source_type: "game_battle",
-        description: "Won a battle in The Hollow Ouroboros"
-      )
-    end
-
     # Mark any words learned during the run as learned. This is idempotent, so
     # duplicate calls are safe.
     learned_word_ids = params["learned_word_ids"] || []
@@ -91,6 +82,26 @@ defmodule MedoruWeb.GameApiController do
         nil -> :ok
         kanji -> Learning.track_kanji_learned(user.id, kanji.id)
       end
+    end
+
+    # Daily challenge runs award site XP based on Ouro Essence earned.
+    # Regular runs still persist learned words/kanji but do not grant site XP.
+    if params["daily_challenge_mode"] == true do
+      earned_ouro_essence = params["earned_ouro_essence"] || 0
+      xp_awarded = max(0, earned_ouro_essence * 100)
+
+      metadata = %{
+        earned_ouro_essence: earned_ouro_essence,
+        victory: params["winner"] == "player"
+      }
+
+      Learning.complete_daily_challenge(
+        user.id,
+        "ouroboros_run",
+        xp_awarded,
+        metadata: metadata,
+        score: earned_ouro_essence
+      )
     end
 
     json(conn, %{status: "ok"})

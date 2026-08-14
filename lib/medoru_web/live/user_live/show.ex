@@ -5,6 +5,7 @@ defmodule MedoruWeb.UserLive.Show do
   use MedoruWeb, :live_view
 
   alias Medoru.Accounts
+  alias Medoru.Accounts.User
   alias Medoru.Gamification
   alias Medoru.Learning
   alias Medoru.Social
@@ -97,12 +98,25 @@ defmodule MedoruWeb.UserLive.Show do
               following_count = Social.count_following(user.id)
               user_tags = Social.list_user_tags(user.id)
 
+              # Record profile visit when a connected, authenticated user views
+              # another user's profile. Skip if either user has blocked the other.
+              if connected?(socket) && current_user && current_user.id != user.id do
+                Social.record_profile_visit(current_user.id, user.id)
+              end
+
               # Check online status
               is_online = Presence.list("user_online:#{user.id}") != %{}
 
               if connected?(socket) do
                 Phoenix.PubSub.subscribe(Medoru.PubSub, "user_online:#{user.id}")
               end
+
+              visitor_count =
+                if current_user && current_user.id == user.id && can_see_visitors?(user) do
+                  Social.count_visitors(user.id)
+                else
+                  0
+                end
 
               {:ok,
                socket
@@ -118,6 +132,8 @@ defmodule MedoruWeb.UserLive.Show do
                |> assign(:is_following, is_following)
                |> assign(:follower_count, follower_count)
                |> assign(:following_count, following_count)
+               |> assign(:visitor_count, visitor_count)
+               |> assign(:can_see_visitors, can_see_visitors?(user))
                |> assign(:user_tags, user_tags)
                |> assign(:is_online, is_online)}
             end
@@ -350,5 +366,9 @@ defmodule MedoruWeb.UserLive.Show do
       completed_count: map_size(challenges),
       challenge_types: Map.keys(challenges)
     }
+  end
+
+  defp can_see_visitors?(%User{} = user) do
+    User.teacher?(user) or User.moderator?(user)
   end
 end

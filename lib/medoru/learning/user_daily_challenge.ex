@@ -7,7 +7,13 @@ defmodule Medoru.Learning.UserDailyChallenge do
 
   alias Medoru.Accounts.User
 
-  @challenge_types ["daily_test", "daily_kanji", "daily_cards", "daily_radical_hunt"]
+  @challenge_types [
+    "daily_test",
+    "daily_kanji",
+    "daily_cards",
+    "daily_radical_hunt",
+    "ouroboros_run"
+  ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

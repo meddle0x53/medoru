@@ -290,6 +290,39 @@ defmodule MedoruWeb.Teacher.CustomLessonLiveTest do
       assert published.test_id != nil
     end
 
+    test "cannot publish grammar lesson with requires_test and no testable steps", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, lesson} =
+        Content.create_custom_lesson(%{
+          title: "Grammar Lesson Without Testable Steps",
+          creator_id: teacher.id,
+          status: "draft",
+          lesson_subtype: "grammar",
+          requires_test: true,
+          word_count: 1
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        position: 0,
+        title: "Step Without Examples",
+        include_in_test: true,
+        examples: []
+      })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/custom-lessons/#{lesson.id}/edit")
+
+      view
+      |> element("button", "Publish")
+      |> render_click()
+
+      assert render(view) =~
+               "At least 1 grammar step must be included in the test and have examples."
+    end
+
     test "teacher can reorder lesson words", %{conn: conn, teacher: teacher} do
       word1 = word_fixture(%{text: "日本", reading: "にほん", meaning: "Japan"})
       word2 = word_fixture(%{text: "学校", reading: "がっこう", meaning: "school"})

@@ -63,5 +63,6 @@ defmodule MedoruWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug MedoruWeb.Plugs.CORS
   plug MedoruWeb.Router
 end

@@ -44,7 +44,21 @@ export default class RestScene extends Phaser.Scene {
   }
 
   createInfoPanel() {
-    this.infoText = this.add.text(GAME_CONFIG.width / 2, 100, this.buildInfoText(), {
+    this.hpText = this.add.text(GAME_CONFIG.width / 2, 80, `HP: ${this.player.hp}/${this.player.maxHp}`, {
+      ...FONTS.default,
+      fontSize: '16px',
+      color: '#ecf0f1',
+      align: 'center',
+    }).setOrigin(0.5)
+
+    this.weaponInfoText = this.add.text(GAME_CONFIG.width * 0.25, 150, this.buildWeaponInfoText(), {
+      ...FONTS.default,
+      fontSize: '15px',
+      color: '#ecf0f1',
+      align: 'center',
+    }).setOrigin(0.5)
+
+    this.shieldInfoText = this.add.text(GAME_CONFIG.width * 0.75, 150, this.buildShieldInfoText(), {
       ...FONTS.default,
       fontSize: '15px',
       color: '#ecf0f1',
@@ -52,23 +66,23 @@ export default class RestScene extends Phaser.Scene {
     }).setOrigin(0.5)
   }
 
-  buildInfoText() {
+  buildWeaponInfoText() {
     const w = this.player.weapon
+    const cost = w && w.level < w.maxLevel ? getUpgradeCost(w.level) : 'MAX'
+    return `${w?.name || 'Weapon'} +${w?.level || 0}\nUpgrade: ${cost}G`
+  }
+
+  buildShieldInfoText() {
     const s = this.player.shield
-    const wCost = w && w.level < w.maxLevel ? getUpgradeCost(w.level) : 'MAX'
-    const sCost = s && s.level < s.maxLevel ? getUpgradeCost(s.level) : 'MAX'
-    return [
-      `HP: ${this.player.hp}/${this.player.maxHp}`,
-      `${w?.name || 'Weapon'} +${w?.level || 0} · Upgrade: ${wCost}G`,
-      `${s?.name || 'Shield'} +${s?.level || 0} · Upgrade: ${sCost}G`,
-    ].join('\n')
+    const cost = s && s.level < s.maxLevel ? getUpgradeCost(s.level) : 'MAX'
+    return `${s?.name || 'Shield'} +${s?.level || 0}\nUpgrade: ${cost}G`
   }
 
   createButtons() {
-    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 190, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
-    this.weaponBtn = this.createButton(GAME_CONFIG.width / 2, 250, 'Upgrade Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
-    this.shieldBtn = this.createButton(GAME_CONFIG.width / 2, 310, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
-    this.createButton(GAME_CONFIG.width / 2, 390, 'Leave', () => this.completeTile(), 0x7f8c8d)
+    this.weaponBtn = this.createButton(GAME_CONFIG.width * 0.25, 230, 'Upgrade Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
+    this.shieldBtn = this.createButton(GAME_CONFIG.width * 0.75, 230, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
+    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 320, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
+    this.createButton(GAME_CONFIG.width / 2, 400, 'Leave', () => this.completeTile(), 0x7f8c8d)
   }
 
   createButton(x, y, label, onClick, color = 0x2980b9) {
@@ -150,7 +164,9 @@ export default class RestScene extends Phaser.Scene {
   }
 
   updateInfo() {
-    this.infoText.setText(this.buildInfoText())
+    this.hpText.setText(`HP: ${this.player.hp}/${this.player.maxHp}`)
+    this.weaponInfoText.setText(this.buildWeaponInfoText())
+    this.shieldInfoText.setText(this.buildShieldInfoText())
   }
 
   showToast(message) {

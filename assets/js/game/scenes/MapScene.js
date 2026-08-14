@@ -3,6 +3,7 @@ import { TILE_TYPES, getTileConfig, isBattleTile } from '../data/tileTypes.js'
 import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
 import { updateReachability, findTileById, computeLayout, getMapName } from '../systems/MapGenerator.js'
+import { getMapDefinition } from '../data/maps/index.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
@@ -227,61 +228,63 @@ export default class MapScene extends Phaser.Scene {
       },
     ).setOrigin(0.5)
 
-    // DEV ONLY: reset the current run back to hero select.
-    this.hud.resetBtn = this.add.text(GAME_CONFIG.width - 16, 16, 'DEV: RESET RUN', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#ffffff',
-      backgroundColor: '#c0392b',
-      padding: { left: 8, right: 8, top: 4, bottom: 4 },
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
-    this.hud.resetBtn.on('pointerdown', () => {
-      this.player.resetToFreshHero()
-      this.scene.start('HeroSelectScene', { player: this.player })
-    })
+    if (window.gameData?.devMode) {
+      // DEV ONLY: reset the current run back to hero select.
+      this.hud.resetBtn = this.add.text(GAME_CONFIG.width - 16, 16, 'DEV: RESET RUN', {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#c0392b',
+        padding: { left: 8, right: 8, top: 4, bottom: 4 },
+      }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+      this.hud.resetBtn.on('pointerdown', () => {
+        this.player.resetToFreshHero()
+        this.scene.start('HeroSelectScene', { player: this.player })
+      })
 
-    // DEV ONLY: wipe all meta-progression and return to hero select.
-    this.hud.hardResetBtn = this.add.text(GAME_CONFIG.width - 16, 46, 'DEV: HARD RESET', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#ffffff',
-      backgroundColor: '#8e44ad',
-      padding: { left: 8, right: 8, top: 4, bottom: 4 },
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
-    this.hud.hardResetBtn.on('pointerdown', () => {
-      this.player.hardReset()
-      this.scene.start('HeroSelectScene', { player: this.player })
-    })
+      // DEV ONLY: wipe all meta-progression and return to hero select.
+      this.hud.hardResetBtn = this.add.text(GAME_CONFIG.width - 16, 46, 'DEV: HARD RESET', {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#8e44ad',
+        padding: { left: 8, right: 8, top: 4, bottom: 4 },
+      }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+      this.hud.hardResetBtn.on('pointerdown', () => {
+        this.player.hardReset()
+        this.scene.start('HeroSelectScene', { player: this.player })
+      })
 
-    // DEV ONLY: start a test fight with a chosen enemy and count.
-    this.hud.testFightBtn = this.add.text(GAME_CONFIG.width - 16, 76, 'DEV: TEST FIGHT', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#ffffff',
-      backgroundColor: '#2980b9',
-      padding: { left: 8, right: 8, top: 4, bottom: 4 },
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
-    this.hud.testFightBtn.on('pointerdown', () => this.showTestFightDialog())
+      // DEV ONLY: start a test fight with a chosen enemy and count.
+      this.hud.testFightBtn = this.add.text(GAME_CONFIG.width - 16, 76, 'DEV: TEST FIGHT', {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#2980b9',
+        padding: { left: 8, right: 8, top: 4, bottom: 4 },
+      }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+      this.hud.testFightBtn.on('pointerdown', () => this.showTestFightDialog())
 
-    // DEV ONLY: teleport to any forward column.
-    this.hud.teleportBtn = this.add.text(GAME_CONFIG.width - 16, 106, 'DEV: TELEPORT', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#ffffff',
-      backgroundColor: '#16a085',
-      padding: { left: 8, right: 8, top: 4, bottom: 4 },
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
-    this.hud.teleportBtn.on('pointerdown', () => this.showTeleportDialog())
+      // DEV ONLY: teleport to any forward column.
+      this.hud.teleportBtn = this.add.text(GAME_CONFIG.width - 16, 106, 'DEV: TELEPORT', {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#16a085',
+        padding: { left: 8, right: 8, top: 4, bottom: 4 },
+      }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+      this.hud.teleportBtn.on('pointerdown', () => this.showTeleportDialog())
 
-    // DEV ONLY: trigger an event scene directly for testing.
-    this.hud.eventBtn = this.add.text(GAME_CONFIG.width - 16, 136, 'DEV: EVENT', {
-      fontFamily: 'Arial',
-      fontSize: '12px',
-      color: '#ffffff',
-      backgroundColor: '#d35400',
-      padding: { left: 8, right: 8, top: 4, bottom: 4 },
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
-    this.hud.eventBtn.on('pointerdown', () => this.showEventDialog())
+      // DEV ONLY: trigger an event scene directly for testing.
+      this.hud.eventBtn = this.add.text(GAME_CONFIG.width - 16, 136, 'DEV: EVENT', {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#d35400',
+        padding: { left: 8, right: 8, top: 4, bottom: 4 },
+      }).setOrigin(1, 0).setInteractive({ useHandCursor: true })
+      this.hud.eventBtn.on('pointerdown', () => this.showEventDialog())
+    }
 
     this.createFullscreenButton()
   }
@@ -965,7 +968,7 @@ export default class MapScene extends Phaser.Scene {
     }
 
     if (tile.type === TILE_TYPES.EVENT) {
-      this.scene.start('EventScene', { player: this.player, tile, mapIndex: this.map.index })
+      this.resolveEventTile(tile)
       return
     }
 
@@ -976,6 +979,52 @@ export default class MapScene extends Phaser.Scene {
    * Temporary placeholder for non-battle tiles.
    * Rolls 33/33/33: -5 HP / +5 HP / instant win.
    */
+  resolveEventTile(tile) {
+    // Events in column 1 (right next to home) are always Lost Memories.
+    if (tile.col === 1) {
+      this.scene.start('EventScene', {
+        player: this.player,
+        tile,
+        mapIndex: this.map.index,
+        eventType: 'lost_memories',
+      })
+      return
+    }
+
+    const roll = Math.random()
+    if (roll < 0.8) {
+      this.scene.start('EventScene', {
+        player: this.player,
+        tile,
+        mapIndex: this.map.index,
+        eventType: 'lost_memories',
+      })
+    } else if (roll < 0.9) {
+      this.scene.start('ChestScene', { player: this.player, tile, mapIndex: this.map.index })
+    } else {
+      const enemyPool = this.getBattleEnemyPoolForColumn(tile)
+      const battleTile = { ...tile, type: TILE_TYPES.BATTLE, enemyPool }
+      this.scene.start('LoadoutScene', {
+        player: this.player,
+        tile: battleTile,
+        mapIndex: this.map.index,
+      })
+    }
+  }
+
+  getBattleEnemyPoolForColumn(tile) {
+    const column = this.map.columns[tile.col] || []
+    for (const t of column) {
+      if (t.type === TILE_TYPES.BATTLE && Array.isArray(t.enemyPool) && t.enemyPool.length > 0) {
+        return t.enemyPool
+      }
+    }
+
+    const def = getMapDefinition(this.map.index)
+    const colConfig = (def.columns || [])[tile.col] || {}
+    return colConfig.enemyPools?.battle || def.defaultEnemyPools?.battle || null
+  }
+
   runPlaceholderEvent(tile) {
     const roll = Math.random()
     let message, color, onComplete

@@ -301,4 +301,141 @@ defmodule Medoru.SocialTest do
       refute Social.mutual_followers?(user_a.id, user_c.id)
     end
   end
+
+  describe "profile visits" do
+    test "record_profile_visit/2 creates a visit" do
+      owner = user_fixture()
+      visitor = user_fixture()
+
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+      assert Social.count_visitors(owner.id) == 1
+    end
+
+    test "record_profile_visit/2 deduplicates repeated visits" do
+      owner = user_fixture()
+      visitor = user_fixture()
+
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+
+      assert Social.count_visitors(owner.id) == 1
+    end
+
+    test "record_profile_visit/2 updates visited_at on repeated visits" do
+      owner = user_fixture()
+      visitor = user_fixture()
+
+      old_time = DateTime.utc_now() |> DateTime.add(-3600, :second) |> DateTime.truncate(:second)
+
+      %Social.ProfileVisit{}
+      |> Social.ProfileVisit.changeset(%{
+        visitor_id: visitor.id,
+        visited_user_id: owner.id,
+        visited_at: old_time
+      })
+      |> Medoru.Repo.insert!()
+
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+
+      [visit] =
+        Social.ProfileVisit
+        |> where([pv], pv.visited_user_id == ^owner.id)
+        |> Medoru.Repo.all()
+
+      assert DateTime.compare(visit.visited_at, old_time) == :gt
+    end
+
+    test "record_profile_visit/2 ignores self visits" do
+      owner = user_fixture()
+
+      assert :ok = Social.record_profile_visit(owner.id, owner.id)
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "record_profile_visit/2 ignores nil visitor" do
+      owner = user_fixture()
+
+      assert :ok = Social.record_profile_visit(nil, owner.id)
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "record_profile_visit/2 ignores visits when visitor blocked owner" do
+      owner = user_fixture()
+      visitor = user_fixture()
+
+      Social.block_user(visitor.id, owner.id)
+
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "record_profile_visit/2 ignores visits when owner blocked visitor" do
+      owner = user_fixture()
+      visitor = user_fixture()
+
+      Social.block_user(owner.id, visitor.id)
+
+      assert :ok = Social.record_profile_visit(visitor.id, owner.id)
+      assert Social.count_visitors(owner.id) == 0
+    end
+
+    test "list_visitors/2 orders by most recent visit first" do
+      owner = user_fixture()
+      visitor_a = user_fixture_with_registration(%{name: "Visitor A"})
+      visitor_b = user_fixture_with_registration(%{name: "Visitor B"})
+
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Insert older visit for A and newer visit for B directly to control timestamps.
+      %Social.ProfileVisit{}
+      |> Social.ProfileVisit.changeset(%{
+        visitor_id: visitor_a.id,
+        visited_user_id: owner.id,
+        visited_at: DateTime.add(now, -3600, :second)
+      })
+      |> Medoru.Repo.insert!()
+
+      %Social.ProfileVisit{}
+      |> Social.ProfileVisit.changeset(%{
+        visitor_id: visitor_b.id,
+        visited_user_id: owner.id,
+        visited_at: now
+      })
+      |> Medoru.Repo.insert!()
+
+      visitors = Social.list_visitors(owner.id)
+      assert length(visitors) == 2
+      assert hd(visitors).user.id == visitor_b.id
+      assert List.last(visitors).user.id == visitor_a.id
+    end
+
+    test "list_visitors/2 supports pagination" do
+      owner = user_fixture()
+
+      for _ <- 1..5 do
+        visitor = user_fixture_with_registration()
+        Social.record_profile_visit(visitor.id, owner.id)
+        visitor
+      end
+
+      page1 = Social.list_visitors(owner.id, page: 1, per_page: 2)
+      page2 = Social.list_visitors(owner.id, page: 2, per_page: 2)
+
+      assert length(page1) == 2
+      assert length(page2) == 2
+      assert Enum.map(page1, & &1.user.id) != Enum.map(page2, & &1.user.id)
+    end
+
+    test "count_visitors/1 counts unique visitors" do
+      owner = user_fixture()
+      visitor_a = user_fixture()
+      visitor_b = user_fixture()
+
+      Social.record_profile_visit(visitor_a.id, owner.id)
+      Social.record_profile_visit(visitor_a.id, owner.id)
+      Social.record_profile_visit(visitor_b.id, owner.id)
+
+      assert Social.count_visitors(owner.id) == 2
+    end
+  end
 end

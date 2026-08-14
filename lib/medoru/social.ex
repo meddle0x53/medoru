@@ -12,6 +12,7 @@ defmodule Medoru.Social do
   alias Medoru.Social.Tag
   alias Medoru.Social.UserTag
   alias Medoru.Social.Follow
+  alias Medoru.Social.ProfileVisit
   alias Medoru.Accounts
   alias Medoru.Accounts.User
 
@@ -602,5 +603,95 @@ defmodule Medoru.Social do
         not blocked_by?(sender_id, recipient_id) and
           not blocked_by?(recipient_id, sender_id)
     end
+  end
+
+  # ============================================================================
+  # Profile Visits
+  # ============================================================================
+
+  @doc """
+  Records a profile visit from `visitor_id` to `visited_user_id`.
+
+  Does nothing if:
+    * the visitor is the profile owner
+    * either user has blocked the other
+    * the visitor is nil
+
+  Repeated visits update the existing row with the latest timestamp.
+  """
+  def record_profile_visit(nil, _visited_user_id), do: :ok
+
+  def record_profile_visit(visitor_id, visited_user_id) when visitor_id == visited_user_id,
+    do: :ok
+
+  def record_profile_visit(visitor_id, visited_user_id) do
+    if is_blocked?(visitor_id, visited_user_id) == :blocked do
+      :ok
+    else
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      %ProfileVisit{}
+      |> ProfileVisit.changeset(%{
+        visitor_id: visitor_id,
+        visited_user_id: visited_user_id,
+        visited_at: now
+      })
+      |> Repo.insert(
+        on_conflict: [set: [visited_at: now, updated_at: now]],
+        conflict_target: [:visitor_id, :visited_user_id]
+      )
+      |> case do
+        {:ok, _} -> :ok
+        {:error, _} -> :ok
+      end
+    end
+  end
+
+  @doc """
+  Counts unique users who have visited the given user's profile.
+  Excludes users who have blocked the owner or been blocked by the owner.
+  """
+  def count_visitors(user_id) do
+    ProfileVisit
+    |> where([pv], pv.visited_user_id == ^user_id)
+    |> join(:inner, [pv], u in assoc(pv, :visitor))
+    |> exclude_blocked_visitors(user_id)
+    |> Repo.aggregate(:count, :id)
+  end
+
+  @doc """
+  Lists visitors of a user's profile, ordered by most recent visit first.
+  Excludes users who have blocked the owner or been blocked by the owner.
+
+  Options:
+    * `:page` - page number (default 1)
+    * `:per_page` - page size (default 24)
+  """
+  def list_visitors(user_id, opts \\ []) do
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 24)
+
+    ProfileVisit
+    |> where([pv], pv.visited_user_id == ^user_id)
+    |> join(:inner, [pv], u in assoc(pv, :visitor))
+    |> exclude_blocked_visitors(user_id)
+    |> preload([pv, u], visitor: [:profile, :stats])
+    |> order_by([pv], desc: pv.visited_at)
+    |> limit(^per_page)
+    |> offset((^page - 1) * ^per_page)
+    |> Repo.all()
+    |> Enum.map(&%{user: &1.visitor, visited_at: &1.visited_at})
+  end
+
+  # Exclude visitors where either direction of block exists between the owner
+  # and the visitor.
+  defp exclude_blocked_visitors(query, user_id) do
+    query
+    |> join(:left, [pv, u], ub in UserBlock,
+      on:
+        (ub.blocker_id == ^user_id and ub.blocked_id == u.id) or
+          (ub.blocked_id == ^user_id and ub.blocker_id == u.id)
+    )
+    |> where([pv, u, ub], is_nil(ub.id))
   end
 end

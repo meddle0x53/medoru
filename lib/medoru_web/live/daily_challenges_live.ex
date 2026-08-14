@@ -266,6 +266,61 @@ defmodule MedoruWeb.DailyChallengesLive do
             </div>
           </div>
         </div>
+
+        <%!-- Hollow Ouroboros Run --%>
+        <div class="mt-6 flex justify-center">
+          <div class={[
+            "card border transition-all w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)]",
+            if(@stats.ouroboros_run_completed,
+              do: "border-success/30 bg-success/5",
+              else: "border-base-300 bg-base-100"
+            )
+          ]}>
+            <div class="card-body">
+              <div class="flex items-center justify-between mb-4">
+                <div class={[
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  if(@stats.ouroboros_run_completed, do: "bg-success/20", else: "bg-secondary/10")
+                ]}>
+                  <.icon
+                    name="hero-bolt"
+                    class={[
+                      "w-6 h-6",
+                      if(@stats.ouroboros_run_completed, do: "text-success", else: "text-secondary")
+                    ]}
+                  />
+                </div>
+                <%= if @stats.ouroboros_run_completed do %>
+                  <span class="badge badge-success">{gettext("Completed")}</span>
+                <% else %>
+                  <span class="badge badge-ghost">{gettext("Available")}</span>
+                <% end %>
+              </div>
+              <h3 class="card-title text-lg">{gettext("Hollow Ouroboros Run")}</h3>
+              <p class="text-sm text-secondary mt-2">
+                {gettext("Play The Hollow Ouroboros. Earn site XP from Ouro Essence gained.")}
+              </p>
+              <div class="mt-4 flex items-center gap-2 text-sm text-base-content/70">
+                <.icon name="hero-sparkles" class="w-4 h-4 text-warning" />
+                <span>{gettext("100 XP per Ouro Essence")}</span>
+              </div>
+              <div class="card-actions mt-4">
+                <%= if @stats.ouroboros_run_completed do %>
+                  <button class="btn btn-success btn-sm w-full" disabled>
+                    <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Done")}
+                  </button>
+                <% else %>
+                  <.link
+                    navigate={~p"/the-hollow-ouroboros?daily_challenge=1"}
+                    class="btn btn-primary btn-sm w-full"
+                  >
+                    <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start")}
+                  </.link>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Layouts.app>
     """

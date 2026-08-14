@@ -233,5 +233,51 @@ defmodule Medoru.Tests.GrammarLessonTestGeneratorTest do
       assert {:error, :no_steps_in_lesson} =
                GrammarLessonTestGenerator.generate_lesson_test(empty_lesson.id)
     end
+
+    test "returns error when grammar steps are not included in test" do
+      teacher = user_fixture(%{type: "teacher"})
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          title: "Grammar Lesson Without Testable Steps",
+          lesson_subtype: "grammar",
+          requires_test: true
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        position: 0,
+        title: "Excluded Step",
+        include_in_test: false,
+        examples: [%{"sentence" => "猫", "reading" => "ねこ", "meaning" => "cat"}]
+      })
+
+      assert {:error, :no_testable_steps} =
+               GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
+    end
+
+    test "returns error when grammar steps have no examples" do
+      teacher = user_fixture(%{type: "teacher"})
+
+      lesson =
+        custom_lesson_fixture(%{
+          creator_id: teacher.id,
+          title: "Grammar Lesson Without Examples",
+          lesson_subtype: "grammar",
+          requires_test: true
+        })
+
+      grammar_lesson_step_fixture(%{
+        custom_lesson: lesson,
+        position: 0,
+        title: "Step Without Examples",
+        include_in_test: true,
+        examples: []
+      })
+
+      assert {:error, :no_testable_steps} =
+               GrammarLessonTestGenerator.generate_lesson_test(lesson.id)
+    end
   end
 end

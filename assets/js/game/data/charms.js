@@ -77,7 +77,7 @@ export const CHARMS = [
     type: CHARM_TYPES.HERO,
     rarity: 'rare',
     firstDefeatReward: true,
-    effect: { stat: 'staminaRegen', value: 1 },
+    effect: { stat: 'staminaRegen', value: 2 },
   },
   {
     id: 'hi_charm',

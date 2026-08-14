@@ -148,6 +148,7 @@ defmodule MedoruWeb.Router do
       live "/messages/:id", MessagesLive.Show
       live "/messages/:id/settings", MessagesLive.Settings
       live "/daily-review", DailyReviewLive
+      live "/the-hollow-ouroboros", GameLive
     end
   end
 
@@ -195,6 +196,7 @@ defmodule MedoruWeb.Router do
       live "/:id", UserLive.Show
       live "/:id/followers", UserLive.Followers
       live "/:id/following", UserLive.Following
+      live "/:id/visitors", UserLive.Visitors
     end
   end
 
@@ -424,6 +426,25 @@ defmodule MedoruWeb.Router do
     post "/chat/uploads", ChatUploadController, :create
     get "/game/user-data", GameApiController, :user_data
     post "/game/run-result", GameApiController, :run_result
+  end
+
+  # Public API v1
+  scope "/api/v1", MedoruWeb do
+    pipe_through :api
+
+    get "/health", Api.V1.HealthController, :health
+    get "/health/db", Api.V1.HealthController, :db_health
+
+    get "/kanji", Api.V1.KanjiController, :index
+    get "/kanji/character/:character", Api.V1.KanjiController, :show
+
+    get "/openapi.json", Api.V1.OpenApiController, :spec
+  end
+
+  scope "/api/v1" do
+    pipe_through :api
+
+    forward "/docs", OpenApiSpex.Plug.SwaggerUI, path: "/api/v1/openapi.json"
   end
 
   # Other scopes may use custom stacks.

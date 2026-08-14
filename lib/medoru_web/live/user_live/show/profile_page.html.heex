@@ -75,6 +75,16 @@
                     "following"
                   )}
                 </.link>
+                <%= if @can_see_visitors do %>
+                  <.link
+                    navigate={~p"/users/#{@user.id}/visitors"}
+                    class="hover:text-primary transition-colors"
+                  >
+                    <span class="font-semibold text-base-content">{@visitor_count}</span> {gettext(
+                      "visitors"
+                    )}
+                  </.link>
+                <% end %>
               <% else %>
                 <span>
                   <span class="font-semibold text-base-content">{@follower_count}</span> {gettext(

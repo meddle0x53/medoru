@@ -1,10 +1,10 @@
 import { GAME_CONFIG, FONTS, COLORS } from '../config.js'
-import Player from '../entities/Player.js'
+import Player, { loadoutKey } from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const SETTINGS_KEY = 'medoru_settings_v1'
-const LOADOUT_KEY = 'medoru_loadout_v1'
+
 
 export default class TitleScene extends Phaser.Scene {
   constructor() {
@@ -49,7 +49,7 @@ export default class TitleScene extends Phaser.Scene {
 
   checkActiveRun() {
     try {
-      const raw = localStorage.getItem(LOADOUT_KEY)
+      const raw = localStorage.getItem(loadoutKey())
       if (raw) {
         const loadout = JSON.parse(raw)
         const map = loadout.mapState?.maps?.[loadout.mapState?.currentMapIndex]

@@ -1258,10 +1258,22 @@ defmodule Medoru.Tests do
       else
         if existing_answer do
           existing_answer
-          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points, question_data)
+          |> TestStepAnswer.answer_changeset(
+            attrs,
+            correct_answer,
+            step.points,
+            question_data,
+            step.question_type
+          )
         else
           %TestStepAnswer{}
-          |> TestStepAnswer.answer_changeset(attrs, correct_answer, step.points, question_data)
+          |> TestStepAnswer.answer_changeset(
+            attrs,
+            correct_answer,
+            step.points,
+            question_data,
+            step.question_type
+          )
         end
       end
 
