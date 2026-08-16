@@ -112,8 +112,7 @@ defmodule MedoruWeb.GameLive do
           on_readings: on_readings,
           kun_readings: kun_readings,
           readings: readings,
-          stroke_count: k.stroke_count,
-          stroke_data: k.stroke_data
+          stroke_count: k.stroke_count
         }
       end)
 

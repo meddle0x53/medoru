@@ -1,6 +1,7 @@
 import { GAME_CONFIG } from '../config.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import { setupHighDPIWorld } from '../highDpi.js'
+import { fetchKanjiStrokes } from '../api.js'
 
 /**
  * Pre-run Kanji Library scene.
@@ -21,6 +22,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     this.learnedChars = new Set(userData.learned_kanji_chars || [])
     this.selectedChar = null
     this.practiceOpen = false
+    this.strokeCache = new Map()
   }
 
   create() {
@@ -337,7 +339,7 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     this.sortSelect = wrapper.querySelector('#kco-sort')
     this.sortSelect.addEventListener('change', () => this.render())
 
-    wrapper.querySelector('#kco-continue').addEventListener('click', () => {
+    wrapper.querySelector('#kco-continue').addEventListener('click', async () => {
       this.closePracticeDialog()
       if (this.kanjiDrawing) {
         this.kanjiDrawing.destroy()
@@ -349,6 +351,10 @@ export default class KanjiLibraryScene extends Phaser.Scene {
       this.practiceHeader = null
 
       const focusKanji = this.computeFocusKanji()
+      if (focusKanji) {
+        this.showPracticeStatus(`Loading strokes for ${focusKanji.character}...`)
+        await this.loadStrokesForKanji(focusKanji)
+      }
       this.player.loadout.focusKanji = focusKanji ? focusKanji.character : null
       this.player.loadout.focusKanjiData = focusKanji
       this.player.saveLoadout()
@@ -432,10 +438,41 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     header.querySelector('#kco-practice-close').addEventListener('click', () => this.closePracticeDialog())
   }
 
-  openPracticeDialog(kanji) {
-    if (!kanji || !kanji.stroke_data || !(kanji.stroke_data.strokes || []).length) {
-      this.showPracticeStatus('No stroke data available for this kanji.')
-      return
+  async loadStrokesForKanji(kanji) {
+    if (!kanji) return null
+    if (kanji.stroke_data && (kanji.stroke_data.strokes || []).length) return kanji.stroke_data
+
+    let strokes = this.strokeCache.get(kanji.character)
+    if (!strokes) {
+      strokes = await fetchKanjiStrokes(kanji.character)
+      if (strokes) {
+        this.strokeCache.set(kanji.character, strokes)
+      }
+    }
+    if (strokes && (strokes.strokes || []).length) {
+      kanji.stroke_data = strokes
+      return strokes
+    }
+    return null
+  }
+
+  async openPracticeDialog(kanji) {
+    if (!kanji) return
+
+    if (!kanji.stroke_data || !(kanji.stroke_data.strokes || []).length) {
+      let strokes = this.strokeCache.get(kanji.character)
+      if (!strokes) {
+        this.showPracticeStatus(`Loading strokes for ${kanji.character}...`)
+        strokes = await fetchKanjiStrokes(kanji.character)
+        if (strokes) {
+          this.strokeCache.set(kanji.character, strokes)
+        }
+      }
+      if (!strokes || !(strokes.strokes || []).length) {
+        this.showPracticeStatus('No stroke data available for this kanji.')
+        return
+      }
+      kanji.stroke_data = strokes
     }
 
     this.practiceOpen = true
@@ -557,7 +594,6 @@ export default class KanjiLibraryScene extends Phaser.Scene {
     for (const k of list) {
       const card = document.createElement('div')
       const learned = this.learnedChars.has(k.character)
-      const hasStrokes = k.stroke_data && (k.stroke_data.strokes || []).length > 0
       card.className = `kco-card${learned ? ' learned' : ''}`
       card.title = `${k.character}\n${(k.meanings || []).join(', ')}\n${(k.readings || []).join(', ')}`.trim()
 
@@ -589,22 +625,20 @@ export default class KanjiLibraryScene extends Phaser.Scene {
         card.appendChild(badge)
       }
 
-      if (hasStrokes) {
-        const selected = this.selectedChar === k.character
-        if (selected) card.classList.add('selected')
-        if (!learned) card.classList.add('selectable')
+      const selected = this.selectedChar === k.character
+      if (selected) card.classList.add('selected')
+      if (!learned) card.classList.add('selectable')
 
-        card.addEventListener('click', () => {
-          if (learned) {
-            this.openPracticeDialog(k)
-          } else if (this.selectedChar === k.character) {
-            this.openPracticeDialog(k)
-          } else {
-            this.selectedChar = k.character
-            this.render()
-          }
-        })
-      }
+      card.addEventListener('click', () => {
+        if (learned) {
+          this.openPracticeDialog(k)
+        } else if (this.selectedChar === k.character) {
+          this.openPracticeDialog(k)
+        } else {
+          this.selectedChar = k.character
+          this.render()
+        }
+      })
 
       fragment.appendChild(card)
     }

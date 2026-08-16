@@ -1,8 +1,10 @@
-const CACHE_NAME = "medoru-v447";
+const CACHE_NAME = "medoru-v448";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/assets/css/app.css",
   "/assets/js/app.js",
+  "/assets/js/phaser.min.js",
+  "/assets/js/game.js?v=549",
   "/images/pwa-icon-192.png",
   "/images/pwa-icon-512.png",
 ];

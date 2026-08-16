@@ -48,3 +48,18 @@ export function getWindowGameData() {
   }
   return null
 }
+
+export async function fetchKanjiStrokes(character) {
+  try {
+    const resp = await fetch(`/api/v1/kanji/character/${encodeURIComponent(character)}`, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin',
+    })
+    if (!resp.ok) throw new Error('Failed to fetch kanji strokes')
+    const data = await resp.json()
+    return data.stroke_data || null
+  } catch (e) {
+    console.warn('Kanji stroke fetch error:', e)
+    return null
+  }
+}
