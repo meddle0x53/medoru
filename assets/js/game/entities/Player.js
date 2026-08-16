@@ -1292,7 +1292,20 @@ export default class Player extends Character {
   learnAbility(actionId) {
     if (actionId === 'use_item') return { ok: true, added: false }
     if (!this.loadout.knownActionIds) this.loadout.knownActionIds = []
-    if (this.loadout.knownActionIds.includes(actionId)) return { ok: true, added: false }
+
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    const isKnown = this.loadout.knownActionIds.includes(actionId)
+
+    // Single-use abilities gain a charge every time they are rewarded, even if already known.
+    if (action?.singleUse) {
+      this.addAbilityCharges(actionId, 1)
+    }
+
+    if (isKnown) {
+      this.refreshActions()
+      this.saveLoadout()
+      return { ok: true, added: false, recharged: action?.singleUse === true, action }
+    }
 
     const maxOverall = getMaxOverallAbilities(this.capacity || 3)
     if (this.loadout.knownActionIds.length >= maxOverall) {
@@ -1310,7 +1323,7 @@ export default class Player extends Character {
 
     this.refreshActions()
     this.saveLoadout()
-    return { ok: true, added: true }
+    return { ok: true, added: true, action }
   }
 
   replaceAbility(oldActionId, newActionId) {

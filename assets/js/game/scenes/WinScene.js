@@ -369,7 +369,16 @@ export default class WinScene extends Phaser.Scene {
 
     // Single-use abilities can be collected again to gain extra charges.
     if (action.singleUse) {
-      this.player.addAbilityCharges(action.id, 1)
+      if (!this.player.hasAbility(action.id)) {
+        const result = this.player.learnAbility(action.id)
+        if (!result.ok) {
+          this.showToast(result.reason)
+          this.selectedAbilityAction = null
+          return
+        }
+      } else {
+        this.player.addAbilityCharges(action.id, 1)
+      }
       this.showToast(`${action.name} +1 use`)
       const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(action.type) : null
       this.markAbilitySelected(`${action.name} +1 use`, bonusName)
@@ -438,7 +447,11 @@ export default class WinScene extends Phaser.Scene {
     }
 
     if (bonus.singleUse) {
-      this.player.addAbilityCharges(bonus.id, 1)
+      const result = this.player.learnAbility(bonus.id)
+      if (!result.ok) {
+        this.showToast(result.reason)
+        return null
+      }
       this.showToast(`Bonus: ${bonus.name} +1 use`)
       return `${bonus.name} +1 use`
     }
