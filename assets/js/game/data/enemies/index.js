@@ -66,6 +66,32 @@ export function pickEnemyForTile(tile, mapIndex) {
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
+/**
+ * Returns all image texture keys referenced by an enemy definition
+ * (sprites, phase sprites, portrait, icon), excluding comment/utility keys.
+ */
+export function getEnemyTextureKeys(definition) {
+  const keys = new Set()
+  if (!definition) return keys
+
+  for (const [pose, key] of Object.entries(definition.sprites || {})) {
+    if (pose.startsWith('_') || typeof key !== 'string') continue
+    keys.add(key)
+  }
+
+  for (const phase of definition.phases || []) {
+    for (const [pose, key] of Object.entries(phase.sprites || {})) {
+      if (pose.startsWith('_') || typeof key !== 'string') continue
+      keys.add(key)
+    }
+  }
+
+  if (typeof definition.portrait === 'string') keys.add(definition.portrait)
+  if (typeof definition.icon === 'string') keys.add(definition.icon)
+
+  return Array.from(keys)
+}
+
 export function rollEnemyDrops(enemy, playerClass = 'warrior', ngPlusMultiplier = 1) {
   const table = (enemy?.definition?.drops && enemy.definition.drops[playerClass]) || []
   const scaleChance = (c) => Math.min(1, c * ngPlusMultiplier)

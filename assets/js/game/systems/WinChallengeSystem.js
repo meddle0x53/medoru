@@ -28,6 +28,7 @@ export default class WinChallengeSystem {
       promptForMeaning: 'Type the meaning of this word:',
       timeLimit: 13000,
       hangOnWrong: 5000,
+      hangOnCorrect: 900,
     })
   }
 

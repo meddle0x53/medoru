@@ -342,6 +342,12 @@ export default class WordChallengeSystem {
       }
     }
 
+    if (isCorrect) {
+      this.animateSuccess()
+    } else {
+      this.animateFailure(timedOut, correctAnswer)
+    }
+
     if (this.currentOptions.onResult) {
       this.currentOptions.onResult({
         success: isCorrect,
@@ -370,7 +376,118 @@ export default class WordChallengeSystem {
     this.currentOptions = null
   }
 
+  animateSuccess() {
+    if (!this.wordText) return
+    const word = this.wordText
+    word.setColor('#2ecc71')
 
+    this.scene.tweens.add({
+      targets: word,
+      scaleX: 1.4,
+      scaleY: 1.4,
+      duration: 250,
+      ease: 'Back.easeOut',
+      yoyo: true,
+      hold: 200,
+    })
+
+    this.scene.tweens.add({
+      targets: word,
+      y: word.y - 30,
+      duration: 400,
+      ease: 'Quad.easeOut',
+      yoyo: true,
+      hold: 200,
+    })
+
+    // Sparkle particles around the word
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8
+      const dist = 60
+      const px = word.x + Math.cos(angle) * dist
+      const py = word.y + Math.sin(angle) * dist
+      const p = this.scene.add.text(px, py, '✦', {
+        fontFamily: FONTS.default.fontFamily,
+        fontSize: '16px',
+        color: '#2ecc71',
+      }).setOrigin(0.5).setAlpha(0)
+      if (this.overlay) this.overlay.add(p)
+
+      this.scene.tweens.add({
+        targets: p,
+        alpha: { from: 0, to: 1 },
+        scaleX: { from: 0.5, to: 1.2 },
+        scaleY: { from: 0.5, to: 1.2 },
+        duration: 200,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.scene.tweens.add({
+            targets: p,
+            alpha: 0,
+            scaleX: 0,
+            scaleY: 0,
+            duration: 300,
+            delay: 300,
+            onComplete: () => p.destroy(),
+          })
+        },
+      })
+    }
+  }
+
+  animateFailure(timedOut, correctAnswer) {
+    if (!this.wordText) return
+    const word = this.wordText
+    word.setColor('#e74c3c')
+
+    this.scene.tweens.add({
+      targets: word,
+      x: { from: word.x - 8, to: word.x + 8 },
+      duration: 60,
+      repeat: 5,
+      yoyo: true,
+      ease: 'Linear',
+    })
+
+    this.scene.tweens.add({
+      targets: word,
+      y: word.y + 20,
+      alpha: 0.3,
+      duration: 500,
+      ease: 'Quad.easeIn',
+    })
+
+    // Show "X" marks
+    for (let i = 0; i < 3; i++) {
+      const ox = word.x + (i - 1) * 40
+      const oy = word.y - 50
+      const xMark = this.scene.add.text(ox, oy, '✕', {
+        fontFamily: FONTS.default.fontFamily,
+        fontSize: '24px',
+        color: '#e74c3c',
+      }).setOrigin(0.5).setAlpha(0)
+      if (this.overlay) this.overlay.add(xMark)
+
+      this.scene.tweens.add({
+        targets: xMark,
+        alpha: { from: 0, to: 1 },
+        scaleX: { from: 0.3, to: 1 },
+        scaleY: { from: 0.3, to: 1 },
+        duration: 150,
+        delay: i * 80,
+        ease: 'Back.easeOut',
+        onComplete: () => {
+          this.scene.tweens.add({
+            targets: xMark,
+            alpha: 0,
+            duration: 300,
+            delay: 400,
+            onComplete: () => xMark.destroy(),
+          })
+        },
+      })
+    }
+  }
 
   removeInputHandlers() {
     if (this.timerEvent) {

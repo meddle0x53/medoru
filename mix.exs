@@ -4,7 +4,7 @@ defmodule Medoru.MixProject do
   def project do
     [
       app: :medoru,
-      version: "1.0.0",
+      version: "1.0.1",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -95,7 +95,7 @@ defmodule Medoru.MixProject do
   def releases do
     [
       medoru: [
-        version: "1.0.0",
+        version: "1.0.1",
         applications: [medoru: :permanent],
         overlays: ["rel/overlays"],
         include_erts: false,
@@ -121,7 +121,12 @@ defmodule Medoru.MixProject do
       "qa.setup": ["ecto.reset.qa", "qa.seed"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind medoru", "esbuild medoru"],
+      "assets.build": [
+        "compile",
+        "cmd cp assets/vendor/phaser.min.js priv/static/assets/js/phaser.min.js",
+        "tailwind medoru",
+        "esbuild medoru"
+      ],
       "assets.deploy": [
         "cmd cp assets/vendor/phaser.min.js priv/static/assets/js/phaser.min.js",
         "tailwind medoru --minify",

@@ -16,16 +16,16 @@ const MIN_SPAWN_INTERVAL = 800
 
 // Tick interval per row, copied from the site Kana Cascade game.
 const SPEED_TO_MS = {
-  1: 1800,
-  2: 1600,
-  3: 1300,
-  4: 1000,
-  5: 800,
-  6: 700,
-  7: 500,
-  8: 400,
-  9: 300,
-  10: 100,
+  1: 2000,
+  2: 1800,
+  3: 1500,
+  4: 1200,
+  5: 1000,
+  6: 900,
+  7: 700,
+  8: 600,
+  9: 500,
+  10: 300,
 }
 
 const KEYBOARD_ROWS = [
@@ -34,6 +34,13 @@ const KEYBOARD_ROWS = [
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
   ['-'],
+]
+
+// Larger, simplified layout for touch devices (no number row, bigger keys).
+const TOUCH_KEYBOARD_ROWS = [
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-'],
 ]
 
 export default class CascadeScene extends Phaser.Scene {
@@ -255,6 +262,7 @@ export default class CascadeScene extends Phaser.Scene {
       backgroundColor: '#00000055',
       padding: { left: 12, right: 12, top: 6, bottom: 6 },
     }).setOrigin(0.5, 1)
+      .setDepth(101)
   }
 
   setupPhysicalInput() {
@@ -294,14 +302,18 @@ export default class CascadeScene extends Phaser.Scene {
 
   createKeyboard() {
     this.keyboardContainer = this.add.container(0, 0)
+    this.keyboardContainer.setDepth(100)
     this.keyboardKeys = []
 
-    // Compact layout so all rows + the control bar fit inside a 540px canvas.
-    const keySize = 22
-    const keyGap = 3
-    this.keyboardStartY = GAME_CONFIG.height - 155
+    const isTouch = this.sys.game.device.input.touch
+    // Use a larger, simplified layout on touch devices so keys are easier to hit.
+    const rows = isTouch ? TOUCH_KEYBOARD_ROWS : KEYBOARD_ROWS
+    const keySize = isTouch ? 30 : 22
+    const keyGap = isTouch ? 4 : 3
+    const keyboardHeight = isTouch ? 148 : 155
+    this.keyboardStartY = GAME_CONFIG.height - keyboardHeight
 
-    KEYBOARD_ROWS.forEach((row, rowIndex) => {
+    rows.forEach((row, rowIndex) => {
       const rowWidth = row.length * keySize + (row.length - 1) * keyGap
       const startX = (GAME_CONFIG.width - rowWidth) / 2 + keySize / 2
       row.forEach((char, colIndex) => {
@@ -312,14 +324,14 @@ export default class CascadeScene extends Phaser.Scene {
     })
 
     // Control row: backspace, space, enter, delete (clear).
-    const controlY = this.keyboardStartY + KEYBOARD_ROWS.length * (keySize + keyGap) + 6
+    const controlY = this.keyboardStartY + rows.length * (keySize + keyGap) + 6
     const controls = [
-      { label: '⌫', width: 40, key: 'BACKSPACE' },
-      { label: 'SPACE', width: 100, key: 'SPACE' },
-      { label: '⏎', width: 40, key: 'ENTER' },
-      { label: 'DEL', width: 40, key: 'DELETE' },
+      { label: '⌫', width: isTouch ? 54 : 40, key: 'BACKSPACE' },
+      { label: 'SPACE', width: isTouch ? 120 : 100, key: 'SPACE' },
+      { label: '⏎', width: isTouch ? 54 : 40, key: 'ENTER' },
+      { label: 'DEL', width: isTouch ? 54 : 40, key: 'DELETE' },
     ]
-    const controlGap = 5
+    const controlGap = isTouch ? 6 : 5
     const controlsWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * controlGap
     let controlX = (GAME_CONFIG.width - controlsWidth) / 2
     controls.forEach(({ label, width, key }) => {
@@ -345,12 +357,21 @@ export default class CascadeScene extends Phaser.Scene {
     hitArea.setInteractive({ useHandCursor: true })
     container.add(hitArea)
 
-    hitArea.on('pointerdown', () => {
+    const pressKey = () => {
       bg.setFillStyle(0x3498db)
+      container.setScale(0.92)
+    }
+    const releaseKey = () => {
+      bg.setFillStyle(0x2c3e50)
+      container.setScale(1)
+    }
+
+    hitArea.on('pointerdown', () => {
+      pressKey()
       this.handleKey(key)
     })
-    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
-    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+    hitArea.on('pointerup', releaseKey)
+    hitArea.on('pointerout', releaseKey)
 
     container.keyName = key
     this.keyboardContainer.add(container)

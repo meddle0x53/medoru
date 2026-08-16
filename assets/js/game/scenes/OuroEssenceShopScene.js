@@ -2,6 +2,7 @@ import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import SHOP_DATA from '../data/ouroEssenceShop.json'
 import { SOCKET_1_CHARMS, getSocketCharmById } from '../data/socketCharms.js'
 import { CHARMS, CHARM_TYPES, getCharmById } from '../data/charms.js'
+import AbilityTooltip from '../ui/AbilityTooltip.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const MAX_STARTING_GOLD_BONUS = 150
@@ -24,6 +25,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
 
   create() {
     setupHighDPIWorld(this)
+    this.abilityTooltip = new AbilityTooltip(this)
     this.createBackground()
     this.createHeader()
     this.createCurrencyDisplay()
@@ -142,6 +144,56 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
     return items
   }
 
+  getItemTooltipAction(item) {
+    let description = ''
+    let rarity = 'normal'
+
+    switch (item.type) {
+      case 'socketCharm': {
+        const charm = getSocketCharmById(item.id)
+        description = charm?.description || ''
+        rarity = charm?.rarity || 'normal'
+        break
+      }
+      case 'heroCharm': {
+        const charm = getCharmById(item.id)
+        description = this.describeCharmEffect(charm)
+        rarity = charm?.rarity || 'normal'
+        break
+      }
+      case 'startingGold':
+        description = 'Permanently increase starting gold for future runs.'
+        break
+      case 'startingPotion':
+        description = 'Permanently increase starting potion uses for future runs.'
+        break
+      case 'ouroScale':
+        description = 'Permanent meta currency used for camp upgrades.'
+        break
+      case 'ouroSource':
+        description = 'Rare permanent meta currency for high-tier unlocks.'
+        break
+      default:
+        break
+    }
+
+    return {
+      name: item.name,
+      description,
+      type: item.type === 'socketCharm' || item.type === 'heroCharm' ? 'Charm' : item.type,
+      rarity,
+    }
+  }
+
+  describeCharmEffect(charm) {
+    if (!charm || !charm.effect) return ''
+    const { stat, value } = charm.effect
+    const sign = value >= 0 ? '+' : ''
+    const pctStats = ['maxHpMultiplier', 'damageBonus']
+    const suffix = pctStats.includes(stat) ? '%' : ''
+    return `${sign}${value}${suffix} ${stat}`
+  }
+
   createShopList() {
     const items = this.buildShopItems()
     const startY = 110
@@ -208,6 +260,14 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
       fontSize: '14px',
       color: priceColor,
     }).setOrigin(0, 0.5))
+
+    // Tooltip hit area for the item row (desktop hover / mobile long-press).
+    // Placed before the buy button so the button stays clickable.
+    const tooltipHitArea = this.add.rectangle(0, 0, ROW_WIDTH, rowHeight - 4, 0x000000, 0)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: false })
+    this.abilityTooltip.attach(tooltipHitArea, this.getItemTooltipAction(item))
+    container.add(tooltipHitArea)
 
     // Buy button — enlarged for mobile touch targets.
     const btnWidth = 96

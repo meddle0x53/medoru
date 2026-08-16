@@ -1,4 +1,4 @@
-import { ENEMY_DEFINITIONS } from '../data/enemies/index.js'
+
 import { MAP_DEFINITIONS } from '../data/maps/index.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
@@ -11,6 +11,40 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    this._bootPerfStart = performance.now()
+    this._loadedFiles = 0
+    this._totalFiles = 0
+
+    this.load.on('start', () => {
+      this._bootPerfStart = performance.now()
+      console.log('[GamePerf] BootScene preload started')
+    })
+
+    this.load.on('progress', (progress) => {
+      if (progress === 1) {
+        const elapsed = Math.round(performance.now() - this._bootPerfStart)
+        console.log('[GamePerf] BootScene preload progress 100%', { elapsedMs: elapsed })
+      }
+    })
+
+    this.load.on('load', (file) => {
+      this._loadedFiles++
+      console.log('[GamePerf] BootScene file loaded', { key: file.key, url: file.url, type: file.type })
+    })
+
+    this.load.on('loaderror', (file) => {
+      console.warn('[GamePerf] BootScene file failed', { key: file.key, url: file.url })
+    })
+
+    this.load.on('complete', () => {
+      const elapsed = Math.round(performance.now() - this._bootPerfStart)
+      console.log('[GamePerf] BootScene preload complete', {
+        elapsedMs: elapsed,
+        loadedFiles: this._loadedFiles,
+        totalFiles: this.load.totalToLoad,
+      })
+    })
+
     // Warrior sprites
     this.load.image('player_idle', '/images/game/player_idle.png')
     this.load.image('player_ready', '/images/game/player_ready.png')
@@ -54,30 +88,6 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('ouro_scale', '/images/game/ouro_scale.png')
     this.load.image('ouro_source', '/images/game/ouro_source.png')
     this.load.image('ouro_essence', '/images/game/ouro_essence.png')
-
-    // Enemy sprites — loaded dynamically from enemy definitions (including phase sprites).
-    const loadedKeys = new Set()
-    for (const def of ENEMY_DEFINITIONS) {
-      const spriteKeys = new Set(Object.values(def.sprites || {}))
-      for (const phase of def.phases || []) {
-        for (const key of Object.values(phase.sprites || {})) {
-          if (key) spriteKeys.add(key)
-        }
-      }
-      for (const key of spriteKeys) {
-        if (!key || loadedKeys.has(key)) continue
-        loadedKeys.add(key)
-        this.load.image(key, `/images/game/${key}.png`)
-      }
-      if (def.portrait && !loadedKeys.has(def.portrait)) {
-        loadedKeys.add(def.portrait)
-        this.load.image(def.portrait, `/images/game/${def.portrait}.png`)
-      }
-      if (def.icon && !loadedKeys.has(def.icon)) {
-        loadedKeys.add(def.icon)
-        this.load.image(def.icon, `/images/game/${def.icon}.png`)
-      }
-    }
 
     // Placeholder textures for UI bars
     const graphics = this.make.graphics({ x: 0, y: 0, add: false })

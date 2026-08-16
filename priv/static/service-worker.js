@@ -1,4 +1,4 @@
-const CACHE_NAME = "medoru-v437";
+const CACHE_NAME = "medoru-v447";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/assets/css/app.css",
@@ -59,10 +59,15 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(request));
   } else if (isStaticAsset) {
     // Cache-first for static assets
+    const shortUrl = url.pathname + (url.search || '');
     event.respondWith(
       caches.match(request).then((cached) => {
-        if (cached) return cached;
+        if (cached) {
+          console.log('[SW] cache hit', shortUrl);
+          return cached;
+        }
 
+        console.log('[SW] cache miss', shortUrl);
         return fetch(request).then((response) => {
           if (!response || response.status !== 200 || response.type !== "basic") {
             return response;

@@ -226,6 +226,7 @@ export default class Player extends Character {
       ouroSource: 0,
       ouroEssence: 0,
       startingOuroEssenceForRun: 0,
+      dailyRunActive: false,
       ngPlusLevel: 0,
       startingGoldBonus: 0,
       startingPotionBonus: 0,
@@ -1439,6 +1440,7 @@ export default class Player extends Character {
       ouroSource: this.loadout?.ouroSource ?? this.loadout?.rareGameTokens ?? 0,
       ouroEssence: this.loadout?.ouroEssence ?? 0,
       startingOuroEssenceForRun: this.loadout?.startingOuroEssenceForRun ?? 0,
+      dailyRunActive: this.loadout?.dailyRunActive ?? false,
       ngPlusLevel: 0,
       startingGoldBonus: this.loadout?.startingGoldBonus ?? 0,
       startingPotionBonus: Math.min(4, this.loadout?.startingPotionBonus ?? 0),
@@ -1523,6 +1525,10 @@ export default class Player extends Character {
     // Snapshot essence at the start of the next run so we can compute
     // how much was earned when the run ends.
     this.loadout.startingOuroEssenceForRun = this.loadout.ouroEssence || 0
+
+    // Mark whether this run was started as a daily challenge so we don't
+    // auto-abandon it on page reload.
+    this.loadout.dailyRunActive = Boolean(window.gameData?.dailyChallengeMode)
   }
 
   hardReset() {
@@ -1533,6 +1539,7 @@ export default class Player extends Character {
       ouroSource: 0,
       ouroEssence: 0,
       startingOuroEssenceForRun: 0,
+      dailyRunActive: false,
       startingGoldBonus: 0,
       startingPotionBonus: 0,
       lifetimeNormalEnemiesDefeated: 0,

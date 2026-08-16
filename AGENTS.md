@@ -6,7 +6,7 @@
 
 **Version**: 0.10.0 ✅ IMPLEMENTED  
 **Status**: 0.10.0 adds **Word Books** — user-created vocabulary card books built from word sets or custom words, with a configurable card designer (front/back content: meanings/examples in en/bg/ja, reading, picture, sound, N-level, frequency, optional word text on the back), preset backgrounds/covers (covers and word images usable as card backgrounds), daisyUI themes, square (strict 1:1, content clipped) and rectangle (grows with content) card shapes, a paged book viewer with flip cards (1/2/4/6 per page, uniform card sizes), and PNG download of card faces (with medoru.net branding on every card). Entry points from word sets and the word detail page.  
-**Tests**: 1887 passing  
+**Tests**: 1909 passing  
 **URL**: https://medoru.net
 
 ### Alpha Game Release Plan
@@ -17,7 +17,7 @@ User-confirmed plan for the first alpha of **The Hollow Ouroboros** (admin game 
 3. **Profile reward** — the win condition should give something to the current user profile on the site.
 4. **Hero selection / preparation screen** — let the player spend site XP and in-game WIN tokens to start a stronger run.
 5. **More enemies / second hero** — nice-to-have, possibly post-alpha.
-6. **Public copy + admin copy ✅** — `/the-hollow-ouroboros` is live as the 5th daily challenge (`ouroboros_run`). Daily runs auto-abandon any active saved run, then award site XP = `100 × Ouro Essence earned` on run end and update the streak via `Learning.complete_daily_challenge/4`. The admin `/admin/game` version remains for parallel development.
+6. **Public copy + admin copy ✅** — `/the-hollow-ouroboros` is live as the 5th daily challenge (`ouroboros_run`). Daily runs auto-abandon any active saved run, then award site XP = `100 × Ouro Essence earned` on run end and update the streak via `Learning.complete_daily_challenge/4`. The admin `/admin/game` version remains for parallel development. Bug fixes: daily runs now survive page reloads, and defeat/final-boss victory correctly reports the daily challenge completion.
 7. **Alpha ending** — level 1 map finishes in a meaningful way; alpha has only one level, later levels built in the admin version.
 
 Weapon/shield socket charms and slot unlock schedule are considered good enough for alpha. Work on them is paused.

@@ -20,6 +20,65 @@ function isMobile() {
   )
 }
 
+function perfNow() {
+  return performance.now()
+}
+
+function perfLog(label, detail = null) {
+  const elapsed = window.__gamePerfStart ? Math.round(perfNow() - window.__gamePerfStart) : null
+  const prefix = `[GamePerf] ${label}`
+  if (elapsed !== null) {
+    console.log(prefix, { elapsedMs: elapsed, ...(detail || {}) })
+  } else {
+    console.log(prefix, detail || '')
+  }
+}
+
+function logCacheSummary() {
+  if (!('caches' in window)) return
+  caches.keys().then((names) => {
+    return Promise.all(
+      names.map(async (name) => {
+        const cache = await caches.open(name)
+        const requests = await cache.keys()
+        let size = 0
+        for (const req of requests) {
+          const resp = await cache.match(req)
+          if (resp && resp.headers) {
+            const contentLength = resp.headers.get('content-length')
+            if (contentLength) {
+              size += parseInt(contentLength, 10) || 0
+            } else {
+              const blob = await resp.blob()
+              size += blob.size
+            }
+          }
+        }
+        return { cache: name, entries: requests.length, sizeBytes: size, sizeMb: (size / 1024 / 1024).toFixed(2) }
+      })
+    )
+  }).then((rows) => {
+    console.log('[GamePerf] Service Worker cache summary')
+    console.table(rows)
+  }).catch((err) => {
+    console.warn('[GamePerf] Could not inspect caches:', err)
+  })
+}
+
+function logServiceWorkerState() {
+  if (!('serviceWorker' in navigator)) {
+    perfLog('Service Worker not supported')
+    return
+  }
+  navigator.serviceWorker.ready.then((reg) => {
+    perfLog('Service Worker state', {
+      controller: navigator.serviceWorker.controller?.scriptURL || null,
+      state: reg.active?.state || null,
+      scope: reg.scope,
+    })
+  })
+}
+
 function tryEnterFullscreen() {
   if (!isMobile() || document.fullscreenElement) return
   const wrapper = document.getElementById('game-wrapper')
@@ -45,6 +104,10 @@ function abandonActiveDailyRun() {
     const map = loadout.mapState?.maps?.[loadout.mapState?.currentMapIndex]
     if (!map) return
 
+    // If the active run was already started as a daily challenge, the player
+    // is just reloading the page. Preserve their progress instead of wiping it.
+    if (loadout.dailyRunActive) return
+
     // Daily challenge runs must start fresh: wipe the in-progress map and
     // any run-scoped learning state so the player cannot continue an old run.
     loadout.mapState = null
@@ -59,6 +122,10 @@ function abandonActiveDailyRun() {
 
 const GameHook = {
   mounted() {
+    window.__gamePerfStart = perfNow()
+    perfLog('GameHook mounted')
+    logServiceWorkerState()
+
     this.fullscreenHandler = () => {
       window.game?.scale?.refresh?.()
     }
@@ -81,12 +148,16 @@ const GameHook = {
     document.addEventListener('pointerdown', this.firstInteractionHandler, { once: true })
 
     const el = this.el
+    const rawData = el.dataset.gameData || '{}'
+    perfLog('Game data attribute size', { bytes: rawData.length })
+    const parseStart = perfNow()
     try {
-      window.gameData = JSON.parse(el.dataset.gameData || '{}')
+      window.gameData = JSON.parse(rawData)
     } catch (e) {
       console.error('[GameHook] Failed to parse game data:', e)
       window.gameData = {}
     }
+    perfLog('Game data parsed', { durationMs: Math.round(perfNow() - parseStart) })
 
     window.gameData.devMode = el.dataset.devMode === 'true'
     window.gameData.dailyChallengeMode = el.dataset.dailyChallengeMode === 'true'
@@ -105,15 +176,25 @@ const GameHook = {
 
   startIfReady() {
     if (window.Phaser && window.startTheHollowOuroboros) {
+      perfLog('Starting Phaser game')
       this.destroyExisting()
+      const gameStart = perfNow()
       window.startTheHollowOuroboros()
+      perfLog('Phaser Game created', { durationMs: Math.round(perfNow() - gameStart) })
       this.hideLoadingOverlay()
+      perfLog('Loading overlay removed')
+      setTimeout(logCacheSummary, 500)
       return
     }
 
     if (!window.Phaser) {
+      perfLog('Loading Phaser script', { url: PHASER_URL })
+      const phaserStart = perfNow()
       loadScript(PHASER_URL)
-        .then(() => this.startIfReady())
+        .then(() => {
+          perfLog('Phaser script loaded', { durationMs: Math.round(perfNow() - phaserStart) })
+          this.startIfReady()
+        })
         .catch(() => {
           console.warn('[GameHook] Failed to load local Phaser, trying CDN fallback')
           loadScript(PHASER_FALLBACK)
@@ -125,8 +206,13 @@ const GameHook = {
 
     if (!window.startTheHollowOuroboros) {
       const url = this.el.dataset.gameScriptUrl || '/assets/js/game.js'
+      perfLog('Loading game.js', { url })
+      const gameJsStart = perfNow()
       loadScript(url)
-        .then(() => this.startIfReady())
+        .then(() => {
+          perfLog('game.js loaded', { durationMs: Math.round(perfNow() - gameJsStart) })
+          this.startIfReady()
+        })
         .catch(err => console.error('[GameHook] Failed to load game.js:', err))
     }
   },

@@ -23,7 +23,18 @@ import CascadeScene from './game/scenes/CascadeScene.js'
 import ChestScene from './game/scenes/ChestScene.js'
 import EventScene from './game/scenes/EventScene.js'
 
+function perfLog(label, detail = null) {
+  const elapsed = window.__gamePerfStart ? Math.round(performance.now() - window.__gamePerfStart) : null
+  const prefix = `[GamePerf] ${label}`
+  if (elapsed !== null) {
+    console.log(prefix, { elapsedMs: elapsed, ...(detail || {}) })
+  } else {
+    console.log(prefix, detail || '')
+  }
+}
+
 function startGame() {
+  perfLog('startGame() called')
   const container = document.getElementById('game-container')
   if (!container) {
     console.error('[The Hollow Ouroboros] #game-container not found')
@@ -61,7 +72,9 @@ function startGame() {
   }
 
   try {
+    const initStart = performance.now()
     window.game = new Phaser.Game(config)
+    perfLog('Phaser.Game initialized', { durationMs: Math.round(performance.now() - initStart) })
     console.log('[The Hollow Ouroboros] Phaser initialized')
   } catch (err) {
     console.error('[The Hollow Ouroboros] Phaser failed to start:', err)

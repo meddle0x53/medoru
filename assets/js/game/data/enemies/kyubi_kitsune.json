@@ -8,8 +8,8 @@
   "roles": ["mini_boss"],
   "mapIds": [1],
   "maxColumn": 10,
+  "_comment": "All Kitsune sprites are now in place.",
   "sprites": {
-    "_comment": "All Kitsune sprites are now in place.",
     "default": "enemy_kitsune_default",
     "attack": "enemy_kitsune_attack",
     "defend": "enemy_kitsune_defend",

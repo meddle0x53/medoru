@@ -16,7 +16,7 @@
     "death": "enemy_hone_onna_defeated"
   },
   "portrait": "enemy_hone_onna_default",
-  "icon": "enemy_hone_onna_icon",
+  "icon": "enemy_hone_onna_default",
   "layout": {
     "1": [{ "x": 690, "y": 470, "scale": 0.38 }],
     "2": [{ "x": 600, "y": 460, "scale": 0.28 }, { "x": 780, "y": 460, "scale": 0.28 }],
@@ -43,7 +43,7 @@
       "maxUsesPerTurn": 1,
       "sprite": "enemy_hone_onna_buff",
       "buffType": "evasion",
-      "buffValue": 0.25,
+      "buffValue": 0.05,
       "effects": [],
       "challenges": [
         {
@@ -52,7 +52,7 @@
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
           "onSuccess": "neutralize",
-          "onFail": { "type": "setValue", "key": "evasion", "value": 0.35 },
+          "onFail": { "type": "setValue", "key": "evasion", "value": 0.15 },
           "timeLimit": 13000
         }
       ]

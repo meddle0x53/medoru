@@ -48,8 +48,8 @@ const STATUS_EFFECT_ICONS = {
   void_guard: '🛡️🌑',
 }
 
-import { getWindowGameData, sendRunResult } from '../api.js'
-import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition } from '../data/enemies/index.js'
+import { getWindowGameData } from '../api.js'
+import { ENEMY_DEFINITIONS, pickEnemyForTile, getEnemyDefinition, getEnemyTextureKeys } from '../data/enemies/index.js'
 import { buildEnemyChallenge, filterChallengeWords } from '../systems/EnemyChallengePicker.js'
 import EnemyAbilityChallengeSystem from '../systems/EnemyAbilityChallengeSystem.js'
 import { setupHighDPIWorld } from '../highDpi.js'
@@ -64,11 +64,74 @@ export default class BattleScene extends Phaser.Scene {
     this.mapIndex = data.mapIndex ?? 0
   }
 
+  preload() {
+    this.loadEnemyTexturesForBattle()
+  }
+
+  loadEnemyTexturesForBattle() {
+    const definitions = this.collectEnemyDefinitionsForPreload()
+    const loadedKeys = new Set()
+
+    for (const def of definitions) {
+      for (const key of getEnemyTextureKeys(def)) {
+        if (loadedKeys.has(key)) continue
+        loadedKeys.add(key)
+        if (!this.textures.exists(key)) {
+          this.load.image(key, `/images/game/${key}.png`)
+        }
+      }
+    }
+  }
+
+  collectEnemyDefinitionsForPreload() {
+    const defs = new Set()
+
+    // Dev test fight passes a specific enemyId.
+    if (this.tile?.enemyId) {
+      const def = getEnemyDefinition(this.tile.enemyId)
+      if (def) defs.add(def)
+    }
+
+    const role = this.tile?.type === TILE_TYPES.MINI_BOSS ? 'mini_boss'
+               : this.tile?.type === TILE_TYPES.BOSS ? 'boss'
+               : 'battle'
+
+    const poolIds = this.tile?.enemyPool?.length > 0
+      ? this.tile.enemyPool
+      : this.getDefaultEnemyPoolForRole(role)
+
+    for (const id of poolIds || []) {
+      const def = getEnemyDefinition(id)
+      if (def) defs.add(def)
+    }
+
+    // Fallback to the same role/map/column filter used by pickEnemyForTile.
+    if (defs.size === 0) {
+      const mapId = (this.mapIndex ?? 0) + 1
+      const col = this.tile?.col ?? 1
+      for (const def of ENEMY_DEFINITIONS) {
+        if (def.roles.includes(role) && def.mapIds.includes(mapId) && def.maxColumn >= col) {
+          defs.add(def)
+        }
+      }
+    }
+
+    return Array.from(defs)
+  }
+
+  getDefaultEnemyPoolForRole(role) {
+    const mapDef = getMapDefinition(this.mapIndex)
+    return mapDef?.defaultEnemyPools?.[role] || []
+  }
+
   create() {
     setupHighDPIWorld(this)
     const userData = getWindowGameData()
     const passedPlayer = this.scene.settings.data?.player
     this.player = passedPlayer || new Player(userData)
+    // Clear any stale combat-log callback from a previous battle before running
+    // reset/expire logic, so it does not try to update UI that no longer exists.
+    this.player.onCombatLog = null
     this.player.buffs = [] // clear any lingering battle buffs from previous fight
     this.player.clearActiveEffects() // clear status effects from previous fight
     this.player.resetStanceMultipliers() // stance multipliers last one battle only
@@ -79,7 +142,6 @@ export default class BattleScene extends Phaser.Scene {
     this.player.block = 0 // block from previous battle must not carry over
     this.player.tempDefense = 0 // setup defence from previous battle must not carry over
     this.player.clearAllAbilityInfusions() // infusions last for one battle only
-    this.player.onCombatLog = (msg) => this.addCombatLog(msg)
     this.essenceGainedThisBattle = 0
     this.normalBattleEssenceAwarded = false
     this.enemies = this.createEnemiesForTile()
@@ -137,6 +199,9 @@ export default class BattleScene extends Phaser.Scene {
     this.createSwitchActionDialog()
     this.createCombatLog()
 
+    // Now that the combat log UI exists, wire up the callbacks.
+    this.player.onCombatLog = (msg) => this.addCombatLog(msg)
+
     this.input.keyboard.on('keydown', this.handleKeyInput, this)
 
     // Hidden input for mobile touch keyboard during word challenges
@@ -180,7 +245,7 @@ export default class BattleScene extends Phaser.Scene {
   createEnemiesForTile() {
     let count = this.tile?.testFightCount
     if (count == null) {
-      count = this.tile?.type === TILE_TYPES.MINI_BOSS ? 1 : this.determineEnemyCount()
+      count = [TILE_TYPES.MINI_BOSS, TILE_TYPES.BOSS].includes(this.tile?.type) ? 1 : this.determineEnemyCount()
     }
     const multiplier = count === 3 ? 0.5 : count === 2 ? 0.65 : 1.0
 
@@ -1799,10 +1864,8 @@ export default class BattleScene extends Phaser.Scene {
       onResult: ({ success, timedOut, word, correctAnswer }) => {
         if (success) {
           this.player.addReadiness(0.3)
-          this._animateWordChallengeSuccess(this.wordChallenge.wordText)
         } else {
           this.player.addReadiness(-0.3)
-          this._animateWordChallengeFailure(this.wordChallenge.wordText, timedOut, correctAnswer)
         }
       },
       onComplete: ({ success, timedOut, word }) => {
@@ -1819,121 +1882,6 @@ export default class BattleScene extends Phaser.Scene {
         this.turnManager.endTurn()
       },
     })
-  }
-
-  _animateWordChallengeSuccess(word) {
-    // Positive animation: word bounces up, flashes green, sparkles
-    word.setColor('#2ecc71')
-
-    this.tweens.add({
-      targets: word,
-      scaleX: 1.4,
-      scaleY: 1.4,
-      duration: 250,
-      ease: 'Back.easeOut',
-      yoyo: true,
-      hold: 200,
-    })
-
-    this.tweens.add({
-      targets: word,
-      y: word.y - 30,
-      duration: 400,
-      ease: 'Quad.easeOut',
-      yoyo: true,
-      hold: 200,
-    })
-
-    // Sparkle particles around the word
-    for (let i = 0; i < 8; i++) {
-      const angle = (Math.PI * 2 * i) / 8
-      const dist = 60
-      const px = word.x + Math.cos(angle) * dist
-      const py = word.y + Math.sin(angle) * dist
-      const p = this.add.text(px, py, '✦', {
-        fontFamily: FONTS.default.fontFamily,
-        fontSize: '16px',
-        color: '#2ecc71',
-      }).setOrigin(0.5).setAlpha(0)
-      this.wordChallenge.overlay.add(p)
-
-      this.tweens.add({
-        targets: p,
-        alpha: { from: 0, to: 1 },
-        scaleX: { from: 0.5, to: 1.2 },
-        scaleY: { from: 0.5, to: 1.2 },
-        duration: 200,
-        ease: 'Quad.easeOut',
-        onComplete: () => {
-          this.tweens.add({
-            targets: p,
-            alpha: 0,
-            scaleX: 0,
-            scaleY: 0,
-            duration: 300,
-            delay: 300,
-            onComplete: () => p.destroy(),
-          })
-        },
-      })
-    }
-  }
-
-  _animateWordChallengeFailure(word, timedOut, correctAnswer) {
-    // Negative animation: word shakes, flashes red, drops
-    word.setColor('#e74c3c')
-
-    const msg = timedOut ? "Time's up!" : 'Wrong!'
-    this.wordChallenge.feedbackText.setText(`${msg} The meaning was: ${correctAnswer || '?'}`)
-    this.wordChallenge.feedbackText.setColor('#e74c3c')
-
-    this.tweens.add({
-      targets: word,
-      x: { from: word.x - 8, to: word.x + 8 },
-      duration: 60,
-      repeat: 5,
-      yoyo: true,
-      ease: 'Linear',
-    })
-
-    this.tweens.add({
-      targets: word,
-      y: word.y + 20,
-      alpha: 0.3,
-      duration: 500,
-      ease: 'Quad.easeIn',
-    })
-
-    // Show "X" marks
-    for (let i = 0; i < 3; i++) {
-      const ox = word.x + (i - 1) * 40
-      const oy = word.y - 50
-      const xMark = this.add.text(ox, oy, '✕', {
-        fontFamily: FONTS.default.fontFamily,
-        fontSize: '24px',
-        color: '#e74c3c',
-      }).setOrigin(0.5).setAlpha(0)
-      this.wordChallenge.overlay.add(xMark)
-
-      this.tweens.add({
-        targets: xMark,
-        alpha: { from: 0, to: 1 },
-        scaleX: { from: 0.3, to: 1 },
-        scaleY: { from: 0.3, to: 1 },
-        duration: 150,
-        delay: i * 80,
-        ease: 'Back.easeOut',
-        onComplete: () => {
-          this.tweens.add({
-            targets: xMark,
-            alpha: 0,
-            duration: 300,
-            delay: 400,
-            onComplete: () => xMark.destroy(),
-          })
-        },
-      })
-    }
   }
 
   // ---------- Reaction Challenge (during enemy attacks) ----------
@@ -1961,8 +1909,8 @@ export default class BattleScene extends Phaser.Scene {
         title: 'REACTION!',
         promptType: 'meaning',
         timeLimit: 5000,
-        hangOnWrong: 400,
-        hangOnCorrect: 400,
+        hangOnWrong: 1000,
+        hangOnCorrect: 900,
         onStart: () => {
           this.challengeActive = true
           this.wordChallengeActive = true
@@ -4201,7 +4149,33 @@ export default class BattleScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 2,
     }).setOrigin(0.5)
-    return [iconText, turnsText]
+
+    // Tooltip hit-area covering the icon (hover on desktop, long-press on mobile)
+    const hitArea = this.add.rectangle(x, y, 30, 30, 0x000000, 0).setOrigin(0.5).setInteractive({ useHandCursor: true })
+    const action = this.buildStatusEffectTooltipAction(effect, entry)
+    this.abilityTooltip.attach(hitArea, action)
+
+    return [iconText, turnsText, hitArea]
+  }
+
+  buildStatusEffectTooltipAction(effect, entry) {
+    const name = effect?.name || entry.effectId
+    let description = effect?.description || ''
+    if (entry.remainingTurns != null) {
+      const turns = entry.remainingTurns
+      description += description ? ` ` : ''
+      description += `(${turns} turn${turns === 1 ? '' : 's'} remaining)`
+    }
+    if (entry.stacks != null && entry.stacks > 1) {
+      description += description ? ' ' : ''
+      description += `[${entry.stacks} stacks]`
+    }
+    return {
+      name,
+      description,
+      type: effect?.category || 'status',
+      rarity: effect?.category || 'normal',
+    }
   }
 
   updateStatusIcons(display) {
@@ -4302,6 +4276,8 @@ export default class BattleScene extends Phaser.Scene {
   addCombatLog(msg) {
     this.combatLogHistory.unshift({ turn: this.turnManager?.turnCount ?? 0, message: msg })
     if (this.combatLogHistory.length > 40) this.combatLogHistory.pop()
+
+    if (!this.combatLogText) return
 
     this.combatLogText.setText(msg)
     this.drawCombatLogBg()
@@ -4420,19 +4396,6 @@ export default class BattleScene extends Phaser.Scene {
         this.tile?.type === TILE_TYPES.BOSS &&
         getMapDefinition(this.mapIndex).isFinal !== false
 
-      // Send result to server before transitioning
-      const runResultPayload = {
-        winner,
-        playerHp: this.player.hp,
-        enemyHp: representativeEnemy.hp,
-        turnCount: this.turnManager.turnCount,
-        timestamp: new Date().toISOString(),
-      }
-      if (isRunVictory && this.player.loadout.focusKanji) {
-        runResultPayload.focus_kanji = this.player.loadout.focusKanji
-      }
-      sendRunResult(runResultPayload)
-
       if (this.tile?.type === TILE_TYPES.BOSS) {
         const mapDef = getMapDefinition(this.mapIndex)
         // Defaults to final when the flag is missing, so early-release maps
@@ -4443,6 +4406,9 @@ export default class BattleScene extends Phaser.Scene {
           const beforeUnlocked = new Set(this.player.loadout.unlockedAbilityIds || [])
 
           this.player.grantEndRunMetaRewards()
+
+          // Report the completed run to the site (daily challenge, learned words, kanji).
+          this.player.persistRunProgress(winner)
 
           const rewards = {
             ouroScales: (this.player.loadout.ouroScales || 0) - beforeScales,
@@ -4496,14 +4462,8 @@ export default class BattleScene extends Phaser.Scene {
     restartBtn.bg.setDepth(200)
     restartBtn.text.setDepth(200)
 
-    // Send result to server
-    sendRunResult({
-      winner,
-      playerHp: this.player.hp,
-      enemyHp: representativeEnemy.hp,
-      turnCount: this.turnManager.turnCount,
-      timestamp: new Date().toISOString(),
-    })
+    // Report the ended run to the site (daily challenge, learned words, kanji).
+    this.player.persistRunProgress(winner)
   }
 
   delay(ms) {

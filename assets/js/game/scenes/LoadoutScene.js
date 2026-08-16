@@ -1479,7 +1479,7 @@ export default class LoadoutScene extends Phaser.Scene {
     )
 
     // Requirements
-    const reqs = this.formatAbilityRequirements(action)
+    const reqs = formatAbilityRequirements(action)
     overlay.add(
       this.add.text(0, -70, `Requirements: ${reqs}`, {
         ...FONTS.default,
