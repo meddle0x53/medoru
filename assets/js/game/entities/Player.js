@@ -1114,13 +1114,19 @@ export default class Player extends Character {
     }
 
     let equipped = false
-    if (charm.type === 'hero' && this.loadout.heroCharmIds.length < this.getHeroCharmSlots()) {
+    if (charm.type === 'hero' &&
+        !this.loadout.heroCharmIds.includes(charmId) &&
+        this.loadout.heroCharmIds.length < this.getHeroCharmSlots()) {
       this.loadout.heroCharmIds.push(charmId)
       equipped = true
-    } else if (charm.type === 'weapon' && this.loadout.weaponCharmIds.length < this.getWeaponCharmSlots()) {
+    } else if (charm.type === 'weapon' &&
+               !this.loadout.weaponCharmIds.includes(charmId) &&
+               this.loadout.weaponCharmIds.length < this.getWeaponCharmSlots()) {
       this.loadout.weaponCharmIds.push(charmId)
       equipped = true
-    } else if (charm.type === 'shield' && this.loadout.shieldCharmIds.length < this.getShieldCharmSlots()) {
+    } else if (charm.type === 'shield' &&
+               !this.loadout.shieldCharmIds.includes(charmId) &&
+               this.loadout.shieldCharmIds.length < this.getShieldCharmSlots()) {
       this.loadout.shieldCharmIds.push(charmId)
       equipped = true
     }

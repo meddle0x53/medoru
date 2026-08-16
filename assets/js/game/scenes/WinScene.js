@@ -82,34 +82,7 @@ export default class WinScene extends Phaser.Scene {
   }
 
   addCharmDrop(charmId) {
-    const charm = getCharmById(charmId)
-    if (!charm) return
-
-    // Track ownership
-    if (!this.player.loadout.ownedCharmIds) this.player.loadout.ownedCharmIds = []
-    if (!this.player.loadout.ownedCharmIds.includes(charmId)) {
-      this.player.loadout.ownedCharmIds.push(charmId)
-    }
-
-    // Auto-equip if a free slot exists
-    const slotType = charm.type
-    let equipped = false
-    if (slotType === 'hero' && this.player.loadout.heroCharmIds.length < this.player.getHeroCharmSlots()) {
-      this.player.loadout.heroCharmIds.push(charmId)
-      equipped = true
-    } else if (slotType === 'weapon' && this.player.loadout.weaponCharmIds.length < this.player.getWeaponCharmSlots()) {
-      this.player.loadout.weaponCharmIds.push(charmId)
-      equipped = true
-    } else if (slotType === 'shield' && this.player.loadout.shieldCharmIds.length < this.player.getShieldCharmSlots()) {
-      this.player.loadout.shieldCharmIds.push(charmId)
-      equipped = true
-    }
-
-    if (equipped) {
-      this.player._charmEffects = null
-      this.player.recalcMaxHp()
-    }
-    this.player.saveLoadout()
+    this.player.addCharm(charmId)
   }
 
   // ---------- UI creation ----------

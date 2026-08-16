@@ -295,6 +295,8 @@ export default class EventScene extends Phaser.Scene {
 
     this.player.saveLoadout()
     this.time.delayedCall(1800, () => {
+      // Report the ended run to the site (daily challenge, learned words, kanji).
+      this.player.persistRunProgress('enemy')
       this.player.endRun(false)
       this.scene.start('HeroSelectScene', { player: this.player })
     })

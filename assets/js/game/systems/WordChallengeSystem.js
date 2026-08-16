@@ -224,15 +224,15 @@ export default class WordChallengeSystem {
     this.keyboardContainer = this.scene.add.container(0, 0)
     this.overlay.add(this.keyboardContainer)
 
-    // Smaller keys so the full keyboard (including Enter) fits on 540px screens.
-    const keySize = 26
-    const keyGap = 3
-    const startY = 166
+    // Larger, simplified keys for touch devices, matching the Cascade keyboard.
+    const keySize = 30
+    const keyGap = 4
+    const startY = 138
 
     const rows = [
       ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-      ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
+      ['z', 'x', 'c', 'v', 'b', 'n', 'm', '-'],
     ]
 
     rows.forEach((row, rowIndex) => {
@@ -245,13 +245,12 @@ export default class WordChallengeSystem {
       })
     })
 
-    // Control row: backspace, hyphen, space, enter
-    const controlY = startY + rows.length * (keySize + keyGap) + 4
+    // Control row: backspace, space, enter
+    const controlY = startY + rows.length * (keySize + keyGap) + 6
     const controls = [
-      { label: '⌫', width: 42, key: 'BACKSPACE' },
-      { label: '-', width: 26, key: '-' },
-      { label: 'SPACE', width: 78, key: 'SPACE' },
-      { label: '⏎', width: 42, key: 'ENTER' },
+      { label: '⌫', width: 48, key: 'BACKSPACE' },
+      { label: 'SPACE', width: 96, key: 'SPACE' },
+      { label: '⏎', width: 48, key: 'ENTER' },
     ]
     const totalWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * keyGap
     let x = -totalWidth / 2
@@ -276,12 +275,21 @@ export default class WordChallengeSystem {
     hitArea.setInteractive({ useHandCursor: true })
     container.add(hitArea)
 
-    hitArea.on('pointerdown', () => {
+    const pressKey = () => {
       bg.setFillStyle(0x3498db)
+      container.setScale(0.92)
+    }
+    const releaseKey = () => {
+      bg.setFillStyle(0x2c3e50)
+      container.setScale(1)
+    }
+
+    hitArea.on('pointerdown', () => {
+      pressKey()
       this.handleKeyboardKey(keyName)
     })
-    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
-    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+    hitArea.on('pointerup', releaseKey)
+    hitArea.on('pointerout', releaseKey)
 
     this.keyboardContainer.add(container)
   }
