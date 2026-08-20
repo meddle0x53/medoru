@@ -33,7 +33,18 @@ export function getEnemyDefinition(id) {
   return ENEMY_DEFINITIONS.find(e => e.id === id)
 }
 
-export function pickEnemyForTile(tile, mapIndex) {
+function pickWeightedEnemy(pool, foughtEnemyIds) {
+  const weights = pool.map(def => (foughtEnemyIds || []).includes(def.id) ? 0.5 : 1)
+  const total = weights.reduce((a, b) => a + b, 0)
+  let roll = Math.random() * total
+  for (let i = 0; i < pool.length; i++) {
+    roll -= weights[i]
+    if (roll <= 0) return pool[i]
+  }
+  return pool[pool.length - 1]
+}
+
+export function pickEnemyForTile(tile, mapIndex, foughtEnemyIds = []) {
   const role = tile?.type === 'mini_boss' ? 'mini_boss'
              : tile?.type === 'boss' ? 'boss'
              : 'battle'
@@ -44,7 +55,7 @@ export function pickEnemyForTile(tile, mapIndex) {
       .map(id => getEnemyDefinition(id))
       .filter(Boolean)
     if (pool.length > 0) {
-      return pool[Math.floor(Math.random() * pool.length)]
+      return pickWeightedEnemy(pool, foughtEnemyIds)
     }
   }
 
@@ -59,11 +70,12 @@ export function pickEnemyForTile(tile, mapIndex) {
   )
 
   if (pool.length === 0) {
-    const fallback = ENEMY_DEFINITIONS.find(def => def.roles.includes(role))
-    return fallback || ENEMY_DEFINITIONS[0]
+    const fallbackPool = ENEMY_DEFINITIONS.filter(def => def.roles.includes(role))
+    if (fallbackPool.length === 0) return ENEMY_DEFINITIONS[0]
+    return pickWeightedEnemy(fallbackPool, foughtEnemyIds)
   }
 
-  return pool[Math.floor(Math.random() * pool.length)]
+  return pickWeightedEnemy(pool, foughtEnemyIds)
 }
 
 /**

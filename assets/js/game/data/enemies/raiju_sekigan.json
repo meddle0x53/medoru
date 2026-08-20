@@ -41,7 +41,7 @@
       "staminaCost": 3,
       "aiWeight": 10,
       "maxUsesPerTurn": 5,
-      "basePower": 18,
+      "basePower": 14,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
       "sprite": "enemy_danzaburo_attack",
@@ -49,7 +49,7 @@
         {
           "effectId": "electrified",
           "target": "enemy",
-          "chance": { "base": 0.30, "step": 0, "cap": 0.30 },
+          "chance": { "base": 0.15, "step": 0, "cap": 0.15 },
           "duration": { "min": 1, "max": 1 }
         }
       ],
@@ -63,7 +63,7 @@
       "staminaCost": 4,
       "aiWeight": 9,
       "maxUsesPerTurn": 3,
-      "basePower": 14,
+      "basePower": 10,
       "scalingStat": "skill",
       "scalingMultiplier": 1.1,
       "damageMultiplier": 1.25,
@@ -87,7 +87,7 @@
       "maxUsesPerTurn": 1,
       "sprite": "enemy_danzaburo_buff",
       "buffType": "evasion",
-      "buffValue": 0.20,
+      "buffValue": 0.10,
       "effects": [
         {
           "effectId": "power_up",
@@ -98,7 +98,7 @@
       ],
       "challenges": [
         {
-          "chance": 0.40,
+          "chance": 0.15,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -127,7 +127,7 @@
       ],
       "challenges": [
         {
-          "chance": 0.35,
+          "chance": 0.60,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -146,7 +146,7 @@
       "staminaCost": 5,
       "aiWeight": 14,
       "maxUsesPerTurn": 2,
-      "basePower": 16,
+      "basePower": 12,
       "scalingStat": "skill",
       "scalingMultiplier": 1.2,
       "isLightning": true,
@@ -172,7 +172,7 @@
       "staminaCost": 6,
       "aiWeight": 10,
       "maxUsesPerTurn": 2,
-      "basePower": 24,
+      "basePower": 18,
       "scalingStat": "mana",
       "scalingMultiplier": 0.6,
       "isLightning": true,
@@ -181,7 +181,7 @@
         {
           "effectId": "madness",
           "target": "enemy",
-          "chance": { "base": 0.10, "step": 0, "cap": 0.10 },
+          "chance": { "base": 0.05, "step": 0, "cap": 0.05 },
           "duration": { "min": 1, "max": 2 }
         }
       ],
@@ -207,7 +207,7 @@
       "maxUsesPerTurn": 1,
       "sprite": "enemy_danzaburo_buff",
       "healPercent": 0,
-      "staminaRecover": 8,
+      "staminaRecover": 4,
       "buffEffect": {
         "effectId": "sake_power",
         "duration": { "min": 2, "max": 2 }
@@ -234,7 +234,7 @@
       "staminaCost": 7,
       "aiWeight": 13,
       "maxUsesPerTurn": 2,
-      "basePower": 24,
+      "basePower": 18,
       "scalingStat": "mana",
       "scalingMultiplier": 1.3,
       "isLightning": true,
@@ -261,7 +261,7 @@
       "staminaCost": 6,
       "aiWeight": 15,
       "maxUsesPerTurn": 2,
-      "basePower": 20,
+      "basePower": 16,
       "scalingStat": "strength",
       "scalingMultiplier": 1.2,
       "sprite": "enemy_danzaburo_attack",
@@ -321,7 +321,7 @@
       "staminaCost": 0,
       "aiWeight": 1,
       "maxUsesPerTurn": 99,
-      "basePower": 10,
+      "basePower": 8,
       "scalingStat": "mana",
       "scalingMultiplier": 0.5,
       "isLightning": true,
@@ -330,7 +330,7 @@
         {
           "effectId": "electrified",
           "target": "enemy",
-          "chance": { "base": 0.20, "step": 0, "cap": 0.20 },
+          "chance": { "base": 0.10, "step": 0, "cap": 0.10 },
           "duration": { "min": 1, "max": 1 }
         }
       ],
@@ -376,7 +376,7 @@
       "announce": "The Raijū's lightning spirals out of control!",
       "modifiers": {
         "gainStaticCharge": true,
-        "freeActionChance": 0.40,
+        "freeActionChance": 0.20,
         "freeActionId": "lightning_arc"
       },
       "sprites": {

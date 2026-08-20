@@ -43,7 +43,7 @@
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
-      "basePower": 16,
+      "basePower": 12,
       "scalingStat": "mana",
       "scalingMultiplier": 0.3,
       "effects": [
@@ -89,7 +89,7 @@
       "aiWeight": 16,
       "maxUsesPerTurn": 1,
       "buffType": "evasion",
-      "buffValue": 0.25,
+      "buffValue": 0.15,
       "effects": [
         {
           "effectId": "eye_of_heaven",
@@ -128,7 +128,7 @@
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
-      "basePower": 24,
+      "basePower": 20,
       "scalingStat": "mana",
       "scalingMultiplier": 1.4,
       "effects": [

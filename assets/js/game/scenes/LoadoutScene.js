@@ -1713,7 +1713,6 @@ export default class LoadoutScene extends Phaser.Scene {
         // Recalculate derived stats
         if (stat.key === 'vitality') {
           this.player.maxHp = 80 + this.player.baseStats.vitality * 5
-          this.player.hp = this.player.maxHp
         }
         if (stat.key === 'stamina') {
           this.player.maxStamina = 8 + Math.floor(this.player.baseStats.stamina / 3)

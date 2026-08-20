@@ -255,6 +255,7 @@ export default class Player extends Character {
       ownedCharmIds: [],
       ownedSocketCharmIds: [],
       beingLearnedWords: [],
+      foughtEnemyIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
       focusKanji: null,
@@ -847,6 +848,9 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.beingLearnedWords)) {
           loadout.beingLearnedWords = []
+        }
+        if (!Array.isArray(loadout.foughtEnemyIds)) {
+          loadout.foughtEnemyIds = []
         }
         // Reset the map when the generation logic changes so players see the new layout.
         if (loadout.mapVersion !== MAP_VERSION) {
@@ -1505,6 +1509,7 @@ export default class Player extends Character {
       ownedSocketCharmIds: [],
       mapState: null,
       mapVersion: MAP_VERSION,
+      foughtEnemyIds: [],
       weapon: createDefaultWeapon(meta.permanentWeaponLevel),
       shield: createDefaultShield(meta.permanentShieldLevel),
     }

@@ -3,13 +3,26 @@
  */
 const API_BASE = '/api/game'
 
+async function parseResponse(resp) {
+  const text = await resp.text()
+  try {
+    return JSON.parse(text)
+  } catch (_) {
+    return { raw: text }
+  }
+}
+
 export async function fetchUserData() {
   try {
     const resp = await fetch(`${API_BASE}/user-data`, {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin',
     })
-    if (!resp.ok) throw new Error('Failed to fetch user data')
+    if (!resp.ok) {
+      const body = await parseResponse(resp)
+      console.warn('Game API user-data error:', resp.status, body)
+      throw new Error(`Failed to fetch user data (${resp.status})`)
+    }
     return await resp.json()
   } catch (e) {
     console.warn('Game API error (using defaults):', e)
@@ -24,22 +37,20 @@ export async function sendRunResult(data) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-CSRF-Token': getCsrfToken(),
       },
       credentials: 'same-origin',
       body: JSON.stringify(data),
     })
-    if (!resp.ok) throw new Error('Failed to send run result')
+    if (!resp.ok) {
+      const body = await parseResponse(resp)
+      console.warn('Run result API error:', resp.status, body, data)
+      throw new Error(`Failed to send run result (${resp.status})`)
+    }
     return await resp.json()
   } catch (e) {
-    console.warn('Run result API error:', e)
+    console.warn('Run result API error:', e, data)
     return null
   }
-}
-
-function getCsrfToken() {
-  const meta = document.querySelector('meta[name="csrf-token"]')
-  return meta ? meta.getAttribute('content') : ''
 }
 
 export function getWindowGameData() {
@@ -55,7 +66,11 @@ export async function fetchKanjiStrokes(character) {
       headers: { 'Accept': 'application/json' },
       credentials: 'same-origin',
     })
-    if (!resp.ok) throw new Error('Failed to fetch kanji strokes')
+    if (!resp.ok) {
+      const body = await parseResponse(resp)
+      console.warn('Kanji stroke API error:', resp.status, body)
+      throw new Error(`Failed to fetch kanji strokes (${resp.status})`)
+    }
     const data = await resp.json()
     return data.stroke_data || null
   } catch (e) {

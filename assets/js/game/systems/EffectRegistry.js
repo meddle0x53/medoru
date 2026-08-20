@@ -326,8 +326,8 @@ export const STATUS_EFFECTS = {
     category: EFFECT_CATEGORIES.BUFF,
     stackRule: 'refresh',
     duration: { min: 1, max: 1 },
-    outgoingDamageMultiplier: 1.5,
-    description: 'Next attack deals 50% more damage.',
+    outgoingDamageMultiplier: 1.25,
+    description: 'Next attack deals 25% more damage.',
   },
 
   blind: {

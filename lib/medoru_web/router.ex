@@ -18,6 +18,14 @@ defmodule MedoruWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Game API pipeline - session support, no CSRF (game client sends JSON).
+  pipeline :game_api do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug :put_secure_browser_headers
+    plug MedoruWeb.UserAuth, :fetch_current_user
+  end
+
   # QA API pipeline - has session support but no CSRF for testing
   pipeline :qa_api do
     plug :accepts, ["json"]
@@ -424,8 +432,14 @@ defmodule MedoruWeb.Router do
     get "/grammar-preview/:text", GrammarPreviewController, :show
     get "/link-preview", LinkPreviewController, :show
     post "/chat/uploads", ChatUploadController, :create
-    get "/game/user-data", GameApiController, :user_data
-    post "/game/run-result", GameApiController, :run_result
+  end
+
+  # Game client API
+  scope "/api/game", MedoruWeb do
+    pipe_through [:game_api, :require_authenticated_user]
+
+    get "/user-data", GameApiController, :user_data
+    post "/run-result", GameApiController, :run_result
   end
 
   # Public API v1

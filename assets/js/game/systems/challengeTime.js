@@ -5,7 +5,7 @@
  * 25 second limit. On non-touch devices the requested/base limit is preserved.
  */
 export function getWordChallengeTimeLimit(scene, requestedLimit = null) {
-  if (scene?.sys?.game?.device?.input?.touch) {
+  if (window.matchMedia('(pointer: coarse)').matches) {
     return 25000
   }
   return requestedLimit ?? 13000

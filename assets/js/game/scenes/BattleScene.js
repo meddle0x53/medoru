@@ -249,17 +249,24 @@ export default class BattleScene extends Phaser.Scene {
     }
     const multiplier = count === 3 ? 0.5 : count === 2 ? 0.65 : 1.0
 
+    this.player.loadout.foughtEnemyIds ||= []
+    const foughtIds = this.player.loadout.foughtEnemyIds
+
     const enemies = []
     for (let i = 0; i < count; i++) {
       const definition = this.tile?.enemyId
         ? getEnemyDefinition(this.tile.enemyId)
-        : pickEnemyForTile(this.tile, this.mapIndex)
+        : pickEnemyForTile(this.tile, this.mapIndex, foughtIds)
+      if (!definition) continue
       const enemy = new Enemy(definition, { ngPlusMultiplier: this.player.getNgPlusMultiplier() })
       if (multiplier !== 1.0) {
         enemy.maxHp = Math.max(1, Math.floor(enemy.maxHp * multiplier))
         enemy.hp = enemy.maxHp
       }
       enemies.push(enemy)
+      if (!foughtIds.includes(definition.id)) {
+        foughtIds.push(definition.id)
+      }
     }
     return enemies
   }
@@ -3349,6 +3356,19 @@ export default class BattleScene extends Phaser.Scene {
 
     this.addCombatLog(`${enemy.name || 'Enemy'} defeated!`)
     this.grantFirstDefeatRewards(enemy)
+
+    // If Danzaburō-danuki falls, his summoned tanuki clones die with him.
+    const isTanukiBoss = enemy.originalId === 'danzaburo_danuki' || enemy.definition?.id === 'danzaburo_danuki'
+    if (isTanukiBoss) {
+      const clones = this.enemies.filter(e => e.definition?.id === 'tanuki_clone' && e.isAlive())
+      if (clones.length > 0) {
+        this.addCombatLog("Danzaburō's illusions fade as he falls!")
+        for (const clone of clones) {
+          clone.hp = 0
+          this.onEnemyDefeated(clone)
+        }
+      }
+    }
 
     display.sprite.disableInteractive()
     display.sprite.setTexture(this.getEnemySpriteKey(enemy, 'death'))

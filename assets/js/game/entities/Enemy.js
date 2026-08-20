@@ -62,6 +62,7 @@ export default class Enemy extends Character {
     })
 
     this.definition = definition
+    this.originalId = definition.id
     this.phases = definition.phases || []
     this.phaseIndex = 0
     this.phaseModifiers = {}

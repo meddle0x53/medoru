@@ -49,6 +49,8 @@ export default class WordChallengeSystem {
     this.timerEvent = null
     this.hangEvent = null
     this.keyboardContainer = null
+    this.keyboardStartY = null
+    this.isTouchKeyboard = false
 
     this.word = null
     this.input = ''
@@ -89,7 +91,8 @@ export default class WordChallengeSystem {
 
     this.createOverlay()
 
-    if (this.scene.sys.game.device.input.touch) {
+    this.isTouchKeyboard = window.matchMedia('(pointer: coarse)').matches
+    if (this.isTouchKeyboard) {
       this.createTouchKeyboard()
     } else {
       this.createHiddenInput()
@@ -149,43 +152,53 @@ export default class WordChallengeSystem {
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
     this.overlay.add(backdrop)
 
-    const panel = this.scene.add.rectangle(0, 0, 460, 300, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
+    const isTouch = this.isTouchKeyboard
+    const panelHeight = isTouch ? 420 : 300
+    const layout = isTouch
+      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40, answer: 62, keyboardStart: 95 }
+      : { title: -130, prompt: -95, word: -45, hint: 0, input: 30, timerBar: 70, timerText: 88, feedback: 108, answer: 132 }
+
+    const panel = this.scene.add.rectangle(0, 0, 460, panelHeight, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
     this.overlay.add(panel)
 
-    this.titleText = this.scene.add.text(0, -130, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
+    this.titleText = this.scene.add.text(0, layout.title, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
     this.overlay.add(this.titleText)
 
     const prompt = this.currentOptions.promptType === 'meaning'
       ? this.options.promptForMeaning
       : this.options.promptForReading
-    this.promptText = this.scene.add.text(0, -95, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    this.promptText = this.scene.add.text(0, layout.prompt, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
     this.overlay.add(this.promptText)
 
-    this.wordText = this.scene.add.text(0, -45, this.word.word, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
+    this.wordText = this.scene.add.text(0, layout.word, this.word.word, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
     this.overlay.add(this.wordText)
 
-    this.hintText = this.scene.add.text(0, 0, this.word.reading || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.hintText = this.scene.add.text(0, layout.hint, this.word.reading || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.hintText)
 
-    this.inputText = this.scene.add.text(0, 30, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
+    this.inputText = this.scene.add.text(0, layout.input, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
     this.overlay.add(this.inputText)
 
-    const barBg = this.scene.add.rectangle(0, 70, 320, 12, COLORS.hpBg).setOrigin(0.5)
+    const barBg = this.scene.add.rectangle(0, layout.timerBar, 320, 12, COLORS.hpBg).setOrigin(0.5)
     this.overlay.add(barBg)
-    this.timerBar = this.scene.add.rectangle(-160, 70, 320, 12, COLORS.warning).setOrigin(0, 0.5)
+    this.timerBar = this.scene.add.rectangle(-160, layout.timerBar, 320, 12, COLORS.warning).setOrigin(0, 0.5)
     this.overlay.add(this.timerBar)
 
-    this.timerText = this.scene.add.text(0, 88, `${(this.currentOptions.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.timerText = this.scene.add.text(0, layout.timerText, `${(this.currentOptions.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.timerText)
 
-    const feedbackLabel = this.scene.sys.game.device.input.touch
+    const feedbackLabel = isTouch
       ? 'Tap the keys below to type'
       : 'Press Enter to submit'
-    this.feedbackText = this.scene.add.text(0, 108, feedbackLabel, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.feedbackText = this.scene.add.text(0, layout.feedback, feedbackLabel, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.feedbackText)
 
-    this.answerText = this.scene.add.text(0, 132, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71', align: 'center', wordWrap: { width: 420 } }).setOrigin(0.5)
+    this.answerText = this.scene.add.text(0, layout.answer, '', { ...FONTS.default, fontSize: '14px', color: '#2ecc71', align: 'center', wordWrap: { width: 420 } }).setOrigin(0.5)
     this.overlay.add(this.answerText)
+
+    if (isTouch) {
+      this.keyboardStartY = layout.keyboardStart
+    }
   }
 
   createHiddenInput() {
@@ -227,7 +240,7 @@ export default class WordChallengeSystem {
     // Larger, simplified keys for touch devices, matching the Cascade keyboard.
     const keySize = 30
     const keyGap = 4
-    const startY = 138
+    const startY = this.keyboardStartY ?? 138
 
     const rows = [
       ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
@@ -528,6 +541,7 @@ export default class WordChallengeSystem {
       this.overlay = null
     }
     this.keyboardContainer = null
+    this.keyboardStartY = null
     this.word = null
     this.input = ''
     this.titleText = null
