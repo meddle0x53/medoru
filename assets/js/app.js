@@ -60,6 +60,7 @@ import ShareAsPicture from "./hooks/share_as_picture"
 import WordBookCards from "./hooks/word_book_cards"
 import WordColorApplyTo from "./hooks/word_color_apply_to"
 import { initPushNotifications } from "./push_notifications"
+import { initLocalTime } from "./hooks/local_time"
 
 // Make KanjiRecognizer available globally for hooks
 import { KanjiWriter, KanjiVGParser } from "../vendor/kanji-recognizer-bundle.js"
@@ -160,9 +161,11 @@ function initCookieConsent() {
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', initCookieConsent)
+document.addEventListener('DOMContentLoaded', initLocalTime)
 
 // Re-initialize after LiveView navigation
 window.addEventListener('phx:page-loading-stop', initCookieConsent)
+window.addEventListener('phx:page-loading-stop', initLocalTime)
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()

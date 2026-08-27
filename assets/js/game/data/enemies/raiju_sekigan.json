@@ -23,14 +23,14 @@
     "3": [{ "x": 540, "y": 475, "scale": 0.16 }, { "x": 690, "y": 475, "scale": 0.16 }, { "x": 840, "y": 475, "scale": 0.16 }]
   },
   "stats": {
-    "hp": { "min": 520, "max": 560 },
-    "stamina": { "min": 18, "max": 22 },
-    "strength": { "min": 10, "max": 12 },
-    "skill": { "min": 16, "max": 18 },
-    "mana": { "min": 18, "max": 20 },
-    "luck": { "min": 14, "max": 14 },
-    "defense": { "min": 14, "max": 14 },
-    "armor": { "min": 6, "max": 6 }
+    "hp": { "min": 320, "max": 400 },
+    "stamina": { "min": 13, "max": 16 },
+    "strength": { "min": 8, "max": 10 },
+    "skill": { "min": 12, "max": 14 },
+    "mana": { "min": 13, "max": 16 },
+    "luck": { "min": 10, "max": 10 },
+    "defense": { "min": 8, "max": 10 },
+    "armor": { "min": 2, "max": 4 }
   },
   "abilities": [
     {
@@ -41,7 +41,7 @@
       "staminaCost": 3,
       "aiWeight": 10,
       "maxUsesPerTurn": 5,
-      "basePower": 14,
+      "basePower": 10,
       "scalingStat": "strength",
       "scalingMultiplier": 1.0,
       "sprite": "enemy_danzaburo_attack",
@@ -49,7 +49,7 @@
         {
           "effectId": "electrified",
           "target": "enemy",
-          "chance": { "base": 0.15, "step": 0, "cap": 0.15 },
+          "chance": { "base": 0.10, "step": 0, "cap": 0.10 },
           "duration": { "min": 1, "max": 1 }
         }
       ],
@@ -63,16 +63,16 @@
       "staminaCost": 4,
       "aiWeight": 9,
       "maxUsesPerTurn": 3,
-      "basePower": 10,
+      "basePower": 8,
       "scalingStat": "skill",
       "scalingMultiplier": 1.1,
-      "damageMultiplier": 1.25,
+      "damageMultiplier": 1.20,
       "sprite": "enemy_danzaburo_attack",
       "combo": {
         "consumesState": {
           "target": "enemy",
           "state": "momentum",
-          "damageMultiplier": 1.5,
+          "damageMultiplier": 1.2,
           "log": "Broken Pounce rips through Momentum!"
         }
       },
@@ -82,7 +82,7 @@
       "id": "lightning_howl",
       "name": "Lightning Howl",
       "type": "buff",
-      "staminaCost": 3,
+      "staminaCost": 4,
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
       "sprite": "enemy_danzaburo_buff",
@@ -93,12 +93,12 @@
           "effectId": "power_up",
           "target": "self",
           "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
-          "duration": { "min": 2, "max": 3 }
+          "duration": { "min": 1, "max": 2 }
         }
       ],
       "challenges": [
         {
-          "chance": 0.15,
+          "chance": 0.30,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -113,7 +113,7 @@
       "id": "watchful_eye",
       "name": "Watchful Eye",
       "type": "buff",
-      "staminaCost": 2,
+      "staminaCost": 4,
       "aiWeight": 11,
       "maxUsesPerTurn": 1,
       "sprite": "enemy_danzaburo_buff",
@@ -121,7 +121,7 @@
         {
           "effectId": "watchful_charge",
           "target": "self",
-          "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
+          "chance": { "base": 0.2, "step": 0, "cap": 0.3 },
           "duration": { "min": 1, "max": 1 }
         }
       ],
@@ -143,17 +143,17 @@
       "name": "Thunder Dash",
       "type": "attack",
       "element": "storm",
-      "staminaCost": 5,
+      "staminaCost": 6,
       "aiWeight": 14,
       "maxUsesPerTurn": 2,
-      "basePower": 12,
+      "basePower": 10,
       "scalingStat": "skill",
-      "scalingMultiplier": 1.2,
+      "scalingMultiplier": 1.1,
       "isLightning": true,
       "sprite": "enemy_danzaburo_attack",
       "challenges": [
         {
-          "chance": 0.45,
+          "chance": 0.65,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -169,12 +169,12 @@
       "name": "Chain Lightning",
       "type": "attack",
       "element": "void",
-      "staminaCost": 6,
+      "staminaCost": 7,
       "aiWeight": 10,
       "maxUsesPerTurn": 2,
-      "basePower": 18,
+      "basePower": 14,
       "scalingStat": "mana",
-      "scalingMultiplier": 0.6,
+      "scalingMultiplier": 0.5,
       "isLightning": true,
       "sprite": "enemy_danzaburo_attack",
       "effects": [
@@ -187,7 +187,7 @@
       ],
       "challenges": [
         {
-          "chance": 0.40,
+          "chance": 0.70,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -199,54 +199,26 @@
       "minPhaseIndex": 1
     },
     {
-      "id": "rolling_storm",
-      "name": "Rolling Storm",
-      "type": "heal",
-      "staminaCost": 2,
-      "aiWeight": 8,
-      "maxUsesPerTurn": 1,
-      "sprite": "enemy_danzaburo_buff",
-      "healPercent": 0,
-      "staminaRecover": 4,
-      "buffEffect": {
-        "effectId": "sake_power",
-        "duration": { "min": 2, "max": 2 }
-      },
-      "challenges": [
-        {
-          "chance": 0.35,
-          "type": "word",
-          "promptType": "meaning",
-          "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
-          "onSuccess": "weaken",
-          "weakenMultiplier": 0.5,
-          "onFail": "full",
-          "timeLimit": 13000
-        }
-      ],
-      "minPhaseIndex": 1
-    },
-    {
       "id": "divine_judgment",
       "name": "Divine Judgment",
       "type": "attack",
       "element": "storm",
-      "staminaCost": 7,
+      "staminaCost": 8,
       "aiWeight": 13,
       "maxUsesPerTurn": 2,
-      "basePower": 18,
+      "basePower": 14,
       "scalingStat": "mana",
-      "scalingMultiplier": 1.3,
+      "scalingMultiplier": 1.2,
       "isLightning": true,
       "sprite": "enemy_danzaburo_attack",
       "challenges": [
         {
-          "chance": 0.50,
+          "chance": 0.60,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
           "onSuccess": "weaken",
-          "weakenMultiplier": 0.5,
+          "weakenMultiplier": 0.4,
           "onFail": "full",
           "timeLimit": 13000
         }
@@ -261,18 +233,18 @@
       "staminaCost": 6,
       "aiWeight": 15,
       "maxUsesPerTurn": 2,
-      "basePower": 16,
+      "basePower": 12,
       "scalingStat": "strength",
-      "scalingMultiplier": 1.2,
+      "scalingMultiplier": 1.1,
       "sprite": "enemy_danzaburo_attack",
       "consumesEffect": {
         "effectId": "electrified",
-        "damageMultiplier": 2.0,
+        "damageMultiplier": 1.5,
         "log": "Heaven Splitter channels Electrified flesh!"
       },
       "challenges": [
         {
-          "chance": 0.45,
+          "chance": 0.65,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
@@ -288,7 +260,7 @@
       "id": "eye_of_heaven",
       "name": "Eye of Heaven",
       "type": "buff",
-      "staminaCost": 4,
+      "staminaCost": 6,
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
       "sprite": "enemy_danzaburo_buff",
@@ -297,12 +269,12 @@
           "effectId": "eye_of_heaven",
           "target": "self",
           "chance": { "base": 1.0, "step": 0, "cap": 1.0 },
-          "duration": { "min": 2, "max": 2 }
+          "duration": { "min": 1, "max": 1 }
         }
       ],
       "challenges": [
         {
-          "chance": 0.40,
+          "chance": 0.70,
           "type": "word",
           "promptType": "meaning",
           "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4", "N3"], "maxFrequency": 2000 },
@@ -321,16 +293,16 @@
       "staminaCost": 0,
       "aiWeight": 1,
       "maxUsesPerTurn": 99,
-      "basePower": 8,
+      "basePower": 7,
       "scalingStat": "mana",
-      "scalingMultiplier": 0.5,
+      "scalingMultiplier": 0.4,
       "isLightning": true,
       "sprite": "enemy_danzaburo_attack",
       "effects": [
         {
           "effectId": "electrified",
           "target": "enemy",
-          "chance": { "base": 0.10, "step": 0, "cap": 0.10 },
+          "chance": { "base": 0.08, "step": 0, "cap": 0.10 },
           "duration": { "min": 1, "max": 1 }
         }
       ],
@@ -392,9 +364,9 @@
   ],
   "drops": {
     "warrior": [
-      { "type": "item", "id": "health_potion", "chance": 0.50, "rarity": "normal" },
+      { "type": "item", "id": "health_potion", "chance": 0.70, "rarity": "normal" },
       { "type": "item", "id": "stone", "chance": 0.35, "rarity": "normal" },
-      { "type": "charm", "id": "kaze_charm", "chance": 0.05, "rarity": "special" }
+      { "type": "charm", "id": "kaze_charm", "chance": 0.15, "rarity": "special" }
     ],
     "mage": [],
     "archer": []

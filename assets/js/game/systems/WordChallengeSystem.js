@@ -155,7 +155,7 @@ export default class WordChallengeSystem {
     const isTouch = this.isTouchKeyboard
     const panelHeight = isTouch ? 420 : 300
     const layout = isTouch
-      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40, answer: 62, keyboardStart: 95 }
+      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40, answer: 62, keyboardStart: 99 }
       : { title: -130, prompt: -95, word: -45, hint: 0, input: 30, timerBar: 70, timerText: 88, feedback: 108, answer: 132 }
 
     const panel = this.scene.add.rectangle(0, 0, 460, panelHeight, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)

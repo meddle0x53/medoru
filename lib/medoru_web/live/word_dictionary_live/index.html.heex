@@ -1,0 +1,238 @@
+<Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <%!-- Header --%>
+    <div class="flex items-center gap-3 mb-6">
+      <.link
+        navigate={~p"/words"}
+        class="text-secondary hover:text-primary transition-colors"
+      >
+        <.icon name="hero-arrow-left" class="w-5 h-5" />
+      </.link>
+      <h1 class="text-2xl font-bold text-base-content">{gettext("My Dictionary")}</h1>
+    </div>
+
+    <%!-- Search & Filter --%>
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+      <form phx-change="set_search" class="flex-1">
+        <input
+          type="text"
+          name="query"
+          value={@search_query}
+          placeholder={gettext("Search keys...")}
+          class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </form>
+
+      <form phx-change="set_category">
+        <select
+          name="category"
+          class="w-full sm:w-48 px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+        >
+          <option value="">{gettext("All categories")}</option>
+          <%= for category <- @categories do %>
+            <option value={category} selected={@selected_category == category}>
+              {category}
+            </option>
+          <% end %>
+        </select>
+      </form>
+    </div>
+
+    <%!-- Add / Edit Form --%>
+    <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-4 mb-6">
+      <%= if @editing_entry do %>
+        <h2 class="font-medium text-base-content mb-3">{gettext("Edit Entry")}</h2>
+      <% else %>
+        <h2 class="font-medium text-base-content mb-3">{gettext("Add Entry")}</h2>
+      <% end %>
+
+      <form
+        phx-submit={if @editing_entry, do: "update_entry", else: "create_entry"}
+        class="space-y-3"
+      >
+        <%= if @editing_entry do %>
+          <input type="hidden" name="entry_id" value={@editing_entry.id} />
+        <% end %>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input
+            type="text"
+            name="entry[key]"
+            value={if(@editing_entry, do: @editing_entry.key, else: "")}
+            placeholder={gettext("Key (lookup phrase)")}
+            required
+            class="px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <input
+            type="text"
+            name="entry[value]"
+            value={if(@editing_entry, do: @editing_entry.value, else: "")}
+            placeholder={gettext("Value (inserted text)")}
+            required
+            class="px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            name="entry[category]"
+            value={if(@editing_entry, do: @editing_entry.category, else: "")}
+            placeholder={gettext("Category (optional)")}
+            class="flex-1 px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <label class="flex items-center gap-2 text-sm text-base-content/70 cursor-pointer">
+            <input
+              type="checkbox"
+              name="entry[match_mode]"
+              value="substring"
+              checked={@editing_entry && @editing_entry.match_mode == "substring"}
+              class="checkbox checkbox-sm checkbox-primary"
+            />
+            {gettext("Substring match")}
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <%= if @editing_entry do %>
+            <button type="button" phx-click="cancel_edit" class="btn btn-ghost btn-sm">
+              {gettext("Cancel")}
+            </button>
+          <% end %>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <%= if @editing_entry do %>
+              {gettext("Update")}
+            <% else %>
+              {gettext("Add")}
+            <% end %>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <%!-- Entries List --%>
+    <%= if @entries == [] do %>
+      <div class="text-center py-12 bg-base-100 rounded-2xl border border-base-300">
+        <.icon name="hero-language" class="w-12 h-12 text-secondary/30 mx-auto mb-3" />
+        <p class="text-secondary">{gettext("Your dictionary is empty.")}</p>
+      </div>
+    <% else %>
+      <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+        <div class="divide-y divide-base-200">
+          <%= for entry <- @entries do %>
+            <div class="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-base-50">
+              <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-baseline gap-2">
+                <div class="font-medium text-base-content shrink-0">
+                  {entry.key}
+                </div>
+                <div class="hidden sm:block text-base-content/30">→</div>
+                <div class="text-sm text-secondary">
+                  <%= for segment <- render_dictionary_value(entry.value) do %>
+                    <%= case segment do %>
+                      <% {:text, text} -> %>
+                        {text}
+                      <% {:link, word} -> %>
+                        <.link
+                          navigate={~p"/words/#{word}"}
+                          class="text-primary hover:underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {word}
+                        </.link>
+                    <% end %>
+                  <% end %>
+                </div>
+                <%= if entry.category do %>
+                  <span class="inline-block sm:self-center text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/70">
+                    {entry.category}
+                  </span>
+                <% end %>
+              </div>
+
+              <div class="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  phx-click="open_send_to_chat"
+                  phx-value-id={entry.id}
+                  class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
+                  title={gettext("Send to chat dictionary")}
+                >
+                  <.icon name="hero-paper-airplane" class="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  phx-click="start_edit"
+                  phx-value-id={entry.id}
+                  class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
+                  title={gettext("Edit")}
+                >
+                  <.icon name="hero-pencil" class="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  phx-click="delete_entry"
+                  phx-value-id={entry.id}
+                  data-confirm={gettext("Delete this entry?")}
+                  class="p-2 text-secondary hover:text-error hover:bg-base-200 rounded-lg transition-colors"
+                  title={gettext("Delete")}
+                >
+                  <.icon name="hero-trash" class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Send to Chat Modal --%>
+    <%= if @send_to_chat_entry do %>
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[80vh] overflow-y-auto">
+          <h3 class="text-xl font-bold text-base-content mb-4">
+            {gettext("Send to Chat Dictionary")}
+          </h3>
+
+          <p class="text-sm text-secondary mb-4">
+            {gettext("Sending: %{key} → %{value}",
+              key: @send_to_chat_entry.key,
+              value: @send_to_chat_entry.value
+            )}
+          </p>
+
+          <%= if @conversations == [] do %>
+            <p class="text-secondary text-center py-4">
+              {gettext("No conversations found.")}
+            </p>
+          <% else %>
+            <div class="space-y-2 mb-4">
+              <%= for conversation <- @conversations do %>
+                <button
+                  type="button"
+                  phx-click="send_to_chat"
+                  phx-value-conversation_id={conversation.id}
+                  class="w-full text-left px-3 py-2 bg-base-200/50 hover:bg-base-200 rounded-xl transition-colors"
+                >
+                  <div class="font-medium text-base-content">
+                    {conversation_label(conversation, @current_scope.current_user.id)}
+                  </div>
+                </button>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="flex justify-end mt-4 pt-4 border-t border-base-300">
+            <button
+              type="button"
+              phx-click="close_send_to_chat"
+              class="btn btn-ghost"
+            >
+              {gettext("Cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.app>

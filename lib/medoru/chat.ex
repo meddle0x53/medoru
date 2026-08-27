@@ -27,11 +27,17 @@ defmodule Medoru.Chat do
     limit = Keyword.get(opts, :limit, 30)
     offset = Keyword.get(opts, :offset, 0)
 
+    last_message_subquery =
+      from m in Message,
+        select: %{conversation_id: m.conversation_id, inserted_at: max(m.inserted_at)},
+        group_by: m.conversation_id
+
     Conversation
     |> join(:inner, [c], cp in ConversationParticipant, on: cp.conversation_id == c.id)
+    |> join(:left, [c, cp], lm in subquery(last_message_subquery), on: lm.conversation_id == c.id)
     |> where([c, cp], cp.user_id == ^user_id and cp.has_left == false and cp.is_archived == false)
     |> preload([:classroom, participants: [user: :profile]])
-    |> order_by([c], desc: c.inserted_at)
+    |> order_by([c, cp, lm], desc_nulls_last: lm.inserted_at, desc: c.inserted_at)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
@@ -632,7 +638,7 @@ defmodule Medoru.Chat do
     conversation =
       Conversation
       |> where([c], c.classroom_id == ^classroom_id)
-      |> preload(participants: [user: :profile])
+      |> preload([:classroom, participants: [user: :profile]])
       |> Repo.one()
 
     if conversation do

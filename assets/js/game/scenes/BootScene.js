@@ -1,5 +1,7 @@
 
 import { MAP_DEFINITIONS } from '../data/maps/index.js'
+import { fetchSaveData } from '../api.js'
+import { loadoutKey } from '../entities/Player.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 /**
@@ -105,8 +107,40 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     setupHighDPIWorld(this)
-    // Always start at the title screen. It will decide whether to show
-    // Continue, New Run, or Settings based on the saved loadout.
-    this.scene.start('TitleScene')
+    // Download any server-side save before the title screen is shown so the
+    // player sees the most recently synced progress.
+    this.syncServerSave().then(() => {
+      this.scene.start('TitleScene')
+    })
+  }
+
+  async syncServerSave() {
+    try {
+      const server = await fetchSaveData()
+      if (!server || server.status !== 'ok' || !server.save_data) return
+
+      const serverTime = new Date(server.updated_at).getTime()
+      const localRaw = localStorage.getItem(loadoutKey())
+      let localTime = 0
+      if (localRaw) {
+        try {
+          const local = JSON.parse(localRaw)
+          localTime = local.localSavedAt || local.serverUpdatedAt || 0
+        } catch (_) {
+          // ignore malformed local save
+        }
+      }
+
+      if (serverTime >= localTime) {
+        const merged = {
+          ...server.save_data,
+          serverUpdatedAt: server.updated_at,
+          localSavedAt: serverTime,
+        }
+        localStorage.setItem(loadoutKey(), JSON.stringify(merged))
+      }
+    } catch (e) {
+      console.warn('[BootScene] Failed to sync server save:', e)
+    }
   }
 }

@@ -5,6 +5,7 @@ defmodule MedoruWeb.WordLive.Show do
   alias Medoru.Accounts
   alias Medoru.Content
   alias Medoru.Content.MatureContent
+  alias Medoru.Dictionaries
   alias Medoru.Learning
   alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
@@ -27,7 +28,10 @@ defmodule MedoruWeb.WordLive.Show do
      |> assign(:add_to_word_book_modal_open, false)
      |> assign(:word_books_page, 1)
      |> assign(:word_books_result, nil)
-     |> assign(:word_book_ids_with_word, [])}
+     |> assign(:word_book_ids_with_word, [])
+     |> assign(:add_to_dictionary_modal_open, false)
+     |> assign(:dictionary_key, "")
+     |> assign(:dictionary_value, "")}
   end
 
   @impl true
@@ -344,6 +348,76 @@ defmodule MedoruWeb.WordLive.Show do
             {:noreply, put_flash(socket, :error, gettext("Failed to remove word."))}
         end
     end
+  end
+
+  @impl true
+  def handle_event("open_add_to_dictionary_modal", _params, socket) do
+    if socket.assigns.current_scope && socket.assigns.current_scope.current_user do
+      word = socket.assigns.word
+      locale = socket.assigns.locale
+      default_key = Content.get_localized_meaning(word, locale) |> first_meaning()
+      default_value = "|#{word.text}|"
+
+      {:noreply,
+       socket
+       |> assign(:add_to_dictionary_modal_open, true)
+       |> assign(:dictionary_key, default_key)
+       |> assign(:dictionary_value, default_value)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("close_add_to_dictionary_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:add_to_dictionary_modal_open, false)
+     |> assign(:dictionary_key, "")
+     |> assign(:dictionary_value, "")}
+  end
+
+  @impl true
+  def handle_event("add_to_dictionary", %{"entry" => entry_params}, socket) do
+    user = socket.assigns.current_scope.current_user
+    main_dictionary = Dictionaries.get_or_create_main_dictionary(user.id)
+
+    case Dictionaries.create_entry(main_dictionary, entry_params) do
+      {:ok, _entry} ->
+        {:noreply,
+         socket
+         |> assign(:add_to_dictionary_modal_open, false)
+         |> assign(:dictionary_key, "")
+         |> assign(:dictionary_value, "")
+         |> put_flash(:info, gettext("Added to your dictionary."))}
+
+      {:error, changeset} ->
+        {:noreply,
+         socket
+         |> assign(:dictionary_key, entry_params["key"] || "")
+         |> assign(:dictionary_value, entry_params["value"] || "")
+         |> put_flash(:error, format_changeset_errors(changeset))}
+    end
+  end
+
+  defp first_meaning(meaning) when is_binary(meaning) do
+    meaning
+    |> String.split("/")
+    |> List.first()
+    |> to_string()
+    |> String.trim()
+  end
+
+  defp first_meaning(_), do: ""
+
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Regex.replace(~r"%\{.*?\}", msg, fn _ ->
+        to_string(Keyword.get(opts, String.to_atom(String.slice(msg, 2, -2)), ""))
+      end)
+    end)
+    |> Enum.map(fn {field, errors} -> "#{field}: #{Enum.join(errors, ", ")}" end)
+    |> Enum.join("; ")
   end
 
   # Reloads the book list (keeping the modal open) and the set of book IDs

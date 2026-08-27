@@ -10,9 +10,11 @@ defmodule MedoruWeb.MessagesLive.Show do
 
   require Logger
 
+  alias Medoru.AI.ChatAssistant
   alias Medoru.Chat
   alias Medoru.Content
   alias Medoru.Content.MatureContent
+  alias Medoru.Dictionaries
   alias Medoru.Social
   alias Medoru.Encryption
   alias Medoru.Notifications
@@ -25,6 +27,8 @@ defmodule MedoruWeb.MessagesLive.Show do
   alias Medoru.LinkPreviews
 
   import MedoruWeb.ChatMediaFolderComponent, only: [chat_media_folder: 1]
+  import MedoruWeb.ChatDictionaryComponents, only: [chat_dictionary_drawer: 1]
+  import MedoruWeb.ChatAIComponents, only: [ai_response_modal: 1]
 
   @per_page 20
 
@@ -224,6 +228,11 @@ defmodule MedoruWeb.MessagesLive.Show do
             |> assign(:media_has_more, false)
             |> assign(:media_offset, 0)
             |> assign(:media_loading, false)
+            |> assign_dictionary_state(current_user, conversation)
+            |> assign(:ai_response_modal_open, false)
+            |> assign(:ai_prompt, nil)
+            |> assign(:ai_response, nil)
+            |> assign(:ai_explanation, nil)
             |> push_event("scroll_to_bottom", %{})
 
           socket =
@@ -241,6 +250,280 @@ defmodule MedoruWeb.MessagesLive.Show do
     else
       {:ok, push_navigate(socket, to: ~p"/")}
     end
+  end
+
+  # ============================================================================
+  # Chat Dictionary
+  # ============================================================================
+
+  @impl true
+  def handle_event("open_dictionary", _params, socket) do
+    {:noreply, assign(socket, :dictionary_open, true)}
+  end
+
+  @impl true
+  def handle_event("close_dictionary", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:dictionary_open, false)
+     |> assign(:dictionary_editing_entry, nil)
+     |> assign(:dictionary_add_from_message, nil)}
+  end
+
+  @impl true
+  def handle_event("toggle_dictionary", _params, socket) do
+    chat_dictionary = socket.assigns.chat_dictionary
+
+    case Dictionaries.toggle_enabled(chat_dictionary) do
+      {:ok, updated} ->
+        {:noreply,
+         socket
+         |> assign(:chat_dictionary, updated)
+         |> assign(:dictionary_enabled, updated.enabled)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to update dictionary setting."))}
+    end
+  end
+
+  @impl true
+  def handle_event("set_dictionary_tab", %{"tab" => tab}, socket) do
+    tab = if tab in ["entries", "people"], do: tab, else: "entries"
+    {:noreply, assign(socket, :dictionary_active_tab, tab)}
+  end
+
+  @impl true
+  def handle_event("create_dictionary_entry", %{"entry" => entry_params}, socket) do
+    dictionary = socket.assigns.chat_dictionary
+
+    case Dictionaries.create_entry(dictionary, entry_params) do
+      {:ok, _entry} ->
+        {:noreply,
+         socket
+         |> refresh_dictionary_state()
+         |> assign(:dictionary_add_from_message, nil)}
+
+      {:error, changeset} ->
+        {:noreply, put_flash(socket, :error, format_changeset_errors(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "update_dictionary_entry",
+        %{"entry_id" => id, "entry" => entry_params},
+        socket
+      ) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Dictionaries.get_entry!(current_user.id, id) do
+      entry ->
+        case Dictionaries.update_entry(entry, entry_params) do
+          {:ok, _entry} ->
+            {:noreply,
+             socket
+             |> refresh_dictionary_state()
+             |> assign(:dictionary_editing_entry, nil)}
+
+          {:error, changeset} ->
+            {:noreply, put_flash(socket, :error, format_changeset_errors(changeset))}
+        end
+    end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, gettext("Entry not found."))}
+  end
+
+  @impl true
+  def handle_event("delete_dictionary_entry", %{"id" => id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Dictionaries.get_entry!(current_user.id, id) do
+      entry ->
+        Dictionaries.delete_entry(entry)
+        {:noreply, refresh_dictionary_state(socket)}
+    end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, gettext("Entry not found."))}
+  end
+
+  @impl true
+  def handle_event("copy_entry_to_main", %{"id" => id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Dictionaries.get_entry!(current_user.id, id) do
+      entry ->
+        Dictionaries.copy_entry_to_main(entry, current_user.id)
+        {:noreply, put_flash(socket, :info, gettext("Copied to main dictionary."))}
+    end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, gettext("Entry not found."))}
+  end
+
+  @impl true
+  def handle_event(
+        "add_message_to_dictionary",
+        %{
+          "message_id" => message_id,
+          "content" => content
+        },
+        socket
+      ) do
+    conversation = socket.assigns.conversation
+
+    message = Chat.get_message!(message_id)
+
+    if message.conversation_id == conversation.id do
+      {:noreply,
+       socket
+       |> assign(:dictionary_open, true)
+       |> assign(:dictionary_active_tab, "entries")
+       |> assign(:dictionary_add_from_message, %{message_id: message_id, content: content})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "save_user_relation",
+        %{
+          "target_user_id" => target_user_id,
+          "relation" => relation_params
+        },
+        socket
+      ) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+
+    valid_target? =
+      Enum.any?(conversation.participants, &(&1.user_id == target_user_id))
+
+    if valid_target? do
+      nicknames =
+        relation_params
+        |> Map.get("nicknames", "")
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+
+      attrs =
+        relation_params
+        |> Map.put("nicknames", nicknames)
+        |> Map.take([
+          "relationship_type",
+          "address_style",
+          "description",
+          "nicknames"
+        ])
+
+      case Social.upsert_relation(current_user.id, target_user_id, attrs) do
+        {:ok, _relation} ->
+          {:noreply,
+           socket
+           |> refresh_dictionary_state()
+           |> put_flash(:info, gettext("Relation saved."))}
+
+        {:error, changeset} ->
+          {:noreply, put_flash(socket, :error, format_changeset_errors(changeset))}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  # ============================================================================
+  # AI Chat Assistant
+  # ============================================================================
+
+  @impl true
+  def handle_event("generate_ai_response", %{"prompt" => prompt, "context" => context}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+    prompt = String.trim(prompt)
+
+    if prompt == "" do
+      {:noreply, socket}
+    else
+      case ChatAssistant.generate_response(current_user, conversation, prompt, context: context) do
+        {:ok, %{response: response, explanation: explanation}} ->
+          {:noreply,
+           socket
+           |> assign(:ai_response_modal_open, true)
+           |> assign(:ai_prompt, prompt)
+           |> assign(:ai_response, response)
+           |> assign(:ai_explanation, explanation)}
+
+        {:error, message} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("AI assistant failed: %{message}", message: message))}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event("generate_ai_response", %{"prompt" => prompt}, socket) do
+    handle_event("generate_ai_response", %{"prompt" => prompt, "context" => []}, socket)
+  end
+
+  @impl true
+  def handle_event("close_ai_response_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:ai_response_modal_open, false)
+     |> assign(:ai_prompt, nil)
+     |> assign(:ai_response, nil)
+     |> assign(:ai_explanation, nil)}
+  end
+
+  @impl true
+  def handle_event("update_ai_response", %{"response" => response}, socket) do
+    {:noreply, assign(socket, :ai_response, response)}
+  end
+
+  @impl true
+  def handle_event("regenerate_ai_response", %{"prompt" => prompt}, socket) do
+    handle_event("generate_ai_response", %{"prompt" => prompt, "context" => []}, socket)
+  end
+
+  @impl true
+  def handle_event("send_ai_response", _params, socket) do
+    trimmed = socket.assigns.ai_response && String.trim(socket.assigns.ai_response)
+
+    if is_nil(trimmed) or trimmed == "" do
+      {:noreply, socket}
+    else
+      # Encrypted chats: send via the encrypted message event with ciphertext/iv.
+      # The client encrypts and sends the message because the server cannot
+      # decrypt E2E messages.
+      {:noreply,
+       socket
+       |> assign(:ai_response_modal_open, false)
+       |> assign(:ai_prompt, nil)
+       |> assign(:ai_response, nil)
+       |> assign(:ai_explanation, nil)
+       |> push_event("send_encrypted_ai_message", %{content: trimmed})}
+    end
+  end
+
+  @impl true
+  def handle_event("start_edit_dictionary_entry", %{"id" => id}, socket) do
+    current_user = socket.assigns.current_scope.current_user
+
+    case Dictionaries.get_entry!(current_user.id, id) do
+      entry ->
+        {:noreply, assign(socket, :dictionary_editing_entry, entry)}
+    end
+  rescue
+    Ecto.NoResultsError ->
+      {:noreply, put_flash(socket, :error, gettext("Entry not found."))}
+  end
+
+  @impl true
+  def handle_event("cancel_edit_dictionary_entry", _params, socket) do
+    {:noreply, assign(socket, :dictionary_editing_entry, nil)}
   end
 
   @impl true
@@ -1112,6 +1395,16 @@ defmodule MedoruWeb.MessagesLive.Show do
     end
   end
 
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Regex.replace(~r"%\{.*?\}", msg, fn _ ->
+        to_string(Keyword.get(opts, String.to_atom(String.slice(msg, 2, -2)), ""))
+      end)
+    end)
+    |> Enum.map(fn {field, errors} -> "#{field}: #{Enum.join(errors, ", ")}" end)
+    |> Enum.join("; ")
+  end
+
   @impl true
   def handle_async(:load_more_media, {:ok, {items, has_more}}, socket) do
     current_offset = socket.assigns.media_offset
@@ -1934,5 +2227,61 @@ defmodule MedoruWeb.MessagesLive.Show do
       ".ogv" -> "video/ogg"
       _ -> "video/mp4"
     end
+  end
+
+  defp assign_dictionary_state(socket, current_user, conversation) do
+    chat_dictionary = Dictionaries.get_or_create_chat_dictionary(current_user.id, conversation.id)
+    main_dictionary = Dictionaries.get_or_create_main_dictionary(current_user.id)
+
+    entries = Dictionaries.list_entries(chat_dictionary.id)
+    categories = Dictionaries.list_categories(current_user.id, conversation.id)
+    aliases = Dictionaries.build_user_aliases(current_user.id, conversation)
+    current_user_alias = Dictionaries.resolve_alias(current_user.id, conversation, 0)
+
+    socket
+    |> assign(:chat_dictionary, chat_dictionary)
+    |> assign(:main_dictionary, main_dictionary)
+    |> assign(:dictionary_entries, entries)
+    |> assign(:dictionary_entries_json, serialize_dictionary_entries(entries))
+    |> assign(:dictionary_categories, categories)
+    |> assign(:user_aliases, aliases)
+    |> assign(:user_aliases_json, Jason.encode!(aliases))
+    |> assign(:current_user_alias, current_user_alias)
+    |> assign(:dictionary_enabled, chat_dictionary.enabled)
+    |> assign(:dictionary_open, false)
+    |> assign(:dictionary_active_tab, "entries")
+    |> assign(:dictionary_editing_entry, nil)
+    |> assign(:dictionary_add_from_message, nil)
+  end
+
+  defp serialize_dictionary_entries(entries) do
+    entries
+    |> Enum.map(fn e ->
+      %{
+        id: e.id,
+        key: e.key,
+        value: e.value,
+        category: e.category,
+        match_mode: e.match_mode
+      }
+    end)
+    |> Jason.encode!()
+  end
+
+  defp refresh_dictionary_state(socket) do
+    current_user = socket.assigns.current_scope.current_user
+    conversation = socket.assigns.conversation
+    chat_dictionary = socket.assigns.chat_dictionary
+
+    entries = Dictionaries.list_entries(chat_dictionary.id)
+    categories = Dictionaries.list_categories(current_user.id, conversation.id)
+    aliases = Dictionaries.build_user_aliases(current_user.id, conversation)
+
+    socket
+    |> assign(:dictionary_entries, entries)
+    |> assign(:dictionary_entries_json, serialize_dictionary_entries(entries))
+    |> assign(:dictionary_categories, categories)
+    |> assign(:user_aliases, aliases)
+    |> assign(:user_aliases_json, Jason.encode!(aliases))
   end
 end

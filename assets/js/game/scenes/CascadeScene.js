@@ -9,8 +9,8 @@ import { setupHighDPIWorld } from '../highDpi.js'
 
 const GAME_DURATION_MS = 60000
 const SPEED_INCREASE_INTERVAL_MS = 20000
-const LIVES = 3
-const WORD_GOLD = 5
+const LIVES = 4
+const WORD_GOLD = 7
 const ROWS_TO_DANGER = 20
 const MIN_SPAWN_INTERVAL = 800
 
@@ -634,14 +634,26 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   checkRewards() {
-    if (this.wordsDestroyed % 10 === 0) {
+    if (this.wordsDestroyed % 5 === 0) {
       this.grantRandomItem()
     }
-    if (this.wordsDestroyed % 20 === 0) {
-      this.offerAbilityChoice()
+    if (this.wordsDestroyed % 10 === 0) {
+      this.pendingChoices.push({ type: 'ability' })
     }
-    if (this.wordsDestroyed % 30 === 0) {
-      this.offerUpgradeChoice()
+    if (this.wordsDestroyed % 15 === 0) {
+      this.pendingChoices.push({ type: 'upgrade' })
+    }
+    this.processPendingChoices()
+  }
+
+  processPendingChoices() {
+    if (this.choiceDialog || this.pendingChoices.length === 0) return
+
+    const next = this.pendingChoices.shift()
+    if (next.type === 'ability') {
+      this.offerAbilityChoice(() => this.processPendingChoices())
+    } else if (next.type === 'upgrade') {
+      this.offerUpgradeChoice(() => this.processPendingChoices())
     }
   }
 
@@ -652,7 +664,7 @@ export default class CascadeScene extends Phaser.Scene {
     this.showToast(`Item: ${item.icon} ${item.name}`)
   }
 
-  offerAbilityChoice() {
+  offerAbilityChoice(onComplete = null) {
     this.pauseGame()
     const pool = getRewardPool(this.player)
     const options = pickRewardAbilities(pool, 3, this.player.loadout.knownActionIds || [])
@@ -662,6 +674,7 @@ export default class CascadeScene extends Phaser.Scene {
 
     if (options.length === 0) {
       this.resumeGame()
+      if (onComplete) onComplete()
       return
     }
 
@@ -670,10 +683,11 @@ export default class CascadeScene extends Phaser.Scene {
       this.abilitiesEarned.push(choice.name)
       this.showToast(`Learned: ${choice.name}`)
       this.resumeGame()
+      if (onComplete) onComplete()
     })
   }
 
-  offerUpgradeChoice() {
+  offerUpgradeChoice(onComplete = null) {
     this.pauseGame()
     const options = [
       { id: 'weapon', name: 'Upgrade Weapon', icon: '⚔️' },
@@ -693,6 +707,7 @@ export default class CascadeScene extends Phaser.Scene {
         this.showToast(`Healed ${heal} HP`)
       }
       this.resumeGame()
+      if (onComplete) onComplete()
     })
   }
 

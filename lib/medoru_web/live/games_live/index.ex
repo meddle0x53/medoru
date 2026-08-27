@@ -104,7 +104,7 @@ defmodule MedoruWeb.GamesLive.Index do
           <div class="mb-8">
             <h2 class="text-lg font-semibold text-base-content mb-3 flex items-center gap-2">
               <.icon name="hero-sparkles" class="w-5 h-5 text-secondary" />
-              {gettext("The Hollow Ouroboros")}
+              {gettext("RPG Game")}
             </h2>
 
             <.link
@@ -119,7 +119,7 @@ defmodule MedoruWeb.GamesLive.Index do
                     </div>
                     <div>
                       <div class="font-semibold text-base-content">
-                        {gettext("Play The Hollow Ouroboros")}
+                        {gettext("Play The RPG Game")}
                       </div>
                       <div class="text-sm text-base-content/60">
                         {gettext("Roguelike Japanese vocabulary adventure")}

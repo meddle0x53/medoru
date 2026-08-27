@@ -71,7 +71,7 @@
     {@inner_content}
     <script>
       // Set locale for LiveViews
-      window.medoruLocale = "{@conn.assigns[:locale] || "en"}";
+      window.medoruLocale = "<%= @conn.assigns[:locale] || "en" %>";
 
       // VAPID public key for push notifications (read from meta tag)
       window.medoruVapidKey = document.querySelector("meta[name='vapid-public-key']")?.getAttribute("content") || "";

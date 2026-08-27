@@ -53,6 +53,47 @@ export async function sendRunResult(data) {
   }
 }
 
+export async function fetchSaveData() {
+  try {
+    const resp = await fetch(`${API_BASE}/save`, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin',
+    })
+    if (!resp.ok) {
+      const body = await parseResponse(resp)
+      console.warn('Game save fetch error:', resp.status, body)
+      return null
+    }
+    return await resp.json()
+  } catch (e) {
+    console.warn('Game save fetch error:', e)
+    return null
+  }
+}
+
+export async function uploadSaveData(saveData) {
+  try {
+    const resp = await fetch(`${API_BASE}/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ save_data: saveData, version: saveData.version || 1 }),
+    })
+    if (!resp.ok) {
+      const body = await parseResponse(resp)
+      console.warn('Game save upload error:', resp.status, body)
+      return { ok: false, error: body }
+    }
+    return { ok: true, data: await resp.json() }
+  } catch (e) {
+    console.warn('Game save upload error:', e)
+    return { ok: false, error: e.message }
+  }
+}
+
 export function getWindowGameData() {
   if (typeof window !== 'undefined' && window.gameData) {
     return window.gameData

@@ -296,9 +296,9 @@ defmodule MedoruWeb.DailyChallengesLive do
                   <span class="badge badge-ghost">{gettext("Available")}</span>
                 <% end %>
               </div>
-              <h3 class="card-title text-lg">{gettext("Hollow Ouroboros Run")}</h3>
+              <h3 class="card-title text-lg">{gettext("RPG Game Run")}</h3>
               <p class="text-sm text-secondary mt-2">
-                {gettext("Play The Hollow Ouroboros. Earn site XP from Ouro Essence gained.")}
+                {gettext("Play The RPG Game. Earn site XP from Ouro Essence gained.")}
               </p>
               <div class="mt-4 flex items-center gap-2 text-sm text-base-content/70">
                 <.icon name="hero-sparkles" class="w-4 h-4 text-warning" />

@@ -202,7 +202,7 @@
 
         <%!-- Action Buttons - Mobile Responsive --%>
         <%= if @current_scope && @current_scope.current_user do %>
-          <div class="border-t border-base-300 pt-6 mt-6 flex flex-col sm:flex-row gap-3 mb-6">
+          <div class="border-t border-base-300 pt-6 mt-6 grid grid-cols-2 gap-3 mb-6">
             <%= if @word_learned do %>
               <button
                 phx-click="unlearn_word"
@@ -240,6 +240,14 @@
             >
               <.icon name="hero-book-open" class="w-5 h-5" />
               {gettext("Add to Word Book")}
+            </button>
+
+            <button
+              phx-click="open_add_to_dictionary_modal"
+              class="flex-1 inline-flex items-center justify-center gap-2 bg-base-200 hover:bg-base-300 text-base-content px-6 py-4 rounded-xl font-medium transition-all duration-200 active:scale-[0.98] min-h-[56px]"
+            >
+              <.icon name="hero-language" class="w-5 h-5" />
+              {gettext("Add to Dictionary")}
             </button>
           </div>
         <% end %>
@@ -406,6 +414,86 @@
               {gettext("Cancel")}
             </button>
           </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%!-- Add to Dictionary Modal --%>
+    <%= if @add_to_dictionary_modal_open do %>
+      <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+          <h3 class="text-xl font-bold text-base-content mb-4">
+            {gettext("Add to Dictionary")}
+          </h3>
+
+          <form phx-submit="add_to_dictionary" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-base-content/70 mb-1">
+                {gettext("Key (lookup phrase)")}
+              </label>
+              <input
+                type="text"
+                name="entry[key]"
+                value={@dictionary_key}
+                required
+                class="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-base-content/70 mb-1">
+                {gettext("Value (what is inserted)")}
+              </label>
+              <input
+                type="text"
+                name="entry[value]"
+                value={@dictionary_value}
+                required
+                class="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <p class="text-xs text-base-content/50 mt-1">
+                {gettext("Use |word| to link to a site word.")}
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-base-content/70 mb-1">
+                {gettext("Category (optional)")}
+              </label>
+              <input
+                type="text"
+                name="entry[category]"
+                placeholder={gettext("e.g. greetings")}
+                class="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="entry[match_mode]"
+                value="substring"
+                id="dictionary-match-substring"
+                class="checkbox checkbox-sm checkbox-primary"
+              />
+              <label for="dictionary-match-substring" class="text-sm text-base-content/70">
+                {gettext("Substring match")}
+              </label>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-4 border-t border-base-300">
+              <button
+                type="button"
+                phx-click="close_add_to_dictionary_modal"
+                class="btn btn-ghost"
+              >
+                {gettext("Cancel")}
+              </button>
+              <button type="submit" class="btn btn-primary">
+                {gettext("Add")}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     <% end %>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <g id="blossom">
+      <circle cx="0" cy="-6" r="4" fill="#fbcfe8" fill-opacity="0.6"/>
+      <circle cx="5.7" cy="-1.9" r="4" fill="#fbcfe8" fill-opacity="0.6"/>
+      <circle cx="3.5" cy="4.9" r="4" fill="#fbcfe8" fill-opacity="0.6"/>
+      <circle cx="-3.5" cy="4.9" r="4" fill="#fbcfe8" fill-opacity="0.6"/>
+      <circle cx="-5.7" cy="-1.9" r="4" fill="#fbcfe8" fill-opacity="0.6"/>
+      <circle cx="0" cy="0" r="2.4" fill="#fdf2f8"/>
+    </g>
+    <pattern id="sakura" width="110" height="100" patternUnits="userSpaceOnUse">
+      <use href="#blossom" x="30" y="28"/>
+      <use href="#blossom" x="82" y="72" transform="rotate(24 82 72)"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="300" fill="#fffdfd"/>
+  <rect width="400" height="300" fill="url(#sakura)"/>
+</svg>

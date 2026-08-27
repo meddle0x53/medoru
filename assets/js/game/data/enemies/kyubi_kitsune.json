@@ -4,7 +4,7 @@
   "nameJa": "九尾の狐",
   "description": "An ancient shrine spirit of cold beauty and colder cunning. She manipulates the battlefield with foxfire and void magic, then punishes a single mistake with infernal force.",
   "level": 6,
-  "baseGold": 50,
+  "baseGold": 60,
   "roles": ["mini_boss"],
   "mapIds": [1],
   "maxColumn": 10,
@@ -24,13 +24,13 @@
     "3": [{ "x": 690, "y": 475, "scale": 0.18 }, { "x": 570, "y": 475, "scale": 0.18 }, { "x": 810, "y": 475, "scale": 0.18 }]
   },
   "stats": {
-    "hp": { "min": 220, "max": 250 },
-    "stamina": { "min": 16, "max": 16 },
+    "hp": { "min": 170, "max": 200 },
+    "stamina": { "min": 12, "max": 12 },
     "strength": { "min": 4, "max": 4 },
-    "skill": { "min": 9, "max": 9 },
-    "mana": { "min": 15, "max": 15 },
-    "luck": { "min": 16, "max": 16 },
-    "defense": { "min": 7, "max": 7 },
+    "skill": { "min": 8, "max": 8 },
+    "mana": { "min": 13, "max": 13 },
+    "luck": { "min": 12, "max": 12 },
+    "defense": { "min": 5, "max": 5 },
     "armor": { "min": 3, "max": 3 }
   },
   "abilities": [
@@ -43,7 +43,7 @@
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
-      "basePower": 12,
+      "basePower": 10,
       "scalingStat": "mana",
       "scalingMultiplier": 0.3,
       "effects": [
@@ -108,14 +108,14 @@
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
-      "basePower": 14,
+      "basePower": 12,
       "scalingStat": "skill",
       "scalingMultiplier": 1.0,
       "effects": [
         {
           "effectId": "bleed",
           "target": "enemy",
-          "chance": { "base": 0.25, "step": 0, "cap": 0.25 }
+          "chance": { "base": 0.20, "step": 0, "cap": 0.20 }
         }
       ]
     },
@@ -128,15 +128,15 @@
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
-      "basePower": 20,
+      "basePower": 16,
       "scalingStat": "mana",
       "scalingMultiplier": 1.4,
       "effects": [
         {
           "effectId": "burn",
           "target": "enemy",
-          "chance": { "base": 0.50, "step": 0, "cap": 0.50 },
-          "duration": { "min": 2, "max": 3 }
+          "chance": { "base": 0.35, "step": 0, "cap": 0.35 },
+          "duration": { "min": 1, "max": 2 }
         }
       ],
       "consumesEffect": {
@@ -152,7 +152,7 @@
       "name": "Calm Priestess"
     },
     {
-      "hpThreshold": 0.5,
+      "hpThreshold": 0.25,
       "name": "Nine-Tails Unveiled",
       "announce": "The Kitsune's nine tails fan out in cold light!",
       "sprites": {

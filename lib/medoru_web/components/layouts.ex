@@ -383,7 +383,7 @@ defmodule MedoruWeb.Layouts do
                       <.mobile_nav_link
                         path="/admin/game"
                         icon="hero-sparkles"
-                        label={gettext("The Hollow Ouroboros")}
+                        label={gettext("RPG Game")}
                         locale={@current_scope[:locale]}
                       />
                       <.mobile_nav_link

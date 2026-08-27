@@ -226,7 +226,57 @@
                     <.icon name="hero-shield-exclamation" class="w-4 h-4 mr-1" />
                     {gettext("Block")}
                   </button>
+                  <button
+                    type="button"
+                    phx-click="open_relation_form"
+                    class="btn btn-outline btn-sm"
+                  >
+                    <.icon name="hero-heart" class="w-4 h-4 mr-1" />
+                    {gettext("Relation")}
+                  </button>
                 <% end %>
+              </div>
+            <% end %>
+
+            <%= if @relation_form_open do %>
+              <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div
+                  class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                  phx-click="close_relation_form"
+                >
+                </div>
+                <div class="relative w-full max-w-md bg-base-100 rounded-xl shadow-2xl border border-base-300 p-4 max-h-[90vh] overflow-y-auto">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-medium text-base-content">
+                      {gettext("Your relation with %{name}",
+                        name: (@profile && @profile.display_name) || @user.name || gettext("User")
+                      )}
+                    </h3>
+                    <button
+                      type="button"
+                      phx-click="close_relation_form"
+                      class="p-1 text-base-content/40 hover:text-base-content"
+                    >
+                      <.icon name="hero-x-mark" class="w-5 h-5" />
+                    </button>
+                  </div>
+                  <.relation_form
+                    target_user_id={@user.id}
+                    display_name={
+                      (@profile && @profile.display_name) || @user.name || gettext("User")
+                    }
+                    nicknames={if @relation_to_user, do: @relation_to_user.nicknames, else: []}
+                    relationship_type={
+                      if @relation_to_user, do: @relation_to_user.relationship_type, else: nil
+                    }
+                    address_style={
+                      if @relation_to_user, do: @relation_to_user.address_style, else: nil
+                    }
+                    description={
+                      if @relation_to_user, do: @relation_to_user.description, else: nil
+                    }
+                  />
+                </div>
               </div>
             <% end %>
 

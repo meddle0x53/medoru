@@ -1,4 +1,5 @@
 import { CryptoState } from "./chat_crypto"
+import { ChatDictionary } from "../lib/chat_dictionary"
 
 const CHAT_DRAFTS = window.__medoruChatDrafts || (window.__medoruChatDrafts = {})
 
@@ -97,6 +98,8 @@ const ChatInput = {
     this.lastTypingSent = 0
     this.queuedFile = null
     this.isUploading = false
+
+    this.chatDictionary = new ChatDictionary(this.textarea, { hook: this })
 
     this.enterSends = this.el.dataset.enterSends !== "false"
 
@@ -261,9 +264,45 @@ const ChatInput = {
       this.textarea.scrollIntoView({ behavior: "smooth", block: "end" })
       setTimeout(() => this.textarea.focus(), 50)
     })
+
+    this.handleEvent("send_encrypted_ai_message", async ({ content }) => {
+      const convId = this.convId || document.getElementById("chat-wrapper")?.dataset.conversationId
+
+      if (!convId || !CryptoState.ready) {
+        console.error("[ChatInput] Cannot send AI response: encryption not ready")
+        return
+      }
+
+      if (!CryptoState.conversationKeys.has(convId)) {
+        console.error("[ChatInput] Cannot send AI response: conversation key not available")
+        return
+      }
+
+      if (this.typingTimer) {
+        clearTimeout(this.typingTimer)
+        this.typingTimer = null
+      }
+
+      if (this.typingSent) {
+        this.pushEvent("set_typing", { typing: false })
+        this.typingSent = false
+      }
+
+      try {
+        const { ciphertext, iv } = await CryptoState.encrypt(convId, content)
+        this.pushEvent("send_encrypted_message", { ciphertext, iv })
+      } catch (e) {
+        console.error("[ChatInput] AI response encryption failed:", e)
+      }
+    })
   },
 
   destroyed() {
+    if (this.chatDictionary) {
+      this.chatDictionary.destroy()
+      this.chatDictionary = null
+    }
+
     if (this._outsideClickHandler) {
       document.removeEventListener("click", this._outsideClickHandler)
     }
@@ -450,10 +489,28 @@ const ChatInput = {
   },
 
   async submit() {
-    const text = this.textarea.value.trim()
+    const rawText = this.textarea.value.trim()
+    const text = this.chatDictionary
+      ? this.chatDictionary.substituteAliases(rawText)
+      : rawText
     const hasFile = this.queuedFile != null
 
     if (text === "" && !hasFile) return
+
+    if (text.startsWith("/ai ") && this.chatDictionary?.isEnabled()) {
+      const prompt = text.slice(4).trim()
+      if (prompt !== "") {
+        this.pushEvent("generate_ai_response", {
+          prompt: prompt,
+          context: collectChatContext("messages-container")
+        })
+      }
+      this.textarea.value = ""
+      this.textarea.style.height = "auto"
+      this.textarea.focus()
+      this._clearDraft()
+      return
+    }
 
     if (text.startsWith("/kanji ") || text.startsWith("/k ") || text.startsWith("\\kanji ") || text.startsWith("\\k ")) {
       const char = text.startsWith("/k ") || text.startsWith("\\k ") ? text.slice(3).trim() : text.slice(7).trim()
@@ -568,6 +625,31 @@ function isSingleKanji(str) {
   if (str.length !== 1) return false
   const code = str.codePointAt(0)
   return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF)
+}
+
+function collectChatContext(containerSelector) {
+  const container = document.getElementById(containerSelector)
+  if (!container) return []
+
+  const rows = Array.from(container.querySelectorAll(".group\\/message"))
+  const context = []
+
+  for (const row of rows.slice(-20)) {
+    const bubble = row.querySelector(".message-bubble")
+    if (!bubble) continue
+
+    const text = bubble.textContent?.replace(/\s+/g, " ").trim() || ""
+    if (!text || text === "[...]") continue
+
+    const isMe = row.classList.contains("justify-end")
+    context.push({
+      sender_id: row.dataset.senderId,
+      role: isMe ? "user" : "other",
+      text: text
+    })
+  }
+
+  return context
 }
 
 export default ChatInput

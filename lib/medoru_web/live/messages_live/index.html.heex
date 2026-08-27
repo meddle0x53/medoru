@@ -59,31 +59,21 @@
 
             <%!-- Content --%>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between">
-                <h3 class={[
-                  "font-medium truncate flex items-center gap-1.5",
-                  unread > 0 && "text-base-content"
-                ]}>
-                  {conversation_name(conversation, @current_scope.current_user.id)}
-                  <% other =
-                    Chat.get_other_participant(conversation, @current_scope.current_user.id) %>
-                  <%= if other && user_online?(other.user_id, @online_user_ids) do %>
-                    <span
-                      class="w-2 h-2 rounded-full bg-success shrink-0"
-                      title={gettext("Online")}
-                    >
-                    </span>
-                  <% end %>
-                </h3>
-                <span class="text-xs text-base-content/50 shrink-0 ml-2">
-                  <span data-local-time={
-                    conversation.last_message &&
-                      DateTime.to_iso8601(conversation.last_message.inserted_at)
-                  }>
-                    {last_message_time(conversation)}
+              <h3 class={[
+                "font-medium truncate flex items-center gap-1.5",
+                unread > 0 && "text-base-content"
+              ]}>
+                {conversation_name(conversation, @current_scope.current_user.id)}
+                <% other =
+                  Chat.get_other_participant(conversation, @current_scope.current_user.id) %>
+                <%= if other && user_online?(other.user_id, @online_user_ids) do %>
+                  <span
+                    class="w-2 h-2 rounded-full bg-success shrink-0"
+                    title={gettext("Online")}
+                  >
                   </span>
-                </span>
-              </div>
+                <% end %>
+              </h3>
               <p class={[
                 "text-sm truncate mt-0.5",
                 unread > 0 && "text-base-content font-medium",
@@ -92,6 +82,16 @@
                 {last_message_preview(conversation)}
               </p>
             </div>
+
+            <%!-- Timestamp --%>
+            <span class="text-xs text-base-content/50 shrink-0">
+              <span data-local-time={
+                conversation.last_message &&
+                  DateTime.to_iso8601(conversation.last_message.inserted_at)
+              }>
+                {last_message_time(conversation)}
+              </span>
+            </span>
 
             <%!-- Unread Badge --%>
             <%= if unread > 0 do %>
@@ -117,10 +117,38 @@
                 <.icon name="hero-trash" class="w-4 h-4" />
               </button>
             </div>
+          <% else %>
+            <div class="shrink-0">
+              <.link
+                navigate={
+                  if is_teacher do
+                    ~p"/teacher/classrooms/#{conversation.classroom_id}?tab=chat"
+                  else
+                    ~p"/classrooms/#{conversation.classroom_id}?tab=chat"
+                  end
+                }
+                class="p-2 text-base-content/40 hover:text-primary transition-colors inline-block"
+                title={gettext("Open classroom")}
+              >
+                <.icon name="hero-arrow-right" class="w-4 h-4" />
+              </.link>
+            </div>
           <% end %>
         </div>
       <% end %>
     </div>
+
+    <%= if @has_more do %>
+      <div class="mt-4 text-center">
+        <button
+          type="button"
+          phx-click="load_more"
+          class="btn btn-outline btn-sm"
+        >
+          {gettext("Load more")}
+        </button>
+      </div>
+    <% end %>
 
     <%!-- Empty State --%>
     <%= if @conversations == [] do %>

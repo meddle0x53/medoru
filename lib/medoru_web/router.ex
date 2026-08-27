@@ -53,6 +53,16 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Word Dictionary route (require authentication) - MUST come before /words/:id
+  scope "/words/dictionary", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :word_dictionary,
+      on_mount: [{MedoruWeb.UserAuth, :require_authenticated_user}] do
+      live "/", WordDictionaryLive.Index
+    end
+  end
+
   # Word Books routes (require authentication) - MUST come before /words/:id
   scope "/words/books", MedoruWeb do
     pipe_through [:browser, :require_authenticated_user]
@@ -440,6 +450,8 @@ defmodule MedoruWeb.Router do
 
     get "/user-data", GameApiController, :user_data
     post "/run-result", GameApiController, :run_result
+    get "/save", GameApiController, :load_save
+    post "/save", GameApiController, :save_save
   end
 
   # Public API v1

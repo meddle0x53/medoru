@@ -2,6 +2,7 @@ import { GAME_CONFIG } from '../config.js'
 import { TILE_TYPES, getTileConfig, isBattleTile } from '../data/tileTypes.js'
 import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
+import SettingsOverlay from '../ui/SettingsOverlay.js'
 import { updateReachability, findTileById, computeLayout, getMapName } from '../systems/MapGenerator.js'
 import { getMapDefinition } from '../data/maps/index.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
@@ -287,6 +288,9 @@ export default class MapScene extends Phaser.Scene {
     }
 
     this.createFullscreenButton()
+
+    this.settingsOverlay = new SettingsOverlay(this, this.player)
+    this.settingsOverlay.createButton(GAME_CONFIG.width - 16, GAME_CONFIG.height - 16)
   }
 
   updateHud() {
@@ -737,10 +741,10 @@ export default class MapScene extends Phaser.Scene {
         const bodyContainer = this.add.container(0, 0)
         container.add(bodyContainer)
 
-        // Current tile glow (behind the tile body). Completed tiles keep the
-        // saved currentTileId so their outgoing paths stay reachable, but we
-        // don't draw the active marker on them — the hero has moved on.
-        if (tile.id === this.player.loadout.mapState.currentTileId && !tile.completed) {
+        // Current tile glow (behind the tile body). The current tile is always
+        // highlighted, even when it is a completed branching decision node,
+        // so the player can see where the hero is standing.
+        if (tile.id === this.player.loadout.mapState.currentTileId) {
           const marker = this.add.circle(0, 0, CURRENT_PULSE_RADIUS, 0xf1c40f, 0.3)
           bodyContainer.add(marker)
           this.tweens.add({
@@ -811,6 +815,21 @@ export default class MapScene extends Phaser.Scene {
 
         container.tileId = tile.id
         container.tileLabel = label
+
+        // Make the current tile unmistakable: a bright ring and a star marker.
+        if (tile.id === this.player.loadout.mapState.currentTileId) {
+          const activeRing = this.add.circle(0, 0, TILE_RADIUS + 6, 0x000000, 0)
+          activeRing.setStrokeStyle(3, 0xf1c40f)
+          container.add(activeRing)
+
+          const activeIcon = this.add.text(0, -TILE_RADIUS - 10, '★', {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            color: '#f1c40f',
+            fontStyle: 'bold',
+          }).setOrigin(0.5)
+          container.add(activeIcon)
+        }
 
         // Reachable tiles are interactive; others are blurred/masked.
         if (tile.reachable && !tile.completed) {

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid slice">
+  <rect width="400" height="560" fill="#e0f2fe"/>
+  <circle cx="320" cy="110" r="52" fill="#fef3c7"/>
+  <g stroke="#92400e" stroke-width="10" stroke-linecap="round" fill="none">
+    <path d="M-10 240 Q120 200 220 260 T410 300"/>
+    <path d="M150 232 Q190 190 250 180" stroke-width="7"/>
+  </g>
+  <g>
+    <g transform="translate(120 216)">
+      <circle cx="0" cy="-14" r="12" fill="#f9a8d4"/>
+      <circle cx="13" cy="-4" r="12" fill="#f9a8d4"/>
+      <circle cx="8" cy="11" r="12" fill="#f9a8d4"/>
+      <circle cx="-8" cy="11" r="12" fill="#f9a8d4"/>
+      <circle cx="-13" cy="-4" r="12" fill="#f9a8d4"/>
+      <circle r="6" fill="#fdf2f8"/>
+    </g>
+    <g transform="translate(238 186) scale(0.9)">
+      <circle cx="0" cy="-14" r="12" fill="#fbcfe8"/>
+      <circle cx="13" cy="-4" r="12" fill="#fbcfe8"/>
+      <circle cx="8" cy="11" r="12" fill="#fbcfe8"/>
+      <circle cx="-8" cy="11" r="12" fill="#fbcfe8"/>
+      <circle cx="-13" cy="-4" r="12" fill="#fbcfe8"/>
+      <circle r="6" fill="#fdf2f8"/>
+    </g>
+    <g transform="translate(310 276) scale(1.1)">
+      <circle cx="0" cy="-14" r="12" fill="#f9a8d4"/>
+      <circle cx="13" cy="-4" r="12" fill="#f9a8d4"/>
+      <circle cx="8" cy="11" r="12" fill="#f9a8d4"/>
+      <circle cx="-8" cy="11" r="12" fill="#f9a8d4"/>
+      <circle cx="-13" cy="-4" r="12" fill="#f9a8d4"/>
+      <circle r="6" fill="#fdf2f8"/>
+    </g>
+    <circle cx="70" cy="330" r="9" fill="#fbcfe8"/>
+    <circle cx="200" cy="360" r="7" fill="#f9a8d4"/>
+    <circle cx="300" cy="400" r="8" fill="#fbcfe8"/>
+  </g>
+</svg>

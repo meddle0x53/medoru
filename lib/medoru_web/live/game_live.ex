@@ -16,31 +16,34 @@ defmodule MedoruWeb.GameLive do
   # in the embedded all_kanji list so battle challenges can pick randomly from
   # the pool without shipping strokes for all 5,000+ kanji.
   @ability_kanji_chars (fn ->
-    pattern = Path.join(File.cwd!(), "assets/js/game/data/abilities/*.json")
+                          pattern = Path.join(File.cwd!(), "assets/js/game/data/abilities/*.json")
 
-    pattern
-    |> Path.wildcard()
-    |> Enum.flat_map(fn path ->
-      case File.read(path) do
-        {:ok, contents} ->
-          case Jason.decode(contents) do
-            {:ok, %{"abilities" => abilities}} when is_list(abilities) ->
-              Enum.flat_map(abilities, fn ability ->
-                chars = Map.get(ability, "kanjiPool", [])
-                if is_binary(ability["kanji"]), do: [ability["kanji"] | chars], else: chars
-              end)
+                          pattern
+                          |> Path.wildcard()
+                          |> Enum.flat_map(fn path ->
+                            case File.read(path) do
+                              {:ok, contents} ->
+                                case Jason.decode(contents) do
+                                  {:ok, %{"abilities" => abilities}} when is_list(abilities) ->
+                                    Enum.flat_map(abilities, fn ability ->
+                                      chars = Map.get(ability, "kanjiPool", [])
 
-            _ ->
-              []
-          end
+                                      if is_binary(ability["kanji"]),
+                                        do: [ability["kanji"] | chars],
+                                        else: chars
+                                    end)
 
-        _ ->
-          []
-      end
-    end)
-    |> Enum.filter(&is_binary/1)
-    |> Enum.uniq()
-  end).()
+                                  _ ->
+                                    []
+                                end
+
+                              _ ->
+                                []
+                            end
+                          end)
+                          |> Enum.filter(&is_binary/1)
+                          |> Enum.uniq()
+                        end).()
 
   @impl true
   def mount(params, session, socket) do
@@ -51,7 +54,7 @@ defmodule MedoruWeb.GameLive do
 
     socket =
       socket
-      |> assign(:page_title, "The Hollow Ouroboros")
+      |> assign(:page_title, "RPG Game")
       |> assign(:game_data, Jason.encode!(game_data))
       |> assign(:daily_challenge_mode, daily_challenge_mode)
 
@@ -143,7 +146,7 @@ defmodule MedoruWeb.GameLive do
           kun_readings: kun_readings,
           readings: readings,
           stroke_count: k.stroke_count,
-          stroke_data: (if k.character in @ability_kanji_chars, do: k.stroke_data, else: nil)
+          stroke_data: if(k.character in @ability_kanji_chars, do: k.stroke_data, else: nil)
         }
       end)
 

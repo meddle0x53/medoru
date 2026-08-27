@@ -11,6 +11,8 @@ defmodule MedoruWeb.UserLive.Show do
   alias Medoru.Social
   alias MedoruWeb.Presence
 
+  import MedoruWeb.ChatDictionaryComponents, only: [relation_form: 1]
+
   embed_templates "show/*"
 
   @impl true
@@ -94,6 +96,13 @@ defmodule MedoruWeb.UserLive.Show do
                   false
                 end
 
+              relation_to_user =
+                if current_user && current_user.id != user.id do
+                  Social.get_relation(current_user.id, user.id)
+                else
+                  nil
+                end
+
               follower_count = Social.count_followers(user.id)
               following_count = Social.count_following(user.id)
               user_tags = Social.list_user_tags(user.id)
@@ -130,6 +139,8 @@ defmodule MedoruWeb.UserLive.Show do
                |> assign(:daily_challenges_status, daily_challenges_status)
                |> assign(:is_blocked, is_blocked)
                |> assign(:is_following, is_following)
+               |> assign(:relation_to_user, relation_to_user)
+               |> assign(:relation_form_open, false)
                |> assign(:follower_count, follower_count)
                |> assign(:following_count, following_count)
                |> assign(:visitor_count, visitor_count)
@@ -192,6 +203,62 @@ defmodule MedoruWeb.UserLive.Show do
        socket
        |> assign(:is_blocked, false)
        |> put_flash(:info, gettext("User unblocked."))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_relation_form", _params, socket) do
+    {:noreply, assign(socket, :relation_form_open, true)}
+  end
+
+  @impl true
+  def handle_event("close_relation_form", _params, socket) do
+    {:noreply, assign(socket, :relation_form_open, false)}
+  end
+
+  @impl true
+  def handle_event(
+        "save_user_relation",
+        %{"target_user_id" => target_user_id, "relation" => relation_params},
+        socket
+      ) do
+    current_user = socket.assigns.current_scope.current_user
+    user = socket.assigns.user
+
+    valid_target? =
+      current_user && current_user.id != user.id && target_user_id == user.id
+
+    if valid_target? do
+      nicknames =
+        relation_params
+        |> Map.get("nicknames", "")
+        |> String.split(",")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+
+      attrs =
+        relation_params
+        |> Map.put("nicknames", nicknames)
+        |> Map.take([
+          "relationship_type",
+          "address_style",
+          "description",
+          "nicknames"
+        ])
+
+      case Social.upsert_relation(current_user.id, target_user_id, attrs) do
+        {:ok, relation} ->
+          {:noreply,
+           socket
+           |> assign(:relation_to_user, relation)
+           |> assign(:relation_form_open, false)
+           |> put_flash(:info, gettext("Relation saved."))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not save relation."))}
+      end
     else
       {:noreply, socket}
     end

@@ -16,6 +16,7 @@ export default class KanjiDrawingSystem {
       offsetYPercent: 0.05,
       offsetYAdjust: -40,
       timeLimit: 7000,
+      showHint: true,
       ...options,
     }
 
@@ -156,8 +157,10 @@ export default class KanjiDrawingSystem {
     this.callbacks = { ...this.callbacks, ...callbacks }
     this._resetState()
     this._loadStrokeData(strokeData)
-    this.hintText.textContent = hint
-    this.hintText.style.display = 'block'
+    if (this.options.showHint) {
+      this.hintText.textContent = hint
+      this.hintText.style.display = 'block'
+    }
     if (callbacks.info) {
       this.infoText.textContent = callbacks.info
       this.infoText.style.display = 'block'
@@ -170,7 +173,9 @@ export default class KanjiDrawingSystem {
   }
 
   hide() {
-    this.hintText.style.display = 'none'
+    if (this.options.showHint) {
+      this.hintText.style.display = 'none'
+    }
     this.infoText.style.display = 'none'
     this.canvas.style.display = 'none'
     this._stopTimer()

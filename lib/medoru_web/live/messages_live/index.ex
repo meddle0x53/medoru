@@ -9,6 +9,8 @@ defmodule MedoruWeb.MessagesLive.Index do
   alias Medoru.Social
   alias MedoruWeb.Presence
 
+  @per_page 30
+
   @impl true
   def mount(_params, session, socket) do
     locale = session["locale"] || "en"
@@ -21,18 +23,7 @@ defmodule MedoruWeb.MessagesLive.Index do
         })
       end
 
-      conversations =
-        Chat.list_conversations(current_user.id, limit: 50)
-        |> Enum.reject(fn conv ->
-          # For 1:1, filter blocked users. Groups are not filtered.
-          if conv.is_group do
-            false
-          else
-            other = Chat.get_other_participant(conv, current_user.id)
-            other && Social.is_blocked?(current_user.id, other.user_id) == :blocked
-          end
-        end)
-
+      {conversations, has_more} = fetch_conversations(current_user.id, 0, @per_page)
       online_user_ids = build_online_user_ids(conversations, current_user.id)
 
       {:ok,
@@ -40,6 +31,8 @@ defmodule MedoruWeb.MessagesLive.Index do
        |> assign(:locale, locale)
        |> assign(:conversations, conversations)
        |> assign(:online_user_ids, online_user_ids)
+       |> assign(:page, 0)
+       |> assign(:has_more, has_more)
        |> assign(:page_title, gettext("Messages"))}
     else
       {:ok, push_navigate(socket, to: ~p"/")}
@@ -77,23 +70,33 @@ defmodule MedoruWeb.MessagesLive.Index do
     Chat.archive_conversation(conversation_id, current_user.id)
 
     # Refresh the list
-    conversations =
-      Chat.list_conversations(current_user.id, limit: 50)
-      |> Enum.reject(fn conv ->
-        if conv.is_group do
-          false
-        else
-          other = Chat.get_other_participant(conv, current_user.id)
-          other && Social.is_blocked?(current_user.id, other.user_id) == :blocked
-        end
-      end)
-
+    {conversations, has_more} = fetch_conversations(current_user.id, 0, @per_page)
     online_user_ids = build_online_user_ids(conversations, current_user.id)
 
     {:noreply,
      socket
      |> assign(:conversations, conversations)
-     |> assign(:online_user_ids, online_user_ids)}
+     |> assign(:online_user_ids, online_user_ids)
+     |> assign(:page, 0)
+     |> assign(:has_more, has_more)}
+  end
+
+  @impl true
+  def handle_event("load_more", _params, socket) do
+    current_user = socket.assigns.current_scope.current_user
+    next_page = socket.assigns.page + 1
+
+    {new_conversations, has_more} = fetch_conversations(current_user.id, next_page, @per_page)
+    online_user_ids = build_online_user_ids(new_conversations, current_user.id)
+
+    conversations = socket.assigns.conversations ++ new_conversations
+
+    {:noreply,
+     socket
+     |> assign(:conversations, conversations)
+     |> assign(:online_user_ids, Enum.uniq(socket.assigns.online_user_ids ++ online_user_ids))
+     |> assign(:page, next_page)
+     |> assign(:has_more, has_more)}
   end
 
   # Helpers for template
@@ -133,9 +136,23 @@ defmodule MedoruWeb.MessagesLive.Index do
     end
   end
 
-  def last_message_preview(_conversation) do
-    # Messages are encrypted; server cannot show a preview
-    gettext("Encrypted message")
+  def last_message_preview(conversation) do
+    # Classroom chats are plaintext; other chats are encrypted server-side.
+    if conversation.classroom_id && conversation.last_message do
+      text =
+        conversation.last_message.content
+        |> String.replace(~r/\s+/, " ")
+        |> String.trim()
+        |> String.slice(0, 15)
+
+      if text == "" do
+        gettext("No preview")
+      else
+        if String.length(conversation.last_message.content) > 15, do: text <> "…", else: text
+      end
+    else
+      gettext("Encrypted message")
+    end
   end
 
   def last_message_time(conversation) do
@@ -155,7 +172,7 @@ defmodule MedoruWeb.MessagesLive.Index do
     if DateTime.to_date(dt) == DateTime.to_date(now) do
       Calendar.strftime(dt, "%H:%M")
     else
-      Calendar.strftime(dt, "%b %d")
+      Calendar.strftime(dt, "%d.%m.%y %H:%M")
     end
   end
 
@@ -177,5 +194,27 @@ defmodule MedoruWeb.MessagesLive.Index do
 
   def user_online?(user_id, online_user_ids) do
     user_id in online_user_ids
+  end
+
+  defp fetch_conversations(user_id, page, per_page) do
+    # Fetch one extra to determine if there are more pages
+    limit = per_page + 1
+    offset = page * per_page
+
+    conversations =
+      Chat.list_conversations(user_id, limit: limit, offset: offset)
+      |> Enum.reject(fn conv ->
+        if conv.is_group do
+          false
+        else
+          other = Chat.get_other_participant(conv, user_id)
+          other && Social.is_blocked?(user_id, other.user_id) == :blocked
+        end
+      end)
+
+    has_more = length(conversations) > per_page
+    conversations = Enum.take(conversations, per_page)
+
+    {conversations, has_more}
   end
 end

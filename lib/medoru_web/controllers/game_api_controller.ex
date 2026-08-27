@@ -6,6 +6,7 @@ defmodule MedoruWeb.GameApiController do
 
   alias Medoru.Accounts.UserStats
   alias Medoru.Content
+  alias Medoru.GameSaves
   alias Medoru.Learning
   alias Medoru.Repo
 
@@ -105,5 +106,41 @@ defmodule MedoruWeb.GameApiController do
     end
 
     json(conn, %{status: "ok"})
+  end
+
+  def load_save(conn, _params) do
+    user = conn.assigns.current_scope.current_user
+
+    case GameSaves.get_user_save(user.id) do
+      nil ->
+        json(conn, %{status: "no_save"})
+
+      save ->
+        json(conn, %{
+          status: "ok",
+          save_data: save.save_data,
+          version: save.version,
+          updated_at: save.updated_at
+        })
+    end
+  end
+
+  def save_save(conn, params) do
+    user = conn.assigns.current_scope.current_user
+    save_data = params["save_data"] || %{}
+    version = params["version"] || 1
+
+    case GameSaves.save_user_save(user.id, %{save_data: save_data, version: version}) do
+      {:ok, save} ->
+        json(conn, %{status: "ok", updated_at: save.updated_at})
+
+      {:error, changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{status: "error", errors: errors})
+    end
   end
 end

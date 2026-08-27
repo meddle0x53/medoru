@@ -14,6 +14,65 @@ defmodule MedoruWeb.GameApiControllerTest do
     %{conn: conn, user: user}
   end
 
+  alias Medoru.GameSaves
+
+  describe "GET /api/game/save" do
+    test "returns no_save when the user has no stored save", %{conn: conn} do
+      conn = get(conn, ~p"/api/game/save")
+      assert json_response(conn, 200) == %{"status" => "no_save"}
+    end
+
+    test "returns the saved game data when one exists", %{conn: conn, user: user} do
+      {:ok, _save} =
+        GameSaves.save_user_save(user.id, %{save_data: %{"ouroScales" => 42}, version: 1})
+
+      conn = get(conn, ~p"/api/game/save")
+
+      assert %{
+               "status" => "ok",
+               "save_data" => %{"ouroScales" => 42},
+               "version" => 1,
+               "updated_at" => _
+             } = json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/game/save" do
+    test "creates a new save for the user", %{conn: conn, user: user} do
+      conn =
+        post(conn, ~p"/api/game/save", %{
+          "save_data" => %{"ouroScales" => 10, "gold" => 5},
+          "version" => 1
+        })
+
+      assert %{
+               "status" => "ok",
+               "updated_at" => _
+             } = json_response(conn, 200)
+
+      save = GameSaves.get_user_save(user.id)
+      assert save.save_data["ouroScales"] == 10
+      assert save.save_data["gold"] == 5
+      assert save.version == 1
+    end
+
+    test "updates an existing save", %{conn: conn, user: user} do
+      GameSaves.save_user_save(user.id, %{save_data: %{"ouroScales" => 1}, version: 1})
+
+      conn =
+        post(conn, ~p"/api/game/save", %{
+          "save_data" => %{"ouroScales" => 99},
+          "version" => 2
+        })
+
+      assert json_response(conn, 200)["status"] == "ok"
+
+      save = GameSaves.get_user_save(user.id)
+      assert save.save_data["ouroScales"] == 99
+      assert save.version == 2
+    end
+  end
+
   describe "POST /api/game/run-result" do
     test "daily challenge run records ouroboros_run completion and awards essence XP",
          %{conn: conn, user: user} do

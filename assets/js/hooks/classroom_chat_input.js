@@ -1,3 +1,5 @@
+import { ChatDictionary } from "../lib/chat_dictionary"
+
 const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
   "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav",
@@ -88,6 +90,14 @@ const ClassroomChatInput = {
     this.lastTypingSent = 0
     this.queuedFile = null
     this.isUploading = false
+
+    const dictionaryWrapper =
+      this.el.closest("[data-dictionary-enabled]") ||
+      document.getElementById("chat-wrapper")
+    this.chatDictionary = new ChatDictionary(this.textarea, {
+      hook: this,
+      wrapper: dictionaryWrapper
+    })
 
     this.enterSends = this.el.dataset.enterSends !== "false"
 
@@ -267,6 +277,11 @@ const ClassroomChatInput = {
   },
 
   destroyed() {
+    if (this.chatDictionary) {
+      this.chatDictionary.destroy()
+      this.chatDictionary = null
+    }
+
     if (this._outsideClickHandler) {
       document.removeEventListener("click", this._outsideClickHandler)
     }
@@ -449,10 +464,28 @@ const ClassroomChatInput = {
   },
 
   async submit() {
-    const text = this.textarea.value.trim()
+    const rawText = this.textarea.value.trim()
+    const text = this.chatDictionary
+      ? this.chatDictionary.substituteAliases(rawText)
+      : rawText
     const hasFile = this.queuedFile != null
 
     if (text === "" && !hasFile) return
+
+    if (text.startsWith("/ai ") && this.chatDictionary?.isEnabled()) {
+      const prompt = text.slice(4).trim()
+      if (prompt !== "") {
+        this.pushEvent("generate_ai_response", {
+          prompt: prompt,
+          context: collectClassroomChatContext()
+        })
+      }
+      this.textarea.value = ""
+      this.textarea.style.height = "auto"
+      this.textarea.focus()
+      this._clearDraft()
+      return
+    }
 
     // Validate /kanji, /word, \kanji, and \word commands
     if (text.startsWith("/kanji ") || text.startsWith("/k ") || text.startsWith("\\kanji ") || text.startsWith("\\k ")) {
@@ -527,6 +560,31 @@ function isSingleKanji(str) {
   if (str.length !== 1) return false
   const code = str.codePointAt(0)
   return (code >= 0x4E00 && code <= 0x9FFF) || (code >= 0x3400 && code <= 0x4DBF)
+}
+
+function collectClassroomChatContext() {
+  const container = document.getElementById("classroom-chat-messages")
+  if (!container) return []
+
+  const rows = Array.from(container.querySelectorAll(".group\\/message"))
+  const context = []
+
+  for (const row of rows.slice(-20)) {
+    const bubble = row.querySelector(".message-bubble")
+    if (!bubble) continue
+
+    const text = bubble.textContent?.replace(/\s+/g, " ").trim() || ""
+    if (!text || text === "[...]") continue
+
+    const isMe = row.classList.contains("justify-end")
+    context.push({
+      sender_id: row.dataset.senderId,
+      role: isMe ? "user" : "other",
+      text: text
+    })
+  }
+
+  return context
 }
 
 export default ClassroomChatInput

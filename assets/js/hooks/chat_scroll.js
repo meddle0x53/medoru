@@ -1,4 +1,5 @@
 import { formatLocalTimes } from "./format_local_time"
+import { CryptoState } from "./chat_crypto"
 
 const ChatScroll = {
   mounted() {
@@ -46,6 +47,15 @@ const ChatScroll = {
         return
       }
 
+      const dictAction = e.target.closest("[data-action='add-to-dictionary']")
+      if (dictAction) {
+        e.stopPropagation()
+        const msgId = dictAction.dataset.messageId
+        if (msgId) this.addMessageToDictionary(msgId)
+        this.el.querySelectorAll(".message-menu-dropdown").forEach(d => d.classList.add("hidden"))
+        return
+      }
+
       // Close menus when clicking outside
       const menuDropdown = e.target.closest(".message-menu-dropdown")
       if (!menuDropdown) {
@@ -78,6 +88,36 @@ const ChatScroll = {
 
   scrollToBottom() {
     this.el.scrollTop = this.el.scrollHeight
+  },
+
+  async addMessageToDictionary(messageId) {
+    const contentEl = document.getElementById(`msg-content-${messageId}`)
+    if (!contentEl) return
+
+    let content = ""
+
+    if (contentEl.dataset.encrypted === "true") {
+      const ciphertext = contentEl.dataset.ciphertext
+      const iv = contentEl.dataset.iv
+      const wrapper = document.getElementById("chat-wrapper")
+      const convId = wrapper?.dataset.conversationId
+
+      if (ciphertext && iv && convId && CryptoState.ready) {
+        try {
+          content = await CryptoState.decrypt(convId, ciphertext, iv)
+        } catch (e) {
+          console.error("[ChatScroll] Failed to decrypt message for dictionary:", e)
+          return
+        }
+      }
+    } else {
+      content = contentEl.textContent || ""
+    }
+
+    content = content.trim()
+    if (!content) return
+
+    this.pushEvent("add_message_to_dictionary", { message_id: messageId, content })
   }
 }
 

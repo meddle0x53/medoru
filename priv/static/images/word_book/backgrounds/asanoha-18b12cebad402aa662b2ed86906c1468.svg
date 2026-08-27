@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <pattern id="asanoha" width="52" height="45" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#bbf7d0" stroke-opacity="0.6" stroke-width="1">
+        <path d="M26 0L52 15 52 45 26 30 0 45 0 15Z"/>
+        <path d="M26 0V30M0 15L26 30 52 15"/>
+        <path d="M26 30V45" stroke-opacity="0"/>
+        <path d="M13 7.5L26 15 39 7.5M13 37.5L26 30 39 37.5"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="400" height="300" fill="#fbfefc"/>
+  <rect width="400" height="300" fill="url(#asanoha)"/>
+</svg>

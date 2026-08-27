@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 560" preserveAspectRatio="xMidYMid slice">
+  <rect width="400" height="560" fill="#eff6ff"/>
+  <g>
+    <path d="M-20 420 Q60 380 90 300 Q110 240 90 200 Q130 230 130 290 Q130 330 170 330 Q140 360 100 350 Q60 420 -20 470 Z" fill="#2563eb"/>
+    <path d="M60 420 Q140 380 170 300 Q190 240 170 200 Q210 230 210 290 Q210 330 250 330 Q220 360 180 350 Q140 420 60 470 Z" fill="#3b82f6" transform="translate(80 20)"/>
+    <path d="M180 440 Q260 400 290 320 Q310 260 290 220 Q330 250 330 310 Q330 350 370 350 Q340 380 300 370 Q260 440 180 490 Z" fill="#60a5fa" transform="translate(40 30)"/>
+  </g>
+  <circle cx="90" cy="205" r="10" fill="#eff6ff"/>
+  <circle cx="170" cy="205" r="8" fill="#eff6ff"/>
+  <circle cx="330" cy="225" r="9" fill="#eff6ff"/>
+  <path d="M0 500 Q100 480 200 500 T400 500 V560 H0 Z" fill="#1d4ed8"/>
+  <path d="M0 525 Q100 508 200 525 T400 525 V560 H0 Z" fill="#3b82f6"/>
+</svg>

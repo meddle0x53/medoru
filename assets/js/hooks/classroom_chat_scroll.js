@@ -45,6 +45,15 @@ const ClassroomChatScroll = {
         return
       }
 
+      const dictAction = e.target.closest("[data-action='add-to-dictionary']")
+      if (dictAction) {
+        e.stopPropagation()
+        const msgId = dictAction.dataset.messageId
+        if (msgId) this.addMessageToDictionary(msgId)
+        this.el.querySelectorAll(".message-menu-dropdown").forEach(d => d.classList.add("hidden"))
+        return
+      }
+
       const menuDropdown = e.target.closest(".message-menu-dropdown")
       if (!menuDropdown) {
         this.el.querySelectorAll(".message-menu-dropdown").forEach(d => d.classList.add("hidden"))
@@ -74,6 +83,16 @@ const ClassroomChatScroll = {
 
   scrollToBottom() {
     this.el.scrollTop = this.el.scrollHeight
+  },
+
+  addMessageToDictionary(messageId) {
+    const contentEl = document.getElementById(`classroom-msg-content-${messageId}`)
+    if (!contentEl) return
+
+    const content = (contentEl.textContent || "").trim()
+    if (!content) return
+
+    this.pushEvent("add_message_to_dictionary", { message_id: messageId, content })
   }
 }
 

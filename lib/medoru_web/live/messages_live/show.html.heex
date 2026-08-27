@@ -9,6 +9,13 @@
     data-conversation-id={@conversation.id}
     data-convert-emoticons={if @convert_emoticons != false, do: "true", else: "false"}
     data-current-user-id={@current_scope.current_user.id}
+    data-dictionary-enabled={if @dictionary_enabled, do: "true", else: "false"}
+    data-dictionary-entries={@dictionary_entries_json}
+    data-user-aliases={@user_aliases_json}
+    data-current-user-alias={@current_user_alias}
+    data-teacher-user-id={
+      if @conversation.classroom_id, do: @conversation.classroom.teacher_id, else: nil
+    }
     data-encrypted-key={@encrypted_key}
     data-encrypted-keys-v2={Jason.encode!(@encrypted_keys_v2)}
     data-participant-public-keys={Jason.encode!(@participant_public_keys)}
@@ -108,6 +115,20 @@
         >
           <.icon name="hero-folder" class="w-5 h-5" />
         </button>
+        <button
+          type="button"
+          phx-click="open_dictionary"
+          class={[
+            "p-2 transition-colors",
+            if(@dictionary_enabled,
+              do: "text-primary hover:text-primary/80",
+              else: "text-base-content/40 hover:text-primary"
+            )
+          ]}
+          title={gettext("Dictionary")}
+        >
+          <.icon name="hero-book-open" class="w-5 h-5" />
+        </button>
         <%= if !@conversation.classroom_id do %>
           <.link
             navigate={~p"/messages/#{@conversation.id}/settings"}
@@ -149,6 +170,19 @@
       current_user_id={@current_scope.current_user.id}
       sender_name_fn={&sender_name/2}
       time_formatter_fn={&format_message_time/1}
+    />
+
+    <.chat_dictionary_drawer
+      open={@dictionary_open}
+      dictionary={@chat_dictionary}
+      enabled={@dictionary_enabled}
+      active_tab={@dictionary_active_tab}
+      entries={@dictionary_entries}
+      categories={@dictionary_categories}
+      aliases={@user_aliases}
+      current_user={@current_scope.current_user}
+      editing_entry={@dictionary_editing_entry}
+      add_from_message={@dictionary_add_from_message}
     />
 
     <%!-- Messages Area --%>
@@ -258,6 +292,7 @@
           <%!-- Message Row --%>
           <div
             id={"msg-#{message.id}"}
+            data-sender-id={message.sender_id}
             class={[
               "flex group/message",
               is_me && "justify-end",
@@ -615,6 +650,15 @@
                     >
                       <.icon name="hero-arrow-uturn-left" class="w-4 h-4" />
                       {gettext("Reply")}
+                    </button>
+                    <button
+                      type="button"
+                      class="add-to-dictionary-btn w-full px-3 py-2 text-left text-sm hover:bg-base-200 flex items-center gap-2 transition-colors"
+                      data-action="add-to-dictionary"
+                      data-message-id={message.id}
+                    >
+                      <.icon name="hero-book-open" class="w-4 h-4" />
+                      {gettext("Dictionary")}
                     </button>
                     <%= if is_me && not message.is_deleted do %>
                       <%= if can_edit_message?(message, @current_scope.current_user.id) do %>
@@ -1242,5 +1286,12 @@
         <% end %>
       <% end %>
     <% end %>
+
+    <.ai_response_modal
+      open={@ai_response_modal_open}
+      prompt={@ai_prompt}
+      response={@ai_response}
+      explanation={@ai_explanation}
+    />
   </div>
 </Layouts.app>

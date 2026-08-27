@@ -13,6 +13,7 @@ defmodule Medoru.Social do
   alias Medoru.Social.UserTag
   alias Medoru.Social.Follow
   alias Medoru.Social.ProfileVisit
+  alias Medoru.Social.UserRelation
   alias Medoru.Accounts
   alias Medoru.Accounts.User
 
@@ -694,4 +695,96 @@ defmodule Medoru.Social do
     )
     |> where([pv, u, ub], is_nil(ub.id))
   end
+
+  # ============================================================================
+  # User Relations (private, unilateral)
+  # ============================================================================
+
+  @doc """
+  Gets the relation from `user_id` to `target_user_id`, or nil.
+  """
+  def get_relation(user_id, target_user_id) do
+    UserRelation
+    |> where([r], r.user_id == ^user_id and r.target_user_id == ^target_user_id)
+    |> preload(target_user: [:profile])
+    |> Repo.one()
+  end
+
+  @doc """
+  Creates or updates a relation from `user_id` to `target_user_id`.
+  """
+  def upsert_relation(user_id, target_user_id, attrs) when is_map(attrs) do
+    case get_relation(user_id, target_user_id) do
+      nil ->
+        %UserRelation{}
+        |> UserRelation.changeset(
+          Map.merge(attrs, %{"user_id" => user_id, "target_user_id" => target_user_id})
+        )
+        |> Repo.insert()
+
+      relation ->
+        relation
+        |> UserRelation.changeset(attrs)
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Lists all relations defined by the given user, preloading target user profiles.
+  """
+  def list_relations_for_user(user_id) do
+    UserRelation
+    |> where([r], r.user_id == ^user_id)
+    |> preload(target_user: [:profile])
+    |> Repo.all()
+  end
+
+  @doc """
+  Deletes a relation from `user_id` to `target_user_id`.
+  Returns `:ok` if the relation did not exist.
+  """
+  def delete_relation(user_id, target_user_id) do
+    UserRelation
+    |> where([r], r.user_id == ^user_id and r.target_user_id == ^target_user_id)
+    |> Repo.delete_all()
+
+    :ok
+  end
+
+  @doc """
+  Returns the nickname at the given 1-based index for a relation.
+  Falls back to the target user's display name, then OAuth name, then "Anonymous".
+  """
+  def nickname_at(%UserRelation{} = relation, index) when is_integer(index) and index > 0 do
+    relation.nicknames
+    |> Enum.at(index - 1)
+    |> case do
+      nil -> display_name_for(relation.target_user)
+      nickname -> nickname
+    end
+  end
+
+  def nickname_at(nil, _index) do
+    nil
+  end
+
+  @doc """
+  Returns the first nickname for a relation, or the target user's display name.
+  """
+  def first_nickname(%UserRelation{} = relation) do
+    nickname_at(relation, 1)
+  end
+
+  def first_nickname(nil) do
+    nil
+  end
+
+  @doc """
+  Returns a display name for a user map/struct.
+  """
+  def display_name_for(%{profile: %{display_name: name}}) when is_binary(name) and name != "",
+    do: name
+
+  def display_name_for(%{name: name}) when is_binary(name) and name != "", do: name
+  def display_name_for(_), do: "Anonymous"
 end

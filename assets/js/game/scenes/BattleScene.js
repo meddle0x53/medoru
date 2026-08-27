@@ -9,6 +9,7 @@ import AbilityTooltip from '../ui/AbilityTooltip.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import WeaponKanjiChallengeSystem from '../systems/WeaponKanjiChallengeSystem.js'
+import SettingsOverlay from '../ui/SettingsOverlay.js'
 import {
   recordTags,
   expireStates,
@@ -163,7 +164,7 @@ export default class BattleScene extends Phaser.Scene {
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
       320,
-      { offsetXPercent: -0.039 }
+      { offsetXPercent: -0.039, showHint: false }
     )
     this.kanjiDrawing.setFocusKanjiData(this.player.loadout.focusKanjiData)
 
@@ -1052,14 +1053,6 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   createUI() {
-    // Turn indicator with rounded background
-    this.turnTextBg = this.add.graphics()
-    this.drawTurnTextBg()
-    this.turnText = this.add.text(GAME_CONFIG.width / 2, 30, 'YOUR TURN', {
-      ...FONTS.title,
-      fontSize: '18px',
-    }).setOrigin(0.5)
-
     // Player bars (left top)
     this.createBar(300, 500, 'playerHp', COLORS.hp, this.player.hp, this.player.maxHp)
     this.createBar(300, 517, 'playerStamina', COLORS.stamina, this.player.stamina, this.player.maxStamina)
@@ -1095,6 +1088,10 @@ export default class BattleScene extends Phaser.Scene {
     // End turn button — fixed at the bottom of the action panel
     this.endTurnBtn = this.createButton(120, 513, 'End Turn', () => this.onEndTurn(), 160, 40, 0xe67e22, 0xf39c12)
 
+    // Settings / manual save upload button (accessible in battle)
+    this.settingsOverlay = new SettingsOverlay(this, this.player)
+    this.settingsOverlay.createButton(GAME_CONFIG.width - 16, 16)
+
     // Block indicators
     this.playerBlockText = this.add.text(300, 485, '', { ...FONTS.default, fontSize: '12px', color: '#3498db' }).setOrigin(0.5)
 
@@ -1124,30 +1121,6 @@ export default class BattleScene extends Phaser.Scene {
     g.lineStyle(1.5, 0x7f8c8d, 0.4)
     g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
     return g
-  }
-
-  drawTurnTextBg() {
-    const w = 220
-    const h = 36
-    const x = GAME_CONFIG.width / 2
-    const y = 30
-    const radius = 18
-    this.turnTextBg.clear()
-    this.turnTextBg.fillStyle(0x2c3e50, 0.75)
-    this.turnTextBg.fillRoundedRect(x - w / 2, y - h / 2, w, h, radius)
-    this.turnTextBg.lineStyle(1.5, 0x7f8c8d, 0.4)
-    this.turnTextBg.strokeRoundedRect(x - w / 2, y - h / 2, w, h, radius)
-  }
-
-  animateTurnChange() {
-    this.tweens.add({
-      targets: [this.turnTextBg, this.turnText],
-      scaleX: 1.15,
-      scaleY: 1.15,
-      duration: 150,
-      yoyo: true,
-      ease: 'Quad.easeOut',
-    })
   }
 
   createModernPanel(x, y, w, h, radius) {
@@ -3427,6 +3400,9 @@ export default class BattleScene extends Phaser.Scene {
 
     if (!target.isAlive()) {
       this.onEnemyDefeated(target)
+      // Extra defeat path: e.g. killing Danzaburō also kills his tanuki clones,
+      // so the win must be evaluated after all derived deaths resolve.
+      if (this.turnManager.checkBattleOver(this.player)) return
     } else if (target.checkPhaseTransition) {
       if (target.checkPhaseTransition((msg) => this.addCombatLog(msg))) {
         this.refreshEnemyDisplay(this.getDisplayForEnemy(target))
@@ -3598,9 +3574,6 @@ export default class BattleScene extends Phaser.Scene {
     this.updatePlayerStatusButton()
 
     if (turn === 'player') {
-      this.turnText.setText('YOUR TURN')
-      this.turnText.setColor(COLORS.text)
-      this.animateTurnChange()
       this.setSkillButtonsEnabled(true)
       this.endTurnBtn.setVisible(true)
       this.updateSkillButtonLabels()
@@ -3620,9 +3593,6 @@ export default class BattleScene extends Phaser.Scene {
     } else {
       if (this.pendingInfusion) this.clearInfusionMode()
       this.playerHitThisEnemyTurn = false
-      this.turnText.setText('ENEMY TURN')
-      this.turnText.setColor(COLORS.danger)
-      this.animateTurnChange()
       this.setSkillButtonsEnabled(false)
       this.endTurnBtn.setVisible(false)
       // Hide intention icons while the enemy acts them out
@@ -4430,6 +4400,11 @@ export default class BattleScene extends Phaser.Scene {
           // Report the completed run to the site (daily challenge, learned words, kanji).
           this.player.persistRunProgress(winner)
 
+          // A finished run is a safe sync point: clear the active map and upload.
+          this.player.loadout.mapState = null
+          this.player.saveLoadout()
+          this.player.uploadSave()
+
           const rewards = {
             ouroScales: (this.player.loadout.ouroScales || 0) - beforeScales,
             ouroSource: (this.player.loadout.ouroSource || 0) - beforeSource,
@@ -4477,6 +4452,7 @@ export default class BattleScene extends Phaser.Scene {
 
     const restartBtn = this.createButton(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 60, 'Return to Hero Select', () => {
       this.player.endRun(false)
+      this.player.uploadSave()
       this.scene.start('HeroSelectScene', { player: this.player })
     }, 240, 44)
     restartBtn.bg.setDepth(200)

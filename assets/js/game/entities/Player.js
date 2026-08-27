@@ -7,7 +7,7 @@ import metaUnlocks from '../data/metaUnlocks.json'
 import { generateMap } from '../systems/MapGenerator.js'
 import { getMapDefinition, MAP_DEFINITIONS } from '../data/maps/index.js'
 import { clearTags, expireStates } from '../systems/CombatStateSystem.js'
-import { sendRunResult } from '../api.js'
+import { sendRunResult, uploadSaveData } from '../api.js'
 
 export function loadoutKey() {
   return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
@@ -869,9 +869,26 @@ export default class Player extends Character {
     try {
       this.loadout.weapon = this.weapon
       this.loadout.shield = this.shield
+      this.loadout.localSavedAt = Date.now()
       localStorage.setItem(loadoutKey(), JSON.stringify(this.loadout))
     } catch (e) {
       console.warn('[Player] Failed to save loadout:', e)
+    }
+  }
+
+  async uploadSave() {
+    try {
+      this.saveLoadout()
+      const result = await uploadSaveData(this.loadout)
+      if (result.ok) {
+        this.loadout.serverUpdatedAt = result.data.updated_at
+        this.saveLoadout()
+        return { ok: true }
+      }
+      return { ok: false, error: result.error }
+    } catch (e) {
+      console.warn('[Player] Failed to upload save:', e)
+      return { ok: false, error: e.message }
     }
   }
 
