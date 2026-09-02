@@ -30,7 +30,7 @@ defmodule MedoruWeb.MessagesLive.Show do
   import MedoruWeb.ChatDictionaryComponents, only: [chat_dictionary_drawer: 1]
   import MedoruWeb.ChatAIComponents, only: [ai_response_modal: 1]
 
-  @per_page 20
+  @per_page 15
 
   @impl true
   def mount(%{"id" => conversation_id}, session, socket) do
@@ -290,6 +290,51 @@ defmodule MedoruWeb.MessagesLive.Show do
   def handle_event("set_dictionary_tab", %{"tab" => tab}, socket) do
     tab = if tab in ["entries", "people"], do: tab, else: "entries"
     {:noreply, assign(socket, :dictionary_active_tab, tab)}
+  end
+
+  @impl true
+  def handle_event("dictionary_search", %{"query" => query}, socket) do
+    {:noreply,
+     socket
+     |> assign(:dictionary_search, query)
+     |> assign(:dictionary_page, 1)
+     |> refresh_dictionary_entries()}
+  end
+
+  @impl true
+  def handle_event("dictionary_category", %{"category" => category}, socket) do
+    category = if category in ["", nil], do: nil, else: category
+
+    {:noreply,
+     socket
+     |> assign(:dictionary_selected_category, category)
+     |> assign(:dictionary_page, 1)
+     |> refresh_dictionary_entries()}
+  end
+
+  @impl true
+  def handle_event("dictionary_sort", %{"sort" => sort}, socket) do
+    sort = if sort in Dictionaries.sort_orders(), do: sort, else: "key_asc"
+
+    {:noreply,
+     socket
+     |> assign(:dictionary_sort, sort)
+     |> assign(:dictionary_page, 1)
+     |> refresh_dictionary_entries()}
+  end
+
+  @impl true
+  def handle_event("dictionary_page", %{"page" => page}, socket) do
+    page =
+      case Integer.parse(to_string(page)) do
+        {n, _} -> max(n, 1)
+        :error -> 1
+      end
+
+    {:noreply,
+     socket
+     |> assign(:dictionary_page, page)
+     |> refresh_dictionary_entries()}
   end
 
   @impl true
@@ -2233,7 +2278,9 @@ defmodule MedoruWeb.MessagesLive.Show do
     chat_dictionary = Dictionaries.get_or_create_chat_dictionary(current_user.id, conversation.id)
     main_dictionary = Dictionaries.get_or_create_main_dictionary(current_user.id)
 
-    entries = Dictionaries.list_entries(chat_dictionary.id)
+    autocomplete_entries =
+      Dictionaries.list_autocomplete_entries(current_user.id, conversation.id)
+
     categories = Dictionaries.list_categories(current_user.id, conversation.id)
     aliases = Dictionaries.build_user_aliases(current_user.id, conversation)
     current_user_alias = Dictionaries.resolve_alias(current_user.id, conversation, 0)
@@ -2241,8 +2288,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     socket
     |> assign(:chat_dictionary, chat_dictionary)
     |> assign(:main_dictionary, main_dictionary)
-    |> assign(:dictionary_entries, entries)
-    |> assign(:dictionary_entries_json, serialize_dictionary_entries(entries))
+    |> assign(:dictionary_entries_json, serialize_dictionary_entries(autocomplete_entries))
     |> assign(:dictionary_categories, categories)
     |> assign(:user_aliases, aliases)
     |> assign(:user_aliases_json, Jason.encode!(aliases))
@@ -2252,6 +2298,12 @@ defmodule MedoruWeb.MessagesLive.Show do
     |> assign(:dictionary_active_tab, "entries")
     |> assign(:dictionary_editing_entry, nil)
     |> assign(:dictionary_add_from_message, nil)
+    |> assign(:dictionary_search, "")
+    |> assign(:dictionary_selected_category, nil)
+    |> assign(:dictionary_sort, "key_asc")
+    |> assign(:dictionary_page, 1)
+    |> assign(:dictionary_per_page, 20)
+    |> refresh_dictionary_entries()
   end
 
   defp serialize_dictionary_entries(entries) do
@@ -2271,17 +2323,37 @@ defmodule MedoruWeb.MessagesLive.Show do
   defp refresh_dictionary_state(socket) do
     current_user = socket.assigns.current_scope.current_user
     conversation = socket.assigns.conversation
-    chat_dictionary = socket.assigns.chat_dictionary
 
-    entries = Dictionaries.list_entries(chat_dictionary.id)
+    autocomplete_entries =
+      Dictionaries.list_autocomplete_entries(current_user.id, conversation.id)
+
     categories = Dictionaries.list_categories(current_user.id, conversation.id)
     aliases = Dictionaries.build_user_aliases(current_user.id, conversation)
 
     socket
-    |> assign(:dictionary_entries, entries)
-    |> assign(:dictionary_entries_json, serialize_dictionary_entries(entries))
+    |> assign(:dictionary_entries_json, serialize_dictionary_entries(autocomplete_entries))
     |> assign(:dictionary_categories, categories)
     |> assign(:user_aliases, aliases)
     |> assign(:user_aliases_json, Jason.encode!(aliases))
+    |> refresh_dictionary_entries()
+  end
+
+  defp refresh_dictionary_entries(socket) do
+    chat_dictionary = socket.assigns.chat_dictionary
+
+    result =
+      Dictionaries.list_entries(chat_dictionary.id,
+        search: socket.assigns.dictionary_search,
+        category: socket.assigns.dictionary_selected_category,
+        sort: socket.assigns.dictionary_sort,
+        page: socket.assigns.dictionary_page,
+        per_page: socket.assigns.dictionary_per_page
+      )
+
+    socket
+    |> assign(:dictionary_entries, result.entries)
+    |> assign(:dictionary_page, result.page)
+    |> assign(:dictionary_total_pages, result.total_pages)
+    |> assign(:dictionary_total_entries, result.total)
   end
 end

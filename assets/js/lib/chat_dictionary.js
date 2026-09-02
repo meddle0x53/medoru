@@ -26,11 +26,20 @@ export class ChatDictionary {
     this._inputHandler = () => this.onInput()
     this._blurHandler = () => this.hideDropdown()
     this._clickOutsideHandler = (e) => this.onClickOutside(e)
+    this._repositionHandler = () => this.positionDropdown()
 
     this.textarea.addEventListener("keydown", this._keydownHandler)
     this.textarea.addEventListener("input", this._inputHandler)
     this.textarea.addEventListener("blur", this._blurHandler)
     document.addEventListener("click", this._clickOutsideHandler)
+
+    // Re-anchor the dropdown when the viewport moves/resizes — on mobile the
+    // virtual keyboard shifts the layout after the dropdown is already shown.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", this._repositionHandler)
+      window.visualViewport.addEventListener("scroll", this._repositionHandler)
+    }
+    window.addEventListener("scroll", this._repositionHandler, true)
   }
 
   destroy() {
@@ -41,6 +50,11 @@ export class ChatDictionary {
       this.textarea.removeEventListener("blur", this._blurHandler)
     }
     document.removeEventListener("click", this._clickOutsideHandler)
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener("resize", this._repositionHandler)
+      window.visualViewport.removeEventListener("scroll", this._repositionHandler)
+    }
+    window.removeEventListener("scroll", this._repositionHandler, true)
   }
 
   isEnabled() {
@@ -190,7 +204,10 @@ export class ChatDictionary {
 
       item.appendChild(keySpan)
       item.appendChild(valueSpan)
-      item.addEventListener("mousedown", (e) => {
+      // pointerdown (not click/mousedown): on touch devices the textarea would
+      // blur on tap before click fires, hiding the dropdown before selection.
+      // preventDefault keeps the textarea focused and suppresses the emulated mouse events.
+      item.addEventListener("pointerdown", (e) => {
         e.preventDefault()
         this.selectMatch(index)
       })

@@ -22,6 +22,12 @@ defmodule MedoruWeb.ChatDictionaryComponents do
   attr :current_user, :map, required: true
   attr :editing_entry, :any, default: nil
   attr :add_from_message, :any, default: nil
+  attr :search_query, :string, default: ""
+  attr :selected_category, :string, default: nil
+  attr :sort, :string, default: "key_asc"
+  attr :page, :integer, default: 1
+  attr :total_pages, :integer, default: 1
+  attr :total_entries, :integer, default: 0
 
   def chat_dictionary_drawer(assigns) do
     ~H"""
@@ -35,7 +41,7 @@ defmodule MedoruWeb.ChatDictionaryComponents do
         </div>
 
         <%!-- Panel --%>
-        <div class="relative w-full max-w-md h-full bg-base-100 shadow-2xl flex flex-col">
+        <div class="relative w-full max-w-xl h-full bg-base-100 shadow-2xl flex flex-col">
           <%!-- Header --%>
           <div class="flex items-center gap-3 px-4 py-3 border-b border-base-300 bg-base-100 shrink-0">
             <button
@@ -99,6 +105,12 @@ defmodule MedoruWeb.ChatDictionaryComponents do
                   categories={@categories}
                   editing_entry={@editing_entry}
                   add_from_message={@add_from_message}
+                  search_query={@search_query}
+                  selected_category={@selected_category}
+                  sort={@sort}
+                  page={@page}
+                  total_pages={@total_pages}
+                  total_entries={@total_entries}
                 />
             <% end %>
           </div>
@@ -112,8 +124,19 @@ defmodule MedoruWeb.ChatDictionaryComponents do
   attr :categories, :list, default: []
   attr :editing_entry, :any, default: nil
   attr :add_from_message, :any, default: nil
+  attr :search_query, :string, default: ""
+  attr :selected_category, :string, default: nil
+  attr :sort, :string, default: "key_asc"
+  attr :page, :integer, default: 1
+  attr :total_pages, :integer, default: 1
+  attr :total_entries, :integer, default: 0
 
   defp entries_tab(assigns) do
+    assigns =
+      assigns
+      |> assign(:grouped?, assigns.sort == "category")
+      |> assign(:groups, group_entries(assigns.entries, assigns.sort))
+
     ~H"""
     <div class="space-y-4">
       <.entry_form
@@ -122,77 +145,230 @@ defmodule MedoruWeb.ChatDictionaryComponents do
         categories={@categories}
       />
 
+      <.entries_toolbar
+        search_query={@search_query}
+        categories={@categories}
+        selected_category={@selected_category}
+        sort={@sort}
+      />
+
       <%= if @entries == [] do %>
         <div class="text-center py-10 text-secondary">
           <.icon name="hero-book-open" class="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>{gettext("No dictionary entries yet.")}</p>
+          <p>
+            <%= if @search_query != "" or @selected_category do %>
+              {gettext("No entries match your filters.")}
+            <% else %>
+              {gettext("No dictionary entries yet.")}
+            <% end %>
+          </p>
         </div>
       <% else %>
         <div class="space-y-2">
-          <%= for entry <- @entries do %>
-            <div class="p-3 bg-base-200 rounded-xl border border-base-300">
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-baseline gap-2">
-                  <p class="text-sm font-medium text-base-content shrink-0">{entry.key}</p>
-                  <p class="hidden sm:block text-base-content/30">→</p>
-                  <p class="text-sm text-secondary break-words">
-                    <%= for segment <- render_dictionary_value(entry.value) do %>
-                      <%= case segment do %>
-                        <% {:text, text} -> %>
-                          {text}
-                        <% {:link, word} -> %>
-                          <.link
-                            navigate={~p"/words/#{word}"}
-                            class="text-primary hover:underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {word}
-                          </.link>
-                      <% end %>
-                    <% end %>
-                  </p>
-                  <%= if entry.category do %>
-                    <span class="inline-block sm:self-center mt-1 sm:mt-0 px-2 py-0.5 bg-base-300 text-base-content/70 text-xs rounded-full">
-                      {entry.category}
-                    </span>
+          <%= if @grouped? do %>
+            <%= for {category, group_entries} <- @groups do %>
+              <div class="pt-2 first:pt-0">
+                <p class="px-1 pb-1 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                  {category}
+                </p>
+                <div class="space-y-2">
+                  <%= for entry <- group_entries do %>
+                    <.entry_row entry={entry} />
                   <% end %>
                 </div>
-                <div class="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    phx-click="start_edit_dictionary_entry"
-                    phx-value-id={entry.id}
-                    class="p-1.5 text-base-content/40 hover:text-primary transition-colors"
-                    title={gettext("Edit")}
-                  >
-                    <.icon name="hero-pencil" class="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="copy_entry_to_main"
-                    phx-value-id={entry.id}
-                    class="p-1.5 text-base-content/40 hover:text-primary transition-colors"
-                    title={gettext("Copy to main dictionary")}
-                  >
-                    <.icon name="hero-arrow-up-tray" class="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="delete_dictionary_entry"
-                    phx-value-id={entry.id}
-                    data-confirm={gettext("Delete this entry?")}
-                    class="p-1.5 text-base-content/40 hover:text-error transition-colors"
-                    title={gettext("Delete")}
-                  >
-                    <.icon name="hero-trash" class="w-4 h-4" />
-                  </button>
-                </div>
               </div>
-            </div>
+            <% end %>
+          <% else %>
+            <%= for entry <- @entries do %>
+              <.entry_row entry={entry} />
+            <% end %>
           <% end %>
         </div>
+
+        <.entries_pagination
+          page={@page}
+          total_pages={@total_pages}
+          total_entries={@total_entries}
+        />
       <% end %>
+    </div>
+    """
+  end
+
+  attr :search_query, :string, default: ""
+  attr :categories, :list, default: []
+  attr :selected_category, :string, default: nil
+  attr :sort, :string, default: "key_asc"
+
+  defp entries_toolbar(assigns) do
+    ~H"""
+    <div class="space-y-2">
+      <form phx-change="dictionary_search">
+        <div class="relative">
+          <.icon
+            name="hero-magnifying-glass"
+            class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"
+          />
+          <input
+            type="text"
+            name="query"
+            value={@search_query}
+            placeholder={gettext("Search keys...")}
+            phx-debounce="300"
+            class="w-full pl-9 pr-3 py-2 bg-base-100 border border-base-300 rounded-lg text-sm text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+      </form>
+
+      <div class="flex gap-2">
+        <form phx-change="dictionary_category" class="flex-1 min-w-0">
+          <select
+            name="category"
+            class="w-full px-2 py-1.5 bg-base-100 border border-base-300 rounded-lg text-sm text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">{gettext("All categories")}</option>
+            <%= for category <- @categories do %>
+              <option value={category} selected={@selected_category == category}>
+                {category}
+              </option>
+            <% end %>
+          </select>
+        </form>
+
+        <form phx-change="dictionary_sort" class="flex-1 min-w-0">
+          <select
+            name="sort"
+            class="w-full px-2 py-1.5 bg-base-100 border border-base-300 rounded-lg text-sm text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="key_asc" selected={@sort == "key_asc"}>{gettext("Key A→Z")}</option>
+            <option value="key_desc" selected={@sort == "key_desc"}>{gettext("Key Z→A")}</option>
+            <option value="newest" selected={@sort == "newest"}>{gettext("Newest first")}</option>
+            <option value="oldest" selected={@sort == "oldest"}>{gettext("Oldest first")}</option>
+            <option value="category" selected={@sort == "category"}>{gettext("By category")}</option>
+          </select>
+        </form>
+      </div>
+    </div>
+    """
+  end
+
+  attr :page, :integer, required: true
+  attr :total_pages, :integer, required: true
+  attr :total_entries, :integer, required: true
+
+  defp entries_pagination(assigns) do
+    ~H"""
+    <div class="flex items-center justify-between gap-2 pt-1 text-sm text-base-content/60">
+      <button
+        type="button"
+        phx-click="dictionary_page"
+        phx-value-page={@page - 1}
+        disabled={@page <= 1}
+        class="p-1.5 rounded-lg hover:bg-base-200 text-base-content/60 hover:text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        title={gettext("Previous page")}
+      >
+        <.icon name="hero-chevron-left" class="w-4 h-4" />
+      </button>
+
+      <span class="text-xs">
+        {gettext("Page %{page} of %{total} · %{count} entries",
+          page: @page,
+          total: @total_pages,
+          count: @total_entries
+        )}
+      </span>
+
+      <button
+        type="button"
+        phx-click="dictionary_page"
+        phx-value-page={@page + 1}
+        disabled={@page >= @total_pages}
+        class="p-1.5 rounded-lg hover:bg-base-200 text-base-content/60 hover:text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
+        title={gettext("Next page")}
+      >
+        <.icon name="hero-chevron-right" class="w-4 h-4" />
+      </button>
+    </div>
+    """
+  end
+
+  # Groups a page of entries under category headers (uncategorized -> "main").
+  defp group_entries(entries, "category") do
+    entries
+    |> Enum.chunk_by(fn e -> String.downcase(e.category || "main") end)
+    |> Enum.map(fn group ->
+      label = hd(group).category || "main"
+      {label, group}
+    end)
+  end
+
+  defp group_entries(_entries, _sort), do: []
+
+  attr :entry, :any, required: true
+
+  defp entry_row(assigns) do
+    ~H"""
+    <div class="p-3 bg-base-200 rounded-xl border border-base-300">
+      <div class="flex items-start justify-between gap-2">
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <p class="text-sm font-medium text-base-content break-words">{@entry.key}</p>
+            <%= if @entry.category do %>
+              <span class="px-2 py-0.5 bg-base-300 text-base-content/70 text-xs rounded-full">
+                {@entry.category}
+              </span>
+            <% end %>
+          </div>
+          <p class="mt-1 text-sm text-secondary break-words">
+            <span class="text-base-content/30">→ </span>
+            <%= for segment <- render_dictionary_value(@entry.value) do %>
+              <%= case segment do %>
+                <% {:text, text} -> %>
+                  {text}
+                <% {:link, word} -> %>
+                  <.link
+                    navigate={~p"/words/#{word}"}
+                    class="text-primary hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {word}
+                  </.link>
+              <% end %>
+            <% end %>
+          </p>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            phx-click="start_edit_dictionary_entry"
+            phx-value-id={@entry.id}
+            class="p-1.5 text-base-content/40 hover:text-primary transition-colors"
+            title={gettext("Edit")}
+          >
+            <.icon name="hero-pencil" class="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            phx-click="copy_entry_to_main"
+            phx-value-id={@entry.id}
+            class="p-1.5 text-base-content/40 hover:text-primary transition-colors"
+            title={gettext("Copy to main dictionary")}
+          >
+            <.icon name="hero-arrow-up-tray" class="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            phx-click="delete_dictionary_entry"
+            phx-value-id={@entry.id}
+            data-confirm={gettext("Delete this entry?")}
+            class="p-1.5 text-base-content/40 hover:text-error transition-colors"
+            title={gettext("Delete")}
+          >
+            <.icon name="hero-trash" class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
     """
   end

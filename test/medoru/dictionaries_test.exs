@@ -65,8 +65,8 @@ defmodule Medoru.DictionariesTest do
                Dictionaries.create_entry(dict, %{"key" => "hello", "value" => "こんにちは"})
 
       entries = Dictionaries.list_entries(dict.id)
-      assert length(entries) == 1
-      assert hd(entries).value == "こんにちは"
+      assert length(entries.entries) == 1
+      assert hd(entries.entries).value == "こんにちは"
     end
 
     test "list_entries/2 filters by category" do
@@ -76,8 +76,8 @@ defmodule Medoru.DictionariesTest do
       Dictionaries.create_entry(dict, %{"key" => "a", "value" => "1", "category" => "Greetings"})
       Dictionaries.create_entry(dict, %{"key" => "b", "value" => "2"})
 
-      assert length(Dictionaries.list_entries(dict.id, category: "greetings")) == 1
-      assert length(Dictionaries.list_entries(dict.id, category: "main")) == 1
+      assert length(Dictionaries.list_entries(dict.id, category: "greetings").entries) == 1
+      assert length(Dictionaries.list_entries(dict.id, category: "main").entries) == 1
     end
 
     test "list_entries/2 respects match modes" do
@@ -96,9 +96,96 @@ defmodule Medoru.DictionariesTest do
         "match_mode" => "substring"
       })
 
-      assert length(Dictionaries.list_entries(dict.id, search: "good mo")) == 1
-      assert length(Dictionaries.list_entries(dict.id, search: "night")) == 1
-      assert length(Dictionaries.list_entries(dict.id, search: "good")) == 2
+      assert length(Dictionaries.list_entries(dict.id, search: "good mo").entries) == 1
+      assert length(Dictionaries.list_entries(dict.id, search: "night").entries) == 1
+      assert length(Dictionaries.list_entries(dict.id, search: "good").entries) == 2
+    end
+
+    test "list_entries/2 paginates and reports totals" do
+      user = user()
+      dict = Dictionaries.get_or_create_main_dictionary(user.id)
+
+      for i <- 1..5 do
+        Dictionaries.create_entry(dict, %{"key" => "key#{i}", "value" => "v#{i}"})
+      end
+
+      page1 = Dictionaries.list_entries(dict.id, page: 1, per_page: 2)
+      assert page1.total == 5
+      assert page1.total_pages == 3
+      assert page1.page == 1
+      assert length(page1.entries) == 2
+
+      last_page = Dictionaries.list_entries(dict.id, page: 3, per_page: 2)
+      assert last_page.page == 3
+      assert length(last_page.entries) == 1
+
+      # out-of-range pages are clamped to the last page
+      clamped = Dictionaries.list_entries(dict.id, page: 99, per_page: 2)
+      assert clamped.page == 3
+      assert length(clamped.entries) == 1
+    end
+
+    test "list_entries/2 sorts by key and recency" do
+      user = user()
+      dict = Dictionaries.get_or_create_main_dictionary(user.id)
+
+      Dictionaries.create_entry(dict, %{"key" => "banana", "value" => "1"})
+      Dictionaries.create_entry(dict, %{"key" => "Apple", "value" => "2"})
+      Dictionaries.create_entry(dict, %{"key" => "cherry", "value" => "3"})
+
+      asc = Dictionaries.list_entries(dict.id, sort: "key_asc")
+      assert Enum.map(asc.entries, & &1.key) == ["Apple", "banana", "cherry"]
+
+      desc = Dictionaries.list_entries(dict.id, sort: "key_desc")
+      assert Enum.map(desc.entries, & &1.key) == ["cherry", "banana", "Apple"]
+
+      newest_first = Dictionaries.list_entries(dict.id, sort: "newest")
+      assert Enum.map(newest_first.entries, & &1.key) == ["cherry", "Apple", "banana"]
+
+      oldest_first = Dictionaries.list_entries(dict.id, sort: "oldest")
+      assert Enum.map(oldest_first.entries, & &1.key) == ["banana", "Apple", "cherry"]
+    end
+
+    test "list_entries/2 sorts by category with uncategorized first" do
+      user = user()
+      dict = Dictionaries.get_or_create_main_dictionary(user.id)
+
+      Dictionaries.create_entry(dict, %{"key" => "zebra", "value" => "1", "category" => "Animals"})
+
+      Dictionaries.create_entry(dict, %{"key" => "hello", "value" => "2"})
+      Dictionaries.create_entry(dict, %{"key" => "ant", "value" => "3", "category" => "Animals"})
+
+      result = Dictionaries.list_entries(dict.id, sort: "category")
+
+      assert Enum.map(result.entries, &{&1.category, &1.key}) == [
+               {nil, "hello"},
+               {"Animals", "ant"},
+               {"Animals", "zebra"}
+             ]
+    end
+
+    test "list_autocomplete_entries/2 merges chat over main, chat wins on key collision" do
+      user_a = user()
+      user_b = user()
+      conv = conversation(user_a, user_b)
+
+      main = Dictionaries.get_or_create_main_dictionary(user_a.id)
+      chat_dict = Dictionaries.get_or_create_chat_dictionary(user_a.id, conv.id)
+
+      Dictionaries.create_entry(main, %{"key" => "hello", "value" => "main hello"})
+      Dictionaries.create_entry(main, %{"key" => "only-main", "value" => "from main"})
+
+      Dictionaries.create_entry(chat_dict, %{"key" => "HELLO", "value" => "chat hello"})
+      Dictionaries.create_entry(chat_dict, %{"key" => "only-chat", "value" => "from chat"})
+
+      entries = Dictionaries.list_autocomplete_entries(user_a.id, conv.id)
+      assert Enum.map(entries, & &1.key) == ["HELLO", "only-chat", "only-main"]
+      assert Enum.find(entries, &(&1.key == "HELLO")).value == "chat hello"
+
+      # another chat without overrides still sees the main entries
+      conv2 = conversation(user_a, user())
+      entries2 = Dictionaries.list_autocomplete_entries(user_a.id, conv2.id)
+      assert Enum.map(entries2, & &1.key) == ["hello", "only-main"]
     end
 
     test "update_entry/2 and delete_entry/1" do
@@ -110,7 +197,7 @@ defmodule Medoru.DictionariesTest do
                Dictionaries.update_entry(entry, %{"value" => "z"})
 
       assert {:ok, _} = Dictionaries.delete_entry(entry)
-      assert Dictionaries.list_entries(dict.id) == []
+      assert Dictionaries.list_entries(dict.id).entries == []
     end
 
     test "upsert_entry/4 updates existing entry by key" do
@@ -122,7 +209,7 @@ defmodule Medoru.DictionariesTest do
 
       assert entry.value == "new"
       assert entry.category == "Greetings"
-      assert length(Dictionaries.list_entries(dict.id)) == 1
+      assert length(Dictionaries.list_entries(dict.id).entries) == 1
     end
 
     test "copy_entry_to_main/2 and copy_entry_to_chat/3" do
@@ -136,11 +223,12 @@ defmodule Medoru.DictionariesTest do
 
       assert {:ok, _} = Dictionaries.copy_entry_to_main(entry, user_a.id)
       main = Dictionaries.get_or_create_main_dictionary(user_a.id)
-      assert length(Dictionaries.list_entries(main.id)) == 1
+      assert length(Dictionaries.list_entries(main.id).entries) == 1
 
       assert {:ok, _} = Dictionaries.send_entry_to_chat(entry, conv.id, user_a.id)
-      assert length(Dictionaries.list_entries(chat_dict.id)) == 1
-      assert Dictionaries.list_entries(chat_dict.id) |> hd() |> Map.get(:key) == "hello"
+      assert length(Dictionaries.list_entries(chat_dict.id).entries) == 1
+
+      assert Dictionaries.list_entries(chat_dict.id).entries |> hd() |> Map.get(:key) == "hello"
     end
   end
 

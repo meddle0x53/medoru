@@ -31,7 +31,8 @@ defmodule Medoru.Social.UserRelation do
     sister
     brother
     family
-    lover
+    romantic-man
+    romantic-woman
   )
 
   @address_styles ~w(formal informal honorific casual)

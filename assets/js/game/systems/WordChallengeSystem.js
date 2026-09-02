@@ -89,9 +89,10 @@ export default class WordChallengeSystem {
     // Give touch players more time to type on the on-screen keyboard.
     this.currentOptions.timeLimit = getWordChallengeTimeLimit(this.scene, this.currentOptions.timeLimit)
 
+    this.isTouchKeyboard = window.matchMedia('(pointer: coarse)').matches
+
     this.createOverlay()
 
-    this.isTouchKeyboard = window.matchMedia('(pointer: coarse)').matches
     if (this.isTouchKeyboard) {
       this.createTouchKeyboard()
     } else {
@@ -146,19 +147,20 @@ export default class WordChallengeSystem {
   createOverlay() {
     const cx = GAME_CONFIG.width / 2
     const cy = GAME_CONFIG.height / 2
+    const isTouch = this.isTouchKeyboard
 
-    this.overlay = this.scene.add.container(cx, cy).setDepth(200)
+    // On touch the panel grows to contain the keyboard, so shift the overlay up to avoid clipping.
+    this.overlay = this.scene.add.container(cx, isTouch ? cy - 12 : cy).setDepth(200)
 
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
     this.overlay.add(backdrop)
 
-    const isTouch = this.isTouchKeyboard
-    const panelHeight = isTouch ? 420 : 300
+    const panelHeight = isTouch ? 500 : 300
     const layout = isTouch
-      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40, answer: 62, keyboardStart: 99 }
+      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40, answer: 62, keyboardStart: 123 }
       : { title: -130, prompt: -95, word: -45, hint: 0, input: 30, timerBar: 70, timerText: 88, feedback: 108, answer: 132 }
 
-    const panel = this.scene.add.rectangle(0, 0, 460, panelHeight, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
+    const panel = this.scene.add.rectangle(0, isTouch ? 40 : 0, 460, panelHeight, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
     this.overlay.add(panel)
 
     this.titleText = this.scene.add.text(0, layout.title, this.options.title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)

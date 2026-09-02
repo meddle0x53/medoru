@@ -22,6 +22,11 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
      |> assign(:editing_entry, nil)
      |> assign(:search_query, "")
      |> assign(:selected_category, nil)
+     |> assign(:sort, "key_asc")
+     |> assign(:page, 1)
+     |> assign(:per_page, 50)
+     |> assign(:total_entries, 0)
+     |> assign(:total_pages, 1)
      |> assign(:send_to_chat_entry, nil)
      |> assign(:conversations, [])
      |> refresh_entries()}
@@ -32,6 +37,7 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
     {:noreply,
      socket
      |> assign(:search_query, query)
+     |> assign(:page, 1)
      |> refresh_entries()}
   end
 
@@ -42,6 +48,32 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
     {:noreply,
      socket
      |> assign(:selected_category, category)
+     |> assign(:page, 1)
+     |> refresh_entries()}
+  end
+
+  @impl true
+  def handle_event("set_sort", %{"sort" => sort}, socket) do
+    sort = if sort in Dictionaries.sort_orders(), do: sort, else: "key_asc"
+
+    {:noreply,
+     socket
+     |> assign(:sort, sort)
+     |> assign(:page, 1)
+     |> refresh_entries()}
+  end
+
+  @impl true
+  def handle_event("set_page", %{"page" => page}, socket) do
+    page =
+      case Integer.parse(to_string(page)) do
+        {n, _} -> max(n, 1)
+        :error -> 1
+      end
+
+    {:noreply,
+     socket
+     |> assign(:page, page)
      |> refresh_entries()}
   end
 
@@ -168,20 +200,104 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
 
   defp refresh_entries(socket) do
     dictionary = socket.assigns.main_dictionary
-    query = socket.assigns.search_query
-    category = socket.assigns.selected_category
 
-    entries =
+    result =
       Dictionaries.list_entries(dictionary.id,
-        search: query,
-        category: category
+        search: socket.assigns.search_query,
+        category: socket.assigns.selected_category,
+        sort: socket.assigns.sort,
+        page: socket.assigns.page,
+        per_page: socket.assigns.per_page
       )
 
     categories = Dictionaries.list_categories(socket.assigns.current_scope.current_user.id, nil)
 
     socket
-    |> assign(:entries, entries)
+    |> assign(:entries, result.entries)
     |> assign(:categories, categories)
+    |> assign(:page, result.page)
+    |> assign(:total_entries, result.total)
+    |> assign(:total_pages, result.total_pages)
+  end
+
+  @doc """
+  Groups a page of entries under category labels for the "category" sort order.
+  Uncategorized entries are grouped under "main".
+  """
+  def group_by_category(entries) do
+    entries
+    |> Enum.chunk_by(fn e -> String.downcase(e.category || "main") end)
+    |> Enum.map(fn group -> {hd(group).category || "main", group} end)
+  end
+
+  attr :entry, :any, required: true
+
+  def entry_row(assigns) do
+    ~H"""
+    <div class="p-4 flex items-start gap-3 hover:bg-base-50">
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <div class="font-medium text-base-content break-words">
+            {@entry.key}
+          </div>
+          <%= if @entry.category do %>
+            <span class="text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/70">
+              {@entry.category}
+            </span>
+          <% end %>
+        </div>
+        <div class="mt-1 text-sm text-secondary break-words">
+          <span class="text-base-content/30">→ </span>
+          <%= for segment <- render_dictionary_value(@entry.value) do %>
+            <%= case segment do %>
+              <% {:text, text} -> %>
+                {text}
+              <% {:link, word} -> %>
+                <.link
+                  navigate={~p"/words/#{word}"}
+                  class="text-primary hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {word}
+                </.link>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          phx-click="open_send_to_chat"
+          phx-value-id={@entry.id}
+          class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
+          title={gettext("Send to chat dictionary")}
+        >
+          <.icon name="hero-paper-airplane" class="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          phx-click="start_edit"
+          phx-value-id={@entry.id}
+          class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
+          title={gettext("Edit")}
+        >
+          <.icon name="hero-pencil" class="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          phx-click="delete_entry"
+          phx-value-id={@entry.id}
+          data-confirm={gettext("Delete this entry?")}
+          class="p-2 text-secondary hover:text-error hover:bg-base-200 rounded-lg transition-colors"
+          title={gettext("Delete")}
+        >
+          <.icon name="hero-trash" class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+    """
   end
 
   defp format_changeset_errors(changeset) do

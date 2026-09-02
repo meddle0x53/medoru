@@ -18,7 +18,7 @@ defmodule Medoru.Dictionaries.DictionaryEntry do
 
     belongs_to :dictionary, Medoru.Dictionaries.ChatDictionary
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @match_modes ["prefix", "substring"]

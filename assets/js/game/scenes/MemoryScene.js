@@ -4,6 +4,7 @@ import { ITEMS } from '../data/items.js'
 import { CHARMS, getCharmsByType, getCharmById } from '../data/charms.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import { ALL_ACTIONS } from '../data/actions.js'
+import { filterChallengeWords } from '../systems/EnemyChallengePicker.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const GRID_COLS = 5
@@ -145,7 +146,7 @@ export default class MemoryScene extends Phaser.Scene {
   }
 
   selectWords() {
-    const list = this.player?.getChallengeWordList?.() || this.player?.wordList || []
+    const list = filterChallengeWords(this.player?.getChallengeWordList?.() || this.player?.wordList || [])
     if (list.length < this.totalPairs) {
       this.showNoWordsOverlay()
       return null
@@ -214,6 +215,17 @@ export default class MemoryScene extends Phaser.Scene {
     }
   }
 
+  // Creates card text that shrinks to fit within the card width.
+  fitCardText(content, style, x, y) {
+    const maxWidth = CARD_W - 8
+    const text = this.add.text(x, y, content, style).setOrigin(0.5)
+    if (text.width > maxWidth) {
+      const baseSize = parseInt(style.fontSize, 10)
+      text.setFontSize(Math.max(10, Math.floor(baseSize * (maxWidth / text.width))))
+    }
+    return text
+  }
+
   flipCard(card) {
     this.tweens.add({
       targets: card.container,
@@ -225,16 +237,16 @@ export default class MemoryScene extends Phaser.Scene {
           card.bg.setFillStyle(0x1e3a28)
           card.qText.setVisible(false)
           if (!card.frontText) {
-            card.frontText = this.add.text(0, -10, card.word.word, {
+            card.frontText = this.fitCardText(card.word.word, {
               ...FONTS.kanji,
               fontSize: '24px',
               color: '#fff0f3',
-            }).setOrigin(0.5)
-            card.readingText = this.add.text(0, 22, card.word.reading || '', {
+            }, 0, -10)
+            card.readingText = this.fitCardText(card.word.reading || '', {
               ...FONTS.default,
               fontSize: '14px',
               color: '#ffcce0',
-            }).setOrigin(0.5)
+            }, 0, 22)
             card.container.add([card.frontText, card.readingText])
           }
           card.frontText.setVisible(true)

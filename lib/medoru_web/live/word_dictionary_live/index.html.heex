@@ -19,6 +19,7 @@
           name="query"
           value={@search_query}
           placeholder={gettext("Search keys...")}
+          phx-debounce="300"
           class="w-full px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </form>
@@ -34,6 +35,21 @@
               {category}
             </option>
           <% end %>
+        </select>
+      </form>
+
+      <form phx-change="set_sort">
+        <select
+          name="sort"
+          class="w-full sm:w-44 px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-base-content focus:outline-none focus:ring-2 focus:ring-primary/30"
+        >
+          <option value="key_asc" selected={@sort == "key_asc"}>{gettext("Key A→Z")}</option>
+          <option value="key_desc" selected={@sort == "key_desc"}>{gettext("Key Z→A")}</option>
+          <option value="newest" selected={@sort == "newest"}>{gettext("Newest first")}</option>
+          <option value="oldest" selected={@sort == "oldest"}>{gettext("Oldest first")}</option>
+          <option value="category" selected={@sort == "category"}>
+            {gettext("By category")}
+          </option>
         </select>
       </form>
     </div>
@@ -114,75 +130,67 @@
     <%= if @entries == [] do %>
       <div class="text-center py-12 bg-base-100 rounded-2xl border border-base-300">
         <.icon name="hero-language" class="w-12 h-12 text-secondary/30 mx-auto mb-3" />
-        <p class="text-secondary">{gettext("Your dictionary is empty.")}</p>
+        <p class="text-secondary">
+          <%= if @search_query != "" or @selected_category do %>
+            {gettext("No entries match your filters.")}
+          <% else %>
+            {gettext("Your dictionary is empty.")}
+          <% end %>
+        </p>
       </div>
     <% else %>
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
         <div class="divide-y divide-base-200">
-          <%= for entry <- @entries do %>
-            <div class="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-base-50">
-              <div class="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-baseline gap-2">
-                <div class="font-medium text-base-content shrink-0">
-                  {entry.key}
-                </div>
-                <div class="hidden sm:block text-base-content/30">→</div>
-                <div class="text-sm text-secondary">
-                  <%= for segment <- render_dictionary_value(entry.value) do %>
-                    <%= case segment do %>
-                      <% {:text, text} -> %>
-                        {text}
-                      <% {:link, word} -> %>
-                        <.link
-                          navigate={~p"/words/#{word}"}
-                          class="text-primary hover:underline"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {word}
-                        </.link>
-                    <% end %>
-                  <% end %>
-                </div>
-                <%= if entry.category do %>
-                  <span class="inline-block sm:self-center text-xs px-2 py-0.5 bg-base-200 rounded-full text-base-content/70">
-                    {entry.category}
-                  </span>
-                <% end %>
+          <%= if @sort == "category" do %>
+            <%= for {category, group_entries} <- group_by_category(@entries) do %>
+              <div class="px-4 pt-3 pb-1 bg-base-200/40">
+                <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                  {category}
+                </p>
               </div>
-
-              <div class="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  phx-click="open_send_to_chat"
-                  phx-value-id={entry.id}
-                  class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
-                  title={gettext("Send to chat dictionary")}
-                >
-                  <.icon name="hero-paper-airplane" class="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  phx-click="start_edit"
-                  phx-value-id={entry.id}
-                  class="p-2 text-secondary hover:text-primary hover:bg-base-200 rounded-lg transition-colors"
-                  title={gettext("Edit")}
-                >
-                  <.icon name="hero-pencil" class="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  phx-click="delete_entry"
-                  phx-value-id={entry.id}
-                  data-confirm={gettext("Delete this entry?")}
-                  class="p-2 text-secondary hover:text-error hover:bg-base-200 rounded-lg transition-colors"
-                  title={gettext("Delete")}
-                >
-                  <.icon name="hero-trash" class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+              <%= for entry <- group_entries do %>
+                <.entry_row entry={entry} />
+              <% end %>
+            <% end %>
+          <% else %>
+            <%= for entry <- @entries do %>
+              <.entry_row entry={entry} />
+            <% end %>
           <% end %>
         </div>
+      </div>
+
+      <%!-- Pagination --%>
+      <div class="flex items-center justify-between gap-2 mt-4 text-sm text-base-content/60">
+        <button
+          type="button"
+          phx-click="set_page"
+          phx-value-page={@page - 1}
+          disabled={@page <= 1}
+          class="btn btn-ghost btn-sm disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <.icon name="hero-chevron-left" class="w-4 h-4" />
+          {gettext("Previous")}
+        </button>
+
+        <span class="text-xs">
+          {gettext("Page %{page} of %{total} · %{count} entries",
+            page: @page,
+            total: @total_pages,
+            count: @total_entries
+          )}
+        </span>
+
+        <button
+          type="button"
+          phx-click="set_page"
+          phx-value-page={@page + 1}
+          disabled={@page >= @total_pages}
+          class="btn btn-ghost btn-sm disabled:opacity-30 disabled:pointer-events-none"
+        >
+          {gettext("Next")}
+          <.icon name="hero-chevron-right" class="w-4 h-4" />
+        </button>
       </div>
     <% end %>
 

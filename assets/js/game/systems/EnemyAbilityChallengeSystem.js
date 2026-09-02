@@ -70,44 +70,55 @@ export default class EnemyAbilityChallengeSystem {
   createOverlay() {
     const cx = GAME_CONFIG.width / 2
     const cy = GAME_CONFIG.height / 2
+    const isTouch = this.scene.sys.game.device.input.touch
 
-    this.overlay = this.scene.add.container(cx, cy).setDepth(200)
+    // On touch the panel grows to contain the keyboard, so shift the overlay up to avoid clipping.
+    // Layout matches WordChallengeSystem so all word challenges look the same.
+    this.overlay = this.scene.add.container(cx, isTouch ? cy - 12 : cy).setDepth(200)
 
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
     this.overlay.add(backdrop)
 
-    const panel = this.scene.add.rectangle(0, 0, 460, 340, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
+    const panelHeight = isTouch ? 500 : 340
+    const layout = isTouch
+      ? { title: -190, prompt: -155, word: -105, hint: -60, input: -30, timerBar: 0, timerText: 18, feedback: 40 }
+      : { title: -120, prompt: -80, word: -30, hint: 25, input: 55, timerBar: 95, timerText: 115, feedback: 140 }
+
+    const panel = this.scene.add.rectangle(0, isTouch ? 40 : 0, 460, panelHeight, COLORS.panelBg).setStrokeStyle(2, COLORS.warning).setOrigin(0.5)
     this.overlay.add(panel)
 
     const title = this.challenge.abilityName
       ? `${this.challenge.abilityName} Challenge`
       : 'Enemy Ability Challenge'
-    this.titleText = this.scene.add.text(0, -120, title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
+    this.titleText = this.scene.add.text(0, layout.title, title, { ...FONTS.title, fontSize: '20px', color: '#f39c12' }).setOrigin(0.5)
     this.overlay.add(this.titleText)
 
     const prompt = this.challenge.prompt || 'Answer quickly!'
-    this.promptText = this.scene.add.text(0, -80, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
+    this.promptText = this.scene.add.text(0, layout.prompt, prompt, { ...FONTS.default, fontSize: '14px' }).setOrigin(0.5)
     this.overlay.add(this.promptText)
 
     const displayValue = this.challenge.word?.word || ''
-    this.targetText = this.scene.add.text(0, -30, displayValue, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
+    this.targetText = this.scene.add.text(0, layout.word, displayValue, { ...FONTS.kanji, fontSize: '42px' }).setOrigin(0.5)
     this.overlay.add(this.targetText)
 
-    this.hintText = this.scene.add.text(0, 25, this.challenge.hint || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.hintText = this.scene.add.text(0, layout.hint, this.challenge.hint || '', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.hintText)
 
-    this.inputText = this.scene.add.text(0, 55, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
+    this.inputText = this.scene.add.text(0, layout.input, '', { ...FONTS.default, fontSize: '22px', color: '#f1c40f' }).setOrigin(0.5)
     this.overlay.add(this.inputText)
 
-    const barBg = this.scene.add.rectangle(0, 95, 320, 12, COLORS.hpBg).setOrigin(0.5)
+    const barBg = this.scene.add.rectangle(0, layout.timerBar, 320, 12, COLORS.hpBg).setOrigin(0.5)
     this.overlay.add(barBg)
-    this.timerBar = this.scene.add.rectangle(-160, 95, 320, 12, COLORS.warning).setOrigin(0, 0.5)
+    this.timerBar = this.scene.add.rectangle(-160, layout.timerBar, 320, 12, COLORS.warning).setOrigin(0, 0.5)
     this.overlay.add(this.timerBar)
 
-    this.timerText = this.scene.add.text(0, 115, `${(this.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    this.timerText = this.scene.add.text(0, layout.timerText, `${(this.timeLimit / 1000).toFixed(1)}s`, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.timerText)
 
-    this.feedbackText = this.scene.add.text(0, 140, 'Press Enter to submit', { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
+    const feedbackLabel = isTouch
+      ? 'Tap the keys below to type'
+      : 'Press Enter to submit'
+    this.feedbackText = this.scene.add.text(0, layout.feedback, feedbackLabel, { ...FONTS.default, fontSize: '12px', color: '#7f8c8d' }).setOrigin(0.5)
     this.overlay.add(this.feedbackText)
   }
 
@@ -147,15 +158,15 @@ export default class EnemyAbilityChallengeSystem {
     this.keyboardContainer = this.scene.add.container(0, 0)
     this.overlay.add(this.keyboardContainer)
 
-    // Compact on-screen keyboard that fits below the 340px enemy-ability panel.
-    const keySize = 26
-    const keyGap = 3
-    const startY = 162
+    // Same keyboard as WordChallengeSystem so all word challenges look identical.
+    const keySize = 30
+    const keyGap = 4
+    const startY = 157
 
     const rows = [
       ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-      ['z', 'x', 'c', 'v', 'b', 'n', 'm'],
+      ['z', 'x', 'c', 'v', 'b', 'n', 'm', '-'],
     ]
 
     rows.forEach((row, rowIndex) => {
@@ -168,13 +179,12 @@ export default class EnemyAbilityChallengeSystem {
       })
     })
 
-    // Control row: backspace, hyphen, space, enter
-    const controlY = startY + rows.length * (keySize + keyGap) + 4
+    // Control row: backspace, space, enter
+    const controlY = startY + rows.length * (keySize + keyGap) + 6
     const controls = [
-      { label: '⌫', width: 42, key: 'BACKSPACE' },
-      { label: '-', width: 26, key: '-' },
-      { label: 'SPACE', width: 78, key: 'SPACE' },
-      { label: '⏎', width: 42, key: 'ENTER' },
+      { label: '⌫', width: 48, key: 'BACKSPACE' },
+      { label: 'SPACE', width: 96, key: 'SPACE' },
+      { label: '⏎', width: 48, key: 'ENTER' },
     ]
     const totalWidth = controls.reduce((sum, c) => sum + c.width, 0) + (controls.length - 1) * keyGap
     let x = -totalWidth / 2

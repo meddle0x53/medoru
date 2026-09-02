@@ -1,7 +1,14 @@
-// Word challenges should skip set phrases/expressions, but keep everything else
-// (including words with no word_type, so we never silently remove challenges).
+// Word challenges should only use concrete vocabulary: nouns, verbs and
+// adjectives. Set phrases/expressions, particles, counters, pronouns, etc.
+// are excluded everywhere a word challenge can appear.
+const CHALLENGE_WORD_TYPES = new Set(['noun', 'verb', 'adjective'])
+
 export function isChallengeWord(word) {
-  return word != null && word.word_type !== 'expression'
+  if (word == null) return false
+  // Learned words come through with `type`, while vocabulary/being-learned
+  // words use `word_type` — accept both keys.
+  const wordType = word.word_type ?? word.type
+  return CHALLENGE_WORD_TYPES.has(wordType)
 }
 
 export function filterChallengeWords(words) {
@@ -47,7 +54,7 @@ export function pickWordForChallenge(player, filters = {}) {
     }
   }
 
-  // Exclude expressions and other non-challenge word types first.
+  // Filter to nouns/verbs/adjectives first.
   const allowedPool = filterChallengeWords(player?.getChallengeWordList?.() || player?.wordList)
   const candidates = allowedPool.filter(w => matchesWordFilters(w, filters))
 

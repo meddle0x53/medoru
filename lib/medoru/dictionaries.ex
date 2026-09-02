@@ -83,60 +83,134 @@ defmodule Medoru.Dictionaries do
   # Entries
   # ============================================================================
 
+  @sort_orders ["key_asc", "key_desc", "newest", "oldest", "category"]
+  @default_per_page 50
+
   @doc """
-  Lists entries for a dictionary.
+  Lists entries for a dictionary with filtering, sorting and pagination.
 
   Options:
-    * `:category` - filter by lower-cased category (use "main" for uncategorized)
     * `:search` - case-insensitive filter on the key (respects each entry's match_mode)
-    * `:limit` - maximum number of entries to return
+    * `:category` - filter by lower-cased category (use "main" for uncategorized)
+    * `:sort` - one of #{inspect(@sort_orders)} (default `"key_asc"`)
+    * `:page` - 1-based page number (default 1)
+    * `:per_page` - entries per page (default #{@default_per_page})
+
+  Returns `%{entries: [...], total: n, page: p, per_page: n, total_pages: n}`.
+  An out-of-range page is clamped to the last non-empty page.
   """
   def list_entries(dictionary_id, opts \\ []) do
-    category = opts[:category]
     search = opts[:search]
-    limit = opts[:limit]
+    category = opts[:category]
+    sort = if opts[:sort] in @sort_orders, do: opts[:sort], else: "key_asc"
+    per_page = max(opts[:per_page] || @default_per_page, 1)
 
-    query =
+    base =
       DictionaryEntry
       |> where([e], e.dictionary_id == ^dictionary_id)
-      |> order_by([e], asc: e.key)
+      |> maybe_query_search(search)
+      |> maybe_query_category(category)
 
-    query = if limit, do: limit(query, ^limit), else: query
+    total = Repo.aggregate(base, :count)
 
-    entries = Repo.all(query)
+    total_pages =
+      case total do
+        0 -> 1
+        _ -> ceil(total / per_page)
+      end
 
-    entries
-    |> maybe_filter_category(category)
-    |> maybe_filter_search(search)
+    page = opts[:page] || 1
+    page = page |> max(1) |> min(total_pages)
+
+    entries =
+      base
+      |> sort_query(sort)
+      |> limit(^per_page)
+      |> offset(^((page - 1) * per_page))
+      |> Repo.all()
+
+    %{entries: entries, total: total, page: page, per_page: per_page, total_pages: total_pages}
   end
 
-  defp maybe_filter_category(entries, nil), do: entries
+  def sort_orders, do: @sort_orders
 
-  defp maybe_filter_category(entries, category) do
+  @doc """
+  Returns the effective entry list for `/d` autocomplete in a chat: the chat
+  dictionary merged over the user's main dictionary. On key collision
+  (case-insensitive) the chat entry wins.
+
+  Used only for the client-side autocomplete payload; the drawer lists each
+  dictionary separately.
+  """
+  def list_autocomplete_entries(user_id, conversation_id) do
+    main = get_or_create_main_dictionary(user_id)
+    chat = get_or_create_chat_dictionary(user_id, conversation_id)
+
+    main.id
+    |> entries_by_key()
+    |> Map.merge(entries_by_key(chat.id))
+    |> Map.values()
+    |> Enum.sort_by(&String.downcase(&1.key))
+  end
+
+  defp entries_by_key(dictionary_id) do
+    DictionaryEntry
+    |> where([e], e.dictionary_id == ^dictionary_id)
+    |> Repo.all()
+    |> Map.new(fn e -> {String.downcase(e.key), e} end)
+  end
+
+  defp maybe_query_search(query, nil), do: query
+  defp maybe_query_search(query, ""), do: query
+
+  defp maybe_query_search(query, search) do
+    search = search |> String.trim() |> escape_like() |> String.downcase()
+
+    if search == "" do
+      query
+    else
+      where(
+        query,
+        [e],
+        # respect each entry's match mode: substring entries match anywhere,
+        # prefix entries (default) match from the start
+        (e.match_mode == "substring" and ilike(e.key, ^"%#{search}%")) or
+          (coalesce(e.match_mode, "prefix") != "substring" and ilike(e.key, ^"#{search}%"))
+      )
+    end
+  end
+
+  # LIKE wildcards in user input must be escaped
+  defp escape_like(text) do
+    String.replace(text, ["\\", "%", "_"], fn ch -> "\\#{ch}" end)
+  end
+
+  defp maybe_query_category(query, nil), do: query
+  defp maybe_query_category(query, ""), do: query
+
+  defp maybe_query_category(query, category) do
     category = String.downcase(category)
 
-    Enum.filter(entries, fn e ->
-      entry_category =
-        if is_nil(e.category), do: @default_category, else: String.downcase(e.category)
-
-      entry_category == category
-    end)
+    if category == @default_category do
+      where(query, [e], is_nil(e.category) or ilike(e.category, ^"#{escape_like(category)}"))
+    else
+      where(query, [e], ilike(e.category, ^"#{escape_like(category)}"))
+    end
   end
 
-  defp maybe_filter_search(entries, nil), do: entries
-  defp maybe_filter_search(entries, ""), do: entries
+  defp sort_query(query, "key_asc"), do: order_by(query, [e], asc: fragment("lower(?)", e.key))
+  defp sort_query(query, "key_desc"), do: order_by(query, [e], desc: fragment("lower(?)", e.key))
 
-  defp maybe_filter_search(entries, search) do
-    search = String.downcase(search)
+  defp sort_query(query, "newest"),
+    do: order_by(query, [e], desc: e.inserted_at, desc: e.id)
 
-    Enum.filter(entries, fn e ->
-      key = String.downcase(e.key)
+  defp sort_query(query, "oldest"), do: order_by(query, [e], asc: e.inserted_at, asc: e.id)
 
-      case e.match_mode do
-        "substring" -> String.contains?(key, search)
-        _ -> String.starts_with?(key, search)
-      end
-    end)
+  defp sort_query(query, "category") do
+    order_by(query, [e],
+      asc: fragment("lower(coalesce(?, ''))", e.category),
+      asc: fragment("lower(?)", e.key)
+    )
   end
 
   @doc """

@@ -24,14 +24,14 @@
     "3": [{ "x": 690, "y": 475, "scale": 0.18 }, { "x": 570, "y": 475, "scale": 0.18 }, { "x": 810, "y": 475, "scale": 0.18 }]
   },
   "stats": {
-    "hp": { "min": 170, "max": 200 },
-    "stamina": { "min": 12, "max": 12 },
+    "hp": { "min": 170, "max": 220 },
+    "stamina": { "min": 12, "max": 14 },
     "strength": { "min": 4, "max": 4 },
-    "skill": { "min": 8, "max": 8 },
-    "mana": { "min": 13, "max": 13 },
+    "skill": { "min": 8, "max": 9 },
+    "mana": { "min": 13, "max": 14 },
     "luck": { "min": 12, "max": 12 },
-    "defense": { "min": 5, "max": 5 },
-    "armor": { "min": 3, "max": 3 }
+    "defense": { "min": 5, "max": 6 },
+    "armor": { "min": 3, "max": 4 }
   },
   "abilities": [
     {
@@ -39,7 +39,7 @@
       "name": "Foxfire",
       "type": "attack",
       "element": "fire",
-      "staminaCost": 4,
+      "staminaCost": 3,
       "sprite": "enemy_kitsune_attack",
       "aiWeight": 12,
       "maxUsesPerTurn": 1,
