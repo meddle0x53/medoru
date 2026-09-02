@@ -129,7 +129,7 @@ defmodule MedoruWeb.UserLive.Show do
 
               {:ok,
                socket
-               |> assign(:page_title, profile_title(user))
+               |> assign(:page_title, profile_title(user, current_user))
                |> assign(:user, user)
                |> assign(:profile, user.profile)
                |> assign(:stats, real_stats)
@@ -158,8 +158,8 @@ defmodule MedoruWeb.UserLive.Show do
     end
   end
 
-  defp profile_title(user) do
-    name = (user.profile && user.profile.display_name) || user.name || gettext("User")
+  defp profile_title(user, viewer) do
+    name = Social.display_name_for_viewer(user, viewer && viewer.id)
 
     gettext("%{name}'s Profile", name: name)
   end

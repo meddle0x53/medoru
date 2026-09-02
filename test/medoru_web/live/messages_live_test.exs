@@ -185,6 +185,53 @@ defmodule MedoruWeb.MessagesLiveTest do
       assert html =~ "[...]"
     end
 
+    test "edit_last_message starts editing the viewer's most recent editable message", %{
+      conn: conn
+    } do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Encryption.store_public_key(user_a.id, <<1>>)
+      Encryption.store_public_key(user_b.id, <<2>>)
+
+      {:ok, _old_own} =
+        Chat.store_message(conv.id, user_a.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+
+      {:ok, _other} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<3>>), Base.encode64(<<4>>))
+
+      {:ok, _last_own} =
+        Chat.store_message(conv.id, user_a.id, Base.encode64(<<5>>), Base.encode64(<<6>>))
+
+      {:ok, view, html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+      refute html =~ "Editing message"
+
+      html = render_hook(view, "edit_last_message", %{})
+      assert html =~ "Editing message"
+
+      # cancelling returns to normal
+      html = render_click(element(view, "button[phx-click='cancel_edit']"))
+      refute html =~ "Editing message"
+    end
+
+    test "edit_last_message does nothing when there is no editable own message", %{conn: conn} do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Encryption.store_public_key(user_a.id, <<1>>)
+      Encryption.store_public_key(user_b.id, <<2>>)
+
+      {:ok, _msg} =
+        Chat.store_message(conv.id, user_b.id, Base.encode64(<<1>>), Base.encode64(<<2>>))
+
+      {:ok, view, _html} = conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+
+      html = render_hook(view, "edit_last_message", %{})
+      refute html =~ "Editing message"
+    end
+
     test "adds reaction to message via picker", %{conn: conn} do
       user_a = user_with_display_name()
       user_b = user_with_display_name()

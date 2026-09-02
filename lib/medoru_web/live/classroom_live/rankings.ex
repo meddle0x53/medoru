@@ -9,6 +9,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
   use MedoruWeb, :live_view
 
   alias Medoru.Classrooms
+  alias Medoru.Social
   alias MedoruWeb.SlugRoutes
 
   @impl true
@@ -244,6 +245,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
                 user={entry.user}
                 points={entry.points}
                 is_me={entry.user.id == @current_user.id}
+                viewer_id={@current_user.id}
               />
             <% end %>
           </div>
@@ -302,6 +304,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
                       rank={entry.rank}
                       entry={entry}
                       is_me={entry.user.id == @current_user.id}
+                      viewer_id={@current_user.id}
                     />
                   <% end %>
                 </div>
@@ -342,7 +345,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
         </div>
         <div>
           <p class="font-medium text-base-content">
-            {@user.name || "Anonymous"}
+            {Social.display_name_for_viewer(@user, @viewer_id)}
             <%= if @is_me do %>
               <span class="badge badge-primary badge-sm ml-2">You</span>
             <% end %>
@@ -383,7 +386,7 @@ defmodule MedoruWeb.ClassroomLive.Rankings do
       <%!-- User Info --%>
       <.link navigate={~p"/users/#{@entry.user.id}"} class="flex-1">
         <p class="font-medium text-base-content">
-          {@entry.user.name || "Anonymous"}
+          {Social.display_name_for_viewer(@entry.user, @viewer_id)}
           <%= if @is_me do %>
             <span class="badge badge-primary badge-sm ml-2">You</span>
           <% end %>

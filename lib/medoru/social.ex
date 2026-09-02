@@ -721,11 +721,13 @@ defmodule Medoru.Social do
           Map.merge(attrs, %{"user_id" => user_id, "target_user_id" => target_user_id})
         )
         |> Repo.insert()
+        |> tap_ok(fn -> invalidate_nickname_map(user_id) end)
 
       relation ->
         relation
         |> UserRelation.changeset(attrs)
         |> Repo.update()
+        |> tap_ok(fn -> invalidate_nickname_map(user_id) end)
     end
   end
 
@@ -747,6 +749,8 @@ defmodule Medoru.Social do
     UserRelation
     |> where([r], r.user_id == ^user_id and r.target_user_id == ^target_user_id)
     |> Repo.delete_all()
+
+    invalidate_nickname_map(user_id)
 
     :ok
   end
@@ -778,6 +782,61 @@ defmodule Medoru.Social do
   def first_nickname(nil) do
     nil
   end
+
+  @doc """
+  Returns a map of `target_user_id => first nickname` for all relations of
+  the given user that have at least one nickname.
+
+  Cached in the process dictionary because one LiveView process renders many
+  rows per event; invalidated whenever the user's relations change through
+  this module.
+  """
+  def nickname_map(nil), do: %{}
+
+  def nickname_map(user_id) when is_binary(user_id) do
+    key = {__MODULE__, :nickname_map, user_id}
+
+    case Process.get(key) do
+      nil ->
+        map =
+          UserRelation
+          |> where([r], r.user_id == ^user_id)
+          |> select([r], {r.target_user_id, r.nicknames})
+          |> Repo.all()
+          |> Map.new(fn {target_id, nicknames} -> {target_id, List.first(nicknames)} end)
+          |> Enum.reject(fn {_target_id, nickname} -> is_nil(nickname) end)
+          |> Map.new()
+
+        Process.put(key, map)
+        map
+
+      map ->
+        map
+    end
+  end
+
+  defp invalidate_nickname_map(user_id), do: Process.delete({__MODULE__, :nickname_map, user_id})
+
+  defp tap_ok({:ok, _} = result, fun) do
+    fun.()
+    result
+  end
+
+  defp tap_ok(result, _fun), do: result
+
+  @doc """
+  Returns the name the given viewer should see for a user: the viewer's first
+  nickname for them if one exists, otherwise the profile display name, OAuth
+  name, or "Anonymous".
+  """
+  def display_name_for_viewer(%{id: id} = user, viewer_id) when is_binary(id) do
+    case nickname_map(viewer_id) do
+      %{^id => nickname} -> nickname
+      _ -> display_name_for(user)
+    end
+  end
+
+  def display_name_for_viewer(user, _viewer_id), do: display_name_for(user)
 
   @doc """
   Returns a display name for a user map/struct.

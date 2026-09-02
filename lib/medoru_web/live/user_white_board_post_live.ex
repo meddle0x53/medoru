@@ -8,11 +8,16 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
 
   require Logger
 
-  alias Medoru.{Notifications, Repo, WhiteBoard}
+  alias Medoru.{Notifications, Repo, Social, WhiteBoard}
   alias MedoruWeb.{Components.Helpers, LinkPreviewSubscribers, WhiteBoardPostRenderer}
   alias MedoruWeb.WordBookCard
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
+
+  # Helpers for template
+  def author_name(user, viewer_id) do
+    Social.display_name_for_viewer(user, viewer_id)
+  end
 
   @impl true
   def render(assigns) do
@@ -45,7 +50,10 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                 </.link>
                 <div class="min-w-0">
                   <p class="font-semibold text-base-content truncate">
-                    {(@post.user.profile && @post.user.profile.display_name) || @post.user.name}
+                    {author_name(
+                      @post.user,
+                      @current_scope.current_user && @current_scope.current_user.id
+                    )}
                   </p>
                   <p class="text-xs text-base-content/50 truncate">
                     {format_localized_date(@post.inserted_at)}
@@ -212,8 +220,10 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                       <div class="flex-1 min-w-0">
                         <div class="bg-base-200 rounded-lg px-3 py-2">
                           <p class="text-xs font-semibold text-base-content">
-                            {(comment.user.profile && comment.user.profile.display_name) ||
-                              comment.user.name}
+                            {author_name(
+                              comment.user,
+                              @current_scope.current_user && @current_scope.current_user.id
+                            )}
                           </p>
                           <p class="text-sm text-base-content mt-0.5">
                             {raw(

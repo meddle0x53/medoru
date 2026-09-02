@@ -398,18 +398,7 @@ const ClassroomChatInput = {
   },
 
   editLastMessage() {
-    const messages = document.querySelectorAll(".message-bubble")
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const bubble = messages[i]
-      if (bubble.textContent.includes("This message was deleted")) continue
-      if (bubble.querySelector(".chat-audio-el")) continue
-
-      const editBtn = bubble.closest(".group/message")?.querySelector("button[phx-click='start_edit']")
-      if (editBtn) {
-        editBtn.click()
-        return
-      }
-    }
+    this.pushEvent("edit_last_message", {})
   },
 
   toggleEmojiPanel() {

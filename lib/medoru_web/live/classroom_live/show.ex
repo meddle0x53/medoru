@@ -1127,11 +1127,24 @@ defmodule MedoruWeb.ClassroomLive.Show do
   def handle_event("start_edit", %{"id" => message_id}, socket) do
     message = Enum.find(socket.assigns.chat_messages, &(&1.id == message_id))
 
-    if message && message.sender_id == socket.assigns.current_scope.current_user.id do
-      {:noreply,
-       socket
-       |> assign(:editing_message, message)
-       |> push_event("start_edit_text", %{text: message.content, message_id: message.id})}
+    if message && Chat.can_edit_message?(message, socket.assigns.current_scope.current_user.id) do
+      {:noreply, begin_edit(socket, message)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("edit_last_message", _params, socket) do
+    current_user_id = socket.assigns.current_scope.current_user.id
+
+    message =
+      socket.assigns.chat_messages
+      |> Enum.reverse()
+      |> Enum.find(&Chat.can_edit_message?(&1, current_user_id))
+
+    if message do
+      {:noreply, begin_edit(socket, message)}
     else
       {:noreply, socket}
     end
@@ -3271,7 +3284,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
     user = sender
 
     if user do
-      name = (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+      name = Social.display_name_for_viewer(user, current_user_id)
 
       if user.id == current_user_id do
         gettext("You")
@@ -3297,6 +3310,12 @@ defmodule MedoruWeb.ClassroomLive.Show do
 
   defp same_day?(%DateTime{} = a, %DateTime{} = b) do
     DateTime.to_date(a) == DateTime.to_date(b)
+  end
+
+  defp begin_edit(socket, message) do
+    socket
+    |> assign(:editing_message, message)
+    |> push_event("start_edit_text", %{text: message.content, message_id: message.id})
   end
 
   defp can_edit_message?(message, current_user_id) do

@@ -38,7 +38,7 @@
 
             <%!-- Name --%>
             <h3 class="font-semibold text-base-content group-hover:text-primary transition-colors truncate">
-              {user_display_name(followed)}
+              {user_display_name(followed, @current_scope.current_user.id)}
             </h3>
             <%!-- Level --%>
             <%= if followed.stats && followed.stats.level > 0 do %>

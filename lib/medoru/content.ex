@@ -931,6 +931,48 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns the most frequent word containing the given kanji character,
+  as a plain map `%{word: text, reading: reading, meaning: meaning}`, or nil.
+  Used to show an example word next to kanji drawing challenges.
+  """
+  def get_challenge_word_for_kanji(character) do
+    case get_challenge_word_map_for_characters([character]) do
+      %{^character => word} -> word
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Returns a map of character => most frequent word (`%{word:, reading:, meaning:}`)
+  for each of the given kanji characters. One query total; the first word per
+  character in ascending usage_frequency order wins.
+  """
+  def get_challenge_word_map_for_characters(characters) when is_list(characters) do
+    characters = Enum.reject(characters, &(not is_binary(&1)))
+
+    if characters == [] do
+      %{}
+    else
+      WordKanji
+      |> join(:inner, [wk], w in assoc(wk, :word))
+      |> join(:inner, [wk], k in assoc(wk, :kanji))
+      |> where([wk, w, k], k.character in ^characters and not is_nil(w.reading) and not is_nil(w.meaning))
+      |> order_by([wk, w], asc: w.usage_frequency)
+      |> select([wk, w, k], %{
+        character: k.character,
+        word: w.text,
+        reading: w.reading,
+        meaning: w.meaning
+      })
+      |> Repo.all()
+      # Rows are ordered by frequency, so the first row per character is the
+      # most frequent word containing it.
+      |> Enum.uniq_by(& &1.character)
+      |> Map.new(&{&1.character, %{word: &1.word, reading: &1.reading, meaning: &1.meaning}})
+    end
+  end
+
+  @doc """
   Returns words containing a specific kanji, grouped by reading.
 
   Fetches all words from the database, then groups them by reading in memory.

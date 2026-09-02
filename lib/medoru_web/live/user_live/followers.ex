@@ -108,8 +108,8 @@ defmodule MedoruWeb.UserLive.Followers do
   defp parse_page(_), do: 1
 
   # Helpers for template
-  def user_display_name(user) do
-    (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+  def user_display_name(user, viewer_id) do
+    Social.display_name_for_viewer(user, viewer_id)
   end
 
   def user_avatar(user) do

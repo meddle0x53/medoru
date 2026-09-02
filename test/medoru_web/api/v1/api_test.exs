@@ -176,6 +176,49 @@ defmodule MedoruWeb.Api.V1.ApiTest do
 
       assert json_response(conn, 404)["errors"] != nil
     end
+
+    test "includes first on/kun readings and the most frequent challenge word", %{
+      conn: conn,
+      kanji: kanji
+    } do
+      kanji_reading_fixture(kanji.id, %{reading_type: :on, reading: "ニチ", position: 0})
+      kanji_reading_fixture(kanji.id, %{reading_type: :on, reading: "ジツ", position: 1})
+      kanji_reading_fixture(kanji.id, %{reading_type: :kun, reading: "ひ", position: 2})
+
+      {:ok, _word} =
+        Content.create_word_with_kanji(
+          %{
+            text: "日本",
+            meaning: "Japan",
+            reading: "ひ",
+            usage_frequency: 50,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id}]
+        )
+
+      conn = get(conn, ~p"/api/v1/kanji/character/#{kanji.character}")
+      response = json_response(conn, 200)
+
+      assert response["on_readings"] == ["ニチ", "ジツ"]
+      assert response["kun_readings"] == ["ひ"]
+
+      assert response["challenge_word"] == %{
+               "word" => "日本",
+               "reading" => "ひ",
+               "meaning" => "Japan"
+             }
+    end
+
+    test "challenge_word is null when no word contains the kanji", %{conn: conn, kanji: kanji} do
+      conn = get(conn, ~p"/api/v1/kanji/character/#{kanji.character}")
+      response = json_response(conn, 200)
+
+      assert response["challenge_word"] == nil
+      assert response["on_readings"] == []
+      assert response["kun_readings"] == []
+    end
   end
 
   describe "GET /api/v1/openapi.json" do

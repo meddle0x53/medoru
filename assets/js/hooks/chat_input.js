@@ -419,24 +419,7 @@ const ChatInput = {
   },
 
   editLastMessage() {
-    const currentUserId = document.getElementById("chat-wrapper")?.dataset.currentUserId
-    const messages = document.querySelectorAll("[data-msg-id]")
-
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      const senderId = msg.dataset.senderId
-      if (senderId === currentUserId) {
-        const menuBtn = msg.querySelector(".message-menu-btn")
-        if (menuBtn) {
-          menuBtn.click()
-          setTimeout(() => {
-            const editBtn = msg.querySelector("[data-action='edit']")
-            if (editBtn) editBtn.click()
-          }, 10)
-        }
-        break
-      }
-    }
+    this.pushEvent("edit_last_message", {})
   },
 
   toggleEmojiPanel() {

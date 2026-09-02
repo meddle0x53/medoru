@@ -119,3 +119,29 @@ export async function fetchKanjiStrokes(character) {
     return null
   }
 }
+
+/**
+ * Fetches everything the kanji drawing challenge needs: stroke data, the
+ * first on/kun readings (DB order), and the most frequent word containing
+ * the kanji. Returns null when the kanji is missing or has no strokes.
+ */
+export async function fetchKanjiChallengeData(character) {
+  try {
+    const resp = await fetch(`/api/v1/kanji/character/${encodeURIComponent(character)}`, {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin',
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    if (!data.stroke_data?.strokes?.length) return null
+    return {
+      stroke_data: data.stroke_data,
+      on_readings: data.on_readings || [],
+      kun_readings: data.kun_readings || [],
+      challenge_word: data.challenge_word || null,
+    }
+  } catch (e) {
+    console.warn('Kanji challenge data fetch error:', e)
+    return null
+  }
+}

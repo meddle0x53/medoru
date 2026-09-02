@@ -1,5 +1,6 @@
 import { getWindowGameData } from '../api.js'
 import { GAME_CONFIG, COLORS } from '../config.js'
+import { getEffectiveKanjiPool, resolveKanjiData } from './freeKanjiPools.js'
 
 /**
  * Data-driven kanji challenge resolver for weapon attacks.
@@ -92,7 +93,8 @@ export default class WeaponKanjiChallengeSystem {
   }
 
   _selectKanji(skill, cfg) {
-    const pool = skill.kanjiPool || []
+    // Free kanji mode swaps in the run's rolled pool; default uses the JSON pool.
+    const pool = getEffectiveKanjiPool(this.scene.player, skill)
     const focusOverrideChance = cfg.focusOverrideChance ?? 0
     const focusKanjiData = this.scene.player.loadout.focusKanjiData
 
@@ -103,16 +105,9 @@ export default class WeaponKanjiChallengeSystem {
 
     if (pool.length === 0) return null
 
-    const allKanji = getWindowGameData()?.all_kanji || []
     const candidates = pool
-      .map(char => {
-        const fromList = this.scene.player.kanjiList.find(k => k.character === char)
-        if (fromList?.stroke_data?.strokes?.length > 0) return fromList
-        const fromAll = allKanji.find(k => k.character === char)
-        if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
-        return null
-      })
-      .filter(Boolean)
+      .map(char => resolveKanjiData(this.scene.player, char))
+      .filter(k => k?.stroke_data?.strokes?.length > 0)
 
     if (candidates.length === 0) return null
     return candidates[Math.floor(Math.random() * candidates.length)]

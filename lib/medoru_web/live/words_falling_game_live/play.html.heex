@@ -187,8 +187,10 @@
                       ]}>
                         <span class="w-5 text-center font-bold text-secondary">{index}</span>
                         <span class="flex-1 truncate">
-                          {(session.user.profile && session.user.profile.display_name) ||
-                            session.user.name || gettext("Anonymous")}
+                          {Medoru.Social.display_name_for_viewer(
+                            session.user,
+                            @current_scope.current_user && @current_scope.current_user.id
+                          ) || gettext("Anonymous")}
                         </span>
                         <span class="font-bold text-primary">{session.score}</span>
                       </div>
@@ -594,8 +596,10 @@
                       ]}>
                         <span class="w-5 text-center font-bold text-secondary">{index}</span>
                         <span class="flex-1 truncate">
-                          {(session.user.profile && session.user.profile.display_name) ||
-                            session.user.name || gettext("Anonymous")}
+                          {Medoru.Social.display_name_for_viewer(
+                            session.user,
+                            @current_scope.current_user && @current_scope.current_user.id
+                          ) || gettext("Anonymous")}
                         </span>
                         <span class="font-bold text-primary">{session.score}</span>
                       </div>

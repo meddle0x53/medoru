@@ -84,7 +84,7 @@
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
             <h2 class="font-medium text-base-content truncate">
-              {participant_name(other)}
+              {participant_name(other, @current_scope.current_user.id)}
             </h2>
             <%= if other && user_online?(other.user_id, @online_user_ids) do %>
               <span class="w-2 h-2 rounded-full bg-success shrink-0" title={gettext("Online")}>
@@ -342,7 +342,7 @@
                   @conversation.classroom_id &&
                     message.sender_id == @conversation.classroom.teacher_id %>
                 <span class="text-[10px] text-base-content/40 px-1 mb-0.5 flex items-center gap-1">
-                  {participant_name(%{user: message.sender})}
+                  {participant_name(%{user: message.sender}, @current_scope.current_user.id)}
                   <%= if is_teacher do %>
                     <span class="badge badge-primary badge-xs">{gettext("Teacher")}</span>
                   <% end %>
@@ -1082,7 +1082,7 @@
                 <% missing_user =
                   Enum.find(@conversation.participants, &(&1.user_id == hd(@missing_keys))) %>
                 {gettext("%{name} hasn't set up encryption yet.",
-                  name: participant_name(missing_user)
+                  name: participant_name(missing_user, @current_scope.current_user.id)
                 )}
               <% else %>
                 {gettext(

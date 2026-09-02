@@ -82,9 +82,12 @@ defmodule MedoruWeb.Components.Helpers do
   defp gettext_short_month(12), do: gettext("Dec")
 
   @doc """
-  Returns a display name for a user, respecting privacy.
+  Returns a display name for a user, respecting privacy and the viewer's
+  private nicknames (a nickname set via the user's relation takes precedence
+  everywhere the viewer sees that user).
 
-  - Shows name if available
+  - Shows the viewer's first nickname for the user if one exists
+  - Otherwise shows name if available
   - If no name and viewer is the user or admin: shows email
   - If no name and viewer is someone else: shows "Anonymous"
 
@@ -98,6 +101,13 @@ defmodule MedoruWeb.Components.Helpers do
 
   """
   def display_name(user, viewer_user_id, is_admin? \\ false)
+
+  # The viewer's private nickname for a user takes precedence over the
+  # user's own name (but not over the viewer's own name).
+  def display_name(%{id: id} = user, viewer_user_id, _is_admin?)
+      when is_binary(viewer_user_id) and id != viewer_user_id do
+    Medoru.Social.display_name_for_viewer(user, viewer_user_id)
+  end
 
   def display_name(%{profile: %{display_name: name}}, _, _) when not is_nil(name) and name != "",
     do: name

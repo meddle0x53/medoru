@@ -39,7 +39,7 @@ defmodule MedoruWeb.MessagesLive.Settings do
             conversation.title || gettext("Group Chat")
           else
             other = List.first(Chat.get_other_participants(conversation, current_user.id))
-            gettext("Chat with %{name}", name: participant_name(other))
+            gettext("Chat with %{name}", name: participant_name(other, current_user.id))
           end
 
         {:ok,
@@ -100,9 +100,13 @@ defmodule MedoruWeb.MessagesLive.Settings do
     end
   end
 
-  defp participant_name(%{user: %{profile: %{display_name: name}}}) when not is_nil(name),
-    do: name
+  defp participant_name(participant, viewer_id) do
+    user = participant && participant.user
 
-  defp participant_name(%{user: %{email: email}}), do: email
-  defp participant_name(_), do: gettext("Unknown")
+    if user do
+      Social.display_name_for_viewer(user, viewer_id)
+    else
+      gettext("Unknown")
+    end
+  end
 end

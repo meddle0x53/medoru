@@ -26,6 +26,11 @@ defmodule MedoruWeb.UserWhiteBoardLive do
       [":ouroboros:", ":medoru:"]
   end
 
+  # Helpers for template
+  def author_name(user, viewer_id) do
+    Social.display_name_for_viewer(user, viewer_id)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -347,7 +352,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                     </.link>
                     <div class="min-w-0">
                       <p class="font-semibold text-base-content truncate">
-                        {(post.user.profile && post.user.profile.display_name) || post.user.name}
+                        {author_name(
+                          post.user,
+                          @current_scope.current_user && @current_scope.current_user.id
+                        )}
                       </p>
                       <p class="text-xs text-base-content/50 truncate">
                         {format_localized_date(post.inserted_at)}
@@ -595,9 +603,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                                 <p class="text-[10px] text-base-content/40">
                                   {gettext("Replying to %{name}",
                                     name:
-                                      (comment.parent_comment.user.profile &&
-                                         comment.parent_comment.user.profile.display_name) ||
-                                        comment.parent_comment.user.name
+                                      author_name(
+                                        comment.parent_comment.user,
+                                        @current_scope.current_user && @current_scope.current_user.id
+                                      )
                                   )}
                                 </p>
                                 <p class="text-xs text-base-content/50 truncate">
@@ -607,8 +616,10 @@ defmodule MedoruWeb.UserWhiteBoardLive do
                             <% end %>
                             <div class="bg-base-200 rounded-lg px-3 py-2">
                               <p class="text-xs font-semibold text-base-content">
-                                {(comment.user.profile && comment.user.profile.display_name) ||
-                                  comment.user.name}
+                                {author_name(
+                                  comment.user,
+                                  @current_scope.current_user && @current_scope.current_user.id
+                                )}
                               </p>
                               <p class="text-sm text-base-content/80">
                                 {raw(

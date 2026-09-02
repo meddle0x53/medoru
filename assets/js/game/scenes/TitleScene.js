@@ -4,6 +4,7 @@ import { getWindowGameData } from '../api.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const SETTINGS_KEY = 'medoru_settings_v1'
+const JLPT_LEVELS = [5, 4, 3, 2, 1]
 
 
 export default class TitleScene extends Phaser.Scene {
@@ -257,6 +258,10 @@ export default class TitleScene extends Phaser.Scene {
   createSettingsOverlay() {
     this.settingsOverlay = this.add.container(0, 0).setDepth(200).setVisible(false)
 
+    // The kanji challenge settings live in the loadout (synced with the server
+    // save); use a Player instance to read/write them like the game scenes do.
+    this.player = new Player(getWindowGameData())
+
     const backdrop = this.add.rectangle(
       GAME_CONFIG.width / 2,
       GAME_CONFIG.height / 2,
@@ -267,39 +272,39 @@ export default class TitleScene extends Phaser.Scene {
     ).setOrigin(0.5).setInteractive()
     this.settingsOverlay.add(backdrop)
 
-    const panel = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, 440, 320, 0x16213e)
+    const panel = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, 440, 440, 0x16213e)
       .setStrokeStyle(2, 0x3498db)
       .setOrigin(0.5)
     this.settingsOverlay.add(panel)
 
-    const title = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 120, 'Settings', {
+    const title = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 190, 'Settings', {
       ...FONTS.title,
       fontSize: '26px',
       color: '#f1c40f',
     }).setOrigin(0.5)
     this.settingsOverlay.add(title)
 
-    this.masterVolumeText = this.add.text(GAME_CONFIG.width / 2 - 170, GAME_CONFIG.height / 2 - 60, 'Master Volume', {
+    this.masterVolumeText = this.add.text(GAME_CONFIG.width / 2 - 170, GAME_CONFIG.height / 2 - 140, 'Master Volume', {
       ...FONTS.default,
       fontSize: '14px',
       color: '#ecf0f1',
     }).setOrigin(0, 0.5)
     this.settingsOverlay.add(this.masterVolumeText)
 
-    this.masterVolumeSlider = this.createSlider(GAME_CONFIG.width / 2 + 10, GAME_CONFIG.height / 2 - 60, this.settings.masterVolume, (value) => {
+    this.masterVolumeSlider = this.createSlider(GAME_CONFIG.width / 2 + 10, GAME_CONFIG.height / 2 - 140, this.settings.masterVolume, (value) => {
       this.settings.masterVolume = value
       this.saveSettings()
     })
     this.settingsOverlay.add(this.masterVolumeSlider.container)
 
-    this.sfxVolumeText = this.add.text(GAME_CONFIG.width / 2 - 170, GAME_CONFIG.height / 2 - 10, 'SFX Volume', {
+    this.sfxVolumeText = this.add.text(GAME_CONFIG.width / 2 - 170, GAME_CONFIG.height / 2 - 90, 'SFX Volume', {
       ...FONTS.default,
       fontSize: '14px',
       color: '#ecf0f1',
     }).setOrigin(0, 0.5)
     this.settingsOverlay.add(this.sfxVolumeText)
 
-    this.sfxVolumeSlider = this.createSlider(GAME_CONFIG.width / 2 + 10, GAME_CONFIG.height / 2 - 10, this.settings.sfxVolume, (value) => {
+    this.sfxVolumeSlider = this.createSlider(GAME_CONFIG.width / 2 + 10, GAME_CONFIG.height / 2 - 90, this.settings.sfxVolume, (value) => {
       this.settings.sfxVolume = value
       this.saveSettings()
     })
@@ -308,21 +313,116 @@ export default class TitleScene extends Phaser.Scene {
     const fullscreenLabel = this.settings.fullscreen ? 'Fullscreen: On' : 'Fullscreen: Off'
     this.fullscreenButton = this.createSettingsButton(
       GAME_CONFIG.width / 2,
-      GAME_CONFIG.height / 2 + 50,
+      GAME_CONFIG.height / 2 - 30,
       fullscreenLabel,
       () => this.toggleFullscreen(),
     )
     this.settingsOverlay.add(this.fullscreenButton)
 
+    this.createKanjiSettingsSection()
+
     const closeButton = this.createSettingsButton(
       GAME_CONFIG.width / 2,
-      GAME_CONFIG.height / 2 + 110,
+      GAME_CONFIG.height / 2 + 185,
       'Close',
       () => this.closeSettings(),
     )
     this.settingsOverlay.add(closeButton)
 
     this.setOverlayInputEnabled(this.settingsOverlay, false)
+  }
+
+  createKanjiSettingsSection() {
+    if (this.kanjiSection) {
+      this.kanjiSection.destroy()
+    }
+    this.kanjiSection = this.add.container(0, 0)
+    this.settingsOverlay.add(this.kanjiSection)
+
+    const cx = GAME_CONFIG.width / 2
+    const cy = GAME_CONFIG.height / 2
+    const loadout = this.player.loadout
+    const mode = loadout.kanjiChallengeMode === 'free' ? 'free' : 'default'
+    const selectedLevels = new Set(
+      Array.isArray(loadout.freeKanjiLevels) && loadout.freeKanjiLevels.length > 0
+        ? loadout.freeKanjiLevels
+        : [5],
+    )
+
+    this.kanjiSection.add(
+      this.add.text(cx, cy + 12, 'Kanji Challenges', {
+        ...FONTS.default,
+        fontSize: '14px',
+        color: '#ecf0f1',
+      }).setOrigin(0.5),
+    )
+
+    const defaultBtn = this.createToggleButton(cx - 85, cy + 46, 140, 32, 'Default', mode === 'default')
+    const freeBtn = this.createToggleButton(cx + 85, cy + 46, 140, 32, 'Free Kanji', mode === 'free')
+    this.kanjiSection.add([defaultBtn.container, freeBtn.container])
+
+    defaultBtn.bg.on('pointerdown', () => this.setKanjiMode('default'))
+    freeBtn.bg.on('pointerdown', () => this.setKanjiMode('free'))
+
+    if (mode !== 'free') return
+
+    const chipW = 56
+    const chipGap = 8
+    const totalW = JLPT_LEVELS.length * chipW + (JLPT_LEVELS.length - 1) * chipGap
+    let chipX = cx - totalW / 2 + chipW / 2
+    for (const level of JLPT_LEVELS) {
+      const chip = this.createToggleButton(chipX, cy + 108, chipW, 30, `N${level}`, selectedLevels.has(level))
+      this.kanjiSection.add(chip.container)
+      chip.bg.on('pointerdown', () => this.toggleKanjiLevel(level, selectedLevels))
+      chipX += chipW + chipGap
+    }
+
+    this.kanjiSection.add(
+      this.add.text(cx, cy + 142, 'Free pools are rolled when a new run starts.', {
+        ...FONTS.default,
+        fontSize: '10px',
+        color: '#7f8c8d',
+      }).setOrigin(0.5),
+    )
+  }
+
+  createToggleButton(x, y, w, h, label, active) {
+    const color = active ? 0x3498db : 0x2c3e50
+    const hoverColor = active ? 0x5dade2 : 0x34495e
+    const bg = this.add.rectangle(x, y, w, h, color)
+      .setInteractive({ useHandCursor: true })
+      .setOrigin(0.5)
+    const text = this.add.text(x, y, label, {
+      ...FONTS.default,
+      fontSize: '13px',
+      color: '#ffffff',
+    }).setOrigin(0.5)
+
+    bg.on('pointerover', () => bg.setFillStyle(hoverColor))
+    bg.on('pointerout', () => bg.setFillStyle(color))
+
+    return { container: this.add.container(0, 0, [bg, text]), bg, text }
+  }
+
+  setKanjiMode(mode) {
+    this.player.loadout.kanjiChallengeMode = mode
+    this.player.saveLoadout()
+    this.createKanjiSettingsSection()
+    this.setOverlayInputEnabled(this.settingsOverlay, true)
+  }
+
+  toggleKanjiLevel(level, selectedLevels) {
+    if (selectedLevels.has(level)) {
+      // Keep at least one level selected so pools always have a source.
+      if (selectedLevels.size <= 1) return
+      selectedLevels.delete(level)
+    } else {
+      selectedLevels.add(level)
+    }
+    this.player.loadout.freeKanjiLevels = JLPT_LEVELS.filter(l => selectedLevels.has(l))
+    this.player.saveLoadout()
+    this.createKanjiSettingsSection()
+    this.setOverlayInputEnabled(this.settingsOverlay, true)
   }
 
   createSlider(x, y, initialValue, onChange) {
@@ -394,6 +494,8 @@ export default class TitleScene extends Phaser.Scene {
   updateSettingsUI() {
     this.masterVolumeSlider.setValue(this.settings.masterVolume)
     this.sfxVolumeSlider.setValue(this.settings.sfxVolume)
+    this.createKanjiSettingsSection()
+    this.setOverlayInputEnabled(this.settingsOverlay, true)
   }
 
   setupFullscreenListeners() {

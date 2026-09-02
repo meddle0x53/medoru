@@ -7,6 +7,7 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
 
   alias Medoru.Chat
   alias Medoru.Dictionaries
+  alias Medoru.Social
 
   embed_templates "index.html"
 
@@ -320,16 +321,14 @@ defmodule MedoruWeb.WordDictionaryLive.Index do
 
       true ->
         other = Chat.get_other_participant(conversation, current_user_id)
-        display_name(other)
+        display_name(other, current_user_id)
     end
   end
 
-  defp display_name(%{user: %{profile: %{display_name: name}}})
-       when is_binary(name) and name != "",
-       do: name
+  defp display_name(%{user: user}, viewer_id) when not is_nil(user),
+    do: Social.display_name_for_viewer(user, viewer_id)
 
-  defp display_name(%{user: %{name: name}}) when is_binary(name) and name != "", do: name
-  defp display_name(_), do: gettext("Anonymous")
+  defp display_name(_, _viewer_id), do: gettext("Anonymous")
 
   @doc """
   Splits a dictionary value into plain text and linked word segments.

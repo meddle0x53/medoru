@@ -5,8 +5,8 @@ export const GAME_CONFIG = {
   width: 960,
   height: 540,
   backgroundColor: '#1a1a2e',
-  title: 'The Hollow Ouroboros',
-  version: '0.4.0',
+  title: 'RPG',
+  version: '0.5.0',
 }
 
 export const COLORS = {

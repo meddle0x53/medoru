@@ -9,6 +9,7 @@ import AbilityTooltip from '../ui/AbilityTooltip.js'
 import KanjiDrawingSystem from '../systems/KanjiDrawingSystem.js'
 import WordChallengeSystem from '../systems/WordChallengeSystem.js'
 import WeaponKanjiChallengeSystem from '../systems/WeaponKanjiChallengeSystem.js'
+import { getEffectiveKanjiPool, resolveKanjiData, getChallengeWordForKanji } from '../systems/freeKanjiPools.js'
 import SettingsOverlay from '../ui/SettingsOverlay.js'
 import {
   recordTags,
@@ -354,10 +355,20 @@ export default class BattleScene extends Phaser.Scene {
       if (actualKanjiData) {
         const allKanji = getWindowGameData()?.all_kanji || []
         const full = allKanji.find(k => k.character === actualKanjiData.character) || actualKanjiData
-        const meanings = (full.meanings || []).slice(0, 2).join(', ')
-        const on = (full.on_readings || []).slice(0, 2).join(', ')
-        const kun = (full.kun_readings || []).slice(0, 2).join(', ')
-        this.addCombatLog(`Draw the kanji for ${meanings || '?'}, read ON: ${on || '-'}/KUN: ${kun || '-'}`)
+        const meanings = (full.meanings || actualKanjiData.meanings || []).slice(0, 2).join(', ')
+        // One on and one kun reading only, in DB order (index 0).
+        const on = full.on_readings?.[0] || actualKanjiData.on_readings?.[0]
+        const kun = full.kun_readings?.[0] || actualKanjiData.kun_readings?.[0]
+        // Example word: most frequent learned word with this kanji, else the
+        // kanji's own most frequent word (embedded or fetched with strokes).
+        const wordSource = actualKanjiData.challenge_word ? actualKanjiData : full
+        const word = getChallengeWordForKanji(this.player, actualKanjiData.character, wordSource)
+        let wordText = ''
+        if (word?.word) {
+          const meaning = word.meaning && word.meaning.length > 40 ? word.meaning.slice(0, 39) + '…' : word.meaning
+          wordText = ` · ${word.reading || word.word}${meaning ? `: ${meaning}` : ''}`
+        }
+        this.addCombatLog(`Draw the kanji for ${meanings || '?'}, read ON: ${on || '-'}/KUN: ${kun || '-'}${wordText}`)
       }
     }
     this.kanjiDrawing.start(strokeData, hint, wrappedCallbacks, kanjiData, drawingOptions)
@@ -369,7 +380,9 @@ export default class BattleScene extends Phaser.Scene {
    * stroke-tier fail threshold (half the strokes, rounded up), perfect/sloppy/fail.
    */
   resolveParryKanjiChallenge(skill, callbacks, hintPrefix = '') {
-    const pool = skill.kanjiPool || ['受', '防', '守', '盾', '護', '弾', '反']
+    // Free kanji mode swaps in the run's rolled pool; default uses the JSON pool.
+    const effectivePool = getEffectiveKanjiPool(this.player, skill)
+    const pool = effectivePool.length > 0 ? effectivePool : ['受', '防', '守', '盾', '護', '弾', '反']
 
     // 10% chance to bypass the drawing challenge entirely.
     if (Math.random() < 0.1) {
@@ -386,16 +399,9 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     if (!selectedKanjiData) {
-      const allKanji = getWindowGameData()?.all_kanji || []
       const poolCandidates = pool
-        .map(char => {
-          const fromList = this.player.kanjiList.find(k => k.character === char)
-          if (fromList?.stroke_data?.strokes?.length > 0) return fromList
-          const fromAll = allKanji.find(k => k.character === char)
-          if (fromAll?.stroke_data?.strokes?.length > 0) return fromAll
-          return null
-        })
-        .filter(Boolean)
+        .map(char => resolveKanjiData(this.player, char))
+        .filter(k => k?.stroke_data?.strokes?.length > 0)
       if (poolCandidates.length > 0) {
         selectedKanjiData = poolCandidates[Math.floor(Math.random() * poolCandidates.length)]
       }
@@ -2115,7 +2121,7 @@ export default class BattleScene extends Phaser.Scene {
       ...FONTS.default,
       fontSize: '16px',
       align: 'left',
-      wordWrap: { width: 360 },
+      wordWrap: { width: 560 },
       stroke: '#000000',
       strokeThickness: 3,
     }).setOrigin(0, 0.5).setDepth(50)

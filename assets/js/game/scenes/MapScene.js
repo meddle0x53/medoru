@@ -3,6 +3,7 @@ import { TILE_TYPES, getTileConfig, isBattleTile } from '../data/tileTypes.js'
 import Player from '../entities/Player.js'
 import { getWindowGameData } from '../api.js'
 import SettingsOverlay from '../ui/SettingsOverlay.js'
+import { prepareFreeKanjiPools } from '../systems/freeKanjiPools.js'
 import { updateReachability, findTileById, computeLayout, getMapName } from '../systems/MapGenerator.js'
 import { getMapDefinition } from '../data/maps/index.js'
 import { ENEMY_DEFINITIONS, getEnemyDefinition } from '../data/enemies/index.js'
@@ -40,8 +41,15 @@ export default class MapScene extends Phaser.Scene {
     this.transitioning = false
   }
 
-  create() {
+  async create() {
     setupHighDPIWorld(this)
+    // Free kanji mode: roll per-ability pools at run start and preload stroke
+    // data (idempotent — after the first visit the stroke cache is warm).
+    try {
+      await prepareFreeKanjiPools(this.player)
+    } catch (e) {
+      console.warn('[FreeKanji] Pool preparation failed:', e)
+    }
     this.setupMap()
     this.createBackground()
     this.createHud()

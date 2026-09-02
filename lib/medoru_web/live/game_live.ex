@@ -65,10 +65,20 @@ defmodule MedoruWeb.GameLive do
   Builds the game data payload shared between the public and admin game pages.
   """
   def build_game_data(user, session, opts \\ []) do
-    kanji_list =
+    learned_kanji =
       user.id
       |> Learning.list_learned_kanji(limit: 50)
       |> Enum.filter(fn k -> k.stroke_count && k.stroke_count > 0 end)
+
+    # Most frequent example word per kanji, shown next to drawing challenges.
+    # Covers learned kanji and the ability pool kanji (the only embedded ones).
+    challenge_words =
+      Content.get_challenge_word_map_for_characters(
+        Enum.uniq(@ability_kanji_chars ++ Enum.map(learned_kanji, & &1.character))
+      )
+
+    kanji_list =
+      learned_kanji
       |> Enum.map(fn k ->
         meanings = Enum.take(k.meanings || [], 2)
 
@@ -85,6 +95,7 @@ defmodule MedoruWeb.GameLive do
           meanings: meanings,
           on_readings: on_readings,
           kun_readings: kun_readings,
+          challenge_word: Map.get(challenge_words, k.character),
           stroke_count: k.stroke_count,
           stroke_data: stroke_data
         }
@@ -135,7 +146,7 @@ defmodule MedoruWeb.GameLive do
 
         readings = (on_readings ++ kun_readings) |> Enum.take(5)
 
-        %{
+        entry = %{
           id: k.id,
           character: k.character,
           jlpt_level: k.jlpt_level,
@@ -148,6 +159,13 @@ defmodule MedoruWeb.GameLive do
           stroke_count: k.stroke_count,
           stroke_data: if(k.character in @ability_kanji_chars, do: k.stroke_data, else: nil)
         }
+
+        # Only attach an example word where one exists (ability/learned kanji)
+        # to keep the payload small for the remaining ~5,000 entries.
+        case Map.get(challenge_words, k.character) do
+          nil -> entry
+          word -> Map.put(entry, :challenge_word, word)
+        end
       end)
 
     user_level =
@@ -233,9 +251,16 @@ defmodule MedoruWeb.GameLive do
       |> MapSet.new()
       |> MapSet.to_list()
 
+    # Prefer the site nickname (profile display_name) over the OAuth name.
+    display_name =
+      case user do
+        %{profile: %{display_name: name}} when is_binary(name) and name != "" -> name
+        _ -> user.name || user.email
+      end
+
     %{
       user_id: user.id,
-      name: user.name || user.email,
+      name: display_name,
       level: user_level,
       daily_challenge_mode: Keyword.get(opts, :daily_challenge_mode, false),
       kanji_list: kanji_list,

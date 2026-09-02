@@ -3,6 +3,7 @@ import AbilityTooltip from '../ui/AbilityTooltip.js'
 import Player from '../entities/Player.js'
 import { ITEMS } from '../data/items.js'
 import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxActiveActions, getMaxBattlePoolActions, getMaxOverallAbilities, getAvailableActions, formatAbilityRequirements } from '../data/actions.js'
+import { isFreeKanjiMode, prepareFreeKanjiPools } from '../systems/freeKanjiPools.js'
 import { getCharmById, getCharmsByType, CHARM_TYPES } from '../data/charms.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 import { getWindowGameData } from '../api.js'
@@ -1197,7 +1198,8 @@ export default class LoadoutScene extends Phaser.Scene {
     const maxOverall = getMaxOverallAbilities(capacity)
     const activeIds = this.player.loadout.activeActionIds
     const selectedIds = this.player.loadout.selectedActionIds
-    const knownIds = this.player.loadout.knownActionIds || []
+    // Deduplicate defensively: legacy saves may list the same single-use id twice.
+    const knownIds = [...new Set(this.player.loadout.knownActionIds || [])]
     const useItemActive = activeIds.includes('use_item')
 
     // Header
@@ -1857,7 +1859,7 @@ export default class LoadoutScene extends Phaser.Scene {
     this.player.loadout.activeActionIds = useItemActive ? [...combatActive, 'use_item'] : combatActive
   }
 
-  startBattle() {
+  async startBattle() {
     this.fillActiveActionSlots()
 
     const hasActiveAttack = this.player.loadout.activeActionIds
@@ -1869,6 +1871,17 @@ export default class LoadoutScene extends Phaser.Scene {
     }
     this.player.saveLoadout()
     this.player.refreshActions()
+
+    // Free kanji mode: roll the run's per-ability pools (first visit of a run)
+    // and preload stroke data so battles can resolve challenges synchronously.
+    if (isFreeKanjiMode(this.player)) {
+      this.showToast('Preparing kanji pools…')
+      try {
+        await prepareFreeKanjiPools(this.player)
+      } catch (e) {
+        console.warn('[FreeKanji] Pool preparation failed:', e)
+      }
+    }
 
     if (this.mode === 'map') {
       this.scene.start('MapScene', { player: this.player })

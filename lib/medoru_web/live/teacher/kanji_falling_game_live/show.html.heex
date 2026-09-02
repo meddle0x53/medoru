@@ -130,7 +130,11 @@
                 </div>
                 <div class="flex-1">
                   <div class="font-medium text-base-content">
-                    {display_name(session.user, :short, gettext("Anonymous"))}
+                    {display_name(
+                      session.user,
+                      @current_scope.current_user.id,
+                      gettext("Anonymous")
+                    )}
                   </div>
                   <div class="text-xs text-secondary">
                     {gettext("Speed %{speed} | Lives left: %{lives}",

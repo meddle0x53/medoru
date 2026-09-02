@@ -51,6 +51,7 @@ defmodule MedoruWeb.Api.V1.KanjiController do
         |> json(%{errors: [%{detail: "Kanji not found"}]})
 
       kanji ->
+        kanji = Medoru.Repo.preload(kanji, :kanji_readings)
         json(conn, render_detail(kanji, include_fields))
     end
   end
@@ -99,6 +100,16 @@ defmodule MedoruWeb.Api.V1.KanjiController do
   end
 
   defp render_detail(kanji, include_fields) do
+    on_readings =
+      kanji.kanji_readings
+      |> Enum.filter(&(&1.reading_type == :on))
+      |> Enum.map(& &1.reading)
+
+    kun_readings =
+      kanji.kanji_readings
+      |> Enum.filter(&(&1.reading_type == :kun))
+      |> Enum.map(& &1.reading)
+
     %{
       character: kanji.character,
       meanings: clean_string_list(kanji.meanings) || [],
@@ -108,6 +119,9 @@ defmodule MedoruWeb.Api.V1.KanjiController do
       frequency: kanji.frequency,
       school_level: kanji.school_level,
       bg_meanings: maybe_include_bg_meanings(kanji.translations, include_fields),
+      on_readings: on_readings,
+      kun_readings: kun_readings,
+      challenge_word: Content.get_challenge_word_for_kanji(kanji.character),
       stroke_data: kanji.stroke_data
     }
   end

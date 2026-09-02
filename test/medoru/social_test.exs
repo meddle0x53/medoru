@@ -438,4 +438,53 @@ defmodule Medoru.SocialTest do
       assert Social.count_visitors(owner.id) == 2
     end
   end
+
+  describe "display_name_for_viewer/2" do
+    test "returns the first nickname when the viewer has nicknamed the user" do
+      viewer = user_with_profile_fixture()
+      target = user_with_profile_fixture(%{display_name: "Real Name"})
+
+      Social.upsert_relation(viewer.id, target.id, %{"nicknames" => ["Zazu", "Zaz"]})
+
+      assert Social.display_name_for_viewer(target, viewer.id) == "Zazu"
+      # other viewers still see the real name
+      other = user_with_profile_fixture()
+      assert Social.display_name_for_viewer(target, other.id) == "Real Name"
+    end
+
+    test "falls back to profile name, OAuth name, then Anonymous" do
+      viewer = user_with_profile_fixture()
+      named = user_with_profile_fixture(%{display_name: "Profile Name"})
+      oauth_named = user_fixture(%{name: "OAuth Name"})
+      unnamed = user_fixture(%{name: nil})
+
+      assert Social.display_name_for_viewer(named, viewer.id) == "Profile Name"
+      assert Social.display_name_for_viewer(oauth_named, viewer.id) == "OAuth Name"
+      assert Social.display_name_for_viewer(unnamed, viewer.id) == "Anonymous"
+    end
+
+    test "reflects nickname edits and deletes (nickname map invalidation)" do
+      viewer = user_with_profile_fixture()
+      target = user_with_profile_fixture(%{display_name: "Real Name"})
+
+      Social.upsert_relation(viewer.id, target.id, %{"nicknames" => ["First"]})
+      assert Social.display_name_for_viewer(target, viewer.id) == "First"
+
+      # adding a second nickname does not change the first
+      Social.upsert_relation(viewer.id, target.id, %{"nicknames" => ["First", "Second"]})
+      assert Social.display_name_for_viewer(target, viewer.id) == "First"
+
+      # removing all nicknames falls back to the real name
+      Social.upsert_relation(viewer.id, target.id, %{"nicknames" => []})
+      assert Social.display_name_for_viewer(target, viewer.id) == "Real Name"
+
+      # a fresh nickname shows again
+      Social.upsert_relation(viewer.id, target.id, %{"nicknames" => ["Third"]})
+      assert Social.display_name_for_viewer(target, viewer.id) == "Third"
+
+      # deleting the relation falls back too
+      Social.delete_relation(viewer.id, target.id)
+      assert Social.display_name_for_viewer(target, viewer.id) == "Real Name"
+    end
+  end
 end

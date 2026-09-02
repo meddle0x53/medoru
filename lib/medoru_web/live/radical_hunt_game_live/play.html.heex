@@ -271,11 +271,10 @@
                       </div>
                       <div class="flex-1">
                         <div class="font-medium text-base-content">
-                          <%= if session.user && session.user.profile do %>
-                            {session.user.profile.display_name || gettext("Anonymous")}
-                          <% else %>
-                            {gettext("Anonymous")}
-                          <% end %>
+                          {Medoru.Social.display_name_for_viewer(
+                            session.user,
+                            @current_scope.current_user && @current_scope.current_user.id
+                          ) || gettext("Anonymous")}
                         </div>
                         <div class="text-xs text-secondary">
                           {length(session.kanji_found || [])} {gettext("kanji")}

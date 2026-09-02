@@ -7,6 +7,7 @@ import { setupHighDPIWorld } from '../highDpi.js'
 
 const MAX_STARTING_GOLD_BONUS = 150
 const MAX_STARTING_POTION_BONUS = 4
+const ROWS_PER_PAGE = 5
 const ROW_HEIGHT = 40
 const ROW_WIDTH = 840
 const BUTTON_RADIUS = 10
@@ -21,6 +22,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
     this.player = data.player
     this.tile = data.tile || null
     this.mapIndex = data.mapIndex ?? 0
+    this.page = data.page || 0
   }
 
   create() {
@@ -197,9 +199,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
   createShopList() {
     const items = this.buildShopItems()
     const startY = 110
-    const maxY = GAME_CONFIG.height - 90
-    const availableHeight = maxY - startY
-    const rowHeight = Math.min(ROW_HEIGHT, Math.floor(availableHeight / Math.max(1, items.length)))
+    const rowHeight = ROW_HEIGHT
 
     if (items.length === 0) {
       this.add.text(GAME_CONFIG.width / 2, startY + 80, 'Nothing for sale right now.', {
@@ -210,10 +210,54 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
       return
     }
 
-    items.forEach((item, index) => {
+    const pageCount = Math.max(1, Math.ceil(items.length / ROWS_PER_PAGE))
+    this.page = Math.min(this.page, pageCount - 1)
+    const pageItems = items.slice(this.page * ROWS_PER_PAGE, (this.page + 1) * ROWS_PER_PAGE)
+
+    pageItems.forEach((item, index) => {
       const y = startY + index * rowHeight + rowHeight / 2
       this.createShopRow(item, y, rowHeight)
     })
+
+    if (pageCount > 1) this.createPagination(pageCount)
+  }
+
+  createPagination(pageCount) {
+    const y = 345
+    const centerX = GAME_CONFIG.width / 2
+
+    this.add.text(centerX, y, `Page ${this.page + 1}/${pageCount}`, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#bdc3c7',
+    }).setOrigin(0.5)
+
+    this.createRound3dButton({
+      x: centerX - 95,
+      y,
+      width: 44,
+      height: 32,
+      label: '◀',
+      baseColor: 0x2c3e50,
+      hoverColor: 0x34495e,
+      disabled: this.page === 0,
+      onClick: () => this.gotoPage(this.page - 1),
+    })
+    this.createRound3dButton({
+      x: centerX + 95,
+      y,
+      width: 44,
+      height: 32,
+      label: '▶',
+      baseColor: 0x2c3e50,
+      hoverColor: 0x34495e,
+      disabled: this.page === pageCount - 1,
+      onClick: () => this.gotoPage(this.page + 1),
+    })
+  }
+
+  gotoPage(page) {
+    this.scene.restart({ player: this.player, tile: this.tile, mapIndex: this.mapIndex, page })
   }
 
   createShopRow(item, y, rowHeight) {
@@ -252,7 +296,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
     }).setOrigin(0, 0.5))
 
     // Price.
-    const priceX = ROW_WIDTH / 2 - 135
+    const priceX = ROW_WIDTH / 2 - 165
     const priceColor = canAfford ? '#9b59b6' : '#7f8c8d'
     container.add(this.add.image(priceX - 10, 0, 'ouro_essence').setDisplaySize(18, 18).setOrigin(0.5))
     container.add(this.add.text(priceX + 8, 0, String(item.price), {
@@ -271,8 +315,8 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
 
     // Buy button — enlarged for mobile touch targets.
     const btnWidth = 96
-    const btnHeight = 40
-    const btnX = ROW_WIDTH / 2 - 25
+    const btnHeight = 28
+    const btnX = ROW_WIDTH / 2 - 60
     const btnColor = canAfford ? 0x9b59b6 : 0x555555
     const btnHover = canAfford ? 0x8e44ad : 0x555555
 
@@ -328,14 +372,18 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
     }
 
     this.player.saveLoadout()
-    this.scene.restart({ player: this.player, tile: this.tile, mapIndex: this.mapIndex })
+    this.scene.restart({ player: this.player, tile: this.tile, mapIndex: this.mapIndex, page: this.page })
   }
 
   autoEquipSocketCharm(charmId) {
     const charm = getSocketCharmById(charmId)
     if (!charm) return
-    const equipment = charm.equipmentType === 'secondary_weapon' ? this.player.shield : this.player.weapon
-    if (equipment && equipment.socketCharmIds && !equipment.socketCharmIds[0]) {
+    const isShield = charm.equipmentType === 'secondary_weapon'
+    const equipment = isShield ? this.player.shield : this.player.weapon
+    const slots = isShield ? this.player.getShieldCharmSlots() : this.player.getWeaponCharmSlots()
+    // Only auto-equip when socket 0 is actually unlocked (weapon/shield level >= 1).
+    // Otherwise the charm stays owned and can be equipped later from the socket UI.
+    if (equipment && slots >= 1 && equipment.socketCharmIds && !equipment.socketCharmIds[0]) {
       equipment.socketCharmIds[0] = charmId
     }
   }
@@ -343,7 +391,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
   createBackButton() {
     this.createRound3dButton({
       x: GAME_CONFIG.width / 2,
-      y: GAME_CONFIG.height - 50,
+      y: GAME_CONFIG.height - 40,
       width: 220,
       height: 46,
       label: 'Back to Home Camp',

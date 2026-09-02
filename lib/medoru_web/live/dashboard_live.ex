@@ -16,6 +16,11 @@ defmodule MedoruWeb.DashboardLive do
 
   import Helpers, only: [format_localized_date: 1, format_localized_datetime: 1]
 
+  # Helpers for template
+  def feed_author_name(user, viewer_id) do
+    Social.display_name_for_viewer(user, viewer_id)
+  end
+
   embed_templates "*.html"
 
   defp all_emojis do

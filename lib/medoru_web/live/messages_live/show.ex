@@ -192,7 +192,7 @@ defmodule MedoruWeb.MessagesLive.Show do
               conversation.title || gettext("Group Chat")
             else
               other = List.first(other_participants)
-              gettext("Chat with %{name}", name: participant_name(other))
+              gettext("Chat with %{name}", name: participant_name(other, current_user.id))
             end
 
           socket =
@@ -1296,14 +1296,23 @@ defmodule MedoruWeb.MessagesLive.Show do
     message = Enum.find(socket.assigns.messages, &(&1.id == message_id))
 
     if message && Chat.can_edit_message?(message, socket.assigns.current_scope.current_user.id) do
-      {:noreply,
-       socket
-       |> assign(:editing_message, message)
-       |> push_event("start_edit", %{
-         message_id: message.id,
-         ciphertext: Base.encode64(message.ciphertext),
-         iv: Base.encode64(message.iv)
-       })}
+      {:noreply, begin_edit(socket, message)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("edit_last_message", _params, socket) do
+    current_user_id = socket.assigns.current_scope.current_user.id
+
+    message =
+      socket.assigns.messages
+      |> Enum.reverse()
+      |> Enum.find(&Chat.can_edit_message?(&1, current_user_id))
+
+    if message do
+      {:noreply, begin_edit(socket, message)}
     else
       {:noreply, socket}
     end
@@ -1776,6 +1785,16 @@ defmodule MedoruWeb.MessagesLive.Show do
     user_id in online_user_ids
   end
 
+  defp begin_edit(socket, message) do
+    socket
+    |> assign(:editing_message, message)
+    |> push_event("start_edit", %{
+      message_id: message.id,
+      ciphertext: Base.encode64(message.ciphertext),
+      iv: Base.encode64(message.iv)
+    })
+  end
+
   def can_edit_message?(message, current_user_id) do
     Chat.can_edit_message?(message, current_user_id)
   end
@@ -2087,11 +2106,11 @@ defmodule MedoruWeb.MessagesLive.Show do
   end
 
   # Helpers
-  def participant_name(participant) do
+  def participant_name(participant, viewer_id) do
     user = participant && participant.user
 
     if user do
-      (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+      Social.display_name_for_viewer(user, viewer_id)
     else
       gettext("Unknown")
     end
@@ -2239,7 +2258,7 @@ defmodule MedoruWeb.MessagesLive.Show do
     if message.sender_id == current_user_id do
       gettext("You")
     else
-      participant_name(%{user: message.sender})
+      participant_name(%{user: message.sender}, current_user_id)
     end
   end
 

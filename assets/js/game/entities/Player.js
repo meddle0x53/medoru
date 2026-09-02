@@ -260,6 +260,9 @@ export default class Player extends Character {
       mapVersion: MAP_VERSION,
       focusKanji: null,
       focusKanjiData: null,
+      kanjiChallengeMode: 'default',
+      freeKanjiLevels: [5],
+      freeKanjiRunPools: null,
     }
 
     // Load persisted equipment or fall back to defaults.
@@ -738,6 +741,9 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
         }
+        // Migration: older versions could store the same single-use ability id
+        // twice (learnAbility pushed after addAbilityCharges had already added it).
+        loadout.knownActionIds = [...new Set(loadout.knownActionIds)]
         // Migration: single-use ability charges.
         if (!loadout.singleUseCharges || typeof loadout.singleUseCharges !== 'object') {
           loadout.singleUseCharges = {}
@@ -756,6 +762,16 @@ export default class Player extends Character {
         }
         if (loadout.focusKanjiData === undefined) {
           loadout.focusKanjiData = null
+        }
+        // Free kanji mode settings (persist across runs; pools are per-run).
+        if (loadout.kanjiChallengeMode === undefined) {
+          loadout.kanjiChallengeMode = 'default'
+        }
+        if (!Array.isArray(loadout.freeKanjiLevels) || loadout.freeKanjiLevels.length === 0) {
+          loadout.freeKanjiLevels = [5]
+        }
+        if (loadout.freeKanjiRunPools === undefined) {
+          loadout.freeKanjiRunPools = null
         }
         // Migration: persisted weapon/shield support.
         if (!loadout.weapon || typeof loadout.weapon !== 'object') {
@@ -1323,15 +1339,19 @@ export default class Player extends Character {
     const action = ALL_ACTIONS.find(a => a.id === actionId)
     const isKnown = this.loadout.knownActionIds.includes(actionId)
 
-    // Single-use abilities gain a charge every time they are rewarded, even if already known.
+    // Single-use abilities gain a charge every time they are rewarded, even if
+    // already known. addAbilityCharges() also adds the ability to the known
+    // pool, so delegate entirely and return — pushing again here would
+    // duplicate the id and show the ability twice in the loadout list.
     if (action?.singleUse) {
       this.addAbilityCharges(actionId, 1)
+      return { ok: true, added: !isKnown, recharged: true, action }
     }
 
     if (isKnown) {
       this.refreshActions()
       this.saveLoadout()
-      return { ok: true, added: false, recharged: action?.singleUse === true, action }
+      return { ok: true, added: false, action }
     }
 
     const maxOverall = getMaxOverallAbilities(this.capacity || 3)
@@ -1493,6 +1513,8 @@ export default class Player extends Character {
       permanentWeaponLevel: this.loadout?.permanentWeaponLevel ?? 0,
       permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
       permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
+      kanjiChallengeMode: this.loadout?.kanjiChallengeMode ?? 'default',
+      freeKanjiLevels: this.loadout?.freeKanjiLevels ?? [5],
     }
 
     // Run-scoped being-learned words are reset after persistence.
@@ -1527,6 +1549,7 @@ export default class Player extends Character {
       mapState: null,
       mapVersion: MAP_VERSION,
       foughtEnemyIds: [],
+      freeKanjiRunPools: null,
       weapon: createDefaultWeapon(meta.permanentWeaponLevel),
       shield: createDefaultShield(meta.permanentShieldLevel),
     }

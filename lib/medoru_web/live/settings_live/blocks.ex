@@ -40,9 +40,8 @@ defmodule MedoruWeb.SettingsLive.Blocks do
   end
 
   # Helpers
-  def blocked_user_name(user_block) do
-    user = user_block.blocked
-    (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+  def blocked_user_name(user_block, viewer_id) do
+    Social.display_name_for_viewer(user_block.blocked, viewer_id)
   end
 
   def blocked_user_avatar(user_block) do

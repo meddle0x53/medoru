@@ -1397,6 +1397,76 @@ defmodule Medoru.ContentTest do
     end
   end
 
+  describe "challenge words" do
+    import Medoru.ContentFixtures
+
+    test "get_challenge_word_map_for_characters/1 returns the most frequent word per character" do
+      kanji = kanji_fixture(%{character: "曜"})
+      other = kanji_fixture(%{character: "甭"})
+
+      {:ok, _frequent} =
+        Content.create_word_with_kanji(
+          %{
+            text: "日曜日",
+            meaning: "Sunday",
+            reading: "にちようび",
+            usage_frequency: 10,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id}, %{position: 1, kanji_id: other.id}]
+        )
+
+      {:ok, _rare} =
+        Content.create_word_with_kanji(
+          %{
+            text: "曜日",
+            meaning: "day of week",
+            reading: "ようび",
+            usage_frequency: 500,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id}]
+        )
+
+      map = Content.get_challenge_word_map_for_characters(["曜", "甭", "無"])
+
+      assert map["曜"] == %{word: "日曜日", reading: "にちようび", meaning: "Sunday"}
+      assert map["甭"] == %{word: "日曜日", reading: "にちようび", meaning: "Sunday"}
+      assert map["無"] == nil
+    end
+
+    test "get_challenge_word_map_for_characters/1 returns an empty map for empty input" do
+      assert Content.get_challenge_word_map_for_characters([]) == %{}
+    end
+
+    test "get_challenge_word_for_kanji/1 returns the word or nil" do
+      kanji = kanji_fixture(%{character: "鯉"})
+
+      assert Content.get_challenge_word_for_kanji("鯉") == nil
+
+      {:ok, _word} =
+        Content.create_word_with_kanji(
+          %{
+            text: "鯉魚",
+            meaning: "carp",
+            reading: "りぎょ",
+            usage_frequency: 100,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id}]
+        )
+
+      assert Content.get_challenge_word_for_kanji("鯉") == %{
+               word: "鯉魚",
+               reading: "りぎょ",
+               meaning: "carp"
+             }
+    end
+  end
+
   # Helper functions
 
   defp unique_kanji_char do

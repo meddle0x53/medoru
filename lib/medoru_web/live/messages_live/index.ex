@@ -105,7 +105,7 @@ defmodule MedoruWeb.MessagesLive.Index do
       conversation.title || gettext("Group Chat")
     else
       other = Chat.get_other_participant(conversation, current_user_id)
-      participant_name(other)
+      participant_name(other, current_user_id)
     end
   end
 
@@ -118,11 +118,11 @@ defmodule MedoruWeb.MessagesLive.Index do
     end
   end
 
-  def participant_name(participant) do
+  def participant_name(participant, viewer_id) do
     user = participant && participant.user
 
     if user do
-      (user.profile && user.profile.display_name) || user.name || gettext("Anonymous")
+      Social.display_name_for_viewer(user, viewer_id)
     else
       gettext("Unknown")
     end
