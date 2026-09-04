@@ -8,6 +8,8 @@ import {
   hasComboState,
   getComboDamageMultiplier,
   shouldGuaranteeCritical,
+  getStreakDamageMultiplier,
+  getSequenceDamageMultiplier,
   getChainDamageMultiplier,
   expireStates,
 } from './CombatStateSystem.js'
@@ -208,7 +210,7 @@ export default class TurnManager {
 
     // ---------- Combo-state resolution ----------
     const combo = skill.combo || {}
-    const pendingCombo = { damageMultiplier: 1, guaranteeCritical: false, consumeStates: [], log: null }
+    const pendingCombo = { damageMultiplier: 1, guaranteeCritical: false, consumeStates: [], log: null, payoff: false }
     const stateConsumers = Array.isArray(combo.consumesState)
       ? combo.consumesState
       : combo.consumesState
@@ -225,13 +227,33 @@ export default class TurnManager {
         pendingCombo.damageMultiplier *= stateConsumer.damageMultiplier || 1
         if (stateConsumer.guaranteeCritical) pendingCombo.guaranteeCritical = true
         pendingCombo.consumeStates.push({ subject, stateId: stateConsumer.state })
+        pendingCombo.payoff = true
         if (stateConsumer.log) pendingCombo.log = stateConsumer.log
       }
     }
     if (combo.requiresPreviousTag) {
-      pendingCombo.damageMultiplier *= getComboDamageMultiplier(skill, performer, target)
+      const tagMultiplier = getComboDamageMultiplier(skill, performer, target)
+      pendingCombo.damageMultiplier *= tagMultiplier
+      if (tagMultiplier !== 1) pendingCombo.payoff = true
       if (shouldGuaranteeCritical(skill, performer, target)) {
         pendingCombo.guaranteeCritical = true
+        pendingCombo.payoff = true
+      }
+    }
+    if (combo.requiresStreak) {
+      const streakMultiplier = getStreakDamageMultiplier(skill, performer)
+      if (streakMultiplier !== 1) {
+        pendingCombo.damageMultiplier *= streakMultiplier
+        pendingCombo.payoff = true
+        if (combo.requiresStreak.log) pendingCombo.log = combo.requiresStreak.log
+      }
+    }
+    if (combo.requiresSequence) {
+      const seqMultiplier = getSequenceDamageMultiplier(skill, performer)
+      if (seqMultiplier !== 1) {
+        pendingCombo.damageMultiplier *= seqMultiplier
+        pendingCombo.payoff = true
+        if (combo.requiresSequence.log) pendingCombo.log = combo.requiresSequence.log
       }
     }
     if (skill.chainBonus) {
@@ -241,7 +263,8 @@ export default class TurnManager {
     if (hasComboState(performer, 'marked') && infusedElement) {
       elementalEffectChanceMultiplier *= 1.5
     }
-    // Revenge and Momentum boost the next attack.
+    // Revenge and Momentum boost the next attack. They are passive reaction
+    // buffs, not deliberate combos, so they don't trigger the combo popup.
     if (hasComboState(performer, 'revenge')) {
       pendingCombo.damageMultiplier *= 1.4
     }
@@ -328,7 +351,7 @@ export default class TurnManager {
           if (lifesteal > 0) performer.heal(lifesteal)
         }
 
-        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal, comboMultiplier: pendingCombo.damageMultiplier }
+        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal, comboMultiplier: pendingCombo.damageMultiplier, comboTriggered: pendingCombo.payoff }
         if (infusion) result.infusion = { value: infusion.value, potency }
 
         // Consume combo states that fuelled this attack and log the payoff.
@@ -551,7 +574,7 @@ export default class TurnManager {
         }
         if (blockTotal > 0) performer.addBlock(blockTotal)
 
-        result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, comboMultiplier: pendingCombo.damageMultiplier }
+        result = { type: 'attack_defence', damage: actual, block: blockTotal, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, comboMultiplier: pendingCombo.damageMultiplier, comboTriggered: pendingCombo.payoff }
         if (infusion) result.infusion = { value: infusion.value, potency }
 
         // Consume combo states that fuelled this attack and log the payoff.

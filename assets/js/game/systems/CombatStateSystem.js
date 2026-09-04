@@ -1,6 +1,11 @@
 import stateData from '../data/combatStates.json'
+import { ALL_ABILITIES } from '../data/abilities/index.js'
 
 const STATES = stateData.states || {}
+
+function findAbilityById(id) {
+  return ALL_ABILITIES.find(a => a.id === id)
+}
 
 export function getStateDefinition(stateId) {
   return STATES[stateId] || null
@@ -16,6 +21,10 @@ export function ensureComboStateContainer(entity) {
   if (!entity.turnTagLedger && entity.isAlive && entity.resetForTurn) {
     // Only player-like entities track tags.
     entity.turnTagLedger = []
+  }
+  if (!entity.turnSkillLedger && entity.isAlive && entity.resetForTurn) {
+    // Per-ability sequence (used for streak combos like Triple Slash).
+    entity.turnSkillLedger = []
   }
 }
 
@@ -120,17 +129,22 @@ export function expireStates(entity, trigger, logFn = null) {
 
 // ---------- Tag Ledger (player turn sequencing) ----------
 
-export function recordTags(performer, tags = []) {
+export function recordTags(performer, tags = [], skillId = null) {
   if (!performer || !Array.isArray(tags)) return
   if (!performer.turnTagLedger) performer.turnTagLedger = []
   for (const tag of tags) {
     performer.turnTagLedger.push({ tag, at: Date.now() })
+  }
+  if (skillId != null) {
+    if (!performer.turnSkillLedger) performer.turnSkillLedger = []
+    performer.turnSkillLedger.push(skillId)
   }
 }
 
 export function clearTags(performer) {
   if (!performer) return
   performer.turnTagLedger = []
+  performer.turnSkillLedger = []
 }
 
 export function getTagsThisTurn(performer) {
@@ -219,6 +233,73 @@ export function shouldGuaranteeCritical(skill, performer, target) {
   }
 
   return false
+}
+
+/**
+ * Count how many times in a row (within the current turn) the given skill
+ * was used, looking only at trailing uses. Used for streak combos such as
+ * Forward Slash -> Forward Slash -> Forward Slash.
+ */
+export function getConsecutiveSkillCount(performer, skillId) {
+  const ledger = performer?.turnSkillLedger || []
+  let count = 0
+  for (let i = ledger.length - 1; i >= 0; i--) {
+    if (ledger[i] !== skillId) break
+    count++
+  }
+  return count
+}
+
+/**
+ * Damage multiplier from a combo.requiresSequence config:
+ * { sequence: ['forward_slash', 'forward_slash'], damageMultiplier } — the
+ * bonus applies when the last N abilities used this turn exactly match the
+ * given sequence (e.g. Forward Slash -> Forward Slash -> Heavy Slash).
+ */
+export function getSequenceDamageMultiplier(skill, performer) {
+  const seq = skill.combo?.requiresSequence
+  if (!seq || !Array.isArray(seq.sequence) || seq.sequence.length === 0) return 1
+  const ledger = performer?.turnSkillLedger || []
+  if (seq.sequence.length > ledger.length) return 1
+  const offset = ledger.length - seq.sequence.length
+  for (let i = 0; i < seq.sequence.length; i++) {
+    const entry = seq.sequence[i]
+    const used = ledger[offset + i]
+    // "tag:<name>" entries match any ability carrying that tag (e.g. "tag:slash").
+    if (typeof entry === 'string' && entry.startsWith('tag:')) {
+      const ability = findAbilityById(used)
+      if (!ability || !(ability.tags || []).includes(entry.slice(4))) return 1
+    } else if (used !== entry) {
+      return 1
+    }
+  }
+  return seq.damageMultiplier || 1
+}
+
+/**
+ * Damage multiplier from a combo.requiresStreak config:
+ * { skillId, count, damageMultiplier } — the bonus applies when the current
+ * use is preceded by `count` consecutive uses of the same skill this turn.
+ */
+export function getStreakDamageMultiplier(skill, performer) {
+  const streak = skill.combo?.requiresStreak
+  if (!streak) return 1
+  if (getConsecutiveSkillCount(performer, streak.skillId) >= streak.count) {
+    return streak.damageMultiplier || 1
+  }
+  return 1
+}
+
+/**
+ * Bonus defence from a combo.requiresStreak config that declares a
+ * defenceMultiplier instead of a damageMultiplier — e.g. the 3rd consecutive
+ * Setup Defence doubling the Defence accumulated so far this turn.
+ * Returns the extra Defence to add (0 when the streak isn't met).
+ */
+export function getStreakDefenceBonus(performer, streakConfig) {
+  if (!streakConfig || !streakConfig.defenceMultiplier) return 0
+  if (getConsecutiveSkillCount(performer, streakConfig.skillId) < streakConfig.count) return 0
+  return Math.floor((performer.tempDefense || 0) * (streakConfig.defenceMultiplier - 1))
 }
 
 export function getChainDamageMultiplier(performer, chainConfig) {

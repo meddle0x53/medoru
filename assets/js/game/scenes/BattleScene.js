@@ -21,6 +21,8 @@ import {
   shouldGuaranteeCritical,
   applyComboState,
   consumeComboState,
+  getSequenceDamageMultiplier,
+  getStreakDefenceBonus,
 } from '../systems/CombatStateSystem.js'
 import { getActionTypeColor, getAbilityRarityColor, ALL_ACTIONS } from '../data/actions.js'
 import { getHeroPose, HERO_DEFAULT_POSE } from '../data/heroPoses.js'
@@ -2618,6 +2620,15 @@ export default class BattleScene extends Phaser.Scene {
         this.player.useStamina(skill.staminaCost)
         this.player.addParryCharge(outcome.quality)
 
+        // Sequence combo into a parry (e.g. Forward Slash -> any slash -> Shield Parry):
+        // the payoff is stored here and landed by the counter-attack, not the setup.
+        if (skill.combo?.requiresSequence) {
+          const seqMultiplier = getSequenceDamageMultiplier(skill, this.player)
+          if (seqMultiplier !== 1) {
+            this.player.parryComboBonus = { multiplier: seqMultiplier, log: skill.combo.requiresSequence.log || null }
+          }
+        }
+
         const count = this.player.parryCharges.length
         const qualityText = outcome.quality === 'perfect' ? 'Perfect' : outcome.quality === 'sloppy' ? 'Solid' : 'Weak'
         this.addCombatLog(`${qualityText} parry set up! (${count} charge${count !== 1 ? 's' : ''}) (-${skill.staminaCost} STA)`)
@@ -2698,6 +2709,22 @@ export default class BattleScene extends Phaser.Scene {
     this.startReadinessChallenge()
   }
 
+  // Grant Setup Defence's Defence pool, honoring the streak combo: the 3rd
+  // consecutive use adds bonus Defence equal to the amount accumulated so far
+  // this turn (i.e. the accumulated Defence doubles). Returns the total granted.
+  applySetupDefence(skill, amount) {
+    const streakConfig = skill.combo?.requiresStreak
+    const streakBonus = getStreakDefenceBonus(this.player, streakConfig)
+    const total = amount + streakBonus
+    this.player.addDefense(total)
+    this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `+${total} Defence`, 0x2ecc71)
+    if (streakBonus > 0) {
+      if (streakConfig.log) this.addCombatLog(streakConfig.log)
+      this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 100, 'コンボ!', 0xf1c40f, { fontSize: '30px', fontFamily: FONTS.kanji.fontFamily })
+    }
+    return total
+  }
+
   startChallenge(skill) {
     this.challengeActive = true
     this.selectedSkill = skill
@@ -2729,9 +2756,8 @@ export default class BattleScene extends Phaser.Scene {
         // No stroke data for this kanji: fall back to a guaranteed success with half value.
         const amount = Math.floor(this.player.computeSetupDefenceAmount(skill, 0.5))
         this.challengeActive = false
-        this.player.addDefense(amount)
-        this.addCombatLog(`Guard raised! +${amount} Defence`)
-        this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `+${amount} Defence`, 0x2ecc71)
+        const totalDefence = this.applySetupDefence(skill, amount)
+        this.addCombatLog(`Guard raised! +${totalDefence} Defence`)
         this.executeSkill('success')
         return
       }
@@ -2756,15 +2782,14 @@ export default class BattleScene extends Phaser.Scene {
             ? (result.wrongStrokes === 0 ? 1.25 : 1.0)
             : 0.5
           const amount = this.player.computeSetupDefenceAmount(skill, multiplier)
-          this.player.addDefense(amount)
-          this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 60, `+${amount} Defence`, 0x2ecc71)
+          const totalDefence = this.applySetupDefence(skill, amount)
 
           if (result.completed) {
             const quality = result.wrongStrokes === 0 ? 'perfectly' : ''
-            this.addCombatLog(`${selectedKanji} drawn${quality ? ' ' + quality : ''}! +${amount} Defence`)
+            this.addCombatLog(`${selectedKanji} drawn${quality ? ' ' + quality : ''}! +${totalDefence} Defence`)
             this.executeSkill('success')
           } else {
-            this.addCombatLog(`${selectedKanji} failed! Only +${amount} Defence`)
+            this.addCombatLog(`${selectedKanji} failed! Only +${totalDefence} Defence`)
             this.executeSkill('fail')
           }
         },
@@ -3449,6 +3474,7 @@ export default class BattleScene extends Phaser.Scene {
           } else {
             const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
             this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
+            if (result.comboTriggered) this.spawnComboPopup(targetDisplay.sprite)
             this.shakeSprite(targetDisplay.sprite)
             if (target.isAlive()) {
               this.setEnemySprite(this.getEnemySpriteKey(target, 'defend'), target)
@@ -3498,6 +3524,7 @@ export default class BattleScene extends Phaser.Scene {
           } else {
             const dmgColor = this.getDamageColor(result, this.selectedSkill.element)
             this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${result.damage}`, dmgColor)
+            if (result.comboTriggered) this.spawnComboPopup(targetDisplay.sprite)
             this.shakeSprite(targetDisplay.sprite)
             if (target.isAlive()) {
               this.setEnemySprite(this.getEnemySpriteKey(target, 'defend'), target)
@@ -3535,7 +3562,7 @@ export default class BattleScene extends Phaser.Scene {
 
     // ---------- Combo ledger & expiry ----------
     if (this.selectedSkill?.tags?.length) {
-      recordTags(this.player, this.selectedSkill.tags)
+      recordTags(this.player, this.selectedSkill.tags, this.selectedSkill.id)
     }
 
     // Visual chain counter for sequencing.
@@ -3711,6 +3738,9 @@ export default class BattleScene extends Phaser.Scene {
             this.addCombatLog('Parry triggered! Counter-attack incoming!')
             // Reset reaction multiplier since parry replaces the attack
             this.player.reactionMultiplier = 1
+          } else {
+            // Charge spent without a trigger — any stored combo payoff fizzles too.
+            this.player.parryComboBonus = null
           }
           this.updatePlayerStatusButton()
         }
@@ -3779,6 +3809,7 @@ export default class BattleScene extends Phaser.Scene {
               if (result.damage > 0) {
                 const dmgColor = this.getDamageColor(result, action.element, 'enemy')
                 this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
+                if (result.comboTriggered) this.spawnComboPopup(this.playerSprite, 'enemy')
                 this.shakeSprite(this.playerSprite)
               }
             }
@@ -3910,6 +3941,7 @@ export default class BattleScene extends Phaser.Scene {
     this.addCombatLog(`${enemyName} uses ${actionName}${critText}! You take ${result.damage} damage!${reactionText}${weakenedText}`)
     const dmgColor = this.getDamageColor(result, action.element, 'enemy')
     this.spawnFloatingText(this.playerSprite.x, this.playerSprite.y - 40, `-${result.damage}`, dmgColor)
+    if (result.comboTriggered) this.spawnComboPopup(this.playerSprite, 'enemy')
     this.shakeSprite(this.playerSprite)
     if (action.element && this.isComboElement(action.element)) {
       this.flashScreen(dmgColor, 120)
@@ -4085,6 +4117,10 @@ export default class BattleScene extends Phaser.Scene {
       else if (kanjiResult.wrongStrokes <= 2) multiplier = 0.75
     }
 
+    // Sequence combo payoff (e.g. Forward Slash -> any slash -> Shield Parry) lands here.
+    const comboBonus = this.player.parryComboBonus
+    if (comboBonus) multiplier *= comboBonus.multiplier
+
     const baseDmg = this.player.calculateWeaponDamage(action)
     const counterDmg = Math.max(1, Math.floor(baseDmg * multiplier))
     const actual = target.takeDamage(counterDmg)
@@ -4102,6 +4138,13 @@ export default class BattleScene extends Phaser.Scene {
     if (targetDisplay) {
       this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 40, `-${actual}`, COLORS.danger)
       this.shakeSprite(targetDisplay.sprite)
+    }
+    if (comboBonus) {
+      if (comboBonus.log) this.addCombatLog(comboBonus.log)
+      if (targetDisplay) {
+        this.spawnFloatingText(targetDisplay.sprite.x, targetDisplay.sprite.y - 100, 'コンボ!', 0xf1c40f, { fontSize: '30px', fontFamily: FONTS.kanji.fontFamily })
+      }
+      this.player.parryComboBonus = null
     }
 
     this.time.delayedCall(600, () => this.setPlayerPose('idle'))
@@ -4289,15 +4332,21 @@ export default class BattleScene extends Phaser.Scene {
     })
   }
 
-  spawnFloatingText(x, y, text, color) {
+  spawnFloatingText(x, y, text, color, fontSize = '20px', fontFamily = null) {
     const t = this.add.text(x, y, text, {
-      fontFamily: FONTS.default.fontFamily,
-      fontSize: '20px',
+      fontFamily: fontFamily || FONTS.default.fontFamily,
+      fontSize,
       fontStyle: 'bold',
       color: typeof color === 'number' ? '#' + color.toString(16).padStart(6, '0') : color,
     }).setOrigin(0.5)
 
     this.particles.push({ text: t, x, y, life: 1000, speed: 40 })
+  }
+
+  // Floating "コンボ!" popup above a combatant when a combo payoff lands.
+  spawnComboPopup(sprite, source = 'player') {
+    if (!sprite) return
+    this.spawnFloatingText(sprite.x, sprite.y - 85, 'コンボ!', 0xf1c40f, '30px', FONTS.kanji.fontFamily)
   }
 
   shakeSprite(sprite) {

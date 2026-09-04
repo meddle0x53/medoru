@@ -6,7 +6,9 @@
  *   2. Slash alias substitution on send: `/0`, `/1`, `/2`... `/t`, `/1@1` etc.
  */
 
-const DICTIONARY_TRIGGER = /(^|\s)\/d(c)?(?:\s+)?(.*)$/
+// The Japanese iOS keyboard produces the full-width "／" (U+FF0F) from the
+// slash key, so accept it as a trigger alongside the ASCII "/".
+const DICTIONARY_TRIGGER = /(^|\s)[\/／]d(c)?(?:\s+)?(.*)$/
 const ALIAS_PATTERN = /(^|\s)\/(\d+|t)(?:@(\d+))?(?=\s|$|[.,!?;])/g
 
 export class ChatDictionary {
@@ -23,7 +25,7 @@ export class ChatDictionary {
     this.matches = []
     this.currentMatch = null
     this._keydownHandler = (e) => this.onKeyDown(e)
-    this._inputHandler = () => this.onInput()
+    this._inputHandler = (e) => this.onInput(e)
     this._blurHandler = () => this.hideDropdown()
     this._clickOutsideHandler = (e) => this.onClickOutside(e)
     this._repositionHandler = () => this.positionDropdown()
@@ -81,9 +83,9 @@ export class ChatDictionary {
     return this.wrapper?.dataset.currentUserAlias || ""
   }
 
-  onInput() {
+  onInput(e) {
     if (!this.isEnabled()) return
-    this.updateDropdown()
+    this.updateDropdown(e)
   }
 
   onKeyDown(e) {
@@ -121,8 +123,14 @@ export class ChatDictionary {
     }
   }
 
-  updateDropdown() {
-    const cursor = this.textarea.selectionStart
+  updateDropdown(inputEvent) {
+    // While an IME composition is in progress (e.g. the Japanese iOS keyboard),
+    // selectionStart points at the composition start, so slicing to it would
+    // cut off the text the user is actually typing. Fall back to the full
+    // value while composing.
+    const composing = inputEvent?.isComposing === true
+    this._composing = composing
+    const cursor = composing ? this.textarea.value.length : this.textarea.selectionStart
     const textBefore = this.textarea.value.slice(0, cursor)
     const match = textBefore.match(DICTIONARY_TRIGGER)
 
@@ -229,17 +237,47 @@ export class ChatDictionary {
 
   positionDropdown() {
     if (!this.dropdown || !this.textarea) return
+
+    // iOS positions fixed elements relative to the visual viewport while the
+    // virtual keyboard is open, but getBoundingClientRect() returns layout
+    // viewport coordinates — without this translation the dropdown renders
+    // off-screen. On desktop the offsets are 0 and scale is 1, so this is a
+    // no-op there.
+    const vv = window.visualViewport
+    const offsetX = vv ? vv.offsetLeft : 0
+    const offsetY = vv ? vv.offsetTop : 0
+    const scale = vv && vv.scale > 0 ? vv.scale : 1
+    const viewW = vv ? vv.width : window.innerWidth
+    const viewH = vv ? vv.height : window.innerHeight
+
     const rect = this.textarea.getBoundingClientRect()
-    this.dropdown.style.left = `${rect.left}px`
-    this.dropdown.style.top = `${rect.top - Math.min(this.dropdown.offsetHeight + 8, 280)}px`
-    this.dropdown.style.width = `${Math.min(rect.width, 320)}px`
+    const dropdownH = this.dropdown.offsetHeight
+    const dropdownW = Math.min(rect.width, 320)
+
+    let left = (rect.left - offsetX) / scale
+    let top = (rect.top - offsetY) / scale - dropdownH - 8
+
+    // If there is not enough room above the input, open below it instead.
+    if (top < 8) {
+      top = (rect.top - offsetY) / scale + rect.height / scale + 8
+    }
+
+    // Clamp fully inside the visual viewport.
+    top = Math.max(8, Math.min(top, viewH - dropdownH - 8))
+    left = Math.max(8, Math.min(left, viewW - dropdownW - 8))
+
+    this.dropdown.style.left = `${left}px`
+    this.dropdown.style.top = `${top}px`
+    this.dropdown.style.width = `${dropdownW / scale}px`
   }
 
   selectMatch(index) {
     const entry = this.matches[index]
     if (!entry || !this.currentMatch) return
 
-    const cursor = this.textarea.selectionStart
+    const cursor = this._composing
+      ? this.textarea.value.length
+      : this.textarea.selectionStart
     const textBefore = this.textarea.value.slice(0, cursor)
     const textAfter = this.textarea.value.slice(cursor)
     const triggerStart = textBefore.length - this.currentMatch[0].length
@@ -271,6 +309,7 @@ export class ChatDictionary {
     this.matches = []
     this.selectedIndex = -1
     this.currentMatch = null
+    this._composing = false
   }
 
   substituteAliases(text) {

@@ -296,6 +296,7 @@ export default class Player extends Character {
 
     // Tag ledger for this turn's combo sequencing
     this.turnTagLedger = []
+    this.turnSkillLedger = []
 
     // Current kanji powerup state during a move
     this.activeKanjiBonus = 0
@@ -340,7 +341,9 @@ export default class Player extends Character {
 
     // Parry setup: array of charge qualities ('perfect', 'sloppy', 'fail')
     this.parryCharges = []
-    this.parryKanjiQuality = null // legacy field kept for compatibility
+    this.parryKanjiQuality = null
+    this.parryComboBonus = null // legacy field kept for compatibility
+    this.parryComboBonus = null // sequence-combo payoff stored for the next counter
 
     // Cache computed charm stats so we don't recompute every frame
     this._charmEffects = null
@@ -736,6 +739,10 @@ export default class Player extends Character {
             .filter(id => !heroEventLocked.has(id))
           loadout.ownedCharmIds = (loadout.ownedCharmIds || [])
             .filter(id => !heroEventLocked.has(id))
+          loadout.permanentSocketCharmIds = (loadout.permanentSocketCharmIds || [])
+            .filter(id => !socketEventLocked.has(id))
+          loadout.permanentCharmIds = (loadout.permanentCharmIds || [])
+            .filter(id => !heroEventLocked.has(id))
           loadout.charmLockVersion = CHARM_LOCK_VERSION
         }
         if (!Array.isArray(loadout.knownActionIds)) {
@@ -849,6 +856,12 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.ownedCharmIds)) {
           loadout.ownedCharmIds = []
+        }
+        if (!Array.isArray(loadout.permanentCharmIds)) {
+          loadout.permanentCharmIds = []
+        }
+        if (!Array.isArray(loadout.permanentSocketCharmIds)) {
+          loadout.permanentSocketCharmIds = []
         }
         if (!Array.isArray(loadout.unlockedAbilityIds)) {
           loadout.unlockedAbilityIds = getDefaultUnlockedAbilityIds()
@@ -1513,6 +1526,10 @@ export default class Player extends Character {
       permanentWeaponLevel: this.loadout?.permanentWeaponLevel ?? 0,
       permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
       permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
+      // Charms purchased with Ouro Essence (meta currency) persist across
+      // runs; in-run gold purchases stay run-scoped.
+      permanentCharmIds: this.loadout?.permanentCharmIds ?? [],
+      permanentSocketCharmIds: this.loadout?.permanentSocketCharmIds ?? [],
       kanjiChallengeMode: this.loadout?.kanjiChallengeMode ?? 'default',
       freeKanjiLevels: this.loadout?.freeKanjiLevels ?? [5],
     }
@@ -1544,8 +1561,8 @@ export default class Player extends Character {
       statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
       gold: meta.startingGoldBonus || 0,
       inventory: {},
-      ownedCharmIds: [],
-      ownedSocketCharmIds: [],
+      ownedCharmIds: [...(meta.permanentCharmIds || [])],
+      ownedSocketCharmIds: [...(meta.permanentSocketCharmIds || [])],
       mapState: null,
       mapVersion: MAP_VERSION,
       foughtEnemyIds: [],

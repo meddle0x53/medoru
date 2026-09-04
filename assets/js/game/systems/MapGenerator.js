@@ -84,6 +84,8 @@ export function generateMap(mapIndexOrId = 0) {
     connectColumns(columns[col], columns[col + 1], maxConnections)
   }
 
+  enforceOncePerPath(columns, definition)
+
   const map = buildMapObject(definition, columns)
   computeLayout(map)
   return map
@@ -385,6 +387,109 @@ function pickWeightedType(pool) {
     if (roll <= 0) return type
   }
   return TILE_TYPES.BATTLE
+}
+
+// Types that may appear at most once on any path from column 0 to the boss.
+const ONCE_PER_PATH_TYPES = [TILE_TYPES.MEMORY, TILE_TYPES.SHORT_CASCADE]
+const MINI_BOSS = TILE_TYPES.MINI_BOSS
+// Maximum mini-boss fights allowed on a single path.
+const MAX_MINI_BOSSES_PER_PATH = 2
+
+/**
+ * Re-type tiles so path constraints hold. The map is a left-to-right DAG, so
+ * every constraint is checked against already-finalized predecessor columns.
+ *
+ * Constraints:
+ *  - memory / short_cascade: at most one of each on any path (ancestor rule).
+ *  - mini_boss: at most MAX_MINI_BOSSES_PER_PATH on any path, and two
+ *    mini-bosses on a path must be separated by a non-battle tile (a chain of
+ *    battle tiles does not count as a separator).
+ * Violating tiles are re-rolled from their column pool with the forbidden
+ * types removed (battle as ultimate fallback).
+ */
+function enforceOncePerPath(columns, definition) {
+  const predecessors = new Map()
+  for (const column of columns) {
+    for (const tile of column) {
+      for (const nextId of tile.connections) {
+        if (!predecessors.has(nextId)) predecessors.set(nextId, [])
+        predecessors.get(nextId).push(tile)
+      }
+    }
+  }
+
+  const hasAncestorOfType = (tile, type) => {
+    const seen = new Set()
+    const stack = [...(predecessors.get(tile.id) || [])]
+    while (stack.length > 0) {
+      const cur = stack.pop()
+      if (seen.has(cur.id)) continue
+      seen.add(cur.id)
+      if (cur.type === type) return true
+      stack.push(...(predecessors.get(cur.id) || []))
+    }
+    return false
+  }
+
+  const predsOf = tile => predecessors.get(tile.id) || []
+
+  // Per-tile DP state, keyed by tile id. Filled left-to-right; predecessors
+  // always belong to earlier columns, so their values are final when read.
+  // maxMiniBosses: maximum mini-boss count on any path home -> tile (inclusive).
+  // battleChain: tile is a mini-boss, or a battle tile reachable from a
+  //   mini-boss through battle tiles only (i.e. "no valid separator yet").
+  const maxMiniBosses = new Map()
+  const battleChain = new Map()
+
+  const rerollWithout = (tile, col, colConfig, forbiddenTypes) => {
+    const pool = getTypePool(col, definition) || { [TILE_TYPES.BATTLE]: 1 }
+    const filtered = Object.fromEntries(
+      Object.entries(pool).filter(([type]) => !forbiddenTypes.includes(type))
+    )
+    tile.type = pickWeightedType(
+      Object.keys(filtered).length > 0 ? filtered : { [TILE_TYPES.BATTLE]: 1 }
+    )
+    attachEnemyPool(tile, definition, colConfig)
+  }
+
+  for (let col = 0; col < columns.length; col++) {
+    const colConfig = (definition.columns || [])[col] || {}
+    for (const tile of columns[col]) {
+      // 1 + 2. Constraint checks, looping with an accumulating forbidden set.
+      // A re-roll for one constraint can pick a type that violates the other
+      // (e.g. a demoted memory re-rolling into mini_boss), so each violated
+      // type is permanently removed from the pool for this tile. The set only
+      // grows and the pool re-roll never picks a forbidden type, so this
+      // terminates in at most one re-roll per restricted type.
+      const forbidden = new Set()
+      let guard = 0
+      while (guard++ < 8) {
+        let violated = null
+        if (tile.type === MINI_BOSS) {
+          const preds = predsOf(tile)
+          const maxPredCount = Math.max(0, ...preds.map(p => maxMiniBosses.get(p.id) || 0))
+          const tooClose = preds.some(p => battleChain.get(p.id))
+          if (maxPredCount >= MAX_MINI_BOSSES_PER_PATH || tooClose) violated = MINI_BOSS
+        } else if (ONCE_PER_PATH_TYPES.includes(tile.type)) {
+          const conflicted = ONCE_PER_PATH_TYPES.filter(t => hasAncestorOfType(tile, t))
+          if (conflicted.includes(tile.type)) violated = tile.type
+        }
+        if (!violated) break
+        forbidden.add(violated)
+        rerollWithout(tile, col, colConfig, [...forbidden])
+      }
+
+      // 3. Record DP state for this tile's final type.
+      const preds = predsOf(tile)
+      const predMax = Math.max(0, ...preds.map(p => maxMiniBosses.get(p.id) || 0))
+      maxMiniBosses.set(tile.id, predMax + (tile.type === MINI_BOSS ? 1 : 0))
+      battleChain.set(
+        tile.id,
+        tile.type === MINI_BOSS ||
+          (isBattleTile(tile.type) && preds.some(p => battleChain.get(p.id)))
+      )
+    }
+  }
 }
 
 function randomInt(min, max) {

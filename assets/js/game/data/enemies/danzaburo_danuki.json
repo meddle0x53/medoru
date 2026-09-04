@@ -171,26 +171,6 @@
         "onFail": "full",
         "timeLimit": 28000
       }]
-    },
-    {
-      "id": "tanuki_transformation",
-      "name": "Tanuki Transformation",
-      "type": "transform",
-      "staminaCost": 5,
-      "sprite": "enemy_bake_neko_buff",
-      "aiWeight": 5,
-      "maxUsesPerTurn": 1,
-      "transformPoolIds": ["kasa_obake", "hitotsume_kozo", "bake_neko"],
-      "keepHpRatio": true,
-      "challenges": [{
-        "chance": 0.40,
-        "type": "word",
-        "promptType": "meaning",
-        "filters": { "knownOnly": true, "jlptLevels": ["N5", "N4"], "maxFrequency": 2000 },
-        "onSuccess": "cancel",
-        "onFail": "full",
-        "timeLimit": 28000
-      }]
     }
   ],
   "phases": [

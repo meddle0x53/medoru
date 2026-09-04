@@ -33,8 +33,17 @@ export function getEnemyDefinition(id) {
   return ENEMY_DEFINITIONS.find(e => e.id === id)
 }
 
-function pickWeightedEnemy(pool, foughtEnemyIds) {
-  const weights = pool.map(def => (foughtEnemyIds || []).includes(def.id) ? 0.5 : 1)
+function pickWeightedEnemy(pool, foughtEnemyIds, { excludeFought = false } = {}) {
+  const fought = (id) => (foughtEnemyIds || []).includes(id)
+  let weights = pool.map(def => {
+    if (fought(def.id)) return excludeFought ? 0 : 0.5
+    return 1
+  })
+  // Exclusion is a preference, not a hard guarantee: if every candidate was
+  // already fought, fall back to the usual half-weight variety nudge.
+  if (excludeFought && weights.every(w => w === 0)) {
+    weights = pool.map(def => (fought(def.id) ? 0.5 : 1))
+  }
   const total = weights.reduce((a, b) => a + b, 0)
   let roll = Math.random() * total
   for (let i = 0; i < pool.length; i++) {
@@ -55,7 +64,9 @@ export function pickEnemyForTile(tile, mapIndex, foughtEnemyIds = []) {
       .map(id => getEnemyDefinition(id))
       .filter(Boolean)
     if (pool.length > 0) {
-      return pickWeightedEnemy(pool, foughtEnemyIds)
+      // Mini-bosses already fought this run are excluded so the player never
+      // faces the same mini-boss twice in one run (unless there is no choice).
+      return pickWeightedEnemy(pool, foughtEnemyIds, { excludeFought: role === 'mini_boss' })
     }
   }
 
@@ -72,10 +83,10 @@ export function pickEnemyForTile(tile, mapIndex, foughtEnemyIds = []) {
   if (pool.length === 0) {
     const fallbackPool = ENEMY_DEFINITIONS.filter(def => def.roles.includes(role))
     if (fallbackPool.length === 0) return ENEMY_DEFINITIONS[0]
-    return pickWeightedEnemy(fallbackPool, foughtEnemyIds)
+    return pickWeightedEnemy(fallbackPool, foughtEnemyIds, { excludeFought: role === 'mini_boss' })
   }
 
-  return pickWeightedEnemy(pool, foughtEnemyIds)
+  return pickWeightedEnemy(pool, foughtEnemyIds, { excludeFought: role === 'mini_boss' })
 }
 
 /**

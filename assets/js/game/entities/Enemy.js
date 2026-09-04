@@ -16,6 +16,22 @@ const AI_PHASE_PRIORITY = {
 
 const SETUP_ACTION_TYPES = new Set(['buff', 'debuff', 'summon', 'transform'])
 
+// Weighted-random pick from a list of abilities using aiWeight. Deterministic
+// sorted[0] selection would permanently shadow a lower-weight setup ability
+// in the same tier (e.g. tanuki transformation vs summon), so the opening
+// setup action is rolled instead.
+function pickWeightedRandomAction(abilities) {
+  if (abilities.length === 1) return abilities[0]
+  const total = abilities.reduce((sum, a) => sum + (a.aiWeight || 0), 0)
+  if (total <= 0) return abilities[0]
+  let roll = Math.random() * total
+  for (const a of abilities) {
+    roll -= (a.aiWeight || 0)
+    if (roll <= 0) return a
+  }
+  return abilities[abilities.length - 1]
+}
+
 const NG_PLUS_ABILITY_NUMERIC_KEYS = new Set([
   'basePower', 'buffValue', 'defenseBonus', 'healValue', 'damage', 'power',
 ])
@@ -256,6 +272,15 @@ export default class Enemy extends Character {
       return sorted.find(a => !SETUP_ACTION_TYPES.has(a.type)) || sorted[0]
     }
 
+    if (SETUP_ACTION_TYPES.has(sorted[0].type)) {
+      const setupTier = []
+      for (const a of sorted) {
+        if (!SETUP_ACTION_TYPES.has(a.type)) break
+        setupTier.push(a)
+      }
+      return pickWeightedRandomAction(setupTier)
+    }
+
     return sorted[0]
   }
 
@@ -293,9 +318,19 @@ export default class Enemy extends Character {
         return (b.aiWeight || 0) - (a.aiWeight || 0)
       })
 
-      const action = buffUsed
-        ? sorted.find(a => !SETUP_ACTION_TYPES.has(a.type)) || sorted[0]
-        : sorted[0]
+      let action
+      if (buffUsed) {
+        action = sorted.find(a => !SETUP_ACTION_TYPES.has(a.type)) || sorted[0]
+      } else if (SETUP_ACTION_TYPES.has(sorted[0].type)) {
+        const setupTier = []
+        for (const a of sorted) {
+          if (!SETUP_ACTION_TYPES.has(a.type)) break
+          setupTier.push(a)
+        }
+        action = pickWeightedRandomAction(setupTier)
+      } else {
+        action = sorted[0]
+      }
 
       if (!action) break
       plan.push(action)

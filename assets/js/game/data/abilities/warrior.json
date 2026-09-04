@@ -1,1883 +1,1921 @@
 {
-  "version": 1,
-  "class": "warrior",
-  "abilities": [
-    {
-      "id": "forward_slash",
-      "name": "Forward Slash",
-      "nameJa": "斬撃",
-      "description": "A swift sword strike.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 3,
-      "basePower": 6,
-      "scalingStat": "strength",
-      "scalingMultiplier": 1.0,
-      "kanji": "刀",
-      "kanjiPool": [
-        "刀",
-        "斬",
-        "切",
-        "剣",
-        "刃",
-        "薙",
-        "突"
-      ],
-      "rarity": "common",
-      "moveHint": {
-        "en": "Make a POWERFUL swing.",
-        "ja": "強力な一振りを。"
-      },
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "bleed",
-          "target": "enemy",
-          "chance": {
-            "base": 0.1,
-            "step": 0.03,
-            "cap": 0.2
-          },
-          "duration": {
-            "min": 1,
-            "max": 1
-          }
-        }
-      ],
-      "singleUse": false,
-      "tags": [
-        "slash",
-        "starter"
-      ],
-      "combo": {
-        "consumesState": [
-          {
-            "target": "enemy",
-            "state": "exposed",
-            "guaranteeCritical": true,
-            "log": "Weak point exploited! Guaranteed critical!"
-          },
-          {
-            "target": "self",
-            "state": "rushing",
-            "guaranteeCritical": true,
-            "log": "Rushing strike! Guaranteed critical!"
-          }
-        ]
-      }
-    },
-    {
-      "id": "heavy_slash",
-      "name": "Heavy Slash",
-      "nameJa": "重斬",
-      "description": "A powerful but slower strike.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 4,
-      "basePower": 15,
-      "scalingStat": "strength",
-      "scalingMultiplier": 1.2,
-      "kanji": "斬",
-      "kanjiPool": [
-        "斬",
-        "豪",
-        "猛",
-        "剛",
-        "砕",
-        "破"
-      ],
-      "rarity": "common",
-      "moveHint": {
-        "en": "Unleash a DEVASTATING blow!",
-        "ja": "壊滅的な一撃を放て！"
-      },
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "power_up",
-          "target": "self",
-          "chance": {
-            "base": 0.3,
-            "step": 0,
-            "cap": 0.3
-          },
-          "duration": {
-            "min": 1,
-            "max": 2
-          }
-        },
-        {
-          "effectId": "blunt",
-          "target": "enemy",
-          "chance": {
-            "base": 0.15,
-            "step": 0.05,
-            "cap": 0.3
-          }
-        }
-      ],
-      "singleUse": true,
-      "tags": [
-        "slash",
-        "heavy",
-        "finisher"
-      ],
-      "combo": {
-        "consumesState": [
-          {
-            "target": "enemy",
-            "state": "staggered",
-            "damageMultiplier": 1.5,
-            "log": "Heavy Slash smashes the staggered enemy!"
-          },
-          {
-            "target": "self",
-            "state": "rushing",
-            "guaranteeCritical": true,
-            "log": "Rushing strike! Guaranteed critical!"
-          }
-        ]
-      }
-    },
-    {
-      "id": "setup_defence",
-      "name": "Setup Defence",
-      "nameJa": "防御",
-      "description": "Raise your guard.",
-      "type": "defence",
-      "element": "physical",
-      "equipmentType": "shield",
-      "requiredEquipment": "Wooden Shield",
-      "staminaCost": 2,
-      "baseBlock": 5,
-      "scalingStat": "skill",
-      "scalingMultiplier": 0.8,
-      "kanji": "盾",
-      "rarity": "common",
-      "moveHint": {
-        "en": "Raise your GUARD.",
-        "ja": "盾を構えろ。"
-      },
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void"
-      ],
-      "lifecycle": {
-        "onUse": [
-          "gainBlock"
-        ]
-      },
-      "effects": [],
-      "singleUse": false,
-      "tags": [
-        "guard",
-        "defence"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "self",
-          "state": "guarding",
-          "duration": "end_of_turn"
-        }
-      }
-    },
-    {
-      "id": "shield_parry",
-      "name": "Shield Parry",
-      "nameJa": "受け流し",
-      "description": "Chance to parry and counter-attack when hit.",
-      "type": "parry",
-      "element": "physical",
-      "equipmentType": "shield",
-      "requiredEquipment": "Wooden Shield",
-      "staminaCost": 2,
-      "baseParryChance": 0.15,
-      "kanji": "受",
-      "kanjiPool": [
-        "受",
-        "防",
-        "守",
-        "盾",
-        "護",
-        "弾",
-        "反"
-      ],
-      "rarity": "common",
-      "lifecycle": {
-        "onUse": [
-          "setupParry"
-        ]
-      },
-      "effects": [],
-      "singleUse": false,
-      "tags": [
-        "counter",
-        "guard"
-      ]
-    },
-    {
-      "id": "use_item",
-      "name": "Use Item",
-      "nameJa": "アイテム",
-      "description": "Use an item from your inventory.",
-      "type": "item",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 1,
-      "kanji": "使",
-      "rarity": "common",
-      "lifecycle": {
-        "onUse": [
-          "useItem"
-        ]
-      },
-      "effects": [],
-      "singleUse": false
-    },
-    {
-      "id": "quick_stab",
-      "name": "Quick Stab",
-      "nameJa": "突き",
-      "description": "A fast thrust that costs little stamina. Requires a Sharp Charm in the sword's first socket.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 2,
-      "basePower": 5,
-      "scalingStat": "skill",
-      "scalingMultiplier": 0.9,
-      "kanji": "突",
-      "kanjiPool": [
-        "突",
-        "刺",
-        "貫",
-        "穿",
-        "迅"
-      ],
-      "rarity": "uncommon",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.3,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "bleed",
-          "target": "enemy",
-          "chance": {
-            "base": 0.15,
-            "step": 0,
-            "cap": 0.15
-          },
-          "duration": {
-            "min": 1,
-            "max": 1
-          }
-        }
-      ],
-      "singleUse": true,
-      "tags": [
-        "pierce",
-        "starter",
-        "bleed"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "enemy",
-          "state": "exposed",
-          "duration": "next_attack"
-        },
-        "consumesState": {
-          "target": "self",
-          "state": "rushing",
-          "guaranteeCritical": true,
-          "log": "Rushing strike! Guaranteed critical!"
-        }
-      }
-    },
-    {
-      "id": "guard_break",
-      "name": "Guard Break",
-      "nameJa": "破防",
-      "description": "A heavy overhead smash. Requires a Heavy Charm in the sword's first socket. Has a chance to inflict Blunt.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "requiredSocketCharm": "heavy_charm_sword",
-      "staminaCost": 5,
-      "basePower": 14,
-      "scalingStat": "strength",
-      "scalingMultiplier": 1.0,
-      "kanji": "砕",
-      "kanjiPool": [
-        "破",
-        "砕",
-        "崩",
-        "割"
-      ],
-      "rarity": "common",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.2,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false,
-            "effectChanceOverrides": {
-              "blunt": 0.5
-            },
-            "log": "Guard Break smashes through! No kanji challenge."
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false,
-            "effectChanceOverrides": {
-              "blunt": 0.5
-            }
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true,
-            "effectChanceOverrides": {
-              "blunt": 0.7
-            }
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false,
-            "effectChanceOverrides": {
-              "blunt": 0.2
-            }
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "blunt",
-          "target": "enemy",
-          "chance": {
-            "base": 0.5,
-            "step": 0,
-            "cap": 0.5
-          }
-        }
-      ],
-      "singleUse": true,
-      "tags": [
-        "heavy",
-        "stagger"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "enemy",
-          "state": "staggered",
-          "duration": "end_of_turn"
-        }
-      }
-    },
-    {
-      "id": "focus",
-      "name": "Focus",
-      "nameJa": "集中",
-      "description": "Meditate to raise readiness. Adds 0.5 readiness on average; a successful kanji challenge adds 0.7, a failed one 0.3. Can be used multiple times.",
-      "type": "focus",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 6,
-      "kanji": "集",
-      "kanjiPool": [
-        "気",
-        "心",
-        "集",
-        "念",
-        "魂",
-        "精"
-      ],
-      "rarity": "common",
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "readinessDelta": 0.5
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "readinessDelta": 0.5
-          },
-          "pass": {
-            "challengeResult": "success",
-            "readinessDelta": 0.7
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "readinessDelta": 0.3
-          }
-        }
-      },
-      "effects": [],
-      "singleUse": false,
-      "tags": [
-        "prepare",
-        "focus"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "self",
-          "state": "marked",
-          "duration": "next_attack"
-        }
-      }
-    },
-    {
-      "id": "taunt",
-      "name": "Taunt",
-      "nameJa": "挑発",
-      "description": "Enter a provocative stance for the rest of the battle. Player damage x1.5, enemy damage x1.5. Stacks multiplicatively. A kanji challenge can raise player damage to x1.7 (pass) or lower it to x1.3 (fail).",
-      "type": "stance",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 5,
-      "kanji": "挑",
-      "kanjiPool": [
-        "挑",
-        "煽",
-        "誘",
-        "嘲",
-        "罵"
-      ],
-      "rarity": "uncommon",
-      "kanjiChallenge": {
-        "skipChance": 0.4,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success"
-          },
-          "fallback": {
-            "challengeResult": "success"
-          },
-          "pass": {
-            "challengeResult": "success"
-          },
-          "fail": {
-            "challengeResult": "fail"
-          }
-        }
-      },
-      "effects": [],
-      "singleUse": true,
-      "tags": [
-        "stance",
-        "taunt"
-      ]
-    },
-    {
-      "id": "zen",
-      "name": "Zen",
-      "nameJa": "禅",
-      "description": "Enter a calm stance for the rest of the battle. Player damage /1.5, enemy damage /1.5. Stacks multiplicatively and cancels Taunt. A kanji challenge can deepen the calm to /1.7 player (pass) or /1.3 player (fail).",
-      "type": "stance",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 5,
-      "kanji": "禅",
-      "kanjiPool": [
-        "禅",
-        "悟",
-        "静",
-        "無",
-        "和"
-      ],
-      "rarity": "uncommon",
-      "kanjiChallenge": {
-        "skipChance": 0.4,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success"
-          },
-          "fallback": {
-            "challengeResult": "success"
-          },
-          "pass": {
-            "challengeResult": "success"
-          },
-          "fail": {
-            "challengeResult": "fail"
-          }
-        }
-      },
-      "effects": [],
-      "singleUse": true,
-      "tags": [
-        "stance",
-        "calm"
-      ]
-    },
-    {
-      "id": "dash",
-      "name": "Dash",
-      "nameJa": "疾走",
-      "description": "Enter a reflex stance for the rest of the battle. Every non-Dash ability used during your turn adds +5% miss chance to the next enemy turn. Stacks: another Dash raises the bonus to +10%, etc.",
-      "type": "dash",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 6,
-      "kanji": "疾",
-      "kanjiPool": [
-        "疾",
-        "走",
-        "走",
-        "迅"
-      ],
-      "rarity": "rare",
-      "kanjiChallenge": {
-        "skipChance": 0.2,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success"
-          },
-          "fallback": {
-            "challengeResult": "success"
-          },
-          "pass": {
-            "challengeResult": "success"
-          },
-          "fail": {
-            "challengeResult": "fail"
-          }
-        }
-      },
-      "effects": [],
-      "singleUse": true,
-      "tags": [
-        "mobility"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "self",
-          "state": "rushing",
-          "duration": "next_attack"
-        }
-      }
-    },
-    {
-      "id": "two_hand_heavy",
-      "name": "Two-Hand Heavy",
-      "nameJa": "両手重撃",
-      "description": "A devastating two-handed strike.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 5,
-      "basePower": 25,
-      "scalingStat": "strength",
-      "scalingMultiplier": 1.3,
-      "kanji": "断",
-      "kanjiPool": [
-        "断",
-        "豪",
-        "猛",
-        "剛",
-        "砕",
-        "裂"
-      ],
-      "rarity": "uncommon",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "power_up",
-          "target": "self",
-          "chance": {
-            "base": 0.3,
-            "step": 0,
-            "cap": 0.3
-          },
-          "duration": {
-            "min": 1,
-            "max": 2
-          }
-        },
-        {
-          "effectId": "blunt",
-          "target": "enemy",
-          "chance": {
-            "base": 0.2,
-            "step": 0.05,
-            "cap": 0.4
-          }
-        }
-      ],
-      "singleUse": true,
-      "tags": [
-        "heavy",
-        "two_hand",
-        "finisher"
-      ],
-      "combo": {
-        "consumesState": [
-          {
-            "target": "enemy",
-            "state": "staggered",
-            "damageMultiplier": 1.5,
-            "log": "Two-Hand Heavy crushes the staggered enemy!"
-          },
-          {
-            "target": "self",
-            "state": "rushing",
-            "guaranteeCritical": true,
-            "log": "Rushing strike! Guaranteed critical!"
-          }
-        ]
-      }
-    },
-    {
-      "id": "sword_buff",
-      "name": "Sharpen Blade",
-      "nameJa": "鋭気",
-      "description": "Draw a kanji to sharpen your blade. Bonus damage scales with Skill and the number of strokes in the drawn kanji, and the buff's duration is extended by Luck.",
-      "type": "buff",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 3,
-      "kanji": "鋭",
-      "kanjiPool": [
-        "鋭",
-        "研",
-        "磨",
-        "錬"
-      ],
-      "rarity": "rare",
-      "kanjiChallenge": {
-        "skipChance": 0,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp"
-      },
-      "config": {
-        "buffType": "sword_damage_bonus",
-        "duration": {
-          "baseTurns": 1,
-          "bonusTurns": 1,
-          "scalesWith": "luck",
-          "chanceTable": [
-            {
-              "max": 10,
-              "chance": 0.2
-            },
-            {
-              "max": 25,
-              "chance": 0.3
-            },
-            {
-              "max": 40,
-              "chance": 0.4
-            },
-            {
-              "max": 80,
-              "chance": 0.5
-            },
-            {
-              "min": 80,
-              "chance": 0.6
-            }
-          ],
-          "qualityModifiers": {
-            "0": 1.0,
-            "1-3": 0.5,
-            "4+": 0
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "applyBuff"
-        ]
-      },
-      "effects": [],
-      "singleUse": true,
-      "tags": [
-        "weapon_buff",
-        "prepare"
-      ]
-    },
-    {
-      "id": "shield_bash",
-      "name": "Shield Bash",
-      "nameJa": "盾打",
-      "description": "Strike with your shield and raise a guard. Blunt chance rises with drawing quality.",
-      "type": "attack_defence",
-      "element": "physical",
-      "equipmentType": "shield",
-      "requiredEquipment": "Wooden Shield",
-      "staminaCost": 2,
-      "basePower": 2,
-      "scalingStat": "strength",
-      "scalingMultiplier": 0.5,
-      "baseBlock": 3,
-      "kanji": "打",
-      "kanjiPool": [
-        "撃",
-        "打",
-        "衝",
-        "盾"
-      ],
-      "rarity": "common",
-      "config": {
-        "setupDefenceBlock": true
-      },
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "effectChanceOverrides": {
-              "blunt": 0.1
-            }
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "effectChanceOverrides": {
-              "blunt": 0.1
-            }
-          },
-          "pass": {
-            "challengeResult": "success",
-            "perfectChallengeResult": "perfect",
-            "effectChanceOverrides": {
-              "blunt": 0.2
-            }
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "effectChanceOverrides": {
-              "blunt": 0.05
-            }
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage",
-          "gainBlock"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "blunt",
-          "target": "enemy",
-          "chance": {
-            "base": 0.1,
-            "step": 0,
-            "cap": 0.1
-          }
-        }
-      ],
-      "singleUse": true,
-      "tags": [
-        "stagger",
-        "bash",
-        "defence"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "enemy",
-          "state": "staggered",
-          "duration": "end_of_turn"
-        },
-        "consumesState": {
-          "target": "enemy",
-          "state": "off_balance",
-          "damageMultiplier": 1.5,
-          "log": "Shield Bash capitalises on the enemy being off balance!"
-        }
-      }
-    },
-    {
-      "id": "berserk",
-      "name": "Berserk",
-      "nameJa": "狂戦",
-      "description": "Enter a rage for the rest of the battle. Weapon attacks heal you for 10% of damage dealt by default. A successful kanji challenge raises the lifesteal based on the drawn kanji's strokes and accuracy. Multiple uses stack.",
-      "type": "buff",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 8,
-      "kanji": "狂",
-      "kanjiPool": [
-        "狂",
-        "猛",
-        "暴",
-        "怒",
-        "鬼"
-      ],
-      "rarity": "epic",
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp"
-      },
-      "config": {
-        "buffType": "berserk_lifesteal"
-      },
-      "lifecycle": {
-        "onUse": [
-          "applyBuff"
-        ]
-      },
-      "effects": [],
-      "singleUse": true,
-      "tags": [
-        "rage",
-        "buff"
-      ]
-    },
-    {
-      "id": "infuse_fire",
-      "name": "Infuse Fire",
-      "nameJa": "火纏い",
-      "description": "Infuse an ability with fire.",
-      "type": "infuse",
-      "element": "fire",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "火",
-      "rarity": "common",
-      "infusionValue": "fire",
-      "infusionKanjiPools": {
-        "0": [
-          "火",
-          "炎"
-        ],
-        "10": [
-          "焔",
-          "灯"
-        ],
-        "20": [
-          "灼",
-          "焦",
-          "燃"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_water",
-      "name": "Infuse Water",
-      "nameJa": "水纏い",
-      "description": "Infuse an ability with water.",
-      "type": "infuse",
-      "element": "water",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "水",
-      "rarity": "common",
-      "infusionValue": "water",
-      "infusionKanjiPools": {
-        "0": [
-          "水",
-          "川"
-        ],
-        "10": [
-          "海",
-          "河"
-        ],
-        "20": [
-          "湖",
-          "泉",
-          "波"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_wind",
-      "name": "Infuse Wind",
-      "nameJa": "風纏い",
-      "description": "Infuse an ability with wind.",
-      "type": "infuse",
-      "element": "wind",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "風",
-      "rarity": "common",
-      "infusionValue": "wind",
-      "infusionKanjiPools": {
-        "0": [
-          "風",
-          "空"
-        ],
-        "10": [
-          "気",
-          "雲"
-        ],
-        "20": [
-          "嵐",
-          "吹",
-          "暴"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_earth",
-      "name": "Infuse Earth",
-      "nameJa": "土纏い",
-      "description": "Infuse an ability with earth.",
-      "type": "infuse",
-      "element": "earth",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "土",
-      "rarity": "common",
-      "infusionValue": "earth",
-      "infusionKanjiPools": {
-        "0": [
-          "土",
-          "地"
-        ],
-        "10": [
-          "山",
-          "岩"
-        ],
-        "20": [
-          "石",
-          "砂",
-          "崖"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_void",
-      "name": "Infuse Void",
-      "nameJa": "虚纏い",
-      "description": "Infuse an ability with void.",
-      "type": "infuse",
-      "element": "void",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "虚",
-      "rarity": "common",
-      "infusionValue": "void",
-      "infusionKanjiPools": {
-        "0": [
-          "虚",
-          "無"
-        ],
-        "10": [
-          "空",
-          "闇"
-        ],
-        "20": [
-          "冥",
-          "暗",
-          "滅"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_frost",
-      "name": "Infuse Ice",
-      "nameJa": "氷纏い",
-      "description": "Infuse an ability with ice ( potent frost ).",
-      "type": "infuse",
-      "element": "water",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "氷",
-      "rarity": "common",
-      "infusionValue": "frost",
-      "infusionKanjiPools": {
-        "0": [
-          "氷",
-          "冷"
-        ],
-        "10": [
-          "雪",
-          "冬"
-        ],
-        "20": [
-          "涼",
-          "霜",
-          "凍"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_bleed",
-      "name": "Infuse Bleed",
-      "nameJa": "血纏い",
-      "description": "Infuse an ability with bleed.",
-      "type": "infuse",
-      "element": "physical",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "血",
-      "rarity": "common",
-      "infusionValue": "bleed",
-      "infusionKanjiPools": {
-        "0": [
-          "血",
-          "刀"
-        ],
-        "10": [
-          "刃",
-          "傷"
-        ],
-        "20": [
-          "剣",
-          "矢",
-          "槍"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "infuse_poison",
-      "name": "Infuse Poison",
-      "nameJa": "毒纏い",
-      "description": "Infuse an ability with poison.",
-      "type": "infuse",
-      "element": "poison",
-      "equipmentType": null,
-      "requiredEquipment": null,
-      "staminaCost": 2,
-      "kanji": "毒",
-      "rarity": "common",
-      "infusionValue": "poison",
-      "infusionKanjiPools": {
-        "0": [
-          "毒",
-          "虫"
-        ],
-        "10": [
-          "薬",
-          "蛇"
-        ],
-        "20": [
-          "菌",
-          "疫",
-          "藻"
-        ]
-      },
-      "lifecycle": {
-        "onUse": [
-          "infuseAbility"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "gutting_slash",
-      "name": "Gutting Slash",
-      "nameJa": "斬り裂き",
-      "description": "A bleeding cut that opens deep wounds. Multi-use; once learned it will not appear as a reward again.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": null,
-      "requiredCharmFamily": "bleed",
-      "staminaCost": 5,
-      "basePower": 14,
-      "scalingStat": "skill",
-      "scalingMultiplier": 1.0,
-      "kanji": "裂",
-      "kanjiPool": [
-        "裂",
-        "血",
-        "傷",
-        "噴"
-      ],
-      "rarity": "rare",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "bleed",
-          "target": "enemy",
-          "chance": {
-            "base": 0.35,
-            "step": 0.05,
-            "cap": 0.65
-          },
-          "duration": {
-            "min": 2,
-            "max": 3
-          }
-        }
-      ],
-      "singleUse": false,
-      "tags": [
-        "bleed",
-        "slash"
-      ],
-      "combo": {
-        "consumesState": {
-          "target": "self",
-          "state": "rushing",
-          "guaranteeCritical": true,
-          "log": "Rushing strike! Guaranteed critical!"
-        }
-      }
-    },
-    {
-      "id": "seismic_slam",
-      "name": "Seismic Slam",
-      "nameJa": "地碎打",
-      "description": "A crushing overhead strike that shatters armour. Multi-use; once learned it will not appear as a reward again.",
-      "type": "attack",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": null,
-      "requiredCharmFamily": "heavy",
-      "staminaCost": 5,
-      "basePower": 20,
-      "scalingStat": "strength",
-      "scalingMultiplier": 1.2,
-      "kanji": "砕",
-      "kanjiPool": [
-        "震",
-        "砕",
-        "轟",
-        "崩"
-      ],
-      "rarity": "rare",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "blunt",
-          "target": "enemy",
-          "chance": {
-            "base": 0.25,
-            "step": 0.05,
-            "cap": 0.45
-          }
-        }
-      ],
-      "singleUse": false,
-      "tags": [
-        "heavy",
-        "earth"
-      ],
-      "combo": {
-        "consumesState": {
-          "target": "enemy",
-          "state": "staggered",
-          "damageMultiplier": 1.5,
-          "log": "Seismic Slam shatters the staggered enemy!"
-        }
-      }
-    },
-    {
-      "id": "flame_arc",
-      "name": "Flame Arc",
-      "nameJa": "炎弧",
-      "description": "A sweeping blade of fire that scorches the enemy. Multi-use; once learned it will not appear as a reward again.",
-      "type": "attack",
-      "element": "fire",
-      "equipmentType": "weapon",
-      "requiredEquipment": null,
-      "requiredCharmFamily": "fire",
-      "staminaCost": 4,
-      "basePower": 12,
-      "scalingStat": "mana",
-      "scalingMultiplier": 1.1,
-      "kanji": "炎",
-      "kanjiPool": [
-        "火",
-        "炎",
-        "焔",
-        "焼",
-        "燃",
-        "灼"
-      ],
-      "rarity": "rare",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "burn",
-          "target": "enemy",
-          "chance": {
-            "base": 0.3,
-            "step": 0.05,
-            "cap": 0.5
-          },
-          "duration": {
-            "min": 2,
-            "max": 3
-          },
-          "payload": {
-            "element": "fire"
-          }
-        }
-      ],
-      "singleUse": false,
-      "tags": [
-        "fire",
-        "arc",
-        "elemental"
-      ]
-    },
-    {
-      "id": "gale_strike",
-      "name": "Gale Strike",
-      "nameJa": "風斬り",
-      "description": "A swift cutting wind that leaves the enemy reeling. Multi-use; once learned it will not appear as a reward again.",
-      "type": "attack",
-      "element": "wind",
-      "equipmentType": "weapon",
-      "requiredEquipment": null,
-      "requiredCharmFamily": "wind",
-      "staminaCost": 4,
-      "basePower": 12,
-      "scalingStat": "skill",
-      "scalingMultiplier": 1.1,
-      "kanji": "風",
-      "kanjiPool": [
-        "風",
-        "嵐",
-        "疾",
-        "迅",
-        "旋"
-      ],
-      "rarity": "rare",
-      "infusableWith": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "void",
-        "frost",
-        "bleed",
-        "poison"
-      ],
-      "kanjiChallenge": {
-        "skipChance": 0.1,
-        "focusOverrideChance": 0.2,
-        "failThreshold": "halfUp",
-        "powerBonusTiers": [
-          {
-            "minStrokes": 0,
-            "bonus": 1
-          },
-          {
-            "minStrokes": 4,
-            "bonus": 2
-          },
-          {
-            "minStrokes": 8,
-            "bonus": 3
-          }
-        ],
-        "outcomes": {
-          "skipped": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "fallback": {
-            "challengeResult": "success",
-            "applyPowerBonus": false
-          },
-          "pass": {
-            "challengeResult": "success",
-            "applyPowerBonus": true
-          },
-          "fail": {
-            "challengeResult": "fail",
-            "applyPowerBonus": false
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "dealDamage"
-        ]
-      },
-      "effects": [
-        {
-          "effectId": "weak",
-          "target": "enemy",
-          "chance": {
-            "base": 0.25,
-            "step": 0.05,
-            "cap": 0.45
-          },
-          "duration": {
-            "min": 2,
-            "max": 3
-          }
-        }
-      ],
-      "singleUse": false,
-      "tags": [
-        "wind",
-        "slash",
-        "mobility"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "enemy",
-          "state": "off_balance",
-          "duration": "end_of_turn"
-        },
-        "consumesState": {
-          "target": "self",
-          "state": "rushing",
-          "guaranteeCritical": true,
-          "log": "Rushing strike! Guaranteed critical!"
-        }
-      }
-    },
-    {
-      "id": "raise_shield",
-      "name": "Raise Shield",
-      "nameJa": "盾を上げる",
-      "description": "Brace for the next enemy attack, gaining a huge block bonus when it lands.",
-      "type": "defence",
-      "element": "physical",
-      "equipmentType": "shield",
-      "requiredEquipment": "Wooden Shield",
-      "staminaCost": 2,
-      "baseBlock": 0,
-      "kanji": "盾",
-      "rarity": "uncommon",
-      "tags": [
-        "guard",
-        "defence",
-        "prepare"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "self",
-          "state": "raised_shield",
-          "duration": "until_hit"
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "gainBlock"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
-    },
-    {
-      "id": "sheathe_blade",
-      "name": "Sheathe Blade",
-      "nameJa": "居合",
-      "description": "Sheathe your blade and wait. The next enemy melee attack triggers a devastating iaijutsu counter.",
-      "type": "buff",
-      "element": "physical",
-      "equipmentType": "weapon",
-      "requiredEquipment": "Long Sword",
-      "staminaCost": 3,
-      "kanji": "居",
-      "rarity": "rare",
-      "tags": [
-        "prepare",
-        "counter"
-      ],
-      "combo": {
-        "appliesState": {
-          "target": "self",
-          "state": "sheathed",
-          "duration": "until_trigger"
-        }
-      },
-      "config": {
-        "buffType": "sheathed",
-        "duration": {
-          "baseTurns": 1,
-          "bonusTurns": 0,
-          "scalesWith": "luck",
-          "chanceTable": [
-            {
-              "max": 99,
-              "chance": 0
-            }
-          ],
-          "qualityModifiers": {
-            "0": 0
-          }
-        }
-      },
-      "lifecycle": {
-        "onUse": [
-          "applyBuff"
-        ]
-      },
-      "effects": [],
-      "singleUse": true
+ "version": 1,
+ "class": "warrior",
+ "abilities": [
+  {
+   "id": "forward_slash",
+   "name": "Forward Slash",
+   "nameJa": "斬撃",
+   "description": "A swift sword strike.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 3,
+   "basePower": 7,
+   "scalingStat": "strength",
+   "scalingMultiplier": 1.1,
+   "kanji": "刀",
+   "kanjiPool": [
+    "刀",
+    "斬",
+    "切",
+    "剣",
+    "刃",
+    "薙",
+    "突"
+   ],
+   "rarity": "common",
+   "moveHint": {
+    "en": "Make a POWERFUL swing.",
+    "ja": "強力な一振りを。"
+   },
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
     }
-  ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "bleed",
+     "target": "enemy",
+     "chance": {
+      "base": 0.1,
+      "step": 0.03,
+      "cap": 0.2
+     },
+     "duration": {
+      "min": 1,
+      "max": 1
+     }
+    }
+   ],
+   "singleUse": false,
+   "tags": [
+    "slash",
+    "starter"
+   ],
+   "combo": {
+    "consumesState": [
+     {
+      "target": "enemy",
+      "state": "exposed",
+      "guaranteeCritical": true,
+      "log": "Weak point exploited! Guaranteed critical!"
+     },
+     {
+      "target": "self",
+      "state": "rushing",
+      "guaranteeCritical": true,
+      "log": "Rushing strike! Guaranteed critical!"
+     }
+    ],
+    "requiresStreak": {
+     "skillId": "forward_slash",
+     "count": 2,
+     "damageMultiplier": 1.5,
+     "log": "Triple Slash! 1.5x damage!"
+    }
+   }
+  },
+  {
+   "id": "heavy_slash",
+   "name": "Heavy Slash",
+   "nameJa": "重斬",
+   "description": "A powerful but slower strike.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 4,
+   "basePower": 15,
+   "scalingStat": "strength",
+   "scalingMultiplier": 1.2,
+   "kanji": "斬",
+   "kanjiPool": [
+    "斬",
+    "豪",
+    "猛",
+    "剛",
+    "砕",
+    "破"
+   ],
+   "rarity": "common",
+   "moveHint": {
+    "en": "Unleash a DEVASTATING blow!",
+    "ja": "壊滅的な一撃を放て！"
+   },
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "power_up",
+     "target": "self",
+     "chance": {
+      "base": 0.3,
+      "step": 0,
+      "cap": 0.3
+     },
+     "duration": {
+      "min": 1,
+      "max": 2
+     }
+    },
+    {
+     "effectId": "blunt",
+     "target": "enemy",
+     "chance": {
+      "base": 0.15,
+      "step": 0.05,
+      "cap": 0.3
+     }
+    }
+   ],
+   "singleUse": true,
+   "tags": [
+    "slash",
+    "heavy",
+    "finisher"
+   ],
+   "combo": {
+    "consumesState": [
+     {
+      "target": "enemy",
+      "state": "staggered",
+      "damageMultiplier": 1.5,
+      "log": "Heavy Slash smashes the staggered enemy!"
+     },
+     {
+      "target": "self",
+      "state": "rushing",
+      "guaranteeCritical": true,
+      "log": "Rushing strike! Guaranteed critical!"
+     }
+    ],
+    "requiresSequence": {
+     "sequence": [
+      "forward_slash",
+      "forward_slash"
+     ],
+     "damageMultiplier": 1.5,
+     "log": "Slash combo finisher! 1.5x damage!"
+    }
+   }
+  },
+  {
+   "id": "setup_defence",
+   "name": "Setup Defence",
+   "nameJa": "防御",
+   "description": "Raise your guard.",
+   "type": "defence",
+   "element": "physical",
+   "equipmentType": "shield",
+   "requiredEquipment": "Wooden Shield",
+   "staminaCost": 2,
+   "baseBlock": 5,
+   "scalingStat": "skill",
+   "scalingMultiplier": 0.8,
+   "kanji": "盾",
+   "rarity": "common",
+   "moveHint": {
+    "en": "Raise your GUARD.",
+    "ja": "盾を構えろ。"
+   },
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void"
+   ],
+   "lifecycle": {
+    "onUse": [
+     "gainBlock"
+    ]
+   },
+   "effects": [],
+   "singleUse": false,
+   "tags": [
+    "guard",
+    "defence"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "self",
+     "state": "guarding",
+     "duration": "end_of_turn"
+    },
+    "requiresStreak": {
+     "skillId": "setup_defence",
+     "count": 2,
+     "defenceMultiplier": 2,
+     "log": "Shield Wall! Accumulated Defence doubled!"
+    }
+   }
+  },
+  {
+   "id": "shield_parry",
+   "name": "Shield Parry",
+   "nameJa": "受け流し",
+   "description": "Chance to parry and counter-attack when hit.",
+   "type": "parry",
+   "element": "physical",
+   "equipmentType": "shield",
+   "requiredEquipment": "Wooden Shield",
+   "staminaCost": 2,
+   "baseParryChance": 0.15,
+   "kanji": "受",
+   "kanjiPool": [
+    "受",
+    "防",
+    "守",
+    "盾",
+    "護",
+    "弾",
+    "反"
+   ],
+   "rarity": "common",
+   "lifecycle": {
+    "onUse": [
+     "setupParry"
+    ]
+   },
+   "effects": [],
+   "singleUse": false,
+   "tags": [
+    "counter",
+    "guard"
+   ],
+   "combo": {
+    "requiresSequence": {
+     "sequence": [
+      "forward_slash",
+      "tag:slash"
+     ],
+     "damageMultiplier": 1.5,
+     "log": "Riposte combo! 1.5x counter damage!"
+    }
+   }
+  },
+  {
+   "id": "use_item",
+   "name": "Use Item",
+   "nameJa": "アイテム",
+   "description": "Use an item from your inventory.",
+   "type": "item",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 1,
+   "kanji": "使",
+   "rarity": "common",
+   "lifecycle": {
+    "onUse": [
+     "useItem"
+    ]
+   },
+   "effects": [],
+   "singleUse": false
+  },
+  {
+   "id": "quick_stab",
+   "name": "Quick Stab",
+   "nameJa": "突き",
+   "description": "A fast thrust that costs little stamina. Requires a Sharp Charm in the sword's first socket.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 2,
+   "basePower": 5,
+   "scalingStat": "skill",
+   "scalingMultiplier": 0.9,
+   "kanji": "突",
+   "kanjiPool": [
+    "突",
+    "刺",
+    "貫",
+    "穿",
+    "迅"
+   ],
+   "rarity": "uncommon",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.3,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "bleed",
+     "target": "enemy",
+     "chance": {
+      "base": 0.15,
+      "step": 0,
+      "cap": 0.15
+     },
+     "duration": {
+      "min": 1,
+      "max": 1
+     }
+    }
+   ],
+   "singleUse": true,
+   "tags": [
+    "pierce",
+    "starter",
+    "bleed"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "enemy",
+     "state": "exposed",
+     "duration": "next_attack"
+    },
+    "consumesState": {
+     "target": "self",
+     "state": "rushing",
+     "guaranteeCritical": true,
+     "log": "Rushing strike! Guaranteed critical!"
+    }
+   }
+  },
+  {
+   "id": "guard_break",
+   "name": "Guard Break",
+   "nameJa": "破防",
+   "description": "A heavy overhead smash. Requires a Heavy Charm in the sword's first socket. Has a chance to inflict Blunt.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "requiredSocketCharm": "heavy_charm_sword",
+   "staminaCost": 5,
+   "basePower": 14,
+   "scalingStat": "strength",
+   "scalingMultiplier": 1.0,
+   "kanji": "砕",
+   "kanjiPool": [
+    "破",
+    "砕",
+    "崩",
+    "割"
+   ],
+   "rarity": "common",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.2,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false,
+      "effectChanceOverrides": {
+       "blunt": 0.5
+      },
+      "log": "Guard Break smashes through! No kanji challenge."
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false,
+      "effectChanceOverrides": {
+       "blunt": 0.5
+      }
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true,
+      "effectChanceOverrides": {
+       "blunt": 0.7
+      }
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false,
+      "effectChanceOverrides": {
+       "blunt": 0.2
+      }
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "blunt",
+     "target": "enemy",
+     "chance": {
+      "base": 0.5,
+      "step": 0,
+      "cap": 0.5
+     }
+    }
+   ],
+   "singleUse": true,
+   "tags": [
+    "heavy",
+    "stagger"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "enemy",
+     "state": "staggered",
+     "duration": "end_of_turn"
+    }
+   }
+  },
+  {
+   "id": "focus",
+   "name": "Focus",
+   "nameJa": "集中",
+   "description": "Meditate to raise readiness. Adds 0.5 readiness on average; a successful kanji challenge adds 0.7, a failed one 0.3. Can be used multiple times.",
+   "type": "focus",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 6,
+   "kanji": "集",
+   "kanjiPool": [
+    "気",
+    "心",
+    "集",
+    "念",
+    "魂",
+    "精"
+   ],
+   "rarity": "common",
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "readinessDelta": 0.5
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "readinessDelta": 0.5
+     },
+     "pass": {
+      "challengeResult": "success",
+      "readinessDelta": 0.7
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "readinessDelta": 0.3
+     }
+    }
+   },
+   "effects": [],
+   "singleUse": false,
+   "tags": [
+    "prepare",
+    "focus"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "self",
+     "state": "marked",
+     "duration": "next_attack"
+    }
+   }
+  },
+  {
+   "id": "taunt",
+   "name": "Taunt",
+   "nameJa": "挑発",
+   "description": "Enter a provocative stance for the rest of the battle. Player damage x1.5, enemy damage x1.5. Stacks multiplicatively. A kanji challenge can raise player damage to x1.7 (pass) or lower it to x1.3 (fail).",
+   "type": "stance",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 5,
+   "kanji": "挑",
+   "kanjiPool": [
+    "挑",
+    "煽",
+    "誘",
+    "嘲",
+    "罵"
+   ],
+   "rarity": "uncommon",
+   "kanjiChallenge": {
+    "skipChance": 0.4,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success"
+     },
+     "fallback": {
+      "challengeResult": "success"
+     },
+     "pass": {
+      "challengeResult": "success"
+     },
+     "fail": {
+      "challengeResult": "fail"
+     }
+    }
+   },
+   "effects": [],
+   "singleUse": true,
+   "tags": [
+    "stance",
+    "taunt"
+   ]
+  },
+  {
+   "id": "zen",
+   "name": "Zen",
+   "nameJa": "禅",
+   "description": "Enter a calm stance for the rest of the battle. Player damage /1.5, enemy damage /1.5. Stacks multiplicatively and cancels Taunt. A kanji challenge can deepen the calm to /1.7 player (pass) or /1.3 player (fail).",
+   "type": "stance",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 5,
+   "kanji": "禅",
+   "kanjiPool": [
+    "禅",
+    "悟",
+    "静",
+    "無",
+    "和"
+   ],
+   "rarity": "uncommon",
+   "kanjiChallenge": {
+    "skipChance": 0.4,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success"
+     },
+     "fallback": {
+      "challengeResult": "success"
+     },
+     "pass": {
+      "challengeResult": "success"
+     },
+     "fail": {
+      "challengeResult": "fail"
+     }
+    }
+   },
+   "effects": [],
+   "singleUse": true,
+   "tags": [
+    "stance",
+    "calm"
+   ]
+  },
+  {
+   "id": "dash",
+   "name": "Dash",
+   "nameJa": "疾走",
+   "description": "Enter a reflex stance for the rest of the battle. Every non-Dash ability used during your turn adds +5% miss chance to the next enemy turn. Stacks: another Dash raises the bonus to +10%, etc.",
+   "type": "dash",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 6,
+   "kanji": "疾",
+   "kanjiPool": [
+    "疾",
+    "走",
+    "走",
+    "迅"
+   ],
+   "rarity": "rare",
+   "kanjiChallenge": {
+    "skipChance": 0.2,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success"
+     },
+     "fallback": {
+      "challengeResult": "success"
+     },
+     "pass": {
+      "challengeResult": "success"
+     },
+     "fail": {
+      "challengeResult": "fail"
+     }
+    }
+   },
+   "effects": [],
+   "singleUse": true,
+   "tags": [
+    "mobility"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "self",
+     "state": "rushing",
+     "duration": "next_attack"
+    }
+   }
+  },
+  {
+   "id": "two_hand_heavy",
+   "name": "Two-Hand Heavy",
+   "nameJa": "両手重撃",
+   "description": "A devastating two-handed strike.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 5,
+   "basePower": 25,
+   "scalingStat": "strength",
+   "scalingMultiplier": 1.3,
+   "kanji": "断",
+   "kanjiPool": [
+    "断",
+    "豪",
+    "猛",
+    "剛",
+    "砕",
+    "裂"
+   ],
+   "rarity": "uncommon",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "power_up",
+     "target": "self",
+     "chance": {
+      "base": 0.3,
+      "step": 0,
+      "cap": 0.3
+     },
+     "duration": {
+      "min": 1,
+      "max": 2
+     }
+    },
+    {
+     "effectId": "blunt",
+     "target": "enemy",
+     "chance": {
+      "base": 0.2,
+      "step": 0.05,
+      "cap": 0.4
+     }
+    }
+   ],
+   "singleUse": true,
+   "tags": [
+    "heavy",
+    "two_hand",
+    "finisher"
+   ],
+   "combo": {
+    "consumesState": [
+     {
+      "target": "enemy",
+      "state": "staggered",
+      "damageMultiplier": 1.5,
+      "log": "Two-Hand Heavy crushes the staggered enemy!"
+     },
+     {
+      "target": "self",
+      "state": "rushing",
+      "guaranteeCritical": true,
+      "log": "Rushing strike! Guaranteed critical!"
+     }
+    ],
+    "requiresSequence": {
+     "sequence": [
+      "forward_slash",
+      "forward_slash"
+     ],
+     "damageMultiplier": 1.5,
+     "log": "Slash combo finisher! 1.5x damage!"
+    }
+   }
+  },
+  {
+   "id": "sword_buff",
+   "name": "Sharpen Blade",
+   "nameJa": "鋭気",
+   "description": "Draw a kanji to sharpen your blade. Bonus damage scales with Skill and the number of strokes in the drawn kanji, and the buff's duration is extended by Luck.",
+   "type": "buff",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 3,
+   "kanji": "鋭",
+   "kanjiPool": [
+    "鋭",
+    "研",
+    "磨",
+    "錬"
+   ],
+   "rarity": "rare",
+   "kanjiChallenge": {
+    "skipChance": 0,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp"
+   },
+   "config": {
+    "buffType": "sword_damage_bonus",
+    "duration": {
+     "baseTurns": 1,
+     "bonusTurns": 1,
+     "scalesWith": "luck",
+     "chanceTable": [
+      {
+       "max": 10,
+       "chance": 0.2
+      },
+      {
+       "max": 25,
+       "chance": 0.3
+      },
+      {
+       "max": 40,
+       "chance": 0.4
+      },
+      {
+       "max": 80,
+       "chance": 0.5
+      },
+      {
+       "min": 80,
+       "chance": 0.6
+      }
+     ],
+     "qualityModifiers": {
+      "0": 1.0,
+      "1-3": 0.5,
+      "4+": 0
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "applyBuff"
+    ]
+   },
+   "effects": [],
+   "singleUse": true,
+   "tags": [
+    "weapon_buff",
+    "prepare"
+   ]
+  },
+  {
+   "id": "shield_bash",
+   "name": "Shield Bash",
+   "nameJa": "盾打",
+   "description": "Strike with your shield and raise a guard. Blunt chance rises with drawing quality.",
+   "type": "attack_defence",
+   "element": "physical",
+   "equipmentType": "shield",
+   "requiredEquipment": "Wooden Shield",
+   "staminaCost": 2,
+   "basePower": 2,
+   "scalingStat": "strength",
+   "scalingMultiplier": 0.5,
+   "baseBlock": 3,
+   "kanji": "打",
+   "kanjiPool": [
+    "撃",
+    "打",
+    "衝",
+    "盾"
+   ],
+   "rarity": "common",
+   "config": {
+    "setupDefenceBlock": true
+   },
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "effectChanceOverrides": {
+       "blunt": 0.1
+      }
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "effectChanceOverrides": {
+       "blunt": 0.1
+      }
+     },
+     "pass": {
+      "challengeResult": "success",
+      "perfectChallengeResult": "perfect",
+      "effectChanceOverrides": {
+       "blunt": 0.2
+      }
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "effectChanceOverrides": {
+       "blunt": 0.05
+      }
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage",
+     "gainBlock"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "blunt",
+     "target": "enemy",
+     "chance": {
+      "base": 0.1,
+      "step": 0,
+      "cap": 0.1
+     }
+    }
+   ],
+   "singleUse": true,
+   "tags": [
+    "stagger",
+    "bash",
+    "defence"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "enemy",
+     "state": "staggered",
+     "duration": "end_of_turn"
+    },
+    "consumesState": {
+     "target": "enemy",
+     "state": "off_balance",
+     "damageMultiplier": 1.5,
+     "log": "Shield Bash capitalises on the enemy being off balance!"
+    }
+   }
+  },
+  {
+   "id": "berserk",
+   "name": "Berserk",
+   "nameJa": "狂戦",
+   "description": "Enter a rage for the rest of the battle. Weapon attacks heal you for 10% of damage dealt by default. A successful kanji challenge raises the lifesteal based on the drawn kanji's strokes and accuracy. Multiple uses stack.",
+   "type": "buff",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 8,
+   "kanji": "狂",
+   "kanjiPool": [
+    "狂",
+    "猛",
+    "暴",
+    "怒",
+    "鬼"
+   ],
+   "rarity": "epic",
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp"
+   },
+   "config": {
+    "buffType": "berserk_lifesteal"
+   },
+   "lifecycle": {
+    "onUse": [
+     "applyBuff"
+    ]
+   },
+   "effects": [],
+   "singleUse": true,
+   "tags": [
+    "rage",
+    "buff"
+   ]
+  },
+  {
+   "id": "infuse_fire",
+   "name": "Infuse Fire",
+   "nameJa": "火纏い",
+   "description": "Infuse an ability with fire.",
+   "type": "infuse",
+   "element": "fire",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "火",
+   "rarity": "common",
+   "infusionValue": "fire",
+   "infusionKanjiPools": {
+    "0": [
+     "火",
+     "炎"
+    ],
+    "10": [
+     "焔",
+     "灯"
+    ],
+    "20": [
+     "灼",
+     "焦",
+     "燃"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_water",
+   "name": "Infuse Water",
+   "nameJa": "水纏い",
+   "description": "Infuse an ability with water.",
+   "type": "infuse",
+   "element": "water",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "水",
+   "rarity": "common",
+   "infusionValue": "water",
+   "infusionKanjiPools": {
+    "0": [
+     "水",
+     "川"
+    ],
+    "10": [
+     "海",
+     "河"
+    ],
+    "20": [
+     "湖",
+     "泉",
+     "波"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_wind",
+   "name": "Infuse Wind",
+   "nameJa": "風纏い",
+   "description": "Infuse an ability with wind.",
+   "type": "infuse",
+   "element": "wind",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "風",
+   "rarity": "common",
+   "infusionValue": "wind",
+   "infusionKanjiPools": {
+    "0": [
+     "風",
+     "空"
+    ],
+    "10": [
+     "気",
+     "雲"
+    ],
+    "20": [
+     "嵐",
+     "吹",
+     "暴"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_earth",
+   "name": "Infuse Earth",
+   "nameJa": "土纏い",
+   "description": "Infuse an ability with earth.",
+   "type": "infuse",
+   "element": "earth",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "土",
+   "rarity": "common",
+   "infusionValue": "earth",
+   "infusionKanjiPools": {
+    "0": [
+     "土",
+     "地"
+    ],
+    "10": [
+     "山",
+     "岩"
+    ],
+    "20": [
+     "石",
+     "砂",
+     "崖"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_void",
+   "name": "Infuse Void",
+   "nameJa": "虚纏い",
+   "description": "Infuse an ability with void.",
+   "type": "infuse",
+   "element": "void",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "虚",
+   "rarity": "common",
+   "infusionValue": "void",
+   "infusionKanjiPools": {
+    "0": [
+     "虚",
+     "無"
+    ],
+    "10": [
+     "空",
+     "闇"
+    ],
+    "20": [
+     "冥",
+     "暗",
+     "滅"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_frost",
+   "name": "Infuse Ice",
+   "nameJa": "氷纏い",
+   "description": "Infuse an ability with ice ( potent frost ).",
+   "type": "infuse",
+   "element": "water",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "氷",
+   "rarity": "common",
+   "infusionValue": "frost",
+   "infusionKanjiPools": {
+    "0": [
+     "氷",
+     "冷"
+    ],
+    "10": [
+     "雪",
+     "冬"
+    ],
+    "20": [
+     "涼",
+     "霜",
+     "凍"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_bleed",
+   "name": "Infuse Bleed",
+   "nameJa": "血纏い",
+   "description": "Infuse an ability with bleed.",
+   "type": "infuse",
+   "element": "physical",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "血",
+   "rarity": "common",
+   "infusionValue": "bleed",
+   "infusionKanjiPools": {
+    "0": [
+     "血",
+     "刀"
+    ],
+    "10": [
+     "刃",
+     "傷"
+    ],
+    "20": [
+     "剣",
+     "矢",
+     "槍"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "infuse_poison",
+   "name": "Infuse Poison",
+   "nameJa": "毒纏い",
+   "description": "Infuse an ability with poison.",
+   "type": "infuse",
+   "element": "poison",
+   "equipmentType": null,
+   "requiredEquipment": null,
+   "staminaCost": 2,
+   "kanji": "毒",
+   "rarity": "common",
+   "infusionValue": "poison",
+   "infusionKanjiPools": {
+    "0": [
+     "毒",
+     "虫"
+    ],
+    "10": [
+     "薬",
+     "蛇"
+    ],
+    "20": [
+     "菌",
+     "疫",
+     "藻"
+    ]
+   },
+   "lifecycle": {
+    "onUse": [
+     "infuseAbility"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "gutting_slash",
+   "name": "Gutting Slash",
+   "nameJa": "斬り裂き",
+   "description": "A bleeding cut that opens deep wounds. Multi-use; once learned it will not appear as a reward again.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": null,
+   "requiredCharmFamily": "bleed",
+   "staminaCost": 5,
+   "basePower": 14,
+   "scalingStat": "skill",
+   "scalingMultiplier": 1.0,
+   "kanji": "裂",
+   "kanjiPool": [
+    "裂",
+    "血",
+    "傷",
+    "噴"
+   ],
+   "rarity": "rare",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "bleed",
+     "target": "enemy",
+     "chance": {
+      "base": 0.35,
+      "step": 0.05,
+      "cap": 0.65
+     },
+     "duration": {
+      "min": 2,
+      "max": 3
+     }
+    }
+   ],
+   "singleUse": false,
+   "tags": [
+    "bleed",
+    "slash"
+   ],
+   "combo": {
+    "consumesState": {
+     "target": "self",
+     "state": "rushing",
+     "guaranteeCritical": true,
+     "log": "Rushing strike! Guaranteed critical!"
+    }
+   }
+  },
+  {
+   "id": "seismic_slam",
+   "name": "Seismic Slam",
+   "nameJa": "地碎打",
+   "description": "A crushing overhead strike that shatters armour. Multi-use; once learned it will not appear as a reward again.",
+   "type": "attack",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": null,
+   "requiredCharmFamily": "heavy",
+   "staminaCost": 5,
+   "basePower": 20,
+   "scalingStat": "strength",
+   "scalingMultiplier": 1.2,
+   "kanji": "砕",
+   "kanjiPool": [
+    "震",
+    "砕",
+    "轟",
+    "崩"
+   ],
+   "rarity": "rare",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "blunt",
+     "target": "enemy",
+     "chance": {
+      "base": 0.25,
+      "step": 0.05,
+      "cap": 0.45
+     }
+    }
+   ],
+   "singleUse": false,
+   "tags": [
+    "heavy",
+    "earth"
+   ],
+   "combo": {
+    "consumesState": {
+     "target": "enemy",
+     "state": "staggered",
+     "damageMultiplier": 1.5,
+     "log": "Seismic Slam shatters the staggered enemy!"
+    }
+   }
+  },
+  {
+   "id": "flame_arc",
+   "name": "Flame Arc",
+   "nameJa": "炎弧",
+   "description": "A sweeping blade of fire that scorches the enemy. Multi-use; once learned it will not appear as a reward again.",
+   "type": "attack",
+   "element": "fire",
+   "equipmentType": "weapon",
+   "requiredEquipment": null,
+   "requiredCharmFamily": "fire",
+   "staminaCost": 4,
+   "basePower": 12,
+   "scalingStat": "mana",
+   "scalingMultiplier": 1.1,
+   "kanji": "炎",
+   "kanjiPool": [
+    "火",
+    "炎",
+    "焔",
+    "焼",
+    "燃",
+    "灼"
+   ],
+   "rarity": "rare",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "burn",
+     "target": "enemy",
+     "chance": {
+      "base": 0.3,
+      "step": 0.05,
+      "cap": 0.5
+     },
+     "duration": {
+      "min": 2,
+      "max": 3
+     },
+     "payload": {
+      "element": "fire"
+     }
+    }
+   ],
+   "singleUse": false,
+   "tags": [
+    "fire",
+    "arc",
+    "elemental"
+   ]
+  },
+  {
+   "id": "gale_strike",
+   "name": "Gale Strike",
+   "nameJa": "風斬り",
+   "description": "A swift cutting wind that leaves the enemy reeling. Multi-use; once learned it will not appear as a reward again.",
+   "type": "attack",
+   "element": "wind",
+   "equipmentType": "weapon",
+   "requiredEquipment": null,
+   "requiredCharmFamily": "wind",
+   "staminaCost": 4,
+   "basePower": 12,
+   "scalingStat": "skill",
+   "scalingMultiplier": 1.1,
+   "kanji": "風",
+   "kanjiPool": [
+    "風",
+    "嵐",
+    "疾",
+    "迅",
+    "旋"
+   ],
+   "rarity": "rare",
+   "infusableWith": [
+    "fire",
+    "water",
+    "wind",
+    "earth",
+    "void",
+    "frost",
+    "bleed",
+    "poison"
+   ],
+   "kanjiChallenge": {
+    "skipChance": 0.1,
+    "focusOverrideChance": 0.2,
+    "failThreshold": "halfUp",
+    "powerBonusTiers": [
+     {
+      "minStrokes": 0,
+      "bonus": 1
+     },
+     {
+      "minStrokes": 4,
+      "bonus": 2
+     },
+     {
+      "minStrokes": 8,
+      "bonus": 3
+     }
+    ],
+    "outcomes": {
+     "skipped": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "fallback": {
+      "challengeResult": "success",
+      "applyPowerBonus": false
+     },
+     "pass": {
+      "challengeResult": "success",
+      "applyPowerBonus": true
+     },
+     "fail": {
+      "challengeResult": "fail",
+      "applyPowerBonus": false
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "dealDamage"
+    ]
+   },
+   "effects": [
+    {
+     "effectId": "weak",
+     "target": "enemy",
+     "chance": {
+      "base": 0.25,
+      "step": 0.05,
+      "cap": 0.45
+     },
+     "duration": {
+      "min": 2,
+      "max": 3
+     }
+    }
+   ],
+   "singleUse": false,
+   "tags": [
+    "wind",
+    "slash",
+    "mobility"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "enemy",
+     "state": "off_balance",
+     "duration": "end_of_turn"
+    },
+    "consumesState": {
+     "target": "self",
+     "state": "rushing",
+     "guaranteeCritical": true,
+     "log": "Rushing strike! Guaranteed critical!"
+    }
+   }
+  },
+  {
+   "id": "raise_shield",
+   "name": "Raise Shield",
+   "nameJa": "盾を上げる",
+   "description": "Brace for the next enemy attack, gaining a huge block bonus when it lands.",
+   "type": "defence",
+   "element": "physical",
+   "equipmentType": "shield",
+   "requiredEquipment": "Wooden Shield",
+   "staminaCost": 2,
+   "baseBlock": 0,
+   "kanji": "盾",
+   "rarity": "uncommon",
+   "tags": [
+    "guard",
+    "defence",
+    "prepare"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "self",
+     "state": "raised_shield",
+     "duration": "until_hit"
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "gainBlock"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  },
+  {
+   "id": "sheathe_blade",
+   "name": "Sheathe Blade",
+   "nameJa": "居合",
+   "description": "Sheathe your blade and wait. The next enemy melee attack triggers a devastating iaijutsu counter.",
+   "type": "buff",
+   "element": "physical",
+   "equipmentType": "weapon",
+   "requiredEquipment": "Long Sword",
+   "staminaCost": 3,
+   "kanji": "居",
+   "rarity": "rare",
+   "tags": [
+    "prepare",
+    "counter"
+   ],
+   "combo": {
+    "appliesState": {
+     "target": "self",
+     "state": "sheathed",
+     "duration": "until_trigger"
+    }
+   },
+   "config": {
+    "buffType": "sheathed",
+    "duration": {
+     "baseTurns": 1,
+     "bonusTurns": 0,
+     "scalesWith": "luck",
+     "chanceTable": [
+      {
+       "max": 99,
+       "chance": 0
+      }
+     ],
+     "qualityModifiers": {
+      "0": 0
+     }
+    }
+   },
+   "lifecycle": {
+    "onUse": [
+     "applyBuff"
+    ]
+   },
+   "effects": [],
+   "singleUse": true
+  }
+ ]
 }

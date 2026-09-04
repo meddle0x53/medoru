@@ -1,22 +1,22 @@
 {
   "defaults": {
-    "socketCharm": 100,
-    "heroCharm": 150,
-    "startingGold": 100,
-    "startingPotion": 100,
-    "ouroScale": 200,
-    "ouroSource": 1000
+    "socketCharm": 80,
+    "heroCharm": 130,
+    "startingGold": 50,
+    "startingPotion": 50,
+    "ouroScale": 180,
+    "ouroSource": 800
   },
   "overrides": {
     "small_void_charm": 100,
-    "ancient_void_charm": 200,
-    "abyss_charm": 300,
-    "wind_charm": 200,
-    "earth_charm": 150,
+    "ancient_void_charm": 180,
+    "abyss_charm": 250,
+    "wind_charm": 180,
+    "earth_charm": 140,
     "charm_of_the_sword": 150,
-    "backpack_charm": 300,
+    "backpack_charm": 250,
     "magi_charm": 100,
-    "tanuki_fur_charm": 250,
-    "kitsune_tail_charm": 250
+    "tanuki_fur_charm": 220,
+    "kitsune_tail_charm": 220
   }
 }

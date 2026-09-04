@@ -16,8 +16,8 @@ import AbilityTooltip from '../ui/AbilityTooltip.js'
 const RARITY_WEIGHTS = [
   { rarity: 'common', weight: 0.50, min: 30, max: 50 },
   { rarity: 'uncommon', weight: 0.30, min: 50, max: 70 },
-  { rarity: 'rare', weight: 0.15, min: 70, max: 100 },
-  { rarity: 'epic', weight: 0.05, min: 100, max: 150 },
+  { rarity: 'rare', weight: 0.15, min: 70, max: 90 },
+  { rarity: 'epic', weight: 0.05, min: 90, max: 130 },
 ]
 
 const ITEM_RANGES = {

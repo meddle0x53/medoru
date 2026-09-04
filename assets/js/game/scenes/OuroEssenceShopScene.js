@@ -342,8 +342,7 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
 
     switch (item.type) {
       case 'socketCharm':
-        if (!this.player.loadout.ownedSocketCharmIds) this.player.loadout.ownedSocketCharmIds = []
-        this.player.loadout.ownedSocketCharmIds.push(item.id)
+        this.player.addSocketCharm(item.id)
         this.autoEquipSocketCharm(item.id)
         break
       case 'heroCharm':
@@ -369,6 +368,15 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
         break
       default:
         break
+    }
+
+    // Essence purchases are permanent across runs.
+    if (item.type === 'socketCharm' || item.type === 'heroCharm') {
+      const permanentKey = item.type === 'socketCharm' ? 'permanentSocketCharmIds' : 'permanentCharmIds'
+      if (!this.player.loadout[permanentKey]) this.player.loadout[permanentKey] = []
+      if (!this.player.loadout[permanentKey].includes(item.id)) {
+        this.player.loadout[permanentKey].push(item.id)
+      }
     }
 
     this.player.saveLoadout()
@@ -428,21 +436,32 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
     container.add(text)
 
     if (!disabled) {
-      container.setSize(width, height)
-      container.setInteractive({
-        useHandCursor: true,
-        hitArea: new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
-        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      // Full-size hit zone as a child rectangle: container-level hitArea is
+      // unreliable in Phaser 4 (only a partial region stays clickable), and
+      // a child zone moves with the container and covers the whole button.
+      const hitZone = this.add.rectangle(0, 0, width, height, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true })
+      container.add(hitZone)
+
+      let pressed = false
+      const releasePress = () => {
+        if (!pressed) return
+        pressed = false
+        text.y -= 1
+        bg.y -= 1
+      }
+      hitZone.on('pointerover', () => drawBg(hoverColor))
+      hitZone.on('pointerout', () => {
+        drawBg(baseColor)
+        releasePress()
       })
-      container.on('pointerover', () => drawBg(hoverColor))
-      container.on('pointerout', () => drawBg(baseColor))
-      container.on('pointerdown', () => {
+      hitZone.on('pointerdown', () => {
+        pressed = true
         text.y += 1
         bg.y += 1
       })
-      container.on('pointerup', () => {
-        text.y -= 1
-        bg.y -= 1
+      hitZone.on('pointerup', () => {
+        releasePress()
         if (onClick) onClick()
       })
     }
