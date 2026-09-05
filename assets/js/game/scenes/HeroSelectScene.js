@@ -108,7 +108,9 @@ export default class HeroSelectScene extends Phaser.Scene {
 
     // Only start a fresh run if there is no saved map in progress.
     // Refreshing the page should resume at the current map tile.
-    if (!player.getCurrentMap()) {
+    // A daily challenge run must ALWAYS start fresh — never resume a stale
+    // in-progress map whose tile data (enemy pools) may predate balance changes.
+    if (!player.getCurrentMap() || userData.dailyChallengeMode) {
       player.resetToFreshHero()
     }
 

@@ -377,7 +377,7 @@ export default class Enemy extends Character {
         const declaredElement = ability.element
         const effectiveElement = getElementForInfusion(declaredElement) || declaredElement
 
-        const base = ability.basePower + this.getStatValue(ability.scalingStat) * ability.scalingMultiplier
+        const base = ability.basePower + (this.getStatValue(ability.scalingStat) || 0) * (ability.scalingMultiplier || 0)
         this.consumeBuff('next_attack_bonus')
         const total = base + this.nextAttackBonus
         this.nextAttackBonus = 0
@@ -467,7 +467,7 @@ export default class Enemy extends Character {
           const declaredElement = ability.element
           const effectiveElement = getElementForInfusion(declaredElement) || declaredElement
 
-          const base = ability.basePower + this.getStatValue(ability.scalingStat) * ability.scalingMultiplier
+          const base = ability.basePower + (this.getStatValue(ability.scalingStat) || 0) * (ability.scalingMultiplier || 0)
           this.consumeBuff('next_attack_bonus')
           const total = base + this.nextAttackBonus
           this.nextAttackBonus = 0

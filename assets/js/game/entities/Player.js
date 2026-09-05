@@ -12,7 +12,7 @@ import { sendRunResult, uploadSaveData } from '../api.js'
 export function loadoutKey() {
   return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
 }
-const MAP_VERSION = 4
+const MAP_VERSION = 5
 
 const BASE_STAT_POINTS = 0
 const STAT_POINTS_PER_LEVEL = 0
