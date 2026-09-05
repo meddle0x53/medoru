@@ -341,6 +341,14 @@ defmodule MedoruWeb.ChatDictionaryComponents do
         <div class="flex items-center gap-1 shrink-0">
           <button
             type="button"
+            data-dictionary-insert={@entry.value}
+            class="p-1.5 text-base-content/40 hover:text-primary transition-colors"
+            title={gettext("Insert into message")}
+          >
+            <.icon name="hero-chat-bubble-left" class="w-4 h-4" />
+          </button>
+          <button
+            type="button"
             phx-click="start_edit_dictionary_entry"
             phx-value-id={@entry.id}
             class="p-1.5 text-base-content/40 hover:text-primary transition-colors"

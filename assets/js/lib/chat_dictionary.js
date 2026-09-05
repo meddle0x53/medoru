@@ -28,12 +28,14 @@ export class ChatDictionary {
     this._inputHandler = (e) => this.onInput(e)
     this._blurHandler = () => this.hideDropdown()
     this._clickOutsideHandler = (e) => this.onClickOutside(e)
+    this._insertHandler = (e) => this.onInsertClick(e)
     this._repositionHandler = () => this.positionDropdown()
 
     this.textarea.addEventListener("keydown", this._keydownHandler)
     this.textarea.addEventListener("input", this._inputHandler)
     this.textarea.addEventListener("blur", this._blurHandler)
     document.addEventListener("click", this._clickOutsideHandler)
+    document.addEventListener("click", this._insertHandler)
 
     // Re-anchor the dropdown when the viewport moves/resizes — on mobile the
     // virtual keyboard shifts the layout after the dropdown is already shown.
@@ -52,6 +54,7 @@ export class ChatDictionary {
       this.textarea.removeEventListener("blur", this._blurHandler)
     }
     document.removeEventListener("click", this._clickOutsideHandler)
+    document.removeEventListener("click", this._insertHandler)
     if (window.visualViewport) {
       window.visualViewport.removeEventListener("resize", this._repositionHandler)
       window.visualViewport.removeEventListener("scroll", this._repositionHandler)
@@ -121,6 +124,60 @@ export class ChatDictionary {
     if (this.dropdown && !this.dropdown.contains(e.target) && e.target !== this.textarea) {
       this.hideDropdown()
     }
+  }
+
+  // Dictionary drawer rows carry data-dictionary-insert with the entry's
+  // value; clicking one drops that meaning into the chat input.
+  onInsertClick(e) {
+    const btn = e.target.closest("[data-dictionary-insert]")
+    if (!btn || !this.textarea) return
+    e.preventDefault()
+    e.stopPropagation()
+    this.insertValue(btn.getAttribute("data-dictionary-insert") || "")
+  }
+
+  // Puts an arbitrary value into the textarea. If a /d trigger is active at
+  // the cursor it is replaced (same as picking an autocomplete match);
+  // otherwise the value is inserted at the cursor (or appended when the
+  // textarea is not focused).
+  insertValue(value) {
+    if (!this.textarea || !value) return
+
+    const focused = document.activeElement === this.textarea
+    const cursor = focused ? this.textarea.selectionStart : this.textarea.value.length
+    const textBefore = this.textarea.value.slice(0, cursor)
+    const trigger = textBefore.match(DICTIONARY_TRIGGER)
+
+    let newValue
+    let newCursor
+
+    if (trigger) {
+      const textAfter = this.textarea.value.slice(cursor)
+      const triggerStart = textBefore.length - trigger[0].length
+      const leading = trigger[1] || ""
+      newValue =
+        this.textarea.value.slice(0, triggerStart) +
+        leading +
+        value +
+        (textAfter.match(/^\s/) ? "" : " ") +
+        textAfter.replace(/^\s+/, "")
+      newCursor = triggerStart + leading.length + value.length + 1
+    } else {
+      const end = focused ? this.textarea.selectionEnd : cursor
+      const after = this.textarea.value.slice(end)
+      newValue = this.textarea.value.slice(0, cursor) + value + after
+      newCursor = cursor + value.length
+      if (after === "") {
+        newValue += " "
+        newCursor += 1
+      }
+    }
+
+    this.textarea.value = newValue
+    this.textarea.selectionStart = this.textarea.selectionEnd = Math.min(newCursor, newValue.length)
+    this.textarea.focus()
+    this.textarea.dispatchEvent(new Event("input"))
+    this.hideDropdown()
   }
 
   updateDropdown(inputEvent) {
@@ -235,40 +292,105 @@ export class ChatDictionary {
     })
   }
 
+  // Touch devices (phones/tablets) get a bottom-docked suggestion strip:
+  // anchoring to the visual viewport bottom is the one positioning behavior
+  // both iOS Safari and Android Chrome implement reliably while the virtual
+  // keyboard is open. Desktop keeps the floating box anchored to the input.
+  _useDockedLayout() {
+    if (this._docked === undefined) {
+      this._docked = window.matchMedia("(hover: none) and (pointer: coarse)").matches
+    }
+    return this._docked
+  }
+
+  _isIOSDevice() {
+    if (this._ios === undefined) {
+      this._ios =
+        /iP(hone|ad|od)/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    }
+    return this._ios
+  }
+
   positionDropdown() {
     if (!this.dropdown || !this.textarea) return
+    const rect = this.textarea.getBoundingClientRect()
 
-    // iOS positions fixed elements relative to the visual viewport while the
-    // virtual keyboard is open, but getBoundingClientRect() returns layout
-    // viewport coordinates — without this translation the dropdown renders
-    // off-screen. On desktop the offsets are 0 and scale is 1, so this is a
-    // no-op there.
+    if (this._useDockedLayout()) {
+      this.positionDropdownDocked(rect)
+      return
+    }
+
+    if (this._isIOSDevice()) {
+      // iOS positions fixed elements relative to the visual viewport while
+      // the virtual keyboard is open, but getBoundingClientRect() returns
+      // layout viewport coordinates — translate so the dropdown stays above
+      // the input. (Desktop Safari reports hover:hover, so it never gets here.)
+      const vv = window.visualViewport
+      const offsetX = vv ? vv.offsetLeft : 0
+      const offsetY = vv ? vv.offsetTop : 0
+      const scale = vv && vv.scale > 0 ? vv.scale : 1
+      const viewW = vv ? vv.width : window.innerWidth
+      const viewH = vv ? vv.height : window.innerHeight
+      const dropdownH = this.dropdown.offsetHeight
+      const dropdownW = Math.min(rect.width, 320)
+
+      let left = (rect.left - offsetX) / scale
+      let top = (rect.top - offsetY) / scale - dropdownH - 8
+
+      if (top < 8) {
+        top = (rect.top - offsetY) / scale + rect.height / scale + 8
+      }
+
+      top = Math.max(8, Math.min(top, viewH - dropdownH - 8))
+      left = Math.max(8, Math.min(left, viewW - dropdownW - 8))
+
+      this.dropdown.style.left = `${left}px`
+      this.dropdown.style.top = `${top}px`
+      this.dropdown.style.width = `${dropdownW / scale}px`
+      this.dropdown.style.bottom = "auto"
+      return
+    }
+
+    // Desktop / Android: fixed positioning and client rects share the same
+    // coordinate space — anchor directly above the input (original behavior).
+    this.dropdown.style.left = `${rect.left}px`
+    this.dropdown.style.top = `${rect.top - Math.min(this.dropdown.offsetHeight + 8, 280)}px`
+    this.dropdown.style.width = `${Math.min(rect.width, 320)}px`
+    this.dropdown.style.bottom = "auto"
+  }
+
+  positionDropdownDocked(rect) {
     const vv = window.visualViewport
-    const offsetX = vv ? vv.offsetLeft : 0
-    const offsetY = vv ? vv.offsetTop : 0
     const scale = vv && vv.scale > 0 ? vv.scale : 1
     const viewW = vv ? vv.width : window.innerWidth
     const viewH = vv ? vv.height : window.innerHeight
 
-    const rect = this.textarea.getBoundingClientRect()
+    // iOS rects are layout-viewport based; Android rects already match the
+    // fixed coordinate space. Only iOS needs the visual viewport offset.
+    const ios = this._isIOSDevice()
+    const offsetX = ios && vv ? vv.offsetLeft : 0
+    const offsetY = ios && vv ? vv.offsetTop : 0
+
     const dropdownH = this.dropdown.offsetHeight
-    const dropdownW = Math.min(rect.width, 320)
+
+    // Distance from the visual viewport bottom up to just below the input.
+    const inputBottom = (rect.bottom - offsetY) / scale
+    let bottom = viewH - inputBottom + 8
+
+    const dropdownW = Math.min(viewW - 16, 480)
+
+    // Keep the strip fully on screen if the input is very high (e.g. small
+    // landscape viewport with the keyboard open).
+    bottom = Math.max(8, Math.min(bottom, viewH - dropdownH - 8))
 
     let left = (rect.left - offsetX) / scale
-    let top = (rect.top - offsetY) / scale - dropdownH - 8
-
-    // If there is not enough room above the input, open below it instead.
-    if (top < 8) {
-      top = (rect.top - offsetY) / scale + rect.height / scale + 8
-    }
-
-    // Clamp fully inside the visual viewport.
-    top = Math.max(8, Math.min(top, viewH - dropdownH - 8))
-    left = Math.max(8, Math.min(left, viewW - dropdownW - 8))
+    left = Math.max(8, Math.min(left, viewW - 8 - dropdownW))
 
     this.dropdown.style.left = `${left}px`
-    this.dropdown.style.top = `${top}px`
-    this.dropdown.style.width = `${dropdownW / scale}px`
+    this.dropdown.style.bottom = `${bottom}px`
+    this.dropdown.style.width = `${dropdownW}px`
+    this.dropdown.style.top = "auto"
   }
 
   selectMatch(index) {
