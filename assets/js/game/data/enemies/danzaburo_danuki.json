@@ -3,7 +3,7 @@
   "name": "Danzaburō-danuki",
   "nameJa": "団三郎狸",
   "description": "A towering tanuki trickster who conjures sake, mirages, and borrowed forms.",
-  "level": 1,
+  "level": 6,
   "baseGold": 25,
   "roles": ["mini_boss"],
   "mapIds": [1],
