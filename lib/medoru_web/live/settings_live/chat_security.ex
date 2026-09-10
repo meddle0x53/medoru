@@ -13,13 +13,16 @@ defmodule MedoruWeb.SettingsLive.ChatSecurity do
     locale = session["locale"] || "en"
     current_user = socket.assigns.current_scope.current_user
 
-    has_previous_keys = Encryption.user_has_previous_keys?(current_user.id)
+    registered_public_keys =
+      current_user.id
+      |> Encryption.get_public_keys_for_user()
+      |> Enum.map(&Base.encode64(&1.public_key_spki))
 
     {:ok,
      socket
      |> assign(:locale, locale)
      |> assign(:page_title, gettext("Chat Security"))
-     |> assign(:has_previous_keys, has_previous_keys)}
+     |> assign(:registered_public_keys, registered_public_keys)}
   end
 
   @impl true
@@ -57,24 +60,26 @@ defmodule MedoruWeb.SettingsLive.ChatSecurity do
                 id="chat-key-manager"
                 phx-hook="ChatKeyManager"
                 data-current-user-id={@current_scope.current_user.id}
+                data-registered-public-keys={Jason.encode!(@registered_public_keys)}
                 class="mt-4 space-y-4"
               >
                 <div id="chat-key-status" class="text-sm text-warning">
                   {gettext("Checking key status...")}
                 </div>
 
-                <%= if @has_previous_keys do %>
-                  <div class="p-3 bg-info/10 rounded-lg border border-info/20">
-                    <div class="flex items-start gap-2">
-                      <.icon name="hero-information-circle" class="w-4 h-4 text-info mt-0.5 shrink-0" />
-                      <p class="text-sm text-info-content">
-                        {gettext(
-                          "We've detected that you've used a different encryption key before. If you're on a new device, make sure to import your original key to access old messages."
-                        )}
-                      </p>
-                    </div>
+                <div
+                  id="chat-key-mismatch-warning"
+                  class="hidden p-3 bg-info/10 rounded-lg border border-info/20"
+                >
+                  <div class="flex items-start gap-2">
+                    <.icon name="hero-information-circle" class="w-4 h-4 text-info mt-0.5 shrink-0" />
+                    <p class="text-sm text-info-content">
+                      {gettext(
+                        "We've detected that you've used a different encryption key before. If you're on a new device, make sure to import your original key to access old messages."
+                      )}
+                    </p>
                   </div>
-                <% end %>
+                </div>
 
                 <%!-- Export Section --%>
                 <div class="space-y-2">

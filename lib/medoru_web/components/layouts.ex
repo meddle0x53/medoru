@@ -448,6 +448,12 @@ defmodule MedoruWeb.Layouts do
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link
+                    path="/settings/chat-security"
+                    icon="hero-key"
+                    label={gettext("Chat Security")}
+                    locale={@current_scope[:locale]}
+                  />
+                  <.mobile_nav_link
                     path="/auth/logout"
                     icon="hero-arrow-right-on-rectangle"
                     label={gettext("Sign out")}
@@ -647,6 +653,14 @@ defmodule MedoruWeb.Layouts do
                     class="flex items-center gap-2"
                   >
                     <.icon name="hero-command-line" class="w-4 h-4" /> {gettext("Chat Shortcuts")}
+                  </.link>
+                </li>
+                <li>
+                  <.link
+                    navigate={~p"/settings/chat-security?#{locale_qs(@current_scope[:locale])}"}
+                    class="flex items-center gap-2"
+                  >
+                    <.icon name="hero-key" class="w-4 h-4" /> {gettext("Chat Security")}
                   </.link>
                 </li>
                 <li>
@@ -930,34 +944,42 @@ defmodule MedoruWeb.Layouts do
     </main>
 
     <%!-- Footer with Attribution --%>
-    <footer class="bg-base-100 border-t border-base-300 py-6">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div class="text-sm text-secondary">
+    <footer class="bg-base-100 border-t border-base-300 min-h-14 flex items-center pb-[env(safe-area-inset-bottom)]">
+      <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+          <div class="text-sm text-secondary flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1 text-center md:text-left">
             <span>© 2025 Medoru</span>
-            <span class="mx-2">·</span>
+            <span aria-hidden="true">·</span>
             <.link navigate={~p"/privacy"} class="hover:text-primary transition-colors">
               {gettext("Privacy")}
             </.link>
-            <span class="mx-2">·</span>
+            <span aria-hidden="true">·</span>
             <.link navigate={~p"/cookies"} class="hover:text-primary transition-colors">
               {gettext("Cookies")}
             </.link>
-            <span class="mx-2">·</span>
+            <span aria-hidden="true">·</span>
             <.link navigate={~p"/attribution"} class="hover:text-primary transition-colors">
               {gettext("Data Attribution")}
             </.link>
           </div>
-          <div class="text-xs text-secondary/60">
-            Data from <a
+          <div class="text-xs text-secondary/60 flex flex-wrap items-center justify-center md:justify-end gap-x-1.5 gap-y-1 text-center md:text-right max-w-2xl">
+            <span>{gettext("Data from")}</span>
+            <a
               href="https://github.com/davidluzgouveia/kanji-data"
               target="_blank"
               class="hover:text-primary"
-            >Kanji Data</a>, <a
+            >
+              Kanji Data
+            </a>
+            <span aria-hidden="true">·</span>
+            <a
               href="http://kanjivg.tagaini.net"
               target="_blank"
               class="hover:text-primary"
-            >KanjiVG</a>,
+            >
+              KanjiVG
+            </a>
+            <span aria-hidden="true">·</span>
             <a
               href="https://github.com/skishore/makemeahanzi"
               target="_blank"
@@ -965,7 +987,8 @@ defmodule MedoruWeb.Layouts do
             >
               MakeMeAHanzi
             </a>
-            & <a href="https://www.edrdg.org/" target="_blank" class="hover:text-primary">EDRDG</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://www.edrdg.org/" target="_blank" class="hover:text-primary">EDRDG</a>
           </div>
         </div>
       </div>
