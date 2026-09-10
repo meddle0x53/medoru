@@ -503,48 +503,43 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     if not is_nil(user) and user.type == "admin" do
       step = socket.assigns.current_step
 
-      if step.step_type == "text" do
-        {:noreply,
-         put_flash(socket, :error, gettext("Text steps cannot be copied to grammar definitions."))}
-      else
-        case Content.get_grammar_definition_by_title(step.title) do
-          nil ->
-            attrs = step_to_grammar_definition_attrs(step, socket.assigns.word_classes)
+      case Content.get_grammar_definition_by_title(step.title) do
+        nil ->
+          attrs = step_to_grammar_definition_attrs(step, socket.assigns.word_classes)
 
-            case Content.create_grammar_definition(attrs) do
-              {:ok, grammar} ->
-                {:noreply,
-                 socket
-                 |> put_flash(
-                   :info,
-                   gettext("'%{title}' copied to grammar definitions.", title: grammar.title)
-                 )}
+          case Content.create_grammar_definition(attrs) do
+            {:ok, grammar} ->
+              {:noreply,
+               socket
+               |> put_flash(
+                 :info,
+                 gettext("'%{title}' copied to grammar definitions.", title: grammar.title)
+               )}
 
-              {:error, changeset} ->
-                errors =
-                  Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-                    Regex.replace(~r/%{(")"""(\w+)}/, msg, fn _, _, key ->
-                      to_string(Keyword.get(opts, String.to_existing_atom(key), key))
-                    end)
+            {:error, changeset} ->
+              errors =
+                Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+                  Regex.replace(~r/%{(")"""(\w+)}/, msg, fn _, _, key ->
+                    to_string(Keyword.get(opts, String.to_existing_atom(key), key))
                   end)
-                  |> Enum.map_join(", ", fn {field, msgs} ->
-                    "#{field}: #{Enum.join(msgs, ", ")}"
-                  end)
+                end)
+                |> Enum.map_join(", ", fn {field, msgs} ->
+                  "#{field}: #{Enum.join(msgs, ", ")}"
+                end)
 
-                {:noreply,
-                 put_flash(socket, :error, gettext("Could not copy: %{errors}", errors: errors))}
-            end
+              {:noreply,
+               put_flash(socket, :error, gettext("Could not copy: %{errors}", errors: errors))}
+          end
 
-          _existing ->
-            {:noreply,
-             put_flash(
-               socket,
-               :error,
-               gettext("A grammar definition with the title '%{title}' already exists.",
-                 title: step.title
-               )
-             )}
-        end
+        _existing ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("A grammar definition with the title '%{title}' already exists.",
+               title: step.title
+             )
+           )}
       end
     else
       {:noreply,
@@ -617,33 +612,44 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
   end
 
   defp step_to_grammar_definition_attrs(step, word_classes) do
+    entry_type =
+      case step.step_type do
+        "text" -> "text"
+        _ -> "pattern"
+      end
+
     pattern_elements =
-      Enum.map(step.pattern_elements || [], fn el ->
-        case el["type"] do
-          "word_slot" ->
-            forms =
-              if el["form"] && el["form"] != "" do
-                [el["form"]]
-              else
-                []
-              end
+      if entry_type == "text" do
+        # Text entries never use a pattern; lesson text steps have none anyway.
+        []
+      else
+        Enum.map(step.pattern_elements || [], fn el ->
+          case el["type"] do
+            "word_slot" ->
+              forms =
+                if el["form"] && el["form"] != "" do
+                  [el["form"]]
+                else
+                  []
+                end
 
-            el
-            |> Map.put("forms", forms)
-            |> Map.delete("form")
+              el
+              |> Map.put("forms", forms)
+              |> Map.delete("form")
 
-          "literal" ->
-            text = el["text"] || el["value"] || ""
-            el |> Map.put("text", text) |> Map.delete("value")
+            "literal" ->
+              text = el["text"] || el["value"] || ""
+              el |> Map.put("text", text) |> Map.delete("value")
 
-          "word_class" ->
-            class_name = word_classes[el["word_class_id"]] || el["word_class"] || ""
-            el |> Map.put("word_class", class_name) |> Map.delete("word_class_id")
+            "word_class" ->
+              class_name = word_classes[el["word_class_id"]] || el["word_class"] || ""
+              el |> Map.put("word_class", class_name) |> Map.delete("word_class_id")
 
-          _ ->
-            el
-        end
-      end)
+            _ ->
+              el
+          end
+        end)
+      end
 
     # Generate a unique slug that handles Japanese-only titles
     slug = generate_grammar_slug(step.title)
@@ -651,8 +657,10 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     %{
       title: step.title,
       slug: slug,
+      entry_type: entry_type,
       pattern_elements: pattern_elements,
       description: step.explanation || "",
+      explanation_sections: step.explanation_sections || [],
       examples: step.examples || [],
       word_colors: step.word_colors || [],
       frequency: 1000
@@ -1016,7 +1024,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           <%!-- Step Title --%>
           <div class="mb-4 flex items-start justify-between gap-4">
             <h2 class="text-xl font-semibold">{@current_step.title}</h2>
-            <%= if @current_scope && @current_scope.current_user && @current_scope.current_user.type == "admin" && @current_step.step_type == "grammar" do %>
+            <%= if @current_scope && @current_scope.current_user && @current_scope.current_user.type == "admin" && @current_step.step_type in ["grammar", "text"] do %>
               <button
                 phx-click="copy_to_grammar"
                 class="btn btn-outline btn-xs shrink-0"

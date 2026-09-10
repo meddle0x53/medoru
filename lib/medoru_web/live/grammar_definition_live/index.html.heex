@@ -46,6 +46,45 @@
             </div>
           </div>
 
+          <%!-- Entry Type Filter --%>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
+              {gettext("Filter by type:")}
+            </span>
+            <div class="flex flex-wrap gap-1">
+              <button
+                phx-click="filter_type"
+                phx-value-type=""
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(is_nil(@entry_type), do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("All")}
+              </button>
+              <button
+                phx-click="filter_type"
+                phx-value-type="pattern"
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(@entry_type == "pattern", do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("Pattern")}
+              </button>
+              <button
+                phx-click="filter_type"
+                phx-value-type="text"
+                class={[
+                  "btn btn-sm min-h-[40px] touch-target",
+                  if(@entry_type == "text", do: "btn-active btn-primary", else: "btn-ghost")
+                ]}
+              >
+                {gettext("Text")}
+              </button>
+            </div>
+          </div>
+
           <%!-- Search --%>
           <form phx-submit="search" class="flex gap-2">
             <div class="relative flex-1">
@@ -66,7 +105,7 @@
               <.icon name="hero-magnifying-glass" class="w-4 h-4 mr-1" />
               {gettext("Search")}
             </button>
-            <%= if @search || @jlpt_level do %>
+            <%= if @search || @jlpt_level || @entry_type do %>
               <button
                 type="button"
                 phx-click="clear_filters"
@@ -123,6 +162,15 @@
                   {grammar.title}
                 </h3>
                 <div class="flex items-center gap-1.5">
+                  <span class={[
+                    "badge badge-ghost badge-sm",
+                    if(grammar.entry_type == "text", do: "text-info", else: "text-secondary")
+                  ]}>
+                    {if(grammar.entry_type == "text",
+                      do: gettext("Text"),
+                      else: gettext("Pattern")
+                    )}
+                  </span>
                   <%= if grammar.frequency && grammar.frequency != 1000 do %>
                     <span
                       class="badge badge-ghost text-xs"
@@ -200,7 +248,9 @@
           <div class="flex items-center gap-2">
             <%= if @page > 1 do %>
               <.link
-                patch={~p"/grammars?#{%{page: @page - 1, level: @jlpt_level, search: @search}}"}
+                patch={
+                  ~p"/grammars?#{%{page: @page - 1, level: @jlpt_level, search: @search, type: @entry_type}}"
+                }
                 class="btn btn-ghost btn-sm"
               >
                 ← {gettext("Prev")}
@@ -215,7 +265,9 @@
 
             <%= if @page < @total_pages do %>
               <.link
-                patch={~p"/grammars?#{%{page: @page + 1, level: @jlpt_level, search: @search}}"}
+                patch={
+                  ~p"/grammars?#{%{page: @page + 1, level: @jlpt_level, search: @search, type: @entry_type}}"
+                }
                 class="btn btn-ghost btn-sm"
               >
                 {gettext("Next")} →

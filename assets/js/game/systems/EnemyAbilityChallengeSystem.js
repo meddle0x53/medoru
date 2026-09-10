@@ -1,3 +1,5 @@
+import { probeKeyLag } from './keyLagProbe.js'
+import { bindDomKeyboard, bindPressRelease } from './domKeyboard.js'
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { lockGameWrapper, unlockGameWrapper } from './challengeKeyboardLock.js'
 import { getWordChallengeTimeLimit } from './challengeTime.js'
@@ -157,6 +159,7 @@ export default class EnemyAbilityChallengeSystem {
   createTouchKeyboard() {
     this.keyboardContainer = this.scene.add.container(0, 0)
     this.overlay.add(this.keyboardContainer)
+    this.domKeys = []
 
     // Same keyboard as WordChallengeSystem so all word challenges look identical.
     const keySize = 30
@@ -192,6 +195,12 @@ export default class EnemyAbilityChallengeSystem {
       this.createKeyboardKey(label, x + width / 2, controlY, width, keySize, key)
       x += width + keyGap
     })
+
+    // DOM-level pointer binding: bypasses Phaser's input-manager pipeline,
+    // which adds a perceivable delay to tap feedback on some Android devices.
+    this.unbindDomKeyboard = bindDomKeyboard(this.scene, this.domKeys, {
+      isActive: () => this.active,
+    })
   }
 
   createKeyboardKey(label, x, y, width, height, keyName) {
@@ -205,18 +214,19 @@ export default class EnemyAbilityChallengeSystem {
     const container = this.scene.add.container(x, y, [bg, text])
     container.setSize(width, height)
 
-    const hitArea = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0)
-    hitArea.setInteractive({ useHandCursor: true })
-    container.add(hitArea)
-
-    hitArea.on('pointerdown', () => {
-      bg.setFillStyle(0x3498db)
-      this.handleKeyboardKey(keyName)
-    })
-    hitArea.on('pointerup', () => bg.setFillStyle(0x2c3e50))
-    hitArea.on('pointerout', () => bg.setFillStyle(0x2c3e50))
+    const pressKey = () => bg.setFillStyle(0x3498db)
+    const releaseKey = () => bg.setFillStyle(0x2c3e50)
 
     this.keyboardContainer.add(container)
+
+    this.domKeys.push({
+      getBounds: () => container.getBounds(),
+      onPress: (e) => {
+        probeKeyLag({ event: e })
+        bindPressRelease(pressKey, releaseKey)
+        this.handleKeyboardKey(keyName)
+      },
+    })
   }
 
   handleKeyboardKey(key) {
@@ -414,6 +424,10 @@ export default class EnemyAbilityChallengeSystem {
 
   destroy() {
     this.removeHandlers()
+    if (this.unbindDomKeyboard) {
+      this.unbindDomKeyboard()
+      this.unbindDomKeyboard = null
+    }
     if (this.overlay) {
       this.overlay.destroy()
       this.overlay = null

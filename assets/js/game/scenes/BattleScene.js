@@ -1,3 +1,4 @@
+import { trackFrame } from '../systems/keyLagProbe.js'
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { getEffect, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
 import Player from '../entities/Player.js'
@@ -302,6 +303,7 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    trackFrame(delta)
     if (this.challengeActive && this.currentChallenge && !this.wordChallengeActive) {
       const elapsed = Date.now() - this.currentChallenge.startTime
       const pct = Math.max(0, 1 - elapsed / this.currentChallenge.timeLimit)
@@ -2471,7 +2473,7 @@ export default class BattleScene extends Phaser.Scene {
 
     this.player.useStamina(infuseSkill.staminaCost)
 
-    const mana = this.player.mana || 0
+    const mana = this.player.getStatValue('mana') || 0
     let failureChance = Math.max(0.1, 0.8 - mana * 0.02)
     let challengeBonus = 0
 
@@ -2739,15 +2741,18 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Setup Defence uses kanji drawing for a random shield kanji
+    // Setup Defence uses kanji drawing for a random shield kanji.
+    // Free kanji mode swaps in the run's rolled pool; default uses the
+    // ability's static pool (same kanji the old hardcoded basePool had).
     if (skill.id === 'setup_defence') {
       const userData = getWindowGameData()
-      const basePool = ['守', '防', '盾', '硬', '堅']
+      const effectivePool = getEffectiveKanjiPool(this.player, skill)
+      const basePool = effectivePool.length > 0 ? effectivePool : ['守', '防', '盾', '硬', '堅']
       const charmPool = this.player.shield?.kanjiPool || []
       const pool = Array.from(new Set([...basePool, ...charmPool]))
       const selectedKanji = pool[Math.floor(Math.random() * pool.length)]
 
-      let strokeData = this.player.kanjiList.find(k => k.character === selectedKanji)?.stroke_data
+      let strokeData = resolveKanjiData(this.player, selectedKanji)?.stroke_data
       if (!strokeData || !strokeData.strokes || strokeData.strokes.length === 0) {
         strokeData = userData?.shield_kanji_pool_strokes?.[selectedKanji] || userData?.shield_kanji_strokes || { strokes: [] }
       }
@@ -2768,8 +2773,8 @@ export default class BattleScene extends Phaser.Scene {
         ? this.player.shield?.moveHint?.ja || '盾を構えろ。'
         : this.player.shield?.moveHint?.en || 'Raise your GUARD.'
 
-      const kanjiEntry = this.player.kanjiList.find(k => k.character === selectedKanji)
-      const meanings = kanjiEntry?.meanings || userData?.shield_kanji_pool_strokes?.[selectedKanji]?.meanings || []
+      const resolvedKanji = resolveKanjiData(this.player, selectedKanji)
+      const meanings = resolvedKanji?.meanings || userData?.shield_kanji_pool_strokes?.[selectedKanji]?.meanings || []
       const kanjiData = { character: selectedKanji, meanings }
 
       this.startKanjiDrawingChallenge(strokeData, hint, {
@@ -3715,7 +3720,7 @@ export default class BattleScene extends Phaser.Scene {
         // Before an attack, check for reaction challenge trigger
         if (action.type === 'attack') {
           const diceRoll = this.roll2d6()
-          const triggerChance = (this.player.luck * 0.1 * diceRoll) / 100
+          const triggerChance = (this.player.getStatValue('luck') * 0.1 * diceRoll) / 100
           if (Math.random() < triggerChance) {
             this.addCombatLog('Reaction opportunity!')
             await this.runReactionChallenge()
@@ -4002,7 +4007,7 @@ export default class BattleScene extends Phaser.Scene {
     if (hasComboState(player, 'deflect')) {
       consumeComboState(player, 'deflect')
       context.damageMultiplier = (context.damageMultiplier || 1) * 0.5
-      reflectDamage = 3 + Math.floor((player.skill || 0) / 5)
+      reflectDamage = 3 + Math.floor(player.getStatValue('skill') / 5)
       this.addCombatLog('Deflect! The blow is turned aside.')
     }
 

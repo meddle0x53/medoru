@@ -224,7 +224,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
       assert html =~ "already exists"
     end
 
-    test "text step does not show Copy To Grammar button", %{
+    test "admin can copy text step to a text grammar definition", %{
       conn: conn,
       admin: admin,
       classroom: classroom,
@@ -241,10 +241,19 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonPageTest do
 
       conn = log_in_user(conn, admin)
 
-      {:ok, _view, html} =
+      {:ok, view, html} =
         live(conn, ~p"/classrooms/#{classroom.id}/custom-lessons/#{lesson.id}?step=1")
 
-      refute html =~ "Copy To Grammar"
+      assert html =~ "Copy To Grammar"
+
+      view
+      |> element("button", "Copy To Grammar")
+      |> render_click()
+
+      grammar = Content.get_grammar_definition_by_title("Introduction")
+      assert grammar.entry_type == "text"
+      assert grammar.explanation_sections == ["Welcome to the lesson"]
+      assert grammar.pattern_elements == []
     end
 
     test "text step renders examples", %{

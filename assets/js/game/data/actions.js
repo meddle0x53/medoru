@@ -83,7 +83,9 @@ export function splitActions(player) {
   // Intersect available gear with selected pool
   const pool = universe.filter(a => available.some(av => av.id === a.id))
 
-  const maxActive = getMaxActiveActions(player.capacity || 3)
+  const maxActive = getMaxActiveActions(
+    typeof player.getEffectiveCapacity === 'function' ? player.getEffectiveCapacity() : (player.capacity || 3)
+  )
 
   // Use loadout.activeActionIds if present, otherwise fall back to direct property
   const activeIds = player.loadout?.activeActionIds || player.activeActionIds || []

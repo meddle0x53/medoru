@@ -173,7 +173,7 @@ export default class Player extends Character {
       stamina: 10,
       capacity: 5,
       skill: 10,
-      strength: 15,
+      strength: 12,
       mana: 5,
       luck: 5,
     }
@@ -282,7 +282,7 @@ export default class Player extends Character {
     // Recalculate derived stats after allocations
     this.recalcMaxHp()
     this.hp = this.maxHp
-    this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
+    this.recalcMaxStamina()
     this.stamina = this.maxStamina
 
     // Active / inactive action management
@@ -292,7 +292,7 @@ export default class Player extends Character {
     this.inactiveActions = inactive
     // Keep equippedSkills in sync for Character base class compatibility
     this.equippedSkills = this.activeActions
-    this.maxActiveSlots = getMaxActiveActions(this.capacity || 3)
+    this.maxActiveSlots = getMaxActiveActions(this.getEffectiveCapacity())
 
     // Tag ledger for this turn's combo sequencing
     this.turnTagLedger = []
@@ -575,7 +575,7 @@ export default class Player extends Character {
     this.activeActions = active
     this.inactiveActions = inactive
     this.equippedSkills = active
-    this.maxActiveSlots = getMaxActiveActions(this.capacity || 3)
+    this.maxActiveSlots = getMaxActiveActions(this.getEffectiveCapacity())
   }
 
   setActiveActionIds(ids) {
@@ -623,7 +623,7 @@ export default class Player extends Character {
     const quality = this.parryCharges[0]
     const parryAction = this.activeActions.find(a => a.type === 'parry')
     const base = parryAction?.baseParryChance || 0.15
-    const luckBonus = (this.luck || 0) / 100
+    const luckBonus = this.getStatValue('luck') / 100
     const readinessBonus = (this.readiness || 0) * 0.20
     const quizBonus = this.lastReactionCorrect ? 0.10 : 0
     let chance = base + luckBonus + readinessBonus + quizBonus
@@ -999,6 +999,8 @@ export default class Player extends Character {
     }
     this._charmEffects = null
     this.recalcMaxHp()
+    this.recalcMaxStamina()
+    this.refreshActions()
     this.saveLoadout()
     return { ok: true }
   }
@@ -1013,6 +1015,8 @@ export default class Player extends Character {
     }
     this._charmEffects = null
     this.recalcMaxHp()
+    this.recalcMaxStamina()
+    this.refreshActions()
     this.saveLoadout()
   }
 
@@ -1039,7 +1043,7 @@ export default class Player extends Character {
   }
 
   recalcMaxHp() {
-    const base = 80 + this.baseStats.vitality * 5
+    const base = 80 + this.getStatValue('vitality') * 5
     const multiplier = 1 + (this.getCharmEffects().maxHpMultiplier || 0)
     const newMax = Math.floor(base * multiplier)
     const oldMax = this.maxHp || newMax
@@ -1048,8 +1052,18 @@ export default class Player extends Character {
     this.hp = Math.min(this.maxHp, Math.max(1, this.hp + (newMax - oldMax)))
   }
 
+  recalcMaxStamina() {
+    this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3)
+  }
+
   // Returns a plain object of accumulated charm effects, e.g.
   // { strength: 2, skill: 2, critChance: 0.05, damageBonus: 0.18 }
+  // Capacity including hero/socket charm bonuses (e.g. Backpack Charm +7).
+  // Slot math must use this instead of the raw this.capacity field.
+  getEffectiveCapacity() {
+    return this.getStatValue('capacity') || 3
+  }
+
   getCharmEffects() {
     if (this._charmEffects) return this._charmEffects
     const effects = {}
@@ -1184,6 +1198,8 @@ export default class Player extends Character {
     if (equipped) {
       this._charmEffects = null
       this.recalcMaxHp()
+      this.recalcMaxStamina()
+      this.refreshActions()
     }
     this.saveLoadout()
     return { owned: true, equipped }
@@ -1322,7 +1338,7 @@ export default class Player extends Character {
     if (!this.hasAbility(actionId)) return { ok: false, reason: 'Ability not known.' }
     if (this.loadout.selectedActionIds.includes(actionId)) return { ok: true }
 
-    const maxBattle = getMaxBattlePoolActions(this.capacity || 3)
+    const maxBattle = getMaxBattlePoolActions(this.getEffectiveCapacity())
     const combatSelected = this.loadout.selectedActionIds.filter(id => id !== 'use_item')
     if (combatSelected.length >= maxBattle) {
       return { ok: false, reason: 'Battle pool is full.' }
@@ -1367,7 +1383,7 @@ export default class Player extends Character {
       return { ok: true, added: false, action }
     }
 
-    const maxOverall = getMaxOverallAbilities(this.capacity || 3)
+    const maxOverall = getMaxOverallAbilities(this.getEffectiveCapacity())
     if (this.loadout.knownActionIds.length >= maxOverall) {
       return { ok: false, reason: 'Overall ability cap reached.' }
     }
@@ -1375,7 +1391,7 @@ export default class Player extends Character {
     this.loadout.knownActionIds.push(actionId)
 
     // Auto-add to battle pool if there is room
-    const maxBattle = getMaxBattlePoolActions(this.capacity || 3)
+    const maxBattle = getMaxBattlePoolActions(this.getEffectiveCapacity())
     const combatSelected = this.loadout.selectedActionIds.filter(id => id !== 'use_item')
     if (combatSelected.length < maxBattle) {
       this.addToSelectedPool(actionId)
@@ -1580,9 +1596,9 @@ export default class Player extends Character {
     for (const stat of Object.keys(this.baseStats)) {
       this[stat] = this.baseStats[stat]
     }
-    this.maxHp = 80 + this.baseStats.vitality * 5
+    this.recalcMaxHp()
     this.hp = this.maxHp
-    this.maxStamina = 8 + Math.floor(this.baseStats.stamina / 3)
+    this.recalcMaxStamina()
     this.stamina = this.maxStamina
 
     this.buffs = []
@@ -1826,7 +1842,7 @@ export default class Player extends Character {
     }
 
     // Auto-equip if there is a free active slot.
-    const maxActive = getMaxActiveActions(this.capacity || 3)
+    const maxActive = getMaxActiveActions(this.getEffectiveCapacity())
     const combatActive = this.loadout.activeActionIds.filter(id => id !== 'use_item')
     if (combatActive.length < maxActive && !this.loadout.activeActionIds.includes(actionId)) {
       this.loadout.activeActionIds.push(actionId)

@@ -273,6 +273,7 @@
    "scalingStat": "skill",
    "scalingMultiplier": 0.8,
    "kanji": "盾",
+   "kanjiPool": ["守", "防", "盾", "硬", "堅"],
    "rarity": "common",
    "moveHint": {
     "en": "Raise your GUARD.",

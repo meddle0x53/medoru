@@ -38,13 +38,15 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
     page = parse_page(params["page"])
     jlpt_level = parse_jlpt_level(params["level"])
     search = parse_search(params["search"])
+    entry_type = parse_entry_type(params["type"])
 
     result =
       Content.list_grammar_definitions(
         page: page,
         per_page: @per_page,
         jlpt_level: jlpt_level,
-        search: search
+        search: search,
+        entry_type: entry_type
       )
 
     {:noreply,
@@ -54,7 +56,8 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
      |> assign(:total_count, result.total_count)
      |> assign(:grammar_definitions, result.grammar_definitions)
      |> assign(:jlpt_level, jlpt_level)
-     |> assign(:search, search)}
+     |> assign(:search, search)
+     |> assign(:entry_type, entry_type)}
   end
 
   @impl true
@@ -63,7 +66,10 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(to: ~p"/grammars?#{%{level: socket.assigns.jlpt_level, search: search_param}}")}
+     |> push_patch(
+       to:
+         ~p"/grammars?#{%{level: socket.assigns.jlpt_level, search: search_param, type: socket.assigns.entry_type}}"
+     )}
   end
 
   @impl true
@@ -76,7 +82,23 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
 
     {:noreply,
      socket
-     |> push_patch(to: ~p"/grammars?#{%{level: level_param, search: socket.assigns.search}}")}
+     |> push_patch(
+       to:
+         ~p"/grammars?#{%{level: level_param, search: socket.assigns.search, type: socket.assigns.entry_type}}"
+     )}
+  end
+
+  @impl true
+  def handle_event("filter_type", %{"type" => type}, socket) do
+    type_param = if type in ["pattern", "text"], do: type, else: nil
+
+    params = %{
+      level: socket.assigns.jlpt_level,
+      search: socket.assigns.search,
+      type: type_param
+    }
+
+    {:noreply, push_patch(socket, to: ~p"/grammars?#{params}")}
   end
 
   @impl true
@@ -100,6 +122,11 @@ defmodule MedoruWeb.GrammarDefinitionLive.Index do
   defp parse_search(nil), do: nil
   defp parse_search(""), do: nil
   defp parse_search(search) when is_binary(search), do: String.trim(search)
+
+  defp parse_entry_type(nil), do: nil
+  defp parse_entry_type(""), do: nil
+  defp parse_entry_type(type) when type in ["pattern", "text"], do: type
+  defp parse_entry_type(_), do: nil
 
   defp level_badge_color(5), do: "badge-success"
   defp level_badge_color(4), do: "badge-info"

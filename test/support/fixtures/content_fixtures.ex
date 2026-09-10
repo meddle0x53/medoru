@@ -308,24 +308,39 @@ defmodule Medoru.ContentFixtures do
   Generate a grammar definition.
   """
   def grammar_definition_fixture(attrs \\ %{}) do
-    attrs =
-      Enum.into(attrs, %{
-        title: "Test Grammar #{System.unique_integer([:positive])}",
-        jlpt_level: 5,
-        frequency: 500,
-        pattern_elements: [
-          %{"type" => "word_slot", "word_type" => "verb", "forms" => ["te-form"]},
-          %{"type" => "literal", "text" => "いる"}
-        ],
-        description: "Test grammar description",
-        examples: [
-          %{
-            "sentence" => "食べている",
-            "reading" => "たべている",
-            "meaning" => "eating (continuous)"
-          }
-        ]
-      })
+    entry_type = Map.get(attrs, :entry_type, "pattern")
+
+    base = %{
+      title: "Test Grammar #{System.unique_integer([:positive])}",
+      jlpt_level: 5,
+      frequency: 500,
+      description: "Test grammar description",
+      examples: [
+        %{
+          "sentence" => "食べている",
+          "reading" => "たべている",
+          "meaning" => "eating (continuous)"
+        }
+      ]
+    }
+
+    defaults =
+      if entry_type == "text" do
+        %{
+          entry_type: "text",
+          explanation_sections: ["First section.", "Second section."]
+        }
+      else
+        %{
+          entry_type: "pattern",
+          pattern_elements: [
+            %{"type" => "word_slot", "word_type" => "verb", "forms" => ["te-form"]},
+            %{"type" => "literal", "text" => "いる"}
+          ]
+        }
+      end
+
+    attrs = base |> Map.merge(defaults) |> Map.merge(attrs)
 
     {:ok, grammar_definition} = Content.create_grammar_definition(attrs)
     grammar_definition

@@ -956,7 +956,10 @@ defmodule Medoru.Content do
       WordKanji
       |> join(:inner, [wk], w in assoc(wk, :word))
       |> join(:inner, [wk], k in assoc(wk, :kanji))
-      |> where([wk, w, k], k.character in ^characters and not is_nil(w.reading) and not is_nil(w.meaning))
+      |> where(
+        [wk, w, k],
+        k.character in ^characters and not is_nil(w.reading) and not is_nil(w.meaning)
+      )
       |> order_by([wk, w], asc: w.usage_frequency)
       |> select([wk, w, k], %{
         character: k.character,
@@ -3509,12 +3512,20 @@ defmodule Medoru.Content do
     per_page = Keyword.get(opts, :per_page, 30)
     jlpt_level = Keyword.get(opts, :jlpt_level)
     search = Keyword.get(opts, :search)
+    entry_type = Keyword.get(opts, :entry_type)
 
     base_query = GrammarDefinition
 
     base_query =
       if jlpt_level && jlpt_level in 1..5 do
         where(base_query, jlpt_level: ^jlpt_level)
+      else
+        base_query
+      end
+
+    base_query =
+      if entry_type && entry_type in ["pattern", "text"] do
+        where(base_query, entry_type: ^entry_type)
       else
         base_query
       end

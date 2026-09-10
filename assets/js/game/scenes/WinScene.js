@@ -29,8 +29,8 @@ export default class WinScene extends Phaser.Scene {
     this.bonusAbilityPending = false
 
     // Calculate base rewards
-    this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.luck || 0) / 50 ? 1 : 0)
-    this.baseGold = Math.round((this.monster?.baseGold || 5) * (1 + (this.player.luck || 0) / 200))
+    this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.getStatValue('luck') || 0) / 50 ? 1 : 0)
+    this.baseGold = Math.round((this.monster?.baseGold || 5) * (1 + (this.player.getStatValue('luck') || 0) / 200))
     this.attributePoints = this.player.applyNgPlusMultiplier(this.baseAttributePoints)
     this.goldReward = this.player.applyNgPlusMultiplier(this.baseGold)
 
@@ -67,7 +67,7 @@ export default class WinScene extends Phaser.Scene {
 
   generateAbilityRewards() {
     const pool = getRewardPool(this.player)
-    const count = this.player.applyNgPlusMultiplier(3 + (Math.random() * 100 < (this.player.luck || 0) ? 1 : 0))
+    const count = this.player.applyNgPlusMultiplier(3 + (Math.random() * 100 < (this.player.getStatValue('luck') || 0) ? 1 : 0))
     return pickRewardAbilities(pool, Math.min(count, 6), this.player.loadout.knownActionIds || [], this.tile)
   }
 
@@ -364,7 +364,7 @@ export default class WinScene extends Phaser.Scene {
       return
     }
 
-    const capacity = this.player.capacity || 3
+    const capacity = this.player.getEffectiveCapacity()
     const knownCount = this.player.countCombatAbilities()
     const maxOverall = getMaxOverallAbilities(capacity)
 
@@ -434,7 +434,7 @@ export default class WinScene extends Phaser.Scene {
       return null
     }
 
-    const capacity = this.player.capacity || 3
+    const capacity = this.player.getEffectiveCapacity()
     const knownCount = this.player.countCombatAbilities()
     const maxOverall = getMaxOverallAbilities(capacity)
 

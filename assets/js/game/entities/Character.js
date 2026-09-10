@@ -444,7 +444,7 @@ export default class Character {
 
   getCritChance() {
     // Crit is driven by Skill rather than Luck.
-    let base = Math.min(0.25, this.skill * 0.05)
+    let base = Math.min(0.25, this.getStatValue('skill') * 0.05)
     if (typeof this.getCharmEffects === 'function') {
       const charmEffects = this.getCharmEffects()
       if (charmEffects && charmEffects.critChance) {
@@ -455,7 +455,7 @@ export default class Character {
   }
 
   getMissChanceFor(attacker = null) {
-    let miss = this.getEvasion() + (this.luck / 120)
+    let miss = this.getEvasion() + (this.getStatValue('luck') / 120)
     if (attacker && attacker.activeEffects) {
       for (const entry of attacker.activeEffects) {
         const effect = getEffect(entry.effectId)
@@ -468,15 +468,15 @@ export default class Character {
   }
 
   getPhysicalDefense() {
-    return Math.floor((this.strength || 0) * 0.5)
+    return Math.floor(this.getStatValue('strength') * 0.5)
   }
 
   getElementalDefense() {
-    return Math.floor((this.mana || 0) * 0.5)
+    return Math.floor(this.getStatValue('mana') * 0.5)
   }
 
   getInfusionChance() {
-    return Math.min(0.30, (this.luck || 0) * 0.01)
+    return Math.min(0.30, this.getStatValue('luck') * 0.01)
   }
 
   getStatValue(statName) {

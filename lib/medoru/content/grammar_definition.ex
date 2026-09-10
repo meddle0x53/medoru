@@ -4,9 +4,11 @@ defmodule Medoru.Content.GrammarDefinition do
 
   Each grammar definition contains:
   - A title and slug
-  - A pattern (array of pattern elements like word slots and literals)
+  - An entry type: "pattern" (validated practice entry) or "text" (informational)
+  - A pattern (array of pattern elements like word slots and literals) —
+    required for "pattern" entries, optional and presentational for "text" entries
   - Word colors for highlighting
-  - A markdown description
+  - A markdown description and optional markdown explanation sections
   - Up to 5 examples (sentence, reading, meaning)
   - JLPT level (N1-N5)
   """
@@ -23,6 +25,8 @@ defmodule Medoru.Content.GrammarDefinition do
     field :description, :string
     field :description_bg, :string
     field :description_ja, :string
+    field :explanation_sections, {:array, :string}, default: []
+    field :entry_type, :string, default: "pattern"
     field :examples, {:array, :map}, default: []
     field :jlpt_level, :integer
     field :frequency, :integer, default: 1000
@@ -41,6 +45,8 @@ defmodule Medoru.Content.GrammarDefinition do
       :description,
       :description_bg,
       :description_ja,
+      :explanation_sections,
+      :entry_type,
       :examples,
       :jlpt_level,
       :frequency
@@ -49,9 +55,11 @@ defmodule Medoru.Content.GrammarDefinition do
     |> validate_required([:title, :slug])
     |> validate_length(:title, min: 1, max: 200)
     |> validate_inclusion(:jlpt_level, 1..5)
+    |> validate_inclusion(:entry_type, ["pattern", "text"])
     |> validate_number(:frequency, greater_than_or_equal_to: 0)
     |> validate_examples()
     |> validate_pattern_elements()
+    |> validate_explanation_sections()
     |> validate_word_colors()
     |> unique_constraint(:title)
     |> unique_constraint(:slug)
@@ -125,9 +133,27 @@ defmodule Medoru.Content.GrammarDefinition do
   end
 
   defp validate_pattern_elements(changeset) do
-    validate_change(changeset, :pattern_elements, fn :pattern_elements, elements ->
-      if Enum.empty?(elements) do
-        [pattern_elements: "must have at least one pattern element"]
+    entry_type = get_field(changeset, :entry_type, "pattern")
+    elements = get_field(changeset, :pattern_elements) || []
+
+    # "pattern" entries must have at least one pattern element; "text" entries
+    # may carry an optional pattern for display only (never used for validation).
+    if entry_type == "pattern" and Enum.empty?(elements) do
+      add_error(changeset, :pattern_elements, "must have at least one pattern element")
+    else
+      changeset
+    end
+  end
+
+  defp validate_explanation_sections(changeset) do
+    validate_change(changeset, :explanation_sections, fn :explanation_sections, sections ->
+      invalid? =
+        not is_list(sections) or
+          Enum.any?(sections, fn section -> not is_binary(section) end) or
+          Enum.any?(sections, &(String.length(&1) > 10_000))
+
+      if invalid? do
+        [explanation_sections: "each section must be a string of at most 10000 characters"]
       else
         []
       end

@@ -18,7 +18,8 @@ defmodule MedoruWeb.GameLiveTest do
 
     # force: true — the fixture user already has its profile association
     # loaded, and a plain preload would return the stale struct.
-    data = GameLive.build_game_data(Repo.preload(user, :profile, force: true), %{"locale" => "en"})
+    data =
+      GameLive.build_game_data(Repo.preload(user, :profile, force: true), %{"locale" => "en"})
 
     assert data.name == "ShadowNeko"
   end

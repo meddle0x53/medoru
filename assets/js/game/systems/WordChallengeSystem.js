@@ -1,3 +1,5 @@
+import { probeKeyLag } from './keyLagProbe.js'
+import { bindDomKeyboard, bindPressRelease } from './domKeyboard.js'
 import { COLORS, FONTS, GAME_CONFIG } from '../config.js'
 import { getAcceptedReadings, normalizeReadingInput } from './kanaUtils.js'
 import { evaluateMeaningAnswer } from './wordChallengeUtils.js'
@@ -238,6 +240,7 @@ export default class WordChallengeSystem {
   createTouchKeyboard() {
     this.keyboardContainer = this.scene.add.container(0, 0)
     this.overlay.add(this.keyboardContainer)
+    this.domKeys = []
 
     // Larger, simplified keys for touch devices, matching the Cascade keyboard.
     const keySize = 30
@@ -273,6 +276,12 @@ export default class WordChallengeSystem {
       this.createKeyboardKey(label, x + width / 2, controlY, width, keySize, key)
       x += width + keyGap
     })
+
+    // DOM-level pointer binding: bypasses Phaser's input-manager pipeline,
+    // which adds a perceivable delay to tap feedback on some Android devices.
+    this.unbindDomKeyboard = bindDomKeyboard(this.scene, this.domKeys, {
+      isActive: () => this.active,
+    })
   }
 
   createKeyboardKey(label, x, y, width, height, keyName) {
@@ -286,10 +295,6 @@ export default class WordChallengeSystem {
     const container = this.scene.add.container(x, y, [bg, text])
     container.setSize(width, height)
 
-    const hitArea = this.scene.add.rectangle(0, 0, width, height, 0x000000, 0)
-    hitArea.setInteractive({ useHandCursor: true })
-    container.add(hitArea)
-
     const pressKey = () => {
       bg.setFillStyle(0x3498db)
       container.setScale(0.92)
@@ -299,14 +304,16 @@ export default class WordChallengeSystem {
       container.setScale(1)
     }
 
-    hitArea.on('pointerdown', () => {
-      pressKey()
-      this.handleKeyboardKey(keyName)
-    })
-    hitArea.on('pointerup', releaseKey)
-    hitArea.on('pointerout', releaseKey)
-
     this.keyboardContainer.add(container)
+
+    this.domKeys.push({
+      getBounds: () => container.getBounds(),
+      onPress: (e) => {
+        probeKeyLag({ event: e })
+        bindPressRelease(pressKey, releaseKey)
+        this.handleKeyboardKey(keyName)
+      },
+    })
   }
 
   handleKeyboardKey(key) {
@@ -534,6 +541,10 @@ export default class WordChallengeSystem {
 
   hide() {
     this.removeInputHandlers()
+    if (this.unbindDomKeyboard) {
+      this.unbindDomKeyboard()
+      this.unbindDomKeyboard = null
+    }
     if (this.hangEvent) {
       this.hangEvent.remove()
       this.hangEvent = null

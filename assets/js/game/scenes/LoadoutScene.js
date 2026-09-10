@@ -259,7 +259,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
   createActiveActionSlots() {
     this.actionSlots = []
-    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
     const activeIds = this.player.loadout.activeActionIds
     const combatActiveIds = activeIds.filter(id => id !== 'use_item')
     const useItemActive = activeIds.includes('use_item')
@@ -385,7 +385,7 @@ export default class LoadoutScene extends Phaser.Scene {
       return
     }
 
-    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
     const combatActiveCount = this.player.loadout.activeActionIds.filter(id => id !== 'use_item').length
     if (combatActiveCount >= maxSlots) {
       this.showToast(`Max ${maxSlots} active abilities`)
@@ -1192,7 +1192,7 @@ export default class LoadoutScene extends Phaser.Scene {
       this.player.saveLoadout()
     }
 
-    const capacity = this.player.capacity || 3
+    const capacity = this.player.getEffectiveCapacity()
     const maxActive = getMaxActiveActions(capacity)
     const maxBattle = getMaxBattlePoolActions(capacity)
     const maxOverall = getMaxOverallAbilities(capacity)
@@ -1505,8 +1505,8 @@ export default class LoadoutScene extends Phaser.Scene {
 
     const inBattle = this.player.loadout.selectedActionIds.includes(action.id)
     const isActive = this.player.loadout.activeActionIds.includes(action.id)
-    const maxActive = getMaxActiveActions(this.player.capacity || 3)
-    const maxBattle = getMaxBattlePoolActions(this.player.capacity || 3)
+    const maxActive = getMaxActiveActions(this.player.getEffectiveCapacity())
+    const maxBattle = getMaxBattlePoolActions(this.player.getEffectiveCapacity())
 
     let btnY = 115
     const addDialogBtn = (label, color, onClick) => {
@@ -1646,7 +1646,7 @@ export default class LoadoutScene extends Phaser.Scene {
   // ---------- Stats Tab ----------
 
   createStatsTab() {
-    const capacity = this.player.capacity || 3
+    const capacity = this.player.getEffectiveCapacity()
     const stats = [
       { key: 'vitality', label: 'Vitality', derived: `HP: ${this.player.maxHp}` },
       { key: 'stamina', label: 'Stamina', derived: `Max STA: ${this.player.maxStamina}` },
@@ -1664,6 +1664,7 @@ export default class LoadoutScene extends Phaser.Scene {
       const y = startY + i * rowH
       const baseVal = this.player.baseStats[stat.key]
       const alloc = this.player.loadout.statAllocations[stat.key] || 0
+      const charmBonus = this.player.getCharmEffects()[stat.key] || 0
       const total = baseVal + alloc
 
       const row = this.add.container(460, y)
@@ -1683,12 +1684,13 @@ export default class LoadoutScene extends Phaser.Scene {
         })
       )
 
-      // Base + allocation display
+      // Base + allocation (+ charm bonus) display
+      const charmNote = charmBonus ? ` + Charm ${charmBonus} = ${total + charmBonus}` : ''
       row.add(
-        this.add.text(16, 32, `Base ${baseVal} + Alloc ${alloc} = ${total}`, {
+        this.add.text(16, 32, `Base ${baseVal} + Alloc ${alloc} = ${total}${charmNote}`, {
           ...FONTS.default,
           fontSize: '11px',
-          color: '#7f8c8d',
+          color: charmBonus ? '#d4a017' : '#7f8c8d',
         })
       )
 
@@ -1830,7 +1832,7 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   fillActiveActionSlots() {
-    const maxSlots = getMaxActiveActions(this.player.capacity || 3)
+    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
     const activeIds = this.player.loadout.activeActionIds
     const useItemActive = activeIds.includes('use_item')
 

@@ -52,57 +52,66 @@
     <% end %>
 
     <%!-- Pattern Display --%>
-    <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
-      <div class="card-body p-4 sm:p-6">
-        <h2 class="text-lg font-semibold text-base-content mb-4">
-          {gettext("Pattern")}
-        </h2>
-        <div class="flex flex-wrap gap-2 items-center">
-          <%= for element <- @grammar_definition.pattern_elements do %>
-            <%= case element["type"] do %>
-              <% "literal" -> %>
-                <span class="px-3 py-1.5 bg-base-200 rounded-lg text-base-content font-medium text-lg">
-                  {element["text"] || ""}
-                </span>
-              <% "word_slot" -> %>
-                <span class="px-3 py-1.5 bg-primary/10 rounded-lg text-primary font-medium border border-primary/30 text-lg">
-                  {element["word_type"] || gettext("word")}
-                  <%= if element["forms"] && length(element["forms"]) > 0 do %>
-                    <span class="text-sm opacity-80">
-                      ({Enum.join(element["forms"], ", ")})
-                    </span>
-                  <% end %>
-                </span>
-              <% "word_class" -> %>
-                <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">
-                  {element["word_class"] || gettext("Class")}
-                </span>
-              <% "particle" -> %>
-                <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">
-                  {element["text"] || gettext("particle")}
-                </span>
-              <% _ -> %>
-                <span class="px-3 py-1.5 bg-base-200 rounded-lg text-base-content text-lg">
-                  {element["type"]}
-                </span>
+    <%= if @grammar_definition.pattern_elements != [] do %>
+      <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="text-lg font-semibold text-base-content mb-4">
+            {gettext("Pattern")}
+          </h2>
+          <div class="flex flex-wrap gap-2 items-center">
+            <%= for element <- @grammar_definition.pattern_elements do %>
+              <%= case element["type"] do %>
+                <% "literal" -> %>
+                  <span class="px-3 py-1.5 bg-base-200 rounded-lg text-base-content font-medium text-lg">
+                    {element["text"] || ""}
+                  </span>
+                <% "word_slot" -> %>
+                  <span class="px-3 py-1.5 bg-primary/10 rounded-lg text-primary font-medium border border-primary/30 text-lg">
+                    {element["word_type"] || gettext("word")}
+                    <%= if element["forms"] && length(element["forms"]) > 0 do %>
+                      <span class="text-sm opacity-80">
+                        ({Enum.join(element["forms"], ", ")})
+                      </span>
+                    <% end %>
+                  </span>
+                <% "word_class" -> %>
+                  <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">
+                    {element["word_class"] || gettext("Class")}
+                  </span>
+                <% "particle" -> %>
+                  <span class="px-3 py-1.5 bg-secondary/10 rounded-lg text-secondary font-medium border border-secondary/30 text-lg">
+                    {element["text"] || gettext("particle")}
+                  </span>
+                <% _ -> %>
+                  <span class="px-3 py-1.5 bg-base-200 rounded-lg text-base-content text-lg">
+                    {element["type"]}
+                  </span>
+              <% end %>
             <% end %>
-          <% end %>
+          </div>
         </div>
       </div>
-    </div>
+    <% end %>
 
-    <%!-- Description --%>
-    <%= if @grammar_definition.description do %>
+    <%!-- Explanation (description + sections) --%>
+    <%= if @grammar_definition.description || @grammar_definition.explanation_sections != [] do %>
       <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
         <div class="card-body p-4 sm:p-6">
           <h2 class="text-lg font-semibold text-base-content mb-4">
             {gettext("Explanation")}
           </h2>
-          <div class="prose prose-sm dark:prose-invert max-w-none">
-            {Phoenix.HTML.raw(
-              render_description(localized_description(@grammar_definition, @locale))
-            )}
-          </div>
+          <%= if @grammar_definition.description do %>
+            <div class="prose prose-sm dark:prose-invert max-w-none">
+              {Phoenix.HTML.raw(
+                render_description(localized_description(@grammar_definition, @locale))
+              )}
+            </div>
+          <% end %>
+          <%= for section <- @grammar_definition.explanation_sections do %>
+            <div class="prose prose-sm dark:prose-invert max-w-none">
+              {Phoenix.HTML.raw(render_description(section))}
+            </div>
+          <% end %>
         </div>
       </div>
     <% end %>
@@ -140,55 +149,57 @@
       </div>
     <% end %>
 
-    <%!-- Try Your Own Example --%>
-    <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
-      <div class="card-body p-4 sm:p-6">
-        <h2 class="text-lg font-semibold text-base-content mb-4">
-          {gettext("Try Your Own Example")}
-        </h2>
-        <p class="text-sm text-secondary mb-4">
-          {gettext("Write a sentence that follows this grammar pattern and validate it.")}
-        </p>
+    <%!-- Try Your Own Example (pattern entries only) --%>
+    <%= if @grammar_definition.entry_type == "pattern" do %>
+      <div class="card bg-base-100 border border-base-300 shadow-sm mb-6">
+        <div class="card-body p-4 sm:p-6">
+          <h2 class="text-lg font-semibold text-base-content mb-4">
+            {gettext("Try Your Own Example")}
+          </h2>
+          <p class="text-sm text-secondary mb-4">
+            {gettext("Write a sentence that follows this grammar pattern and validate it.")}
+          </p>
 
-        <form phx-submit="validate_sentence" class="space-y-4">
-          <div>
-            <input
-              type="text"
-              name="sentence"
-              value={@user_sentence}
-              placeholder={gettext("Type your Japanese sentence here...")}
-              class="input input-bordered w-full"
-              phx-change="update_sentence"
-              phx-debounce="200"
-            />
-          </div>
-
-          <%= if @validation_result do %>
-            <div class={[
-              "rounded-lg p-4",
-              if(@validation_result.valid,
-                do: "bg-success/10 border border-success/30 text-success",
-                else: "bg-error/10 border border-error/30 text-error"
-              )
-            ]}>
-              <div class="flex items-center gap-2">
-                <.icon
-                  name={
-                    if @validation_result.valid, do: "hero-check-circle", else: "hero-x-circle"
-                  }
-                  class="w-5 h-5 shrink-0"
-                />
-                <p class="text-sm font-medium">{@validation_result.message}</p>
-              </div>
+          <form phx-submit="validate_sentence" class="space-y-4">
+            <div>
+              <input
+                type="text"
+                name="sentence"
+                value={@user_sentence}
+                placeholder={gettext("Type your Japanese sentence here...")}
+                class="input input-bordered w-full"
+                phx-change="update_sentence"
+                phx-debounce="200"
+              />
             </div>
-          <% end %>
 
-          <button type="submit" class="btn btn-primary min-h-[44px] touch-target">
-            <.icon name="hero-check" class="w-4 h-4 mr-2" />
-            {gettext("Validate")}
-          </button>
-        </form>
+            <%= if @validation_result do %>
+              <div class={[
+                "rounded-lg p-4",
+                if(@validation_result.valid,
+                  do: "bg-success/10 border border-success/30 text-success",
+                  else: "bg-error/10 border border-error/30 text-error"
+                )
+              ]}>
+                <div class="flex items-center gap-2">
+                  <.icon
+                    name={
+                      if @validation_result.valid, do: "hero-check-circle", else: "hero-x-circle"
+                    }
+                    class="w-5 h-5 shrink-0"
+                  />
+                  <p class="text-sm font-medium">{@validation_result.message}</p>
+                </div>
+              </div>
+            <% end %>
+
+            <button type="submit" class="btn btn-primary min-h-[44px] touch-target">
+              <.icon name="hero-check" class="w-4 h-4 mr-2" />
+              {gettext("Validate")}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    <% end %>
   </div>
 </Layouts.app>

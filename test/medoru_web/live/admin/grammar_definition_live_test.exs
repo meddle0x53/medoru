@@ -89,6 +89,109 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLiveTest do
       assert_redirect(view, ~p"/admin/grammars")
     end
 
+    test "creates text entry with explanation sections", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/grammars/new")
+
+      render_hook(view, "update_field", %{"field" => "title", "value" => "Text Entry"})
+      render_hook(view, "update_field", %{"field" => "entry_type", "value" => "text"})
+
+      view
+      |> element("button[phx-click='add_section']")
+      |> render_click()
+
+      render_hook(view, "update_section", %{"index" => "0", "value" => "A section."})
+
+      _html =
+        view
+        |> element("button[phx-click='save']")
+        |> render_click()
+
+      assert_redirect(view, ~p"/admin/grammars")
+
+      grammar = Medoru.Content.get_grammar_definition_by_title("Text Entry")
+      assert grammar.entry_type == "text"
+      assert grammar.explanation_sections == ["A section."]
+      assert grammar.pattern_elements == []
+    end
+
+    test "saving text entry drops blank sections", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/grammars/new")
+
+      render_hook(view, "update_field", %{"field" => "title", "value" => "Sparse Text"})
+      render_hook(view, "update_field", %{"field" => "entry_type", "value" => "text"})
+
+      view
+      |> element("button[phx-click='add_section']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='add_section']")
+      |> render_click()
+
+      render_hook(view, "update_section", %{"index" => "1", "value" => "Kept."})
+
+      view
+      |> element("button[phx-click='remove_section'][phx-value-index='0']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='save']")
+      |> render_click()
+
+      assert_redirect(view, ~p"/admin/grammars")
+
+      grammar = Medoru.Content.get_grammar_definition_by_title("Sparse Text")
+      assert grammar.explanation_sections == ["Kept."]
+    end
+
+    test "moves sections up and down", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/grammars/new")
+
+      view
+      |> element("button[phx-click='add_section']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='add_section']")
+      |> render_click()
+
+      render_hook(view, "update_section", %{"index" => "0", "value" => "First"})
+      render_hook(view, "update_section", %{"index" => "1", "value" => "Second"})
+
+      html =
+        view
+        |> element(
+          "button[phx-click='move_section'][phx-value-index='1'][phx-value-direction='up']"
+        )
+        |> render_click()
+
+      assert html =~ "Section #1"
+      assert html =~ "Section #2"
+    end
+
+    test "validating an example without a pattern shows an error", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/grammars/new")
+
+      render_hook(view, "update_field", %{"field" => "entry_type", "value" => "text"})
+
+      view
+      |> element("button[phx-click='add_example']")
+      |> render_click()
+
+      render_hook(view, "update_example", %{
+        "index" => "0",
+        "field" => "sentence",
+        "value" => "テスト"
+      })
+
+      html =
+        view
+        |> element("button[phx-click='validate_example'][phx-value-index='0']")
+        |> render_click()
+
+      assert html =~ "Add pattern elements before validating"
+    end
+
     test "shows errors with invalid data", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin/grammars/new")
 
@@ -125,6 +228,20 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLiveTest do
         |> render_click()
 
       assert_redirect(view, ~p"/admin/grammars")
+    end
+
+    test "renders sections of a text entry for editing", %{conn: conn} do
+      grammar =
+        grammar_definition_fixture(%{
+          title: "Text To Edit",
+          entry_type: "text",
+          explanation_sections: ["Existing section."]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/admin/grammars/#{grammar.id}/edit")
+
+      assert html =~ "Existing section."
+      assert html =~ "Explanation Sections"
     end
   end
 

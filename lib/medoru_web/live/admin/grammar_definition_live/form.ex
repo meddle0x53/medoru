@@ -130,11 +130,13 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
             slug: "",
             jlpt_level: 5,
             frequency: 1000,
+            entry_type: "pattern",
             pattern_elements: [],
             word_colors: [],
             description: "",
             description_bg: "",
             description_ja: "",
+            explanation_sections: [],
             examples: []
           }
 
@@ -149,11 +151,13 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
             slug: gd.slug,
             jlpt_level: gd.jlpt_level || 5,
             frequency: gd.frequency || 1000,
+            entry_type: gd.entry_type || "pattern",
             pattern_elements: gd.pattern_elements || [],
             word_colors: gd.word_colors || [],
             description: gd.description || "",
             description_bg: gd.description_bg || "",
             description_ja: gd.description_ja || "",
+            explanation_sections: gd.explanation_sections || [],
             examples: gd.examples || []
           }
 
@@ -271,6 +275,59 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
     {:noreply, assign(socket, :form_data, %{form_data | pattern_elements: elements})}
   end
 
+  # Explanation section events
+  @impl true
+  def handle_event("add_section", _, socket) do
+    form_data = socket.assigns.form_data
+    sections = (form_data.explanation_sections || []) ++ [""]
+    {:noreply, assign(socket, :form_data, %{form_data | explanation_sections: sections})}
+  end
+
+  @impl true
+  def handle_event("update_section", %{"index" => index, "value" => value}, socket) do
+    form_data = socket.assigns.form_data
+
+    sections =
+      update_in_list(form_data.explanation_sections || [], String.to_integer(index), fn _ ->
+        value
+      end)
+
+    {:noreply, assign(socket, :form_data, %{form_data | explanation_sections: sections})}
+  end
+
+  @impl true
+  def handle_event("remove_section", %{"index" => index}, socket) do
+    form_data = socket.assigns.form_data
+
+    sections =
+      List.delete_at(form_data.explanation_sections || [], String.to_integer(index))
+
+    {:noreply, assign(socket, :form_data, %{form_data | explanation_sections: sections})}
+  end
+
+  @impl true
+  def handle_event("move_section", %{"index" => index, "direction" => direction}, socket) do
+    form_data = socket.assigns.form_data
+    sections = form_data.explanation_sections || []
+    idx = String.to_integer(index)
+
+    new_sections =
+      case {direction, idx} do
+        {"up", i} when i > 0 ->
+          List.replace_at(sections, i - 1, Enum.at(sections, i))
+          |> List.replace_at(i, Enum.at(sections, i - 1))
+
+        {"down", i} when i < length(sections) - 1 ->
+          List.replace_at(sections, i + 1, Enum.at(sections, i))
+          |> List.replace_at(i, Enum.at(sections, i + 1))
+
+        _ ->
+          sections
+      end
+
+    {:noreply, assign(socket, :form_data, %{form_data | explanation_sections: new_sections})}
+  end
+
   # Example events
   @impl true
   def handle_event("add_example", _, socket) do
@@ -324,34 +381,46 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
     example = Enum.at(form_data.examples, String.to_integer(index))
     sentence = example["sentence"] || ""
 
-    if String.trim(sentence) == "" do
-      {:noreply,
-       put_flash(socket, :error, gettext("Please enter a Japanese sentence before validating."))}
-    else
-      case Validator.validate_sentence(sentence, form_data.pattern_elements) do
-        {:ok, _} ->
-          {:noreply, put_flash(socket, :info, gettext("Example is valid!"))}
+    cond do
+      String.trim(sentence) == "" ->
+        {:noreply,
+         put_flash(socket, :error, gettext("Please enter a Japanese sentence before validating."))}
 
-        {:error, %{expected: expected, got: got}} when got == "" or is_nil(got) ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext("Example doesn't match pattern. Expected: %{expected}.", expected: expected)
-           )}
+      form_data.pattern_elements == [] ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("Add pattern elements before validating examples against a pattern.")
+         )}
 
-        {:error, reason} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             gettext(
-               "Example doesn't match pattern. Expected: %{expected}, but got: %{got}.",
-               expected: reason[:expected] || gettext("pattern"),
-               got: reason[:got] || gettext("nothing")
-             )
-           )}
-      end
+      true ->
+        case Validator.validate_sentence(sentence, form_data.pattern_elements) do
+          {:ok, _} ->
+            {:noreply, put_flash(socket, :info, gettext("Example is valid!"))}
+
+          {:error, %{expected: expected, got: got}} when got == "" or is_nil(got) ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext("Example doesn't match pattern. Expected: %{expected}.",
+                 expected: expected
+               )
+             )}
+
+          {:error, reason} ->
+            {:noreply,
+             put_flash(
+               socket,
+               :error,
+               gettext(
+                 "Example doesn't match pattern. Expected: %{expected}, but got: %{got}.",
+                 expected: reason[:expected] || gettext("pattern"),
+                 got: reason[:got] || gettext("nothing")
+               )
+             )}
+        end
     end
   end
 
@@ -397,11 +466,13 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
       "title" => form_data.title,
       "jlpt_level" => form_data.jlpt_level,
       "frequency" => form_data.frequency,
+      "entry_type" => form_data.entry_type,
       "pattern_elements" => form_data.pattern_elements,
       "word_colors" => form_data.word_colors,
       "description" => form_data.description,
       "description_bg" => form_data.description_bg,
       "description_ja" => form_data.description_ja,
+      "explanation_sections" => clean_sections(form_data.explanation_sections),
       "examples" => form_data.examples
     }
 
@@ -425,11 +496,13 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
       "title" => form_data.title,
       "jlpt_level" => form_data.jlpt_level,
       "frequency" => form_data.frequency,
+      "entry_type" => form_data.entry_type,
       "pattern_elements" => form_data.pattern_elements,
       "word_colors" => form_data.word_colors,
       "description" => form_data.description,
       "description_bg" => form_data.description_bg,
       "description_ja" => form_data.description_ja,
+      "explanation_sections" => clean_sections(form_data.explanation_sections),
       "examples" => form_data.examples
     }
 
@@ -471,7 +544,18 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
   defp put_in_form_data(form_data, "description_ja", value),
     do: %{form_data | description_ja: value}
 
+  defp put_in_form_data(form_data, "entry_type", value) when value in ["pattern", "text"],
+    do: %{form_data | entry_type: value}
+
   defp put_in_form_data(form_data, _, _), do: form_data
+
+  defp clean_sections(sections) when is_list(sections) do
+    sections
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp clean_sections(_), do: []
 
   defp update_in_list(list, index, fun) do
     item = Enum.at(list, index)

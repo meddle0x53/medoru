@@ -88,7 +88,7 @@ export default class WinChallengeSystem {
   }
 
   getMultiplier(success) {
-    const luck = Math.max(0, Math.min(100, this.player.luck || 0))
+    const luck = Math.max(0, Math.min(100, this.player.getStatValue('luck') || 0))
     const luckFactor = luck / 100
     if (success) {
       return 1.5 + luckFactor

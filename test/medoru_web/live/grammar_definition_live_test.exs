@@ -97,6 +97,20 @@ defmodule MedoruWeb.GrammarDefinitionLiveTest do
       assert render(view) =~ "Unlearned Grammar"
       refute has_element?(view, "span.badge.badge-success", "Learned")
     end
+
+    test "shows type badge and filters by entry type", %{conn: conn} do
+      pattern_grammar = grammar_definition_fixture(%{title: "Pattern Entry", jlpt_level: 5})
+      text_grammar = grammar_definition_fixture(%{title: "Text Entry", entry_type: "text"})
+
+      {:ok, _view, html} = live(conn, ~p"/grammars")
+      assert html =~ "Pattern"
+      assert html =~ "Text"
+
+      {:ok, view, _html} = live(conn, ~p"/grammars?type=text")
+      html = render(view)
+      assert html =~ text_grammar.title
+      refute html =~ pattern_grammar.title
+    end
   end
 
   describe "Show" do
@@ -180,6 +194,66 @@ defmodule MedoruWeb.GrammarDefinitionLiveTest do
     test "returns error for non-existent slug", %{conn: conn} do
       assert {:error, {:live_redirect, %{to: "/grammars"}}} =
                live(conn, ~p"/grammars/nonexistent-slug")
+    end
+
+    test "text entry renders sections and hides the validation box", %{conn: conn} do
+      grammar =
+        grammar_definition_fixture(%{
+          title: "Honorific Overview",
+          entry_type: "text",
+          description: "Intro text.",
+          explanation_sections: ["First **section**.", "Second section."],
+          examples: [
+            %{
+              "sentence" => "食べて",
+              "reading" => "たべて",
+              "meaning" => "eating"
+            }
+          ]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/grammars/#{grammar.slug}")
+
+      assert html =~ "Honorific Overview"
+      assert html =~ "Intro text."
+      assert html =~ "First <strong>section</strong>."
+      assert html =~ "Second section."
+      assert html =~ "食べて"
+      refute html =~ "Try Your Own Example"
+    end
+
+    test "text entry with a display-only pattern shows pattern but no validation", %{
+      conn: conn
+    } do
+      grammar =
+        grammar_definition_fixture(%{
+          title: "Text With Pattern",
+          entry_type: "text",
+          pattern_elements: [%{"type" => "literal", "text" => "こと"}]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/grammars/#{grammar.slug}")
+
+      assert html =~ "Pattern"
+      assert html =~ "こと"
+      refute html =~ "Try Your Own Example"
+    end
+
+    test "pattern entry without description but with sections renders explanation", %{
+      conn: conn
+    } do
+      grammar =
+        grammar_definition_fixture(%{
+          title: "Sectioned Pattern",
+          description: nil,
+          explanation_sections: ["Only a section."]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/grammars/#{grammar.slug}")
+
+      assert html =~ "Explanation"
+      assert html =~ "Only a section."
+      assert html =~ "Try Your Own Example"
     end
   end
 end

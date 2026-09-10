@@ -84,6 +84,31 @@ defmodule Medoru.GrammarDefinitionsTest do
       assert hd(result.grammar_definitions).title == "te-form connection"
     end
 
+    test "list_grammar_definitions/1 filters by entry_type" do
+      {:ok, _} =
+        Content.create_grammar_definition(%{
+          title: "Pattern Grammar",
+          jlpt_level: 5,
+          pattern_elements: [%{"type" => "literal", "text" => "test"}]
+        })
+
+      {:ok, _} =
+        Content.create_grammar_definition(%{
+          title: "Text Grammar",
+          jlpt_level: 5,
+          entry_type: "text",
+          explanation_sections: ["A section."]
+        })
+
+      result = Content.list_grammar_definitions(entry_type: "pattern")
+      assert Enum.all?(result.grammar_definitions, &(&1.entry_type == "pattern"))
+      assert Enum.any?(result.grammar_definitions, &(&1.title == "Pattern Grammar"))
+
+      result = Content.list_grammar_definitions(entry_type: "text")
+      assert length(result.grammar_definitions) == 1
+      assert hd(result.grammar_definitions).title == "Text Grammar"
+    end
+
     test "get_grammar_definition!/1 returns the grammar definition" do
       {:ok, gd} = Content.create_grammar_definition(@valid_attrs)
       assert Content.get_grammar_definition!(gd.id).title == "te-form"
@@ -195,6 +220,87 @@ defmodule Medoru.GrammarDefinitionsTest do
     test "change_grammar_definition/1 returns a changeset" do
       {:ok, gd} = Content.create_grammar_definition(@valid_attrs)
       assert %Ecto.Changeset{} = Content.change_grammar_definition(gd)
+    end
+
+    test "create_grammar_definition/1 defaults entry_type to pattern" do
+      assert {:ok, %GrammarDefinition{} = gd} = Content.create_grammar_definition(@valid_attrs)
+      assert gd.entry_type == "pattern"
+    end
+
+    test "create_grammar_definition/1 with text entry allows empty pattern_elements" do
+      attrs = %{
+        title: "Honorific overview",
+        jlpt_level: 3,
+        entry_type: "text",
+        pattern_elements: [],
+        explanation_sections: ["First part.", "Second part."]
+      }
+
+      assert {:ok, %GrammarDefinition{} = gd} = Content.create_grammar_definition(attrs)
+      assert gd.entry_type == "text"
+      assert gd.pattern_elements == []
+      assert gd.explanation_sections == ["First part.", "Second part."]
+    end
+
+    test "create_grammar_definition/1 with text entry allows an optional display-only pattern" do
+      attrs = %{
+        title: "Text with pattern",
+        jlpt_level: 3,
+        entry_type: "text",
+        pattern_elements: [%{"type" => "literal", "text" => "こと"}]
+      }
+
+      assert {:ok, %GrammarDefinition{} = gd} = Content.create_grammar_definition(attrs)
+      assert gd.entry_type == "text"
+      assert length(gd.pattern_elements) == 1
+    end
+
+    test "create_grammar_definition/1 with pattern entry requires pattern_elements" do
+      attrs = %{title: "No pattern", jlpt_level: 5, pattern_elements: []}
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.create_grammar_definition(attrs)
+
+      assert %{pattern_elements: ["must have at least one pattern element"]} =
+               errors_on(changeset)
+    end
+
+    test "create_grammar_definition/1 validates entry_type inclusion" do
+      attrs = Map.put(@valid_attrs, :entry_type, "invalid")
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.create_grammar_definition(attrs)
+
+      assert %{entry_type: _} = errors_on(changeset)
+    end
+
+    test "create_grammar_definition/1 validates explanation_sections entries" do
+      attrs = %{
+        title: "Bad sections",
+        jlpt_level: 5,
+        entry_type: "text",
+        explanation_sections: ["ok", 123]
+      }
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.create_grammar_definition(attrs)
+
+      assert %{explanation_sections: _} = errors_on(changeset)
+    end
+
+    test "update_grammar_definition/2 switching to pattern requires pattern_elements" do
+      {:ok, gd} =
+        Content.create_grammar_definition(%{
+          title: "Text entry",
+          jlpt_level: 5,
+          entry_type: "text"
+        })
+
+      assert {:error, %Ecto.Changeset{} = changeset} =
+               Content.update_grammar_definition(gd, %{entry_type: "pattern"})
+
+      assert %{pattern_elements: ["must have at least one pattern element"]} =
+               errors_on(changeset)
     end
   end
 

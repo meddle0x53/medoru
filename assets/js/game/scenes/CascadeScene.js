@@ -1,3 +1,5 @@
+import { probeKeyLag, trackFrame } from '../systems/keyLagProbe.js'
+import { bindDomKeyboard, bindPressRelease } from '../systems/domKeyboard.js'
 import { GAME_CONFIG, FONTS, COLORS } from '../config.js'
 import { TILE_TYPES } from '../data/tileTypes.js'
 import { getWindowGameData } from '../api.js'
@@ -304,6 +306,7 @@ export default class CascadeScene extends Phaser.Scene {
     this.keyboardContainer = this.add.container(0, 0)
     this.keyboardContainer.setDepth(100)
     this.keyboardKeys = []
+    this.domKeys = []
 
     const isTouch = this.sys.game.device.input.touch
     // Use a larger, simplified layout on touch devices so keys are easier to hit.
@@ -328,7 +331,7 @@ export default class CascadeScene extends Phaser.Scene {
     const controls = [
       { label: '⌫', width: isTouch ? 54 : 40, key: 'BACKSPACE' },
       { label: 'SPACE', width: isTouch ? 120 : 100, key: 'SPACE' },
-      { label: '⏎', width: isTouch ? 54 : 40, key: 'ENTER' },
+      { label: '↓', width: isTouch ? 54 : 40, key: 'SKIP' },
       { label: 'DEL', width: isTouch ? 54 : 40, key: 'DELETE' },
     ]
     const controlGap = isTouch ? 6 : 5
@@ -337,6 +340,15 @@ export default class CascadeScene extends Phaser.Scene {
     controls.forEach(({ label, width, key }) => {
       this.createKey(label, controlX + width / 2, controlY, width, keySize, key)
       controlX += width + controlGap
+    })
+
+    // DOM-level pointer binding: bypasses Phaser's input-manager pipeline,
+    // which adds a perceivable delay to tap feedback on some Android devices.
+    this.unbindDomKeyboard = bindDomKeyboard(this, this.domKeys, {
+      isActive: () => this.gameActive && !this.gameEnded,
+    })
+    this.events.once('shutdown', () => {
+      if (this.unbindDomKeyboard) this.unbindDomKeyboard()
     })
   }
 
@@ -353,10 +365,6 @@ export default class CascadeScene extends Phaser.Scene {
     const container = this.add.container(x, y, [bg, text])
     container.setSize(width, height)
 
-    const hitArea = this.add.rectangle(0, 0, width, height, 0x000000, 0)
-    hitArea.setInteractive({ useHandCursor: true })
-    container.add(hitArea)
-
     const pressKey = () => {
       bg.setFillStyle(0x3498db)
       container.setScale(0.92)
@@ -366,16 +374,19 @@ export default class CascadeScene extends Phaser.Scene {
       container.setScale(1)
     }
 
-    hitArea.on('pointerdown', () => {
-      pressKey()
-      this.handleKey(key)
-    })
-    hitArea.on('pointerup', releaseKey)
-    hitArea.on('pointerout', releaseKey)
-
     container.keyName = key
     this.keyboardContainer.add(container)
     this.keyboardKeys.push(container)
+
+    this.domKeys.push({
+      getBounds: () => container.getBounds(),
+      enabled: () => this.keyboardVisible,
+      onPress: (e) => {
+        probeKeyLag({ event: e })
+        bindPressRelease(pressKey, releaseKey)
+        this.handleKey(key)
+      },
+    })
   }
 
   createKeyboardToggleButton() {
@@ -419,6 +430,9 @@ export default class CascadeScene extends Phaser.Scene {
       this.inputBuffer += ' '
     } else if (key === 'ENTER') {
       this.tryMatchExact()
+    } else if (key === 'SKIP') {
+      // Same as the physical ArrowDown key: drop/skip the current word.
+      this.skipWord()
     } else if (key.length === 1) {
       this.inputBuffer += key.toLowerCase()
     }
@@ -488,6 +502,7 @@ export default class CascadeScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    trackFrame(delta)
     if (!this.gameActive || this.gameEnded) return
 
     const elapsed = time - this.gameStartTime

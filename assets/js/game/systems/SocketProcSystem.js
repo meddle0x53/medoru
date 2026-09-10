@@ -56,7 +56,7 @@ export default class SocketProcSystem {
     const base = chance?.base ?? 0
     const luckScaling = chance?.luckScaling ?? 0
     const cap = chance?.cap ?? 1
-    const luck = this.player.luck || 0
+    const luck = this.player.getStatValue('luck') || 0
     return Math.min(cap, Math.max(0, base + luck * luckScaling))
   }
 

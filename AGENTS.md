@@ -4,9 +4,9 @@
 
 ## Current State
 
-**Version**: 0.10.0 ✅ IMPLEMENTED  
-**Status**: 0.10.0 adds **Word Books** — user-created vocabulary card books built from word sets or custom words, with a configurable card designer (front/back content: meanings/examples in en/bg/ja, reading, picture, sound, N-level, frequency, optional word text on the back), preset backgrounds/covers (covers and word images usable as card backgrounds), daisyUI themes, square (strict 1:1, content clipped) and rectangle (grows with content) card shapes, a paged book viewer with flip cards (1/2/4/6 per page, uniform card sizes), and PNG download of card faces (with medoru.net branding on every card). Entry points from word sets and the word detail page.  
-**Tests**: 1909 passing  
+**Version**: 1.2.0 ✅ IMPLEMENTED  
+**Status**: 1.2.0 adds **text-type entries to the grammar library** — `grammar_definitions` now supports two entry types: `pattern` (existing, with "Try Your Own Example" validation) and `text` (informational entries with markdown `explanation_sections`, optional display-only `pattern_elements` that never validate, and optional examples). The public index has a type filter/badge; admin and moderator forms have an entry-type selector and a sections editor; the classroom "Copy To Grammar" action now also works for text lesson steps.  
+**Tests**: 1977 passing  
 **URL**: https://medoru.net
 
 ### Alpha Game Release Plan
@@ -67,6 +67,9 @@ For each ability, add a new entry in `assets/js/game/data/abilities/warrior.json
 
 | Version | Focus |
 |---------|-------|
+| 1.2.0 | Grammar library text entries: multi-section explanations, optional display-only pattern (no validation), type filter, admin/moderator sections editor, text-step copy to grammar |
+| 1.1.1 | Game fixes (tanuki level, iOS/Android) |
+| 1.1.0 | Chat dictionary |
 | 0.10.0 | Word Books (vocabulary cards): creation from word sets/custom words, card designer, book viewer, PNG export |
 | 0.9.4 | Chat media folder fixes (classroom crash, single-audio playback) and ongoing 0.9.x stabilization |
 | 0.9.0 | Release stabilization and regression fixes |
