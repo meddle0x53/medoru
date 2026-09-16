@@ -11,7 +11,7 @@ const ALLOWED_TYPES = [
 ]
 
 const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
-const MAX_SIZE_VIDEO = 200 * 1024 * 1024
+const MAX_SIZE_VIDEO = 250 * 1024 * 1024
 
 export default {
   mounted() {

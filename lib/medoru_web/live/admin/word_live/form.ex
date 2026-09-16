@@ -230,8 +230,20 @@ defmodule MedoruWeb.Admin.WordLive.Form do
   end
 
   @impl true
-  def handle_event("generate_pronunciation", _params, socket) do
-    tts_text = socket.assigns.tts_text
+  def handle_event("generate_pronunciation", params, socket) do
+    # Prefer the values submitted with the form (current input values),
+    # falling back to the assigns in case the change events have not been processed yet.
+    vibe_prompt =
+      case params do
+        %{"vibe_prompt" => prompt} when is_binary(prompt) -> prompt
+        _ -> socket.assigns.tts_vibe_prompt
+      end
+
+    tts_text =
+      case params do
+        %{"tts_text" => text} when is_binary(text) -> text
+        _ -> socket.assigns.tts_text
+      end
 
     if is_nil(tts_text) or String.trim(tts_text) == "" do
       {:noreply,
@@ -244,7 +256,7 @@ defmodule MedoruWeb.Admin.WordLive.Form do
         |> assign(:tts_error, nil)
 
       tts_text = String.trim(tts_text)
-      vibe_prompt = socket.assigns.tts_vibe_prompt
+      vibe_prompt = String.trim(vibe_prompt)
       lv_pid = self()
 
       Task.start(fn ->

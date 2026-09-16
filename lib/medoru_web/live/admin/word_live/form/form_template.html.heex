@@ -589,7 +589,12 @@
           {gettext("Generate Pronunciation")}
         </h3>
 
-        <div class="space-y-4">
+        <.form
+          for={}
+          id="tts-generation-form"
+          phx-submit="generate_pronunciation"
+          class="space-y-4"
+        >
           <%!-- TTS Text Input --%>
           <div>
             <label class="label">
@@ -613,6 +618,7 @@
               <span class="label-text">{gettext("Vibe / Style Instructions (editable)")}</span>
             </label>
             <textarea
+              name="vibe_prompt"
               phx-change="update_tts_vibe_prompt"
               phx-debounce="300"
               class="textarea textarea-bordered w-full h-32 font-mono text-sm"
@@ -659,31 +665,30 @@
               </div>
             </div>
           <% end %>
-        </div>
 
-        <div class="modal-action flex-col sm:flex-row gap-2">
-          <button
-            type="button"
-            phx-click="close_tts_modal"
-            class="btn btn-ghost w-full sm:w-auto"
-          >
-            {gettext("Cancel")}
-          </button>
-          <button
-            type="button"
-            phx-click="generate_pronunciation"
-            class="btn btn-secondary w-full sm:w-auto"
-            disabled={@tts_loading}
-          >
-            <%= if @tts_loading do %>
-              <span class="loading loading-spinner loading-sm mr-2"></span>
-              {gettext("Generating...")}
-            <% else %>
-              <.icon name="hero-speaker-wave" class="w-4 h-4 mr-2" />
-              {gettext("Generate")}
-            <% end %>
-          </button>
-        </div>
+          <div class="modal-action flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              phx-click="close_tts_modal"
+              class="btn btn-ghost w-full sm:w-auto"
+            >
+              {gettext("Cancel")}
+            </button>
+            <button
+              type="submit"
+              class="btn btn-secondary w-full sm:w-auto"
+              disabled={@tts_loading}
+            >
+              <%= if @tts_loading do %>
+                <span class="loading loading-spinner loading-sm mr-2"></span>
+                {gettext("Generating...")}
+              <% else %>
+                <.icon name="hero-speaker-wave" class="w-4 h-4 mr-2" />
+                {gettext("Generate")}
+              <% end %>
+            </button>
+          </div>
+        </.form>
       </div>
       <div class="modal-backdrop" phx-click="close_tts_modal"></div>
     </div>

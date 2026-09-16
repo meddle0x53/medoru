@@ -242,6 +242,25 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       assert html =~ "Teacher"
     end
 
+    test "renders a video element for video attachments", %{
+      conn: conn,
+      classroom: classroom,
+      teacher: teacher
+    } do
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+
+      Medoru.Chat.store_plaintext_message(conversation.id, teacher.id, "Video",
+        attachment_path: "/uploads/chat_files/video-1.mp4",
+        attachment_type: "video"
+      )
+
+      {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
+
+      assert html =~ "<video"
+      assert html =~ "/uploads/chat_files/video-1.mp4"
+      assert html =~ "controls"
+    end
+
     test "sends /grammar command and renders grammar preview", %{
       conn: conn,
       classroom: classroom
@@ -307,6 +326,68 @@ defmodule MedoruWeb.ClassroomLive.ShowTest do
       {:ok, _view, html} = live(conn, ~p"/classrooms/#{classroom.id}?tab=chat")
 
       assert html =~ "\\onexistent/"
+    end
+  end
+
+  describe "Classroom media folder teacher actions" do
+    setup %{conn: conn} do
+      teacher = user_fixture(%{email: "media-teacher@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Media Classroom",
+          description: "A test classroom",
+          teacher_id: teacher.id
+        })
+
+      conversation = Medoru.Chat.get_classroom_conversation(classroom.id)
+      %{conn: conn, teacher: teacher, classroom: classroom, conversation: conversation}
+    end
+
+    test "teacher sees download link with download attribute and delete button in media folder",
+         %{
+           conn: conn,
+           teacher: teacher,
+           classroom: classroom,
+           conversation: conversation
+         } do
+      Medoru.Chat.store_plaintext_message(conversation.id, teacher.id, "Image",
+        attachment_path: "/uploads/chat_images/1.jpg",
+        attachment_type: "image"
+      )
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/classrooms/#{classroom.id}?tab=chat")
+
+      html = render_click(view, :open_media_folder)
+
+      assert html =~ ~s(href="/classrooms/#{classroom.id}/media/download")
+      # The download attribute prevents LiveView from intercepting the click
+      # as a live navigation to a non-LiveView route.
+      assert has_element?(
+               view,
+               ~s(a[download][href="/classrooms/#{classroom.id}/media/download"])
+             )
+
+      assert html =~ ~s(href="/classrooms/#{classroom.id}/media/delete_all")
+      assert html =~ "data-confirm"
+    end
+
+    test "students do not see media management actions", %{
+      conn: conn,
+      classroom: classroom
+    } do
+      student = user_fixture(%{email: "media-student@example.com"})
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(student) |> live(~p"/classrooms/#{classroom.id}?tab=chat")
+
+      html = render_click(view, :open_media_folder)
+
+      refute html =~ "/classrooms/#{classroom.id}/media/download"
+      refute html =~ "/classrooms/#{classroom.id}/media/delete_all"
     end
   end
 

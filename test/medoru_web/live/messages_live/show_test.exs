@@ -94,5 +94,23 @@ defmodule MedoruWeb.MessagesLive.ShowTest do
       refute html =~ "Load more media"
       refute html =~ "phx-viewport-bottom=\"load_more_media\""
     end
+
+    test "renders a video element for video attachments", %{conn: conn} do
+      user_a = user_with_display_name()
+      user_b = user_with_display_name()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Chat.store_plaintext_message(conv.id, user_a.id, "Video",
+        attachment_path: "/uploads/chat_files/abc123.mp4",
+        attachment_type: "video"
+      )
+
+      {:ok, _view, html} =
+        conn |> log_in_user(user_a) |> live(~p"/messages/#{conv.id}")
+
+      assert html =~ "<video"
+      assert html =~ "/uploads/chat_files/abc123.mp4"
+      assert html =~ "controls"
+    end
   end
 end

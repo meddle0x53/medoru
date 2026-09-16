@@ -317,6 +317,14 @@ defmodule MedoruWeb.Router do
     end
   end
 
+  # Classroom media management (teacher-only, enforced in the controller)
+  scope "/classrooms", MedoruWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    get "/:id/media/download", ClassroomMediaController, :download
+    post "/:id/media/delete_all", ClassroomMediaController, :delete_all
+  end
+
   # Public classroom content routes (allow anonymous for featured classroom)
   scope "/classrooms", MedoruWeb do
     pipe_through :browser

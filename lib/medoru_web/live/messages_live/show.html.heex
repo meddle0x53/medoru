@@ -919,7 +919,7 @@
         <input
           type="file"
           id="classroom-file-input"
-          accept="image/*,audio/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
+          accept="image/*,audio/*,video/*,application/pdf,text/plain,text/csv,application/json,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/epub+zip"
           class="hidden"
         />
 
@@ -1121,11 +1121,7 @@
               class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative z-30"
               phx-hook="ChatInput"
               data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
-              data-can-upload-video={
-                if Medoru.Accounts.User.teacher?(@current_scope.current_user),
-                  do: "true",
-                  else: "false"
-              }
+              data-can-upload-video="true"
             >
               <%!-- File Preview --%>
               <div id="chat-file-preview" class="hidden mb-2 relative">

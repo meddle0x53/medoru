@@ -1,15 +1,13 @@
 defmodule MedoruWeb.ChatUploadController do
   @moduledoc """
   Handles multipart file uploads for chat attachments.
-  Supports images, audio, documents up to 50MB, and video up to 200MB (teachers/admins only).
+  Supports images, audio, documents up to 50MB, and video up to 250MB.
   """
 
   use MedoruWeb, :controller
 
-  alias Medoru.Accounts.User
-
   @default_max_size 50_000_000
-  @video_max_size 200_000_000
+  @video_max_size 250_000_000
 
   @allowed_types %{
     "image/jpeg" => %{type: "image", ext: ".jpg"},
@@ -26,6 +24,8 @@ defmodule MedoruWeb.ChatUploadController do
     "video/webm" => %{type: "video", ext: ".webm"},
     "video/ogg" => %{type: "video", ext: ".ogv"},
     "video/quicktime" => %{type: "video", ext: ".mov"},
+    "video/x-m4v" => %{type: "video", ext: ".m4v"},
+    "video/3gpp" => %{type: "video", ext: ".3gp"},
     "application/pdf" => %{type: "document", ext: ".pdf"},
     "text/plain" => %{type: "document", ext: ".txt"},
     "text/csv" => %{type: "document", ext: ".csv"},
@@ -57,6 +57,8 @@ defmodule MedoruWeb.ChatUploadController do
     ".mp4" => %{type: "video", ext: ".mp4"},
     ".mov" => %{type: "video", ext: ".mov"},
     ".ogv" => %{type: "video", ext: ".ogv"},
+    ".m4v" => %{type: "video", ext: ".m4v"},
+    ".3gp" => %{type: "video", ext: ".3gp"},
     ".pdf" => %{type: "document", ext: ".pdf"},
     ".txt" => %{type: "document", ext: ".txt"},
     ".csv" => %{type: "document", ext: ".csv"},
@@ -77,40 +79,32 @@ defmodule MedoruWeb.ChatUploadController do
       |> put_status(:unsupported_media_type)
       |> json(%{error: "File type not allowed"})
     else
-      user = conn.assigns.current_scope.current_user
       is_video = meta.type == "video"
 
-      # Only teachers and admins can upload video
-      if is_video and not User.teacher?(user) do
+      file_size = File.stat!(upload.path).size
+      max_size = if is_video, do: @video_max_size, else: @default_max_size
+      max_size_mb = div(max_size, 1_000_000)
+
+      if file_size > max_size do
         conn
-        |> put_status(:forbidden)
-        |> json(%{error: "Video uploads are only available for teachers and admins."})
+        |> put_status(:payload_too_large)
+        |> json(%{error: "File too large. Maximum size is #{max_size_mb}MB."})
       else
-        file_size = File.stat!(upload.path).size
-        max_size = if is_video, do: @video_max_size, else: @default_max_size
-        max_size_mb = div(max_size, 1_000_000)
+        uploads_dir = Application.get_env(:medoru, :uploads_dir)
+        filename = "#{Ecto.UUID.generate()}#{meta.ext}"
+        dest_dir = Path.join(uploads_dir, "chat_files")
+        File.mkdir_p!(dest_dir)
+        dest_path = Path.join(dest_dir, filename)
 
-        if file_size > max_size do
-          conn
-          |> put_status(:payload_too_large)
-          |> json(%{error: "File too large. Maximum size is #{max_size_mb}MB."})
-        else
-          uploads_dir = Application.get_env(:medoru, :uploads_dir)
-          filename = "#{Ecto.UUID.generate()}#{meta.ext}"
-          dest_dir = Path.join(uploads_dir, "chat_files")
-          File.mkdir_p!(dest_dir)
-          dest_path = Path.join(dest_dir, filename)
+        File.cp!(upload.path, dest_path)
 
-          File.cp!(upload.path, dest_path)
-
-          json(conn, %{
-            path: "/uploads/chat_files/#{filename}",
-            type: meta.type,
-            mime_type: mime_type,
-            size: file_size,
-            name: upload.filename
-          })
-        end
+        json(conn, %{
+          path: "/uploads/chat_files/#{filename}",
+          type: meta.type,
+          mime_type: mime_type,
+          size: file_size,
+          name: upload.filename
+        })
       end
     end
   end

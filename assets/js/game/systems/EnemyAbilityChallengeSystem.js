@@ -79,6 +79,9 @@ export default class EnemyAbilityChallengeSystem {
     this.overlay = this.scene.add.container(cx, isTouch ? cy - 12 : cy).setDepth(200)
 
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
+    // Block underlying scene buttons from receiving taps while the challenge
+    // overlay is up (see WordChallengeSystem for details).
+    backdrop.setInteractive()
     this.overlay.add(backdrop)
 
     const panelHeight = isTouch ? 500 : 340

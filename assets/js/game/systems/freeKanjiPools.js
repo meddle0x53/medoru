@@ -63,6 +63,12 @@ export function getEffectiveKanjiPool(player, skill) {
   if (isFreeKanjiMode(player)) {
     const freePool = player.loadout?.freeKanjiRunPools?.[skill.id]
     if (Array.isArray(freePool) && freePool.length > 0) return freePool
+    // Pool missing (run's pools were rolled before this ability had a pool):
+    // roll it on the spot rather than leaking the static pool into free mode.
+    if (Array.isArray(skill.kanjiPool) && skill.kanjiPool.length > 0) {
+      const rolled = generateFreeKanjiRunPools(player)?.[skill.id]
+      if (Array.isArray(rolled) && rolled.length > 0) return rolled
+    }
   }
   return skill.kanjiPool || []
 }
@@ -82,20 +88,29 @@ export function resolveKanjiData(player, char) {
 
 // Roll run pools for every ability that has a static kanjiPool. Idempotent
 // per run: existing pools are kept so a settings change mid-run only applies
-// to the next run.
+// to the next run. Gaps are filled for abilities that gained a kanjiPool
+// after the run's pools were rolled (they'd otherwise silently use their
+// static pool in free mode).
 export function generateFreeKanjiRunPools(player) {
   const loadout = player.loadout
-  if (!isFreeKanjiMode(player)) return null
-  if (loadout.freeKanjiRunPools) return loadout.freeKanjiRunPools
+  if (!isFreeKanjiMode(player) || !loadout) return null
 
   const source = getLevelSource(player)
-  const pools = {}
+  let pools = loadout.freeKanjiRunPools
+  let changed = false
+  if (!pools) {
+    pools = {}
+    loadout.freeKanjiRunPools = pools
+    changed = true
+  }
   for (const action of ALL_ACTIONS) {
     if (!Array.isArray(action.kanjiPool) || action.kanjiPool.length === 0) continue
+    const existing = pools[action.id]
+    if (Array.isArray(existing) && existing.length > 0) continue
     pools[action.id] = sampleChars(source, POOL_SIZE)
+    changed = true
   }
-  loadout.freeKanjiRunPools = pools
-  player.saveLoadout()
+  if (changed && typeof player.saveLoadout === 'function') player.saveLoadout()
   return pools
 }
 

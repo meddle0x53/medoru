@@ -155,6 +155,11 @@ export default class WordChallengeSystem {
     this.overlay = this.scene.add.container(cx, isTouch ? cy - 12 : cy).setDepth(200)
 
     const backdrop = this.scene.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.75).setOrigin(0.5)
+    // Swallow Phaser-level pointer events while the challenge is up. The touch
+    // keyboard is driven by DOM listeners, so without this blocker a tap on a
+    // key overlapping an underlying button (e.g. WinScene's Continue) would
+    // also fire that button's Phaser pointerdown handler.
+    backdrop.setInteractive()
     this.overlay.add(backdrop)
 
     const panelHeight = isTouch ? 500 : 300

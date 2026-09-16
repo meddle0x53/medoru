@@ -677,6 +677,144 @@ defmodule Medoru.ChatTest do
     end
   end
 
+  describe "conversation media export and bulk delete" do
+    defp write_upload(rel_path, content) do
+      uploads_dir = Application.get_env(:medoru, :uploads_dir)
+      path = Path.join(uploads_dir, rel_path)
+      File.mkdir_p!(Path.dirname(path))
+      File.write!(path, content)
+      on_exit(fn -> File.rm(path) end)
+      path
+    end
+
+    test "export_conversation_media_zip/1 returns a zip containing the attachments" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+
+      unique = System.unique_integer([:positive])
+      disk_path = write_upload("chat_files/export-#{unique}.jpg", "fake image data")
+      attachment = "/uploads/chat_files/#{Path.basename(disk_path)}"
+
+      {:ok, _msg} =
+        Chat.store_plaintext_message(conv.id, teacher.id, "Image",
+          attachment_path: attachment,
+          attachment_type: "image"
+        )
+
+      # Missing file on disk is skipped, text-only messages are ignored
+      Chat.store_plaintext_message(conv.id, teacher.id, "Missing",
+        attachment_path: "/uploads/chat_files/gone-#{unique}.jpg",
+        attachment_type: "image"
+      )
+
+      Chat.store_plaintext_message(conv.id, teacher.id, "Text only")
+
+      assert {:ok, zip_path} = Chat.export_conversation_media_zip(conv.id)
+      on_exit(fn -> File.rm(zip_path) end)
+
+      assert {:ok, [{zip_name, data}]} =
+               :zip.unzip(String.to_charlist(zip_path), [:memory])
+
+      assert Path.basename(to_string(zip_name)) =~ Path.basename(attachment)
+      assert data == "fake image data"
+    end
+
+    test "delete_all_conversation_media/2 soft-deletes attachment messages and removes files" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+
+      unique = System.unique_integer([:positive])
+      disk_path_1 = write_upload("chat_files/del-#{unique}-1.jpg", "data1")
+      disk_path_2 = write_upload("chat_files/del-#{unique}-2.webm", "data2")
+
+      {:ok, msg1} =
+        Chat.store_plaintext_message(conv.id, teacher.id, "Image",
+          attachment_path: "/uploads/chat_files/#{Path.basename(disk_path_1)}",
+          attachment_type: "image"
+        )
+
+      {:ok, msg2} =
+        Chat.store_plaintext_message(conv.id, teacher.id, "Voice",
+          attachment_path: "/uploads/chat_files/#{Path.basename(disk_path_2)}",
+          attachment_type: "voice"
+        )
+
+      {:ok, text_msg} = Chat.store_plaintext_message(conv.id, teacher.id, "Text only")
+
+      :ok = Chat.subscribe_to_conversation(conv.id)
+
+      assert {:ok, 2} = Chat.delete_all_conversation_media(conv.id, teacher.id)
+
+      assert Repo.get!(Message, msg1.id).is_deleted
+      assert Repo.get!(Message, msg2.id).is_deleted
+      refute Repo.get!(Message, text_msg.id).is_deleted
+      refute File.exists?(disk_path_1)
+      refute File.exists?(disk_path_2)
+      assert Chat.list_messages_with_attachments(conv.id) == []
+      assert_received {:message_deleted, id} when id in [msg1.id, msg2.id]
+    end
+
+    test "delete_all_conversation_media/2 ignores files missing on disk" do
+      teacher = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+
+      {:ok, msg} =
+        Chat.store_plaintext_message(conv.id, teacher.id, "Image",
+          attachment_path:
+            "/uploads/chat_files/never-existed-#{System.unique_integer([:positive])}.jpg",
+          attachment_type: "image"
+        )
+
+      assert {:ok, 1} = Chat.delete_all_conversation_media(conv.id, teacher.id)
+      assert Repo.get!(Message, msg.id).is_deleted
+    end
+
+    test "delete_all_conversation_media/2 rejects non-teachers" do
+      teacher = user_fixture()
+      student = user_fixture()
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      conv = Chat.get_classroom_conversation(classroom.id)
+
+      unique = System.unique_integer([:positive])
+      disk_path = write_upload("chat_files/unauthorized-#{unique}.jpg", "data")
+
+      {:ok, msg} =
+        Chat.store_plaintext_message(conv.id, student.id, "Image",
+          attachment_path: "/uploads/chat_files/#{Path.basename(disk_path)}",
+          attachment_type: "image"
+        )
+
+      assert {:error, :unauthorized} =
+               Chat.delete_all_conversation_media(conv.id, student.id)
+
+      refute Repo.get!(Message, msg.id).is_deleted
+      assert File.exists?(disk_path)
+    end
+
+    test "delete_all_conversation_media/2 returns not_found for missing conversation" do
+      teacher = user_fixture()
+
+      assert {:error, :not_found} =
+               Chat.delete_all_conversation_media(Ecto.UUID.generate(), teacher.id)
+    end
+
+    test "delete_all_conversation_media/2 rejects non-classroom conversations" do
+      user_a = user_fixture()
+      user_b = user_fixture()
+      {:ok, conv} = Chat.find_or_create_conversation(user_a.id, user_b.id)
+
+      Chat.store_plaintext_message(conv.id, user_a.id, "Image",
+        attachment_path: "/uploads/chat_images/1.jpg",
+        attachment_type: "image"
+      )
+
+      assert {:error, :unauthorized} = Chat.delete_all_conversation_media(conv.id, user_a.id)
+    end
+  end
+
   describe "pubsub" do
     test "subscribe_to_conversation/1 and unsubscribe_from_conversation/1" do
       user_a = user_fixture()

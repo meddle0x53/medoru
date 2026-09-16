@@ -442,6 +442,119 @@ defmodule Medoru.Chat do
   end
 
   @doc """
+  Exports all media attachments in a conversation to a zip archive.
+
+  Paginates through `list_messages_with_attachments/2` and skips files that
+  are missing on disk. Returns `{:ok, zip_path}` where `zip_path` is a file
+  in the system temp directory. The caller is responsible for removing it.
+  """
+  def export_conversation_media_zip(conversation_id) do
+    zip_path =
+      Path.join(
+        System.tmp_dir!(),
+        "chat-media-#{conversation_id}-#{System.unique_integer([:positive])}.zip"
+      )
+
+    entries =
+      conversation_id
+      |> all_attachment_messages()
+      |> Enum.flat_map(fn message ->
+        case message.attachment_path |> attachment_disk_path() |> File.read() do
+          {:ok, content} ->
+            zip_name = "#{message.id}-#{Path.basename(message.attachment_path)}"
+            [{String.to_charlist(zip_name), content}]
+
+          _ ->
+            []
+        end
+      end)
+
+    case :zip.create(String.to_charlist(zip_path), entries) do
+      {:ok, _} -> {:ok, zip_path}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Soft-deletes every message with an attachment in a conversation and
+  removes the underlying files from disk.
+
+  Only the owning classroom's teacher may perform this action; returns
+  `{:error, :unauthorized}` otherwise, and `{:error, :not_found}` when the
+  conversation does not exist. Messages are soft-deleted (`is_deleted: true`,
+  never hard-deleted) inside a transaction, files are removed afterwards
+  (missing files are ignored), and each deletion is broadcast so open
+  clients update. Returns `{:ok, deleted_count}`.
+  """
+  def delete_all_conversation_media(conversation_id, actor_user_id) do
+    conversation =
+      Conversation
+      |> where([c], c.id == ^conversation_id)
+      |> preload(:classroom)
+      |> Repo.one()
+
+    cond do
+      is_nil(conversation) ->
+        {:error, :not_found}
+
+      is_nil(conversation.classroom_id) or is_nil(conversation.classroom) or
+          conversation.classroom.teacher_id != actor_user_id ->
+        {:error, :unauthorized}
+
+      true ->
+        messages = all_attachment_messages(conversation_id)
+
+        case Repo.transaction(fn ->
+               ids = Enum.map(messages, & &1.id)
+
+               {count, _} =
+                 Message
+                 |> where([m], m.id in ^ids)
+                 |> Repo.update_all(set: [is_deleted: true])
+
+               count
+             end) do
+          {:ok, count} ->
+            Enum.each(messages, fn message ->
+              remove_attachment_file(message.attachment_path)
+              broadcast_message_deleted(conversation_id, message.id)
+            end)
+
+            {:ok, count}
+
+          error ->
+            error
+        end
+    end
+  end
+
+  # Collects all attachment messages by paginating before any mutation,
+  # so offsets stay stable while iterating.
+  defp all_attachment_messages(conversation_id) do
+    Stream.unfold(0, fn offset ->
+      case list_messages_with_attachments(conversation_id, limit: 100, offset: offset) do
+        [] -> nil
+        batch -> {batch, offset + length(batch)}
+      end
+    end)
+    |> Stream.flat_map(& &1)
+    |> Enum.to_list()
+  end
+
+  defp attachment_disk_path(attachment_path) do
+    uploads_dir = Application.get_env(:medoru, :uploads_dir)
+    Path.join(uploads_dir, String.trim_leading(attachment_path, "/uploads/"))
+  end
+
+  defp remove_attachment_file(attachment_path) do
+    case attachment_path |> attachment_disk_path() |> File.rm() do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      {:error, _} -> :ok
+    end
+  end
+
+  @doc """
   Stores an encrypted message.
   Accepts base64-encoded ciphertext and IV.
   """

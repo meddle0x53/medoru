@@ -1714,15 +1714,15 @@ export default class LoadoutScene extends Phaser.Scene {
         // Apply immediately to player stat
         this.player.baseStats[stat.key]++
         this.player[stat.key] = this.player.baseStats[stat.key]
-        // Recalculate derived stats
+        // Recalculate derived stats (charm-aware)
         if (stat.key === 'vitality') {
-          this.player.maxHp = 80 + this.player.baseStats.vitality * 5
+          this.player.recalcMaxHp()
           if (this.mode === 'map') {
             this.player.hp = this.player.maxHp
           }
         }
         if (stat.key === 'stamina') {
-          this.player.maxStamina = 8 + Math.floor(this.player.baseStats.stamina / 3)
+          this.player.recalcMaxStamina()
           this.player.stamina = this.player.maxStamina
         }
         this.player.saveLoadout()

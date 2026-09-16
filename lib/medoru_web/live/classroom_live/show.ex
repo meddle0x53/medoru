@@ -2442,6 +2442,8 @@ defmodule MedoruWeb.ClassroomLive.Show do
             current_user_id={@current_user.id}
             sender_name_fn={&chat_message_sender_name/2}
             time_formatter_fn={&format_message_time/1}
+            can_manage_media={@classroom.teacher_id == @current_user.id}
+            classroom_id={@classroom.id}
           />
 
           <.chat_dictionary_drawer
@@ -3085,11 +3087,7 @@ defmodule MedoruWeb.ClassroomLive.Show do
             class="px-4 py-3 border-t border-base-300 bg-base-100 shrink-0 relative z-30"
             phx-hook="ClassroomChatInput"
             data-enter-sends={if @chat_enter_sends != false, do: "true", else: "false"}
-            data-can-upload-video={
-              if @current_user && Medoru.Accounts.User.teacher?(@current_user),
-                do: "true",
-                else: "false"
-            }
+            data-can-upload-video="true"
             data-dictionary-enabled={if @dictionary_enabled, do: "true", else: "false"}
             data-dictionary-entries={@dictionary_entries_json}
             data-user-aliases={@user_aliases_json}

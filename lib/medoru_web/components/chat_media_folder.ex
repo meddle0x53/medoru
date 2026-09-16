@@ -10,6 +10,11 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
 
   import MedoruWeb.CoreComponents, only: [icon: 1]
 
+  use Phoenix.VerifiedRoutes,
+    endpoint: MedoruWeb.Endpoint,
+    router: MedoruWeb.Router,
+    statics: MedoruWeb.static_paths()
+
   attr :open, :boolean, required: true
   attr :filter, :string, required: true
   attr :items, :list, required: true
@@ -18,6 +23,8 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
   attr :current_user_id, :string, required: true
   attr :sender_name_fn, :any, required: true
   attr :time_formatter_fn, :any, required: true
+  attr :can_manage_media, :boolean, default: false
+  attr :classroom_id, :any, default: nil
 
   def chat_media_folder(assigns) do
     ~H"""
@@ -36,6 +43,31 @@ defmodule MedoruWeb.ChatMediaFolderComponent do
           <h2 class="font-medium text-base-content flex-1 min-w-0 truncate">
             {gettext("Media")}
           </h2>
+          <%= if @can_manage_media && @classroom_id do %>
+            <div class="flex items-center gap-1 shrink-0">
+              <a
+                href={~p"/classrooms/#{@classroom_id}/media/download"}
+                download
+                class="p-2 text-base-content/50 hover:text-primary transition-colors"
+                title={gettext("Download all (zip)")}
+              >
+                <.icon name="hero-arrow-down-tray" class="w-5 h-5" />
+              </a>
+              <.link
+                href={~p"/classrooms/#{@classroom_id}/media/delete_all"}
+                method="post"
+                data-confirm={
+                  gettext(
+                    "Delete all chat media? The files will be removed and the messages will be deleted for everyone."
+                  )
+                }
+                class="p-2 text-base-content/50 hover:text-error transition-colors"
+                title={gettext("Delete all media")}
+              >
+                <.icon name="hero-trash" class="w-5 h-5" />
+              </.link>
+            </div>
+          <% end %>
         </div>
 
         <%!-- Filter Tabs --%>

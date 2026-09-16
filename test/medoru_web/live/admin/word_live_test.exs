@@ -248,10 +248,28 @@ defmodule MedoruWeb.Admin.WordLiveTest do
 
       html =
         view
-        |> element("button[phx-click='generate_pronunciation']")
-        |> render_click()
+        |> form("#tts-generation-form")
+        |> render_submit(%{"tts_text" => ""})
 
       assert html =~ "Please enter text to speak first"
+    end
+
+    test "submits edited vibe prompt when generating pronunciation", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin/words/new")
+
+      view
+      |> element("button[phx-click='open_tts_modal']")
+      |> render_click()
+
+      assert html = render(view)
+      assert html =~ "name=\"vibe_prompt\""
+
+      html =
+        view
+        |> form("#tts-generation-form")
+        |> render_submit(%{"tts_text" => "にほん", "vibe_prompt" => "Custom vibe prompt"})
+
+      refute html =~ "Please enter text to speak first"
     end
   end
 

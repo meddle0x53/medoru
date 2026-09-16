@@ -58,7 +58,7 @@ defmodule MedoruWeb.Endpoint do
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Phoenix.json_library(),
-    length: 210_000_000
+    length: 265_000_000
 
   plug Plug.MethodOverride
   plug Plug.Head

@@ -4,6 +4,7 @@ const ALLOWED_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",
   "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav",
   "video/mp4", "video/webm", "video/ogg", "video/quicktime",
+  "video/x-m4v", "video/3gpp",
   "application/pdf", "text/plain", "text/csv",
   "application/json", "text/markdown", "text/x-markdown",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -12,7 +13,7 @@ const ALLOWED_TYPES = [
 ]
 
 const MAX_SIZE_DEFAULT = 50 * 1024 * 1024
-const MAX_SIZE_VIDEO = 200 * 1024 * 1024
+const MAX_SIZE_VIDEO = 250 * 1024 * 1024
 
 const CHAT_DRAFTS = window.__medoruChatDrafts || (window.__medoruChatDrafts = {})
 
@@ -311,12 +312,6 @@ const ClassroomChatInput = {
     }
 
     const isVideo = file.type.startsWith("video/") || this.isVideoExtension(file.name)
-    const canUploadVideo = this.el.dataset.canUploadVideo === "true"
-
-    if (isVideo && !canUploadVideo) {
-      alert("Video uploads are only available for teachers and admins.")
-      return
-    }
 
     const maxSize = isVideo ? MAX_SIZE_VIDEO : MAX_SIZE_DEFAULT
     const maxSizeMb = maxSize / (1024 * 1024)
@@ -332,13 +327,13 @@ const ClassroomChatInput = {
 
   allowedByExtension(filename) {
     const ext = filename.split('.').pop()?.toLowerCase()
-    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'wav', 'webm', 'ogg', 'mp4', 'mov', 'ogv', 'pdf', 'txt', 'csv', 'json', 'md', 'docx', 'xlsx', 'epub']
+    const allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'wav', 'webm', 'ogg', 'mp4', 'mov', 'ogv', 'm4v', '3gp', 'pdf', 'txt', 'csv', 'json', 'md', 'docx', 'xlsx', 'epub']
     return allowedExts.includes(ext)
   },
 
   isVideoExtension(filename) {
     const ext = filename.split('.').pop()?.toLowerCase()
-    return ['mp4', 'mov', 'ogv', 'webm'].includes(ext)
+    return ['mp4', 'mov', 'ogv', 'webm', 'm4v', '3gp'].includes(ext)
   },
 
   showFilePreview(name) {

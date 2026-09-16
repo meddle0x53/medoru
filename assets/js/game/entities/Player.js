@@ -1056,6 +1056,20 @@ export default class Player extends Character {
     this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3)
   }
 
+  // Stats are canonical in baseStats (allocations are folded into it).
+  // Reading this[statName] is unsafe for stamina: this.stamina is the
+  // per-battle resource, not the stat, so a mid-battle charm recalc would
+  // compute max stamina from the *current* stamina and collapse it.
+  getStatValue(statName) {
+    const fromStats = this.baseStats ? this.baseStats[statName] : undefined
+    let base = typeof fromStats === 'number' ? fromStats : (this[statName] || 0)
+    const charmEffects = this.getCharmEffects()
+    if (charmEffects && charmEffects[statName]) {
+      base += charmEffects[statName]
+    }
+    return base
+  }
+
   // Returns a plain object of accumulated charm effects, e.g.
   // { strength: 2, skill: 2, critChance: 0.05, damageBonus: 0.18 }
   // Capacity including hero/socket charm bonuses (e.g. Backpack Charm +7).
