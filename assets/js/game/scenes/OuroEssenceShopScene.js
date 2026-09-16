@@ -353,6 +353,9 @@ export default class OuroEssenceShopScene extends Phaser.Scene {
           MAX_STARTING_GOLD_BONUS,
           (this.player.loadout.startingGoldBonus || 0) + 10
         )
+        // The shop is reachable mid-run; credit the current run immediately
+        // so the purchase isn't invisible until the next fresh hero.
+        this.player.addGold(10)
         break
       case 'startingPotion':
         this.player.loadout.startingPotionBonus = Math.min(
