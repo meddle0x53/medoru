@@ -14,7 +14,7 @@ defmodule Medoru.AI.WordEnrichment do
   @openai_image_url "https://api.openai.com/v1/images/generations"
 
   @tts_vibe_prompt """
-  Voice: The voice should be deep, velvety, and effortlessly cool, like a late-night jazz radio host.
+  Voice: The voice should be feminine, velvety, and effortlessly cool, like a Japanese announcer.
 
   Tone: The tone is smooth, laid-back, and inviting, creating a relaxed and easygoing atmosphere.
 
@@ -22,7 +22,7 @@ defmodule Medoru.AI.WordEnrichment do
 
   Pronunciation: Words should be drawn out slightly with a rhythmic, melodic quality, emphasizing key phrases with a silky flow.
 
-  Phrasing: Sentences should be fluid, conversational, and slightly poetic, with pauses that let the listener soak in the cool, jazzy vibe.
+  Phrasing: Sentences should be fluid, conversational.
   """
 
   @image_prompt """

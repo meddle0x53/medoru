@@ -16,6 +16,7 @@ EnvironmentFile=/etc/medoru/medoru.env
 Environment=MIX_ENV=prod
 Environment=LANG=en_US.UTF-8
 Environment=PORT={{ app_port }}
+Environment=TMPDIR={{ app_home }}/current/tmp
 
 # Phoenix release bin directory
 ExecStart={{ app_home }}/current/bin/medoru start
