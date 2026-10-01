@@ -3,6 +3,7 @@ defmodule MedoruWeb.DailyCardGameLive do
 
   alias Medoru.Learning
   alias Medoru.Content
+  alias MedoruWeb.CardGameLogic
 
   @max_attempts 20
   @pair_count 10
@@ -31,21 +32,7 @@ defmodule MedoruWeb.DailyCardGameLive do
          )
          |> push_navigate(to: ~p"/daily-challenges")}
       else
-        card_positions =
-          words
-          |> Enum.flat_map(&[&1.id, &1.id])
-          |> Enum.shuffle()
-
-        session = %{
-          status: :in_progress,
-          attempts_used: 0,
-          max_attempts: @max_attempts,
-          cards_state: %{
-            "card_positions" => card_positions,
-            "collected_indices" => [],
-            "flipped_indices" => []
-          }
-        }
+        session = CardGameLogic.new_session(Enum.map(words, & &1.id), @max_attempts)
 
         {:ok,
          socket
@@ -77,7 +64,7 @@ defmodule MedoruWeb.DailyCardGameLive do
       session = socket.assigns.session
       position = String.to_integer(position)
 
-      case flip_card(session, position) do
+      case CardGameLogic.flip_card(session, position) do
         {:ok, updated_session} ->
           {:noreply, assign(socket, :session, updated_session)}
 
@@ -96,7 +83,7 @@ defmodule MedoruWeb.DailyCardGameLive do
         {:ok, updated_session, :no_match} ->
           socket = assign(socket, :session, updated_session)
 
-          if game_over?(updated_session) do
+          if CardGameLogic.game_over?(updated_session) do
             complete_game(socket, :lost)
           else
             Process.send_after(self(), :close_unmatched, 1500)
@@ -127,14 +114,14 @@ defmodule MedoruWeb.DailyCardGameLive do
 
     correct? =
       if socket.assigns.english_mode do
-        validate_japanese_answer(answer, word)
+        CardGameLogic.validate_japanese_answer(answer, word)
       else
-        validate_meaning(answer, word, socket.assigns.locale)
+        CardGameLogic.validate_meaning(answer, word, socket.assigns.locale)
       end
 
     if correct? do
       # Correct - collect the flipped cards
-      updated_session = collect_flipped_cards(session)
+      updated_session = CardGameLogic.collect_flipped_cards(session)
 
       socket =
         socket
@@ -145,21 +132,21 @@ defmodule MedoruWeb.DailyCardGameLive do
         |> assign(:answer_meaning, "")
         |> assign(:input_disabled, false)
 
-      if all_collected?(updated_session) do
+      if CardGameLogic.all_collected?(updated_session) do
         complete_game(socket, :won)
       else
         {:noreply, socket}
       end
     else
       # Wrong - consume attempt, close cards
-      updated_session = consume_attempt_and_close_flipped(session)
+      updated_session = CardGameLogic.consume_attempt_and_close_flipped(session)
 
       socket =
         socket
         |> assign(:session, updated_session)
         |> assign(:input_error, gettext("Wrong meaning. Try again!"))
 
-      if game_over?(updated_session) do
+      if CardGameLogic.game_over?(updated_session) do
         complete_game(socket, :lost)
       else
         # Close the modal and flip cards back after a short delay
@@ -172,7 +159,7 @@ defmodule MedoruWeb.DailyCardGameLive do
   @impl true
   def handle_event("cancel_input", _params, socket) do
     session = socket.assigns.session
-    updated_session = consume_attempt_and_close_flipped(session)
+    updated_session = CardGameLogic.consume_attempt_and_close_flipped(session)
 
     socket =
       socket
@@ -181,7 +168,7 @@ defmodule MedoruWeb.DailyCardGameLive do
       |> assign(:input_word, nil)
       |> assign(:input_error, nil)
 
-    if game_over?(updated_session) do
+    if CardGameLogic.game_over?(updated_session) do
       complete_game(socket, :lost)
     else
       {:noreply, socket}
@@ -224,133 +211,7 @@ defmodule MedoruWeb.DailyCardGameLive do
      |> assign(:input_disabled, false)}
   end
 
-  # ============================================================================
-  # Game Logic (inline, no DB)
-  # ============================================================================
-
-  defp flip_card(session, position) do
-    cards_state = session.cards_state
-    card_positions = cards_state["card_positions"] || []
-    collected = cards_state["collected_indices"] || []
-    flipped = cards_state["flipped_indices"] || []
-
-    cond do
-      session.status != :in_progress ->
-        {:error, :game_over}
-
-      position in collected ->
-        {:error, :already_collected}
-
-      position in flipped ->
-        {:error, :already_flipped}
-
-      length(flipped) >= 2 ->
-        {:error, :too_many_flipped}
-
-      position < 0 or position >= length(card_positions) ->
-        {:error, :invalid_position}
-
-      true ->
-        new_flipped = flipped ++ [position]
-
-        if length(new_flipped) == 2 do
-          handle_two_flipped(session, new_flipped, card_positions, collected)
-        else
-          new_state = %{
-            "card_positions" => card_positions,
-            "collected_indices" => collected,
-            "flipped_indices" => new_flipped
-          }
-
-          {:ok, Map.put(session, :cards_state, new_state)}
-        end
-    end
-  end
-
-  defp handle_two_flipped(session, [pos1, pos2], card_positions, collected) do
-    word1 = Enum.at(card_positions, pos1)
-    word2 = Enum.at(card_positions, pos2)
-
-    if word1 == word2 do
-      # Match found - ask for meaning input (keep flipped)
-      new_state = %{
-        "card_positions" => card_positions,
-        "collected_indices" => collected,
-        "flipped_indices" => [pos1, pos2]
-      }
-
-      updated = Map.put(session, :cards_state, new_state)
-      {:needs_input, updated, word1}
-    else
-      new_attempts = session.attempts_used + 1
-
-      new_state = %{
-        "card_positions" => card_positions,
-        "collected_indices" => collected,
-        "flipped_indices" => [pos1, pos2]
-      }
-
-      updated =
-        session
-        |> Map.put(:cards_state, new_state)
-        |> Map.put(:attempts_used, new_attempts)
-
-      if new_attempts >= session.max_attempts do
-        {:ok, Map.put(updated, :status, :completed), :no_match}
-      else
-        {:ok, updated, :no_match}
-      end
-    end
-  end
-
-  defp collect_flipped_cards(session) do
-    cards_state = session.cards_state
-    card_positions = cards_state["card_positions"] || []
-    collected = cards_state["collected_indices"] || []
-    flipped = cards_state["flipped_indices"] || []
-
-    new_collected = collected ++ flipped
-
-    new_state = %{
-      "card_positions" => card_positions,
-      "collected_indices" => new_collected,
-      "flipped_indices" => []
-    }
-
-    updated = Map.put(session, :cards_state, new_state)
-
-    if all_collected?(updated) do
-      Map.put(updated, :status, :completed)
-    else
-      updated
-    end
-  end
-
-  defp consume_attempt_and_close_flipped(session) do
-    cards_state = session.cards_state
-    card_positions = cards_state["card_positions"] || []
-    collected = cards_state["collected_indices"] || []
-
-    new_attempts = session.attempts_used + 1
-
-    new_state = %{
-      "card_positions" => card_positions,
-      "collected_indices" => collected,
-      "flipped_indices" => []
-    }
-
-    updated =
-      session
-      |> Map.put(:cards_state, new_state)
-      |> Map.put(:attempts_used, new_attempts)
-
-    if new_attempts >= session.max_attempts do
-      Map.put(updated, :status, :completed)
-    else
-      updated
-    end
-  end
-
+  # Game logic lives in MedoruWeb.CardGameLogic.
   defp complete_game(socket, result) do
     user = socket.assigns.current_scope.current_user
 
@@ -423,112 +284,6 @@ defmodule MedoruWeb.DailyCardGameLive do
     words
   end
 
-  defp validate_meaning(answer, _word, _locale) when answer == "", do: false
-
-  defp validate_meaning(answer, word, locale) do
-    answer_lower = String.downcase(answer)
-
-    # Build list of valid meanings: English + locale translation
-    localized_meaning = get_localized_meaning(word, locale)
-
-    meanings =
-      [word.meaning, localized_meaning]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.flat_map(&split_meanings/1)
-      |> Enum.map(&String.downcase/1)
-      |> Enum.reject(&(&1 == ""))
-
-    Enum.any?(meanings, fn meaning ->
-      String.contains?(meaning, answer_lower) or
-        String.contains?(answer_lower, meaning)
-    end)
-  end
-
-  defp get_localized_meaning(%{translations: translations}, locale)
-       when is_map(translations) and translations != %{} do
-    case get_in(translations, [locale, "meaning"]) do
-      nil -> get_in(translations, ["en", "meaning"])
-      meaning -> meaning
-    end
-  end
-
-  defp get_localized_meaning(_word, _locale), do: nil
-
-  defp split_meanings(nil), do: []
-
-  defp split_meanings(text) do
-    text
-    |> String.split(~r/[,;、]/)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-  end
-
-  defp validate_japanese_answer(answer, _word) when answer == "", do: false
-
-  defp validate_japanese_answer(answer, word) do
-    answer = String.trim(answer)
-
-    valid_answers =
-      [word.text, word.reading]
-      |> Enum.reject(&is_nil/1)
-      |> Enum.flat_map(&split_readings/1)
-      |> Enum.map(&String.trim/1)
-      |> Enum.reject(&(&1 == ""))
-
-    Enum.any?(valid_answers, fn valid ->
-      String.downcase(valid) == String.downcase(answer)
-    end)
-  end
-
-  defp split_readings(nil), do: []
-
-  defp split_readings(text) do
-    text
-    |> String.split(~r{[/／]})
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-  end
-
-  defp card_states(session) do
-    cards_state = session.cards_state || %{}
-    card_positions = cards_state["card_positions"] || []
-    collected = cards_state["collected_indices"] || []
-    flipped = cards_state["flipped_indices"] || []
-
-    Enum.map(0..(length(card_positions) - 1), fn index ->
-      cond do
-        index in collected -> :collected
-        index in flipped -> :flipped
-        true -> :hidden
-      end
-    end)
-  end
-
-  defp word_at_position(session, words, position) do
-    cards_state = session.cards_state || %{}
-    card_positions = cards_state["card_positions"] || []
-    word_id = Enum.at(card_positions, position)
-
-    Enum.find(words, %{text: "?", reading: "", meaning: "?"}, fn w ->
-      w.id == word_id
-    end)
-  end
-
-  defp attempts_remaining(session) do
-    session.max_attempts - session.attempts_used
-  end
-
-  defp game_over?(session) do
-    session.status == :completed or attempts_remaining(session) <= 0
-  end
-
-  defp all_collected?(session) do
-    cards_state = session.cards_state || %{}
-    collected = cards_state["collected_indices"] || []
-    card_positions = cards_state["card_positions"] || []
-    length(collected) == length(card_positions)
-  end
-
   defp get_streak(user_id) do
     case Learning.get_daily_streak(user_id) do
       nil -> %{current_streak: 0}
@@ -544,9 +299,11 @@ defmodule MedoruWeb.DailyCardGameLive do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-6">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-base-content">{gettext("Daily Card Challenge")}</h1>
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-2xl font-bold text-base-content truncate">
+            {gettext("Daily Card Challenge")}
+          </h1>
           <p class="text-secondary text-sm mt-1">
             <%= if @english_mode do %>
               {gettext("Match meaning pairs and type the Japanese word or reading to collect them!")}
@@ -555,7 +312,7 @@ defmodule MedoruWeb.DailyCardGameLive do
             <% end %>
           </p>
         </div>
-        <div class="text-right">
+        <div class="text-right shrink-0">
           <div class="badge badge-primary badge-lg">
             <.icon name="hero-fire" class="w-4 h-4 mr-1" />
             {@streak.current_streak} {gettext("day streak")}
@@ -573,10 +330,16 @@ defmodule MedoruWeb.DailyCardGameLive do
                 {gettext("You have already completed today's card challenge.")}
               </p>
               <div class="mt-4 flex flex-col sm:flex-row justify-center gap-3">
-                <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
+                <.link
+                  navigate={~p"/daily-challenges"}
+                  class="btn btn-primary btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   {gettext("Back to Daily Challenges")}
                 </.link>
-                <.link navigate={~p"/dashboard"} class="btn btn-outline">
+                <.link
+                  navigate={~p"/dashboard"}
+                  class="btn btn-outline btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   <.icon name="hero-home" class="w-4 h-4 mr-2" /> {gettext("Dashboard")}
                 </.link>
               </div>
@@ -601,10 +364,16 @@ defmodule MedoruWeb.DailyCardGameLive do
               <p class="text-lg font-bold text-primary mt-2">+{@xp_awarded} XP</p>
 
               <div class="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-                <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
+                <.link
+                  navigate={~p"/daily-challenges"}
+                  class="btn btn-primary btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   {gettext("Back to Daily Challenges")}
                 </.link>
-                <.link navigate={~p"/dashboard"} class="btn btn-outline">
+                <.link
+                  navigate={~p"/dashboard"}
+                  class="btn btn-outline btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   <.icon name="hero-home" class="w-4 h-4 mr-2" /> {gettext("Dashboard")}
                 </.link>
               </div>
@@ -618,9 +387,10 @@ defmodule MedoruWeb.DailyCardGameLive do
                 <span class="text-secondary">{gettext("Attempts")}:</span>
                 <span class={[
                   "font-bold",
-                  (attempts_remaining(@session) <= 3 && "text-error") || "text-base-content"
+                  (CardGameLogic.attempts_remaining(@session) <= 3 && "text-error") ||
+                    "text-base-content"
                 ]}>
-                  {attempts_remaining(@session)} / {@session.max_attempts}
+                  {CardGameLogic.attempts_remaining(@session)} / {@session.max_attempts}
                 </span>
               </div>
               <div class="text-sm">
@@ -636,13 +406,14 @@ defmodule MedoruWeb.DailyCardGameLive do
           </div>
 
           <div class="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 mx-auto max-w-lg">
-            <%= for {card_state, index} <- Enum.with_index(card_states(@session)) do %>
-              <% word = word_at_position(@session, @words, index) %>
+            <%= for {card_state, index} <- Enum.with_index(CardGameLogic.card_states(@session)) do %>
+              <% word = CardGameLogic.word_at_position(@session, @words, index) %>
               <button
                 phx-click="flip_card"
                 phx-value-position={index}
                 disabled={
-                  card_state == :collected or card_state == :flipped or game_over?(@session) or
+                  card_state == :collected or card_state == :flipped or
+                    CardGameLogic.game_over?(@session) or
                     @show_input_modal
                 }
                 class={[
@@ -653,7 +424,7 @@ defmodule MedoruWeb.DailyCardGameLive do
                     "bg-base-100 border-2 border-primary text-base-content shadow-lg scale-105",
                   card_state == :collected &&
                     "bg-success/20 border-2 border-success text-success opacity-50 cursor-default",
-                  (game_over?(@session) or @show_input_modal) && card_state == :hidden &&
+                  (CardGameLogic.game_over?(@session) or @show_input_modal) && card_state == :hidden &&
                     "opacity-60 cursor-not-allowed"
                 ]}
               >
@@ -662,7 +433,9 @@ defmodule MedoruWeb.DailyCardGameLive do
                     <span class="text-xl sm:text-2xl">?</span>
                   <% :flipped -> %>
                     <%= if @english_mode do %>
-                      <span class="font-bold text-center px-1">{word.meaning}</span>
+                      <span class="font-bold text-center px-1 break-words text-xs sm:text-sm line-clamp-3">
+                        {word.meaning}
+                      </span>
                     <% else %>
                       <span class="font-bold">{word.text}</span>
                       <span :if={word.reading != ""} class="text-xs text-secondary mt-1">

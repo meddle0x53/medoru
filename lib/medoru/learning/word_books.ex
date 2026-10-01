@@ -7,9 +7,12 @@ defmodule Medoru.Learning.WordBooks do
 
   import Ecto.Query
   alias Medoru.Repo
+  alias Medoru.Accounts
   alias Medoru.Accounts.{User, UserProfile}
-  alias Medoru.Learning.{WordBook, WordBookWord, WordSet}
+  alias Medoru.Learning.{WordBook, WordBookShare, WordBookWord, WordSet}
   alias Medoru.Content.Word
+  alias Medoru.Notifications
+  alias Medoru.Social
 
   @max_words WordBook.max_words()
 
@@ -354,6 +357,188 @@ defmodule Medoru.Learning.WordBooks do
           |> WordBook.update_word_count_changeset(inserted_count)
           |> Repo.update!()
         end)
+    end
+  end
+
+  @doc """
+  Gets a single word book share.
+  """
+  def get_word_book_share(id) do
+    Repo.get(WordBookShare, id)
+  end
+
+  @doc """
+  Lists pending word book shares received by a user.
+  """
+  def list_pending_received_word_book_shares(user_id) do
+    WordBookShare
+    |> where([s], s.recipient_id == ^user_id and s.status == "pending")
+    |> preload([:word_book, sender: [:profile]])
+    |> order_by([s], desc: s.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Shares a word book with another user.
+
+  Requirements:
+  - The sender must own the word book.
+  - The sender and recipient must be mutual followers.
+  - There must not already be a pending share for the same word book/recipient.
+
+  On success, creates a notification for the recipient.
+  """
+  def share_word_book(sender_id, word_book_id, recipient_id) do
+    word_book = Repo.get!(WordBook, word_book_id)
+
+    cond do
+      word_book.user_id != sender_id ->
+        {:error, :not_owner}
+
+      not Social.mutual_followers?(sender_id, recipient_id) ->
+        {:error, :not_mutual}
+
+      true ->
+        existing_pending =
+          WordBookShare
+          |> where(
+            [s],
+            s.word_book_id == ^word_book_id and
+              s.sender_id == ^sender_id and
+              s.recipient_id == ^recipient_id and
+              s.status == "pending"
+          )
+          |> Repo.exists?()
+
+        if existing_pending do
+          {:error, :already_shared}
+        else
+          Repo.transaction(fn ->
+            {:ok, share} =
+              %WordBookShare{}
+              |> WordBookShare.changeset(%{
+                word_book_id: word_book_id,
+                sender_id: sender_id,
+                recipient_id: recipient_id,
+                status: "pending"
+              })
+              |> Repo.insert()
+
+            sender = Accounts.get_user_with_profile(sender_id) || Accounts.get_user!(sender_id)
+            sender_name = (sender.profile && sender.profile.display_name) || sender.name
+
+            Notifications.create_notification(%{
+              user_id: recipient_id,
+              type: "word_book_share",
+              title: "#{sender_name} wants to share a word book",
+              message: "#{sender_name} wants to share '#{word_book.title}' with you",
+              data: %{
+                "share_id" => share.id,
+                "sender_id" => sender_id,
+                "sender_name" => sender_name,
+                "word_book_id" => word_book_id,
+                "word_book_title" => word_book.title
+              }
+            })
+
+            share
+          end)
+        end
+    end
+  end
+
+  @doc """
+  Accepts a word book share.
+
+  Copies the word book (all presentation fields and words) to the recipient's
+  account and returns the new book.
+  """
+  def accept_word_book_share(share_id, recipient_id) do
+    share =
+      WordBookShare
+      |> Repo.get!(share_id)
+      |> Repo.preload(word_book: [:word_book_words])
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      Repo.transaction(fn ->
+        source = share.word_book
+
+        {:ok, new_book} =
+          create_word_book(%{
+            title: source.title,
+            description: source.description,
+            cover_image: source.cover_image,
+            theme: source.theme,
+            card_shape: source.card_shape,
+            cards_per_page: source.cards_per_page,
+            front_background: source.front_background,
+            back_background: source.back_background,
+            custom_text: source.custom_text,
+            front_config: source.front_config,
+            back_config: source.back_config,
+            user_id: recipient_id,
+            word_count: 0
+          })
+
+        word_book_words =
+          source.word_book_words
+          |> Enum.sort_by(& &1.position)
+          |> Enum.with_index(fn wbw, index ->
+            %{
+              word_book_id: new_book.id,
+              word_id: wbw.word_id,
+              position: index,
+              inserted_at: DateTime.utc_now(),
+              updated_at: DateTime.utc_now()
+            }
+          end)
+
+        {inserted_count, _} = Repo.insert_all(WordBookWord, word_book_words)
+
+        {:ok, new_book} =
+          new_book
+          |> WordBook.update_word_count_changeset(inserted_count)
+          |> Repo.update()
+
+        share
+        |> WordBookShare.status_changeset("accepted")
+        |> Repo.update!()
+
+        new_book
+      end)
+    end
+  end
+
+  @doc """
+  Cancels (declines) a word book share.
+  """
+  def cancel_word_book_share(share_id, recipient_id) do
+    share = Repo.get!(WordBookShare, share_id)
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      share
+      |> WordBookShare.status_changeset("cancelled")
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Deletes a word book share.
+
+  Used when the recipient declines the share or deletes the notification,
+  so the share does not become an invisible pending request.
+  """
+  def delete_word_book_share(share_id, recipient_id) do
+    share = Repo.get!(WordBookShare, share_id)
+
+    if share.recipient_id != recipient_id do
+      {:error, :not_recipient}
+    else
+      Repo.delete(share)
     end
   end
 

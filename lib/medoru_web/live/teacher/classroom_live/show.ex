@@ -75,6 +75,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
     |> assign(:classroom_games, classroom_games)
     |> assign(:conversation, conversation)
     |> assign(:active_tab, "overview")
+    |> assign(:reordering_tests, false)
     |> assign(:editing_settings, false)
     |> assign(:edit_name, classroom.name)
     |> assign(:edit_description, classroom.description || "")
@@ -99,6 +100,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
           socket
           |> assign(:published_tests, published_tests)
           |> assign(:test_attempts, test_attempts)
+          |> assign(:reordering_tests, false)
 
         "lessons" ->
           classroom = socket.assigns.classroom
@@ -484,6 +486,74 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_reordering_tests", _, socket) do
+    {:noreply, assign(socket, :reordering_tests, not socket.assigns.reordering_tests)}
+  end
+
+  @impl true
+  def handle_event("move_test_up", %{"id" => test_id}, socket) do
+    classroom_id = socket.assigns.classroom.id
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    # First ensure indices are initialized, then get fresh data
+    with :ok <- Classrooms.ensure_test_order_indices(classroom_id),
+         tests = Classrooms.list_classroom_tests(classroom_id, status: :active),
+         current_index = Enum.find_index(tests, fn t -> t.id == test_id end),
+         true <- current_index && current_index > 0 do
+      current_test = Enum.at(tests, current_index)
+      prev_test = Enum.at(tests, current_index - 1)
+
+      new_order = [
+        {current_test.id, prev_test.order_index},
+        {prev_test.id, current_test.order_index}
+      ]
+
+      case Classrooms.reorder_classroom_tests(classroom_id, teacher_id, new_order) do
+        {:ok, _} ->
+          tests = Classrooms.list_classroom_tests(classroom_id, status: :active)
+          {:noreply, assign(socket, :published_tests, tests)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder tests."))}
+      end
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("move_test_down", %{"id" => test_id}, socket) do
+    classroom_id = socket.assigns.classroom.id
+    teacher_id = socket.assigns.current_scope.current_user.id
+
+    # First ensure indices are initialized, then get fresh data
+    with :ok <- Classrooms.ensure_test_order_indices(classroom_id),
+         tests = Classrooms.list_classroom_tests(classroom_id, status: :active),
+         current_index = Enum.find_index(tests, fn t -> t.id == test_id end),
+         last_index = length(tests) - 1,
+         true <- current_index && current_index < last_index do
+      current_test = Enum.at(tests, current_index)
+      next_test = Enum.at(tests, current_index + 1)
+
+      new_order = [
+        {current_test.id, next_test.order_index},
+        {next_test.id, current_test.order_index}
+      ]
+
+      case Classrooms.reorder_classroom_tests(classroom_id, teacher_id, new_order) do
+        {:ok, _} ->
+          tests = Classrooms.list_classroom_tests(classroom_id, status: :active)
+          {:noreply, assign(socket, :published_tests, tests)}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to reorder tests."))}
+      end
+    else
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope} socket={@socket}>
@@ -613,6 +683,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                 published_tests={@published_tests}
                 test_attempts={@test_attempts}
                 current_scope={@current_scope}
+                reordering_tests={@reordering_tests}
               />
             <% "games" -> %>
               <.games_tab
@@ -1110,6 +1181,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
   attr :published_tests, :list, required: true
   attr :test_attempts, :list, required: true
   attr :current_scope, :map, required: true
+  attr :reordering_tests, :boolean, required: true
 
   defp tests_tab(assigns) do
     ~H"""
@@ -1117,9 +1189,30 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
       <%!-- Published Tests --%>
       <div class="card bg-base-100 border border-base-300 shadow-sm">
         <div class="card-body">
-          <h3 class="card-title text-base-content mb-4">
-            <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext("Published Tests")}
-          </h3>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="card-title text-base-content">
+              <.icon name="hero-clipboard-document-list" class="w-5 h-5" /> {gettext(
+                "Published Tests"
+              )}
+            </h3>
+
+            <%= if @published_tests != [] do %>
+              <button
+                phx-click="toggle_reordering_tests"
+                class={[
+                  "btn btn-sm",
+                  @reordering_tests && "btn-primary",
+                  !@reordering_tests && "btn-ghost btn-outline"
+                ]}
+              >
+                <%= if @reordering_tests do %>
+                  <.icon name="hero-check" class="w-4 h-4 mr-1" /> {gettext("Done")}
+                <% else %>
+                  <.icon name="hero-arrows-up-down" class="w-4 h-4 mr-1" /> {gettext("Reorder")}
+                <% end %>
+              </button>
+            <% end %>
+          </div>
 
           <%= if @published_tests == [] do %>
             <p class="text-secondary">{gettext("No tests published to this classroom yet.")}</p>
@@ -1167,8 +1260,31 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
               </.link>
             </div>
             <div class="space-y-3">
-              <%= for classroom_test <- @published_tests do %>
+              <%= for {classroom_test, index} <- Enum.with_index(@published_tests, 1) do %>
                 <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg gap-4">
+                  <%= if @reordering_tests do %>
+                    <div class="flex flex-col gap-1 shrink-0">
+                      <button
+                        phx-click="move_test_up"
+                        phx-value-id={classroom_test.id}
+                        disabled={index == 1}
+                        class={["btn btn-xs btn-ghost", index == 1 && "opacity-30"]}
+                      >
+                        <.icon name="hero-chevron-up" class="w-4 h-4" />
+                      </button>
+                      <button
+                        phx-click="move_test_down"
+                        phx-value-id={classroom_test.id}
+                        disabled={index == length(@published_tests)}
+                        class={[
+                          "btn btn-xs btn-ghost",
+                          index == length(@published_tests) && "opacity-30"
+                        ]}
+                      >
+                        <.icon name="hero-chevron-down" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  <% end %>
                   <div>
                     <p class="font-medium text-base-content">{classroom_test.test.title}</p>
                     <div class="flex gap-4 text-sm text-secondary mt-1">

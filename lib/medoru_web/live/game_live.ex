@@ -174,7 +174,10 @@ defmodule MedoruWeb.GameLive do
         _ -> 1
       end
 
-    learned_word_ids = Enum.map(learned_words, & &1.id)
+    # Full exclusion set — unbounded. The game's "learn a new word" events
+    # must never offer already-learned words, and users can pass the 1000-word
+    # cap of the display lists above.
+    learned_word_ids = Learning.list_all_learned_word_ids(user.id)
 
     vocabulary =
       Content.Word

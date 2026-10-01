@@ -8,13 +8,16 @@ defmodule Medoru.Learning.WordSets do
   import Ecto.Query
   alias Medoru.Repo
   alias Medoru.Accounts
-  alias Medoru.Learning.{WordSet, WordSetShare, WordSetWord}
+  alias Medoru.Learning.{UserProgress, WordSet, WordSetCardGame, WordSetShare, WordSetWord}
   alias Medoru.Content.Word
   alias Medoru.Notifications
   alias Medoru.Social
   alias Medoru.Tests
 
   @max_words WordSet.max_words()
+
+  @word_type_strings ~w(noun verb adjective adverb particle pronoun counter expression other)
+  @max_learned_set_size 55
 
   @doc """
   Returns a paginated list of word sets for a user.
@@ -328,6 +331,78 @@ defmodule Medoru.Learning.WordSets do
     end
   end
 
+  @max_card_game_pairs 10
+  @min_card_game_words 4
+
+  @doc """
+  Creates a memory card game for a word set.
+
+  Snapshots the first min(10, word_count) words of the set (in the set's word
+  order) so later edits to the set do not affect the game.
+
+  Returns `{:error, :already_exists}` if the set already has a game, or
+  `{:error, :not_enough_words}` if the set has fewer than 4 words.
+  """
+  def create_card_game_for_set(%WordSet{} = word_set, %Accounts.User{} = user) do
+    cond do
+      get_card_game_for_set(word_set.id) ->
+        {:error, :already_exists}
+
+      word_set.word_count < @min_card_game_words ->
+        {:error, :not_enough_words}
+
+      true ->
+        words =
+          from(w in Word,
+            join: wsw in WordSetWord,
+            on: wsw.word_id == w.id,
+            where: wsw.word_set_id == ^word_set.id,
+            order_by: [asc: wsw.position]
+          )
+          |> Repo.all()
+          |> Enum.take(@max_card_game_pairs)
+          |> Enum.map(fn word ->
+            %{
+              "id" => word.id,
+              "text" => word.text,
+              "reading" => word.reading,
+              "meaning" => word.meaning,
+              "translations" => word.translations
+            }
+          end)
+
+        %WordSetCardGame{}
+        |> WordSetCardGame.changeset(%{
+          word_set_id: word_set.id,
+          user_id: user.id,
+          words: words
+        })
+        |> Repo.insert()
+    end
+  end
+
+  @doc """
+  Gets the memory card game for a word set, or nil.
+  """
+  def get_card_game_for_set(word_set_id) do
+    Repo.get_by(WordSetCardGame, word_set_id: word_set_id)
+  end
+
+  @doc """
+  Deletes a word set memory card game (hard delete).
+
+  Only the word set owner may delete the game.
+  """
+  def delete_card_game(%WordSetCardGame{} = card_game, user) do
+    word_set = Repo.get(WordSet, card_game.word_set_id)
+
+    if word_set && word_set.user_id == user.id && card_game.user_id == user.id do
+      Repo.delete(card_game)
+    else
+      {:error, :not_authorized}
+    end
+  end
+
   @doc """
   Creates a new word set from a custom lesson's words.
   The word set name and description are copied from the lesson.
@@ -381,6 +456,144 @@ defmodule Medoru.Learning.WordSets do
       end)
     end
   end
+
+  @doc """
+  Counts the user's learned words matching the given filters.
+
+  `word_types` is a list of strings (e.g. `["noun", "verb"]`); empty or nil means all.
+  `levels` is a list of integers (1..5); empty or nil means all.
+  """
+  def count_learned_words_matching(user_id, word_types \\ [], levels \\ []) do
+    user_id
+    |> learned_words_query(word_types, levels)
+    |> select([_up, w], count(w.id))
+    |> Repo.one()
+  end
+
+  @doc """
+  Lists the user's latest N learned words matching the given filters,
+  most recently learned first.
+
+  `word_types` is a list of strings; empty or nil means all.
+  `levels` is a list of integers (1..5); empty or nil means all.
+  """
+  def list_latest_learned_words(user_id, n, word_types \\ [], levels \\ []) do
+    user_id
+    |> learned_words_query(word_types, levels)
+    |> select([_up, w], w)
+    |> order_by([up, _w], desc: up.inserted_at)
+    |> limit(^max(n, 1))
+    |> Repo.all()
+  end
+
+  defp learned_words_query(user_id, word_types, levels) do
+    query =
+      from(up in UserProgress,
+        join: w in Word,
+        on: w.id == up.word_id,
+        where: up.user_id == ^user_id and not is_nil(up.word_id)
+      )
+
+    types = Enum.filter(List.wrap(word_types), &(&1 in @word_type_strings))
+    levels = Enum.filter(List.wrap(levels), &(&1 in 1..5))
+
+    query =
+      if types != [] do
+        where(query, [_up, w], w.word_type in ^Enum.map(types, &String.to_existing_atom/1))
+      else
+        query
+      end
+
+    if levels != [] do
+      where(query, [_up, w], w.difficulty in ^levels)
+    else
+      query
+    end
+  end
+
+  @doc """
+  Creates a word set from the user's latest N learned words matching the filters.
+
+  ## Options
+    * `:name` - Set name (default: "Learned Words — <today's date>")
+    * `:description` - Set description (default: "")
+    * `:n` - Number of words to take (clamped to 1..min(55, matching count))
+    * `:word_types` - List of word type strings; empty/nil = no type filtering
+    * `:levels` - List of JLPT levels (1..5); empty/nil = no level filtering
+
+  Returns `{:error, :no_matching_words}` when nothing matches, or
+  `{:error, changeset}` if the set insert fails.
+  """
+  def create_word_set_from_learned_words(user, attrs) do
+    word_types = List.wrap(attrs[:word_types])
+    levels = List.wrap(attrs[:levels])
+    matching_count = count_learned_words_matching(user.id, word_types, levels)
+
+    if matching_count == 0 do
+      {:error, :no_matching_words}
+    else
+      max_n = min(@max_learned_set_size, matching_count)
+      n = attrs[:n] |> to_int() |> clamp(1, max_n)
+
+      name =
+        case attrs[:name] do
+          nil -> ""
+          name -> String.trim(to_string(name))
+        end
+
+      name = if name == "", do: default_learned_set_name(), else: name
+
+      words = list_latest_learned_words(user.id, n, word_types, levels)
+
+      word_set_attrs = %{
+        name: name,
+        description: attrs[:description] || "",
+        user_id: user.id,
+        word_count: 0
+      }
+
+      Repo.transaction(fn ->
+        {:ok, word_set} = create_word_set(word_set_attrs)
+
+        now = DateTime.utc_now()
+
+        word_set_words =
+          Enum.with_index(words, fn word, index ->
+            %{
+              word_set_id: word_set.id,
+              word_id: word.id,
+              position: index,
+              inserted_at: now,
+              updated_at: now
+            }
+          end)
+
+        {inserted_count, _} = Repo.insert_all(WordSetWord, word_set_words)
+
+        word_set
+        |> WordSet.update_word_count_changeset(inserted_count)
+        |> Repo.update!()
+      end)
+    end
+  end
+
+  defp default_learned_set_name do
+    "Learned Words — #{Date.utc_today()}"
+  end
+
+  defp to_int(n) when is_integer(n), do: n
+
+  defp to_int(n) when is_binary(n) do
+    case Integer.parse(n) do
+      {int, _} -> int
+      :error -> 0
+    end
+  end
+
+  defp to_int(_), do: 0
+
+  defp clamp(_n, min, max) when max < min, do: min
+  defp clamp(n, min, max), do: n |> max(min) |> min(max)
 
   @doc """
   Searches user's word sets by name for copying words.

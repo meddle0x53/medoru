@@ -2597,8 +2597,11 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    if (!this.player.canUseSkill(skill)) {
-      this.addCombatLog('Not enough stamina!')
+    const unavailableReason = typeof this.player.skillUnavailableReason === 'function'
+      ? this.player.skillUnavailableReason(skill)
+      : (this.player.canUseSkill(skill) ? null : 'Not enough stamina')
+    if (unavailableReason) {
+      this.addCombatLog(`${unavailableReason}!`)
       return
     }
 

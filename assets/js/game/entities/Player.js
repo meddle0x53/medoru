@@ -596,20 +596,21 @@ export default class Player extends Character {
 
   // ---------- Skill Availability ----------
 
+  // Why a skill cannot be used right now, or null if it can.
+  skillUnavailableReason(skill) {
+    if (skill.id === 'quick_stab' && this.weapon?.socketCharmIds?.[0] !== 'sharp_charm_sword') {
+      return 'Quick Stab requires the Sharp Charm in the sword\'s first socket'
+    }
+    if (skill.id === 'guard_break' && this.weapon?.socketCharmIds?.[0] !== 'heavy_charm_sword') {
+      return 'Guard Break requires the Heavy Charm in the sword\'s first socket'
+    }
+    if (this.stamina < skill.staminaCost) return 'Not enough stamina'
+    if (skill.singleUse && (this.loadout.singleUseCharges?.[skill.id] || 0) <= 0) return 'No charges left'
+    return null
+  }
+
   canUseSkill(skill) {
-    if (this.stamina < skill.staminaCost) return false
-    if (skill.id === 'quick_stab') {
-      const firstSocketCharm = this.weapon?.socketCharmIds?.[0]
-      if (firstSocketCharm !== 'sharp_charm_sword') return false
-    }
-    if (skill.id === 'guard_break') {
-      const firstSocketCharm = this.weapon?.socketCharmIds?.[0]
-      if (firstSocketCharm !== 'heavy_charm_sword') return false
-    }
-    if (skill.singleUse) {
-      return (this.loadout.singleUseCharges?.[skill.id] || 0) > 0
-    }
-    return true
+    return this.skillUnavailableReason(skill) === null
   }
 
   // ---------- Parry System ----------
@@ -1716,12 +1717,18 @@ export default class Player extends Character {
 
   getCandidateEventWords(maxCount = 4) {
     const knownIds = new Set((this.wordList || []).map(w => w.id || w.word))
-    const beingLearnedIds = new Set((this.loadout.beingLearnedWords || []).map(w => w.id))
+    const knownWords = new Set((this.wordList || []).map(w => w.word).filter(Boolean))
+    const beingLearnedIds = new Set((this.loadout.beingLearnedWords || []).map(w => w.id || w.word))
 
     const candidates = (this.vocabulary || [])
       .filter(w => {
         const key = w.id || w.word
-        return key && !knownIds.has(key) && !beingLearnedIds.has(key)
+        // Match by id AND by text: the known list is text-only while
+        // vocabulary entries carry numeric ids, so an id-only check
+        // would never exclude anything.
+        return key &&
+          !knownIds.has(key) && !knownWords.has(w.word) &&
+          !beingLearnedIds.has(w.id) && !beingLearnedIds.has(w.word)
       })
       .slice(0, maxCount)
 

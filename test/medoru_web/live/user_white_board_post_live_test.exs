@@ -46,6 +46,69 @@ defmodule MedoruWeb.UserWhiteBoardPostLiveTest do
     end
   end
 
+  describe "delete post" do
+    test "author sees delete button and can delete the post with its comments", %{conn: conn} do
+      owner = owner_fixture()
+      commenter = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, comment} =
+        WhiteBoard.create_comment(%{
+          post_id: post.id,
+          user_id: commenter.id,
+          parent_id: nil,
+          content: "A comment"
+        })
+
+      {:ok, view, html} =
+        conn |> log_in_user(owner) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+
+      assert html =~ "delete_post"
+
+      view
+      |> element("button[phx-click='delete_post'][phx-value-id='#{post.id}']")
+      |> render_click()
+
+      assert_redirect(view, ~p"/users/#{owner.id}/white-board")
+
+      assert Repo.get(Medoru.WhiteBoard.BoardPost, post.id) == nil
+      assert Repo.get(Medoru.WhiteBoard.BoardComment, comment.id) == nil
+    end
+
+    test "non-author does not see the delete button", %{conn: conn} do
+      owner = owner_fixture()
+      other = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, _view, html} =
+        conn |> log_in_user(other) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+
+      refute html =~ "delete_post"
+    end
+
+    test "guest does not see the delete button", %{conn: conn} do
+      owner = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, _view, html} = live(conn, ~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+
+      refute html =~ "delete_post"
+    end
+
+    test "direct delete_post event from non-author does not delete the post", %{conn: conn} do
+      owner = owner_fixture()
+      other = owner_fixture()
+      post = post_fixture(%{user: owner, visibility: "public"})
+
+      {:ok, view, _html} =
+        conn |> log_in_user(other) |> live(~p"/users/#{owner.id}/white-board/posts/#{post.id}")
+
+      assert render_click(view, "delete_post", %{"id" => post.id})
+
+      assert Repo.get(Medoru.WhiteBoard.BoardPost, post.id) != nil
+    end
+  end
+
   describe "reactions" do
     test "user can add a reaction", %{conn: conn} do
       owner = owner_fixture()

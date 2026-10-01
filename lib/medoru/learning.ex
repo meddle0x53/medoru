@@ -897,6 +897,28 @@ defmodule Medoru.Learning do
     |> Repo.all()
   end
 
+  @doc """
+  Returns ALL learned word ids for a user across both progress tables,
+  with no limit. Use for exclusion checks (e.g. the game's new-word events)
+  where a truncated list would leak already-learned words back in.
+  """
+  def list_all_learned_word_ids(user_id) do
+    regular_ids =
+      UserProgress
+      |> where([up], up.user_id == ^user_id and not is_nil(up.word_id))
+      |> select([up], up.word_id)
+      |> Repo.all()
+
+    english_ids =
+      UserEnglishProgress
+      |> where([uep], uep.user_id == ^user_id)
+      |> select([uep], uep.word_id)
+      |> Repo.all()
+
+    MapSet.union(MapSet.new(regular_ids), MapSet.new(english_ids))
+    |> MapSet.to_list()
+  end
+
   defp get_english_word_progress(user_id, word_id) do
     UserEnglishProgress
     |> where([uep], uep.user_id == ^user_id and uep.word_id == ^word_id)

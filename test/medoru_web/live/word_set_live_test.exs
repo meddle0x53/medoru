@@ -223,4 +223,93 @@ defmodule MedoruWeb.WordSetLiveTest do
       assert html =~ "You can only share with mutual followers."
     end
   end
+
+  describe "From Learned Words modal (index)" do
+    setup %{user: user} do
+      words = [
+        word_fixture(%{word_type: :noun, difficulty: 5}),
+        word_fixture(%{word_type: :verb, difficulty: 4}),
+        word_fixture(%{word_type: :verb, difficulty: 2})
+      ]
+
+      for word <- words do
+        user_progress_fixture(%{user_id: user.id, word_id: word.id})
+      end
+
+      %{words: words}
+    end
+
+    test "opens the modal with the learned words generator", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets")
+
+      html =
+        view
+        |> element("button[phx-click='open_generate_modal']")
+        |> render_click()
+
+      assert html =~ "Word Set from Learned Words"
+      assert html =~ "3 words available"
+    end
+
+    test "creates a set from learned words with defaults and navigates to it", %{
+      conn: conn,
+      user: user,
+      words: words
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets")
+
+      view
+      |> element("button[phx-click='open_generate_modal']")
+      |> render_click()
+
+      {:ok, _view, html} =
+        view
+        |> element("form[phx-submit='create_from_learned']")
+        |> render_submit(%{"generate" => %{"name" => "", "n" => "55"}})
+        |> follow_redirect(conn)
+
+      assert html =~ "Word set created"
+
+      set = WordSets.list_user_word_sets(user.id).word_sets |> hd()
+      assert set.word_count == 3
+
+      {_set, %{words: set_words}} = WordSets.get_word_set_with_words_paginated(set.id)
+      assert Enum.sort(Enum.map(set_words, & &1.id)) == Enum.sort(Enum.map(words, & &1.id))
+    end
+
+    test "filters reduce the available count", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets")
+
+      view
+      |> element("button[phx-click='open_generate_modal']")
+      |> render_click()
+
+      html =
+        view
+        |> element("form[phx-change='validate_generate']")
+        |> render_change(%{"generate" => %{"levels" => ["4"]}})
+
+      assert html =~ "1 word available"
+    end
+
+    test "n above the max is clamped server-side", %{conn: conn, user: user} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets")
+
+      view
+      |> element("button[phx-click='open_generate_modal']")
+      |> render_click()
+
+      {:ok, _view, html} =
+        view
+        |> element("form[phx-submit='create_from_learned']")
+        |> render_submit(%{"generate" => %{"name" => "Clamped", "n" => "999"}})
+        |> follow_redirect(conn)
+
+      assert html =~ "Word set created"
+
+      set = WordSets.list_user_word_sets(user.id).word_sets |> hd()
+      assert set.name == "Clamped"
+      assert set.word_count == 3
+    end
+  end
 end

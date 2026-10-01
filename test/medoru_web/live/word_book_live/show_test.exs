@@ -7,6 +7,10 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
   import Medoru.LearningFixtures
 
   alias Medoru.Learning.WordBooks
+  alias Medoru.Learning.WordBooks
+  alias Medoru.Learning.WordSets
+  alias Medoru.Notifications
+  alias Medoru.Social
   alias Medoru.WhiteBoard
 
   setup %{conn: conn} do
@@ -68,6 +72,90 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
 
       assert html =~ "/words/books/#{word_book.id}/design"
       assert html =~ "/words/books/#{word_book.id}/edit-words"
+    end
+  end
+
+  describe "Share word book" do
+    test "shows share button for owner", %{conn: conn, user: user} do
+      word_book = word_book_fixture(%{user_id: user.id})
+
+      {:ok, _view, html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      assert html =~ ~s(phx-click="open_share_modal")
+    end
+
+    test "opens share modal and lists mutual followers", %{conn: conn, user: user} do
+      recipient = user_fixture_with_profile(%{name: "Book Mutual"})
+
+      Social.follow_user(user.id, recipient.id)
+      Social.follow_user(recipient.id, user.id)
+
+      word_book = word_book_fixture(%{user_id: user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      html = view |> element(~s(button[phx-click="open_share_modal"])) |> render_click()
+
+      assert html =~ "Share Word Book"
+      assert html =~ "Book Mutual"
+    end
+
+    test "does not list users who are not mutual followers", %{conn: conn, user: user} do
+      only_follows = user_fixture_with_profile(%{name: "Only Follows Book"})
+      only_follower = user_fixture_with_profile(%{name: "Only Follower Book"})
+
+      Social.follow_user(user.id, only_follows.id)
+      Social.follow_user(only_follower.id, user.id)
+
+      word_book = word_book_fixture(%{user_id: user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      html = view |> element(~s(button[phx-click="open_share_modal"])) |> render_click()
+
+      assert html =~ "mutual followers yet."
+      refute html =~ "Only Follows Book"
+      refute html =~ "Only Follower Book"
+    end
+
+    test "sending share creates a pending share and notification", %{conn: conn, user: user} do
+      recipient = user_fixture_with_profile()
+
+      Social.follow_user(user.id, recipient.id)
+      Social.follow_user(recipient.id, user.id)
+
+      word_book = word_book_fixture(%{user_id: user.id})
+      word = word_fixture()
+      {:ok, _} = WordBooks.add_word_to_book(word_book, word.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      view |> element(~s(button[phx-click="open_share_modal"])) |> render_click()
+
+      html =
+        view
+        |> element(
+          "button[phx-click='share_word_book'][phx-value-recipient_id='#{recipient.id}']"
+        )
+        |> render_click()
+
+      assert html =~ "Word book shared successfully."
+
+      assert length(Notifications.list_notifications_by_type(recipient.id, "word_book_share")) ==
+               1
+
+      assert length(WordBooks.list_pending_received_word_book_shares(recipient.id)) == 1
+    end
+
+    test "shows error when sharing with a non-mutual user", %{conn: conn, user: user} do
+      stranger = user_fixture_with_profile()
+      word_book = word_book_fixture(%{user_id: user.id})
+
+      {:ok, view, _html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      html = view |> render_click("share_word_book", %{"recipient_id" => stranger.id})
+
+      assert html =~ "You can only share with mutual followers."
     end
   end
 

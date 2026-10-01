@@ -26,6 +26,7 @@ defmodule Medoru.Classrooms.ClassroomTest do
 
     # Publishing history
     field :publish_count, :integer, default: 1
+    field :order_index, :integer, default: 0
 
     belongs_to :classroom, Classroom
     belongs_to :test, Test
@@ -45,6 +46,7 @@ defmodule Medoru.Classrooms.ClassroomTest do
       :max_attempts,
       :settings,
       :publish_count,
+      :order_index,
       :classroom_id,
       :test_id,
       :published_by_id
@@ -105,5 +107,15 @@ defmodule Medoru.Classrooms.ClassroomTest do
   """
   def archive_changeset(classroom_test) do
     changeset(classroom_test, %{status: :archived})
+  end
+
+  @doc """
+  Changeset for updating test order.
+  """
+  def order_changeset(classroom_test, attrs) do
+    classroom_test
+    |> cast(attrs, [:order_index])
+    |> validate_required([:order_index])
+    |> validate_number(:order_index, greater_than_or_equal_to: 0)
   end
 end

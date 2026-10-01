@@ -5,6 +5,7 @@ defmodule MedoruWeb.NotificationsLive do
   use MedoruWeb, :live_view
 
   alias Medoru.Notifications
+  alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
   alias Medoru.Repo
 
@@ -94,23 +95,41 @@ defmodule MedoruWeb.NotificationsLive do
     notification = Notifications.get_user_notification(user.id, notification_id)
 
     result =
-      if notification && notification.type == "word_set_share" do
-        share_id = notification.data["share_id"]
+      cond do
+        notification && notification.type == "word_set_share" ->
+          share_id = notification.data["share_id"]
 
-        Ecto.Multi.new()
-        |> Ecto.Multi.run(:delete_share, fn _repo, _changes ->
-          WordSets.delete_word_set_share(share_id, user.id)
-        end)
-        |> Ecto.Multi.run(:delete_notification, fn _repo, _changes ->
+          Ecto.Multi.new()
+          |> Ecto.Multi.run(:delete_share, fn _repo, _changes ->
+            WordSets.delete_word_set_share(share_id, user.id)
+          end)
+          |> Ecto.Multi.run(:delete_notification, fn _repo, _changes ->
+            Notifications.delete_user_notification(user.id, notification_id)
+          end)
+          |> Repo.transaction()
+          |> case do
+            {:ok, _} -> {:ok, nil}
+            {:error, _step, error, _changes} -> {:error, error}
+          end
+
+        notification && notification.type == "word_book_share" ->
+          share_id = notification.data["share_id"]
+
+          Ecto.Multi.new()
+          |> Ecto.Multi.run(:delete_share, fn _repo, _changes ->
+            WordBooks.delete_word_book_share(share_id, user.id)
+          end)
+          |> Ecto.Multi.run(:delete_notification, fn _repo, _changes ->
+            Notifications.delete_user_notification(user.id, notification_id)
+          end)
+          |> Repo.transaction()
+          |> case do
+            {:ok, _} -> {:ok, nil}
+            {:error, _step, error, _changes} -> {:error, error}
+          end
+
+        true ->
           Notifications.delete_user_notification(user.id, notification_id)
-        end)
-        |> Repo.transaction()
-        |> case do
-          {:ok, _} -> {:ok, nil}
-          {:error, _step, error, _changes} -> {:error, error}
-        end
-      else
-        Notifications.delete_user_notification(user.id, notification_id)
       end
 
     case result do
@@ -193,6 +212,36 @@ defmodule MedoruWeb.NotificationsLive do
     end
   end
 
+  @impl true
+  def handle_event("accept_word_book_share", %{"id" => notification_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case handle_word_book_share_action(notification_id, user.id, :accept) do
+      {:ok, word_book} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Word book added to your collection."))
+         |> push_navigate(to: ~p"/words/books/#{word_book.id}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_word_book_share", %{"id" => notification_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case handle_word_book_share_action(notification_id, user.id, :cancel) do
+      {:ok, _} ->
+        socket = reload_and_broadcast(socket, user.id)
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
   defp handle_word_set_share_action(notification_id, user_id, action) do
     notification = Notifications.get_user_notification(user_id, notification_id)
 
@@ -203,6 +252,28 @@ defmodule MedoruWeb.NotificationsLive do
         case action do
           :accept -> WordSets.accept_word_set_share(share_id, user_id)
           :cancel -> WordSets.delete_word_set_share(share_id, user_id)
+        end
+
+      if elem(result, 0) == :ok do
+        Notifications.delete_user_notification(user_id, notification_id)
+      end
+
+      result
+    else
+      {:error, :not_found}
+    end
+  end
+
+  defp handle_word_book_share_action(notification_id, user_id, action) do
+    notification = Notifications.get_user_notification(user_id, notification_id)
+
+    if notification && notification.type == "word_book_share" do
+      share_id = notification.data["share_id"]
+
+      result =
+        case action do
+          :accept -> WordBooks.accept_word_book_share(share_id, user_id)
+          :cancel -> WordBooks.delete_word_book_share(share_id, user_id)
         end
 
       if elem(result, 0) == :ok do
@@ -312,6 +383,7 @@ defmodule MedoruWeb.NotificationsLive do
   def icon_for_type("chat_message"), do: "hero-chat-bubble-left-ellipsis"
   def icon_for_type("chat_invite"), do: "hero-chat-bubble-left-right"
   def icon_for_type("word_set_share"), do: "hero-share"
+  def icon_for_type("word_book_share"), do: "hero-share"
   def icon_for_type(_), do: "hero-bell"
 
   def icon_bg_class("badge_earned"),
@@ -333,6 +405,9 @@ defmodule MedoruWeb.NotificationsLive do
     do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
 
   def icon_bg_class("word_set_share"),
+    do: "bg-accent/20 text-accent dark:bg-accent/30 dark:text-accent"
+
+  def icon_bg_class("word_book_share"),
     do: "bg-accent/20 text-accent dark:bg-accent/30 dark:text-accent"
 
   def icon_bg_class(_), do: "bg-base-200 text-base-content"

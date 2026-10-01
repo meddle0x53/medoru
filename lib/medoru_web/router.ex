@@ -50,6 +50,7 @@ defmodule MedoruWeb.Router do
       live "/:id/edit-words", WordSetLive.EditWords
       live "/:id/test-config", WordSetLive.TestConfig
       live "/:id/test", WordSetLive.Test
+      live "/:id/cards", WordSetLive.CardGame
     end
   end
 

@@ -63,16 +63,30 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                id={"share-btn-#{@post.id}"}
-                phx-hook="CopyToClipboard"
-                data-text={url(~p"/users/#{@post.user_id}/white-board/posts/#{@post.id}")}
-                class="btn btn-ghost btn-xs shrink-0"
-                title={gettext("Copy link to post")}
-              >
-                <.icon name="hero-share" class="w-4 h-4" />
-              </button>
+              <div class="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  id={"share-btn-#{@post.id}"}
+                  phx-hook="CopyToClipboard"
+                  data-text={url(~p"/users/#{@post.user_id}/white-board/posts/#{@post.id}")}
+                  class="btn btn-ghost btn-xs"
+                  title={gettext("Copy link to post")}
+                >
+                  <.icon name="hero-share" class="w-4 h-4" />
+                </button>
+                <%= if @current_scope.current_user && @current_scope.current_user.id == @post.user_id do %>
+                  <button
+                    type="button"
+                    phx-click="delete_post"
+                    phx-value-id={@post.id}
+                    data-confirm={gettext("Delete this post?")}
+                    class="btn btn-ghost btn-xs text-error w-full sm:w-auto"
+                    title={gettext("Delete")}
+                  >
+                    <.icon name="hero-trash" class="w-4 h-4" />
+                  </button>
+                <% end %>
+              </div>
             </div>
 
             <%!-- Post Content --%>
@@ -338,6 +352,27 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
          socket
          |> put_flash(:error, gettext("Invalid post ID."))
          |> push_navigate(to: ~p"/")}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_post", %{"id" => id}, socket) do
+    post = socket.assigns.post
+    current_user = socket.assigns.current_scope.current_user
+
+    if post.id == id && current_user && current_user.id == post.user_id do
+      WhiteBoard.delete_post(post)
+      WhiteBoard.broadcast_post_deleted(post.user_id, post.id)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Post deleted."))
+       |> push_navigate(to: ~p"/users/#{post.user_id}/white-board")}
+    else
+      {:noreply,
+       socket
+       |> put_flash(:error, gettext("You are not allowed to delete this post."))
+       |> push_navigate(to: ~p"/users/#{post.user_id}/white-board")}
     end
   end
 

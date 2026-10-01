@@ -9,6 +9,10 @@ defmodule MedoruWeb.WordSetLive.Index do
 
   @per_page 20
 
+  @word_types ~w(noun verb adjective adverb particle pronoun counter expression other)
+  @levels [1, 2, 3, 4, 5]
+  @default_learned_n 55
+
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
@@ -19,6 +23,7 @@ defmodule MedoruWeb.WordSetLive.Index do
      |> assign(:search, nil)
      |> assign(:sort_by, :inserted_at)
      |> assign(:sort_order, :desc)
+     |> assign_generate_defaults()
      |> load_word_sets(user.id, 1, nil, :inserted_at, :desc)}
   end
 
@@ -119,6 +124,117 @@ defmodule MedoruWeb.WordSetLive.Index do
        put_flash(socket, :error, gettext("You don't have permission to delete this word set."))}
     end
   end
+
+  @impl true
+  def handle_event("open_generate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign_generate_defaults()
+     |> assign(:generate_modal_open, true)}
+  end
+
+  @impl true
+  def handle_event("close_generate_modal", _params, socket) do
+    {:noreply, assign(socket, :generate_modal_open, false)}
+  end
+
+  @impl true
+  def handle_event("validate_generate", params, socket) do
+    {:noreply, apply_generate_params(socket, params)}
+  end
+
+  @impl true
+  def handle_event("create_from_learned", params, socket) do
+    socket = apply_generate_params(socket, params)
+    user = socket.assigns.current_scope.current_user
+
+    case WordSets.create_word_set_from_learned_words(user, %{
+           name: socket.assigns.gen_name,
+           n: socket.assigns.gen_n,
+           word_types: socket.assigns.gen_word_types,
+           levels: socket.assigns.gen_levels
+         }) do
+      {:ok, word_set} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Word set created"))
+         |> push_navigate(to: ~p"/words/sets/#{word_set.id}")}
+
+      {:error, :no_matching_words} ->
+        {:noreply,
+         put_flash(socket, :error, gettext("No learned words match the selected filters."))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, gettext("Failed to create word set."))}
+    end
+  end
+
+  defp assign_generate_defaults(socket) do
+    socket
+    |> assign(:generate_modal_open, false)
+    |> assign(:word_types, @word_types)
+    |> assign(:levels, @levels)
+    |> assign(:gen_name, "Learned Words — #{Date.utc_today()}")
+    |> assign(:gen_n, @default_learned_n)
+    |> assign(:gen_word_types, @word_types)
+    |> assign(:gen_levels, @levels)
+    |> refresh_generate_counts()
+  end
+
+  defp apply_generate_params(socket, params) do
+    p = params["generate"] || params
+
+    n =
+      case Integer.parse(to_string(p["n"] || "")) do
+        {int, _} -> int
+        :error -> 0
+      end
+
+    socket
+    |> assign(:gen_name, to_string(p["name"] || ""))
+    |> assign(:gen_n, n)
+    |> assign(:gen_word_types, List.wrap(p["word_types"]))
+    |> assign(
+      :gen_levels,
+      List.wrap(p["levels"]) |> Enum.map(&to_level/1) |> Enum.reject(&is_nil/1)
+    )
+    |> refresh_generate_counts()
+  end
+
+  defp refresh_generate_counts(socket) do
+    user = socket.assigns.current_scope.current_user
+
+    matching =
+      WordSets.count_learned_words_matching(
+        user.id,
+        socket.assigns.gen_word_types,
+        socket.assigns.gen_levels
+      )
+
+    max_n = min(@default_learned_n, matching)
+
+    socket
+    |> assign(:gen_matching, matching)
+    |> assign(:gen_max_n, max_n)
+    |> assign(
+      :gen_valid?,
+      matching > 0 and socket.assigns.gen_n >= 1 and socket.assigns.gen_n <= max_n
+    )
+  end
+
+  defp to_level(level) when is_integer(level) and level in 1..5, do: level
+
+  defp to_level(level) when is_binary(level) do
+    case Integer.parse(level) do
+      {int, _} when int in 1..5 -> int
+      _ -> nil
+    end
+  end
+
+  defp to_level(_), do: nil
+
+  defp humanize_word_type("other"), do: "Other"
+  defp humanize_word_type(type), do: type |> String.capitalize()
 
   defp load_word_sets(socket, user_id, page, search, sort_by, sort_order) do
     result =
@@ -228,13 +344,22 @@ defmodule MedoruWeb.WordSetLive.Index do
               {gettext("Create personalized collections of words for focused study.")}
             </p>
           </div>
-          <.link
-            navigate={~p"/words/sets/new"}
-            class="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors"
-          >
-            <.icon name="hero-plus" class="w-5 h-5" />
-            {gettext("New Word Set")}
-          </.link>
+          <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              phx-click="open_generate_modal"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2 btn-outline border border-base-300 text-base-content hover:bg-base-200 rounded-lg font-medium transition-colors w-full sm:w-auto"
+            >
+              <.icon name="hero-clock" class="w-5 h-5" />
+              {gettext("From Learned Words")}
+            </button>
+            <.link
+              navigate={~p"/words/sets/new"}
+              class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors w-full sm:w-auto"
+            >
+              <.icon name="hero-plus" class="w-5 h-5" />
+              {gettext("New Word Set")}
+            </.link>
+          </div>
         </div>
 
         <%!-- Search and Sort Controls --%>
@@ -417,6 +542,109 @@ defmodule MedoruWeb.WordSetLive.Index do
               <% end %>
             </div>
           <% end %>
+        <% end %>
+
+        <%!-- Generate From Learned Words Modal --%>
+        <%= if @generate_modal_open do %>
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-base-100 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto p-6">
+              <h2 class="text-xl font-bold text-base-content mb-4">
+                {gettext("Word Set from Learned Words")}
+              </h2>
+
+              <form phx-change="validate_generate" phx-submit="create_from_learned">
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-base-content mb-1" for="generate-name">
+                    {gettext("Name")}
+                  </label>
+                  <input
+                    type="text"
+                    id="generate-name"
+                    name="generate[name]"
+                    value={@gen_name}
+                    class="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label class="block text-sm font-medium text-base-content mb-1" for="generate-n">
+                    {gettext("Number of words (max %{max})", max: @gen_max_n)}
+                  </label>
+                  <input
+                    type="number"
+                    id="generate-n"
+                    name="generate[n]"
+                    value={@gen_n}
+                    min="1"
+                    max={@gen_max_n}
+                    class="w-full px-3 py-2 bg-base-100 border border-base-300 rounded-lg text-base-content focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                  <p class="text-sm text-secondary mt-1">
+                    {ngettext("%{count} word available", "%{count} words available", @gen_matching,
+                      count: @gen_matching
+                    )}
+                  </p>
+                </div>
+
+                <div class="mb-4">
+                  <span class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Word types")}
+                  </span>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <%= for type <- @word_types do %>
+                      <label class="flex items-center gap-2 text-sm text-base-content cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="generate[word_types][]"
+                          value={type}
+                          checked={type in @gen_word_types}
+                          class="checkbox checkbox-sm checkbox-primary"
+                        />
+                        {humanize_word_type(type)}
+                      </label>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <span class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("JLPT levels")}
+                  </span>
+                  <div class="flex flex-wrap gap-2">
+                    <%= for level <- @levels do %>
+                      <label class="flex items-center gap-2 text-sm text-base-content cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="generate[levels][]"
+                          value={level}
+                          checked={level in @gen_levels}
+                          class="checkbox checkbox-sm checkbox-primary"
+                        />
+                        {"N#{level}"}
+                      </label>
+                    <% end %>
+                  </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    phx-click="close_generate_modal"
+                    class="px-4 py-2 bg-base-200 hover:bg-base-300 text-base-content rounded-lg font-medium transition-colors w-full sm:w-auto"
+                  >
+                    {gettext("Cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={not @gen_valid?}
+                    class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {gettext("Create")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         <% end %>
       </div>
     </Layouts.app>

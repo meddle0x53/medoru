@@ -37,6 +37,8 @@ defmodule MedoruWeb.WordSetLive.Show do
         word_type: word_type
       )
 
+    card_game = WordSets.get_card_game_for_set(id)
+
     # Check if user owns this word set and can create lessons
     is_owner = user && word_set.user_id == user.id
     can_create_lesson = is_owner && user.type in ["teacher", "admin"]
@@ -50,6 +52,7 @@ defmodule MedoruWeb.WordSetLive.Show do
      |> assign(:page, page)
      |> assign(:word_type, word_type)
      |> assign(:is_owner, is_owner)
+     |> assign(:card_game, card_game)
      |> assign(:can_create_lesson, can_create_lesson)
      |> assign(:page_title, word_set.name)
      |> assign(:copy_modal_open, false)
@@ -114,6 +117,60 @@ defmodule MedoruWeb.WordSetLive.Show do
 
         {:error, _} ->
           {:noreply, put_flash(socket, :error, gettext("Failed to delete practice test."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
+    end
+  end
+
+  @impl true
+  def handle_event("create_card_game", _params, socket) do
+    if socket.assigns.is_owner do
+      user = socket.assigns.current_scope.current_user
+      word_set = socket.assigns.word_set
+
+      case WordSets.create_card_game_for_set(word_set, user) do
+        {:ok, _game} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, gettext("Memory card game created."))
+           |> push_navigate(to: ~p"/words/sets/#{word_set.id}/cards")}
+
+        {:error, :already_exists} ->
+          {:noreply,
+           put_flash(socket, :error, gettext("A memory game already exists for this set."))}
+
+        {:error, :not_enough_words} ->
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             gettext("Add at least 4 words to the set to create a memory game.")
+           )}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to create memory game."))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_card_game", _params, socket) do
+    if socket.assigns.is_owner do
+      user = socket.assigns.current_scope.current_user
+      card_game = socket.assigns.card_game
+
+      case card_game && WordSets.delete_card_game(card_game, user) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(:card_game, nil)
+           |> put_flash(:info, gettext("Memory game deleted."))}
+
+        _ ->
+          {:noreply, put_flash(socket, :error, gettext("Failed to delete memory game."))}
       end
     else
       {:noreply, put_flash(socket, :error, gettext("You don't have permission to do this."))}
@@ -551,6 +608,60 @@ defmodule MedoruWeb.WordSetLive.Show do
                     <.icon name="hero-plus" class="w-4 h-4 inline mr-1" />
                     {gettext("Create Test")}
                   </.link>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Memory Card Game Section --%>
+        <%= if @is_owner do %>
+          <div class="card bg-base-100 border border-base-300 mb-8">
+            <div class="card-body">
+              <h2 class="text-lg font-semibold text-base-content mb-4">
+                {gettext("Memory Game")}
+              </h2>
+
+              <%= if @card_game do %>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div class="flex-1">
+                    <p class="text-secondary">
+                      {gettext("Match word pairs and type their meanings to collect them.")}
+                    </p>
+                  </div>
+                  <div class="flex gap-2">
+                    <.link
+                      navigate={~p"/words/sets/#{@word_set.id}/cards"}
+                      class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors"
+                    >
+                      <.icon name="hero-play" class="w-4 h-4 inline mr-1" />
+                      {gettext("Play")}
+                    </.link>
+                    <button
+                      phx-click="delete_card_game"
+                      data-confirm={
+                        gettext("Delete this memory game? You'll need to recreate it to play again.")
+                      }
+                      class="px-4 py-2 bg-error/10 hover:bg-error/20 text-error rounded-lg font-medium transition-colors"
+                    >
+                      <.icon name="hero-trash" class="w-4 h-4 inline mr-1" />
+                      {gettext("Delete")}
+                    </button>
+                  </div>
+                </div>
+              <% else %>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <p class="text-secondary flex-1">
+                    {gettext("Create a memory card game to practice these words by matching pairs.")}
+                  </p>
+                  <button
+                    type="button"
+                    phx-click="create_card_game"
+                    class="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-content rounded-lg font-medium transition-colors"
+                  >
+                    <.icon name="hero-plus" class="w-4 h-4 inline mr-1" />
+                    {gettext("Create Game")}
+                  </button>
                 </div>
               <% end %>
             </div>

@@ -915,6 +915,88 @@ defmodule Medoru.ClassroomsTest do
     end
   end
 
+  describe "classroom test ordering" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      other_teacher = user_fixture(%{type: "teacher"})
+      classroom = classroom_fixture(%{teacher_id: teacher.id})
+      %{teacher: teacher, other_teacher: other_teacher, classroom: classroom}
+    end
+
+    test "publish_test_to_classroom/4 assigns order indices so newest sorts first", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      test1 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+      test2 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+
+      assert {:ok, ct1} =
+               Classrooms.publish_test_to_classroom(classroom.id, test1.id, teacher.id)
+
+      assert {:ok, ct2} =
+               Classrooms.publish_test_to_classroom(classroom.id, test2.id, teacher.id)
+
+      listed = Classrooms.list_classroom_tests(classroom.id)
+      assert Enum.map(listed, & &1.id) == [ct2.id, ct1.id]
+    end
+
+    test "ensure_test_order_indices/1 backfills sequential indices preserving newest-first", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      test1 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+      test2 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+      test3 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+
+      {:ok, ct1} = Classrooms.publish_test_to_classroom(classroom.id, test1.id, teacher.id)
+      {:ok, ct2} = Classrooms.publish_test_to_classroom(classroom.id, test2.id, teacher.id)
+      {:ok, ct3} = Classrooms.publish_test_to_classroom(classroom.id, test3.id, teacher.id)
+
+      assert :ok = Classrooms.ensure_test_order_indices(classroom.id)
+
+      listed = Classrooms.list_classroom_tests(classroom.id)
+      assert Enum.map(listed, & &1.id) == [ct3.id, ct2.id, ct1.id]
+      assert Enum.map(listed, & &1.order_index) == [1, 2, 3]
+    end
+
+    test "reorder_classroom_tests/3 swaps order and persists", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      test1 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+      test2 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+
+      {:ok, ct1} = Classrooms.publish_test_to_classroom(classroom.id, test1.id, teacher.id)
+      {:ok, ct2} = Classrooms.publish_test_to_classroom(classroom.id, test2.id, teacher.id)
+
+      assert :ok = Classrooms.ensure_test_order_indices(classroom.id)
+
+      assert {:ok, :ok} =
+               Classrooms.reorder_classroom_tests(classroom.id, teacher.id, [
+                 {ct1.id, 1},
+                 {ct2.id, 2}
+               ])
+
+      listed = Classrooms.list_classroom_tests(classroom.id)
+      assert Enum.map(listed, & &1.id) == [ct1.id, ct2.id]
+    end
+
+    test "reorder_classroom_tests/3 rejects teachers who do not own the classroom", %{
+      teacher: teacher,
+      other_teacher: other_teacher,
+      classroom: classroom
+    } do
+      test1 = Medoru.TestsFixtures.test_fixture(%{status: :published})
+
+      {:ok, ct1} = Classrooms.publish_test_to_classroom(classroom.id, test1.id, teacher.id)
+
+      assert {:error, :not_authorized} =
+               Classrooms.reorder_classroom_tests(classroom.id, other_teacher.id, [
+                 {ct1.id, 1}
+               ])
+    end
+  end
+
   # Helper function
   defp classroom_fixture(attrs) do
     teacher_id = attrs[:teacher_id] || user_fixture(%{type: "teacher"}).id

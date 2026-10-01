@@ -67,7 +67,10 @@ export default class Enemy extends Character {
       name: definition.name,
       nameJa: definition.nameJa,
       maxHp: scale(rollStat(definition.stats.hp.min, definition.stats.hp.max)),
-      maxStamina: scale(rollStat(definition.stats.stamina.min, definition.stats.stamina.max)),
+      // Stamina is deliberately NOT NG+-scaled: the AI is capped at 5 actions
+      // per turn (and per-ability maxUsesPerTurn), so a bigger pool would just
+      // sit unused and read as a bug ("enemy has 20 stamina but spends 13").
+      maxStamina: rollStat(definition.stats.stamina.min, definition.stats.stamina.max),
       strength: scale(rollStat(definition.stats.strength.min, definition.stats.strength.max)),
       skill: scale(rollStat(definition.stats.skill.min, definition.stats.skill.max)),
       mana: scale(rollStat(definition.stats.mana.min, definition.stats.mana.max)),

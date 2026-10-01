@@ -782,4 +782,59 @@ defmodule MedoruWeb.Teacher.ClassroomLiveTest do
       assert flash["error"] == "This classroom has no vocabulary lessons to generate a test from."
     end
   end
+
+  describe "teacher classroom test reordering" do
+    setup do
+      teacher = user_fixture(%{type: "teacher"})
+      %{teacher: teacher}
+    end
+
+    test "toggle reordering shows up/down buttons and moving changes order", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Test Classroom",
+          description: "Test",
+          teacher_id: teacher.id
+        })
+
+      test1 = Medoru.TestsFixtures.test_fixture(%{status: :published, title: "Alpha Test"})
+      test2 = Medoru.TestsFixtures.test_fixture(%{status: :published, title: "Beta Test"})
+
+      {:ok, ct1} = Classrooms.publish_test_to_classroom(classroom.id, test1.id, teacher.id)
+      {:ok, _ct2} = Classrooms.publish_test_to_classroom(classroom.id, test2.id, teacher.id)
+
+      {:ok, view, html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      # Newest published test appears first
+      assert [first, second] = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert first.test.title == "Beta Test"
+      assert second.test.title == "Alpha Test"
+
+      assert html =~ "Reorder"
+      refute html =~ "move_test_up"
+
+      # Toggle reordering on
+      html = view |> element("button", "Reorder") |> render_click()
+      assert html =~ "move_test_up"
+
+      # Move the older test (Alpha) up one position
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/classrooms/#{classroom.id}?tab=tests")
+
+      view |> element("button", "Reorder") |> render_click()
+
+      view
+      |> element(~s{button[phx-click="move_test_up"][phx-value-id="#{ct1.id}"]})
+      |> render_click()
+
+      [first, second] = Classrooms.list_classroom_tests(classroom.id, status: :active)
+      assert first.id == ct1.id
+      assert first.test.title == "Alpha Test"
+      assert second.test.title == "Beta Test"
+    end
+  end
 end

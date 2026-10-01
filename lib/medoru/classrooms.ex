@@ -937,6 +937,7 @@ defmodule Medoru.Classrooms do
         |> Map.put(:classroom_id, classroom_id)
         |> Map.put(:test_id, test_id)
         |> Map.put(:published_by_id, teacher_id)
+        |> Map.put(:order_index, get_next_test_order_index(classroom_id))
 
       %ClassroomTest{}
       |> ClassroomTest.publish_changeset(attrs)
@@ -1029,9 +1030,99 @@ defmodule Medoru.Classrooms do
         query
       end
     end)
-    |> order_by([ct], desc: ct.published_at)
+    |> order_by([ct], asc: ct.order_index, desc: ct.published_at)
     |> preload([:test])
     |> Repo.all()
+  end
+
+  @doc """
+  Updates the order of tests in a classroom.
+  Accepts a list of tuples {test_id, new_order_index}.
+  Only the teacher who owns the classroom can reorder tests.
+  """
+  def reorder_classroom_tests(classroom_id, teacher_id, test_order_list) do
+    classroom = get_classroom!(classroom_id)
+
+    if classroom.teacher_id != teacher_id do
+      {:error, :not_authorized}
+    else
+      Repo.transaction(fn ->
+        Enum.each(test_order_list, fn {test_id, order_index} ->
+          ClassroomTest
+          |> where([ct], ct.id == ^test_id and ct.classroom_id == ^classroom_id)
+          |> Repo.one()
+          |> case do
+            nil ->
+              nil
+
+            classroom_test ->
+              classroom_test
+              |> ClassroomTest.order_changeset(%{order_index: order_index})
+              |> Repo.update!()
+          end
+        end)
+
+        :ok
+      end)
+    end
+  end
+
+  @doc """
+  Ensures all tests in a classroom have unique order indices.
+
+  If all tests have the same order_index (e.g., all 0 from default),
+  assigns sequential indices ordered by `asc: order_index, desc: published_at`,
+  so the newest test gets index 1 and appears first — matching the
+  historical `desc: published_at` listing order.
+  """
+  def ensure_test_order_indices(classroom_id) do
+    tests =
+      ClassroomTest
+      |> where([ct], ct.classroom_id == ^classroom_id)
+      |> order_by([ct], asc: ct.order_index, desc: ct.published_at)
+      |> Repo.all()
+
+    # Check if all tests have the same order_index or if there are duplicates
+    order_indices = Enum.map(tests, & &1.order_index)
+    unique_indices = Enum.uniq(order_indices)
+
+    needs_reassign? =
+      length(tests) > 1 and
+        (length(unique_indices) == 1 or length(unique_indices) < length(order_indices))
+
+    if needs_reassign? do
+      # Reassign sequential indices based on current order
+      tests
+      |> Enum.with_index(1)
+      |> Enum.each(fn {classroom_test, index} ->
+        classroom_test
+        |> ClassroomTest.order_changeset(%{order_index: index})
+        |> Repo.update!()
+      end)
+    end
+
+    :ok
+  end
+
+  @doc """
+  Gets the order index for a newly published test in a classroom.
+
+  Returns `min(existing order_index) - 1` so a newly published test sorts
+  first, consistent with the historical `desc: published_at` ordering where
+  the newest published test appeared at the top of the list.
+  """
+  def get_next_test_order_index(classroom_id) do
+    min_index =
+      ClassroomTest
+      |> where([ct], ct.classroom_id == ^classroom_id)
+      |> select([ct], min(ct.order_index))
+      |> Repo.one()
+
+    min_index = (min_index || 1) - 1
+
+    # Never go below 0 (order_changeset validates order_index >= 0);
+    # a tie at 0 is fine since published_at breaks the tie newest-first.
+    max(min_index, 0)
   end
 
   @doc """

@@ -8,6 +8,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   use MedoruWeb, :live_view
 
   alias Medoru.Notifications
+  alias Medoru.Learning.WordBooks
   alias Medoru.Learning.WordSets
 
   @impl true
@@ -73,9 +74,14 @@ defmodule MedoruWeb.NotificationDropdownLive do
               <div
                 class={[
                   "px-4 py-3 border-b border-base-300 last:border-b-0 transition-colors",
-                  notification.type != "word_set_share" && "hover:bg-base-200 cursor-pointer"
+                  notification.type not in ["word_set_share", "word_book_share"] &&
+                    "hover:bg-base-200 cursor-pointer"
                 ]}
-                phx-click={if(notification.type != "word_set_share", do: "mark_read")}
+                phx-click={
+                  if(notification.type not in ["word_set_share", "word_book_share"],
+                    do: "mark_read"
+                  )
+                }
                 phx-value-id={notification.id}
               >
                 <div class="flex items-start gap-3">
@@ -109,6 +115,25 @@ defmodule MedoruWeb.NotificationDropdownLive do
                           <button
                             type="button"
                             phx-click="cancel_word_set_share"
+                            phx-value-id={notification.id}
+                            class="btn btn-ghost btn-xs"
+                          >
+                            {gettext("Cancel")}
+                          </button>
+                        </div>
+                      <% notification.type == "word_book_share" -> %>
+                        <div class="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            phx-click="accept_word_book_share"
+                            phx-value-id={notification.id}
+                            class="btn btn-primary btn-xs"
+                          >
+                            {gettext("Accept")}
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="cancel_word_book_share"
                             phx-value-id={notification.id}
                             class="btn btn-ghost btn-xs"
                           >
@@ -255,6 +280,51 @@ defmodule MedoruWeb.NotificationDropdownLive do
     end
   end
 
+  @impl true
+  def handle_event("accept_word_book_share", %{"id" => notification_id}, socket) do
+    user_id = socket.assigns.user_id
+
+    case handle_word_book_share_action(notification_id, user_id, :accept) do
+      {:ok, word_book} ->
+        socket = refresh_dropdown(socket, user_id)
+
+        Phoenix.PubSub.broadcast(
+          Medoru.PubSub,
+          "notifications:#{user_id}",
+          {:unread_count_updated, socket.assigns.unread_count}
+        )
+
+        {:noreply,
+         socket
+         |> put_flash(:info, gettext("Word book added to your collection."))
+         |> push_navigate(to: ~p"/words/books/#{word_book.id}")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_word_book_share", %{"id" => notification_id}, socket) do
+    user_id = socket.assigns.user_id
+
+    case handle_word_book_share_action(notification_id, user_id, :cancel) do
+      {:ok, _} ->
+        socket = refresh_dropdown(socket, user_id)
+
+        Phoenix.PubSub.broadcast(
+          Medoru.PubSub,
+          "notifications:#{user_id}",
+          {:unread_count_updated, socket.assigns.unread_count}
+        )
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, share_error_message(reason))}
+    end
+  end
+
   defp handle_word_set_share_action(notification_id, user_id, action) do
     notification = Notifications.get_user_notification(user_id, notification_id)
 
@@ -265,6 +335,28 @@ defmodule MedoruWeb.NotificationDropdownLive do
         case action do
           :accept -> WordSets.accept_word_set_share(share_id, user_id)
           :cancel -> WordSets.delete_word_set_share(share_id, user_id)
+        end
+
+      if elem(result, 0) == :ok do
+        Notifications.delete_user_notification(user_id, notification_id)
+      end
+
+      result
+    else
+      {:error, :not_found}
+    end
+  end
+
+  defp handle_word_book_share_action(notification_id, user_id, action) do
+    notification = Notifications.get_user_notification(user_id, notification_id)
+
+    if notification && notification.type == "word_book_share" do
+      share_id = notification.data["share_id"]
+
+      result =
+        case action do
+          :accept -> WordBooks.accept_word_book_share(share_id, user_id)
+          :cancel -> WordBooks.delete_word_book_share(share_id, user_id)
         end
 
       if elem(result, 0) == :ok do
@@ -333,6 +425,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_for_type("white_board_post"), do: "hero-document-text"
   defp icon_for_type("white_board_comment"), do: "hero-chat-bubble-oval-left"
   defp icon_for_type("word_set_share"), do: "hero-share"
+  defp icon_for_type("word_book_share"), do: "hero-share"
   defp icon_for_type(_), do: "hero-bell"
 
   defp icon_bg_class("badge_earned"), do: "bg-yellow-100 text-yellow-700"
@@ -346,6 +439,7 @@ defmodule MedoruWeb.NotificationDropdownLive do
   defp icon_bg_class("white_board_post"), do: "bg-pink-100 text-pink-700"
   defp icon_bg_class("white_board_comment"), do: "bg-rose-100 text-rose-700"
   defp icon_bg_class("word_set_share"), do: "bg-accent/20 text-accent"
+  defp icon_bg_class("word_book_share"), do: "bg-accent/20 text-accent"
   defp icon_bg_class(_), do: "bg-base-200 text-base-content"
 
   defp notification_link(%{

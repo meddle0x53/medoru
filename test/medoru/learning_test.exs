@@ -441,6 +441,19 @@ defmodule Medoru.LearningTest do
       assert [returned_word] = Learning.list_english_learned_words(user.id)
       assert returned_word.id == word.id
     end
+
+    test "list_all_learned_word_ids unions both progress tables without a limit", %{
+      user: user,
+      word: word
+    } do
+      other_word = word_fixture(%{text: "別の言葉"})
+      Learning.track_word_learned(user.id, word.id)
+      Learning.track_english_word_learned(user.id, other_word.id)
+
+      ids = Learning.list_all_learned_word_ids(user.id)
+      assert word.id in ids
+      assert other_word.id in ids
+    end
   end
 
   # ============================================================================

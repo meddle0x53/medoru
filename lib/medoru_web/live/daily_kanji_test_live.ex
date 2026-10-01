@@ -73,10 +73,16 @@ defmodule MedoruWeb.DailyKanjiTestLive do
               <% end %>
 
               <div class="flex flex-col sm:flex-row justify-center gap-3">
-                <.link navigate={~p"/daily-challenges"} class="btn btn-primary">
+                <.link
+                  navigate={~p"/daily-challenges"}
+                  class="btn btn-primary btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   <.icon name="hero-arrow-left" class="w-4 h-4 mr-2" /> {gettext("Back to Challenges")}
                 </.link>
-                <.link navigate={~p"/dashboard"} class="btn btn-outline">
+                <.link
+                  navigate={~p"/dashboard"}
+                  class="btn btn-outline btn-sm h-auto py-2 px-4 whitespace-normal text-center leading-tight w-full sm:w-auto"
+                >
                   <.icon name="hero-home" class="w-4 h-4 mr-2" /> {gettext("Dashboard")}
                 </.link>
               </div>

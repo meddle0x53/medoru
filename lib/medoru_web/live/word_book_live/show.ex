@@ -10,6 +10,7 @@ defmodule MedoruWeb.WordBookLive.Show do
   use MedoruWeb, :live_view
 
   alias Medoru.Learning.WordBooks
+  alias Medoru.Social
   alias Medoru.WhiteBoard
   alias MedoruWeb.WordBookCard
 
@@ -23,7 +24,10 @@ defmodule MedoruWeb.WordBookLive.Show do
      |> assign(:page, 1)
      |> assign(:total_pages, 1)
      |> assign(:words, [])
-     |> assign(:cards_per_page_options, @cards_per_page_options)}
+     |> assign(:cards_per_page_options, @cards_per_page_options)
+     |> assign(:share_modal_open, false)
+     |> assign(:share_mutual_follows, [])
+     |> assign(:share_loading, false)}
   end
 
   @impl true
@@ -67,6 +71,72 @@ defmodule MedoruWeb.WordBookLive.Show do
     {:noreply, assign(socket, :view_state, :cover)}
   end
 
+  # Share Word Book event handlers
+  def handle_event("open_share_modal", _, socket) do
+    user = socket.assigns.current_scope.current_user
+    mutual_follows = Social.list_mutual_follows(user.id)
+
+    {:noreply,
+     socket
+     |> assign(:share_modal_open, true)
+     |> assign(:share_mutual_follows, mutual_follows)
+     |> assign(:share_loading, false)}
+  end
+
+  def handle_event("close_share_modal", _, socket) do
+    {:noreply,
+     socket
+     |> assign(:share_modal_open, false)
+     |> assign(:share_mutual_follows, [])
+     |> assign(:share_loading, false)}
+  end
+
+  def handle_event("share_word_book", %{"recipient_id" => recipient_id}, socket) do
+    user = socket.assigns.current_scope.current_user
+    word_book = socket.assigns.word_book
+
+    socket = assign(socket, :share_loading, true)
+
+    case WordBooks.share_word_book(user.id, word_book.id, recipient_id) do
+      {:ok, _share} ->
+        {:noreply,
+         socket
+         |> assign(:share_modal_open, false)
+         |> assign(:share_mutual_follows, [])
+         |> assign(:share_loading, false)
+         |> put_flash(:info, gettext("Word book shared successfully."))}
+
+      {:error, :not_owner} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You can only share your own word books."))}
+
+      {:error, :not_mutual} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You can only share with mutual followers."))}
+
+      {:error, :already_shared} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(:error, gettext("You already have a pending share with this user."))}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         socket
+         |> assign(:share_loading, false)
+         |> put_flash(
+           :error,
+           gettext("Failed to share word book: %{errors}",
+             errors: format_changeset_errors(changeset)
+           )
+         )}
+    end
+  end
+
   def handle_event("post_card_to_board", %{"word_id" => word_id}, socket) do
     word = Enum.find(socket.assigns.words, &(&1.id == word_id))
     user = socket.assigns.current_scope.current_user
@@ -108,6 +178,13 @@ defmodule MedoruWeb.WordBookLive.Show do
       _ ->
         {:noreply, socket}
     end
+  end
+
+  defp format_changeset_errors(changeset) do
+    changeset.errors
+    |> Enum.map_join(", ", fn {field, {msg, _opts}} ->
+      "#{field}: #{msg}"
+    end)
   end
 
   defp load_page(socket, requested_page) do
@@ -218,6 +295,77 @@ defmodule MedoruWeb.WordBookLive.Show do
             cards_per_page_options={@cards_per_page_options}
           />
         <% end %>
+
+        <%!-- Share Word Book Modal --%>
+        <%= if @share_modal_open do %>
+          <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-base-100 rounded-2xl shadow-xl max-w-md w-full p-6">
+              <h3 class="text-xl font-bold text-base-content mb-2">
+                {gettext("Share Word Book")}
+              </h3>
+              <p class="text-secondary mb-4">
+                {gettext("Share '%{title}' with a mutual follower", title: @word_book.title)}
+              </p>
+
+              <%= if @share_mutual_follows == [] do %>
+                <div class="text-center py-8">
+                  <.icon name="hero-users" class="w-12 h-12 mx-auto text-secondary/30 mb-3" />
+                  <p class="text-secondary">
+                    {gettext("You don't have any mutual followers yet.")}
+                  </p>
+                  <p class="text-sm text-secondary/70 mt-1">
+                    {gettext(
+                      "You can only share word books with users who follow you and whom you follow back."
+                    )}
+                  </p>
+                </div>
+              <% else %>
+                <div class="space-y-2 max-h-80 overflow-y-auto mb-4">
+                  <%= for user <- @share_mutual_follows do %>
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-base-200 hover:border-primary hover:bg-primary/5 transition-colors">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                          <span class="text-lg font-medium text-base-content">
+                            {String.first(
+                              (user.profile && user.profile.display_name) || user.name || "?"
+                            )}
+                          </span>
+                        </div>
+                        <div class="min-w-0">
+                          <div class="font-medium text-base-content truncate">
+                            {(user.profile && user.profile.display_name) || user.name}
+                          </div>
+                          <%= if user.profile && user.profile.display_name && user.profile.display_name != user.name do %>
+                            <div class="text-xs text-secondary truncate">{user.name}</div>
+                          <% end %>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        phx-click="share_word_book"
+                        phx-value-recipient_id={user.id}
+                        disabled={@share_loading}
+                        class="btn btn-primary btn-sm"
+                      >
+                        {gettext("Send")}
+                      </button>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  phx-click="close_share_modal"
+                  class="btn btn-ghost"
+                >
+                  {gettext("Close")}
+                </button>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
     </Layouts.app>
     """
@@ -241,6 +389,15 @@ defmodule MedoruWeb.WordBookLive.Show do
           <span class="hidden sm:inline">{gettext("Back to Word Books")}</span>
         </.link>
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <button
+            type="button"
+            phx-click="open_share_modal"
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Share")}
+          >
+            <.icon name="hero-share" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Share")}</span>
+          </button>
           <.link
             navigate={~p"/words/books/#{@word_book.id}/design"}
             class="btn btn-sm btn-ghost px-2 sm:px-3"
