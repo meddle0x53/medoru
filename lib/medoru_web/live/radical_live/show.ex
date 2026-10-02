@@ -18,23 +18,15 @@ defmodule MedoruWeb.RadicalLive.Show do
     radical = KanjiRadicals.get(character)
 
     if radical do
-      top_kanji_data = KanjiRadicals.top_kanji(character)
-      frequency = KanjiRadicals.frequency(character)
-
-      kanji_list =
-        top_kanji_data
-        |> Enum.map(fn %{id: id} ->
-          case Content.get_kanji(id) do
-            nil -> nil
-            kanji -> kanji
-          end
-        end)
-        |> Enum.reject(&is_nil/1)
+      all_kanji = Content.list_kanji_by_radical(radical.character)
+      kanji_list = Enum.take(all_kanji, 60)
+      frequency = Content.count_kanji_by_radical(radical.character)
 
       {:noreply,
        socket
        |> assign(:radical, radical)
        |> assign(:kanji_list, kanji_list)
+       |> assign(:total_count, length(all_kanji))
        |> assign(:frequency, frequency)
        |> assign(:page_title, gettext("Radical: %{character}", character: character))}
     else

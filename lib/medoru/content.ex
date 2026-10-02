@@ -74,6 +74,27 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns the number of kanji classified under the given classical radical.
+  """
+  def count_kanji_by_radical(radical) when is_binary(radical) do
+    Kanji
+    |> where([k], ^radical in k.radicals)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
+  Returns a map of radical character => number of kanji classified under it.
+  """
+  def kanji_counts_by_radical do
+    Kanji
+    |> where([k], not is_nil(k.radicals))
+    |> select([k], k.radicals)
+    |> Repo.all()
+    |> List.flatten()
+    |> Enum.frequencies()
+  end
+
+  @doc """
   Returns kanji that contain the given component.
   """
   def list_kanji_by_component(component) when is_binary(component) do

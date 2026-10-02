@@ -7,10 +7,45 @@
       </h1>
       <p class="text-secondary">
         {gettext(
-          "Browse the 214 traditional Kangxi radicals sorted by how many kanji contain them"
+          "Browse the 214 traditional Kangxi radicals sorted by how many kanji are classified under them"
         )}
       </p>
     </div>
+
+    <%!-- Filter --%>
+    <form phx-change="filter" phx-submit="filter" class="mb-6">
+      <div class="relative">
+        <.icon
+          name="hero-magnifying-glass"
+          class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-secondary/50 pointer-events-none"
+        />
+        <input
+          type="text"
+          name="q"
+          value={@query}
+          placeholder={gettext("Filter by radical, meaning, or kanji...")}
+          class="w-full px-4 py-3 pl-10 pr-10 bg-base-100 border border-base-300 rounded-xl
+                 text-base-content placeholder:text-secondary/50
+                 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          phx-debounce="300"
+        />
+        <%= if @query != "" do %>
+          <button
+            type="button"
+            phx-click="clear_filter"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-secondary hover:text-primary transition-colors"
+            aria-label={gettext("Clear filter")}
+          >
+            <.icon name="hero-x-mark" class="w-4 h-4" />
+          </button>
+        <% end %>
+      </div>
+      <%= if @matched_kanji do %>
+        <p class="mt-2 text-sm text-secondary">
+          {gettext("%{kanji} is classified under:", kanji: @matched_kanji.character)}
+        </p>
+      <% end %>
+    </form>
 
     <%!-- Stats --%>
     <div class="mb-6 flex flex-wrap items-center gap-3 text-sm text-secondary">
@@ -81,6 +116,11 @@
         <h3 class="text-lg font-medium text-base-content mb-2">
           {gettext("No radicals found")}
         </h3>
+        <%= if @query != "" do %>
+          <p class="text-secondary">
+            {gettext("Nothing matches \"%{query}\".", query: @query)}
+          </p>
+        <% end %>
       </div>
     <% end %>
 

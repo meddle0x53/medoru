@@ -59,7 +59,14 @@
     <%!-- Top Kanji Section --%>
     <div class="mb-6">
       <h2 class="text-xl font-bold text-base-content mb-4">
-        {gettext("Top %{count} Most Frequent Kanji", count: length(@kanji_list))}
+        <%= if @total_count > length(@kanji_list) do %>
+          {gettext("Top %{count} Most Frequent Kanji (of %{total})",
+            count: length(@kanji_list),
+            total: @total_count
+          )}
+        <% else %>
+          {gettext("Top %{count} Most Frequent Kanji", count: length(@kanji_list))}
+        <% end %>
       </h2>
 
       <div class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-8 xl:grid-cols-10 gap-3">
