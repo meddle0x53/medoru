@@ -15,7 +15,7 @@
 
     <%!-- Main Kanji Card --%>
     <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden mb-8">
-      <div class="p-8">
+      <div class="p-4 sm:p-8">
         <div class="flex flex-col md:flex-row gap-8">
           <%!-- Large Kanji Display --%>
           <div class="flex-shrink-0">
@@ -66,7 +66,7 @@
                 <h2 class="text-sm font-medium text-secondary/80 uppercase tracking-wide mb-2">
                   {gettext("Radicals")}
                 </h2>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                   <%= for radical <- @kanji.radicals do %>
                     <span class="bg-secondary/10 text-secondary px-3 py-1.5 rounded-lg text-lg border border-secondary/20">
                       {radical}
@@ -141,7 +141,7 @@
     <%!-- Writing Practice Section (if stroke data available) --%>
     <%= if @has_stroke_data do %>
       <div class="bg-base-100 rounded-2xl shadow-sm border border-base-300 p-6 mb-8">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div class="flex items-center gap-2">
             <.icon name="hero-pencil" class="w-5 h-5 text-primary" />
             <h2 class="text-xl font-bold text-base-content">{gettext("Writing Practice")}</h2>
@@ -339,7 +339,7 @@
 
     <%!-- Words Using This Kanji Section --%>
     <div class="mt-8">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
         <h2 class="text-xl font-bold text-base-content">
           {gettext("Words Using This Kanji")}
         </h2>

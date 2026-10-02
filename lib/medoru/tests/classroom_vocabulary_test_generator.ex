@@ -317,33 +317,43 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
       |> Enum.filter(& &1.image_path)
       |> Enum.take_random(count)
 
-    distractor_data =
-      Enum.map(distractors, fn d ->
+    # Keep each option's meaning, word id, and image together so the
+    # shuffled arrays stay aligned by index.
+    options =
+      [
         %{
-          "image_path" => d.image_path,
-          "word_id" => d.id,
-          "word_text" => d.text
+          meaning: step.correct_answer,
+          word_id: word.id,
+          word_text: word.text,
+          image_path: word.image_path
+        }
+        | Enum.map(distractors, fn d ->
+            %{
+              meaning: d.meaning,
+              word_id: d.id,
+              word_text: d.text,
+              image_path: d.image_path
+            }
+          end)
+      ]
+      |> Enum.shuffle()
+
+    shuffled_meanings = Enum.map(options, & &1.meaning)
+    shuffled_ids = Enum.map(options, & &1.word_id)
+
+    image_options =
+      Enum.map(options, fn option ->
+        %{
+          "image_path" => option.image_path,
+          "word_id" => option.word_id,
+          "word_text" => option.word_text
         }
       end)
-
-    distractor_meanings = Enum.map(distractors, & &1.meaning)
-    distractor_ids = Enum.map(distractors, & &1.id)
-
-    pairs = [{step.correct_answer, word.id} | Enum.zip(distractor_meanings, distractor_ids)]
-    {shuffled_meanings, shuffled_ids} = Enum.unzip(Enum.shuffle(pairs))
-
-    correct_image = %{
-      "image_path" => word.image_path,
-      "word_id" => word.id,
-      "word_text" => word.text
-    }
-
-    shuffled_images = [correct_image | distractor_data] |> Enum.shuffle()
 
     question_data =
       Map.get(step, :question_data, %{})
       |> Map.merge(%{
-        image_options: shuffled_images,
+        image_options: image_options,
         option_word_ids: shuffled_ids,
         options: shuffled_meanings
       })

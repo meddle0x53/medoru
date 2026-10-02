@@ -97,7 +97,7 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
   end
 
   @impl true
-  def handle_event("set_max_steps", %{"value" => value}, socket) do
+  def handle_event("set_max_steps", %{"max_steps" => value}, socket) do
     case Integer.parse(value) do
       {n, _} when n in 1..5 ->
         {:noreply, assign(socket, :max_steps_per_word, n)}
@@ -208,17 +208,6 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
                   </button>
                 <% end %>
               </div>
-
-              <%= if length(@selected_types) == 1 do %>
-                <div class="mt-4 p-4 bg-warning/10 rounded-lg">
-                  <div class="flex items-start gap-3">
-                    <.icon name="hero-exclamation-triangle" class="w-5 h-5 text-warning mt-0.5" />
-                    <div class="text-sm text-warning-content">
-                      <p>{gettext("You must have at least one question type selected.")}</p>
-                    </div>
-                  </div>
-                </div>
-              <% end %>
             </div>
 
             <%!-- Max Steps Per Word --%>
@@ -227,14 +216,16 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
                 {gettext("Questions Per Word")}
               </h2>
               <div class="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={@max_steps_per_word}
-                  phx-change="set_max_steps"
-                  class="flex-1 h-2 bg-base-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                />
+                <form phx-change="set_max_steps" class="flex-1">
+                  <select
+                    name="max_steps"
+                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-base-100"
+                  >
+                    <%= for n <- 1..5 do %>
+                      <option value={n} selected={@max_steps_per_word == n}>{n}</option>
+                    <% end %>
+                  </select>
+                </form>
                 <span class="w-12 text-center font-medium text-base-content">
                   {@max_steps_per_word}
                 </span>

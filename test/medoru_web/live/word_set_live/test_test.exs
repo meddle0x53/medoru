@@ -203,6 +203,36 @@ defmodule MedoruWeb.WordSetLive.TestTest do
 
       assert html =~ "Correct!" or html =~ "Incorrect"
     end
+
+    test "selecting the correct image is graded as correct", %{
+      conn: conn,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      current_step = current_step_for(view, test)
+
+      image_options = current_step.question_data["image_options"]
+      correct_index = Enum.find_index(image_options, &(&1["word_id"] == current_step.word_id))
+      correct_option = Enum.at(current_step.question_data["options"], correct_index)
+
+      view
+      |> element("button[phx-value-answer='#{correct_option}']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='submit_answer']")
+        |> render_click()
+
+      assert html =~ "Correct!"
+    end
+
+    defp current_step_for(_view, test) do
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      Enum.min_by(test.test_steps, & &1.order_index)
+    end
   end
 
   describe "Word Set Practice Test - reading_text" do
