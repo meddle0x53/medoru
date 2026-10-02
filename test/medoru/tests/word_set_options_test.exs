@@ -61,4 +61,34 @@ defmodule Medoru.Tests.WordSetOptionsTest do
              "Expected at least 2 options for step #{step.id}, got #{length(step.options)}: #{inspect(step.options)}"
     end
   end
+
+  test "image_to_meaning steps are generated when enough words have images" do
+    user = user_fixture()
+
+    words =
+      ["日本", "学校", "先生", "学生", "図書館"]
+      |> Enum.map(fn text ->
+        word_fixture(%{
+          text: text,
+          meaning: "meaning #{text}",
+          reading: "てすと",
+          image_path: "/uploads/word_images/#{text}.png"
+        })
+      end)
+
+    word_set = word_set_fixture(%{user_id: user.id, name: "Image Set"})
+    Enum.each(words, &WordSets.add_word_to_set(word_set, &1.id))
+
+    {:ok, test} =
+      WordSets.create_practice_test(word_set,
+        step_types: [:image_to_meaning],
+        max_steps_per_word: 1,
+        distractor_count: 3
+      )
+
+    steps = Medoru.Repo.all(from s in TestStep, where: s.test_id == ^test.id)
+
+    assert Enum.any?(steps, &(&1.question_data["type"] == "image_to_meaning"))
+    assert Enum.all?(steps, &(&1.question_data["image_options"] != []))
+  end
 end

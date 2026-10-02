@@ -152,6 +152,59 @@ defmodule MedoruWeb.WordSetLive.TestTest do
     end
   end
 
+  describe "Word Set Practice Test - image_to_meaning" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      words =
+        ["日本", "学校", "先生", "学生", "図書館"]
+        |> Enum.map(fn text ->
+          word_fixture(%{
+            text: text,
+            meaning: "meaning #{text}",
+            reading: "てすと",
+            image_path: "/uploads/word_images/#{text}.png"
+          })
+        end)
+
+      word_set = word_set_fixture(%{user_id: user.id, name: "Image Set"})
+      Enum.each(words, &WordSets.add_word_to_set(word_set, &1.id))
+
+      {:ok, test} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:image_to_meaning],
+          max_steps_per_word: 1,
+          distractor_count: 3
+        )
+
+      %{conn: conn, word_set: WordSets.get_word_set!(word_set.id), practice_test: test}
+    end
+
+    test "renders image options for image steps", %{conn: conn, word_set: word_set} do
+      {:ok, view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      assert html =~ "Select the image that matches the word"
+      assert html =~ "<img"
+      assert has_element?(view, "img[src^='/uploads/word_images/']")
+    end
+
+    test "image step can be answered", %{conn: conn, word_set: word_set} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("button[phx-click='select_answer']:first-of-type")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='submit_answer']")
+        |> render_click()
+
+      assert html =~ "Correct!" or html =~ "Incorrect"
+    end
+  end
+
   describe "Word Set Practice Test - reading_text" do
     test "shows reading_text input fields for kanji words", %{conn: conn} do
       # Create a word set with only reading_text steps

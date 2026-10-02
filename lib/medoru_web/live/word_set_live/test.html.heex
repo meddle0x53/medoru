@@ -220,7 +220,9 @@
               <% question_data = @current_step.question_data || %{}
               question_label = question_data["question_label"]
               word_text = question_data["word_text"] || @current_step.question
-              options = question_data["options"] || @current_step.options || [] %>
+              options = question_data["options"] || @current_step.options || []
+              is_image_question = question_data["type"] == "image_to_meaning"
+              image_options = question_data["image_options"] || [] %>
 
               <%!-- Question --%>
               <div class="mb-4 sm:mb-6">
@@ -231,7 +233,11 @@
                     <% "reading" -> %>
                       {gettext("How do you read this word?")}
                     <% _ -> %>
-                      {gettext("Choose the correct answer")}
+                      <%= if is_image_question do %>
+                        {gettext("Select the image that matches the word")}
+                      <% else %>
+                        {gettext("Choose the correct answer")}
+                      <% end %>
                   <% end %>
                 </div>
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
@@ -257,43 +263,78 @@
 
               <%= if is_nil(@feedback) do %>
                 <%!-- Answer Options --%>
-                <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
-                  <%= for {option, index} <- Enum.with_index(options) do %>
-                    <% is_selected = @selected_answer == option
-                    display_option = localize_option(option, @locale) %>
-                    <button
-                      type="button"
-                      phx-click="select_answer"
-                      phx-value-answer={option}
-                      class={[
-                        "w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px]",
-                        if is_selected do
-                          "border-primary bg-primary/5"
-                        else
-                          "border-base-200 hover:border-primary/50 hover:bg-base-50"
-                        end
-                      ]}
-                    >
-                      <div class="flex items-center gap-3">
-                        <div class={[
-                          "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                <%= if is_image_question do %>
+                  <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    <%= for {option, index} <- Enum.with_index(options) do %>
+                      <% is_selected = @selected_answer == option
+                      image_data = Enum.at(image_options, index) %>
+                      <button
+                        type="button"
+                        phx-click="select_answer"
+                        phx-value-answer={option}
+                        class={[
+                          "relative rounded-xl border-2 overflow-hidden aspect-square transition-all duration-200 min-h-[48px]",
                           if is_selected do
-                            "border-primary bg-primary"
+                            "border-primary ring-2 ring-primary"
                           else
-                            "border-base-300"
+                            "border-base-200 hover:border-primary/50 hover:shadow-md"
                           end
-                        ]}>
-                          <%= if is_selected do %>
-                            <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
-                          <% end %>
+                        ]}
+                      >
+                        <%= if image_data && image_data["image_path"] do %>
+                          <img
+                            src={image_data["image_path"]}
+                            alt={localize_option(option, @locale)}
+                            class="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        <% else %>
+                          <div class="w-full h-full flex items-center justify-center bg-base-200">
+                            <.icon name="hero-photo" class="w-8 h-8 text-secondary" />
+                          </div>
+                        <% end %>
+                      </button>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                    <%= for {option, index} <- Enum.with_index(options) do %>
+                      <% is_selected = @selected_answer == option
+                      display_option = localize_option(option, @locale) %>
+                      <button
+                        type="button"
+                        phx-click="select_answer"
+                        phx-value-answer={option}
+                        class={[
+                          "w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 min-h-[48px]",
+                          if is_selected do
+                            "border-primary bg-primary/5"
+                          else
+                            "border-base-200 hover:border-primary/50 hover:bg-base-50"
+                          end
+                        ]}
+                      >
+                        <div class="flex items-center gap-3">
+                          <div class={[
+                            "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center shrink-0",
+                            if is_selected do
+                              "border-primary bg-primary"
+                            else
+                              "border-base-300"
+                            end
+                          ]}>
+                            <%= if is_selected do %>
+                              <div class="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white"></div>
+                            <% end %>
+                          </div>
+                          <span class="text-base-content font-medium text-sm sm:text-base">
+                            {display_option}
+                          </span>
                         </div>
-                        <span class="text-base-content font-medium text-sm sm:text-base">
-                          {display_option}
-                        </span>
-                      </div>
-                    </button>
-                  <% end %>
-                </div>
+                      </button>
+                    <% end %>
+                  </div>
+                <% end %>
 
                 <%!-- Actions --%>
                 <div class="flex flex-col sm:flex-row gap-3">
