@@ -285,5 +285,23 @@ defmodule MedoruWeb.WordBookLive.ShowTest do
       assert post.card_data["custom_text"] == "Word Of The Day"
       assert post.card_data["book_title"] == word_book.title
     end
+
+    test "sharing the book creates a word_book white board post and flashes success",
+         %{conn: conn, user: user} do
+      word_book = word_book_fixture(%{user_id: user.id, title: "Shareable Book"})
+
+      {:ok, view, html} = live(conn, ~p"/words/books/#{word_book.id}")
+
+      assert html =~ ~s(phx-click="share_book_to_board")
+
+      html = view |> element(~s(button[phx-click="share_book_to_board"])) |> render_click()
+
+      assert html =~ "Word book shared to your White Board."
+
+      [post] = WhiteBoard.list_posts(user.id, user.id)
+      assert post.post_type == "word_book"
+      assert post.card_data["book_id"] == word_book.id
+      assert post.card_data["title"] == "Shareable Book"
+    end
   end
 end

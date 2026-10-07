@@ -641,6 +641,51 @@ defmodule Medoru.ContentTest do
       assert first_result.reading == "いち"
     end
 
+    test "search_words/2 matches any '/'-separated reading segment as exact match" do
+      multi =
+        word_fixture(%{
+          text: unique_word_text(),
+          meaning: "to pass through / ten",
+          reading: "とおう/じゅう",
+          usage_frequency: 100
+        })
+
+      for query <- ["とおう", "じゅう"] do
+        results = Content.search_words(query, limit: 10)
+
+        assert Enum.any?(results, &(&1.id == multi.id)),
+               "Expected word with reading 'とおう/じゅう' in results for '#{query}'"
+
+        first_result = hd(results)
+
+        assert first_result.id == multi.id,
+               "Expected exact reading-segment match to rank first for '#{query}', got '#{first_result.reading}'"
+      end
+    end
+
+    test "search_words/2 ranks exact reading-segment match above partial meaning match" do
+      multi =
+        word_fixture(%{
+          text: unique_word_text(),
+          meaning: "counter",
+          reading: "とおう/じゅう",
+          usage_frequency: 100
+        })
+
+      _partial =
+        word_fixture(%{
+          text: unique_word_text(),
+          meaning: "じゅうでん counter charging",
+          reading: "じゅうでん",
+          usage_frequency: 10_000
+        })
+
+      results = Content.search_words("じゅう", limit: 10)
+
+      assert hd(results).id == multi.id,
+             "Expected exact reading-segment match to rank above partial meaning match"
+    end
+
     test "get_word!/1 returns the word with given id" do
       word = word_fixture()
       assert Content.get_word!(word.id).id == word.id

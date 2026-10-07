@@ -360,4 +360,11 @@ defmodule MedoruWeb.WordLive.Index do
       {gettext("Other"), :other}
     ]
   end
+
+  # Localized label for a single word type atom (used by the chips next to
+  # each word card); falls back to the capitalized atom for unknown types.
+  def word_type_label(type) do
+    Enum.find_value(word_type_options(), fn {label, t} -> if t == type, do: label end) ||
+      type |> to_string() |> String.capitalize()
+  end
 end

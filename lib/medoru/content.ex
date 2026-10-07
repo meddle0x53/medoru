@@ -580,14 +580,19 @@ defmodule Medoru.Content do
       query_lower = String.downcase(query)
       search_term = "%#{query}%"
 
+      reading_exact =
+        dynamic(
+          [w],
+          w.reading == ^query or
+            fragment("? = ANY(string_to_array(?, '/'))", ^query, w.reading)
+        )
+
       # First, get exact matches on text or reading (highest priority)
       # This ensures exact matches are never cut off by the limit
       exact_matches =
         Word
-        |> where(
-          [w],
-          w.text == ^query or w.reading == ^query
-        )
+        |> where([w], w.text == ^query)
+        |> or_where([w], ^reading_exact)
         |> Repo.all()
 
       # Then get partial matches, excluding exact matches to avoid duplicates
@@ -628,12 +633,15 @@ defmodule Medoru.Content do
 
         # Check for exact matches in text or reading (highest priority)
         exact_text = text_lower == query_lower
-        exact_reading = reading_lower == query_lower
+        exact_reading = Enum.any?(reading_segments(reading_lower), &(&1 == query_lower))
         exact_meaning = meaning_lower == query_lower
 
         # Check for "starts with" matches
         starts_text = String.starts_with?(text_lower, query_lower)
-        starts_reading = String.starts_with?(reading_lower, query_lower)
+
+        starts_reading =
+          Enum.any?(reading_segments(reading_lower), &String.starts_with?(&1, query_lower))
+
         starts_meaning = String.starts_with?(meaning_lower, query_lower)
 
         # Priority (lower number = higher priority):
@@ -667,6 +675,12 @@ defmodule Medoru.Content do
       |> Enum.take(limit)
     end
   end
+
+  defp reading_segments(reading) when is_binary(reading) do
+    reading |> String.split("/") |> Enum.map(&String.trim/1) |> Enum.reject(&(&1 == ""))
+  end
+
+  defp reading_segments(_), do: []
 
   @doc """
   Searches words by query and filters by word type (verb, adjective, noun, etc.)

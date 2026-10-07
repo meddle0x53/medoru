@@ -10,6 +10,14 @@ defmodule MedoruWeb.SettingsLive.Language do
     %{code: "ja", name: "Japanese", flag: "🇯🇵", native: "日本語"}
   ]
 
+  # Locale names are translated at runtime — a gettext call in the module
+  # attribute would be evaluated at compile time with the default locale.
+  defp supported_locales do
+    Enum.map(@supported_locales, fn locale ->
+      %{locale | name: Gettext.gettext(MedoruWeb.Gettext, locale.name)}
+    end)
+  end
+
   @impl true
   def mount(_params, session, socket) do
     current_locale = session["locale"] || "en"
@@ -18,7 +26,7 @@ defmodule MedoruWeb.SettingsLive.Language do
      socket
      |> assign(:page_title, gettext("Language"))
      |> assign(:current_locale, current_locale)
-     |> assign(:supported_locales, @supported_locales)}
+     |> assign(:supported_locales, supported_locales())}
   end
 
   @impl true

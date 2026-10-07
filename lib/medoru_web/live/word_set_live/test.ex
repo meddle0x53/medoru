@@ -284,15 +284,13 @@ defmodule MedoruWeb.WordSetLive.Test do
 
     Tests.record_step_answer(session.id, step.id, attrs)
 
-    # Move to next step
     case get_next_step(session) do
       nil ->
-        Tests.complete_session(session, 0, 0, 0)
-        {:noreply, assign(socket, :test_completed, true)}
+        complete_test(socket, session)
 
       next_step ->
         new_index = session.current_step_index + 1
-        {:ok, updated_session} = Tests.progress_session(session, new_index, 10)
+        {:ok, updated_session} = Tests.progress_session(session, new_index, 5)
         updated_session = Tests.get_test_session_with_answers(updated_session.id)
 
         {:noreply,
@@ -313,15 +311,7 @@ defmodule MedoruWeb.WordSetLive.Test do
 
     case get_next_step(session) do
       nil ->
-        Tests.complete_session(session, 0, 0, 0)
-
-        # Calculate statistics
-        stats = calculate_test_stats(session)
-
-        {:noreply,
-         socket
-         |> assign(:test_completed, true)
-         |> assign(:stats, stats)}
+        complete_test(socket, session)
 
       next_step ->
         new_index = session.current_step_index + 1
@@ -338,6 +328,19 @@ defmodule MedoruWeb.WordSetLive.Test do
          |> assign(:meaning_answer, "")
          |> assign(:reading_answer, "")}
     end
+  end
+
+  # Marks the session complete and builds the results view data (stats +
+  # mistakes review) from the recorded answers.
+  defp complete_test(socket, session) do
+    Tests.complete_session(session, 0, 0, 0)
+    session = Tests.get_test_session_with_answers(session.id)
+
+    {:noreply,
+     socket
+     |> assign(:test_completed, true)
+     |> assign(:stats, calculate_test_stats(session))
+     |> assign(:mistakes, build_mistakes(session))}
   end
 
   defp get_current_step(session) do
@@ -359,15 +362,7 @@ defmodule MedoruWeb.WordSetLive.Test do
   end
 
   defp calculate_test_stats(session) do
-    import Ecto.Query
-    alias Medoru.Repo
-    alias Medoru.Tests.TestStepAnswer
-
-    # Get all answers for this session
-    answers =
-      TestStepAnswer
-      |> where([a], a.test_session_id == ^session.id)
-      |> Repo.all()
+    answers = session.test_step_answers || []
 
     total = length(answers)
     correct = Enum.count(answers, & &1.is_correct)
@@ -382,6 +377,58 @@ defmodule MedoruWeb.WordSetLive.Test do
       percentage: percentage
     }
   end
+
+  # Builds the "review mistakes" list: one entry per incorrect/skipped
+  # answer, in question order, with the user's answer and the correct one.
+  defp build_mistakes(session) do
+    (session.test_step_answers || [])
+    |> Enum.reject(& &1.is_correct)
+    |> Enum.sort_by(& &1.step_index)
+    |> Enum.map(&build_mistake/1)
+  end
+
+  defp build_mistake(answer) do
+    step = answer.test_step
+    word = step && step.word
+    stored = parse_stored_answer(answer.answer)
+
+    %{
+      question_type: step && step.question_type,
+      word_text: (word && word.text) || (step && step.question) || "",
+      word_reading: word && word.reading,
+      user_answer: stored["raw"],
+      user_meaning: stored["meaning"],
+      user_reading: stored["reading"],
+      meaning_correct: stored["meaning_correct"],
+      reading_correct: stored["reading_correct"],
+      correct_answer: step && step.correct_answer,
+      correct_meaning: word && word.meaning,
+      correct_reading: word && word.reading,
+      skipped: stored["raw"] in [nil, ""]
+    }
+  end
+
+  # Reading-text answers are stored as JSON with the typed meaning/reading
+  # and the per-field validation map. Everything else is stored as a plain
+  # string (empty when the question was skipped).
+  defp parse_stored_answer(answer) when is_binary(answer) do
+    case Jason.decode(answer) do
+      {:ok, %{"meaning" => _} = decoded} ->
+        validation = decoded["validation"] || %{}
+
+        %{
+          "meaning" => decoded["meaning"],
+          "reading" => decoded["reading"],
+          "meaning_correct" => validation["meaning_correct"],
+          "reading_correct" => validation["reading_correct"]
+        }
+
+      _ ->
+        %{"raw" => answer}
+    end
+  end
+
+  defp parse_stored_answer(_), do: %{"raw" => ""}
 
   defp abandon_existing_sessions(user_id, test_id) do
     import Ecto.Query

@@ -87,6 +87,37 @@ defmodule Medoru.WhiteBoardTest do
       assert WhiteBoard.card_word(nil) == nil
     end
 
+    test "create_word_book_post/2 snapshots the book and the author name" do
+      user = user_fixture_with_profile(%{name: "Book Author"})
+
+      word_book =
+        word_book_fixture(%{
+          user_id: user.id,
+          title: "Snapshot Book",
+          card_shape: "square",
+          cover_image: "sakura",
+          word_count: 3
+        })
+
+      assert {:ok, %BoardPost{} = post} = WhiteBoard.create_word_book_post(user, word_book)
+      assert post.post_type == "word_book"
+      assert post.visibility == "public"
+      assert post.card_data["book_id"] == word_book.id
+      assert post.card_data["title"] == "Snapshot Book"
+      assert post.card_data["card_shape"] == "square"
+      assert post.card_data["cover_image"] == "sakura"
+      assert post.card_data["word_count"] == 3
+      assert post.card_data["author_name"] == "Book Author"
+    end
+
+    test "create_word_book_post/2 falls back to the user name without a profile" do
+      user = user_fixture(%{name: "No Profile Author"})
+      word_book = word_book_fixture(%{user_id: user.id})
+
+      assert {:ok, %BoardPost{} = post} = WhiteBoard.create_word_book_post(user, word_book)
+      assert post.card_data["author_name"] == "No Profile Author"
+    end
+
     test "create_post/1 requires a word snapshot for word_card posts" do
       user = owner_fixture()
 

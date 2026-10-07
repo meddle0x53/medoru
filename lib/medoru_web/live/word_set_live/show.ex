@@ -432,6 +432,13 @@ defmodule MedoruWeb.WordSetLive.Show do
     end
   end
 
+  # Localized label for a single word type atom (word chips); falls back to
+  # the capitalized atom for unknown types.
+  def word_type_label(type) do
+    Enum.find_value(word_type_options(), fn {label, t} -> if t == type, do: label end) ||
+      type |> to_string() |> String.capitalize()
+  end
+
   defp parse_page(page) when is_integer(page) and page > 0, do: page
   defp parse_page(_), do: 1
 
@@ -483,20 +490,22 @@ defmodule MedoruWeb.WordSetLive.Show do
       <div class="max-w-6xl mx-auto px-4 py-8">
         <%!-- Header --%>
         <div class="mb-8">
-          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div class="flex flex-col gap-4">
             <div>
-              <h1 class="text-3xl font-bold text-base-content">{@word_set.name}</h1>
+              <h1 class="text-3xl font-bold text-base-content break-words">{@word_set.name}</h1>
               <%= if @word_set.description && @word_set.description != "" do %>
-                <p class="text-secondary mt-2">{@word_set.description}</p>
+                <p class="text-secondary mt-2 break-words">{@word_set.description}</p>
               <% end %>
-              <div class="flex items-center gap-4 mt-3 text-sm text-secondary">
-                <span class="flex items-center gap-1">
-                  <.icon name="hero-book-open" class="w-4 h-4" />
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-secondary">
+                <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                  <.icon name="hero-book-open" class="w-4 h-4 shrink-0" />
                   {@word_set.word_count} {ngettext("word", "words", @word_set.word_count)}
                 </span>
-                <span class="flex items-center gap-1">
-                  <.icon name="hero-calendar" class="w-4 h-4" />
-                  {Calendar.strftime(@word_set.inserted_at, "%b %d, %Y")}
+                <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                  <.icon name="hero-calendar" class="w-4 h-4 shrink-0" />
+                  <span class="whitespace-nowrap">
+                    {Calendar.strftime(@word_set.inserted_at, "%b %d, %Y")}
+                  </span>
                 </span>
               </div>
             </div>
@@ -740,7 +749,7 @@ defmodule MedoruWeb.WordSetLive.Show do
                       <%!-- Word Type --%>
                       <%= if word.word_type do %>
                         <span class="px-2 py-1 bg-secondary/10 rounded text-xs font-medium text-secondary capitalize">
-                          {word.word_type}
+                          {word_type_label(word.word_type)}
                         </span>
                       <% end %>
                     </div>

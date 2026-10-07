@@ -174,7 +174,7 @@ defmodule MedoruWeb.WordSetLive.Index do
     |> assign(:generate_modal_open, false)
     |> assign(:word_types, @word_types)
     |> assign(:levels, @levels)
-    |> assign(:gen_name, "Learned Words — #{Date.utc_today()}")
+    |> assign(:gen_name, gettext("Learned Words — %{date}", date: Date.utc_today()))
     |> assign(:gen_n, @default_learned_n)
     |> assign(:gen_word_types, @word_types)
     |> assign(:gen_levels, @levels)
@@ -233,7 +233,15 @@ defmodule MedoruWeb.WordSetLive.Index do
 
   defp to_level(_), do: nil
 
-  defp humanize_word_type("other"), do: "Other"
+  defp humanize_word_type("noun"), do: gettext("Noun")
+  defp humanize_word_type("verb"), do: gettext("Verb")
+  defp humanize_word_type("adjective"), do: gettext("Adjective")
+  defp humanize_word_type("adverb"), do: gettext("Adverb")
+  defp humanize_word_type("particle"), do: gettext("Particle")
+  defp humanize_word_type("pronoun"), do: gettext("Pronoun")
+  defp humanize_word_type("counter"), do: gettext("Counter")
+  defp humanize_word_type("expression"), do: gettext("Expression")
+  defp humanize_word_type("other"), do: gettext("Other")
   defp humanize_word_type(type), do: type |> String.capitalize()
 
   defp load_word_sets(socket, user_id, page, search, sort_by, sort_order) do
@@ -458,18 +466,20 @@ defmodule MedoruWeb.WordSetLive.Index do
                       <%= if word_set.description && word_set.description != "" do %>
                         <p class="text-secondary text-sm mt-1 line-clamp-1">{word_set.description}</p>
                       <% end %>
-                      <div class="flex items-center gap-4 mt-2 text-sm text-secondary">
-                        <span class="flex items-center gap-1">
-                          <.icon name="hero-book-open" class="w-4 h-4" />
+                      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-secondary">
+                        <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                          <.icon name="hero-book-open" class="w-4 h-4 shrink-0" />
                           {word_set.word_count} {ngettext("word", "words", word_set.word_count)}
                         </span>
-                        <span class="flex items-center gap-1">
-                          <.icon name="hero-calendar" class="w-4 h-4" />
-                          {Calendar.strftime(word_set.inserted_at, "%b %d, %Y")}
+                        <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                          <.icon name="hero-calendar" class="w-4 h-4 shrink-0" />
+                          <span class="whitespace-nowrap">
+                            {Calendar.strftime(word_set.inserted_at, "%b %d, %Y")}
+                          </span>
                         </span>
                         <%= if word_set.practice_test_id do %>
-                          <span class="flex items-center gap-1 text-success">
-                            <.icon name="hero-check-circle" class="w-4 h-4" />
+                          <span class="inline-flex items-center gap-1 whitespace-nowrap text-success">
+                            <.icon name="hero-check-circle" class="w-4 h-4 shrink-0" />
                             {gettext("Practice test ready")}
                           </span>
                         <% end %>

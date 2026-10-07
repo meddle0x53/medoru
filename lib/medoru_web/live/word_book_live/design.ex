@@ -20,20 +20,29 @@ defmodule MedoruWeb.WordBookLive.Design do
   # `Medoru.Classrooms.Classroom.allowed_themes/0`.
   @excluded_themes ~w(cyberpunk aqua acid retro coffee night wireframe cupcake pastel luxury black)
 
+  # Labels are plain English msgids translated at runtime via
+  # display_options/0 — gettext in a module attribute would bake in
+  # compile-time (English) strings.
   @display_options [
-    {"show_image", gettext("Picture")},
-    {"show_sound", gettext("Sound")},
-    {"show_reading", gettext("Reading")},
-    {"show_level", gettext("N Level")},
-    {"show_frequency", gettext("Frequency")}
+    {"show_image", "Picture"},
+    {"show_sound", "Sound"},
+    {"show_reading", "Reading"},
+    {"show_level", "N Level"},
+    {"show_frequency", "Frequency"}
   ]
+
+  defp display_options do
+    Enum.map(@display_options, fn {key, label} ->
+      {key, Gettext.gettext(MedoruWeb.Gettext, label)}
+    end)
+  end
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
      |> assign(:page_title, gettext("Design Word Book"))
-     |> assign(:display_options, @display_options)
+     |> assign(:display_options, display_options())
      |> assign(:locales, @locales)
      |> assign(:themes, Classroom.allowed_themes() -- @excluded_themes)
      |> assign(:background_options, WordBooks.background_options())

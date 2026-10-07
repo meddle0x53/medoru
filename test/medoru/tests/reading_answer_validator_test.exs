@@ -148,6 +148,79 @@ defmodule Medoru.Tests.ReadingAnswerValidatorTest do
     end
   end
 
+  describe "validate_meaning_for_locale/3 with multiple meanings" do
+    alias Medoru.Content.Word
+
+    defp multi_meaning_word do
+      struct(Word,
+        text: "word",
+        meaning: "excuse me / sorry to bother you / goodbye",
+        reading: "reading",
+        translations: %{
+          "bg" => %{"meaning" => "Извинете ме / Съжалявам, че безпокоя / Довиждане"}
+        }
+      )
+    end
+
+    test "accepts any single meaning" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "excuse me", "en") == true
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "goodbye", "en") == true
+    end
+
+    test "accepts several or all meanings separated by slash" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(
+               word,
+               "excuse me / goodbye",
+               "en"
+             ) == true
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(
+               word,
+               "excuse me / sorry to bother you / goodbye",
+               "en"
+             ) == true
+    end
+
+    test "rejects when one of several meanings is wrong" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(
+               word,
+               "excuse me / nonsense",
+               "en"
+             ) == false
+    end
+
+    test "rejects empty answer" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "", "en") == false
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, " / ", "en") == false
+    end
+
+    test "accepts the English meaning even when a localized meaning exists" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "excuse me", "bg") == true
+    end
+
+    test "accepts the localized meaning" do
+      word = multi_meaning_word()
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "Довиждане", "bg") == true
+    end
+
+    test "falls back to English meaning when no translation exists" do
+      word = struct(Word, text: "word", meaning: "to eat", reading: "たべる", translations: %{})
+
+      assert ReadingAnswerValidator.validate_meaning_for_locale(word, "to eat", "bg") == true
+    end
+  end
+
   describe "meaning_hint/1" do
     test "returns first letter with ellipsis" do
       assert ReadingAnswerValidator.meaning_hint("to eat") == "t..."

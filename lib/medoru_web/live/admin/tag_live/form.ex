@@ -51,6 +51,13 @@ defmodule MedoruWeb.Admin.TagLive.Form do
     "error"
   ]
 
+  # Color names are user-facing labels but the raw values feed
+  # tag_color_classes/1, so we translate at runtime into {label, value}
+  # tuples instead of translating a module attribute at compile time.
+  defp color_options do
+    Enum.map(@colors, fn color -> {Gettext.gettext(MedoruWeb.Gettext, color), color} end)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -63,7 +70,8 @@ defmodule MedoruWeb.Admin.TagLive.Form do
     {:ok,
      socket
      |> assign(:categories, @categories)
-     |> assign(:colors, @colors)}
+     |> assign(:colors, @colors)
+     |> assign(:color_options, color_options())}
   end
 
   @impl true

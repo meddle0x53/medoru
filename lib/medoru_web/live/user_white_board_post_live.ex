@@ -113,7 +113,7 @@ defmodule MedoruWeb.UserWhiteBoardPostLive do
               </div>
             <% end %>
 
-            <%= if @post.post_type == "word_card" && @post.card_data do %>
+            <%= if @post.post_type in ["word_card", "word_book"] && @post.card_data do %>
               <WordBookCard.board_card post={@post} />
             <% end %>
 

@@ -33,12 +33,110 @@
           </div>
         <% end %>
 
-        <.link
-          navigate={~p"/words/sets/#{@word_set.id}"}
-          class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
-        >
-          <.icon name="hero-arrow-left" class="w-5 h-5" /> {gettext("Back to Word Set")}
-        </.link>
+        <%!-- Review Mistakes --%>
+        <%= if mistakes = assigns[:mistakes] do %>
+          <%= if mistakes == [] do %>
+            <p class="text-success font-medium mb-6">
+              {gettext("Perfect — no mistakes to review!")}
+            </p>
+          <% else %>
+            <div class="mt-2 mb-6 text-left">
+              <h2 class="text-lg sm:text-xl font-bold text-base-content mb-3 sm:mb-4 flex items-center gap-2">
+                <.icon name="hero-eye" class="w-5 h-5 text-error shrink-0" />
+                {gettext("Review mistakes")}
+                <span class="text-sm font-normal text-secondary">({length(mistakes)})</span>
+              </h2>
+              <ul class="space-y-3">
+                <%= for mistake <- mistakes do %>
+                  <li class="bg-error/5 border border-error/20 rounded-xl p-4">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                      <div class="min-w-0">
+                        <span class="text-lg sm:text-xl font-bold text-primary font-japanese break-words">
+                          {mistake.word_text}
+                        </span>
+                        <%= if mistake.word_reading do %>
+                          <span class="text-secondary font-japanese ml-2">
+                            {mistake.word_reading}
+                          </span>
+                        <% end %>
+                      </div>
+                      <%= if mistake.skipped do %>
+                        <span class="badge badge-sm badge-ghost shrink-0">
+                          {gettext("Skipped")}
+                        </span>
+                      <% end %>
+                    </div>
+
+                    <%= if is_nil(mistake.meaning_correct) do %>
+                      <%!-- Multichoice / writing / image steps: plain stored answer --%>
+                      <div class="text-sm space-y-1">
+                        <p class="text-secondary">
+                          {gettext("Your answer:")}
+                          <span class="text-error font-medium">
+                            {if(mistake.user_answer in [nil, ""],
+                              do: gettext("Skipped"),
+                              else: mistake.user_answer
+                            )}
+                          </span>
+                        </p>
+                        <p class="text-secondary">
+                          {gettext("The correct answer is: %{answer}",
+                            answer: String.replace(mistake.correct_answer || "", "|", " / ")
+                          )}
+                        </p>
+                      </div>
+                    <% else %>
+                      <%!-- Reading text steps: per-field meaning/reading correctness --%>
+                      <div class="text-sm space-y-1">
+                        <p class="text-secondary">
+                          {gettext("Meaning")}:
+                          <span class={[
+                            "font-medium",
+                            if(mistake.meaning_correct, do: "text-success", else: "text-error")
+                          ]}>
+                            {mistake.user_meaning}
+                          </span>
+                          <%= if not mistake.meaning_correct and mistake.correct_meaning do %>
+                            <span class="text-secondary">→ {mistake.correct_meaning}</span>
+                          <% end %>
+                        </p>
+                        <p class="text-secondary">
+                          {gettext("Reading")}:
+                          <span class={[
+                            "font-medium font-japanese",
+                            if(mistake.reading_correct, do: "text-success", else: "text-error")
+                          ]}>
+                            {mistake.user_reading}
+                          </span>
+                          <%= if not mistake.reading_correct and mistake.correct_reading do %>
+                            <span class="text-secondary font-japanese">
+                              → {mistake.correct_reading}
+                            </span>
+                          <% end %>
+                        </p>
+                      </div>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+        <% end %>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <.link
+            navigate={~p"/words/sets/#{@word_set.id}"}
+            class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+          >
+            <.icon name="hero-arrow-left" class="w-5 h-5" /> {gettext("Back to Word Set")}
+          </.link>
+          <.link
+            navigate={~p"/words/sets/#{@word_set.id}/test"}
+            class="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl font-medium transition-colors min-h-[44px]"
+          >
+            <.icon name="hero-arrow-path" class="w-5 h-5" /> {gettext("Retake Test")}
+          </.link>
+        </div>
       </div>
     <% else %>
       <%!-- Header --%>
@@ -51,12 +149,15 @@
             <.icon name="hero-arrow-left" class="w-4 h-4" /> {gettext("Back to Word Set")}
           </.link>
         </div>
-        <h1 class="text-xl sm:text-2xl font-bold text-base-content">
-          {gettext("Practice Test")}
-        </h1>
-        <p class="text-secondary mt-1 text-sm sm:text-base">
+        <p class="text-xs sm:text-sm text-secondary mb-1">{gettext("Practice Test")}</p>
+        <h1 class="text-xl sm:text-2xl font-bold text-base-content break-words">
           {@word_set.name}
-        </p>
+        </h1>
+        <%= if @word_set.description && @word_set.description != "" do %>
+          <p class="text-secondary mt-1 text-sm sm:text-base break-words">
+            {@word_set.description}
+          </p>
+        <% end %>
       </div>
 
       <%= if @current_step do %>

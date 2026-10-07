@@ -23,7 +23,7 @@ defmodule Medoru.WhiteBoard.BoardPost do
   end
 
   @visibilities ["public", "followers"]
-  @post_types ["text", "canvas", "word_card"]
+  @post_types ["text", "canvas", "word_card", "word_book"]
 
   def changeset(post, attrs) do
     post
@@ -54,6 +54,17 @@ defmodule Medoru.WhiteBoard.BoardPost do
             []
           else
             [card_data: "must contain a word snapshot"]
+          end
+        end)
+
+      "word_book" ->
+        changeset
+        |> validate_required([:card_data])
+        |> validate_change(:card_data, fn :card_data, data ->
+          if is_map(data) and is_binary(data["book_id"]) and is_binary(data["title"]) do
+            []
+          else
+            [card_data: "must contain a word book snapshot"]
           end
         end)
 

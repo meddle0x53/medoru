@@ -50,12 +50,12 @@
               field={@form[:color]}
               type="select"
               label={gettext("Color")}
-              options={@colors}
+              options={@color_options}
             />
           </div>
           <div class="flex flex-wrap gap-1 -mt-4">
-            <%= for color <- @colors do %>
-              <span class={["badge badge-xs", tag_color_classes(color)]}>{color}</span>
+            <%= for {label, color} <- @color_options do %>
+              <span class={["badge badge-xs", tag_color_classes(color)]}>{label}</span>
             <% end %>
           </div>
 

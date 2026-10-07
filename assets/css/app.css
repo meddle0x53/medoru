@@ -959,3 +959,168 @@ body:has(.classroom-chat-tab) footer {
 .word-book-card-face-back {
   transform: rotateY(180deg);
 }
+
+/* Word Book public presentation (flipbook) */
+
+.wb-present {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-present-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-base-100, #fff);
+  border-bottom: 1px solid var(--color-base-300, #ddd);
+  flex-shrink: 0;
+}
+
+.wb-flipbook-viewport {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.wb-flipbook {
+  margin: 0 auto;
+}
+
+/* Flipbook pages: server-rendered card faces fill their page. */
+.wb-page {
+  background: var(--color-base-100, #fff);
+  overflow: hidden;
+}
+
+.wb-page .word-book-card-face {
+  height: 100%;
+  overflow: hidden;
+}
+
+.wb-cover-page {
+  background-size: cover;
+  background-position: center;
+}
+
+/* Prev/next arrows overlaying the viewport edges. The padded hit area
+   keeps them touch-friendly without dominating the presentation. */
+.wb-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: var(--color-base-content, #333);
+  background: var(--color-base-100, #fff);
+  border: 1px solid var(--color-base-300, #ddd);
+  opacity: 0.55;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.wb-nav-btn:hover {
+  opacity: 0.9;
+}
+
+.wb-nav-prev {
+  left: 0.5rem;
+}
+
+.wb-nav-next {
+  right: 0.5rem;
+}
+
+/* Print view: hidden on screen, static pages when printing. Card
+   backgrounds and theme colors are preserved on paper (the card faces
+   are bg-base-100/text-base-content, so they stay readable in both light
+   and dark themes); print-color-adjust tells the browser to actually
+   render the backgrounds. */
+.wb-print {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print,
+  .wb-present-header,
+  .wb-flipbook-viewport {
+    display: none !important;
+  }
+
+  .wb-present {
+    height: auto !important;
+    display: block;
+    background: #fff !important;
+  }
+
+  .wb-print {
+    display: block;
+  }
+
+  .wb-print-page {
+    break-after: page;
+    page-break-after: always;
+    width: 100%;
+    /* A4 (297mm) minus the 10mm margins on both sides. Intentionally a few
+       mm short: at exactly 277mm, rounding pushes an empty spillover page
+       after every printed page in Chrome. */
+    height: 270mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Card faces fill the whole printed page */
+  .wb-print-page .word-book-card-face {
+    width: 100%;
+    height: 100%;
+    box-shadow: none;
+  }
+
+  .wb-print-cover {
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .wb-print-cover-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .wb-print-cover-content {
+    position: relative;
+    z-index: 1;
+  }
+}

@@ -153,6 +153,38 @@ defmodule Medoru.WhiteBoard do
 
   def card_word(_), do: nil
 
+  # Book fields snapshotted into word-book posts. A snapshot (instead of a
+  # book_id-only reference) keeps posted books renderable — title, author,
+  # word count, cover — and immune to book edits/deletes. The book_id is
+  # still stored so the post can link to the public presentation.
+  @word_book_fields ~w(title description cover_image card_shape theme
+                       front_background back_background word_count)a
+
+  @doc """
+  Creates a white board post holding a whole word book: a snapshot of the
+  book's presentation fields plus the author's display name, rendered as a
+  book-cover card linking to the public presentation.
+  """
+  def create_word_book_post(user, word_book) do
+    author_name =
+      case Repo.preload(user, :profile) do
+        %{profile: %{display_name: name}} when name not in [nil, ""] -> name
+        %{name: name} when name not in [nil, ""] -> name
+        _ -> nil
+      end
+
+    card_data =
+      Map.new(@word_book_fields, fn field -> {to_string(field), Map.get(word_book, field)} end)
+      |> Map.merge(%{"book_id" => word_book.id, "author_name" => author_name})
+
+    create_post(%{
+      user_id: user.id,
+      post_type: "word_book",
+      visibility: "public",
+      card_data: card_data
+    })
+  end
+
   @doc """
   Updates a post.
   """

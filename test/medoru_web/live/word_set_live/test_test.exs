@@ -114,6 +114,169 @@ defmodule MedoruWeb.WordSetLive.TestTest do
     end
   end
 
+  describe "Word Set Practice Test - results review" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Review Set"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_text],
+          max_steps_per_word: 1
+        )
+
+      %{conn: conn, word_set: WordSets.get_word_set!(word_set.id), word: word}
+    end
+
+    defp answer_and_continue(view, meaning, reading) do
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => meaning})
+
+      view
+      |> element("input[name='reading_answer']")
+      |> render_keyup(%{"value" => reading})
+
+      view
+      |> element("button[phx-click='submit_reading_text']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='next_step']")
+      |> render_click()
+    end
+
+    test "wrong answers are listed in the review mistakes section", %{
+      conn: conn,
+      word_set: word_set,
+      word: word
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      html = answer_and_continue(view, "wrong meaning", "まちがい")
+
+      assert html =~ "Practice Complete!"
+      assert html =~ "Review mistakes"
+      assert html =~ word.text
+      assert html =~ word.reading
+      assert html =~ "wrong meaning"
+      # per-field rows with the correct answers shown next to wrong fields
+      assert html =~ "Meaning"
+      assert html =~ "Reading"
+      assert html =~ word.meaning
+      assert html =~ "まちがい"
+      # stats summary
+      assert html =~ "Back to Word Set"
+      assert html =~ "Retake Test"
+    end
+
+    test "all-correct test shows no mistakes message", %{conn: conn, word_set: word_set} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      html = answer_and_continue(view, "Japan", "にほん")
+
+      assert html =~ "Practice Complete!"
+      assert html =~ "Perfect — no mistakes to review!"
+      refute html =~ "Review mistakes"
+    end
+
+    test "skipped question appears as a skipped mistake", %{conn: conn, word_set: word_set} do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("button[phx-click='skip_question']")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "Practice Complete!"
+      assert html =~ "Review mistakes"
+      assert html =~ "Skipped"
+    end
+  end
+
+  describe "Word Set Practice Test - multichoice results review" do
+    test "wrong multichoice answer shows user answer and correct answer", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word1 = word_fixture(%{text: "日本", meaning: "Japan", reading: "にほん"})
+      word2 = word_fixture(%{text: "一", meaning: "one", reading: "いち"})
+
+      word_set = word_set_fixture(%{user_id: user.id, name: "MC Review Set"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word1.id)
+      {:ok, _} = WordSets.add_word_to_set(word_set, word2.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:word_to_meaning],
+          max_steps_per_word: 1,
+          distractor_count: 3
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      # Answer the first step incorrectly, remaining steps correctly
+      test = Tests.get_test!(word_set.practice_test_id) |> Medoru.Repo.preload(:test_steps)
+      first_step = Enum.min_by(test.test_steps, & &1.order_index)
+      wrong = Enum.find(first_step.options, &(&1 != first_step.correct_answer))
+
+      view
+      |> element("button[phx-value-answer='#{wrong}']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='submit_answer']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='next_step']")
+      |> render_click()
+
+      # Finish remaining steps with correct answers
+      remaining = length(test.test_steps) - 1
+
+      for _ <- 1..remaining do
+        test = Tests.get_test!(word_set.practice_test_id) |> Medoru.Repo.preload(:test_steps)
+
+        html = render(view)
+        # find current question word from the page and match its step
+        current_step =
+          Enum.find(test.test_steps, fn step ->
+            html =~ step.question
+          end)
+
+        view
+        |> element("button[phx-value-answer='#{current_step.correct_answer}']")
+        |> render_click()
+
+        view
+        |> element("button[phx-click='submit_answer']")
+        |> render_click()
+
+        view
+        |> element("button[phx-click='next_step']")
+        |> render_click()
+      end
+
+      html = render(view)
+
+      assert html =~ "Practice Complete!"
+      assert html =~ "Review mistakes"
+      assert html =~ "Your answer:"
+      assert html =~ wrong
+      assert html =~ "The correct answer is:"
+      assert html =~ first_step.correct_answer
+      # only the wrong step is listed
+      assert html =~ ~r/Review mistakes.*\(\d\)/s
+    end
+  end
+
   describe "Word Set Practice Test - writing" do
     test "handle_event accepts boolean true for submit_writing", %{conn: conn} do
       # This test verifies the fix for the boolean vs string parameter issue

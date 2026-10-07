@@ -1012,6 +1012,23 @@ defmodule MedoruWeb.Layouts do
   end
 
   @doc """
+  Minimal full-viewport layout for read-only presentation views (e.g. the
+  public word book flipbook). No app nav, sidebar, or footer.
+  """
+  attr :flash, :map, required: true, doc: "the map of flash messages"
+
+  slot :inner_block, required: true
+
+  def present(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-base-200">
+      {render_slot(@inner_block)}
+    </div>
+    <.flash_group flash={@flash} />
+    """
+  end
+
+  @doc """
   Shows the flash group with standard titles and content.
 
   ## Examples

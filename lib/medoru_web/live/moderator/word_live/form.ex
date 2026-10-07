@@ -12,16 +12,22 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
   embed_templates "form/*"
 
   @word_types [
-    {gettext("Noun"), "noun"},
-    {gettext("Verb"), "verb"},
-    {gettext("Adjective"), "adjective"},
-    {gettext("Adverb"), "adverb"},
-    {gettext("Particle"), "particle"},
-    {gettext("Pronoun"), "pronoun"},
-    {gettext("Counter"), "counter"},
-    {gettext("Expression"), "expression"},
-    {gettext("Other"), "other"}
+    {"Noun", "noun"},
+    {"Verb", "verb"},
+    {"Adjective", "adjective"},
+    {"Adverb", "adverb"},
+    {"Particle", "particle"},
+    {"Pronoun", "pronoun"},
+    {"Counter", "counter"},
+    {"Expression", "expression"},
+    {"Other", "other"}
   ]
+
+  defp localized_word_types do
+    Enum.map(@word_types, fn {label, value} ->
+      {Gettext.gettext(MedoruWeb.Gettext, label), value}
+    end)
+  end
 
   @impl true
   def render(assigns) do
@@ -34,7 +40,7 @@ defmodule MedoruWeb.Moderator.WordLive.Form do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:word_types, @word_types)
+     |> assign(:word_types, localized_word_types())
      |> allow_upload(:image,
        accept: ~w(.jpg .jpeg .png .webp),
        max_entries: 1,

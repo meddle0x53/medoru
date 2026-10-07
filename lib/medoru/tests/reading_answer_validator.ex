@@ -59,7 +59,12 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
   end
 
   @doc """
-  Validates meaning against the word's meaning in the given locale.
+  Validates meaning against the word's known meanings for the given locale.
+
+  The answer is accepted if it matches the localized meaning (falling back
+  to English) or the English meaning itself. "/" -separated alternatives on
+  either side are matched independently, so typing any one (or several) of
+  the meanings counts as correct.
 
   ## Examples
 
@@ -70,18 +75,39 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
       true
 
   """
-  def validate_meaning_for_locale(word, user_answer, locale) when locale in ["bg", "ja"] do
-    # Get the localized meaning
-    localized_meaning = Medoru.Content.get_localized_meaning(word, locale)
+  def validate_meaning_for_locale(word, user_answer, locale) do
+    # Accept the meaning in any language we know for this word: the localized
+    # meaning (falling back to English) plus the English meaning itself, so a
+    # user is never failed for answering in a different language than the UI.
+    localized =
+      if locale in ["bg", "ja"] do
+        Medoru.Content.get_localized_meaning(word, locale)
+      else
+        word.meaning
+      end
 
-    # Validate against the localized meaning
-    validate_meaning(localized_meaning, user_answer)
+    acceptable_meanings =
+      [localized, word.meaning]
+      |> Enum.uniq()
+      |> Enum.flat_map(&meaning_segments/1)
+
+    user_parts = meaning_segments(user_answer)
+
+    user_parts != [] and
+      Enum.all?(user_parts, fn part ->
+        Enum.any?(acceptable_meanings, &validate_meaning(&1, part))
+      end)
   end
 
-  def validate_meaning_for_locale(word, user_answer, _locale) do
-    # Default to English meaning
-    validate_meaning(word.meaning, user_answer)
+  # Splits a meaning string into its "/" -separated alternatives.
+  defp meaning_segments(meaning) when is_binary(meaning) do
+    meaning
+    |> String.split("/")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
+
+  defp meaning_segments(_), do: []
 
   @doc """
   Validates the meaning answer against the word's meaning.

@@ -32,6 +32,7 @@ defmodule Medoru.Tests do
   """
 
   import Ecto.Query, warn: false
+  import Ecto.Changeset, only: [put_change: 3]
   require Logger
 
   alias Medoru.Accounts
@@ -1248,13 +1249,18 @@ defmodule Medoru.Tests do
           test_step_id: step_id
         }
 
-        if existing_answer do
-          existing_answer
-          |> TestStepAnswer.changeset(answer_data)
-        else
-          %TestStepAnswer{}
-          |> TestStepAnswer.changeset(answer_data)
-        end
+        changeset =
+          if existing_answer do
+            existing_answer
+            |> TestStepAnswer.changeset(answer_data)
+          else
+            %TestStepAnswer{}
+            |> TestStepAnswer.changeset(answer_data)
+          end
+
+        # Ecto cast turns "" into nil, but skipped/given-up questions are
+        # recorded with a blank answer and the column is NOT NULL.
+        put_change(changeset, :answer, attrs["answer"] || "")
       else
         if existing_answer do
           existing_answer

@@ -243,7 +243,7 @@
       <% end %>
       <%= if @word_type do %>
         <span class="bg-primary/10 text-primary px-3 py-1.5 rounded-full capitalize">
-          {@word_type}
+          {MedoruWeb.WordLive.Index.word_type_label(@word_type)}
         </span>
       <% end %>
       <%= if @search && @search != "" do %>
@@ -347,7 +347,7 @@
                     "bg-gray-100/80 text-gray-700 dark:bg-gray-700/40 dark:text-gray-300"
                 end
               ]}>
-                {word.word_type}
+                {MedoruWeb.WordLive.Index.word_type_label(word.word_type)}
               </span>
               <span class={[
                 "px-2 py-0.5 rounded text-xs font-medium",

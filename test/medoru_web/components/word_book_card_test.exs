@@ -177,4 +177,43 @@ defmodule MedoruWeb.WordBookCardTest do
 
     refute html =~ "uppercase tracking-widest"
   end
+
+  test "board_card renders a word_book post from its snapshot" do
+    book_id = Ecto.UUID.generate()
+
+    post = %Medoru.WhiteBoard.BoardPost{
+      id: Ecto.UUID.generate(),
+      post_type: "word_book",
+      card_data: %{
+        "book_id" => book_id,
+        "title" => "Board Book",
+        "author_name" => "Board Author",
+        "word_count" => 5,
+        "theme" => "sakura",
+        "cover_image" => nil
+      }
+    }
+
+    html = render_component(&MedoruWeb.WordBookCard.board_card/1, post: post)
+
+    assert html =~ "Board Book"
+    assert html =~ "Board Author"
+    assert html =~ "5 words"
+    assert html =~ ~s(href="/word-books/#{book_id}")
+    assert html =~ "Open book"
+  end
+
+  test "board_card renders nothing for a word_book post without a book_id" do
+    post = %Medoru.WhiteBoard.BoardPost{
+      id: Ecto.UUID.generate(),
+      post_type: "word_book",
+      card_data: %{"title" => "Broken"}
+    }
+
+    html = render_component(&MedoruWeb.WordBookCard.board_card/1, post: post)
+
+    assert html =~ ""
+    refute html =~ "Broken"
+    refute html =~ ~s(href="/word-books/)
+  end
 end

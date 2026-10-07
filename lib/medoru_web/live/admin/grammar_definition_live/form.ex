@@ -19,6 +19,14 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
     {"Expression", "expression"}
   ]
 
+  # Labels are translated at runtime — gettext in a module attribute
+  # would bake in compile-time (English) strings.
+  defp localized_word_types do
+    Enum.map(@word_types, fn {label, value} ->
+      {Gettext.gettext(MedoruWeb.Gettext, label), value}
+    end)
+  end
+
   @particles [
     {"は (wa)", "は"},
     {"が (ga)", "が"},
@@ -109,7 +117,7 @@ defmodule MedoruWeb.Admin.GrammarDefinitionLive.Form do
 
     {:ok,
      socket
-     |> assign(:word_types, @word_types)
+     |> assign(:word_types, localized_word_types())
      |> assign(:particles, @particles)
      |> assign(:word_type_colors, @word_type_colors)
      |> assign(:color_palette, @color_palette)

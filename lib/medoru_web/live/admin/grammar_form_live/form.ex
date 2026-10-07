@@ -15,6 +15,14 @@ defmodule MedoruWeb.Admin.GrammarFormLive.Form do
     {"Noun", "noun"}
   ]
 
+  # Labels are translated at runtime — calling gettext in a module
+  # attribute would bake in compile-time (English) strings.
+  defp localized_word_types do
+    Enum.map(@word_types, fn {label, value} ->
+      {Gettext.gettext(MedoruWeb.Gettext, label), value}
+    end)
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -24,7 +32,7 @@ defmodule MedoruWeb.Admin.GrammarFormLive.Form do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :word_types, @word_types)}
+    {:ok, assign(socket, :word_types, localized_word_types())}
   end
 
   @impl true

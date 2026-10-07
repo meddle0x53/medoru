@@ -105,6 +105,7 @@ defmodule MedoruWeb.Router do
       live "/words/:id/conjugations", WordLive.Conjugations
       live "/grammars", GrammarDefinitionLive.Index
       live "/grammars/:slug", GrammarDefinitionLive.Show
+      live "/word-books/:id", WordBookLive.Present
       live "/users", UsersLive.Index
       live "/users/:id/words", LearnedWordsLive.Index
       live "/users/:id/kanji", LearnedKanjiLive.Index

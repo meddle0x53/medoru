@@ -137,6 +137,18 @@ defmodule MedoruWeb.WordBookLive.Show do
     end
   end
 
+  def handle_event("share_book_to_board", _params, socket) do
+    user = socket.assigns.current_scope.current_user
+
+    case WhiteBoard.create_word_book_post(user, socket.assigns.word_book) do
+      {:ok, _post} ->
+        {:noreply, put_flash(socket, :info, gettext("Word book shared to your White Board."))}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, gettext("Could not share the word book."))}
+    end
+  end
+
   def handle_event("post_card_to_board", %{"word_id" => word_id}, socket) do
     word = Enum.find(socket.assigns.words, &(&1.id == word_id))
     user = socket.assigns.current_scope.current_user
@@ -389,6 +401,35 @@ defmodule MedoruWeb.WordBookLive.Show do
           <span class="hidden sm:inline">{gettext("Back to Word Books")}</span>
         </.link>
         <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+          <.link
+            href={~p"/word-books/#{@word_book.id}"}
+            target="_blank"
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Present")}
+          >
+            <.icon name="hero-play" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Present")}</span>
+          </.link>
+          <button
+            type="button"
+            id={"present-copy-link-#{@word_book.id}"}
+            phx-hook="CopyToClipboard"
+            data-text={"#{MedoruWeb.Endpoint.url()}#{~p"/word-books/#{@word_book.id}"}"}
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Copy presentation link")}
+          >
+            <.icon name="hero-link" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Copy link")}</span>
+          </button>
+          <button
+            type="button"
+            phx-click="share_book_to_board"
+            class="btn btn-sm btn-ghost px-2 sm:px-3"
+            title={gettext("Share to board")}
+          >
+            <.icon name="hero-rectangle-stack" class="w-4 h-4" />
+            <span class="hidden sm:inline">{gettext("Share to board")}</span>
+          </button>
           <button
             type="button"
             phx-click="open_share_modal"

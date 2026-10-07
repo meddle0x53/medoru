@@ -49,11 +49,13 @@ defmodule Medoru.Tests.TestStepAnswer do
     ])
     |> validate_required([
       :step_index,
-      :answer,
       :is_correct,
       :test_session_id,
       :test_step_id
     ])
+    # :answer is intentionally not required — skipped/given-up questions are
+    # recorded with an empty answer string so they appear in results review.
+    |> validate_length(:answer, max: 5000)
     |> validate_number(:step_index, greater_than_or_equal_to: 0)
     |> validate_number(:points_earned, greater_than_or_equal_to: 0)
     |> validate_number(:time_spent_seconds, greater_than_or_equal_to: 0)

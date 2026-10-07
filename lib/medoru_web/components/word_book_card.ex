@@ -132,7 +132,7 @@ defmodule MedoruWeb.WordBookCard do
   defp level_badge(assigns) do
     ~H"""
     <%= if show?(@config, "show_level") && @word.difficulty do %>
-      <span class="absolute top-2 left-2 z-10 inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold shadow-sm [backface-visibility:hidden]">
+      <span class="absolute top-2 left-2 z-20 inline-flex items-center px-2 py-1 bg-primary text-primary-content text-xs font-bold shadow-sm [backface-visibility:hidden]">
         N{@word.difficulty}
       </span>
     <% end %>
@@ -169,6 +169,67 @@ defmodule MedoruWeb.WordBookCard do
     """
   end
 
+  attr :word, :any, required: true, doc: "a `%Medoru.Content.Word{}`"
+
+  attr :config, :map,
+    default: %{},
+    doc: "the side config (`front_config` or `back_config`) for this face"
+
+  attr :card_shape, :string, default: "rectangle", values: ~w(square rectangle)
+
+  attr :background, :string,
+    default: nil,
+    doc: ~s(background key \(see `WordBooks.background_path/1\) or "word_image")
+
+  attr :custom_text, :string,
+    default: nil,
+    doc: "optional book-level text shown above the word on the face"
+
+  attr :eager_images, :boolean,
+    default: false,
+    doc:
+      ~s(print output: load images eagerly and render the face background as an <img> layer instead of a CSS background-image, which browsers print unreliably)
+
+  @doc """
+  Renders a single card face (no 3D flip wrapper) for contexts where front
+  and back are shown as separate blocks — flipbook pages and print output.
+  """
+  def face(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      class="word-book-card-face relative bg-base-100 text-base-content border border-base-300 shadow-md"
+      style={background_style(print_background(@eager_images, face_background(@background, @word)))}
+    >
+      <%= if @eager_images do %>
+        <% print_bg_path = face_background(@background, @word) %>
+        <%= if print_bg_path do %>
+          <img
+            src={print_bg_path}
+            alt=""
+            class="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+          />
+        <% end %>
+      <% end %>
+      <.level_badge word={@word} config={@config} />
+      <.card_face
+        word={@word}
+        config={@config}
+        shape={@card_shape}
+        background={face_background(@background, @word)}
+        custom_text={@custom_text}
+        eager_images={@eager_images}
+      />
+    </div>
+    """
+  end
+
+  # Print output uses an explicit <img> layer for the face background
+  # (see face/1), so the CSS background-image is omitted there.
+  defp print_background(true, _path), do: nil
+  defp print_background(false, path), do: path
+
   attr :post, :any, required: true, doc: "a `%BoardPost{}` with post_type \"word_card\""
 
   @doc """
@@ -180,26 +241,97 @@ defmodule MedoruWeb.WordBookCard do
     assigns = assign(assigns, :card_word, WhiteBoard.card_word(assigns.post.card_data))
 
     ~H"""
-    <%= if @card_word do %>
-      <div class="mt-3 w-full">
-        <.card
-          id={"board-card-#{@post.id}"}
-          word={@card_word}
-          front_config={@post.card_data["front_config"] || %{}}
-          back_config={@post.card_data["back_config"] || %{}}
-          card_shape={@post.card_data["card_shape"] || "rectangle"}
-          front_background={@post.card_data["front_background"]}
-          back_background={@post.card_data["back_background"]}
-          custom_text={@post.card_data["custom_text"]}
-          download={true}
-        />
-        <%= if @post.card_data["book_title"] do %>
-          <p class="mt-2 text-center text-xs text-base-content/60">
-            {gettext("From word book: %{title}", title: @post.card_data["book_title"])}
-          </p>
-        <% end %>
-      </div>
+    <%= if @post.post_type == "word_book" do %>
+      <.book_board_card card_data={@post.card_data} />
+    <% else %>
+      <%= if @card_word do %>
+        <div class="mt-3 w-full">
+          <.card
+            id={"board-card-#{@post.id}"}
+            word={@card_word}
+            front_config={@post.card_data["front_config"] || %{}}
+            back_config={@post.card_data["back_config"] || %{}}
+            card_shape={@post.card_data["card_shape"] || "rectangle"}
+            front_background={@post.card_data["front_background"]}
+            back_background={@post.card_data["back_background"]}
+            custom_text={@post.card_data["custom_text"]}
+            download={true}
+          />
+          <%= if @post.card_data["book_title"] do %>
+            <p class="mt-2 text-center text-xs text-base-content/60">
+              {gettext("From word book: %{title}", title: @post.card_data["book_title"])}
+            </p>
+          <% end %>
+        </div>
+      <% end %>
     <% end %>
+    """
+  end
+
+  # Renders a word-book post from its snapshot: a book-cover-style card
+  # linking to the public presentation. Renders nothing when the snapshot
+  # has no usable book_id (e.g. hand-written card_data).
+  attr :card_data, :map, required: true
+
+  defp book_board_card(%{card_data: %{"book_id" => book_id}} = assigns)
+       when is_binary(book_id) and book_id != "" do
+    cover_path =
+      Enum.find_value(WordBooks.cover_options(), fn {key, _label, path} ->
+        if key == assigns.card_data["cover_image"], do: path
+      end)
+
+    assigns =
+      assigns
+      |> assign(:cover_path, cover_path)
+      |> assign(
+        :present_url,
+        "#{MedoruWeb.Endpoint.url()}#{~p"/word-books/#{book_id}"}"
+      )
+
+    ~H"""
+    <div class="mt-3 w-full" data-theme={@card_data["theme"]}>
+      <div class="relative max-w-md mx-auto aspect-[3/4] rounded-2xl overflow-hidden border border-base-300 shadow-md bg-base-200 text-base-content">
+        <%= if @cover_path do %>
+          <img
+            src={@cover_path}
+            alt={@card_data["title"]}
+            class="absolute inset-0 w-full h-full object-cover"
+          />
+          <div class="absolute inset-0 bg-gradient-to-t from-base-300/80 via-transparent to-base-300/30">
+          </div>
+        <% end %>
+        <div class="absolute inset-0 flex flex-col items-center justify-between p-8 text-center">
+          <h3 class="text-2xl font-bold drop-shadow-sm line-clamp-3">{@card_data["title"]}</h3>
+          <%= if @cover_path do %>
+            <div></div>
+          <% else %>
+            <.icon name="hero-book-open" class="w-16 h-16 opacity-40" />
+          <% end %>
+          <div>
+            <p :if={@card_data["author_name"]} class="text-sm text-base-content/80">
+              {gettext("by %{name}", name: @card_data["author_name"])}
+            </p>
+            <p class="text-xs text-base-content/60">
+              {@card_data["word_count"] || 0} {ngettext(
+                "word",
+                "words",
+                @card_data["word_count"] || 0
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-2 text-center">
+        <.link href={~p"/word-books/#{book_id}"} class="btn btn-sm btn-primary">
+          {gettext("Open book")}
+        </.link>
+      </div>
+    </div>
+    """
+  end
+
+  defp book_board_card(assigns) do
+    ~H"""
     """
   end
 
@@ -208,13 +340,17 @@ defmodule MedoruWeb.WordBookCard do
   attr :shape, :string, required: true
   attr :background, :string, required: true
   attr :custom_text, :string, default: nil
+  attr :eager_images, :boolean, default: false
 
   defp card_face(assigns) do
     assigns = assign(assigns, :has_content?, side_config_content?(assigns.config))
 
     ~H"""
     <%= if @shape == "square" do %>
-      <div class={["h-full w-full flex flex-col text-center", if(@background, do: "bg-base-100/60")]}>
+      <div class={[
+        "relative z-10 h-full w-full flex flex-col text-center",
+        if(@background, do: "bg-base-100/60")
+      ]}>
         <div class="flex-1 min-h-0 w-full flex flex-col items-center justify-start gap-2 p-4 pt-10">
           <%!-- my-auto centers the content vertically when it fits; when it
                is taller than the square the auto margins collapse to 0 and
@@ -226,6 +362,7 @@ defmodule MedoruWeb.WordBookCard do
               shape={@shape}
               has_content?={@has_content?}
               custom_text={@custom_text}
+              eager_images={@eager_images}
             />
           </div>
         </div>
@@ -233,7 +370,7 @@ defmodule MedoruWeb.WordBookCard do
       </div>
     <% else %>
       <div class={[
-        "min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center",
+        "relative z-10 min-h-full w-full flex flex-col items-center justify-center gap-2 p-4 pt-10 text-center",
         if(@background, do: "bg-base-100/60")
       ]}>
         <.card_content
@@ -242,6 +379,7 @@ defmodule MedoruWeb.WordBookCard do
           shape={@shape}
           has_content?={@has_content?}
           custom_text={@custom_text}
+          eager_images={@eager_images}
         />
         <.watermark />
       </div>
@@ -268,6 +406,7 @@ defmodule MedoruWeb.WordBookCard do
   attr :shape, :string, required: true
   attr :has_content?, :boolean, required: true
   attr :custom_text, :string, default: nil
+  attr :eager_images, :boolean, default: false
 
   defp card_content(assigns) do
     ~H"""
@@ -277,7 +416,7 @@ defmodule MedoruWeb.WordBookCard do
           src={@word.image_path}
           alt={@word.text}
           class="max-h-28 w-auto max-w-full object-contain rounded-lg border border-base-300"
-          loading="lazy"
+          loading={if(@eager_images, do: "eager", else: "lazy")}
         />
       <% end %>
 

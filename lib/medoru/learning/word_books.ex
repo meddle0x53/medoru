@@ -126,6 +126,20 @@ defmodule Medoru.Learning.WordBooks do
   end
 
   @doc """
+  Gets a word book by id for public presentation, with preloaded words and owner.
+
+  Returns `nil` if the word book does not exist. The UUID acts as a
+  capability: anyone with the link can view the book.
+  """
+  def get_public_word_book(id) do
+    WordBook
+    |> where([wb], wb.id == ^id)
+    |> preload(word_book_words: [word: [:word_kanjis]])
+    |> preload(user: [:profile])
+    |> Repo.one()
+  end
+
+  @doc """
   Gets a word book with paginated words.
   """
   def get_word_book_with_words_paginated(id, opts \\ []) do

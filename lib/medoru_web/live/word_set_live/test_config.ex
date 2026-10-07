@@ -8,38 +8,51 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
 
   alias Medoru.Learning.WordSets
 
-  @available_step_types [
+  # Step type metadata. Labels/descriptions are resolved at runtime via
+  # available_step_types/0 — calling gettext in a module attribute would
+  # bake in the compile-time (English) strings and never translate.
+  @step_type_meta [
     %{
       id: "word_to_meaning",
-      label: gettext("Word to Meaning"),
       icon: "hero-book-open",
-      description: gettext("Show a Japanese word and select the English meaning")
+      label: "Word to Meaning",
+      description: "Show a Japanese word and select the English meaning"
     },
     %{
       id: "word_to_reading",
-      label: gettext("Word to Reading"),
       icon: "hero-language",
-      description: gettext("Show a Japanese word and select the hiragana reading")
+      label: "Word to Reading",
+      description: "Show a Japanese word and select the hiragana reading"
     },
     %{
       id: "reading_text",
-      label: gettext("Type Meaning & Reading"),
       icon: "hero-pencil",
-      description: gettext("Type both the English meaning and hiragana reading")
+      label: "Type Meaning & Reading",
+      description: "Type both the English meaning and hiragana reading"
     },
     %{
       id: "image_to_meaning",
-      label: gettext("Image to Meaning"),
       icon: "hero-photo",
-      description: gettext("Show a Japanese word and select from image options")
+      label: "Image to Meaning",
+      description: "Show a Japanese word and select from image options"
     },
     %{
       id: "kanji_writing",
-      label: gettext("Kanji Writing"),
       icon: "hero-paint-brush",
-      description: gettext("Draw kanji with correct stroke order (3 points)")
+      label: "Kanji Writing",
+      description: "Draw kanji with correct stroke order (3 points)"
     }
   ]
+
+  defp available_step_types do
+    Enum.map(@step_type_meta, fn step_type ->
+      %{
+        step_type
+        | label: Gettext.gettext(MedoruWeb.Gettext, step_type.label),
+          description: Gettext.gettext(MedoruWeb.Gettext, step_type.description)
+      }
+    end)
+  end
 
   @impl true
   def mount(_params, _session, socket) do
@@ -48,7 +61,7 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
      |> assign(:page_title, gettext("Create Practice Test"))
      |> assign(:selected_types, ["word_to_meaning", "word_to_reading"])
      |> assign(:max_steps_per_word, 3)
-     |> assign(:available_step_types, @available_step_types)}
+     |> assign(:available_step_types, available_step_types())}
   end
 
   @impl true

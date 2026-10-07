@@ -12,12 +12,16 @@ defmodule MedoruWeb.Admin.LessonLive.Form do
   embed_templates "form/*"
 
   @lesson_types [
-    {:reading, gettext("Reading")},
-    {:writing, gettext("Writing")},
-    {:listening, gettext("Listening")},
-    {:speaking, gettext("Speaking")},
-    {:grammar, gettext("Grammar")}
+    {:reading, "Reading"},
+    {:writing, "Writing"},
+    {:listening, "Listening"},
+    {:speaking, "Speaking"},
+    {:grammar, "Grammar"}
   ]
+
+  defp localized_lesson_types do
+    Enum.map(@lesson_types, fn {id, label} -> {id, Gettext.gettext(MedoruWeb.Gettext, label)} end)
+  end
 
   @impl true
   def render(assigns) do
@@ -28,7 +32,7 @@ defmodule MedoruWeb.Admin.LessonLive.Form do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :lesson_types, @lesson_types)}
+    {:ok, assign(socket, :lesson_types, localized_lesson_types())}
   end
 
   @impl true
