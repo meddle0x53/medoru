@@ -42,3 +42,4 @@ npm-debug.log
 /raw
 /seeds
 /priv/repo/seeds/*.json
+/priv/static/service-worker-*.js*

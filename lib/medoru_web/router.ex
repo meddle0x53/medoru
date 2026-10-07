@@ -118,6 +118,8 @@ defmodule MedoruWeb.Router do
       live "/lessons/:id", LessonLive.Show
       live "/tests", TestLive.Index
       live "/games", GamesLive.Index
+      live "/challenges", ChallengesLive
+      live "/challenges/kanji-master", KanjiMasterLive
       live "/attribution", SettingsLive.Attribution
       live "/privacy", PrivacyLive
       live "/cookies", CookiesLive

@@ -25,6 +25,7 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/medoru"
 import topbar from "../vendor/topbar"
 import KanjiWriting from "./hooks/kanji_writing"
+import KanjiMaster from "./hooks/kanji_master"
 import FreeDraw from "./hooks/free_draw"
 import CanvasPlayer from "./hooks/canvas_player"
 import BoardInput from "./hooks/board_input"
@@ -72,7 +73,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, KanjiWriting, FreeDraw, CanvasPlayer, BoardInput, StepSorter, WordSorter, ReadingSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, GameHook, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay, CopyToClipboard, ShareAsPicture, WordBookCards, WordBookPresent, CommentInput, WordColorApplyTo},
+  hooks: {...colocatedHooks, KanjiWriting, KanjiMaster, FreeDraw, CanvasPlayer, BoardInput, StepSorter, WordSorter, ReadingSorter, OptionInput, Timer, AutoDismiss, StrokeAnimator, KanaFallingInput, GameFullscreen, FlickKeyboard, GameFullscreenButton, GameHook, LessonPlayer, Theme, ChatScroll, ChatInput, ChatCrypto, GroupChatCreator, ClassroomChatInput, ClassroomChatScroll, ChatKeyManager, ChatVoiceRecorder, ChatAudioPlayer, NotificationSound, PushNotificationsHook, PreviewOverlay, CopyToClipboard, ShareAsPicture, WordBookCards, WordBookPresent, CommentInput, WordColorApplyTo},
 })
 
 // Show progress bar on live navigation and form submits

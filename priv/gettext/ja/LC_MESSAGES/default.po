@@ -19004,3 +19004,270 @@ msgstr "完璧 — 復習する間違いはありません！"
 #, elixir-autogen, elixir-format
 msgid "Skipped"
 msgstr "スキップ"
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "+1 life"
+msgstr "ライフ +1"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "+1 yellow stroke"
+msgstr "黄色ストローク +1"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "An endless kanji-writing survival game. 15 lives — how far can you go?"
+msgstr "漢字書きのエンドレスサバイバルゲーム。15のライフ — どこまでいける？"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Anonymous name"
+msgstr "匿名の名前"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Best: %{score}"
+msgstr "ベスト: %{score}"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Coins"
+msgstr "コイン"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Congratulations!"
+msgstr "おめでとうございます！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Library"
+msgstr "漢字ライブラリ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Master"
+msgstr "漢字マスター"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Learn more kanji and come back!"
+msgstr "もっと漢字を学んでまた来てください！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Learner"
+msgstr "学習者"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Learner Challenges"
+msgstr "学習者チャレンジ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Link my profile"
+msgstr "プロフィールと連携"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Log in to check your progress"
+msgstr "ログインして進捗を確認"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No scores yet. Be the first!"
+msgstr "まだスコアがありません。最初の記録を！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Permanent challenges. Compete with other learners for the top spots!"
+msgstr "常設チャレンジ。他の学習者と上位を競おう！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Practice Classroom"
+msgstr "練習用クラスルーム"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Record Score"
+msgstr "スコアを記録"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Score recorded! Check the leaderboard:"
+msgstr "スコアを記録しました！ランキングを確認："
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Shop"
+msgstr "ショップ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Skip a kanji"
+msgstr "漢字をスキップ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The Hollow Ouroboros"
+msgstr "The Hollow Ouroboros"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Top 5"
+msgstr "トップ5"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Upgrade pack (3 offers, pick 1)"
+msgstr "アップグレードパック（3つから1つ選択）"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "View Leaderboard"
+msgstr "ランキングを見る"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You drew every kanji you know! Learn more kanji for a better score."
+msgstr "知っている漢字をすべて書きました！より良いスコアのために漢字をもっと学びましょう。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You know %{count} kanji. You need at least 50 learned kanji to enter Kanji Master."
+msgstr "%{count}字の漢字を習得しています。漢字マスターに参加するには50字以上必要です。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Your rank: #%{rank}"
+msgstr "あなたの順位: #%{rank}"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "KUN"
+msgstr "KUN"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "ON"
+msgstr "ON"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Draw the kanji with these readings"
+msgstr "次の読みを持つ漢字を書こう"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Draw the kanji in %{word}（%{reading}）— %{meaning}"
+msgstr "%{word}（%{reading}）— %{meaning} の漢字を書こう"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "How to play"
+msgstr "遊び方"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Draw the kanji for the given word, stroke by stroke, in the correct order."
+msgstr "与えられた単語の漢字を、正しい順番で1画ずつ書きましょう。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Levels go from simple (1-3 strokes) to your hardest kanji, then restart with kanji you haven't drawn yet."
+msgstr "レベルは簡単なもの（1〜3画）から最も難しい漢字まで進み、その後はまだ書いていない漢字から再開します。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Each cycle, a wrong stroke costs one more life."
+msgstr "サイクルが進むごとに、間違った1画で失うライフが1つ増えます。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The shop opens every 5 kanji — spend coins on lives, hints, upgrades, or skips."
+msgstr "ショップは5字ごとに開きます — コインでライフ、ヒント、アップグレード、スキップを購入しましょう。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Currencies"
+msgstr "通貨"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Lives — you start with 15. Lose one (or more per cycle) on a wrong stroke."
+msgstr "ライフ — 15からスタート。間違った1画で1つ（サイクルごとに増加）失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Coins — you start with your site level and earn 1 per 5 kanji. Spent in the shop."
+msgstr "コイン — サイトレベル分からスタートし、5字ごとに1枚獲得。ショップで使用します。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Yellow strokes — a mistake always costs lives; a charge shows you the correct stroke (once per stroke). You get +1 per kanji."
+msgstr "黄色ストローク — 間違いは必ずライフを失います。1回の使用で正しい1画を表示（1画につき1回）。漢字1字ごとに+1獲得。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Stars — your score. Each correct stroke earns points; upgraded strokes earn more."
+msgstr "スター — スコアです。正しい1画ごとにポイント獲得。アップグレードした画はさらに多く得られます。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Stroke upgrades"
+msgstr "ストロークアップグレード"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Blue"
+msgstr "青"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "2 points when drawn correctly."
+msgstr "正しく書くと2ポイント。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Purple"
+msgstr "紫"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "50/50 chance of 3 points, otherwise 1."
+msgstr "50%の確率で3ポイント、それ以外は1。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Orange"
+msgstr "オレンジ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "5 points, but a mistake costs one extra life."
+msgstr "5ポイント、ただし間違えるとライフが1つ追加で減ります。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Silver"
+msgstr "シルバー"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "10% chance to win a life when drawn correctly."
+msgstr "正しく書くと10%の確率でライフを獲得。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Cyan"
+msgstr "シアン"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "5 points, but a mistake also costs 5 coins."
+msgstr "5ポイント、ただし間違えるとコインも5枚失います。"
+

@@ -1124,3 +1124,43 @@ body:has(.classroom-chat-tab) footer {
     z-index: 1;
   }
 }
+
+/* Kanji Master HUD feedback animations */
+@keyframes km-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+@keyframes km-hit {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes km-float-up {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-28px); }
+}
+
+.km-anim-bump {
+  animation: km-bump 0.35s ease;
+}
+
+.km-anim-hit {
+  animation: km-hit 0.4s ease;
+  color: #ef4444 !important;
+}
+
+.km-float-score {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  font-weight: 800;
+  font-size: 0.85rem;
+  pointer-events: none;
+  animation: km-float-up 0.8s ease-out forwards;
+}
