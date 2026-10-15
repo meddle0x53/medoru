@@ -1,7 +1,7 @@
 import { trackFrame } from '../systems/keyLagProbe.js'
 import { GAME_CONFIG, COLORS, FONTS } from '../config.js'
 import { getEffect, EFFECT_CATEGORIES } from '../systems/EffectRegistry.js'
-import Player from '../entities/Player.js'
+import Player, { KANJI_TIER_MULTIPLIERS } from '../entities/Player.js'
 import Enemy from '../entities/Enemy.js'
 import TurnManager from '../systems/TurnManager.js'
 import SocketProcSystem from '../systems/SocketProcSystem.js'
@@ -1458,12 +1458,8 @@ export default class BattleScene extends Phaser.Scene {
 
   renderSwitchDialog() {
     const maxActive = this.player.maxActiveSlots
-    const hasChargesLeft = (action) => {
-      if (!action.singleUse) return true
-      return this.player.getAbilityCharges(action.id) > 0
-    }
-    const combatActive = this.player.activeActions.filter(a => a.id !== 'use_item' && hasChargesLeft(a))
-    const combatInactive = this.player.inactiveActions.filter(a => a.id !== 'use_item' && hasChargesLeft(a))
+    const combatActive = this.player.activeActions.filter(a => a.id !== 'use_item')
+    const combatInactive = this.player.inactiveActions.filter(a => a.id !== 'use_item')
     if (this.switchDialogSelectedInactive && !combatInactive.some(a => a.id === this.switchDialogSelectedInactive)) {
       this.switchDialogSelectedInactive = null
     }
@@ -2277,9 +2273,7 @@ export default class BattleScene extends Phaser.Scene {
   getSkillButtonLabel(action) {
     const infusion = this.player.getAbilityInfusion(action.id)
     const badge = infusion ? (INFUSION_ICONS[infusion.value] || '✦') : ''
-    const charges = action.singleUse ? this.player.getAbilityCharges(action.id) : null
-    const chargesText = charges !== null ? ` x${charges}` : ''
-    return `${badge}${badge ? ' ' : ''}${action.name} (${action.staminaCost})${chargesText}`
+    return `${badge}${badge ? ' ' : ''}${action.name} (${action.staminaCost})`
   }
 
   updateSkillButtonLabels() {
@@ -2785,6 +2779,11 @@ export default class BattleScene extends Phaser.Scene {
           this.challengeActive = false
           this.setSkillButtonsEnabled(true)
           this.endTurnBtn.setVisible(true)
+
+          // D11 kanji tier: the drawn shield kanji's run tier sets the
+          // per-action multiplier (cleared with the other kanji fields).
+          const tier = this.player.getKanjiTier(skill.id, selectedKanji)
+          this.player.setKanjiTierMultiplier(KANJI_TIER_MULTIPLIERS[tier] || 1)
 
           const multiplier = result.completed
             ? (result.wrongStrokes === 0 ? 1.25 : 1.0)
@@ -3431,12 +3430,6 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
-    // Consume a charge for single-use abilities and refresh the action bar.
-    if (this.selectedSkill.singleUse) {
-      this.player.consumeAbilityCharge(this.selectedSkill.id)
-      this._refreshSkillButtons()
-    }
-
     if (!target.isAlive()) {
       this.onEnemyDefeated(target)
       // Extra defeat path: e.g. killing Danzaburō also kills his tanuki clones,
@@ -3456,6 +3449,7 @@ export default class BattleScene extends Phaser.Scene {
     this.updatePlayerStatusButton()
     this.player.clearKanjiBonus()
     this.player.clearBasePowerBonus()
+    this.player.clearKanjiTierMultiplier()
 
     const quality = challengeResult === 'perfect' ? 'Perfect!' : challengeResult === 'success' ? '' : 'Failed...'
     switch (result.type) {
@@ -4488,7 +4482,7 @@ export default class BattleScene extends Phaser.Scene {
       // Mark the tile completed immediately so the map state is correct even if
       // the player gambles/closes the WinScene before clicking Continue.
       if (this.tile?.id) this.player.completeTile(this.tile.id)
-      this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile, essenceGained: this.essenceGainedThisBattle })
+      this.scene.start('WinScene', { player: this.player, enemy: representativeEnemy, tile: this.tile, mapIndex: this.mapIndex ?? 0, essenceGained: this.essenceGainedThisBattle })
       return
     }
 

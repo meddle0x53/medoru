@@ -1,6 +1,7 @@
 import { getWindowGameData } from '../api.js'
 import { GAME_CONFIG, COLORS } from '../config.js'
 import { getEffectiveKanjiPool, resolveKanjiData } from './freeKanjiPools.js'
+import { KANJI_TIER_MULTIPLIERS } from '../entities/Player.js'
 
 /**
  * Data-driven kanji challenge resolver for weapon attacks.
@@ -51,6 +52,7 @@ export default class WeaponKanjiChallengeSystem {
     }
 
     const selectedKanjiData = this._selectKanji(skill, cfg)
+    this._pendingKanjiChar = selectedKanjiData?.character || null
 
     // Fallback path: no usable stroke data available.
     if (!selectedKanjiData || !selectedKanjiData.stroke_data?.strokes?.length) {
@@ -117,6 +119,13 @@ export default class WeaponKanjiChallengeSystem {
     this.scene.challengeActive = false
     this.scene.setSkillButtonsEnabled(true)
     this.scene.endTurnBtn.setVisible(true)
+
+    // D11 kanji tier: the drawn kanji's run tier sets a per-action damage
+    // multiplier, consumed (and cleared) by TurnManager's attack branch.
+    const player = this.scene.player
+    const tier = player.getKanjiTier?.(skill.id, this._pendingKanjiChar) || 'green'
+    player.setKanjiTierMultiplier(KANJI_TIER_MULTIPLIERS[tier] || 1)
+    this._pendingKanjiChar = null
 
     const outcome = cfg.outcomes?.[outcomeKey]
 
