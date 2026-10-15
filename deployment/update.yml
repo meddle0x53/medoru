@@ -70,6 +70,18 @@
         executable: /bin/bash
         chdir: "{{ app_home }}/source"
 
+    - name: Prune old release versions (keep latest 2)
+      ansible.builtin.shell: |
+        cd {{ app_home }}/source/_build/prod/rel/medoru
+        # lib holds medoru-<version> app dirs, releases holds plain <version>
+        # dirs — old ones accumulate ~400MB each across deploys.
+        ls -d lib/medoru-* 2>/dev/null | sort -V | head -n -2 | xargs -r rm -rf
+        ls -d releases/*/ 2>/dev/null | sort -V | head -n -2 | xargs -r rm -rf
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
     - name: Check if current release exists
       ansible.builtin.stat:
         path: "{{ app_home }}/current"
