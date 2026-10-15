@@ -12,10 +12,18 @@ import { sendRunResult, uploadSaveData } from '../api.js'
 export function loadoutKey() {
   return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
 }
-const MAP_VERSION = 5
+const MAP_VERSION = 6
 
-const BASE_STAT_POINTS = 0
-const STAT_POINTS_PER_LEVEL = 0
+// Roll prices by currency (Rolls meta-progression; see docs/PLAN-roguelike-implementation.md)
+export const ROLL_TIERS = ['common', 'uncommon', 'rare', 'epic']
+export const ROLL_PRICES = {
+  scales: { common: 5, uncommon: 10, rare: 18, epic: 25 },
+  gold: { common: 50, uncommon: 100, rare: 180, epic: 250 },
+}
+
+// Kanji tier multipliers (D11): green is the default/absent tier.
+export const KANJI_TIER_MULTIPLIERS = { green: 1, blue: 1.15, purple: 1.3, silver: 1.5 }
+const KANJI_TIER_LADDER = ['green', 'blue', 'purple', 'silver']
 
 // Scaling letter multipliers
 export const SCALING_MULTIPLIERS = {
@@ -209,7 +217,6 @@ export default class Player extends Character {
     this.level = userData.level || 1
     this.potionUsesLeft = 3
     this.userData = userData
-    const startingStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL
 
     // Equipment
     this.shield = shield
@@ -238,7 +245,8 @@ export default class Player extends Character {
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
       permanentWeaponLevel: 0,
       permanentShieldLevel: 0,
-      permanentStatPointBonus: 0,
+      // Rolls inventory is meta-progression: persists across runs/death.
+      rollInventory: { common: 0, uncommon: 0, rare: 0, epic: 0 },
       // Run-scoped state (reset every run)
       activeItemIds: [],
       heroCharmIds: [],
@@ -247,9 +255,13 @@ export default class Player extends Character {
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
-      singleUseCharges: {},
-      statPoints: startingStatPoints,
-      statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      // Roguelike upgrade system (run-scoped; see systems/UpgradeEngine.js)
+      runUpgrades: [],
+      staminaFlatBonus: 0,
+      activeSlotBonus: 0,
+      weaponProfileOverride: null,
+      activeRoll: null,
+      kanjiTiers: {},
       gold: 0,
       inventory: {},
       ownedCharmIds: [],
@@ -271,15 +283,7 @@ export default class Player extends Character {
     this.loadout.weapon = this.weapon
     this.loadout.shield = this.shield
 
-    // Apply stat allocations to base stats
-    for (const [stat, points] of Object.entries(this.loadout.statAllocations)) {
-      if (this.baseStats[stat] !== undefined) {
-        this.baseStats[stat] += points
-        this[stat] = this.baseStats[stat]
-      }
-    }
-
-    // Recalculate derived stats after allocations
+    // Recalculate derived stats
     this.recalcMaxHp()
     this.hp = this.maxHp
     this.recalcMaxStamina()
@@ -302,6 +306,7 @@ export default class Player extends Character {
     this.activeKanjiBonus = 0
     this.activeBasePowerBonus = 0
     this.activeShieldBonus = 0
+    this.activeKanjiTierMult = 1
     this.lastKanjiStrokes = 0
 
     // Readiness: 0 = distracted, 1 = focused (set after End Turn word challenge)
@@ -357,6 +362,25 @@ export default class Player extends Character {
 
   // ---------- Weapon Damage Calculation ----------
 
+  // Base scaling for the weapon: when a weapon_profile upgrade card overrides
+  // the weapon profile, resolve the override charm's scaling block instead of
+  // the weapon's own schedule (mirrors applySocketScaling charm rules).
+  getBaseScaling() {
+    const overrideId = this.loadout?.weaponProfileOverride
+    if (overrideId) {
+      const charm = getSocketCharmById(overrideId)
+      if (charm?.scaling) {
+        return applySocketScaling({}, { socketCharmIds: [overrideId], level: this.weapon?.level || 0 })
+      }
+    }
+    return getBaseScaling(this.weapon)
+  }
+
+  // Effective weapon scaling: base (possibly overridden) plus socket charms.
+  getEffectiveScaling() {
+    return applySocketScaling(this.getBaseScaling(), this.weapon)
+  }
+
   calculateWeaponDamage(action = null) {
     const w = this.weapon
     if (!w) return 0
@@ -364,8 +388,8 @@ export default class Player extends Character {
     const base = w.baseDamage
     let bonus = 0
 
-    // Apply effective scaling (base + socket charm overrides)
-    for (const [stat, grade] of Object.entries(getEffectiveScaling(w))) {
+    // Apply effective scaling (profile override + socket charm overrides)
+    for (const [stat, grade] of Object.entries(this.getEffectiveScaling())) {
       const multiplier = SCALING_MULTIPLIERS[grade] || 0
       const statValue = this.getStatValue(stat)
       const factor = getStatFactor(statValue)
@@ -575,7 +599,7 @@ export default class Player extends Character {
     this.activeActions = active
     this.inactiveActions = inactive
     this.equippedSkills = active
-    this.maxActiveSlots = getMaxActiveActions(this.getEffectiveCapacity())
+    this.maxActiveSlots = getMaxActiveActions(this.getEffectiveCapacity()) + (this.loadout?.activeSlotBonus || 0)
   }
 
   setActiveActionIds(ids) {
@@ -598,19 +622,80 @@ export default class Player extends Character {
 
   // Why a skill cannot be used right now, or null if it can.
   skillUnavailableReason(skill) {
-    if (skill.id === 'quick_stab' && this.weapon?.socketCharmIds?.[0] !== 'sharp_charm_sword') {
+    // Socket-gated abilities are usable with the charm in socket 0 OR the
+    // matching run-unlock upgrade card (see hasRunUnlock).
+    if (skill.id === 'quick_stab' &&
+        this.weapon?.socketCharmIds?.[0] !== 'sharp_charm_sword' &&
+        !this.hasRunUnlock('sharp_charm_sword')) {
       return 'Quick Stab requires the Sharp Charm in the sword\'s first socket'
     }
-    if (skill.id === 'guard_break' && this.weapon?.socketCharmIds?.[0] !== 'heavy_charm_sword') {
+    if (skill.id === 'guard_break' &&
+        this.weapon?.socketCharmIds?.[0] !== 'heavy_charm_sword' &&
+        !this.hasRunUnlock('heavy_charm_sword')) {
       return 'Guard Break requires the Heavy Charm in the sword\'s first socket'
     }
-    if (this.stamina < skill.staminaCost) return 'Not enough stamina'
-    if (skill.singleUse && (this.loadout.singleUseCharges?.[skill.id] || 0) <= 0) return 'No charges left'
+    const eff = this.getEffectiveAbility(skill)
+    if (this.stamina < eff.staminaCost) return 'Not enough stamina'
     return null
   }
 
   canUseSkill(skill) {
     return this.skillUnavailableReason(skill) === null
+  }
+
+  // True when an unlock_ability upgrade card granted the socket-charm gate.
+  hasRunUnlock(charmId) {
+    return (this.loadout?.runUpgrades || [])
+      .some(u => u.type === 'unlock_ability' && u.effect?.charmId === charmId)
+  }
+
+  /**
+   * Resolve an ability definition into its effective form for this run by
+   * merging ability_modifier upgrade cards from loadout.runUpgrades.
+   * Returns { staminaCost (min 1), damageMultiplier, critChanceBonus,
+   * critDamageBonus, onHitEffects, executeBonus, doubleHit }.
+   */
+  getEffectiveAbility(action) {
+    const eff = {
+      staminaCost: action?.staminaCost ?? 0,
+      damageMultiplier: 1,
+      critChanceBonus: 0,
+      critDamageBonus: 0,
+      onHitEffects: [],
+      executeBonus: 0,
+      doubleHit: false,
+    }
+    if (!action) return eff
+    for (const upgrade of this.loadout?.runUpgrades || []) {
+      if (upgrade.type !== 'ability_modifier') continue
+      const mod = upgrade.effect || {}
+      if (mod.abilityId !== action.id) continue
+      if (typeof mod.staminaCostDelta === 'number') eff.staminaCost += mod.staminaCostDelta
+      if (typeof mod.damageMultiplier === 'number') eff.damageMultiplier += mod.damageMultiplier
+      if (typeof mod.critChanceBonus === 'number') eff.critChanceBonus += mod.critChanceBonus
+      if (typeof mod.critDamageBonus === 'number') eff.critDamageBonus += mod.critDamageBonus
+      if (typeof mod.executeBonus === 'number') eff.executeBonus += mod.executeBonus
+      if (Array.isArray(mod.onHitEffects)) eff.onHitEffects.push(...mod.onHitEffects)
+      if (mod.doubleHit) eff.doubleHit = true
+    }
+    eff.staminaCost = Math.max(1, Math.round(eff.staminaCost))
+    return eff
+  }
+
+  // ---------- Kanji Tiers (D11) ----------
+
+  // Tier of a kanji within an ability pool for this run; 'green' when unraised.
+  getKanjiTier(abilityId, char) {
+    const tier = this.loadout?.kanjiTiers?.[abilityId]?.[char]
+    return KANJI_TIER_LADDER.includes(tier) ? tier : 'green'
+  }
+
+  setKanjiTierMultiplier(mult) {
+    this.activeKanjiTierMult = mult
+  }
+
+  clearKanjiTierMultiplier() {
+    this.activeKanjiTierMult = 1
   }
 
   // ---------- Parry System ----------
@@ -686,18 +771,9 @@ export default class Player extends Character {
       const raw = localStorage.getItem(loadoutKey())
       if (raw) {
         const loadout = JSON.parse(raw)
-        // Migration: ensure permanent bonus field exists
-        if (typeof loadout.permanentStatPointBonus !== 'number') {
-          loadout.permanentStatPointBonus = 0
-        }
-        // Migration: recalc available stat points based on level + permanent bonus,
-        // preserving points already spent.
-        const expectedTotal = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + loadout.permanentStatPointBonus
-        const spent = Object.values(loadout.statAllocations || {}).reduce((a, b) => a + b, 0)
-        const expectedRemaining = Math.max(0, expectedTotal - spent)
-        if (typeof loadout.statPoints !== 'number' || loadout.statPoints < expectedRemaining) {
-          loadout.statPoints = expectedRemaining
-        }
+        // Direct cutover: the stat-point system and single-use charges are
+        // deleted; stale saves are invalidated via the MAP_VERSION bump.
+        delete loadout.permanentStatPointBonus
         // Migration: ensure new rogue-like fields exist
         if (!loadout.class) loadout.class = 'warrior'
         if (typeof loadout.gold !== 'number') loadout.gold = 0
@@ -749,12 +825,24 @@ export default class Player extends Character {
         if (!Array.isArray(loadout.knownActionIds)) {
           loadout.knownActionIds = (loadout.selectedActionIds || []).filter(id => id !== 'use_item')
         }
-        // Migration: older versions could store the same single-use ability id
-        // twice (learnAbility pushed after addAbilityCharges had already added it).
+        // Migration: older versions could store the same ability id twice.
         loadout.knownActionIds = [...new Set(loadout.knownActionIds)]
-        // Migration: single-use ability charges.
-        if (!loadout.singleUseCharges || typeof loadout.singleUseCharges !== 'object') {
-          loadout.singleUseCharges = {}
+        // Roguelike upgrade system run-state backfills (direct cutover: the
+        // old singleUseCharges/statAllocations keys are simply dropped).
+        delete loadout.singleUseCharges
+        delete loadout.statAllocations
+        delete loadout.statPoints
+        if (!Array.isArray(loadout.runUpgrades)) loadout.runUpgrades = []
+        if (typeof loadout.staminaFlatBonus !== 'number') loadout.staminaFlatBonus = 0
+        if (typeof loadout.activeSlotBonus !== 'number') loadout.activeSlotBonus = 0
+        if (loadout.weaponProfileOverride === undefined) loadout.weaponProfileOverride = null
+        if (loadout.activeRoll === undefined) loadout.activeRoll = null
+        if (!loadout.kanjiTiers || typeof loadout.kanjiTiers !== 'object') loadout.kanjiTiers = {}
+        if (!loadout.rollInventory || typeof loadout.rollInventory !== 'object') {
+          loadout.rollInventory = { common: 0, uncommon: 0, rare: 0, epic: 0 }
+        }
+        for (const tier of ['common', 'uncommon', 'rare', 'epic']) {
+          if (typeof loadout.rollInventory[tier] !== 'number') loadout.rollInventory[tier] = 0
         }
         // Migration: ensure Use Item is active by default (it has its own slot).
         if (!Array.isArray(loadout.activeActionIds)) {
@@ -807,12 +895,6 @@ export default class Player extends Character {
         }
         if (!Array.isArray(loadout.shield.socketCharmIds)) {
           loadout.shield.socketCharmIds = [null, null, null, null]
-        }
-        if (!loadout.statAllocations) {
-          loadout.statAllocations = {}
-        }
-        if (loadout.statAllocations.capacity === undefined) {
-          loadout.statAllocations.capacity = 0
         }
         // Migration: meta-currency and permanent unlocks.
         // Legacy `gameTokens` and `rareGameTokens` become `ouroScales` and `ouroSource`.
@@ -1054,7 +1136,7 @@ export default class Player extends Character {
   }
 
   recalcMaxStamina() {
-    this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3)
+    this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3) + (this.loadout?.staminaFlatBonus || 0)
   }
 
   // Stats are canonical in baseStats (allocations are folded into it).
@@ -1383,15 +1465,6 @@ export default class Player extends Character {
     const action = ALL_ACTIONS.find(a => a.id === actionId)
     const isKnown = this.loadout.knownActionIds.includes(actionId)
 
-    // Single-use abilities gain a charge every time they are rewarded, even if
-    // already known. addAbilityCharges() also adds the ability to the known
-    // pool, so delegate entirely and return — pushing again here would
-    // duplicate the id and show the ability twice in the loadout list.
-    if (action?.singleUse) {
-      this.addAbilityCharges(actionId, 1)
-      return { ok: true, added: !isKnown, recharged: true, action }
-    }
-
     if (isKnown) {
       this.refreshActions()
       this.saveLoadout()
@@ -1410,6 +1483,14 @@ export default class Player extends Character {
     const combatSelected = this.loadout.selectedActionIds.filter(id => id !== 'use_item')
     if (combatSelected.length < maxBattle) {
       this.addToSelectedPool(actionId)
+    }
+
+    // Auto-equip into a free active slot if one is available (D10: learned
+    // abilities are permanent for the run; stamina is the only use limiter).
+    const maxActive = getMaxActiveActions(this.getEffectiveCapacity()) + (this.loadout.activeSlotBonus || 0)
+    const combatActive = this.loadout.activeActionIds.filter(id => id !== 'use_item')
+    if (combatActive.length < maxActive && !this.loadout.activeActionIds.includes(actionId)) {
+      this.loadout.activeActionIds.push(actionId)
     }
 
     this.refreshActions()
@@ -1556,7 +1637,8 @@ export default class Player extends Character {
       unlockedAbilityIds: this.loadout?.unlockedAbilityIds ?? getDefaultUnlockedAbilityIds(),
       permanentWeaponLevel: this.loadout?.permanentWeaponLevel ?? 0,
       permanentShieldLevel: this.loadout?.permanentShieldLevel ?? 0,
-      permanentStatPointBonus: this.loadout?.permanentStatPointBonus ?? 0,
+      // Rolls inventory survives runs and death (meta progression).
+      rollInventory: this.loadout?.rollInventory || { common: 0, uncommon: 0, rare: 0, epic: 0 },
       // Charms purchased with Ouro Essence (meta currency) persist across
       // runs; in-run gold purchases stay run-scoped.
       permanentCharmIds: this.loadout?.permanentCharmIds ?? [],
@@ -1575,8 +1657,6 @@ export default class Player extends Character {
       meta.savedSiteLevel = this.level
     }
 
-    const totalStatPoints = BASE_STAT_POINTS + (this.level - 1) * STAT_POINTS_PER_LEVEL + meta.permanentStatPointBonus
-
     this.loadout = {
       class: 'warrior',
       ...meta,
@@ -1588,8 +1668,13 @@ export default class Player extends Character {
       knownActionIds: starterActionIds.filter(id => id !== 'use_item'),
       selectedActionIds: [...starterActionIds],
       activeActionIds: ['forward_slash', 'setup_defence', 'shield_parry', 'use_item'],
-      statPoints: totalStatPoints,
-      statAllocations: { vitality: 0, stamina: 0, capacity: 0, skill: 0, strength: 0, mana: 0, luck: 0 },
+      // Roguelike upgrade system run-state (wiped every run).
+      runUpgrades: [],
+      staminaFlatBonus: 0,
+      activeSlotBonus: 0,
+      weaponProfileOverride: null,
+      activeRoll: null,
+      kanjiTiers: {},
       gold: meta.startingGoldBonus || 0,
       inventory: {},
       ownedCharmIds: [...(meta.permanentCharmIds || [])],
@@ -1619,6 +1704,7 @@ export default class Player extends Character {
     this.buffs = []
     this.activeKanjiBonus = 0
     this.activeShieldBonus = 0
+    this.activeKanjiTierMult = 1
     this.readiness = 0
     this.reactionMultiplier = 1
     this.lastReactionCorrect = false
@@ -1662,7 +1748,6 @@ export default class Player extends Character {
       unlockedAbilityIds: getDefaultUnlockedAbilityIds(),
       permanentWeaponLevel: 0,
       permanentShieldLevel: 0,
-      permanentStatPointBonus: 0,
     }
     this.resetToFreshHero()
   }
@@ -1832,66 +1917,61 @@ export default class Player extends Character {
     this.saveLoadout()
   }
 
-  // ---------- Single-Use Ability Charges ----------
+  // ---------- Rolls (meta progression; see docs/PLAN-roguelike-implementation.md) ----------
 
-  getAbilityCharges(actionId) {
-    const action = ALL_ACTIONS.find(a => a.id === actionId)
-    if (!action || !action.singleUse) return Infinity
-    return this.loadout.singleUseCharges?.[actionId] || 0
-  }
+  // Buy a roll with the calling site's currency ('scales' or 'gold').
+  buyRoll(tier, currency = 'scales') {
+    if (!ROLL_TIERS.includes(tier)) return { ok: false, reason: 'Unknown roll tier.' }
+    const price = ROLL_PRICES[currency]?.[tier]
+    if (price == null) return { ok: false, reason: 'Unknown currency.' }
 
-  addAbilityCharges(actionId, charges = 1) {
-    const action = ALL_ACTIONS.find(a => a.id === actionId)
-    if (!action) return
-
-    if (!action.singleUse) {
-      // Multi-use ability: just make sure it's known.
-      if (!this.loadout.knownActionIds.includes(actionId)) {
-        this.loadout.knownActionIds.push(actionId)
-      }
-      this.saveLoadout()
-      this.refreshActions()
-      return
-    }
-
-    // Single-use ability.
-    if (!this.loadout.singleUseCharges) this.loadout.singleUseCharges = {}
-    this.loadout.singleUseCharges[actionId] = (this.loadout.singleUseCharges[actionId] || 0) + charges
-
-    if (!this.loadout.knownActionIds.includes(actionId)) {
-      this.loadout.knownActionIds.push(actionId)
-    }
-
-    // Auto-equip if there is a free active slot.
-    const maxActive = getMaxActiveActions(this.getEffectiveCapacity())
-    const combatActive = this.loadout.activeActionIds.filter(id => id !== 'use_item')
-    if (combatActive.length < maxActive && !this.loadout.activeActionIds.includes(actionId)) {
-      this.loadout.activeActionIds.push(actionId)
-    }
-
-    // Keep the battle pool consistent so the loadout UI shows it correctly.
-    this.addToSelectedPool(actionId)
-
-    this.saveLoadout()
-    this.refreshActions()
-  }
-
-  consumeAbilityCharge(actionId) {
-    const action = ALL_ACTIONS.find(a => a.id === actionId)
-    if (!action || !action.singleUse) return true
-
-    const charges = (this.loadout.singleUseCharges?.[actionId] || 0) - 1
-    if (charges > 0) {
-      this.loadout.singleUseCharges[actionId] = charges
+    let spent = false
+    if (currency === 'gold') {
+      if ((this.loadout.gold || 0) < price) return { ok: false, reason: `Need ${price} gold.` }
+      this.loadout.gold -= price
+      spent = true
     } else {
-      delete this.loadout.singleUseCharges[actionId]
-      this.loadout.knownActionIds = this.loadout.knownActionIds.filter(id => id !== actionId)
-      this.loadout.activeActionIds = this.loadout.activeActionIds.filter(id => id !== actionId)
-      this.loadout.selectedActionIds = this.loadout.selectedActionIds.filter(id => id !== actionId)
+      spent = this.spendOuroScales(price)
+      if (!spent) return { ok: false, reason: `Need ${price} scales.` }
     }
+
+    if (!this.loadout.rollInventory || typeof this.loadout.rollInventory !== 'object') {
+      this.loadout.rollInventory = { common: 0, uncommon: 0, rare: 0, epic: 0 }
+    }
+    this.loadout.rollInventory[tier] = (this.loadout.rollInventory[tier] || 0) + 1
     this.saveLoadout()
-    this.refreshActions()
-    return charges >= 0
+    return { ok: true, tier, price, currency }
+  }
+
+  // Activate a roll (D8: one active at a time; replacing returns the old one
+  // to the inventory). Pass null to deactivate (also returns to inventory).
+  setActiveRoll(tier) {
+    if (tier !== null && !ROLL_TIERS.includes(tier)) {
+      return { ok: false, reason: 'Unknown roll tier.' }
+    }
+    const inventory = this.loadout.rollInventory || { common: 0, uncommon: 0, rare: 0, epic: 0 }
+    if (tier !== null && (inventory[tier] || 0) <= 0) {
+      return { ok: false, reason: 'No rolls of that tier in inventory.' }
+    }
+    const previous = this.loadout.activeRoll ?? null
+    if (previous && inventory[previous] !== undefined) {
+      inventory[previous] = (inventory[previous] || 0) + 1
+    }
+    if (tier !== null) {
+      inventory[tier] -= 1
+    }
+    this.loadout.activeRoll = tier
+    this.saveLoadout()
+    return { ok: true, activeRoll: tier, returned: previous }
+  }
+
+  // Consume the active roll when a reward screen generates (D7). Returns the
+  // active tier, or 'common' when none was active.
+  consumeActiveRoll() {
+    const tier = this.loadout.activeRoll || 'common'
+    this.loadout.activeRoll = null
+    this.saveLoadout()
+    return tier
   }
 
   rollNormalBattleEssence() {

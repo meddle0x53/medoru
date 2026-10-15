@@ -128,6 +128,9 @@ export default class LoadoutScene extends Phaser.Scene {
     // Socket charms buttons above weapon and shield charm columns.
     this.createSocketButton(70, 266)
     this.createSocketButton(370, 266)
+
+    // Active-roll selector (visible in both map and battle-prep modes).
+    this.createRollSelector()
   }
 
   createSocketButton(x, y) {
@@ -1810,6 +1813,74 @@ export default class LoadoutScene extends Phaser.Scene {
     btn.add(hitArea)
 
     this.leftPanel.add(btn)
+  }
+
+  // ---------- Reward Roll selector (D8) ----------
+
+  createRollSelector() {
+    this.rollSelectorContainer = this.add.container(0, 0)
+    this.leftPanel.add(this.rollSelectorContainer)
+    this.refreshRollSelector()
+  }
+
+  // Tap a tier to activate/replace it (the replaced roll returns to the
+  // inventory); tap the active tier to deactivate it (also returns).
+  // Kept side-effect-light so the inventory math is testable headless.
+  applyRollTap(tier) {
+    const player = this.player
+    if (player.loadout.activeRoll === tier) {
+      const res = player.setActiveRoll(null)
+      return res.ok ? { action: 'deactivated', tier } : { action: 'failed', reason: res.reason }
+    }
+    const res = player.setActiveRoll(tier)
+    if (!res.ok) return { action: 'failed', reason: res.reason }
+    return { action: res.returned ? 'replaced' : 'activated', tier, returned: res.returned || null }
+  }
+
+  refreshRollSelector() {
+    const container = this.rollSelectorContainer
+    if (!container) return
+    container.removeAll(true)
+
+    const inventory = this.player.loadout.rollInventory || {}
+    const active = this.player.loadout.activeRoll
+
+    container.add(this.add.text(40, 482, 'Reward Roll (next reward):', {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#95a5a6',
+    }))
+
+    const tiers = ['common', 'uncommon', 'rare', 'epic']
+    let x = 40
+    const y = 504
+    for (const tier of tiers) {
+      const count = inventory[tier] || 0
+      const isActive = active === tier
+      const label = `${tier[0].toUpperCase()}${tier.slice(1)} ×${count}`
+      const color = isActive ? 0xf1c40f : count > 0 ? 0x2c3e50 : 0x1a1a2e
+      const btn = this.createMiniButton(0, y, label, color, () => this.onRollChipTapped(tier))
+      const w = btn.hitArea.width
+      btn.container.setX(x + w / 2)
+      x += w + 8
+      if (isActive) {
+        btn.text.setColor('#1a1a2e')
+        btn.text.setFontStyle('bold')
+      } else if (count === 0) {
+        btn.text.setColor('#566573')
+      }
+      container.add(btn.container)
+    }
+  }
+
+  onRollChipTapped(tier) {
+    const result = this.applyRollTap(tier)
+    this.refreshRollSelector()
+    if (result.action === 'failed') {
+      this.showToast(result.reason || 'Cannot set roll')
+    } else if (result.action === 'replaced' && result.returned) {
+      this.showToast(`Roll replaced (returned ${result.returned})`)
+    }
   }
 
   showToast(message) {
