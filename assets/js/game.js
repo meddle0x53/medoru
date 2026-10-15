@@ -22,6 +22,7 @@ import RunVictoryScene from './game/scenes/RunVictoryScene.js'
 import CascadeScene from './game/scenes/CascadeScene.js'
 import ChestScene from './game/scenes/ChestScene.js'
 import EventScene from './game/scenes/EventScene.js'
+import UpgradeScene from './game/scenes/UpgradeScene.js'
 
 function perfLog(label, detail = null) {
   const elapsed = window.__gamePerfStart ? Math.round(performance.now() - window.__gamePerfStart) : null
@@ -61,7 +62,7 @@ function startGame() {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, TitleScene, HeroSelectScene, KanjiLibraryScene, HomeShopScene, OuroEssenceShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene, EventScene],
+    scene: [BootScene, TitleScene, HeroSelectScene, KanjiLibraryScene, HomeShopScene, OuroEssenceShopScene, MapScene, LoadoutScene, BattleScene, MemoryScene, ShopScene, RestScene, SocketScene, WinScene, RunVictoryScene, CascadeScene, ChestScene, EventScene, UpgradeScene],
     physics: {
       default: 'arcade',
       arcade: {

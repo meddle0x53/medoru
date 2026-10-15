@@ -182,7 +182,11 @@ export default class TurnManager {
       return null
     }
 
-    performer.useStamina(skill.staminaCost)
+    // Effective ability: run upgrade modifiers merged in (damage multiplier,
+    // crit bonuses, execute, double hit, on-hit effects, stamina cost).
+    const eff = performer.getEffectiveAbility ? performer.getEffectiveAbility(skill) : null
+
+    performer.useStamina(eff?.staminaCost ?? skill.staminaCost)
 
     // Challenge multiplier: perfect=1.25, success=1.0, fail=0.5
     const multiplier = challengeResult === 'perfect' ? 1.25 : challengeResult === 'success' ? 1.0 : 0.5
@@ -290,8 +294,22 @@ export default class TurnManager {
         // Apply combo-state and chain damage multipliers before crit.
         total *= pendingCombo.damageMultiplier
 
-        const isCrit = pendingCombo.guaranteeCritical || Math.random() < performer.getCritChance()
-        let rawDamage = isCrit ? Math.floor(total * 1.5) : Math.floor(total)
+        // Run upgrade modifiers (damageMultiplier) after the challenge multiplier.
+        if (eff) total *= eff.damageMultiplier
+
+        // D11 kanji tier multiplier, set by the challenge resolver; consumed
+        // and cleared per action.
+        total *= (performer.activeKanjiTierMult || 1)
+        performer.activeKanjiTierMult = 1
+
+        // Execute bonus against low-HP targets.
+        if (eff?.executeBonus && target.maxHp > 0 && target.hp / target.maxHp < 0.25) {
+          total *= 1 + eff.executeBonus
+        }
+
+        const critChance = (performer.getCritChance ? performer.getCritChance() : 0) + (eff?.critChanceBonus || 0)
+        const isCrit = pendingCombo.guaranteeCritical || Math.random() < critChance
+        let rawDamage = isCrit ? Math.floor(total * (1.5 + (eff?.critDamageBonus || 0))) : Math.floor(total)
 
         // Perfect kanji (0 wrong strokes) bypasses 80% of enemy defense
         let effectiveDefense = target.getDefense()
@@ -343,6 +361,13 @@ export default class TurnManager {
 
         const actual = target.takeDamage(finalDamage)
 
+        // Double hit: a follow-up strike at 60% damage, no re-crit.
+        let doubleHitDamage = 0
+        if (eff?.doubleHit && actual > 0 && target.isAlive()) {
+          doubleHitDamage = target.takeDamage(Math.max(1, Math.floor(finalDamage * 0.6)))
+          if (doubleHitDamage > 0) this.log(`Double hit! ${doubleHitDamage} follow-up damage!`)
+        }
+
         // Berserk lifesteal on weapon attacks
         let lifesteal = 0
         const berserkPercent = performer.getBerserkLifestealPercent ? performer.getBerserkLifestealPercent() : 0
@@ -351,7 +376,7 @@ export default class TurnManager {
           if (lifesteal > 0) performer.heal(lifesteal)
         }
 
-        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal, comboMultiplier: pendingCombo.damageMultiplier, comboTriggered: pendingCombo.payoff }
+        result = { type: 'attack', damage: actual, isCrit, multiplier, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal, comboMultiplier: pendingCombo.damageMultiplier, comboTriggered: pendingCombo.payoff, doubleHitDamage }
         if (infusion) result.infusion = { value: infusion.value, potency }
 
         // Consume combo states that fuelled this attack and log the payoff.
@@ -399,7 +424,18 @@ export default class TurnManager {
           if (performer.pendingEffectChanceOverrides) {
             effectCtx.chanceOverrides = performer.pendingEffectChanceOverrides
           }
-          const applied = applyAbilityEffects(skill, performer, target, effectCtx, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
+          // Merge run-upgrade on-hit effects (e.g. Deep Cut's bleed) into the
+          // ability's effect list; they roll with a guaranteed chance.
+          const extraEffects = (eff?.onHitEffects || []).map(e => ({
+            effectId: e.effectId,
+            target: 'enemy',
+            chance: { base: 1, step: 0, cap: 1 },
+            duration: { min: e.duration ?? 1, max: e.duration ?? 1 },
+          }))
+          const effectSkill = extraEffects.length > 0
+            ? { ...skill, effects: [...(skill.effects || []), ...extraEffects] }
+            : skill
+          const applied = applyAbilityEffects(effectSkill, performer, target, effectCtx, (msg) => this.log(msg), consecutiveHits, elementalEffectChanceMultiplier)
           delete performer.pendingEffectChanceOverrides
           if (applied.length > 0) target.resetElementStreak(infusedElement)
         }
