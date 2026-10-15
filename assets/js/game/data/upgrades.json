@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "upgrades": [
+    {
+      "id": "might",
+      "name": "Might",
+      "nameJa": "怪力",
+      "description": "+1 Strength for this run.",
+      "rarity": "common",
+      "family": "stat",
+      "tags": ["stat", "strength", "physical"],
+      "type": "stat",
+      "maxStacks": 10,
+      "effect": { "stat": "strength" }
+    },
+    {
+      "id": "life",
+      "name": "Life",
+      "nameJa": "活力",
+      "description": "+1 Vitality for this run.",
+      "rarity": "common",
+      "family": "stat",
+      "tags": ["stat", "vitality"],
+      "type": "stat",
+      "maxStacks": 10,
+      "effect": { "stat": "vitality" }
+    },
+    {
+      "id": "insight",
+      "name": "Insight",
+      "nameJa": "慧眼",
+      "description": "+1 Luck for this run.",
+      "rarity": "common",
+      "family": "stat",
+      "tags": ["stat", "luck"],
+      "type": "stat",
+      "maxStacks": 10,
+      "effect": { "stat": "luck" }
+    },
+    {
+      "id": "stamina_1",
+      "name": "Second Wind",
+      "nameJa": "息継ぎ",
+      "description": "+1 Energy (max stamina) for this run.",
+      "rarity": "common",
+      "family": "flat",
+      "tags": ["stamina"],
+      "type": "flat_stamina",
+      "maxStacks": 5,
+      "effect": {}
+    },
+    {
+      "id": "capacity_1",
+      "name": "Expanded Arsenal",
+      "nameJa": "拡張兵器庫",
+      "description": "+1 active ability slot for this run.",
+      "rarity": "epic",
+      "family": "flat",
+      "tags": ["capacity", "slots"],
+      "type": "flat_active_slot",
+      "maxStacks": 3,
+      "effect": {}
+    },
+    {
+      "id": "sharp_weapon",
+      "name": "Keen Edge",
+      "nameJa": "鋭き刃",
+      "description": "Your sword fights like a Sharp Charm blade: skill-scaling, bleeding edge.",
+      "rarity": "uncommon",
+      "family": "conversion",
+      "tags": ["weapon", "skill", "bleed"],
+      "type": "weapon_profile",
+      "maxStacks": 1,
+      "excludes": ["heavy_weapon"],
+      "effect": { "charmId": "sharp_charm_sword" }
+    },
+    {
+      "id": "heavy_weapon",
+      "name": "Crushing Weight",
+      "nameJa": "重き一撃",
+      "description": "Your sword fights like a Heavy Charm blade: raw strength scaling.",
+      "rarity": "uncommon",
+      "family": "conversion",
+      "tags": ["weapon", "strength"],
+      "type": "weapon_profile",
+      "maxStacks": 1,
+      "excludes": ["sharp_weapon"],
+      "effect": { "charmId": "heavy_charm_sword" }
+    },
+    {
+      "id": "quick_stab_unlock",
+      "name": "Viper's Thrust",
+      "nameJa": "蛇の突き",
+      "description": "Learn Quick Stab for this run — no Sharp Charm socket required.",
+      "rarity": "rare",
+      "family": "unlock",
+      "tags": ["unlock", "pierce", "bleed"],
+      "type": "unlock_ability",
+      "maxStacks": 1,
+      "effect": { "abilityId": "quick_stab", "charmId": "sharp_charm_sword" }
+    },
+    {
+      "id": "sharpened_slash",
+      "name": "Sharpened Slash",
+      "nameJa": "研ぎ澄まされし斬撃",
+      "description": "Forward Slash deals +10% damage.",
+      "rarity": "common",
+      "family": "ability",
+      "tags": ["ability", "forward_slash", "slash"],
+      "type": "ability_modifier",
+      "maxStacks": 3,
+      "effect": {
+        "abilityId": "forward_slash",
+        "damageMultiplier": 0.1
+      }
+    },
+    {
+      "id": "deep_cut",
+      "name": "Deep Cut",
+      "nameJa": "深い傷",
+      "description": "Quick Stab applies Bleed for 2 turns on hit.",
+      "rarity": "uncommon",
+      "family": "ability",
+      "tags": ["ability", "quick_stab", "bleed"],
+      "type": "ability_modifier",
+      "maxStacks": 1,
+      "effect": {
+        "abilityId": "quick_stab",
+        "onHitEffects": [{ "effectId": "bleed", "duration": 2 }]
+      }
+    },
+    {
+      "id": "kanji_attunement_slash",
+      "name": "Blade Attunement",
+      "nameJa": "刀の交感",
+      "description": "One random kanji in Forward Slash's pool is strengthened by one tier (up to silver).",
+      "rarity": "uncommon",
+      "family": "ability",
+      "tags": ["ability", "forward_slash", "kanji"],
+      "type": "kanji_tier_up",
+      "maxStacks": 28,
+      "effect": { "abilityId": "forward_slash" }
+    }
+  ]
+}

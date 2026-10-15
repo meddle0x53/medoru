@@ -444,7 +444,7 @@ export default class ShopScene extends Phaser.Scene {
         break
       case 'ability':
         this.player.loadout.gold -= entry.price
-        this.player.addAbilityCharges(entry.data.id, 1)
+        this.player.learnAbility(entry.data.id)
         ok = true
         message = `Learned ${entry.data.name}!`
         break

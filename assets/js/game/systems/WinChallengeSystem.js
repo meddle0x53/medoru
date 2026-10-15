@@ -96,6 +96,22 @@ export default class WinChallengeSystem {
     return 1.0 - luckFactor * 0.5
   }
 
+  /**
+   * No-multiplier kanji pass/fail flow (used by the upgrade reward screen's
+   * reroll). Passes when no drawable kanji is available.
+   */
+  runPassFail(onPass, onFail) {
+    const kanji = this.pickKanji()
+    if (!kanji) {
+      onPass()
+      return
+    }
+    this.startKanjiChallenge(kanji, (passed) => {
+      if (passed) onPass()
+      else onFail()
+    })
+  }
+
   // ---------- Kanji drawing ----------
 
   startKanjiChallenge(kanji, onComplete) {

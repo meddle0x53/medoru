@@ -23,6 +23,7 @@ export default class WinScene extends Phaser.Scene {
 
     this.challengeSystem = null
     this.replaceDialog = null
+    this.mapIndex = data.mapIndex ?? 0
     this.abilityTooltip = new AbilityTooltip(this)
     this.abilitySelected = false
     this.selectedAbilityAction = null
@@ -315,7 +316,9 @@ export default class WinScene extends Phaser.Scene {
 
   createChallengeSection() {
     const y = 430
-    this.challengeButton = this.createButton(GAME_CONFIG.width / 2, y, 'Gamble Points & Gold', () => this.startChallenge(), 220, 40, 0x8e44ad, 0x9b59b6)
+    // D1: the gamble multiplies gold/essence only — stat points are being
+    // cut over to upgrade cards and no longer scale with the gamble.
+    this.challengeButton = this.createButton(GAME_CONFIG.width / 2, y, 'Gamble Gold & Essence', () => this.startChallenge(), 220, 40, 0x8e44ad, 0x9b59b6)
     this.challengeResultText = this.add.text(GAME_CONFIG.width / 2, y + 35, '', {
       ...FONTS.default,
       fontSize: '13px',
@@ -323,13 +326,25 @@ export default class WinScene extends Phaser.Scene {
     }).setOrigin(0.5)
   }
 
+  // D4: normal battles get an upgrade reward screen 60% of the time;
+  // mini-boss/boss battles always do. The roll itself is only consumed when
+  // the UpgradeScene actually generates (D7).
+  shouldShowUpgradeScreen() {
+    const roles = this.monster?.roles || []
+    if (roles.includes('mini_boss') || roles.includes('boss')) return true
+    return Math.random() < 0.60
+  }
+
   createContinueButton() {
     this.createButton(GAME_CONFIG.width / 2, 500, 'Continue', () => {
-      this.player.loadout.statPoints = (this.player.loadout.statPoints || 0) + this.attributePoints
       this.player.addGold(this.goldReward)
       if (this.tile?.id) this.player.completeTile(this.tile.id)
       this.player.saveLoadout()
-      this.scene.start('MapScene', { player: this.player })
+      if (this.shouldShowUpgradeScreen()) {
+        this.scene.start('UpgradeScene', { player: this.player, returnScene: 'MapScene', mapIndex: this.mapIndex ?? 0 })
+      } else {
+        this.scene.start('MapScene', { player: this.player, mapIndex: this.mapIndex ?? 0 })
+      }
     }, 180, 44, 0x27ae60, 0x2ecc71)
   }
 
@@ -349,12 +364,10 @@ export default class WinScene extends Phaser.Scene {
           this.selectedAbilityAction = null
           return
         }
-      } else {
-        this.player.addAbilityCharges(action.id, 1)
       }
-      this.showToast(`${action.name} +1 use`)
+      this.showToast(`${action.name} learned`)
       const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(action.type) : null
-      this.markAbilitySelected(`${action.name} +1 use`, bonusName)
+      this.markAbilitySelected(`${action.name} learned`, bonusName)
       return
     }
 
@@ -614,6 +627,30 @@ export default class WinScene extends Phaser.Scene {
     return { container: btnContainer, bg, text, hitArea }
   }
 
+  // D1: the gamble scales gold and essence — never stat points.
+  applyChallengeResult(result) {
+    this.challengeMultiplier = result.multiplier
+    this.attributePoints = this.player.applyNgPlusMultiplier(this.baseAttributePoints)
+    this.goldReward = this.player.applyNgPlusMultiplier(Math.round(this.baseGold * this.challengeMultiplier))
+
+    this.pointsText.setText(`+${this.attributePoints}`)
+    this.goldText.setText(`+${this.goldReward}`)
+
+    if (this.essenceGained > 0) {
+      const finalEssence = result.success ? this.essenceGained * 2 : Math.max(0, Math.floor(this.essenceGained / 2))
+      const delta = finalEssence - this.essenceGained
+      if (delta !== 0) {
+        this.player.addOuroEssence(delta)
+        this.essenceGained = finalEssence
+      }
+      if (this.essenceText) this.essenceText.setText(`+${this.essenceGained}`)
+      if (finalEssence === 0 && this.essenceIcon) {
+        this.essenceIcon.setVisible(false)
+        this.essenceText.setVisible(false)
+      }
+    }
+  }
+
   startChallenge() {
     if (this.challengePlayed) return
     this.challengePlayed = true
@@ -622,26 +659,7 @@ export default class WinScene extends Phaser.Scene {
 
     this.challengeSystem = new WinChallengeSystem(this, this.player)
     this.challengeSystem.run((result) => {
-      this.challengeMultiplier = result.multiplier
-      this.attributePoints = this.player.applyNgPlusMultiplier(Math.round(this.baseAttributePoints * this.challengeMultiplier))
-      this.goldReward = this.player.applyNgPlusMultiplier(Math.round(this.baseGold * this.challengeMultiplier))
-
-      this.pointsText.setText(`+${this.attributePoints}`)
-      this.goldText.setText(`+${this.goldReward}`)
-
-      if (this.essenceGained > 0) {
-        const finalEssence = result.success ? this.essenceGained * 2 : Math.max(0, Math.floor(this.essenceGained / 2))
-        const delta = finalEssence - this.essenceGained
-        if (delta !== 0) {
-          this.player.addOuroEssence(delta)
-          this.essenceGained = finalEssence
-        }
-        if (this.essenceText) this.essenceText.setText(`+${this.essenceGained}`)
-        if (finalEssence === 0 && this.essenceIcon) {
-          this.essenceIcon.setVisible(false)
-          this.essenceText.setVisible(false)
-        }
-      }
+      this.applyChallengeResult(result)
 
       let status = result.success ? 'Won!' : 'Lost...'
       const color = result.success ? '#2ecc71' : '#e74c3c'
