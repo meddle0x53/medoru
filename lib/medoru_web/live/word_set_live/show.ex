@@ -432,15 +432,15 @@ defmodule MedoruWeb.WordSetLive.Show do
     end
   end
 
+  defp parse_page(page) when is_integer(page) and page > 0, do: page
+  defp parse_page(_), do: 1
+
   # Localized label for a single word type atom (word chips); falls back to
   # the capitalized atom for unknown types.
   def word_type_label(type) do
     Enum.find_value(word_type_options(), fn {label, t} -> if t == type, do: label end) ||
       type |> to_string() |> String.capitalize()
   end
-
-  defp parse_page(page) when is_integer(page) and page > 0, do: page
-  defp parse_page(_), do: 1
 
   defp parse_word_type(nil), do: nil
   defp parse_word_type(""), do: nil

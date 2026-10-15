@@ -960,6 +960,14 @@ body:has(.classroom-chat-tab) footer {
   transform: rotateY(180deg);
 }
 
+/* The front face needs its own explicit (identity) 3D transform: browsers
+   ignore backface-visibility on children of a rotated preserve-3d parent
+   when the face itself has no transform — without this the front content
+   stays visible, mirrored, after the flip. */
+.word-book-card-face:not(.word-book-card-face-back) {
+  transform: rotateY(0deg);
+}
+
 /* Word Book public presentation (flipbook) */
 
 .wb-present {
@@ -1164,3 +1172,20 @@ body:has(.classroom-chat-tab) footer {
   pointer-events: none;
   animation: km-float-up 0.8s ease-out forwards;
 }
+
+/* Kanji Master level indicator: a colored border around the DRAWING AREA
+   only (color is driven by the level class on the ancestor
+   #kanji-master-game; the game component itself has no border). */
+#km-canvas-wrap {
+  border: 2px solid transparent;
+  border-radius: 9px;
+  overflow: hidden;
+  transition: border-color 0.6s ease;
+}
+
+#kanji-master-game.km-level-1 #km-canvas-wrap { border-color: #3b82f6; }
+#kanji-master-game.km-level-2 #km-canvas-wrap { border-color: #a855f7; }
+#kanji-master-game.km-level-3 #km-canvas-wrap { border-color: #a1a1aa; }
+#kanji-master-game.km-level-4 #km-canvas-wrap { border-color: #06b6d4; }
+#kanji-master-game.km-level-5 #km-canvas-wrap { border-color: #f9a8d4; }
+#kanji-master-game.km-level-boss #km-canvas-wrap { border-color: #f97316; }

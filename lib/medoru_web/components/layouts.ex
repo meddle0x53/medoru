@@ -678,9 +678,9 @@ defmodule MedoruWeb.Layouts do
           <% else %>
             <%!-- Anonymous User Navigation --%>
             <.nav_link
-              path="/classrooms"
-              icon="hero-academic-cap"
-              label={gettext("Classrooms")}
+              path="/challenges"
+              icon="hero-trophy"
+              label={gettext("Challenges")}
               locale={@current_scope[:locale]}
               class="hidden md:block"
             />
@@ -812,9 +812,9 @@ defmodule MedoruWeb.Layouts do
                     {gettext("Explore")}
                   </div>
                   <.mobile_nav_link
-                    path="/classrooms"
-                    icon="hero-academic-cap"
-                    label={gettext("Classrooms")}
+                    path="/challenges"
+                    icon="hero-trophy"
+                    label={gettext("Challenges")}
                     locale={@current_scope[:locale]}
                   />
                   <.mobile_nav_link

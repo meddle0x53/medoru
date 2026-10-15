@@ -11,11 +11,19 @@ defmodule MedoruWeb.KanjiMasterLive do
 
   use MedoruWeb, :live_view
 
+  import Ecto.Query
+
   alias Medoru.Accounts
   alias Medoru.Challenges
+  alias Medoru.Content.Kanji
+  alias Medoru.Repo
 
   # Game constants (mirrored in the template and data attributes):
-  # 15 lives, 5 yellow-stroke hint charges, 50-kanji eligibility gate.
+  # 20 lives, 5 yellow-stroke hint charges, 50-kanji eligibility gate.
+
+  # Boss kanji for Kanji Master: whole-dictionary rarities (22+ strokes)
+  # the player likely hasn't learned, serialized exactly like the pool.
+  @boss_min_strokes 22
 
   @impl true
   def mount(_params, _session, socket) do
@@ -26,70 +34,138 @@ defmodule MedoruWeb.KanjiMasterLive do
   def handle_params(_params, _url, socket) do
     user = socket.assigns.current_scope.current_user
 
-    if user && Challenges.eligible?(user) do
-      level =
-        user.id |> Accounts.get_stats_by_user!() |> Map.fetch!(:xp) |> Accounts.calculate_level()
+    if socket.assigns.live_action in [:n5, :n4] do
+      # N5/N4 modes: no gate — anyone (including anonymous visitors) plays,
+      # and everyone starts with the same 10 coins.
+      mode = Atom.to_string(socket.assigns.live_action)
 
-      pool = Challenges.kanji_master_pool(user)
+      page_title =
+        if socket.assigns.live_action == :n4,
+          do: gettext("Kanji Master N4"),
+          else: gettext("Kanji Master N5")
+
+      pool =
+        if socket.assigns.live_action == :n4,
+          do: Challenges.kanji_master_n4_pool(),
+          else: Challenges.kanji_master_n5_pool()
 
       {:noreply,
        socket
-       |> assign(:page_title, gettext("Kanji Master"))
+       |> assign(:page_title, page_title)
+       |> assign(:mode, mode)
        |> assign(:gate?, false)
-       |> assign(:anonymous?, false)
-       |> assign(:learned_count, Challenges.learned_kanji_count(user))
-       |> assign(:pool, pool)
-       |> assign(:start_coins, level)
-       |> assign(:game_over, nil)
-       |> assign(:record_error, nil)
-       |> assign(:recorded?, false)
-       |> assign(:leaderboard, Challenges.get_leaderboard())}
-    else
-      {:noreply,
-       socket
-       |> assign(:page_title, gettext("Kanji Master"))
-       |> assign(:gate?, true)
        |> assign(:anonymous?, is_nil(user))
        |> assign(:learned_count, if(user, do: Challenges.learned_kanji_count(user), else: 0))
-       |> assign(:pool, [])
-       |> assign(:start_coins, 0)
+       |> assign(:pool, pool)
+       |> assign(:boss_pool, boss_pool())
+       |> assign(:start_coins, 10)
        |> assign(:game_over, nil)
        |> assign(:record_error, nil)
        |> assign(:recorded?, false)
-       |> assign(:leaderboard, Challenges.get_leaderboard())}
+       |> assign(:leaderboard, Challenges.get_leaderboard(mode))}
+    else
+      if user && Challenges.eligible?(user) do
+        level =
+          user.id
+          |> Accounts.get_stats_by_user!()
+          |> Map.fetch!(:xp)
+          |> Accounts.calculate_level()
+
+        pool = Challenges.kanji_master_pool(user)
+        boss_pool = boss_pool()
+
+        {:noreply,
+         socket
+         |> assign(:page_title, gettext("Kanji Master"))
+         |> assign(:mode, "master")
+         |> assign(:gate?, false)
+         |> assign(:anonymous?, false)
+         |> assign(:learned_count, Challenges.learned_kanji_count(user))
+         |> assign(:pool, pool)
+         |> assign(:boss_pool, boss_pool)
+         |> assign(:start_coins, level)
+         |> assign(:game_over, nil)
+         |> assign(:record_error, nil)
+         |> assign(:recorded?, false)
+         |> assign(:leaderboard, Challenges.get_leaderboard())}
+      else
+        {:noreply,
+         socket
+         |> assign(:page_title, gettext("Kanji Master"))
+         |> assign(:mode, "master")
+         |> assign(:gate?, true)
+         |> assign(:anonymous?, is_nil(user))
+         |> assign(:learned_count, if(user, do: Challenges.learned_kanji_count(user), else: 0))
+         |> assign(:pool, [])
+         |> assign(:boss_pool, [])
+         |> assign(:start_coins, 0)
+         |> assign(:game_over, nil)
+         |> assign(:record_error, nil)
+         |> assign(:recorded?, false)
+         |> assign(:leaderboard, Challenges.get_leaderboard())}
+      end
     end
   end
 
   @impl true
-  def handle_event("game_over", %{"score" => score, "reason" => reason}, socket) do
+  def handle_event("game_over", %{"score" => score, "reason" => reason} = params, socket) do
     case parse_int(score) do
-      {:ok, parsed} -> {:noreply, assign(socket, :game_over, %{score: parsed, reason: reason})}
-      :error -> {:noreply, socket}
+      {:ok, parsed} ->
+        failed =
+          case params["failed_kanji"] do
+            char when is_binary(char) ->
+              known =
+                socket.assigns.pool ++ socket.assigns.boss_pool
+
+              if char in Enum.map(known, & &1.character), do: char, else: nil
+
+            _ ->
+              nil
+          end
+
+        {:noreply,
+         assign(socket, :game_over, %{score: parsed, reason: reason, failed_kanji: failed})}
+
+      :error ->
+        {:noreply, socket}
     end
   end
 
   def handle_event(
         "record_score",
-        %{"score" => score, "display_mode" => mode} = params,
+        %{"score" => score} = params,
         socket
       ) do
     user = socket.assigns.current_scope.current_user
+    mode = socket.assigns.mode || "master"
 
-    with true <- not is_nil(user),
-         {:ok, parsed} <- parse_int(score) do
-      name = Map.get(params, "anonymous_name")
+    with {:ok, parsed} <- parse_int(score) do
+      result =
+        if user do
+          Challenges.record_score(user, %{
+            score: parsed,
+            display_mode: Map.get(params, "display_mode", "linked"),
+            anonymous_name: Map.get(params, "anonymous_name"),
+            mode: mode
+          })
+        else
+          # Anonymous recording — only possible in N5 mode. The name is
+          # required, trimmed and capped at 12 characters (validated in the
+          # changeset as well).
+          Challenges.record_anonymous_score(%{
+            score: parsed,
+            anonymous_name: Map.get(params, "anonymous_name"),
+            mode: mode
+          })
+        end
 
-      case Challenges.record_score(user, %{
-             score: parsed,
-             display_mode: mode,
-             anonymous_name: name
-           }) do
+      case result do
         {:ok, _} ->
           {:noreply,
            socket
            |> assign(:recorded?, true)
            |> assign(:record_error, nil)
-           |> assign(:leaderboard, Challenges.get_leaderboard())}
+           |> assign(:leaderboard, Challenges.get_leaderboard(mode))}
 
         {:error, changeset} ->
           message =
@@ -114,6 +190,49 @@ defmodule MedoruWeb.KanjiMasterLive do
   end
 
   defp parse_int(_), do: :error
+
+  # Up to 2 random whole-dictionary kanji with 22+ strokes and usable stroke
+  # data (fallback: the highest-stroke kanji available). Serialized exactly
+  # like kanji_master_pool/1 so the hook can draw them with no word (the
+  # question falls back to the readings/meanings template).
+  defp boss_pool do
+    drawable =
+      from(k in Kanji,
+        where:
+          not is_nil(k.stroke_data) and fragment("?->'strokes' != '[]'::jsonb", k.stroke_data)
+      )
+
+    kanji =
+      Repo.all(
+        from k in drawable,
+          where: k.stroke_count >= @boss_min_strokes,
+          order_by: fragment("RANDOM()"),
+          limit: 2
+      )
+
+    kanji =
+      if kanji == [] do
+        Repo.all(
+          from k in drawable,
+            order_by: [desc: k.stroke_count],
+            limit: 2
+        )
+      else
+        kanji
+      end
+
+    Enum.map(kanji, fn k ->
+      %{
+        character: k.character,
+        stroke_data: k.stroke_data,
+        stroke_count: k.stroke_count,
+        word: nil,
+        kun: [],
+        on: [],
+        meanings: (k.meanings || []) |> Enum.take(2)
+      }
+    end)
+  end
 
   @impl true
   def render(assigns) do
@@ -164,36 +283,74 @@ defmodule MedoruWeb.KanjiMasterLive do
           class="fixed inset-x-0 bottom-0 top-16 overflow-hidden flex flex-col bg-base-100"
           phx-hook="KanjiMaster"
           data-pool={Jason.encode!(@pool)}
+          data-boss-pool={Jason.encode!(@boss_pool)}
           data-start-coins={@start_coins}
-          data-start-lives="15"
+          data-start-lives="20"
           data-start-hints="5"
           data-question-template={gettext("Draw the kanji in %{word}（%{reading}）— %{meaning}")}
           data-question-fallback={gettext("Draw the kanji with these readings")}
           data-kun-label={gettext("KUN")}
           data-on-label={gettext("ON")}
+          data-status-stroke-label={gettext("Stroke %{n}")}
+          data-status-none-label={gettext("No upgrade")}
+          data-perfect-label={gettext("Perfect!")}
+          data-boss-label={gettext("Boss")}
+          data-upgrade-names={
+            Jason.encode!(%{
+              "blue" => gettext("Blue"),
+              "purple" => gettext("Purple"),
+              "orange" => gettext("Orange"),
+              "silver" => gettext("Silver"),
+              "cyan" => gettext("Cyan"),
+              "momo" => gettext("Momo")
+            })
+          }
         >
           <%!-- HUD --%>
-          <div class="flex items-center justify-center gap-4 sm:gap-8 px-4 py-3 text-sm sm:text-base font-bold select-none">
+          <div class="flex items-center justify-center gap-2 sm:gap-8 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-base font-bold select-none w-full max-w-full">
             <span id="km-lives" class="inline-flex items-center gap-1 text-error">
-              <span id="km-lives-count">15</span> <.icon name="hero-heart" class="w-5 h-5" />
+              <span id="km-lives-count">20</span>
+              <.icon name="hero-heart" class="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
             <span id="km-coins" class="inline-flex items-center gap-1 text-warning">
               <span id="km-coins-count">{@start_coins}</span>
-              <.icon name="hero-circle-stack" class="w-5 h-5" />
+              <.icon name="hero-circle-stack" class="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
             <span id="km-hints" class="inline-flex items-center gap-1 text-yellow-500">
-              <span id="km-hints-count">5</span> <.icon name="hero-heart" class="w-5 h-5" />
+              <span id="km-hints-count">5</span>
+              <.icon name="hero-heart" class="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
             <span class="inline-flex items-center gap-1 text-primary">
-              <span id="km-score">0</span> <.icon name="hero-star" class="w-5 h-5" />
+              <span id="km-score">0</span> <.icon name="hero-star" class="w-4 h-4 sm:w-5 sm:h-5" />
             </span>
+            <button
+              id="km-status-btn"
+              type="button"
+              class="btn btn-ghost btn-circle btn-xs"
+              aria-label={gettext("Upgrade status")}
+            >
+              <.icon name="hero-queue-list" class="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
             <button
               id="km-help-btn"
               type="button"
               class="btn btn-ghost btn-circle btn-xs"
               aria-label={gettext("How to play")}
             >
-              <.icon name="hero-question-mark-circle" class="w-6 h-6" />
+              <.icon name="hero-question-mark-circle" class="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <button
+              id="km-give-up-btn"
+              type="button"
+              class="btn btn-ghost btn-circle btn-xs text-error"
+              aria-label={gettext("Give up")}
+              data-give-up-confirm={
+                gettext(
+                  "Are you sure you want to give up? Your run will end and you can record your score."
+                )
+              }
+            >
+              <.icon name="hero-flag" class="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
@@ -209,15 +366,31 @@ defmodule MedoruWeb.KanjiMasterLive do
           <div class="flex-1 min-h-0 flex items-center justify-center p-4">
             <div id="km-canvas-wrap" class="relative touch-none"></div>
           </div>
+          <p
+            id="km-boss-label"
+            class="hidden text-center text-sm font-bold uppercase tracking-widest pb-2"
+          >
+            {gettext("Boss")}
+          </p>
 
           <%!-- Shop overlay + game-over panel mount points (populated by the hook) --%>
-          <div id="km-shop">
+          <div id="km-shop" data-sold-out-label={gettext("Sold out")}>
             <div
               id="km-shop-overlay"
               class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-300/70 p-4"
             >
               <div class="bg-base-100 rounded-2xl shadow-xl border border-base-300 p-4 sm:p-6 w-full max-w-sm">
-                <h3 class="text-lg font-bold text-base-content mb-1">{gettext("Shop")}</h3>
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="text-lg font-bold text-base-content">{gettext("Shop")}</h3>
+                  <button
+                    id="km-status-btn-shop"
+                    type="button"
+                    class="btn btn-ghost btn-xs"
+                    title={gettext("Upgrade status")}
+                  >
+                    <.icon name="hero-queue-list" class="w-4 h-4" />
+                  </button>
+                </div>
                 <p class="text-sm text-secondary mb-4">
                   {gettext("Coins")}: <span id="km-shop-coins" class="font-bold text-warning"></span>
                 </p>
@@ -235,7 +408,14 @@ defmodule MedoruWeb.KanjiMasterLive do
                     {gettext("Skip a kanji")} — <span class="km-price"></span>
                   </button>
                 </div>
-                <div id="km-pack-offers" class="hidden mt-3 flex flex-col gap-2"></div>
+                <div id="km-pack-area" class="hidden mt-3">
+                  <div class="flex items-center justify-end mb-2">
+                    <button id="km-pack-reroll" type="button" class="btn btn-xs btn-primary">
+                      {gettext("Re-roll")}: <span id="km-reroll-cost" class="text-warning"></span>
+                    </button>
+                  </div>
+                  <div id="km-pack-offers" class="flex flex-col gap-2"></div>
+                </div>
                 <div
                   id="km-skip-picker"
                   class="hidden mt-3 max-h-40 overflow-y-auto grid grid-cols-5 gap-1"
@@ -259,12 +439,33 @@ defmodule MedoruWeb.KanjiMasterLive do
                       {gettext("You drew every kanji you know! Learn more kanji for a better score.")}
                     </p>
                   <% else %>
-                    <h2 class="text-2xl font-bold text-error mb-2">{gettext("Game Over")}</h2>
+                    <%= if @game_over.reason == "gave_up" do %>
+                      <h2 class="text-2xl font-bold text-warning mb-2">{gettext("You gave up")}</h2>
+                    <% else %>
+                      <h2 class="text-2xl font-bold text-error mb-2">{gettext("Game Over")}</h2>
+                    <% end %>
                   <% end %>
 
                   <p class="text-lg mb-6">
                     {gettext("Score")}: <span class="font-bold text-primary">{@game_over.score}</span>
                   </p>
+
+                  <%= if @game_over.failed_kanji && @game_over.reason != "exhausted" do %>
+                    <p class="text-base mb-2">
+                      {gettext("The kanji you failed is:")}
+                      <span class="font-japanese font-bold text-lg">{@game_over.failed_kanji}</span>
+                    </p>
+                    <p class="mb-6">
+                      <.link
+                        href={~p"/kanji/#{@game_over.failed_kanji}"}
+                        target="_blank"
+                        rel="noopener"
+                        class="link link-primary"
+                      >
+                        {gettext("View it and practice →")}
+                      </.link>
+                    </p>
+                  <% end %>
 
                   <%= if @recorded? do %>
                     <p class="text-success font-medium mb-4">
@@ -274,26 +475,49 @@ defmodule MedoruWeb.KanjiMasterLive do
                       {gettext("View Leaderboard")}
                     </.link>
                   <% else %>
-                    <form phx-submit="record_score" class="text-left">
-                      <input type="hidden" name="score" value={@game_over.score} />
-                      <label class="flex items-center gap-2 mb-2">
-                        <input type="radio" name="display_mode" value="linked" checked />
-                        {gettext("Link my profile")}
-                      </label>
-                      <label class="flex items-center gap-2 mb-2">
-                        <input type="radio" name="display_mode" value="anonymous" />
-                        {gettext("Anonymous")}
-                      </label>
-                      <input
-                        type="text"
-                        name="anonymous_name"
-                        placeholder={gettext("Anonymous name")}
-                        class="input input-bordered input-sm w-full mb-2"
-                      />
-                      <button type="submit" class="btn btn-primary btn-sm w-full">
-                        {gettext("Record Score")}
-                      </button>
-                    </form>
+                    <%= if @anonymous? do %>
+                      <form phx-submit="record_score" class="text-left">
+                        <input type="hidden" name="score" value={@game_over.score} />
+                        <input type="hidden" name="display_mode" value="anonymous" />
+                        <label class="block text-sm text-secondary mb-1" for="km-anon-name">
+                          {gettext("Name (max 12 characters)")}
+                        </label>
+                        <input
+                          id="km-anon-name"
+                          type="text"
+                          name="anonymous_name"
+                          required
+                          maxlength="12"
+                          placeholder={gettext("Name (max 12 characters)")}
+                          class="input input-bordered input-sm w-full mb-2"
+                        />
+                        <button type="submit" class="btn btn-primary btn-sm w-full">
+                          {gettext("Record Score")}
+                        </button>
+                      </form>
+                    <% else %>
+                      <form phx-submit="record_score" class="text-left">
+                        <input type="hidden" name="score" value={@game_over.score} />
+                        <label class="flex items-center gap-2 mb-2">
+                          <input type="radio" name="display_mode" value="linked" checked />
+                          {gettext("Link my profile")}
+                        </label>
+                        <label class="flex items-center gap-2 mb-2">
+                          <input type="radio" name="display_mode" value="anonymous" />
+                          {gettext("Anonymous")}
+                        </label>
+                        <input
+                          type="text"
+                          name="anonymous_name"
+                          placeholder={gettext("Anonymous name")}
+                          maxlength="12"
+                          class="input input-bordered input-sm w-full mb-2"
+                        />
+                        <button type="submit" class="btn btn-primary btn-sm w-full">
+                          {gettext("Record Score")}
+                        </button>
+                      </form>
+                    <% end %>
                     <%= if @record_error do %>
                       <p class="text-error text-sm mt-2">{@record_error}</p>
                     <% end %>
@@ -341,13 +565,13 @@ defmodule MedoruWeb.KanjiMasterLive do
               <ul class="text-sm text-base-content/80 space-y-2 mb-4">
                 <li>
                   {gettext(
-                    "Levels go from simple (1-3 strokes) to your hardest kanji, then restart with kanji you haven't drawn yet."
+                    "Levels go from simple (1-6 strokes) up to 19+ strokes, then restart with kanji you haven't drawn yet. After the last level you might face a rare boss kanji for a huge reward!"
                   )}
                 </li>
                 <li>{gettext("Each cycle, a wrong stroke costs one more life.")}</li>
                 <li>
                   {gettext(
-                    "The shop opens every 5 kanji — spend coins on lives, hints, upgrades, or skips."
+                    "The shop opens once before your first kanji and then every 4 kanji — spend coins on lives, hints, upgrades, or skips."
                   )}
                 </li>
               </ul>
@@ -358,13 +582,13 @@ defmodule MedoruWeb.KanjiMasterLive do
                 <li class="flex items-center gap-2">
                   <.icon name="hero-heart" class="w-4 h-4 text-error" />
                   {gettext(
-                    "Lives — you start with 15. Lose one (or more per cycle) on a wrong stroke."
+                    "Lives — you start with 20. Lose one (or more per cycle) on a wrong stroke."
                   )}
                 </li>
                 <li class="flex items-center gap-2">
                   <.icon name="hero-circle-stack" class="w-4 h-4 text-warning" />
                   {gettext(
-                    "Coins — you start with your site level and earn 1 per 5 kanji. Spent in the shop."
+                    "Coins — you start with your site level and earn 2 per completed kanji (plus 1 extra life every 4th kanji). Spent in the shop."
                   )}
                 </li>
                 <li class="flex items-center gap-2">
@@ -404,8 +628,88 @@ defmodule MedoruWeb.KanjiMasterLive do
                   <span class="font-bold" style="color: #06b6d4">{gettext("Cyan")}</span>
                   — {gettext("5 points, but a mistake also costs 5 coins.")}
                 </li>
+                <li>
+                  <span class="font-bold" style="color: #f9a8d4">{gettext("Pink (momo)")}</span>
+                  — {gettext(
+                    "20% jackpot on a correct draw (+1 life, +5 coins, +5 yellow strokes); a mistake costs +1 life, 5 coins, and 2 yellow-stroke charges."
+                  )}
+                </li>
               </ul>
+              <h4 class="text-sm font-semibold uppercase tracking-widest text-base-content/60 mb-2">
+                {gettext("Boss kanji")}
+              </h4>
+              <p class="text-sm text-secondary mb-2">
+                {gettext(
+                  "The last kanji of each level is a boss with debuffed strokes; a rare final boss appears after level 5."
+                )}
+              </p>
+              <ul class="text-sm space-y-1.5 mb-4">
+                <li>
+                  <span class="font-bold" style="color: #15803d">{gettext("Suppressed")}</span>
+                  — {gettext("a stroke with an upgrade loses its bonus effects.")}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #000000">{gettext("Black")}</span>
+                  — {gettext("a correct draw earns 0 points.")}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #ff1f1f">{gettext("Bright red")}</span>
+                  — {gettext("a wrong draw costs 1 extra life.")}
+                </li>
+                <li>
+                  <span class="font-bold">{gettext("Hidden")}</span>
+                  — {gettext("yellow hints cannot be used on this stroke.")}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #be185d">{gettext("Trap")}</span>
+                  — {gettext(
+                    "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
+                  )}
+                </li>
+              </ul>
+              <p class="text-sm text-secondary mb-4">
+                {gettext(
+                  "A pack of 3 upgrades costs a random 4-6 coins — buy it to reveal the offers and pick one. Afterwards you can re-roll the pack for 1 coin, then 2, then 3... The re-roll cost resets each time the shop opens, and re-rolling replaces the pack price (you never pay both). Packs only offer strokes of the current level and below (level 1 packs: strokes 1-6, level 2: 1-10, and so on), and the shop right after a level boss offers strokes of the next level. Already-upgraded strokes never appear while other strokes are available — when everything at this level is upgraded, packs offer re-colors of strokes you already upgraded."
+                )}
+              </p>
+              <p class="text-sm text-secondary mb-4">
+                {gettext(
+                  "Purchase limits per shop visit: up to 2 upgrade packs, 4 lives, 7 yellow strokes, and 2 kanji skips. Limits reset when the shop reopens."
+                )}
+              </p>
               <button id="km-help-close" type="button" class="btn btn-ghost btn-sm w-full">
+                {gettext("Close")}
+              </button>
+            </div>
+          </div>
+
+          <%!-- Upgrade status overlay: every stroke of the current kanji + currencies --%>
+          <div
+            id="km-status-overlay"
+            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-300/80 p-4"
+          >
+            <div class="bg-base-100 rounded-2xl shadow-xl border border-base-300 p-4 sm:p-6 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+              <h3 class="text-lg font-bold text-base-content mb-1">{gettext("Upgrade status")}</h3>
+              <p class="text-xs text-secondary mb-3">{gettext("Current kanji")}</p>
+              <ul id="km-status-strokes" class="text-sm space-y-1.5 mb-4"></ul>
+              <h4 class="text-xs font-semibold uppercase tracking-widest text-base-content/60 mb-2">
+                {gettext("Currencies")}
+              </h4>
+              <div id="km-status-currencies" class="flex items-center gap-4 text-sm font-bold">
+                <span class="inline-flex items-center gap-1 text-error">
+                  <span id="km-status-lives">0</span>
+                  <.icon name="hero-heart" class="w-4 h-4" />
+                </span>
+                <span class="inline-flex items-center gap-1 text-warning">
+                  <span id="km-status-coins">0</span>
+                  <.icon name="hero-circle-stack" class="w-4 h-4" />
+                </span>
+                <span class="inline-flex items-center gap-1 text-yellow-500">
+                  <span id="km-status-hints">0</span>
+                  <.icon name="hero-heart" class="w-4 h-4" />
+                </span>
+              </div>
+              <button id="km-status-close" type="button" class="btn btn-ghost btn-sm w-full mt-4">
                 {gettext("Close")}
               </button>
             </div>

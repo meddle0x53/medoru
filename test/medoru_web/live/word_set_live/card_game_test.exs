@@ -157,7 +157,7 @@ defmodule MedoruWeb.WordSetLive.CardGameTest do
         {pos, text}
       end)
 
-    {pos1, pos2, _text} =
+    {pos1, pos2, text} =
       positions
       |> Enum.reject(fn {_, text} -> is_nil(text) end)
       |> Enum.group_by(fn {_, text} -> text end)
@@ -167,7 +167,7 @@ defmodule MedoruWeb.WordSetLive.CardGameTest do
       end) ||
         raise "could not find a matching pair"
 
-    {pos1, pos2, _text}
+    {pos1, pos2, text}
   end
 
   defp extract_card_text(html, pos) do

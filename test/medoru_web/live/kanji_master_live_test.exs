@@ -55,11 +55,63 @@ defmodule MedoruWeb.KanjiMasterLiveTest do
     {:ok, _view, html} = live(conn, ~p"/challenges/kanji-master")
 
     assert html =~ ~s|id="kanji-master-game"|
-    assert html =~ ~s|data-start-lives="15"|
+    assert html =~ ~s|data-start-lives="20"|
     assert html =~ ~s|data-start-hints="5"|
     assert html =~ ~s|data-start-coins=|
     assert html =~ "km-lives"
     assert html =~ "km-coins"
     assert html =~ "km-hints"
+  end
+
+  test "eligible user gets whole-dictionary boss kanji (22+ strokes) in data-boss-pool" do
+    user = user_fixture()
+    learn_kanji(user, 50)
+
+    boss_char = <<0x9B31::utf8>>
+
+    _boss =
+      kanji_fixture(%{
+        character: boss_char,
+        stroke_count: 22,
+        stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+      })
+
+    conn = log_in_user(build_conn(), user)
+    {:ok, _view, html} = live(conn, ~p"/challenges/kanji-master")
+
+    assert html =~ ~s|data-boss-pool=|
+    assert html =~ boss_char
+    refute html =~ "data-boss-pool=\"[]\""
+  end
+
+  test "boss pool falls back to the highest-stroke kanji when none have 22+" do
+    user = user_fixture()
+    learn_kanji(user, 50)
+
+    fallback_char = <<0x9B32::utf8>>
+
+    _fallback =
+      kanji_fixture(%{
+        character: fallback_char,
+        stroke_count: 17,
+        stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+      })
+
+    conn = log_in_user(build_conn(), user)
+    {:ok, _view, html} = live(conn, ~p"/challenges/kanji-master")
+
+    assert html =~ ~s|data-boss-pool=|
+    assert html =~ fallback_char
+  end
+
+  test "game shell renders the boss label element and boss label data attribute" do
+    user = user_fixture()
+    learn_kanji(user, 50)
+    conn = log_in_user(build_conn(), user)
+
+    {:ok, _view, html} = live(conn, ~p"/challenges/kanji-master")
+
+    assert html =~ ~s|id="km-boss-label"|
+    assert html =~ ~s|data-boss-label=|
   end
 end

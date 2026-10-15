@@ -4646,7 +4646,7 @@ msgstr "特集バッジ"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:418
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Learning Stats"
-msgstr "学習デュエル"
+msgstr "学習統計"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:293
 #, elixir-autogen, elixir-format
@@ -4662,7 +4662,7 @@ msgstr "生徒"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:421
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Tests Completed"
-msgstr "テスト完了！"
+msgstr "完了したテスト"
 
 #: lib/medoru_web/controllers/admin/user_controller.ex:38
 #: lib/medoru_web/live/user_live/show.ex:34
@@ -7254,7 +7254,7 @@ msgstr "画像→意味"
 #: lib/medoru_web/live/user_white_board_live.ex:816
 #, elixir-autogen, elixir-format
 msgid "Invalid user ID."
-msgstr ""
+msgstr "無効なユーザーIDです。"
 
 #: lib/medoru_web/live/settings_live/daily_test_preferences.ex:50
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:433
@@ -11853,7 +11853,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:228
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to block this user? They won't be able to message you."
-msgstr "この単語を削除してもよろしいですか？"
+msgstr "このユーザーをブロックしてもよろしいですか？メッセージを送信できなくなります。"
 
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:105
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:105
@@ -11864,7 +11864,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:235
 #, elixir-autogen, elixir-format
 msgid "Block"
-msgstr ""
+msgstr "ブロック"
 
 #: lib/medoru_web/components/layouts.ex:633
 #: lib/medoru_web/live/settings_live/blocks.ex:22
@@ -12165,7 +12165,7 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Message"
-msgstr ""
+msgstr "メッセージ"
 
 #: lib/medoru_web/components/layouts.ex:151
 #: lib/medoru_web/components/layouts.ex:284
@@ -12728,7 +12728,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "Already Completed!"
-msgstr ""
+msgstr "すでに完了済みです！"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:974
 #, elixir-autogen, elixir-format
@@ -12891,7 +12891,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_kanji_test_live.ex:57
 #, elixir-autogen, elixir-format
 msgid "Base XP"
-msgstr ""
+msgstr "基本XP"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:15
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:15
@@ -12933,7 +12933,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_kanji_test_live.ex:49
 #, elixir-autogen, elixir-format
 msgid "Challenge Complete!"
-msgstr ""
+msgstr "チャレンジ完了！"
 
 #: lib/medoru_web/live/classroom_live/show.ex:1499
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:642
@@ -13044,7 +13044,7 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Complete any challenge to keep your streak going!"
-msgstr ""
+msgstr "どれか1つのチャレンジを完了して連続記録を維持しましょう！"
 
 #: lib/medoru_web/live/messages_live/settings.ex:21
 #: lib/medoru_web/live/messages_live/settings.ex:33
@@ -13086,7 +13086,7 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.ex:133
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not follow user."
-msgstr "ユーザーをブロックできませんでした。"
+msgstr "ユーザーをフォローできませんでした。"
 
 #: lib/medoru_web/live/user_white_board_live.ex:913
 #, elixir-autogen, elixir-format
@@ -13150,7 +13150,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "Daily Cards"
-msgstr ""
+msgstr "デイリーカード"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:17
 #: lib/medoru_web/live/daily_challenges_live.ex:336
@@ -13158,7 +13158,7 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Daily Challenges"
-msgstr ""
+msgstr "デイリーチャレンジ"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:141
 #, elixir-autogen, elixir-format, fuzzy
@@ -13171,12 +13171,12 @@ msgstr "漢字合計"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "Daily Kanji Challenge"
-msgstr ""
+msgstr "デイリー漢字チャレンジ"
 
 #: lib/medoru_web/live/user_live/show.ex:282
 #, elixir-autogen, elixir-format
 msgid "Daily challenges reset successfully. Deleted %{count} records."
-msgstr ""
+msgstr "デイリーチャレンジをリセットしました。%{count}件のレコードを削除しました。"
 
 #: lib/medoru_web/components/helpers.ex:82
 #, elixir-autogen, elixir-format, fuzzy
@@ -13524,7 +13524,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show.ex:403
 #, elixir-autogen, elixir-format
 msgid "Female"
-msgstr ""
+msgstr "女性"
 
 #: lib/medoru_web/live/classroom_live/show.ex:2785
 #: lib/medoru_web/live/messages_live/show.html.heex:526
@@ -13566,7 +13566,7 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:159
 #, elixir-autogen, elixir-format
 msgid "Follow"
-msgstr ""
+msgstr "フォロー"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:567
 #: lib/medoru_web/live/dashboard_live.html.heex:567
@@ -13582,7 +13582,7 @@ msgstr ""
 #: lib/medoru_web/live/user_white_board_post_live.ex:61
 #, elixir-autogen, elixir-format
 msgid "Followers"
-msgstr ""
+msgstr "フォロワー"
 
 #: lib/medoru_web/live/user_white_board_live.ex:388
 #, elixir-autogen, elixir-format
@@ -13786,7 +13786,7 @@ msgstr ""
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Kanji %{current} of %{total}"
-msgstr ""
+msgstr "漢字 %{current} / %{total}"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.ex:54
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:12
@@ -13883,14 +13883,14 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Lv. %{level}"
-msgstr ""
+msgstr "Lv. %{level}"
 
 #: lib/medoru/ai/chat_assistant.ex:391
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:238
 #: lib/medoru_web/live/user_live/show.ex:402
 #, elixir-autogen, elixir-format
 msgid "Male"
-msgstr ""
+msgstr "男性"
 
 #: lib/medoru_web/live/admin/custom_lesson_live/index.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -13972,7 +13972,7 @@ msgstr "単語のペアを合わせ、意味を入力してカードを獲得し
 #: lib/medoru_web/live/daily_challenges_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Match word pairs in a memory game. Type meanings to win!"
-msgstr ""
+msgstr "記憶ゲームで単語のペアを合わせましょう。意味を入力して勝利！"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form.ex:337
 #: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:337
@@ -14044,7 +14044,7 @@ msgstr "条件に一致するユーザーが見つかりませんでした。"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:455
 #, elixir-autogen, elixir-format
 msgid "No daily challenges completed today."
-msgstr ""
+msgstr "今日完了したデイリーチャレンジはありません。"
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:72
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:41
@@ -14139,7 +14139,7 @@ msgstr "条件に一致するユーザーが見つかりませんでした。"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Not enough learned kanji with stroke data. Learn at least %{count} kanji first!"
-msgstr ""
+msgstr "書き順データのある学習済み漢字が不足しています。まず%{count}字以上の漢字を学習してください！"
 
 #: lib/medoru_web/live/daily_card_game_live.ex:31
 #, elixir-autogen, elixir-format
@@ -14172,7 +14172,7 @@ msgstr "メンバー"
 #: lib/medoru_web/live/users_live/index.ex:130
 #, elixir-autogen, elixir-format
 msgid "Now following user."
-msgstr ""
+msgstr "ユーザーをフォローしました。"
 
 #: lib/medoru_web/components/helpers.ex:80
 #, elixir-autogen, elixir-format
@@ -14195,12 +14195,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Online"
-msgstr ""
+msgstr "オンライン"
 
 #: lib/medoru_web/live/user_live/show.ex:287
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Only admins can reset daily challenges."
-msgstr "デイリーテストのリセットは管理者のみ可能です。"
+msgstr "デイリーチャレンジのリセットは管理者のみ可能です。"
 
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:195
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:206
@@ -14247,7 +14247,7 @@ msgstr "パターン："
 #: lib/medoru_web/live/daily_kanji_test_live.ex:62
 #, elixir-autogen, elixir-format
 msgid "Penalties"
-msgstr ""
+msgstr "ペナルティ"
 
 #: lib/medoru_web/live/admin/game_live/index.ex:142
 #, elixir-autogen, elixir-format, fuzzy
@@ -14326,7 +14326,7 @@ msgstr "もう一度練習する"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Practice writing %{count} kanji. 10 are your least-known, 5 are random. Each kanji is worth 30 XP if you keep wrong strokes under 4."
-msgstr ""
+msgstr "%{count}字の漢字の書き方を練習しましょう。10字は最も苦手な漢字、5字はランダムです。間違いストロークを4未満に抑えると、漢字ごとに30 XP獲得できます。"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:15
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:15
@@ -14337,7 +14337,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:143
 #, elixir-autogen, elixir-format
 msgid "Practice writing 10-20 learned kanji with stroke validation."
-msgstr ""
+msgstr "学習済みの漢字を10〜20字、書き順チェック付きで練習しましょう。"
 
 #: lib/medoru_web/live/settings_live/chat_shortcuts.ex:106
 #, elixir-autogen, elixir-format
@@ -14440,12 +14440,12 @@ msgstr "他の人にキーを依頼"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:466
 #, elixir-autogen, elixir-format
 msgid "Reset Challenges"
-msgstr ""
+msgstr "チャレンジをリセット"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:446
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reset Daily Challenges"
-msgstr "デイリーテストをリセット"
+msgstr "デイリーチャレンジをリセット"
 
 #: lib/medoru_web/live/messages_live/show.html.heex:881
 #, elixir-autogen, elixir-format
@@ -14465,7 +14465,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Review due words and learn new ones with a personalized test."
-msgstr ""
+msgstr "復習すべき単語を確認し、新しい単語をパーソナライズされたテストで学びましょう。"
 
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:190
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:190
@@ -14621,7 +14621,7 @@ msgstr "テストを再受験"
 #: lib/medoru_web/live/daily_challenges_live.ex:43
 #, elixir-autogen, elixir-format
 msgid "Streak saved today!"
-msgstr ""
+msgstr "今日は記録が維持されました！"
 
 #: lib/medoru_web/live/admin/tag_live/index/index.html.heex:10
 #, elixir-autogen, elixir-format
@@ -14803,7 +14803,7 @@ msgstr "ここに文を入力してください..."
 #: lib/medoru_web/live/users_live/index.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
-msgstr ""
+msgstr "フォロー解除"
 
 #: lib/medoru_web/live/user_live/followers.ex:94
 #: lib/medoru_web/live/user_live/following.ex:94
@@ -14811,17 +14811,17 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.ex:151
 #, elixir-autogen, elixir-format
 msgid "Unfollowed user."
-msgstr ""
+msgstr "フォロー解除しました。"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:197
 #, elixir-autogen, elixir-format
 msgid "Up to 300 XP"
-msgstr ""
+msgstr "最大300 XP"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Up to 600 XP"
-msgstr ""
+msgstr "最大600 XP"
 
 #: lib/medoru_web/live/admin/tag_live/form/form_template.html.heex:99
 #, elixir-autogen, elixir-format, fuzzy
@@ -14841,12 +14841,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:449
 #, elixir-autogen, elixir-format
 msgid "User has completed %{count} challenge(s) today: %{types}. Reset to allow retaking."
-msgstr ""
+msgstr "ユーザーは今日%{count}件のチャレンジを完了しています：%{types}。再受験できるようにリセットします。"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Variable XP"
-msgstr ""
+msgstr "変動XP"
 
 #: lib/medoru_web/live/radical_live/show.html.heex:44
 #: lib/medoru_web/live/radical_live/show.html.heex:44
@@ -14905,7 +14905,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:308
 #, elixir-autogen, elixir-format
 msgid "White Board"
-msgstr ""
+msgstr "ホワイトボード"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:213
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:213
@@ -14988,7 +14988,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "XP"
-msgstr ""
+msgstr "XP"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:36
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:36
@@ -15135,13 +15135,13 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:98
 #, elixir-autogen, elixir-format
 msgid "followers"
-msgstr ""
+msgstr "フォロワー"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:82
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "following"
-msgstr ""
+msgstr "フォロー中"
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:106
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:84
@@ -15164,7 +15164,7 @@ msgstr "漢字"
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "kanji written correctly"
-msgstr ""
+msgstr "字の漢字を正しく書けました"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form.ex:420
 #: lib/medoru_web/live/grammar_definition_live/show.ex:85
@@ -15333,7 +15333,7 @@ msgstr "メールアドレスまたは名前で検索..."
 #: lib/medoru_web/live/user_live/followers.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "%{count} people are following you"
-msgstr ""
+msgstr "%{count}人があなたをフォローしています"
 
 #: lib/medoru_web/live/grammar_definition_live/show.ex:104
 #, elixir-autogen, elixir-format
@@ -15405,20 +15405,20 @@ msgstr ""
 #: lib/medoru_web/live/user_live/following.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Discover Users"
-msgstr ""
+msgstr "ユーザーを見つけよう"
 
 #: lib/medoru_web/live/user_live/following.ex:39
 #: lib/medoru_web/live/user_live/following.html.heex:13
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Following"
-msgstr ""
+msgstr "フォロー中"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:106
 #: lib/medoru_web/live/dashboard_live.html.heex:106
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:356
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Grammar Learned"
-msgstr "文法パターン"
+msgstr "学習した文法"
 
 #: lib/medoru_web/live/grammar_definition_live/show.ex:130
 #, elixir-autogen, elixir-format
@@ -15428,7 +15428,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/followers.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "No followers yet"
-msgstr ""
+msgstr "まだフォロワーはいません"
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:96
 #, elixir-autogen, elixir-format, fuzzy
@@ -15438,7 +15438,7 @@ msgstr "文法レッスンはまだありません"
 #: lib/medoru_web/live/user_live/following.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Not following anyone yet"
-msgstr ""
+msgstr "まだ誰もフォローしていません"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:546
 #, elixir-autogen, elixir-format
@@ -15448,12 +15448,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/followers.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "People who follow you will appear here."
-msgstr ""
+msgstr "あなたをフォローした人がここに表示されます。"
 
 #: lib/medoru_web/live/user_live/following.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "People you follow will appear here."
-msgstr ""
+msgstr "フォローした人がここに表示されます。"
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:99
 #, elixir-autogen, elixir-format
@@ -15463,17 +15463,17 @@ msgstr ""
 #: lib/medoru_web/live/user_live/following.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "You are following %{count} people"
-msgstr ""
+msgstr "%{count}人をフォローしています"
 
 #: lib/medoru_web/live/user_live/followers.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own followers."
-msgstr "自分のレッスンのみ編集できます。"
+msgstr "自分のフォロワーのみ表示できます。"
 
 #: lib/medoru_web/live/user_live/following.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own following list."
-msgstr "自分のレッスンのみ編集できます。"
+msgstr "自分のフォロー一覧のみ表示できます。"
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:24
 #, elixir-autogen, elixir-format, fuzzy
@@ -16195,7 +16195,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show.ex:421
 #, elixir-autogen, elixir-format
 msgid "Learning %{language}"
-msgstr ""
+msgstr "%{language}を学習中"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:16
 #, elixir-autogen, elixir-format, fuzzy
@@ -16249,7 +16249,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:250
 #, elixir-autogen, elixir-format
 msgid "30 XP per kanji + 50 XP"
-msgstr ""
+msgstr "漢字1つにつき30 XP＋50 XP"
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:238
 #, elixir-autogen, elixir-format, fuzzy
@@ -17629,7 +17629,7 @@ msgstr "この本の単語カードの見た目をカスタマイズします。
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Daily Component Hunt"
-msgstr ""
+msgstr "デイリー部品ハント"
 
 #: lib/medoru_web/live/word_book_live/form.ex:216
 #, elixir-autogen, elixir-format
@@ -17891,7 +17891,7 @@ msgstr "この本にはまだ単語がありません。"
 #: lib/medoru_web/live/daily_challenges_live.ex:246
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Type kanji containing a chosen component before time runs out."
-msgstr ""
+msgstr "時間切れになる前に、選択した部品を含む漢字を入力しましょう。"
 
 #: lib/medoru_web/live/word_book_live/form.ex:121
 #, elixir-autogen, elixir-format
@@ -18071,7 +18071,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "100 XP per Ouro Essence"
-msgstr ""
+msgstr "Ouro Essenceごとに100 XP"
 
 #: lib/medoru_web/live/games_live/index.ex:125
 #, elixir-autogen, elixir-format
@@ -18081,7 +18081,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:17
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} people visited your profile"
-msgstr ""
+msgstr "%{count}人がプロフィールを訪問しました"
 
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:62
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:62
@@ -18242,7 +18242,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:64
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No visitors yet"
-msgstr "まだステップがありません。"
+msgstr "まだ訪問者はいません"
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:614
 #, elixir-autogen, elixir-format
@@ -18257,20 +18257,20 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "People who visit your profile will appear here."
-msgstr ""
+msgstr "プロフィールを訪問した人がここに表示されます。"
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:575
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:243
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Relation"
-msgstr ""
+msgstr "関係"
 
 #: lib/medoru_web/live/classroom_live/show.ex:878
 #: lib/medoru_web/live/messages_live/show.ex:472
 #: lib/medoru_web/live/user_live/show.ex:257
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Relation saved."
-msgstr ""
+msgstr "関係を保存しました。"
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:216
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:21
@@ -18341,12 +18341,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Visitors"
-msgstr ""
+msgstr "訪問者"
 
 #: lib/medoru_web/live/user_live/visitors.ex:46
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own visitors."
-msgstr "自分のレッスンのみ編集できます。"
+msgstr "自分の訪問者のみ表示できます。"
 
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:137
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:137
@@ -18379,7 +18379,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "visitors"
-msgstr ""
+msgstr "訪問者"
 
 #: lib/medoru_web/live/word_set_live/index.ex:591
 #, elixir-autogen, elixir-format
@@ -18479,7 +18479,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show.ex:260
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not save relation."
-msgstr "デイリーテストを開始できませんでした"
+msgstr "関係を保存できませんでした。"
 
 #: lib/medoru_web/live/word_set_live/index.ex:650
 #, elixir-autogen, elixir-format, fuzzy
@@ -18723,7 +18723,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Play The RPG Game. Earn site XP from Ouro Essence gained."
-msgstr ""
+msgstr "RPGゲームをプレイ。獲得したOuro EssenceでサイトXPを獲得。"
 
 #: lib/medoru_web/live/word_book_live/show.ex:408
 #: lib/medoru_web/live/word_book_live/show.ex:411
@@ -18753,7 +18753,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:299
 #, elixir-autogen, elixir-format
 msgid "RPG Game Run"
-msgstr ""
+msgstr "RPGゲームラン"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:111
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:111
@@ -18865,7 +18865,7 @@ msgstr "試行回数がなくなりました。もう一度！"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:259
 #, elixir-autogen, elixir-format
 msgid "Your relation with %{name}"
-msgstr ""
+msgstr "%{name}との関係"
 
 #: lib/medoru_web/live/word_book_live/present.ex:151
 #, elixir-autogen, elixir-format
@@ -19016,8 +19016,8 @@ msgstr "黄色ストローク +1"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "An endless kanji-writing survival game. 15 lives — how far can you go?"
-msgstr "漢字書きのエンドレスサバイバルゲーム。15のライフ — どこまでいける？"
+msgid "An endless kanji-writing survival game. 20 lives — how far can you go?"
+msgstr "漢字書き取りサバイバルゲーム。ライフ20 — どこまでいける？"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19188,8 +19188,8 @@ msgstr "サイクルが進むごとに、間違った1画で失うライフが1�
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "The shop opens every 5 kanji — spend coins on lives, hints, upgrades, or skips."
-msgstr "ショップは5字ごとに開きます — コインでライフ、ヒント、アップグレード、スキップを購入しましょう。"
+msgid "The shop opens once before your first kanji and then every 4 kanji — spend coins on lives, hints, upgrades, or skips."
+msgstr "ショップは最初の字の前に1回、その後は4字ごとに開きます — コインでライフ、ヒント、アップグレード、スキップを購入しましょう。"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19198,13 +19198,13 @@ msgstr "通貨"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "Lives — you start with 15. Lose one (or more per cycle) on a wrong stroke."
-msgstr "ライフ — 15からスタート。間違った1画で1つ（サイクルごとに増加）失います。"
+msgid "Lives — you start with 20. Lose one (or more per cycle) on a wrong stroke."
+msgstr "ライフ — 20からスタート。ストロークを間違えると1つ（サイクルごとに増加）失います。"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "Coins — you start with your site level and earn 1 per 5 kanji. Spent in the shop."
-msgstr "コイン — サイトレベル分からスタートし、5字ごとに1枚獲得。ショップで使用します。"
+msgid "Coins — you start with your site level and earn 2 per completed kanji (plus 1 extra life every 4th kanji). Spent in the shop."
+msgstr "コイン — サイトレベル分からスタートし、漢字1字ごとに2枚獲得（4字ごとにライフ+1）。ショップで使用します。"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19271,3 +19271,190 @@ msgstr "シアン"
 msgid "5 points, but a mistake also costs 5 coins."
 msgstr "5ポイント、ただし間違えるとコインも5枚失います。"
 
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Stroke %{n}"
+msgstr "%{n}画目"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No upgrade"
+msgstr "アップグレードなし"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Momo"
+msgstr "もも"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Upgrade status"
+msgstr "アップグレード状況"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Current kanji"
+msgstr "現在の漢字"
+
+
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Re-roll"
+msgstr "振り直す"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Pink (momo)"
+msgstr "ピンク（もも）"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "20% jackpot on a correct draw (+1 life, +5 coins, +5 yellow strokes); a mistake costs +1 life, 5 coins, and 2 yellow-stroke charges."
+msgstr "正しく書くと20%でジャックポット（ライフ+1、コイン+5、黄ストローク+5）。間違えるとライフ+1、コイン5枚、黄ストローク2チャージ失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "A pack of 3 upgrades costs a random 4-6 coins — buy it to reveal the offers and pick one. Afterwards you can re-roll the pack for 1 coin, then 2, then 3... The re-roll cost resets each time the shop opens, and re-rolling replaces the pack price (you never pay both). Packs only offer strokes of the current level and below (level 1 packs: strokes 1-6, level 2: 1-10, and so on), and the shop right after a level boss offers strokes of the next level. Already-upgraded strokes never appear while other strokes are available — when everything at this level is upgraded, packs offer re-colors of strokes you already upgraded."
+msgstr "アップグレードパック（3つの候補から1つ選択）はランダム4-6コイン — 購入して候補を表示し、1つ選びます。購入後は1コイン、2コイン、3コイン…と再ロールできます。再ロール料はショップが開くたびにリセットされ、パック代と両方はかかりません。パックに含まれるのは現在のレベル以下のストロークのみです（レベル1：ストローク1-6、レベル2：1-10など）。レベルボスの直後のショップでは次のレベルのストロークが出ます。まだアップグレードされていないストロークがある限り、済みのストロークは出ません — このレベルが全部アップグレード済みの場合は、済みストロークの色替えが候補になります。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Give up"
+msgstr "ギブアップ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure you want to give up? Your run will end and you can record your score."
+msgstr "本当にギブアップしますか？ランが終了し、スコアを記録できます。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You gave up"
+msgstr "ギブアップしました"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Sold out"
+msgstr "売り切れ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Purchase limits per shop visit: up to 2 upgrade packs, 4 lives, 7 yellow strokes, and 2 kanji skips. Limits reset when the shop reopens."
+msgstr "ショップごとの購入上限：アップグレードパック2つ、ライフ4つ、黄色いストローク7つ、漢字スキップ2つまで。ショップが再び開くたびに上限はリセットされます。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Perfect!"
+msgstr "完璧！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Levels go from simple (1-6 strokes) up to 19+ strokes, then restart with kanji you haven't drawn yet. After the last level you might face a rare boss kanji for a huge reward!"
+msgstr "レベルは簡単なもの（1〜6画）から19画以上まで、書いたことのない漢字で再開します。最後のレベルの後には、レアなボス漢字と巨大な報酬が待っているかもしれません！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Boss"
+msgstr "ボス"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Boss kanji"
+msgstr "ボス漢字"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The last kanji of each level is a boss with debuffed strokes; a rare final boss appears after level 5."
+msgstr "各レベルの最後の漢字はデバフ画を持つボスです。レベル5の後には稀に最終ボスが登場します。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Suppressed"
+msgstr "抑制"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a stroke with an upgrade loses its bonus effects."
+msgstr "アップグレードされた画はボーナス効果を失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Black"
+msgstr "黒"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a correct draw earns 0 points."
+msgstr "正しく書いてもポイントは0。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Bright red"
+msgstr "赤"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a wrong draw costs 1 extra life."
+msgstr "間違えるとライフを1追加で失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Hidden"
+msgstr "隠し"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "yellow hints cannot be used on this stroke."
+msgstr "この画では黄のヒントが使えません。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Trap"
+msgstr "罠"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
+msgstr "正しく書くと50%でライフ+1。間違えると50%でライフを3追加で失います。"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Master N5"
+msgstr "Kanji Master N5"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Survive the JLPT N5 kanji. Everyone starts with 10 coins — no account needed!"
+msgstr "JLPT N5の漢字で生き残ろう。全員が10コインからスタート——アカウント不要！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Name (max 12 characters)"
+msgstr "名前（最大12文字）"
+
+#: lib/medoru_web/components/layouts.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Challenges"
+msgstr "チャレンジ"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Master N4"
+msgstr "Kanji Master N4"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Survive the JLPT N4 and N5 kanji. Everyone starts with 10 coins — no account needed!"
+msgstr "JLPT N4とN5の漢字で生き残ろう。全員が10コインからスタート——アカウント不要！"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The kanji you failed is:"
+msgstr "失敗した漢字は："
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "View it and practice →"
+msgstr "表示して練習する →"

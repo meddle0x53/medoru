@@ -39,6 +39,14 @@
         executable: /bin/bash
         chdir: "{{ app_home }}/source"
 
+    - name: Install JS dependencies
+      ansible.builtin.shell: |
+        npm ci
+      become_user: "{{ app_user }}"
+      args:
+        executable: /bin/bash
+        chdir: "{{ app_home }}/source/assets"
+
     - name: Build assets
       ansible.builtin.shell: |
         source $HOME/.kiex/scripts/kiex

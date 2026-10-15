@@ -13,12 +13,22 @@ defmodule MedoruWeb.ChallengesLive do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_scope.current_user
-    my_rank = if user, do: Challenges.get_rank_and_score(user.id), else: nil
+
+    my_rank =
+      if user,
+        do: %{
+          "master" => Challenges.get_rank_and_score(user.id, "master"),
+          "n5" => Challenges.get_rank_and_score(user.id, "n5"),
+          "n4" => Challenges.get_rank_and_score(user.id, "n4")
+        },
+        else: %{"master" => nil, "n5" => nil, "n4" => nil}
 
     {:ok,
      socket
      |> assign(:page_title, gettext("Learner Challenges"))
-     |> assign(:leaderboard, Challenges.get_leaderboard())
+     |> assign(:leaderboard, Challenges.get_leaderboard("master"))
+     |> assign(:leaderboard_n5, Challenges.get_leaderboard("n5"))
+     |> assign(:leaderboard_n4, Challenges.get_leaderboard("n4"))
      |> assign(:my_rank, my_rank)}
   end
 
@@ -34,68 +44,109 @@ defmodule MedoruWeb.ChallengesLive do
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="card border border-base-300 bg-base-100 transition-all">
-            <div class="card-body">
-              <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10">
-                  <.icon name="hero-pencil-square" class="w-6 h-6 text-primary" />
-                </div>
-                <span class="badge badge-ghost">{gettext("Available")}</span>
-              </div>
-
-              <h3 class="card-title text-lg">{gettext("Kanji Master")}</h3>
-              <p class="text-sm text-secondary mt-2">
-                {gettext("An endless kanji-writing survival game. 15 lives — how far can you go?")}
-              </p>
-
-              <%= if @my_rank do %>
-                <p class="mt-3 text-sm text-base-content/70">
-                  {gettext("Your rank: #%{rank}", rank: @my_rank.rank)} · {gettext("Best: %{score}",
-                    score: @my_rank.score
-                  )}
-                </p>
-              <% end %>
-
-              <div class="mt-4">
-                <h4 class="text-xs font-semibold uppercase tracking-widest text-base-content/60 mb-2">
-                  {gettext("Top 5")}
-                </h4>
-                <%= if @leaderboard == [] do %>
-                  <p class="text-sm text-secondary">{gettext("No scores yet. Be the first!")}</p>
-                <% else %>
-                  <ol class="space-y-1.5">
-                    <li
-                      :for={{entry, index} <- Enum.with_index(@leaderboard, 1)}
-                      class="flex items-center gap-2 text-sm"
-                    >
-                      <span class="w-6 text-right font-bold text-base-content/50">{index}</span>
-                      <%= if entry.display_mode == "linked" do %>
-                        <.link
-                          navigate={~p"/users/#{entry.user_id}"}
-                          class="text-primary hover:underline font-medium truncate"
-                        >
-                          {leaderboard_name(entry)}
-                        </.link>
-                      <% else %>
-                        <span class="font-medium truncate">{entry.anonymous_name}</span>
-                      <% end %>
-                      <span class="ml-auto font-bold text-base-content">{entry.score}</span>
-                    </li>
-                  </ol>
-                <% end %>
-              </div>
-
-              <div class="card-actions mt-4">
-                <.link navigate={~p"/challenges/kanji-master"} class="btn btn-primary btn-sm w-full">
-                  <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start")}
-                </.link>
-              </div>
-            </div>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <.challenge_card
+            :if={@current_scope.current_user}
+            title={gettext("Kanji Master")}
+            description={
+              gettext("An endless kanji-writing survival game. 20 lives — how far can you go?")
+            }
+            leaderboard={@leaderboard}
+            my_rank={@my_rank["master"]}
+            path={~p"/challenges/kanji-master"}
+          />
+          <.challenge_card
+            title={gettext("Kanji Master N5")}
+            description={
+              gettext("Survive the JLPT N5 kanji. Everyone starts with 10 coins — no account needed!")
+            }
+            leaderboard={@leaderboard_n5}
+            my_rank={@my_rank["n5"]}
+            path={~p"/challenges/kanji-master/n5"}
+          />
+          <.challenge_card
+            title={gettext("Kanji Master N4")}
+            description={
+              gettext(
+                "Survive the JLPT N4 and N5 kanji. Everyone starts with 10 coins — no account needed!"
+              )
+            }
+            leaderboard={@leaderboard_n4}
+            my_rank={@my_rank["n4"]}
+            path={~p"/challenges/kanji-master/n4"}
+          />
         </div>
       </div>
     </Layouts.app>
+    """
+  end
+
+  attr :title, :string, required: true
+  attr :description, :string, required: true
+  attr :leaderboard, :list, required: true
+  attr :my_rank, :map, default: nil
+  attr :path, :string, required: true
+
+  defp challenge_card(assigns) do
+    ~H"""
+    <div class="card border border-base-300 bg-base-100 transition-all">
+      <div class="card-body">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10">
+            <.icon name="hero-pencil-square" class="w-6 h-6 text-primary" />
+          </div>
+          <span class="badge badge-ghost">{gettext("Available")}</span>
+        </div>
+
+        <h3 class="card-title text-lg">{@title}</h3>
+        <p class="text-sm text-secondary mt-2">
+          {@description}
+        </p>
+
+        <%= if @my_rank do %>
+          <p class="mt-3 text-sm text-base-content/70">
+            {gettext("Your rank: #%{rank}", rank: @my_rank.rank)} · {gettext("Best: %{score}",
+              score: @my_rank.score
+            )}
+          </p>
+        <% end %>
+
+        <div class="mt-4">
+          <h4 class="text-xs font-semibold uppercase tracking-widest text-base-content/60 mb-2">
+            {gettext("Top 5")}
+          </h4>
+          <%= if @leaderboard == [] do %>
+            <p class="text-sm text-secondary">{gettext("No scores yet. Be the first!")}</p>
+          <% else %>
+            <ol class="space-y-1.5">
+              <li
+                :for={{entry, index} <- Enum.with_index(@leaderboard, 1)}
+                class="flex items-center gap-2 text-sm"
+              >
+                <span class="w-6 text-right font-bold text-base-content/50">{index}</span>
+                <%= if entry.display_mode == "linked" do %>
+                  <.link
+                    navigate={~p"/users/#{entry.user_id}"}
+                    class="text-primary hover:underline font-medium truncate"
+                  >
+                    {leaderboard_name(entry)}
+                  </.link>
+                <% else %>
+                  <span class="font-medium truncate">{entry.anonymous_name}</span>
+                <% end %>
+                <span class="ml-auto font-bold text-base-content">{entry.score}</span>
+              </li>
+            </ol>
+          <% end %>
+        </div>
+
+        <div class="card-actions mt-4">
+          <.link navigate={@path} class="btn btn-primary btn-sm w-full">
+            <.icon name="hero-play" class="w-4 h-4 mr-1" /> {gettext("Start")}
+          </.link>
+        </div>
+      </div>
+    </div>
     """
   end
 

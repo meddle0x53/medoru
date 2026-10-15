@@ -58,6 +58,11 @@ defmodule MedoruWeb.RadicalLive.Index do
     {:noreply, push_patch(socket, to: ~p"/radicals")}
   end
 
+  def handle_event("change_page", %{"page" => page}, socket) do
+    page = parse_page(page)
+    {:noreply, push_patch(socket, to: ~p"/radicals?page=#{page}")}
+  end
+
   defp apply_filter(radicals, query) do
     trimmed = String.trim(query)
 
@@ -87,12 +92,6 @@ defmodule MedoruWeb.RadicalLive.Index do
         (is_binary(radical.meaning) &&
            String.contains?(String.downcase(radical.meaning), lowered))
     end)
-  end
-
-  @impl true
-  def handle_event("change_page", %{"page" => page}, socket) do
-    page = parse_page(page)
-    {:noreply, push_patch(socket, to: ~p"/radicals?page=#{page}")}
   end
 
   defp parse_page(page) when is_binary(page) do

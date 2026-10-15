@@ -15,27 +15,37 @@ defmodule Medoru.Challenges.KanjiMasterScore do
   @foreign_key_type :binary_id
 
   @display_modes ["linked", "anonymous"]
+  @modes ["master", "n5", "n4"]
 
   schema "kanji_master_scores" do
     field :score, :integer, default: 0
     field :display_mode, :string, default: "linked"
     field :anonymous_name, :string
+    field :mode, :string, default: "master"
 
+    # Anonymous N5 entries have no user; belongs_to is optional by default
+    # in Ecto 3.x (no validate_required on the association here).
     belongs_to :user, User
 
     timestamps(type: :utc_datetime_usec)
   end
 
   def display_modes, do: @display_modes
+  def modes, do: @modes
 
   def changeset(score, attrs) do
     score
-    |> cast(attrs, [:score, :display_mode, :anonymous_name])
-    |> validate_required([:score, :display_mode])
+    |> cast(attrs, [:score, :display_mode, :anonymous_name, :mode])
+    |> update_change(:anonymous_name, fn name ->
+      if is_binary(name), do: String.trim(name), else: name
+    end)
+    |> validate_required([:score, :display_mode, :mode])
     |> validate_inclusion(:display_mode, @display_modes)
+    |> validate_inclusion(:mode, @modes)
     |> validate_number(:score, greater_than_or_equal_to: 0)
+    |> validate_length(:anonymous_name, max: 12)
     |> validate_anonymous_name()
-    |> unique_constraint(:user_id)
+    |> unique_constraint([:user_id, :mode])
   end
 
   defp validate_anonymous_name(changeset) do

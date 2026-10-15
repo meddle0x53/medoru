@@ -186,6 +186,444 @@ function analyzeStroke(points) {
 }
 
 // ---------------------------------------------------------------------------
+// Ideal-stroke shape classification
+//
+// Shape classes are derived from the KanjiVG geometry (see stroke
+// classification): every ideal stroke of a kanji is classified purely from
+// its authored path, independent of the player's drawing.
+// Classes in plain words:
+//   dot        — very short stroke with low directionality (点)
+//   horizontal — straight left-to-right stroke (横)
+//   vertical   — straight top-to-bottom stroke (竖)
+//   diagDownLeft  — straight left-falling stroke (撇)
+//   diagDownRight — straight right-falling stroke
+//   diagUpRight / diagUpLeft — straight rising diagonals
+//   rise       — rising flick, chord clearly going up (提)
+//   press      — right-falling stroke with a press bend (捺)
+//   hook       — main run with the deviation concentrated at the very end (钩)
+//   corner     — two roughly straight legs joined at a mid corner (折);
+//                rounded corners (digitized without a sharp vertex) included
+//   curveHook  — smooth curve finishing in an up-flick (卧钩 / 竖弯钩)
+//   curve      — remaining smooth curves (弯)
+// Sub-labels are kept in `shapeDetail` as compact direction codes:
+//   H horizontal, V vertical, DR/DL down-right/down-left, UR/UL up-right/
+//   up-left (SVG y axis points down). Hooks carry the incoming direction,
+//   corners the two leg directions ("H_V"), prefixed "r:" when rounded.
+// ---------------------------------------------------------------------------
+
+const STROKE_SHAPES = {
+  dot: 'dot',
+  horizontal: 'horizontal',
+  vertical: 'vertical',
+  diagDownLeft: 'diagDownLeft',
+  diagDownRight: 'diagDownRight',
+  diagUpRight: 'diagUpRight',
+  diagUpLeft: 'diagUpLeft',
+  rise: 'rise',
+  press: 'press',
+  hook: 'hook',
+  corner: 'corner',
+  curveHook: 'curveHook',
+  curve: 'curve'
+}
+
+const SHAPE_DIR_CODES = { H: 'horizontal', V: 'vertical', DR: 'diagDownRight', DL: 'diagDownLeft', UR: 'diagUpRight', UL: 'diagUpLeft' }
+
+const SAMPLE_STEP = 2.0
+
+function sampleCubic(p0, c1, c2, p3, step) {
+  const coarse = []
+  const n = 24
+  for (let i = 0; i <= n; i++) {
+    const t = i / n
+    const mt = 1 - t
+    coarse.push({
+      x: mt * mt * mt * p0.x + 3 * mt * mt * t * c1.x + 3 * mt * t * t * c2.x + t * t * t * p3.x,
+      y: mt * mt * mt * p0.y + 3 * mt * mt * t * c1.y + 3 * mt * t * t * c2.y + t * t * t * p3.y
+    })
+  }
+  return resampleByArcLength(coarse, step)
+}
+
+function sampleQuadratic(p0, c1, p2, step) {
+  return sampleCubic(
+    p0,
+    { x: p0.x + (2 / 3) * (c1.x - p0.x), y: p0.y + (2 / 3) * (c1.y - p0.y) },
+    { x: p2.x + (2 / 3) * (c1.x - p2.x), y: p2.y + (2 / 3) * (c1.y - p2.y) },
+    p2,
+    step
+  )
+}
+
+function resampleByArcLength(coarse, step) {
+  const cum = [0]
+  for (let i = 1; i < coarse.length; i++) {
+    const dx = coarse[i].x - coarse[i - 1].x
+    const dy = coarse[i].y - coarse[i - 1].y
+    cum.push(cum[i - 1] + Math.sqrt(dx * dx + dy * dy))
+  }
+  const total = cum[cum.length - 1]
+  if (total < 1e-9) return [coarse[coarse.length - 1]]
+  const nOut = Math.max(2, Math.floor(total / step) + 1)
+  const pts = []
+  let j = 0
+  for (let k = 0; k < nOut; k++) {
+    const target = (total * k) / (nOut - 1)
+    while (j < cum.length - 2 && cum[j + 1] < target) j++
+    const seg = cum[j + 1] - cum[j]
+    const f = seg < 1e-12 ? 0 : (target - cum[j]) / seg
+    pts.push({
+      x: coarse[j].x + (coarse[j + 1].x - coarse[j].x) * f,
+      y: coarse[j].y + (coarse[j + 1].y - coarse[j].y) * f
+    })
+  }
+  return pts
+}
+
+// Same tokenizer as parsePath, but curve segments are densely sampled
+// (~2-unit arc-length steps): the classifier thresholds were derived from
+// sampled polylines (arc length, deviation, turning all depend on density).
+function parseStrokePoints(pathStr) {
+  const points = []
+  let currentX = 0
+  let currentY = 0
+
+  let normalized = pathStr
+    .replace(/([MmLlHhVvCcSsQqTtAaZz])/g, ' $1 ')
+    .replace(/,/g, ' ')
+
+  for (let i = 0; i < 5; i++) {
+    normalized = normalized.replace(/(\d)(-)/g, '$1 $2')
+  }
+
+  normalized = normalized.replace(/\s+/g, ' ').trim()
+  const tokens = normalized.split(/\s+/)
+  let pendingMove = null
+
+  const push = (p) => {
+    if (pendingMove) {
+      points.push(pendingMove)
+      pendingMove = null
+    }
+    points.push(p)
+  }
+
+  const extendCurve = (seg) => {
+    if (pendingMove) {
+      points.push(pendingMove)
+      pendingMove = null
+      points.push(...seg)
+    } else {
+      points.push(...seg.slice(1))
+    }
+  }
+
+  for (let i = 0; i < tokens.length; i++) {
+    const cmd = tokens[i]
+    const type = cmd.toUpperCase()
+    const isRelative = cmd !== type
+
+    switch (type) {
+      case 'M':
+        if (i + 2 < tokens.length) {
+          const x = parseFloat(tokens[++i])
+          const y = parseFloat(tokens[++i])
+          currentX = isRelative ? currentX + x : x
+          currentY = isRelative ? currentY + y : y
+          pendingMove = { x: currentX, y: currentY }
+        }
+        break
+      case 'L':
+        if (i + 2 < tokens.length) {
+          const x = parseFloat(tokens[++i])
+          const y = parseFloat(tokens[++i])
+          currentX = isRelative ? currentX + x : x
+          currentY = isRelative ? currentY + y : y
+          push({ x: currentX, y: currentY })
+        }
+        break
+      case 'H':
+        if (i + 1 < tokens.length) {
+          const x = parseFloat(tokens[++i])
+          currentX = isRelative ? currentX + x : x
+          push({ x: currentX, y: currentY })
+        }
+        break
+      case 'V':
+        if (i + 1 < tokens.length) {
+          const y = parseFloat(tokens[++i])
+          currentY = isRelative ? currentY + y : y
+          push({ x: currentX, y: currentY })
+        }
+        break
+      case 'C':
+        if (i + 6 < tokens.length) {
+          const c1 = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          const c2 = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          const p = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          if (isRelative) {
+            c1.x += currentX; c1.y += currentY
+            c2.x += currentX; c2.y += currentY
+            p.x += currentX; p.y += currentY
+          }
+          const from = { x: currentX, y: currentY }
+          extendCurve(sampleCubic(from, c1, c2, p, SAMPLE_STEP))
+          currentX = p.x
+          currentY = p.y
+        }
+        break
+      case 'S':
+        if (i + 4 < tokens.length) {
+          const c2 = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          const p = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          if (isRelative) {
+            c2.x += currentX; c2.y += currentY
+            p.x += currentX; p.y += currentY
+          }
+          const from = { x: currentX, y: currentY }
+          extendCurve(sampleCubic(from, from, c2, p, SAMPLE_STEP))
+          currentX = p.x
+          currentY = p.y
+        }
+        break
+      case 'Q':
+        if (i + 4 < tokens.length) {
+          const c = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          const p = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          if (isRelative) {
+            c.x += currentX; c.y += currentY
+            p.x += currentX; p.y += currentY
+          }
+          const from = { x: currentX, y: currentY }
+          extendCurve(sampleQuadratic(from, c, p, SAMPLE_STEP))
+          currentX = p.x
+          currentY = p.y
+        }
+        break
+      case 'T':
+        if (i + 2 < tokens.length) {
+          const p = { x: parseFloat(tokens[++i]), y: parseFloat(tokens[++i]) }
+          if (isRelative) {
+            p.x += currentX; p.y += currentY
+          }
+          const from = { x: currentX, y: currentY }
+          extendCurve(sampleQuadratic(from, from, p, SAMPLE_STEP))
+          currentX = p.x
+          currentY = p.y
+        }
+        break
+      case 'A':
+        if (i + 7 < tokens.length) {
+          i += 6
+          const x = parseFloat(tokens[i])
+          const y = parseFloat(tokens[++i])
+          currentX = isRelative ? currentX + x : x
+          currentY = isRelative ? currentY + y : y
+          push({ x: currentX, y: currentY })
+        }
+        break
+    }
+  }
+
+  return points
+}
+
+// Direction code from a vector. SVG y axis points down, so dy > 0 means the
+// stroke is heading downward on screen. Same |dy/dx| bands as analyzeStroke.
+function shapeDirCode(dx, dy) {
+  const absDx = Math.abs(dx)
+  const absDy = Math.abs(dy)
+  if (absDx < 1e-9) return 'V'
+  const r = absDy / absDx
+  if (r < 0.3) return 'H'
+  if (r > 3) return 'V'
+  return (dy > 0 ? 'D' : 'U') + (dx > 0 ? 'R' : 'L')
+}
+
+function shapeDirFromDeg(deg) {
+  const rad = (deg * Math.PI) / 180
+  return shapeDirCode(Math.cos(rad), Math.sin(rad))
+}
+
+function angleDiff(a, b) {
+  const d = Math.abs(a - b) % 360
+  return Math.min(d, 360 - d)
+}
+
+function computeStrokeFeatures(points) {
+  const pts = []
+  for (const p of points) {
+    const last = pts[pts.length - 1]
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 1e-6) pts.push(p)
+  }
+  if (pts.length < 2) return null
+  const n = pts.length
+  const segLens = [0]
+  for (let i = 1; i < n; i++) segLens.push(Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y))
+  const cum = [0]
+  for (let i = 1; i < n; i++) cum.push(cum[i - 1] + segLens[i])
+  const L = cum[n - 1]
+  const sx = pts[0].x
+  const sy = pts[0].y
+  const ex = pts[n - 1].x
+  const ey = pts[n - 1].y
+  const dx = ex - sx
+  const dy = ey - sy
+  const C = Math.hypot(dx, dy)
+  const ratio = C > 1e-9 ? L / C : Infinity
+
+  let maxDev = 0
+  let tDev = 0
+  if (C >= 1e-9) {
+    const nx = dx / C
+    const ny = dy / C
+    for (const p of pts) {
+      const px = p.x - sx
+      const py = p.y - sy
+      const perp = Math.abs(px * ny - py * nx)
+      const t = (px * nx + py * ny) / C
+      if (perp > maxDev) {
+        maxDev = perp
+        tDev = t
+      }
+    }
+  }
+
+  let turn = 0
+  for (let i = 1; i < n - 1; i++) {
+    const ax = pts[i].x - pts[i - 1].x
+    const ay = pts[i].y - pts[i - 1].y
+    const bx = pts[i + 1].x - pts[i].x
+    const by = pts[i + 1].y - pts[i].y
+    const la = Math.hypot(ax, ay)
+    const lb = Math.hypot(bx, by)
+    if (la < 1e-9 || lb < 1e-9) continue
+    const cosv = Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)))
+    turn += Math.acos(cosv)
+  }
+  const turnDeg = (turn * 180) / Math.PI
+
+  const corners = []
+  for (let i = 1; i < n - 1; i++) {
+    const ax = pts[i - 1].x - pts[i].x
+    const ay = pts[i - 1].y - pts[i].y
+    const bx = pts[i + 1].x - pts[i].x
+    const by = pts[i + 1].y - pts[i].y
+    const la = Math.hypot(ax, ay)
+    const lb = Math.hypot(bx, by)
+    if (la < 2.0 || lb < 2.0) continue
+    const cosv = Math.max(-1, Math.min(1, (ax * bx + ay * by) / (la * lb)))
+    const ang = (Math.acos(cosv) * 180) / Math.PI
+    if (ang < 130) corners.push({ ang, t: L ? cum[i] / L : 0, i })
+  }
+
+  const ptAt = (frac) => {
+    const target = L * frac
+    for (let i = 0; i < n; i++) {
+      if (cum[i] >= target) return pts[i]
+    }
+    return pts[n - 1]
+  }
+  const p25 = ptAt(0.25)
+  const p75 = ptAt(0.75)
+  const h0 = (Math.atan2(p25.y - sy, p25.x - sx) * 180) / Math.PI
+  const h1 = (Math.atan2(ey - p75.y, ex - p75.x) * 180) / Math.PI
+  const legRatio = (f0, f1) => {
+    let i0 = 0
+    while (i0 < n - 1 && cum[i0] < L * f0) i0++
+    let i1 = i0
+    while (i1 < n - 1 && cum[i1] < L * f1) i1++
+    if (i1 <= i0) return 1
+    const la = cum[i1] - cum[i0]
+    const lc = Math.hypot(pts[i1].x - pts[i0].x, pts[i1].y - pts[i0].y)
+    return lc > 1e-9 ? la / lc : 1
+  }
+
+  return {
+    L, C, ratio, maxDev, tDev, turnDeg, corners, dx, dy,
+    h0, h1, legRatio0: legRatio(0, 0.32), legRatio1: legRatio(0.68, 1), pts, cum
+  }
+}
+
+// Decision tree ported verbatim from /tmp/analyze_strokes.py (thresholds and
+// rule order unchanged). Returns { shape, shapeDetail? }.
+function classifyStroke(points) {
+  const f = computeStrokeFeatures(points)
+  if (!f) return { shape: STROKE_SHAPES.dot }
+  const { L, C, ratio, maxDev, tDev, turnDeg, corners, dx, dy } = f
+  const dirCode = shapeDirCode(dx, dy)
+
+  // dot
+  if (L < 12 || (L < 15 && C < 14 && maxDev < 5)) {
+    return { shape: STROKE_SHAPES.dot }
+  }
+
+  // hook: deviation concentrated near the end
+  if (tDev > 0.78 && maxDev > 3.5) {
+    return { shape: STROKE_SHAPES.hook, shapeDetail: dirCode }
+  }
+
+  // corner: sharp corner around the middle
+  const midCorners = corners.filter((c) => c.t > 0.12 && c.t < 0.88)
+  if (midCorners.length > 0) {
+    const c = midCorners.reduce((a, b) => (a.ang <= b.ang ? a : b))
+    const cp = f.pts[c.i]
+    const leg1 = shapeDirCode(cp.x - f.pts[0].x, cp.y - f.pts[0].y)
+    const leg2 = shapeDirCode(dx - (cp.x - f.pts[0].x), dy - (cp.y - f.pts[0].y))
+    return { shape: STROKE_SHAPES.corner, shapeDetail: `${leg1}_${leg2}` }
+  }
+
+  const legD = angleDiff(f.h0, f.h1)
+
+  // corner (rounded): big leg-heading change, straight first leg, and the
+  // max deviation happens before the corner region; second leg runs from
+  // the 55%-arc point to the end (absorbs a trailing hook)
+  if (corners.length === 0 && legD > 55 && f.legRatio0 < 1.12 && tDev < 0.55) {
+    const mid = f.pts[f.cum.findIndex((c) => c >= 0.55 * f.L)]
+    const end = f.pts[f.pts.length - 1]
+    return {
+      shape: STROKE_SHAPES.corner,
+      shapeDetail: `r:${shapeDirFromDeg(f.h0)}_${shapeDirCode(end.x - mid.x, end.y - mid.y)}`
+    }
+  }
+
+  // corner (rounded): both legs straight
+  if (corners.length === 0 && legD > 55 && f.legRatio0 < 1.12 && f.legRatio1 < 1.12) {
+    return {
+      shape: STROKE_SHAPES.corner,
+      shapeDetail: `r:${shapeDirFromDeg(f.h0)}_${shapeDirFromDeg(f.h1)}`
+    }
+  }
+
+  // press (捺): right-falling chord with a clear press bend
+  if (dirCode === 'DR' && ratio < 1.3 && turnDeg > 18 && maxDev > 2) {
+    return { shape: STROKE_SHAPES.press }
+  }
+
+  // rise (提): clearly rising chord
+  if (dy < -4 && (Math.abs(dx) < 0.3 * Math.abs(dy) || Math.abs(dy) > 0.15 * Math.abs(dx))) {
+    return { shape: STROKE_SHAPES.rise, shapeDetail: dirCode }
+  }
+
+  // straight
+  if (ratio < 1.15) {
+    return { shape: STROKE_SHAPES[SHAPE_DIR_CODES[dirCode]] }
+  }
+
+  // smooth curve with an up-flick at the end (卧钩 / 竖弯钩)
+  const chordDeg = C > 1e-9 ? (Math.atan2(dy, dx) * 180) / Math.PI : f.h0
+  if (angleDiff(f.h1, chordDeg) > 60) {
+    return { shape: STROKE_SHAPES.curveHook, shapeDetail: dirCode }
+  }
+
+  return { shape: STROKE_SHAPES.curve, shapeDetail: dirCode }
+}
+
+function classifyStrokePath(pathStr) {
+  return classifyStroke(parseStrokePoints(pathStr))
+}
+
+// ---------------------------------------------------------------------------
 // Upgrade definitions
 // ---------------------------------------------------------------------------
 
@@ -194,10 +632,52 @@ const UPGRADE_COLORS = {
   purple: '#a855f7',
   orange: '#f97316',
   silver: '#c0c0c0',
-  cyan: '#06b6d4'
+  cyan: '#06b6d4',
+  momo: '#f9a8d4'
 }
 
 const MAX_UPGRADE_INDEX = 12
+
+// Level structure: each level draws up to 4 unused learned kanji from its
+// stroke range. After level 5 (and the boss, if one triggers) a new pass
+// starts at level 1 with the base error cost — the cycle increments, the
+// way the old ladder wrap did.
+const LEVELS = [
+  { min: 1, max: 6 },
+  { min: 7, max: 10 },
+  { min: 11, max: 14 },
+  { min: 15, max: 18 },
+  { min: 19, max: Infinity }
+]
+
+// Perfect-kanji bonus per level: at most `max` wrong attempts on the kanji
+// earns `hints` yellow strokes and `coins` coins on completion.
+const PERFECT_BONUS = [
+  { max: 0, hints: 1, coins: 1 },
+  { max: 1, hints: 2, coins: 2 },
+  { max: 2, hints: 3, coins: 4 },
+  { max: 3, hints: 5, coins: 7 },
+  { max: 4, hints: 10, coins: 15 }
+]
+
+// Boss debuffs, keyed by effect. `hidden` has no color — it only blocks
+// yellow hints on its stroke.
+const DEBUFF_COLORS = {
+  suppressed: '#15803d',
+  black: '#000000',
+  brightred: '#ff1f1f',
+  trap: '#be185d'
+}
+
+// Page/label accent color per level — matches the km-level-* border colors.
+const LEVEL_COLORS = {
+  1: '#3b82f6',
+  2: '#a855f7',
+  3: '#c0c0c0',
+  4: '#06b6d4',
+  5: '#f9a8d4',
+  boss: '#f97316'
+}
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -207,11 +687,21 @@ const KanjiMaster = {
   mounted() {
     this.pool = JSON.parse(this.el.dataset.pool || '[]')
     if (this.pool.length === 0) return
+    this.bossPool = JSON.parse(this.el.dataset.bossPool || '[]')
 
     this.questionTemplate = this.el.dataset.questionTemplate || 'Draw the kanji for %{word}（%{reading}）— %{meaning}'
     this.questionFallback = this.el.dataset.questionFallback || 'Draw the kanji with these readings'
     this.kunLabel = this.el.dataset.kunLabel || 'KUN'
     this.onLabel = this.el.dataset.onLabel || 'ON'
+    this.statusStrokeLabel = this.el.dataset.statusStrokeLabel || 'Stroke %{n}'
+    this.statusNoneLabel = this.el.dataset.statusNoneLabel || 'No upgrade'
+    this.perfectLabel = this.el.dataset.perfectLabel || 'Perfect!'
+    this.bossLabel = this.el.dataset.bossLabel || 'Boss'
+    try {
+      this.upgradeNames = JSON.parse(this.el.dataset.upgradeNames || '{}')
+    } catch (_e) {
+      this.upgradeNames = {}
+    }
 
     this.state = {
       lives: parseInt(this.el.dataset.startLives || '15', 10),
@@ -220,10 +710,22 @@ const KanjiMaster = {
       score: 0,
       completedKanji: 0,
       cycle: 1,
-      rung: 0, // index into this.rungs
+      levelIndex: 0, // index into LEVELS
+      levelQueue: [], // remaining entries of the current level: {kanji, boss}
+      levelsBuilt: new Set(), // level indices already built in this pass
+      bossActive: false,
+      mistakes: 0, // wrong attempts on the current kanji
       usedCharacters: new Set(),
       skippedCharacters: new Set(),
       upgrades: {}, // 1-based stroke index -> color name
+      pack: null, // current store pack: [{index, color}] or null
+      packCost: 5, // random 4-6 coins, rolled per pack
+      packBought: false, // whether the current pack was paid for (offers revealed)
+      rerollCost: 1, // coins for the next re-roll within this store visit
+      shopOpen: false,
+      // Per-shop-visit purchase limits (reset every time the shop opens).
+      shopBuys: { pack: 0, life: 0, hint: 0, skip: 0 },
+      shopLimits: { pack: 2, life: 4, hint: 7, skip: 2 },
       current: null, // { kanji, analyzed, validCount, strokeIndex }
       showingHint: false,
       drawing: false,
@@ -231,22 +733,18 @@ const KanjiMaster = {
       over: false
     }
 
-    // Stroke-count ladder: rung 0 = 1-3 strokes, then 4, 5, ... up to the
-    // max stroke count available in the pool.
-    const maxStrokes = Math.max(...this.pool.map((k) => k.stroke_count || 0))
-    const rungs = []
-    if (maxStrokes >= 1) rungs.push([1, Math.min(3, maxStrokes)])
-    for (let n = 4; n <= maxStrokes; n++) rungs.push([n, n])
-    this.rungs = rungs.filter(([lo, hi]) => this.pool.some((k) => {
-      const c = k.stroke_count || 0
-      return c >= lo && c <= hi
-    }))
+    // Levels are built lazily from the pool in pickEntry(); nothing to
+    // precompute here.
 
     this.canvasWrap = this.el.querySelector('#km-canvas-wrap')
     this.buildCanvas()
     this.bindHelp()
+    this.bindStatus()
+    this.bindGiveUp()
     if (!this.restoreRun()) {
+      // Fresh run: show the shop once before the first kanji.
       this.nextKanji()
+      this.openShop()
     } else {
       this.redraw()
       this.updateProgress()
@@ -256,63 +754,193 @@ const KanjiMaster = {
 
   // -- kanji selection ------------------------------------------------------
 
-  pickKanji() {
-    const { usedCharacters, skippedCharacters } = this.state
-    const [lo, hi] = this.rungs[this.state.rung]
-    const candidates = this.pool.filter((k) => {
-      const c = k.stroke_count || 0
-      return (
-        c >= lo &&
-        c <= hi &&
-        !skippedCharacters.has(k.character) &&
-        (this.state.cycle === 1 || !usedCharacters.has(k.character))
-      )
-    })
-
-    if (candidates.length === 0) {
-      // Rungs with no unused kanji left are dropped from the ladder; if
-      // none remain at all, the pool is exhausted.
-      this.rungs = this.rungs.filter((_, i) => {
-        if (i === this.state.rung) return false
-        const [l, h] = this.rungs[i]
-        return this.pool.some((k) => {
-          const c = k.stroke_count || 0
-          return (
-            c >= l &&
-            c <= h &&
-            !skippedCharacters.has(k.character) &&
-            (this.state.cycle === 1 || !usedCharacters.has(k.character))
-          )
-        })
-      })
-
-      if (this.rungs.length === 0) {
-        this.gameOver('exhausted')
-        return null
+  // Picks the next {kanji, boss} entry: a final-boss kanji while bossActive,
+  // otherwise the next queued level kanji (whose LAST entry is the level
+  // boss), building/skipping levels as needed.
+  pickEntry() {
+    if (this.state.bossActive) {
+      if (this.bossPool.length === 0) {
+        this.state.bossActive = false
+      } else {
+        return { kanji: this.bossPool[Math.floor(Math.random() * this.bossPool.length)], boss: true }
       }
-      this.state.rung = this.state.rung % this.rungs.length
-      return this.pickKanji()
     }
 
-    return candidates[Math.floor(Math.random() * candidates.length)]
+    for (;;) {
+      if (this.state.levelIndex >= LEVELS.length) {
+        // Pass complete. 10% chance to face a boss kanji first; otherwise
+        // (or when no boss kanji exist) a new pass starts at level 1 with
+        // the base error cost — the old ladder-wrap behavior.
+        if (this.bossPool.length > 0 && Math.random() < 0.1) {
+          this.state.bossActive = true
+          return this.pickEntry()
+        }
+        if (this.state.cycle > 1 && !this.unusedKanjiRemain()) {
+          this.gameOver('exhausted')
+          return null
+        }
+        this.state.cycle += 1
+        this.state.levelIndex = 0
+        this.state.levelsBuilt = new Set()
+        continue
+      }
+
+      if (this.state.levelQueue.length > 0) {
+        return this.state.levelQueue.shift()
+      }
+
+      // Each level is built exactly once per pass. When its queue drains we
+      // advance to the next level even if this one still has unused kanji —
+      // leftovers wait for the next pass (New Game+). Levels with nothing
+      // the player can draw are skipped silently.
+      if (!this.state.levelsBuilt.has(this.state.levelIndex)) {
+        this.state.levelsBuilt.add(this.state.levelIndex)
+        if (this.buildLevelQueue()) continue
+      }
+      this.state.levelIndex += 1
+    }
+  },
+
+  unusedKanjiRemain() {
+    const { usedCharacters, skippedCharacters } = this.state
+    return this.pool.some(
+      (k) => !skippedCharacters.has(k.character) && !usedCharacters.has(k.character)
+    )
+  },
+
+  // Fills the current level's queue: one kanji per stroke-count step, in
+  // order — level 1 is a 1-3 stroke kanji, then a 4, then a 5, then a 6;
+  // level 2 is 7, 8, 9, 10; ... level 5 is four 19+ kanji. Steps the player
+  // has no unused kanji for are skipped, so a level can have fewer than 4.
+  // The level advances when its queue drains, even if lower stroke counts
+  // still have unused kanji — those wait for the next pass. The LAST kanji
+  // is the boss (the highest-stroke one). Returns false when the level has
+  // nothing unused left.
+  buildLevelQueue() {
+    const { usedCharacters, skippedCharacters } = this.state
+    const { min, max } = LEVELS[this.state.levelIndex]
+    const pickable = (k) =>
+      !skippedCharacters.has(k.character) && !usedCharacters.has(k.character)
+
+    let ordered
+    if (min === 19) {
+      // Level 5: four 19+ kanji, ascending, highest last (the boss).
+      const candidates = this.pool
+        .filter((k) => (k.stroke_count || 0) >= 19 && pickable(k))
+        .sort((a, b) => (a.stroke_count || 0) - (b.stroke_count || 0))
+      ordered = candidates.slice(0, 4)
+    } else {
+      // One kanji per step: the 1-3 band first (level 1 only), then each
+      // single stroke count climbing to the level's max. Steps with no
+      // unused kanji are simply skipped.
+      ordered = []
+      const takeOfStrokes = (list) => {
+        if (!list.length || ordered.length >= 4) return
+        ordered.push(list[Math.floor(Math.random() * list.length)])
+      }
+      if (min === 1) {
+        takeOfStrokes(this.pool.filter((k) => {
+          const c = k.stroke_count || 0
+          return c >= 1 && c <= 3 && pickable(k)
+        }))
+      }
+      for (let c = min === 1 ? 4 : min; c <= max; c++) {
+        takeOfStrokes(this.pool.filter((k) => (k.stroke_count || 0) === c && pickable(k)))
+      }
+    }
+
+    if (ordered.length === 0) return false
+    this.state.levelQueue = ordered.map((kanji, i, arr) => ({
+      kanji,
+      boss: i === arr.length - 1
+    }))
+    return true
+  },
+
+  // Colored border per level (the component background itself is untouched).
+  applyLevelBackground() {
+    const cls = this.state.bossActive
+      ? 'km-level-boss'
+      : `km-level-${Math.min(this.state.levelIndex + 1, LEVELS.length)}`
+    LEVELS.forEach((_, i) => this.el.classList.remove(`km-level-${i + 1}`))
+    this.el.classList.remove('km-level-boss')
+    this.el.classList.add(cls)
+    this.updateBossLabel()
+  },
+
+  // "Boss" label under the drawing area: visible only while a boss kanji is
+  // active, tinted with the current level's accent color.
+  updateBossLabel() {
+    const el = document.getElementById('km-boss-label')
+    if (!el) return
+    const { current } = this.state
+    const isBoss = !!(current && current.boss)
+    el.classList.toggle('hidden', !isBoss)
+    if (isBoss) {
+      el.textContent = this.bossLabel
+      const key =
+        current.level === 'boss' ? 'boss' : Math.min(current.level + 1, LEVELS.length)
+      el.style.color = LEVEL_COLORS[key]
+    }
+  },
+
+  // Rolls `count` distinct debuffed stroke indices (1-based) for a boss
+  // kanji. Each index gets one random effect; `suppressed` only rolls on
+  // strokes that carry a purchased upgrade (otherwise it would be a no-op).
+  generateDebuffs(kanji, validCount, count) {
+    const strokeCount = kanji.stroke_count || validCount
+    const indices = []
+    for (let n = 1; n <= strokeCount; n++) indices.push(n)
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+
+    const debuffs = {}
+    for (const idx of indices.slice(0, Math.min(count, indices.length))) {
+      const effects = ['black', 'brightred', 'hidden', 'trap']
+      if (this.state.upgrades[idx]) effects.push('suppressed')
+      debuffs[idx] = effects[Math.floor(Math.random() * effects.length)]
+    }
+    return debuffs
   },
 
   nextKanji() {
-    const kanji = this.pickKanji()
-    if (!kanji) return
+    const entry = this.pickEntry()
+    if (!entry) return
+    const kanji = entry.kanji
 
     const strokes = (kanji.stroke_data.strokes || []).filter((s) => s.path)
     const analyzed = strokes.map((s, i) => {
       const points = parsePath(s.path)
       const a = analyzeStroke(points)
-      return a ? { ...a, index: i, originalPath: s.path } : null
+      return a ? { ...a, index: i, originalPath: s.path, ...classifyStrokePath(s.path) } : null
     })
     const validCount = analyzed.filter((a) => a !== null).length
 
-    this.state.current = { kanji, analyzed, validCount, strokeIndex: 0 }
+    // Remember which level this kanji belongs to — the perfect-kanji bonus
+    // is graded by it on completion.
+    const level = this.state.bossActive
+      ? 'boss'
+      : Math.min(this.state.levelIndex, LEVELS.length - 1)
+    const isBoss = entry.boss || this.state.bossActive
+
+    // Boss kanji carry debuffed strokes: a level boss gets levelIndex+1, the
+    // final boss a random 1-10.
+    const debuffCount = !isBoss
+      ? 0
+      : level === 'boss'
+        ? 1 + Math.floor(Math.random() * 10)
+        : level + 1
+    const debuffs = debuffCount > 0 ? this.generateDebuffs(kanji, validCount, debuffCount) : null
+
+    this.state.current = { kanji, analyzed, validCount, strokeIndex: 0, level, boss: isBoss, debuffs }
     this.state.showingHint = false
+    this.state.mistakes = 0
     this.state.usedCharacters.add(kanji.character)
     this.showKanjiCharacter(kanji.character)
+    this.logExpectedStroke()
+    this.applyLevelBackground()
     this.redraw()
     this.updateProgress()
     // Persist the fresh kanji so a refresh mid-run resumes here, not on
@@ -443,6 +1071,18 @@ const KanjiMaster = {
     this.currentCharacter = character
   },
 
+  // Console log of the shape of the stroke the player is EXPECTED to draw
+  // right now (fired when a stroke becomes current, not when it is drawn).
+  logExpectedStroke() {
+    const { current } = this.state
+    if (!current) return
+    const stroke = current.analyzed[current.strokeIndex]
+    if (!stroke) return
+    console.log(
+      `[kanji-master] expected stroke #${current.strokeIndex + 1}: ${stroke.shape}${stroke.shapeDetail ? ` (${stroke.shapeDetail})` : ''}`
+    )
+  },
+
   redraw() {
     const c = this.ctx
     c.clearRect(0, 0, this.canvas.width, this.canvas.height)
@@ -462,8 +1102,11 @@ const KanjiMaster = {
     for (let i = 0; i < current.strokeIndex; i++) {
       const a = current.analyzed[i]
       if (!a) continue
+      const debuff = current.debuffs ? current.debuffs[i + 1] : null
       const colorName = this.state.upgrades[i + 1]
-      const color = colorName ? UPGRADE_COLORS[colorName] : '#22c55e'
+      const color =
+        (debuff && DEBUFF_COLORS[debuff]) ||
+        (colorName ? UPGRADE_COLORS[colorName] : '#22c55e')
       this.drawCurvedStroke(a.originalPath, color, 5, 1)
     }
   },
@@ -479,13 +1122,36 @@ const KanjiMaster = {
     const expected = this.state.current.analyzed[expectedIndex]
     if (!expected) return { valid: false }
 
+    // Hooks (钩, 卧钩/弯钩) get a looser end/center gate: the flick's tip is
+    // hard to place precisely, and the chord endpoint doesn't follow the
+    // hook's curve. Left-falling 撇 sweeps are a little forgiving too — the
+    // hand accelerates and drifts. Straight and other strokes keep the
+    // strict gates.
+    const isHook = expected.shape === 'hook' || expected.shape === 'curveHook'
+    // Corners ending in a down-left sweep (横撇) get the same treatment as
+    // plain 撇 sweeps — the second leg's tip is where hands drift.
+    const isSweep =
+      expected.shape === 'diagDownLeft' ||
+      expected.shape === 'rise' ||
+      (expected.shape === 'corner' &&
+        (expected.shapeDetail === 'DL_DR' || expected.shapeDetail === 'r:DL_DR')) ||
+      (expected.shape === 'corner' &&
+        (expected.shapeDetail === 'DR_UL' || expected.shapeDetail === 'r:DR_UL'))
+    // 横撇 corners (H_DL, sharp or rounded) are the hardest to land: a turn
+    // followed by a down-left sweep, so the endpoint compounds both errors.
+    // They get a tier above plain sweeps.
+    const isHengPie =
+      expected.shape === 'corner' && (expected.shapeDetail === 'H_DL' || expected.shapeDetail === 'r:H_DL')
+    const endTolerance = isHook || isHengPie ? 27 : isSweep ? 24 : 18
+    const centerTolerance = isHook || isHengPie ? 30 : isSweep ? 28 : 25
+
     const lengthRatio = drawn.length / expected.length
     if (lengthRatio < 0.3 || lengthRatio > 3.0) return { valid: false }
 
     const dist = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
     if (dist(drawn.start, expected.start) > 12) return { valid: false }
-    if (dist(drawn.end, expected.end) > 18) return { valid: false }
-    if (dist({ x: drawn.centerX, y: drawn.centerY }, { x: expected.centerX, y: expected.centerY }) > 25)
+    if (dist(drawn.end, expected.end) > endTolerance) return { valid: false }
+    if (dist({ x: drawn.centerX, y: drawn.centerY }, { x: expected.centerX, y: expected.centerY }) > centerTolerance)
       return { valid: false }
 
     if (drawn.direction !== expected.direction) {
@@ -515,22 +1181,45 @@ const KanjiMaster = {
     const { current } = this.state
     this.state.showingHint = false
     const upgrade = this.state.upgrades[i + 1]
-    let gained = 1
+    const debuff = current.debuffs ? current.debuffs[i + 1] : null
+    // Black strokes score 0; suppressed strokes keep their upgrade's LOSE
+    // effects but lose its WIN effects. Both skip the upgrade win logic.
+    const winSuppressed = debuff === 'black' || debuff === 'suppressed'
+    let gained = debuff === 'black' ? 0 : 1
 
-    if (upgrade === 'blue') gained = 2
-    if (upgrade === 'purple') gained = Math.random() < 0.5 ? 3 : 1
-    if (upgrade === 'orange') gained = 5
-    if (upgrade === 'cyan') gained = 5
-    if (upgrade === 'silver' && Math.random() < 0.1) {
+    if (!winSuppressed) {
+      if (upgrade === 'blue') gained = 2
+      if (upgrade === 'purple') gained = Math.random() < 0.5 ? 3 : 1
+      if (upgrade === 'orange') gained = 5
+      if (upgrade === 'cyan') gained = 5
+      if (upgrade === 'silver' && Math.random() < 0.1) {
+        this.state.lives += 1
+      }
+      if (upgrade === 'momo' && Math.random() < 0.2) {
+        // Jackpot: bonus currencies on top of the normal 1 point.
+        this.state.lives += 1
+        this.state.coins += 5
+        this.state.hints += 5
+        this.animate('km-lives', 'km-anim-bump')
+        this.animate('km-coins', 'km-anim-bump')
+        this.animate('km-hints', 'km-anim-bump')
+        this.floatScore('+1♥ +5🪙 +5', '#f9a8d4')
+      }
+    }
+    if (debuff === 'trap' && Math.random() < 0.5) {
+      // Trap: coin flip for an extra life on a right draw.
       this.state.lives += 1
+      this.animate('km-lives', 'km-anim-bump')
+      this.floatScore('+1♥', DEBUFF_COLORS.trap)
     }
 
     this.state.score += gained
     current.strokeIndex += 1
+    this.logExpectedStroke()
     this.updateHud()
     this.animate('km-score', 'km-anim-bump')
-    this.floatScore(`+${gained}`, upgrade ? '#f97316' : '#22c55e')
-    if (upgrade === 'silver') this.animate('km-lives', 'km-anim-bump')
+    this.floatScore(`+${gained}`, upgrade && !winSuppressed ? '#f97316' : '#22c55e')
+    if (upgrade === 'silver' && !winSuppressed) this.animate('km-lives', 'km-anim-bump')
     this.redraw()
 
     if (current.strokeIndex >= current.validCount) {
@@ -540,15 +1229,38 @@ const KanjiMaster = {
     }
   },
 
-  // Shared kanji-completion logic for both the normal and the
-  // yellow-charge (hint) path: ladder advance, +1 coin and the shop
-  // exactly every 5 completed kanji.
+  // Kanji-completion logic: flat rewards (+1 yellow stroke and +2 coins
+  // every completed kanji; every 4th also grants +1 life and opens the
+  // shop), plus the perfect-kanji bonus graded by the kanji's level.
   completeKanji() {
     this.state.completedKanji += 1
     this.state.hints += 1
-    this.advanceLadder()
-    if (this.state.completedKanji % 5 === 0) {
-      this.state.coins += 1
+    this.state.coins += 2
+
+    const { level, mistakes } = { level: this.state.current?.level, mistakes: this.state.mistakes }
+    if (level === 'boss') {
+      // Boss reward applies on every completion, mistakes or not.
+      this.state.hints += 50
+      this.state.coins += 70
+      this.floatScore('+50💛 +70🪙', '#f97316')
+      this.animate('km-hints', 'km-anim-bump')
+      this.animate('km-coins', 'km-anim-bump')
+      this.state.bossActive = false
+    } else if (typeof level === 'number') {
+      const bonus = PERFECT_BONUS[level]
+      if (bonus && mistakes <= bonus.max) {
+        this.state.hints += bonus.hints
+        this.state.coins += bonus.coins
+        const gain = `+${bonus.hints}💛 +${bonus.coins}🪙`
+        // The zero-mistake level-1 award gets the "Perfect!" callout.
+        this.floatScore(level === 0 && mistakes === 0 ? `${this.perfectLabel} ${gain}` : gain, '#fbbf24')
+        this.animate('km-hints', 'km-anim-bump')
+        this.animate('km-coins', 'km-anim-bump')
+      }
+    }
+
+    if (this.state.completedKanji % 4 === 0) {
+      this.state.lives += 1
       this.updateHud()
       this.openShop()
     } else {
@@ -559,25 +1271,54 @@ const KanjiMaster = {
   },
 
   onWrongStroke(i, points) {
+    const { current } = this.state
     const upgrade = this.state.upgrades[i + 1]
+    const debuff = current.debuffs ? current.debuffs[i + 1] : null
+    this.state.mistakes += 1
 
     // Life loss always happens: cycle 1 = 1 life, cycle 2 = 2, ... Orange
-    // adds +1. Yellow strokes are hint charges only — they never prevent
-    // the loss.
+    // and momo add +1. Yellow strokes are hint charges only — they never
+    // prevent the loss. The bright-red boss debuff costs +1 extra on top of
+    // all that.
     let loss = this.state.cycle
     if (upgrade === 'orange') loss = this.state.cycle + 1
+    if (upgrade === 'momo') loss = this.state.cycle + 1
+    if (debuff === 'brightred') loss += 1
     if (upgrade === 'cyan') this.state.coins = Math.max(0, this.state.coins - 5)
+    if (upgrade === 'momo') this.state.coins = Math.max(0, this.state.coins - 5)
 
     this.state.lives -= loss
+
+    // Trap: coin flip for 3 extra lives lost on a wrong draw.
+    if (debuff === 'trap' && Math.random() < 0.5) {
+      this.state.lives -= 3
+      this.floatScore('-3♥', DEBUFF_COLORS.trap)
+    }
 
     // Hint charge: consumed once per stroke — the first error on a stroke
     // shows the yellow guide; further errors on the SAME stroke don't
     // consume another charge (the guide stays visible). With no charges
     // left, errors show no guide at all until more charges are gained.
-    if (!this.state.showingHint && this.state.hints > 0) {
-      this.state.hints -= 1
-      this.state.showingHint = true
-      this.animate('km-hints', 'km-anim-hit')
+    // Momo strokes are the exception: their hint costs 2 charges, and with
+    // exactly 1 charge that charge is consumed but no guide appears.
+    // Hidden boss strokes block hints entirely: no guide, no charge.
+    if (debuff !== 'hidden') {
+      if (upgrade === 'momo') {
+        if (!this.state.showingHint) {
+          if (this.state.hints >= 2) {
+            this.state.hints -= 2
+            this.state.showingHint = true
+            this.animate('km-hints', 'km-anim-hit')
+          } else if (this.state.hints === 1) {
+            this.state.hints -= 1
+            this.animate('km-hints', 'km-anim-hit')
+          }
+        }
+      } else if (!this.state.showingHint && this.state.hints > 0) {
+        this.state.hints -= 1
+        this.state.showingHint = true
+        this.animate('km-hints', 'km-anim-hit')
+      }
     }
 
     // Show the wrong stroke raw in red (no snap); the player must draw
@@ -589,20 +1330,13 @@ const KanjiMaster = {
     this.updateHud()
     this.animate('km-lives', 'km-anim-hit')
     if (upgrade === 'cyan') this.animate('km-coins', 'km-anim-hit')
+    if (upgrade === 'momo') this.animate('km-coins', 'km-anim-hit')
 
     if (this.state.lives <= 0) {
       this.gameOver('lives')
     } else {
       this.saveRun()
       setTimeout(() => this.redraw(), 300)
-    }
-  },
-
-  advanceLadder() {
-    this.state.rung += 1
-    if (this.state.rung >= this.rungs.length) {
-      this.state.rung = 0
-      this.state.cycle += 1
     }
   },
 
@@ -692,6 +1426,60 @@ const KanjiMaster = {
     if (close && overlay) close.addEventListener('click', () => overlay.classList.add('hidden'))
   },
 
+  // -- upgrade status panel ---------------------------------------------------
+
+  bindStatus() {
+    const overlay = document.getElementById('km-status-overlay')
+    const close = document.getElementById('km-status-close')
+    const open = () => {
+      this.renderStatus()
+      overlay.classList.remove('hidden')
+    }
+    // Both the HUD button and the shop header button open the same overlay.
+    ;['km-status-btn', 'km-status-btn-shop'].forEach((id) => {
+      const btn = document.getElementById(id)
+      if (btn && overlay) btn.addEventListener('click', open)
+    })
+    if (close && overlay) close.addEventListener('click', () => overlay.classList.add('hidden'))
+  },
+
+  renderStatus() {
+    const list = document.getElementById('km-status-strokes')
+    const currencies = document.getElementById('km-status-currencies')
+    const { current } = this.state
+    if (!list) return
+
+    // Show at least the current kanji's strokes, and never hide strokes that
+    // already carry an upgrade — during the shop the "current" kanji is the
+    // completed one, which may have fewer strokes than an upgraded index.
+    const upgradedMax = Object.keys(this.state.upgrades).reduce(
+      (m, k) => Math.max(m, parseInt(k, 10) || 0),
+      0
+    )
+    const strokeCount = current
+      ? Math.max(current.kanji.stroke_count || current.validCount, upgradedMax)
+      : upgradedMax
+    const rows = []
+    for (let n = 1; n <= strokeCount; n++) {
+      const colorName = this.state.upgrades[n]
+      const color = colorName ? UPGRADE_COLORS[colorName] : '#9ca3af'
+      const label = colorName ? this.upgradeNames[colorName] || colorName : this.statusNoneLabel
+      rows.push(`
+        <li class="flex items-center gap-2">
+          <span class="inline-block w-4 h-4 rounded-full shrink-0" style="background: ${color}"></span>
+          <span class="text-base-content/70">${this.statusStrokeLabel.replace('%{n}', String(n))}</span>
+          <span class="ml-auto font-medium" style="color: ${colorName ? color : 'inherit'}">${label}</span>
+        </li>`)
+    }
+    list.innerHTML = rows.join('')
+
+    if (currencies) {
+      this.setCount('km-status-lives', this.state.lives)
+      this.setCount('km-status-coins', this.state.coins)
+      this.setCount('km-status-hints', this.state.hints)
+    }
+  },
+
   // -- run persistence (localStorage) ----------------------------------------
 
   saveRun() {
@@ -704,12 +1492,24 @@ const KanjiMaster = {
       score: this.state.score,
       completedKanji: this.state.completedKanji,
       cycle: this.state.cycle,
-      rung: this.state.rung,
+      levelIndex: this.state.levelIndex,
+      levelQueue: this.state.levelQueue,
+      levelsBuilt: [...this.state.levelsBuilt],
+      bossActive: this.state.bossActive,
+      mistakes: this.state.mistakes,
       usedCharacters: [...this.state.usedCharacters],
       skippedCharacters: [...this.state.skippedCharacters],
       upgrades: this.state.upgrades,
+      pack: this.state.pack,
+      packCost: this.state.packCost,
+      packBought: this.state.packBought,
+      rerollCost: this.state.rerollCost,
+      shopOpen: this.state.shopOpen,
+      shopBuys: this.state.shopBuys,
       currentCharacter: current ? current.kanji.character : null,
-      strokeIndex: current ? current.strokeIndex : 0
+      strokeIndex: current ? current.strokeIndex : 0,
+      currentBoss: current ? !!current.boss : false,
+      debuffs: current ? current.debuffs || null : null
     }
     try {
       localStorage.setItem('kanjiMasterRun', JSON.stringify(snapshot))
@@ -727,7 +1527,11 @@ const KanjiMaster = {
       const raw = localStorage.getItem('kanjiMasterRun')
       if (!raw) return false
       const s = JSON.parse(raw)
-      const kanji = this.pool.find((k) => k.character === s.currentCharacter)
+      // The current kanji is normally from the learned pool, but a boss
+      // kanji comes from the whole-dictionary boss pool instead.
+      const kanji =
+        this.pool.find((k) => k.character === s.currentCharacter) ||
+        (s.bossActive ? this.bossPool.find((k) => k.character === s.currentCharacter) : undefined)
       if (!kanji || typeof s.lives !== 'number') {
         this.clearRun()
         return false
@@ -739,29 +1543,55 @@ const KanjiMaster = {
       this.state.score = s.score
       this.state.completedKanji = s.completedKanji
       this.state.cycle = s.cycle
-      this.state.rung = s.rung
+      this.state.levelIndex = typeof s.levelIndex === 'number' ? s.levelIndex : 0
+      // Queue entries are {kanji, boss}; snapshots from before level bosses
+      // hold plain kanji objects — normalize them.
+      this.state.levelQueue = Array.isArray(s.levelQueue)
+        ? s.levelQueue.map((e) => (e && e.kanji ? e : { kanji: e, boss: false }))
+        : []
+      // Levels at or before the current one are done for this pass. Older
+      // snapshots without the field get the same conservative reconstruction.
+      this.state.levelsBuilt = new Set(
+        Array.isArray(s.levelsBuilt)
+          ? s.levelsBuilt
+          : Array.from({ length: this.state.levelIndex + 1 }, (_unused, i) => i)
+      )
+      this.state.bossActive = !!s.bossActive
+      this.state.mistakes = typeof s.mistakes === 'number' ? s.mistakes : 0
       this.state.usedCharacters = new Set(s.usedCharacters || [])
       this.state.skippedCharacters = new Set(s.skippedCharacters || [])
       this.state.upgrades = s.upgrades || {}
+      this.state.pack = Array.isArray(s.pack) ? s.pack : null
+      this.state.packCost = typeof s.packCost === 'number' ? s.packCost : 4 + Math.floor(Math.random() * 3)
+      this.state.packBought = !!s.packBought
+      this.state.rerollCost = typeof s.rerollCost === 'number' ? s.rerollCost : 1
+      this.state.shopOpen = !!s.shopOpen
+      this.state.shopBuys = s.shopBuys || { pack: 0, life: 0, hint: 0, skip: 0 }
 
       const strokes = (kanji.stroke_data.strokes || []).filter((st) => st.path)
       const analyzed = strokes.map((st, i) => {
         const pts = parsePath(st.path)
         const a = analyzeStroke(pts)
-        return a ? { ...a, index: i, originalPath: st.path } : null
+        return a ? { ...a, index: i, originalPath: st.path, ...classifyStrokePath(st.path) } : null
       })
       this.state.current = {
         kanji,
         analyzed,
         validCount: analyzed.filter((a) => a !== null).length,
-        strokeIndex: Math.min(s.strokeIndex || 0, analyzed.length)
+        strokeIndex: Math.min(s.strokeIndex || 0, analyzed.length),
+        level: this.state.bossActive ? 'boss' : Math.min(this.state.levelIndex, LEVELS.length - 1),
+        boss: !!s.currentBoss,
+        debuffs: s.debuffs || null
       }
+      this.applyLevelBackground()
 
       // If the snapshot was taken while the shop was open (or during the
       // short transition), the saved kanji is already complete — advance
-      // to the next one instead of restoring a stuck state.
+      // to the next one instead of restoring a stuck state, then re-open
+      // the shop with the saved pack / re-roll cost.
       if (this.state.current.strokeIndex >= this.state.current.validCount) {
         this.nextKanji()
+        if (!this.state.over && this.state.shopOpen) this.openShop(false)
       }
       return true
     } catch (_e) {
@@ -776,24 +1606,43 @@ const KanjiMaster = {
     return {
       life: 5,
       hint: 1,
-      pack: 4 + Math.floor(Math.random() * 3), // 4-6
       skip: 5
     }
   },
 
-  openShop() {
+  openShop(fresh = true) {
+    if (this.state.over) return
     const overlay = document.getElementById('km-shop-overlay')
     if (!overlay) return this.nextKanji()
+    this.state.shopOpen = true
+    // A fresh store visit starts with no pack, a fresh random pack price,
+    // a 1-coin re-roll and zeroed purchase counts; a restored visit keeps
+    // its saved state.
+    if (fresh) {
+      this.state.shopBuys = { pack: 0, life: 0, hint: 0, skip: 0 }
+      // Drop an unpaid leftover pack from an earlier shop so offers are
+      // always generated for the level the player is in now.
+      if (!this.state.packBought) this.state.pack = null
+    }
+    if (!this.state.pack && !this.state.packBought) {
+      this.state.packCost = 4 + Math.floor(Math.random() * 3)
+      this.state.rerollCost = 1
+    }
     this.shopBound = this.shopBound || this.bindShop()
     this.refreshShop()
+    this.renderPack()
     overlay.classList.remove('hidden')
+    this.saveRun()
   },
 
   closeShop() {
     const overlay = document.getElementById('km-shop-overlay')
     if (overlay) overlay.classList.add('hidden')
+    this.state.shopOpen = false
     if (this.state.over) return
-    this.nextKanji()
+    // The pre-first-kanji shop closes onto the already-loaded first kanji;
+    // every later shop follows a completed kanji, so advance.
+    if (this.state.completedKanji > 0) this.nextKanji()
     this.saveRun()
   },
 
@@ -805,8 +1654,9 @@ const KanjiMaster = {
     bind('km-shop-close', () => this.closeShop())
     bind('km-buy-life', () => this.buyItem('life', 'km-buy-life'))
     bind('km-buy-hint', () => this.buyItem('hint', 'km-buy-hint'))
-    bind('km-buy-pack', () => this.buyItem('pack', 'km-buy-pack'))
     bind('km-buy-skip', () => this.buyItem('skip', 'km-buy-skip'))
+    bind('km-buy-pack', () => this.buyPack())
+    bind('km-pack-reroll', () => this.rerollPack())
     return true
   },
 
@@ -815,11 +1665,24 @@ const KanjiMaster = {
     this.currentPrices = prices
     document.getElementById('km-shop-coins').textContent = String(this.state.coins)
 
-    const configure = (id, price) => {
+    const soldOutLabel = (document.getElementById('km-shop') || {}).dataset
+      ? document.getElementById('km-shop').dataset.soldOutLabel || 'Sold out'
+      : 'Sold out'
+
+    const configure = (id, price, kind) => {
       const btn = document.getElementById(id)
       if (!btn) return
-      btn.querySelector('.km-price').textContent = `${price} 🪙`
-      if (this.state.coins < price) {
+      const priceEl = btn.querySelector('.km-price')
+      const limit = this.state.shopLimits[kind]
+      const reached = limit != null && this.state.shopBuys[kind] >= limit
+      if (reached) {
+        priceEl.textContent = soldOutLabel
+        priceEl.classList.add('text-error')
+      } else {
+        priceEl.textContent = `${price} 🪙`
+        priceEl.classList.remove('text-error')
+      }
+      if (reached || this.state.coins < price) {
         btn.setAttribute('disabled', '')
         btn.classList.add('btn-disabled')
         btn.classList.remove('btn-primary')
@@ -830,16 +1693,40 @@ const KanjiMaster = {
       }
     }
 
-    configure('km-buy-life', prices.life)
-    configure('km-buy-hint', prices.hint)
-    configure('km-buy-pack', prices.pack)
-    configure('km-buy-skip', prices.skip)
+    configure('km-buy-life', prices.life, 'life')
+    configure('km-buy-hint', prices.hint, 'hint')
+    configure('km-buy-skip', prices.skip, 'skip')
+    configure('km-buy-pack', this.state.packCost, 'pack')
+
+    // Re-roll button state: cost shown in red when unaffordable. Only
+    // available after the pack was bought (re-roll replaces the pack price).
+    const reroll = document.getElementById('km-pack-reroll')
+    if (reroll) {
+      const cost = this.state.rerollCost
+      const costEl = document.getElementById('km-reroll-cost')
+      if (costEl) {
+        costEl.textContent = `${cost} 🪙`
+        costEl.classList.toggle('text-error', this.state.coins < cost)
+        costEl.classList.toggle('text-warning', this.state.coins >= cost)
+      }
+      if (!this.state.packBought || this.state.coins < cost) {
+        reroll.setAttribute('disabled', '')
+        reroll.classList.add('btn-disabled')
+        reroll.classList.remove('btn-primary')
+      } else {
+        reroll.removeAttribute('disabled')
+        reroll.classList.remove('btn-disabled')
+        reroll.classList.add('btn-primary')
+      }
+    }
   },
 
   buyItem(kind, btnId) {
+    if (this.state.shopBuys[kind] >= this.state.shopLimits[kind]) return
     const price = this.currentPrices[kind]
     if (this.state.coins < price) return
     this.state.coins -= price
+    this.state.shopBuys[kind] += 1
     this.updateHud()
 
     if (kind === 'life') {
@@ -850,51 +1737,139 @@ const KanjiMaster = {
       this.state.hints += 1
       this.updateHud()
     }
-    if (kind === 'pack') this.showPackOffers()
     if (kind === 'skip') this.showSkipPicker()
 
     this.refreshShop()
     this.saveRun()
   },
 
-  showPackOffers() {
-    const offers = []
+  // -- upgrade packs ----------------------------------------------------------
+
+  // Builds a fresh pack of 3 offers. Offers only target strokes of the
+  // current level and the levels below it (the shop after a level boss uses
+  // the NEXT level's cap). Already-upgraded strokes are excluded — but when
+  // fewer than 3 unowned strokes remain, packs offer re-colors of already
+  // upgraded strokes instead so there are always 3 choices (when possible).
+  generatePack() {
     const owned = this.state.upgrades
+    const levelCap = this.effectiveLevelCap()
     const maxIndex = Math.min(
       MAX_UPGRADE_INDEX,
+      levelCap,
       Math.max(...this.pool.map((k) => k.stroke_count || 1))
     )
-
-    // Already-upgraded stroke indices are offered at 40% weight compared
-    // to the others, so re-rolls are possible but rarer.
-    const pickIndex = () => {
-      const indices = Array.from({ length: maxIndex }, (_, i) => i + 1)
-      const weights = indices.map((idx) => (owned[idx] ? 0.4 : 1))
-      const total = weights.reduce((a, b) => a + b, 0)
-      let roll = Math.random() * total
-      for (let k = 0; k < indices.length; k++) {
-        roll -= weights[k]
-        if (roll <= 0) return indices[k]
-      }
-      return indices[indices.length - 1]
+    const available = []
+    for (let idx = 1; idx <= maxIndex; idx++) {
+      if (!owned[idx]) available.push(idx)
     }
 
-    while (offers.length < 3) {
-      const index = pickIndex()
-      const color = Object.keys(UPGRADE_COLORS)[Math.floor(Math.random() * 5)]
-      if (offers.some((o) => o.index === index && o.color === color)) continue
+    const colors = Object.keys(UPGRADE_COLORS)
+
+    // Every unowned stroke gets exactly one offer first (shuffled), so all
+    // of them are always available before any re-color of an upgraded one.
+    const shuffled = [...available]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    const offers = shuffled
+      .slice(0, 3)
+      .map((index) => ({
+        index,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      }))
+
+    // Fallback: re-color offers for already-upgraded strokes fill the
+    // remaining slots (each offer a different stroke, and never the color it
+    // already has).
+    const ownedIndices = Object.keys(owned)
+      .map(Number)
+      .filter((i) => i >= 1 && i <= maxIndex)
+    let guard = 0
+    while (offers.length < 3 && ownedIndices.length > 0 && guard++ < 400) {
+      const index = ownedIndices[Math.floor(Math.random() * ownedIndices.length)]
+      const color = colors[Math.floor(Math.random() * colors.length)]
+      if (owned[index] === color) continue
+      if (offers.some((o) => o.index === index)) continue
       offers.push({ index, color })
     }
+    return offers
+  },
 
+  // The stroke-count cap for packs. While drawing a level it is that level's
+  // max; when the shop opens right after a level boss (queue drained), packs
+  // target the level the player enters next. A finished pass restarts at
+  // level 1.
+  effectiveLevelCap() {
+    if (this.state.levelQueue.length > 0 || this.state.bossActive) {
+      return LEVELS[Math.min(this.state.levelIndex, LEVELS.length - 1)].max
+    }
+    if (this.state.levelIndex >= LEVELS.length - 1) return LEVELS[0].max
+
+    const { usedCharacters, skippedCharacters } = this.state
+    for (let idx = this.state.levelIndex + 1; idx < LEVELS.length; idx++) {
+      const { min, max } = LEVELS[idx]
+      const has = this.pool.some((k) => {
+        const c = k.stroke_count || 0
+        return (
+          c >= min &&
+          c <= max &&
+          !skippedCharacters.has(k.character) &&
+          !usedCharacters.has(k.character)
+        )
+      })
+      if (has) return LEVELS[idx].max
+    }
+    return LEVELS[0].max
+  },
+
+  // Pay the pack price (random 4-6 per pack) to reveal the offers.
+  buyPack() {
+    if (this.state.packBought) return
+    if (this.state.shopBuys.pack >= this.state.shopLimits.pack) return
+    const cost = this.state.packCost
+    if (this.state.coins < cost) return
+    this.state.coins -= cost
+    this.state.shopBuys.pack += 1
+    this.state.pack = this.generatePack()
+    this.state.packBought = true
+    this.updateHud()
+    this.renderPack()
+    this.refreshShop()
+    this.saveRun()
+  },
+
+  // After the pack is bought, a re-roll replaces the pack price: it costs
+  // 1 coin, then 2, then 3... within the same store visit.
+  rerollPack() {
+    if (!this.state.packBought) return
+    const cost = this.state.rerollCost
+    if (this.state.coins < cost) return
+    this.state.coins -= cost
+    this.state.rerollCost += 1
+    this.state.pack = this.generatePack()
+    this.updateHud()
+    this.renderPack()
+    this.refreshShop()
+    this.saveRun()
+  },
+
+  renderPack() {
     const box = document.getElementById('km-pack-offers')
+    const area = document.getElementById('km-pack-area')
     if (!box) return
-    box.classList.remove('hidden')
+    const offers = this.state.packBought ? this.state.pack || [] : []
+    if (area) area.classList.toggle('hidden', offers.length === 0)
+    if (offers.length === 0) {
+      box.innerHTML = ''
+      return
+    }
     box.innerHTML = offers
       .map(
         (o, i) => `
         <button data-pick="${i}" class="btn btn-sm w-full btn-outline"
           style="border-color: ${UPGRADE_COLORS[o.color]}; color: ${UPGRADE_COLORS[o.color]}">
-          ${o.index} → ${o.color}
+          ${o.index} → ${this.upgradeNames[o.color] || o.color}
         </button>`
       )
       .join('')
@@ -902,9 +1877,18 @@ const KanjiMaster = {
     box.querySelectorAll('[data-pick]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const offer = offers[parseInt(btn.dataset.pick, 10)]
-        this.state.upgrades[offer.index] = offer.color // same index overrides
+        if (!offer) return
+        this.state.upgrades[offer.index] = offer.color
+        this.state.pack = null
+        this.state.packBought = false
+        this.state.packCost = 4 + Math.floor(Math.random() * 3) // price for the next pack
         box.innerHTML = ''
-        box.classList.add('hidden')
+        this.renderPack()
+        this.refreshShop()
+        // Keep the status panel in sync when it is open (it renders above the
+        // shop, so a purchase can happen while it is visible).
+        const statusOverlay = document.getElementById('km-status-overlay')
+        if (statusOverlay && !statusOverlay.classList.contains('hidden')) this.renderStatus()
         this.saveRun()
       })
     })
@@ -932,12 +1916,28 @@ const KanjiMaster = {
     })
   },
 
+  // -- give up ----------------------------------------------------------------
+
+  bindGiveUp() {
+    const btn = document.getElementById('km-give-up-btn')
+    if (!btn) return
+    btn.addEventListener('click', () => {
+      if (this.state.over) return
+      const message =
+        btn.dataset.giveUpConfirm || 'Are you sure you want to give up? Your run will end.'
+      if (window.confirm(message)) this.gameOver('gave_up')
+    })
+  },
+
   // -- game over (panel wired in Task 6) ------------------------------------
 
   gameOver(reason) {
     this.state.over = true
     this.clearRun()
-    this.pushEvent('game_over', { score: this.state.score, reason })
+    // Send the kanji that ended the run so the game-over panel can link to
+    // its page for practice.
+    const failed = this.state.current ? this.state.current.kanji.character : null
+    this.pushEvent('game_over', { score: this.state.score, reason, failed_kanji: failed })
   },
 
   destroyed() {

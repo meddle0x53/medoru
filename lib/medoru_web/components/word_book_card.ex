@@ -169,6 +169,7 @@ defmodule MedoruWeb.WordBookCard do
     """
   end
 
+  attr :id, :string, default: nil
   attr :word, :any, required: true, doc: "a `%Medoru.Content.Word{}`"
 
   attr :config, :map,
@@ -283,6 +284,7 @@ defmodule MedoruWeb.WordBookCard do
     assigns =
       assigns
       |> assign(:cover_path, cover_path)
+      |> assign(:book_id, book_id)
       |> assign(
         :present_url,
         "#{MedoruWeb.Endpoint.url()}#{~p"/word-books/#{book_id}"}"
@@ -322,7 +324,7 @@ defmodule MedoruWeb.WordBookCard do
         </div>
       </div>
       <div class="mt-2 text-center">
-        <.link href={~p"/word-books/#{book_id}"} class="btn btn-sm btn-primary">
+        <.link href={~p"/word-books/#{@book_id}"} class="btn btn-sm btn-primary">
           {gettext("Open book")}
         </.link>
       </div>

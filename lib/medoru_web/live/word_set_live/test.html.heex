@@ -353,8 +353,14 @@
                   </p>
                 <% end %>
                 <% word_meaning =
-                  question_data["word_meaning"] ||
-                    (@current_step.word && @current_step.word.meaning) %>
+                  if @current_step.word do
+                    # Localize the meaning for the player's locale; the
+                    # question_data value is the raw English meaning baked in
+                    # at generation time.
+                    Content.get_localized_meaning(@current_step.word, @locale)
+                  else
+                    question_data["word_meaning"]
+                  end %>
                 <%= if word_meaning && question_label == "reading" do %>
                   <p class="text-lg sm:text-xl text-secondary/80 text-center">
                     {word_meaning}

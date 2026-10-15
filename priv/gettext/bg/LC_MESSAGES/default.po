@@ -7255,7 +7255,7 @@ msgstr "Изображение към значение"
 #: lib/medoru_web/live/user_white_board_live.ex:816
 #, elixir-autogen, elixir-format
 msgid "Invalid user ID."
-msgstr ""
+msgstr "Невалиден потребителски идентификатор."
 
 #: lib/medoru_web/live/settings_live/daily_test_preferences.ex:50
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:433
@@ -11858,7 +11858,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:228
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Are you sure you want to block this user? They won't be able to message you."
-msgstr "Сигурни ли сте, че искате да изтриете тази дума?"
+msgstr "Сигурни ли сте, че искате да блокирате този потребител? Няма да може да ви изпраща съобщения."
 
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:105
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:105
@@ -11869,7 +11869,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:235
 #, elixir-autogen, elixir-format
 msgid "Block"
-msgstr ""
+msgstr "Блокирай"
 
 #: lib/medoru_web/components/layouts.ex:633
 #: lib/medoru_web/live/settings_live/blocks.ex:22
@@ -12170,7 +12170,7 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:167
 #, elixir-autogen, elixir-format
 msgid "Message"
-msgstr ""
+msgstr "Съобщение"
 
 #: lib/medoru_web/components/layouts.ex:151
 #: lib/medoru_web/components/layouts.ex:284
@@ -12733,7 +12733,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:12
 #, elixir-autogen, elixir-format
 msgid "Already Completed!"
-msgstr ""
+msgstr "Вече е завършено!"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:974
 #, elixir-autogen, elixir-format
@@ -12896,7 +12896,7 @@ msgstr "Фоново изображение"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:57
 #, elixir-autogen, elixir-format
 msgid "Base XP"
-msgstr ""
+msgstr "Базов XP"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:15
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:15
@@ -12938,7 +12938,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_kanji_test_live.ex:49
 #, elixir-autogen, elixir-format
 msgid "Challenge Complete!"
-msgstr ""
+msgstr "Предизвикателството завърши!"
 
 #: lib/medoru_web/live/classroom_live/show.ex:1499
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:642
@@ -13049,7 +13049,7 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:42
 #, elixir-autogen, elixir-format
 msgid "Complete any challenge to keep your streak going!"
-msgstr ""
+msgstr "Завършете кое да е предизвикателство, за да поддържате серията си!"
 
 #: lib/medoru_web/live/messages_live/settings.ex:21
 #: lib/medoru_web/live/messages_live/settings.ex:33
@@ -13091,7 +13091,7 @@ msgstr "Неуспешно създаване на публикация."
 #: lib/medoru_web/live/users_live/index.ex:133
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not follow user."
-msgstr "Неуспешно блокиране на потребител."
+msgstr "Неуспешно последване на потребител."
 
 #: lib/medoru_web/live/user_white_board_live.ex:913
 #, elixir-autogen, elixir-format
@@ -13155,7 +13155,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:191
 #, elixir-autogen, elixir-format
 msgid "Daily Cards"
-msgstr ""
+msgstr "Дневни карти"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:17
 #: lib/medoru_web/live/daily_challenges_live.ex:336
@@ -13163,7 +13163,7 @@ msgstr ""
 #: lib/medoru_web/live/dashboard_live.html.heex:59
 #, elixir-autogen, elixir-format
 msgid "Daily Challenges"
-msgstr ""
+msgstr "Ежедневни предизвикателства"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:141
 #, elixir-autogen, elixir-format, fuzzy
@@ -13176,12 +13176,12 @@ msgstr "Общо канджи"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "Daily Kanji Challenge"
-msgstr ""
+msgstr "Дневно предизвикателство с канджи"
 
 #: lib/medoru_web/live/user_live/show.ex:282
 #, elixir-autogen, elixir-format
 msgid "Daily challenges reset successfully. Deleted %{count} records."
-msgstr ""
+msgstr "Ежедневните предизвикателства са нулирани успешно. Изтрити са %{count} записа."
 
 #: lib/medoru_web/components/helpers.ex:82
 #, elixir-autogen, elixir-format, fuzzy
@@ -13529,7 +13529,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show.ex:403
 #, elixir-autogen, elixir-format
 msgid "Female"
-msgstr ""
+msgstr "Жена"
 
 #: lib/medoru_web/live/classroom_live/show.ex:2785
 #: lib/medoru_web/live/messages_live/show.html.heex:526
@@ -13571,7 +13571,7 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:159
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Follow"
-msgstr "Само последователи"
+msgstr "Последвай"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:567
 #: lib/medoru_web/live/dashboard_live.html.heex:567
@@ -13587,7 +13587,7 @@ msgstr ""
 #: lib/medoru_web/live/user_white_board_post_live.ex:61
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Followers"
-msgstr "Само последователи"
+msgstr "Последователи"
 
 #: lib/medoru_web/live/user_white_board_live.ex:388
 #, elixir-autogen, elixir-format
@@ -13791,7 +13791,7 @@ msgstr ""
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:77
 #, elixir-autogen, elixir-format
 msgid "Kanji %{current} of %{total}"
-msgstr ""
+msgstr "Канджи %{current} от %{total}"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.ex:54
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:12
@@ -13888,14 +13888,14 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.html.heex:133
 #, elixir-autogen, elixir-format
 msgid "Lv. %{level}"
-msgstr ""
+msgstr "Ниво %{level}"
 
 #: lib/medoru/ai/chat_assistant.ex:391
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:238
 #: lib/medoru_web/live/user_live/show.ex:402
 #, elixir-autogen, elixir-format
 msgid "Male"
-msgstr ""
+msgstr "Мъж"
 
 #: lib/medoru_web/live/admin/custom_lesson_live/index.ex:18
 #, elixir-autogen, elixir-format, fuzzy
@@ -13977,7 +13977,7 @@ msgstr "Съпоставете двойките думи и въведете з�
 #: lib/medoru_web/live/daily_challenges_live.ex:193
 #, elixir-autogen, elixir-format
 msgid "Match word pairs in a memory game. Type meanings to win!"
-msgstr ""
+msgstr "Съпоставете двойки думи в игра на памет. Въвеждайте значенията, за да победите!"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form.ex:337
 #: lib/medoru_web/live/moderator/grammar_definition_live/form.ex:337
@@ -14049,7 +14049,7 @@ msgstr "Няма намерени потребители, отговарящи �
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:455
 #, elixir-autogen, elixir-format
 msgid "No daily challenges completed today."
-msgstr ""
+msgstr "Няма завършени ежедневни предизвикателства днес."
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:72
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:41
@@ -14144,7 +14144,7 @@ msgstr "Няма намерени потребители, отговарящи �
 #: lib/medoru_web/live/daily_kanji_test_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Not enough learned kanji with stroke data. Learn at least %{count} kanji first!"
-msgstr ""
+msgstr "Няма достатъчно научени канджи с данни за редовете. Научете първо поне %{count} канджи!"
 
 #: lib/medoru_web/live/daily_card_game_live.ex:31
 #, elixir-autogen, elixir-format
@@ -14177,7 +14177,7 @@ msgstr "Член"
 #: lib/medoru_web/live/users_live/index.ex:130
 #, elixir-autogen, elixir-format
 msgid "Now following user."
-msgstr ""
+msgstr "Вече следвате потребителя."
 
 #: lib/medoru_web/components/helpers.ex:80
 #, elixir-autogen, elixir-format
@@ -14200,12 +14200,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:40
 #, elixir-autogen, elixir-format
 msgid "Online"
-msgstr ""
+msgstr "На линия"
 
 #: lib/medoru_web/live/user_live/show.ex:287
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Only admins can reset daily challenges."
-msgstr "Само администратори могат да нулират дневни тестове."
+msgstr "Само администратори могат да нулират ежедневните предизвикателства."
 
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:195
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:206
@@ -14252,7 +14252,7 @@ msgstr "Шаблон:"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:62
 #, elixir-autogen, elixir-format
 msgid "Penalties"
-msgstr ""
+msgstr "Наказания"
 
 #: lib/medoru_web/live/admin/game_live/index.ex:142
 #, elixir-autogen, elixir-format, fuzzy
@@ -14331,7 +14331,7 @@ msgstr "Практикувайте отново"
 #: lib/medoru_web/live/daily_kanji_test_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Practice writing %{count} kanji. 10 are your least-known, 5 are random. Each kanji is worth 30 XP if you keep wrong strokes under 4."
-msgstr ""
+msgstr "Практикувайте писането на %{count} канджи. 10 са най-слабо познатите ви, 5 са случайни. Всяко канджи носи 30 XP, ако грешните редове са под 4."
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:15
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:15
@@ -14342,7 +14342,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:143
 #, elixir-autogen, elixir-format
 msgid "Practice writing 10-20 learned kanji with stroke validation."
-msgstr ""
+msgstr "Практикувайте писането на 10–20 научени канджи с проверка на редовете."
 
 #: lib/medoru_web/live/settings_live/chat_shortcuts.ex:106
 #, elixir-autogen, elixir-format
@@ -14445,12 +14445,12 @@ msgstr "Поискай ключ от другите"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:466
 #, elixir-autogen, elixir-format
 msgid "Reset Challenges"
-msgstr ""
+msgstr "Нулирай предизвикателства"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:446
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Reset Daily Challenges"
-msgstr "Нулиране на дневен тест"
+msgstr "Нулиране на ежедневните предизвикателства"
 
 #: lib/medoru_web/live/messages_live/show.html.heex:881
 #, elixir-autogen, elixir-format
@@ -14470,7 +14470,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "Review due words and learn new ones with a personalized test."
-msgstr ""
+msgstr "Прегледайте дължащите се думи и научете нови с персонализиран тест."
 
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:190
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:190
@@ -14626,7 +14626,7 @@ msgstr "Създайте тест"
 #: lib/medoru_web/live/daily_challenges_live.ex:43
 #, elixir-autogen, elixir-format
 msgid "Streak saved today!"
-msgstr ""
+msgstr "Серията е запазена днес!"
 
 #: lib/medoru_web/live/admin/tag_live/index/index.html.heex:10
 #, elixir-autogen, elixir-format
@@ -14808,7 +14808,7 @@ msgstr "Въведете изречението си тук..."
 #: lib/medoru_web/live/users_live/index.html.heex:149
 #, elixir-autogen, elixir-format
 msgid "Unfollow"
-msgstr ""
+msgstr "Отследвай"
 
 #: lib/medoru_web/live/user_live/followers.ex:94
 #: lib/medoru_web/live/user_live/following.ex:94
@@ -14816,17 +14816,17 @@ msgstr ""
 #: lib/medoru_web/live/users_live/index.ex:151
 #, elixir-autogen, elixir-format
 msgid "Unfollowed user."
-msgstr ""
+msgstr "Спряхте следването на потребителя."
 
 #: lib/medoru_web/live/daily_challenges_live.ex:197
 #, elixir-autogen, elixir-format
 msgid "Up to 300 XP"
-msgstr ""
+msgstr "До 300 XP"
 
 #: lib/medoru_web/live/daily_challenges_live.ex:147
 #, elixir-autogen, elixir-format
 msgid "Up to 600 XP"
-msgstr ""
+msgstr "До 600 XP"
 
 #: lib/medoru_web/live/admin/tag_live/form/form_template.html.heex:99
 #, elixir-autogen, elixir-format, fuzzy
@@ -14846,12 +14846,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:449
 #, elixir-autogen, elixir-format
 msgid "User has completed %{count} challenge(s) today: %{types}. Reset to allow retaking."
-msgstr ""
+msgstr "Потребителят е завършил %{count} предизвикателства днес: %{types}. Нулирайте, за да може да ги повтори."
 
 #: lib/medoru_web/live/daily_challenges_live.ex:97
 #, elixir-autogen, elixir-format
 msgid "Variable XP"
-msgstr ""
+msgstr "Различен XP"
 
 #: lib/medoru_web/live/radical_live/show.html.heex:44
 #: lib/medoru_web/live/radical_live/show.html.heex:44
@@ -14910,7 +14910,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:308
 #, elixir-autogen, elixir-format
 msgid "White Board"
-msgstr ""
+msgstr "Бяла дъска"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:213
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:213
@@ -14993,7 +14993,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:117
 #, elixir-autogen, elixir-format
 msgid "XP"
-msgstr ""
+msgstr "XP"
 
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:36
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:36
@@ -15140,13 +15140,13 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:98
 #, elixir-autogen, elixir-format, fuzzy
 msgid "followers"
-msgstr "Само последователи"
+msgstr "последователи"
 
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:82
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:103
 #, elixir-autogen, elixir-format
 msgid "following"
-msgstr ""
+msgstr "следвани"
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:106
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:84
@@ -15169,7 +15169,7 @@ msgstr "Канджи"
 #: lib/medoru_web/live/learned_kanji_live/practice_challenge.html.heex:31
 #, elixir-autogen, elixir-format
 msgid "kanji written correctly"
-msgstr ""
+msgstr "канджи, написани правилно"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form.ex:420
 #: lib/medoru_web/live/grammar_definition_live/show.ex:85
@@ -15338,7 +15338,7 @@ msgstr "Търсете по имейл или име..."
 #: lib/medoru_web/live/user_live/followers.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "%{count} people are following you"
-msgstr ""
+msgstr "%{count} души ви следват"
 
 #: lib/medoru_web/live/grammar_definition_live/show.ex:104
 #, elixir-autogen, elixir-format
@@ -15410,20 +15410,20 @@ msgstr ""
 #: lib/medoru_web/live/user_live/following.html.heex:104
 #, elixir-autogen, elixir-format
 msgid "Discover Users"
-msgstr ""
+msgstr "Открийте потребители"
 
 #: lib/medoru_web/live/user_live/following.ex:39
 #: lib/medoru_web/live/user_live/following.html.heex:13
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Following"
-msgstr ""
+msgstr "Следвани"
 
 #: lib/medoru_web/live/dashboard_live.html.heex:106
 #: lib/medoru_web/live/dashboard_live.html.heex:106
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:356
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Grammar Learned"
-msgstr "Граматичен шаблон"
+msgstr "Научена граматика"
 
 #: lib/medoru_web/live/grammar_definition_live/show.ex:130
 #, elixir-autogen, elixir-format
@@ -15433,7 +15433,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/followers.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "No followers yet"
-msgstr ""
+msgstr "Все още нямате последователи"
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:96
 #, elixir-autogen, elixir-format, fuzzy
@@ -15443,7 +15443,7 @@ msgstr "Все още няма граматични уроци"
 #: lib/medoru_web/live/user_live/following.html.heex:94
 #, elixir-autogen, elixir-format
 msgid "Not following anyone yet"
-msgstr ""
+msgstr "Все още не следвате никого"
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:546
 #, elixir-autogen, elixir-format
@@ -15453,12 +15453,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/followers.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "People who follow you will appear here."
-msgstr ""
+msgstr "Хората, които ви следват, ще се показват тук."
 
 #: lib/medoru_web/live/user_live/following.html.heex:97
 #, elixir-autogen, elixir-format
 msgid "People you follow will appear here."
-msgstr ""
+msgstr "Хората, които следвате, ще се показват тук."
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:99
 #, elixir-autogen, elixir-format
@@ -15468,17 +15468,17 @@ msgstr ""
 #: lib/medoru_web/live/user_live/following.html.heex:17
 #, elixir-autogen, elixir-format
 msgid "You are following %{count} people"
-msgstr ""
+msgstr "Следвате %{count} души"
 
 #: lib/medoru_web/live/user_live/followers.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own followers."
-msgstr "Можете да редактирате само собствените си уроци."
+msgstr "Можете да преглеждате само собствените си последователи."
 
 #: lib/medoru_web/live/user_live/following.ex:43
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own following list."
-msgstr "Можете да редактирате само собствените си уроци."
+msgstr "Можете да преглеждате само списъка си със следвани потребители."
 
 #: lib/medoru_web/live/learned_grammars_live/index.html.heex:24
 #, elixir-autogen, elixir-format, fuzzy
@@ -16200,7 +16200,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show.ex:421
 #, elixir-autogen, elixir-format
 msgid "Learning %{language}"
-msgstr ""
+msgstr "Изучава %{language}"
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:16
 #, elixir-autogen, elixir-format, fuzzy
@@ -16254,7 +16254,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:250
 #, elixir-autogen, elixir-format
 msgid "30 XP per kanji + 50 XP"
-msgstr ""
+msgstr "30 XP на канджи + 50 XP"
 
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:238
 #, elixir-autogen, elixir-format, fuzzy
@@ -17634,7 +17634,7 @@ msgstr "Персонализирайте вида на картите с дум�
 #: lib/medoru_web/live/daily_radical_hunt_live/index.html.heex:37
 #, elixir-autogen, elixir-format
 msgid "Daily Component Hunt"
-msgstr ""
+msgstr "Дневен лов на компоненти"
 
 #: lib/medoru_web/live/word_book_live/form.ex:216
 #, elixir-autogen, elixir-format
@@ -17896,7 +17896,7 @@ msgstr "Тази книга все още няма думи."
 #: lib/medoru_web/live/daily_challenges_live.ex:246
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Type kanji containing a chosen component before time runs out."
-msgstr ""
+msgstr "Въведете канджи, съдържащи избрания компонент, преди времето да изтече."
 
 #: lib/medoru_web/live/word_book_live/form.ex:121
 #, elixir-autogen, elixir-format
@@ -18076,7 +18076,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "100 XP per Ouro Essence"
-msgstr ""
+msgstr "100 XP за Ouro Essence"
 
 #: lib/medoru_web/live/games_live/index.ex:125
 #, elixir-autogen, elixir-format
@@ -18086,7 +18086,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:17
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} people visited your profile"
-msgstr ""
+msgstr "%{count} души са посетили профила ви"
 
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:62
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:62
@@ -18247,7 +18247,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:64
 #, elixir-autogen, elixir-format, fuzzy
 msgid "No visitors yet"
-msgstr "Все още няма публикации"
+msgstr "Все още няма посетители"
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:614
 #, elixir-autogen, elixir-format
@@ -18262,20 +18262,20 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:67
 #, elixir-autogen, elixir-format
 msgid "People who visit your profile will appear here."
-msgstr ""
+msgstr "Хората, които посещават профила ви, ще се показват тук."
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:575
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:243
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Relation"
-msgstr ""
+msgstr "Връзка"
 
 #: lib/medoru_web/live/classroom_live/show.ex:878
 #: lib/medoru_web/live/messages_live/show.ex:472
 #: lib/medoru_web/live/user_live/show.ex:257
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Relation saved."
-msgstr ""
+msgstr "Връзката е запазена."
 
 #: lib/medoru_web/components/chat_dictionary_components.ex:216
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:21
@@ -18346,12 +18346,12 @@ msgstr ""
 #: lib/medoru_web/live/user_live/visitors.html.heex:13
 #, elixir-autogen, elixir-format
 msgid "Visitors"
-msgstr ""
+msgstr "Посетители"
 
 #: lib/medoru_web/live/user_live/visitors.ex:46
 #, elixir-autogen, elixir-format, fuzzy
 msgid "You can only view your own visitors."
-msgstr "Можете да редактирате само собствените си уроци."
+msgstr "Можете да преглеждате само собствените си посетители."
 
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:137
 #: lib/medoru_web/live/word_dictionary_live/index.html.heex:137
@@ -18384,7 +18384,7 @@ msgstr ""
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:91
 #, elixir-autogen, elixir-format
 msgid "visitors"
-msgstr ""
+msgstr "посетители"
 
 #: lib/medoru_web/live/word_set_live/index.ex:591
 #, elixir-autogen, elixir-format
@@ -18485,7 +18485,7 @@ msgstr "Неуспешно създаване на публикация."
 #: lib/medoru_web/live/user_live/show.ex:260
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Could not save relation."
-msgstr "Не може да се стартира ежедневният тест"
+msgstr "Връзката не можа да бъде запазена."
 
 #: lib/medoru_web/live/word_set_live/index.ex:650
 #, elixir-autogen, elixir-format, fuzzy
@@ -18729,7 +18729,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "Play The RPG Game. Earn site XP from Ouro Essence gained."
-msgstr ""
+msgstr "Играйте RPG играта. Получавайте XP за сайта от събрания Ouro Essence."
 
 #: lib/medoru_web/live/word_book_live/show.ex:408
 #: lib/medoru_web/live/word_book_live/show.ex:411
@@ -18759,7 +18759,7 @@ msgstr ""
 #: lib/medoru_web/live/daily_challenges_live.ex:299
 #, elixir-autogen, elixir-format
 msgid "RPG Game Run"
-msgstr ""
+msgstr "RPG игра"
 
 #: lib/medoru_web/live/admin/grammar_definition_live/form/form_template.html.heex:111
 #: lib/medoru_web/live/moderator/grammar_definition_live/form/form_template.html.heex:111
@@ -18871,7 +18871,7 @@ msgstr "Опитите ви свършиха. Опитайте отново!"
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:259
 #, elixir-autogen, elixir-format
 msgid "Your relation with %{name}"
-msgstr ""
+msgstr "Вашата връзка с %{name}"
 
 #: lib/medoru_web/live/word_book_live/present.ex:151
 #, elixir-autogen, elixir-format
@@ -19023,8 +19023,8 @@ msgstr "+1 жълта черта"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "An endless kanji-writing survival game. 15 lives — how far can you go?"
-msgstr "Безкрайна игра за оцеляване с писане на канджи. 15 живота — докъде можете да стигнете?"
+msgid "An endless kanji-writing survival game. 20 lives — how far can you go?"
+msgstr "Безкрайна игра за оцеляване с писане на канджи. 20 живота — докъде ще стигнете?"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19195,8 +19195,8 @@ msgstr "С всеки цикъл грешна черта струва с еди�
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "The shop opens every 5 kanji — spend coins on lives, hints, upgrades, or skips."
-msgstr "Магазинът се отваря на всеки 5 канджи — харчете монети за животи, подсказки, подобрения или пропускане."
+msgid "The shop opens once before your first kanji and then every 4 kanji — spend coins on lives, hints, upgrades, or skips."
+msgstr "Магазинът се отваря веднъж преди първото канджи и след това на всеки 4 канджи — харчете монети за животи, подсказки, подобрения или пропускане."
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19205,13 +19205,13 @@ msgstr "Валути"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "Lives — you start with 15. Lose one (or more per cycle) on a wrong stroke."
-msgstr "Животи — започвате с 15. Грешна черта отнема един (или повече на цикъл) живот."
+msgid "Lives — you start with 20. Lose one (or more per cycle) on a wrong stroke."
+msgstr "Животи — започвате с 20. Губите един (или повече на цикъл) при грешна черта."
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "Coins — you start with your site level and earn 1 per 5 kanji. Spent in the shop."
-msgstr "Монети — започвате със своето ниво в сайта и печелите 1 на всеки 5 канджи. Харчат се в магазина."
+msgid "Coins — you start with your site level and earn 2 per completed kanji (plus 1 extra life every 4th kanji). Spent in the shop."
+msgstr "Монети — започвате със своето ниво в сайта и печелите 2 за всяко завършено канджи (плюс 1 допълнителен живот на всеки 4-то канджи). Харчат се в магазина."
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19278,3 +19278,190 @@ msgstr "Циан"
 msgid "5 points, but a mistake also costs 5 coins."
 msgstr "5 точки, но грешка струва и 5 монети."
 
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Stroke %{n}"
+msgstr "Черта %{n}"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "No upgrade"
+msgstr "Без подобрение"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Momo"
+msgstr "Момо"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Upgrade status"
+msgstr "Статус на подобренията"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Current kanji"
+msgstr "Текущ канджи"
+
+
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Re-roll"
+msgstr "Превърти отново"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Pink (momo)"
+msgstr "Розово (момо)"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "20% jackpot on a correct draw (+1 life, +5 coins, +5 yellow strokes); a mistake costs +1 life, 5 coins, and 2 yellow-stroke charges."
+msgstr "20% джакпот при правилно изчертаване (+1 живот, +5 монети, +5 жълти черти); грешка струва +1 живот, 5 монети и 2 такси за жълти черти."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "A pack of 3 upgrades costs a random 4-6 coins — buy it to reveal the offers and pick one. Afterwards you can re-roll the pack for 1 coin, then 2, then 3... The re-roll cost resets each time the shop opens, and re-rolling replaces the pack price (you never pay both). Packs only offer strokes of the current level and below (level 1 packs: strokes 1-6, level 2: 1-10, and so on), and the shop right after a level boss offers strokes of the next level. Already-upgraded strokes never appear while other strokes are available — when everything at this level is upgraded, packs offer re-colors of strokes you already upgraded."
+msgstr "Пакет от 3 подобрения струва случайни 4-6 монет — купете го, за да разкриете предложенията и да изберете едно. След това можете да го разбъркате отново за 1 монета, после 2, после 3... Цената за разбъркване се нулира при всяко отваряне на магазина и замества цената на пакета (не плащате и двете). Пакетите предлагат само черти от текущото ниво и по-долните (пакети ниво 1: черти 1-6, ниво 2: 1-10 и т.н.), а магазинът веднага след бос на ниво предлага черти от следващото ниво. Черти с вече закупено подобрение не се появяват, докато има други — когато всички черти на това ниво са подобрени, пакетите предлагат пребоядисване на вече подобрени черти."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Give up"
+msgstr "Отказвам се"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure you want to give up? Your run will end and you can record your score."
+msgstr "Сигурни ли сте, че искате да се откажете? Сесията ще приключи и ще можете да запишете резултата си."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "You gave up"
+msgstr "Отказахте се"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Sold out"
+msgstr "Изчерпано"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Purchase limits per shop visit: up to 2 upgrade packs, 4 lives, 7 yellow strokes, and 2 kanji skips. Limits reset when the shop reopens."
+msgstr "Ограничения за покупки при всяко посещение на магазина: до 2 пакета с подобрения, 4 живота, 7 жълти черти и 2 пропуснати канджи. Ограниченията се нулират при следващо отваряне на магазина."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Perfect!"
+msgstr "Перфектно!"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Levels go from simple (1-6 strokes) up to 19+ strokes, then restart with kanji you haven't drawn yet. After the last level you might face a rare boss kanji for a huge reward!"
+msgstr "Нивата започват от прости (1-6 черти) до 19+, след което се рестартират с канджи, които още не сте рисували. След последното ниво може да срещнете рядко бос канджи с огромна награда!"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Boss"
+msgstr "Бос"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Boss kanji"
+msgstr "Бос канджи"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The last kanji of each level is a boss with debuffed strokes; a rare final boss appears after level 5."
+msgstr "Последното канджи на всяко ниво е бос с отслабени черти; рядък финален бос се появява след ниво 5."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Suppressed"
+msgstr "Потиснато"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a stroke with an upgrade loses its bonus effects."
+msgstr "черта с подобрение губи бонусните си ефекти."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Black"
+msgstr "Черно"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a correct draw earns 0 points."
+msgstr "правилна черта носи 0 точки."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Bright red"
+msgstr "Яркочервено"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "a wrong draw costs 1 extra life."
+msgstr "грешна черта струва 1 допълнителен живот."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Hidden"
+msgstr "Скрито"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "yellow hints cannot be used on this stroke."
+msgstr "жълтите подсказки не могат да се използват за тази черта."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Trap"
+msgstr "Капан"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
+msgstr "50% шанс за +1 живот при правилна черта; 50% шанс да загубите 3 допълнителни живота при грешна."
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Master N5"
+msgstr "Kanji Master N5"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Survive the JLPT N5 kanji. Everyone starts with 10 coins — no account needed!"
+msgstr "Оцелей сред канджи от JLPT N5. Всички започват с 10 монети — не е нужен профил!"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Name (max 12 characters)"
+msgstr "Име (макс. 12 знака)"
+
+#: lib/medoru_web/components/layouts.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Challenges"
+msgstr "Предизвикателства"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kanji Master N4"
+msgstr "Kanji Master N4"
+
+#: lib/medoru_web/live/challenges_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Survive the JLPT N4 and N5 kanji. Everyone starts with 10 coins — no account needed!"
+msgstr "Оцелей сред канджи от JLPT N4 и N5. Всички започват с 10 монети — не е нужен профил!"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "The kanji you failed is:"
+msgstr "Канджито, на което се провалихте, е:"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "View it and practice →"
+msgstr "Вижте го и го тренирайте →"
