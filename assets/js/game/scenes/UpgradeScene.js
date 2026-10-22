@@ -8,14 +8,15 @@ import WinChallengeSystem from '../systems/WinChallengeSystem.js'
 const TIER_LABELS = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic' }
 
 /**
- * Post-battle upgrade reward screen (Phase 3).
+ * 3-card upgrade reward screen (Phases 3 + D12 revision).
  *
- * On create the active roll is consumed exactly once (D7: screens that never
- * generate don't consume — this scene only starts when WinScene's D4 gate
- * passed). Cards come from UpgradeGenerator at the consumed roll's tier; an
- * optional kanji reroll (1 per screen) regenerates at the SAME tier on pass
- * and keeps the cards on fail (D9). Choosing a card applies it via
- * UpgradeEngine and returns to the caller's scene.
+ * The screen's tier arrives via init data: a triggered roll (D12) passes its
+ * tier after player.useRoll() consumed it; battle drops pass the tier rolled
+ * by player.rollBattleRewardTier() (revised D4 — every win drops a screen).
+ * Cards come from UpgradeGenerator at that tier; an optional kanji reroll
+ * (1 per screen) regenerates at the SAME tier on pass and keeps the cards on
+ * fail (D9). Choosing a card applies it via UpgradeEngine and returns to the
+ * caller's scene.
  *
  * Decision logic lives in small methods (resolveTier / rollCards / reroll /
  * chooseCard) so it stays testable headless; rendering follows the existing
@@ -29,11 +30,14 @@ export default class UpgradeScene extends Phaser.Scene {
   init(data) {
     this.player = data.player
     this.returnScene = data.returnScene || 'MapScene'
+    this.returnData = data.returnData || null
     this.mapIndex = data.mapIndex ?? 0
+    // The screen's tier comes from the caller (D12): a triggered roll passes
+    // its tier; battle drops roll it via player.rollBattleRewardTier().
+    this.tier = data.tier || 'common'
     this.rerollsLeft = 1
     this.challengeSystem = null
     this.cards = []
-    this.tier = null
     this.chosen = false
   }
 
@@ -41,7 +45,6 @@ export default class UpgradeScene extends Phaser.Scene {
     setupHighDPIWorld(this)
     this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, GAME_CONFIG.width, GAME_CONFIG.height, 0x0f1525)
 
-    this.tier = this.player.consumeActiveRoll()
     this.cards = this.rollCards()
     if (this.cards.length === 0) {
       // Pool exhausted: skip cleanly back without a reward screen.
@@ -83,8 +86,7 @@ export default class UpgradeScene extends Phaser.Scene {
   // ---------- Decision logic (headless-testable) ----------
 
   resolveTier() {
-    this.tier = this.player.consumeActiveRoll()
-    return this.tier
+    return this.tier || 'common'
   }
 
   rollCards() {
@@ -108,7 +110,7 @@ export default class UpgradeScene extends Phaser.Scene {
   }
 
   exit() {
-    this.scene.start(this.returnScene, { player: this.player, mapIndex: this.mapIndex })
+    this.scene.start(this.returnScene, this.returnData || { player: this.player, mapIndex: this.mapIndex })
   }
 
   // ---------- Rendering ----------

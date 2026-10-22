@@ -1,12 +1,24 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import { setupHighDPIWorld } from '../highDpi.js'
+import { ROLL_PRICES } from '../entities/Player.js'
 
-const SHOP_ITEMS = [
-  { id: 'stat_point', name: '+1 Stat Point', icon: '🌟', costScales: 1, costSource: 0 },
+// Rolls are the scales shop's stat-point replacement (D3): they set the
+// rarity floor of the next upgrade reward screen. Prices come from the
+// shared ROLL_PRICES table in Player.js.
+const ROLL_SHOP_TIERS = ['common', 'uncommon', 'rare', 'epic']
+
+export const SHOP_ITEMS = [
+  ...ROLL_SHOP_TIERS.map(tier => ({
+    id: `roll_${tier}`,
+    tier,
+    name: `${tier[0].toUpperCase()}${tier.slice(1)} Roll`,
+    icon: '🎲',
+    costScales: ROLL_PRICES.scales[tier],
+    costSource: 0,
+  })),
   { id: 'chest', name: 'Open Chest', icon: '🎁', costScales: 2, costSource: 0 },
   { id: 'memory', name: 'Memory Game', icon: '🧠', costScales: 1, costSource: 0 },
   { id: 'cascade', name: 'Cascade Game', icon: '🌊', costScales: 1, costSource: 0 },
-  { id: 'weapon_upgrade_run', name: 'Weapon Upgrade (this run)', icon: '⚔️', costScales: 1, costSource: 0 },
   { id: 'weapon_upgrade_permanent', name: 'Permanent Weapon Upgrade', icon: '💎', costScales: 5, costSource: 1 },
 ]
 
@@ -19,6 +31,7 @@ export default class HomeShopScene extends Phaser.Scene {
     this.player = data.player
     this.tile = data.tile
     this.mapIndex = data.mapIndex
+    this.notice = data.notice || null
   }
 
   create() {
@@ -29,6 +42,7 @@ export default class HomeShopScene extends Phaser.Scene {
     this.createBigEssenceCoin()
     this.createShopList()
     this.createPrepareButton()
+    if (this.notice) this.showToast(this.notice, 4500)
   }
 
   createBackground() {
@@ -132,7 +146,9 @@ export default class HomeShopScene extends Phaser.Scene {
       const row = this.createRound3dRow(GAME_CONFIG.width / 2, y, 420, 44, color, hover, () => this.buyItem(item), !canAfford)
 
       const icon = this.add.text(-180, 0, item.icon, { fontSize: '20px' }).setOrigin(0.5)
-      const label = this.add.text(-130, 0, item.name, {
+      const owned = item.tier ? (this.player.loadout.rollInventory?.[item.tier] || 0) : 0
+      const labelText = item.tier ? `${item.name} (have ${owned})` : item.name
+      const label = this.add.text(-130, 0, labelText, {
         ...FONTS.default,
         fontSize: '14px',
         color: '#ffffff',
@@ -253,6 +269,26 @@ export default class HomeShopScene extends Phaser.Scene {
     return container
   }
 
+  showToast(message, duration = 1500) {
+    if (this.toast) this.toast.destroy()
+    this.toast = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 100)
+    const bg = this.add.rectangle(0, 0, 420, 56, 0x000000, 0.85).setStrokeStyle(1, 0xf39c12).setOrigin(0.5)
+    const text = this.add.text(0, 0, message, {
+      ...FONTS.default,
+      fontSize: '14px',
+      color: '#f39c12',
+      align: 'center',
+      wordWrap: { width: 400 },
+    }).setOrigin(0.5)
+    this.toast.add([bg, text])
+    this.time.delayedCall(duration, () => {
+      if (this.toast) {
+        this.toast.destroy()
+        this.toast = null
+      }
+    })
+  }
+
   canAfford(item) {
     return (this.player.loadout.ouroScales || 0) >= item.costScales &&
       (this.player.loadout.ouroSource || 0) >= item.costSource
@@ -261,12 +297,19 @@ export default class HomeShopScene extends Phaser.Scene {
   buyItem(item) {
     if (!this.canAfford(item)) return
 
+    // Rolls spend scales inside player.buyRoll() (shared with the rest
+    // camp's gold pricing), so they bypass the generic spend() flow.
+    // Buying only stores the roll (D12/Alt 2); it is triggered later from
+    // the Prepare/Loadout roll chips.
+    if (item.tier) {
+      const result = this.player.buyRoll(item.tier, 'scales')
+      if (!result.ok) return
+      const label = `${item.name} acquired! Tap it in Prepare (or Loadout) any time to trigger your card screen.`
+      this.scene.restart({ player: this.player, tile: this.tile, mapIndex: this.mapIndex, notice: label })
+      return
+    }
+
     switch (item.id) {
-      case 'stat_point':
-        this.player.loadout.permanentStatPointBonus = (this.player.loadout.permanentStatPointBonus || 0) + 1
-        this.player.loadout.statPoints = (this.player.loadout.statPoints || 0) + 1
-        this.player.saveLoadout()
-        break
       case 'chest':
         this.spend(item)
         this.scene.start('ChestScene', { player: this.player, returnScene: 'HomeShopScene', skipCompleteTile: true })
@@ -279,13 +322,6 @@ export default class HomeShopScene extends Phaser.Scene {
         this.spend(item)
         this.scene.start('CascadeScene', { player: this.player, returnScene: 'HomeShopScene', skipCompleteTile: true })
         return
-      case 'weapon_upgrade_run':
-        if (this.player.weapon && this.player.weapon.level < (this.player.weapon.maxLevel || 10)) {
-          this.player.weapon.level = (this.player.weapon.level || 0) + 1
-          this.player.weapon.baseDamage = (this.player.weapon.baseDamage || 0) + 2
-          this.player.saveLoadout()
-        }
-        break
       case 'weapon_upgrade_permanent':
         this.player.loadout.permanentWeaponLevel = (this.player.loadout.permanentWeaponLevel || 0) + 1
         if (this.player.weapon) {

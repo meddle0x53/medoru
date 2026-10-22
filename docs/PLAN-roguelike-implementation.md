@@ -24,41 +24,45 @@ immediately instead of layering beside it.
 | D1 | Gamble challenge vs reroll | Gamble multiplies gold/essence only (no longer multiplies stat points). The kanji/word reroll handles upgrade cards. |
 | D2 | Legacy `statAllocations` in old saves | **Cutover:** statAllocations/statPoints are deleted; MAP_VERSION bump invalidates old saves. No migration. |
 | D3 | `permanentStatPointBonus` / scales-shop stat point | **Replaced by Rolls** (below). The `stat_point` shop item becomes 4 roll items. |
-| D4 | Reward frequency | Normal battle: 60% chance of upgrade reward; mini-boss/boss: always. Tune later. |
+| D4 | Reward frequency | **Every battle win drops the 3-card screen** (100% — normal, mini-boss, boss). Battle tier is rolled from map column + luck + RNG (later columns / higher luck → better floor chance). |
 | D5 | Capacity upgrades | Affect active slots only. Battle-pool/overall caps unchanged. |
 | D6 | Stats tab in LoadoutScene | Replaced by "Run Upgrades" list + derived readouts (HP / Energy / Slots / Crit%). Raw stats not shown as allocatable. |
-| D7 | Wasted-roll protection | A battle with no reward screen does NOT consume the active roll; it stays until a reward generates. |
-| D8 | Active roll switching | One active roll at a time; activating another **replaces** it (the old one returns to inventory). |
-| D9 | Reroll interaction | The kanji-challenge reroll regenerates the set at the **same tier** as the consumed roll. |
+| D7 | Wasted-roll protection | n/a — rolls are consumed by triggering (D12), not by battle RNG. |
+| D8 | Active roll switching | n/a — no active-roll state (D12). |
+| D9 | Reroll interaction | The kanji-challenge reroll regenerates the set at the **same tier** as the screen that spawned it. |
 | D10 | Ability charges | **Removed.** Abilities unlocked by cards are yours for the run; stamina is the only use limiter. Strong former single-use abilities get stamina-cost rebalance (Phase 5). |
 | D11 | Kanji tiers | Ability pools have tiered kanji: green (default) → blue → purple → silver, each a stronger challenge-result multiplier (×1.0 / ×1.15 / ×1.3 / ×1.5). Upgraded one random pool kanji per card. |
+| D12 | **Rolls = instant card screens (Model B, post-Phase-4 revision)** | Triggering a roll opens the 3-card screen **immediately** at the roll's tier and consumes it. Buying stores it in inventory (Alt 2: scales permanently spent, rolls persist across runs/death). Trigger points: LoadoutScene chips (and shop rows show inventory only). No `activeRoll` state. |
 
 ---
 
 ## The Rolls system (meta progression)
 
-**Economy:** ouro scales (site XP conversion + battle/victory income, unchanged)
-buy rolls in the home scales shop. Rolls sit in a persistent inventory across
-runs and death; one can be **activated** before a battle to set the floor of
-the next upgrade reward screen, and is consumed when that screen generates.
+**Economy (Alt 2):** scales spent on rolls are **permanently deducted**; bought
+rolls are **permanent goods** — they sit in a persistent inventory across runs
+and death until triggered. The more you play, the bigger your stockpile of
+banked card screens, so veterans start runs stronger.
 
 | Roll | Price (scales) | Effect |
 |---|---|---|
-| Common | 5 | next reward screen: 3 cards, normal rarity table |
-| Uncommon | 10 | 3 cards, at least one uncommon+ |
-| Rare | 18 | 3 cards, at least one rare+ |
-| Epic | 25 | 3 cards, at least one epic |
+| Common | 5 | trigger → instant 3-card screen at normal rarity table |
+| Uncommon | 10 | trigger → 3 cards, at least one uncommon+ |
+| Rare | 18 | trigger → 3 cards, at least one rare+ |
+| Epic | 25 | trigger → 3 cards, at least one epic |
+
+Gold prices at the rest camp stay 50/100/180/250 (10× ratio) and also feed the
+same permanent inventory.
 
 **Data model** (`loadout`):
 - `rollInventory: { common, uncommon, rare, epic }` — counts; **meta**, survives
-  `resetToFreshHero` (add to its preserve list)
-- `activeRoll: 'common' | 'uncommon' | 'rare' | 'epic' | null` — **run-scoped**,
-  wiped by `resetToFreshHero`; consumed by the next reward generation (D7)
+  `resetToFreshHero` (preserved). Consumed only by triggering (D12).
+- ~~`activeRoll`~~ — removed (D12).
 
-**Player helpers** (`entities/Player.js`): `buyRoll(tier)` (spends the calling
-site's currency, increments inventory), `setActiveRoll(tier | null)`
-(swap/return per D8), `consumeActiveRoll()` → returns tier or 'common',
-clears the key.
+**Player helpers** (`entities/Player.js`): `buyRoll(tier, currency)` (spends
+permanently, increments inventory), `useRoll(tier)` → decrements inventory,
+saves, returns {ok}; `rollBattleRewardTier(column, luck)` → rolls the tier of
+a battle-drop card screen from map column + luck + RNG (constants at top of
+Player.js or UpgradeGenerator).
 
 ## Kanji tier system (D11)
 
@@ -152,8 +156,9 @@ resolver flows through combat math. No UI yet.
    - `sharp_weapon` → effective scaling matches sharp charm rules
    - `sharpened_slash` ×3 → damageMultiplier 1.3
    - `deep_cut` → quick_stab has onHitEffects bleed 2
-   - rolls: buy → inventory++; setActive replaces per D8; consume → tier returned,
-     key cleared; `resetToFreshHero` wipes activeRoll but keeps rollInventory
+   - rolls: buy → inventory++; useRoll decrements (D12); battle tier rolled
+     via `rollBattleRewardTier(column, luck)`; `resetToFreshHero` keeps
+     rollInventory (meta)
    - kanji tiers (D11): apply `kanji_tier_up` → random pool char raised one
      tier; `getKanjiTier` returns it; silver is the cap
    - `resetToFreshHero` clears all other run keys
@@ -181,15 +186,16 @@ unique cards honoring the roll floor.
 
 ---
 
-## Phase 3 — Player-visible: reward screen, reroll, roll activation
+## Phase 3 — Player-visible: reward screen, reroll, roll triggering (revised per D12)
 
-**Goal:** after eligible wins → 3 cards at the active roll's tier → optional
-kanji/word reroll (same tier) → pick one.
+**Goal:** every won battle → 3 cards at the rolled tier → optional kanji
+reroll (same tier) → pick one. Player-owned rolls are triggered from the
+Loadout/Prepare chips and open the same screen immediately.
 
 1. **`scenes/UpgradeScene.js`** (new, ~250 lines, modeled on EventScene):
-   - on create: `tier = player.consumeActiveRoll()`; cards from
-     `UpgradeGenerator.generateChoices(player, tier)` (D7: if this screen
-     wasn't reached, the roll was never consumed)
+   - tier arrives via init data (`data.tier`): battle drops roll it with
+     `player.rollBattleRewardTier(column, luck)`; triggered rolls pass their
+     own tier after `player.useRoll()` consumed it
    - 3 cards + `[REROLL — KANJI] (n)` using the existing WinChallengeSystem
      pass/fail flow; success → regenerate at the **same tier**; failure →
      cards stay, reroll consumed
@@ -197,18 +203,18 @@ kanji/word reroll (same tier) → pick one.
    - destroy challenge systems in `shutdown()` (copy BattleScene's pattern)
 2. **`scenes/WinScene.js`**:
    - D1: gamble multiplies gold/essence only
-   - after existing rewards: `scene.start('UpgradeScene', ...)` gated by D4
-     frequency; skipped when the generator pool is empty
-3. **`scenes/LoadoutScene.js`** — active-roll selector (the "trigger before
-   battle" UI): one row showing `activeRoll` + inventory counts
-   (`Common ×2 · Uncommon ×1 …`); tap a tier to activate/replace per D8, tap
-   the active one to deactivate (returns to inventory). Visible in both
-   'map' and battle-prep modes.
+   - after existing rewards: ALWAYS `scene.start('UpgradeScene', ...)` with
+     the rolled battle tier (revised D4); UpgradeScene exits cleanly when the
+     generator pool is empty
+3. **`scenes/LoadoutScene.js`** — roll chips (D12 triggers): a row of tier
+   chips with inventory counts (`Common ×2 · Uncommon ×1 …`); tapping a chip
+   with stock consumes one roll (`player.useRoll`) and opens UpgradeScene
+   immediately at that tier. Visible in both 'map' and battle-prep modes.
 4. **`systems/WinChallengeSystem.js`** — extract `runPassFail(onPass, onFail)`
    (no multiplier) for the reroll.
 5. **Manual check (tablet):** win → cards → reroll pass/fail → choose → map;
-   roll activation/replacement in LoadoutScene; roll survives a no-reward
-   battle (D7); roll gone after a reward screen.
+   roll chip triggers the card screen from Prepare/Loadout and decrements
+   the inventory (D12).
 
 ---
 

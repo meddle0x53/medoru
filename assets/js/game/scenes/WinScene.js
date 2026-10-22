@@ -326,13 +326,16 @@ export default class WinScene extends Phaser.Scene {
     }).setOrigin(0.5)
   }
 
-  // D4: normal battles get an upgrade reward screen 60% of the time;
-  // mini-boss/boss battles always do. The roll itself is only consumed when
-  // the UpgradeScene actually generates (D7).
-  shouldShowUpgradeScreen() {
-    const roles = this.monster?.roles || []
-    if (roles.includes('mini_boss') || roles.includes('boss')) return true
-    return Math.random() < 0.60
+  // Revised D4: every battle win drops the 3-card screen; only its tier is
+  // rolled (map column + luck). Column comes from the battle tile when
+  // available, else the current map cursor, else the enemy level as a proxy.
+  battleRewardColumn() {
+    if (typeof this.tile?.col === 'number') return this.tile.col
+    const map = this.player.getCurrentMap?.()
+    const tileId = this.player.getCurrentTileId?.()
+    const tile = map?.columns?.flat?.().find(t => t.id === tileId)
+    if (typeof tile?.col === 'number') return tile.col
+    return Math.max(0, Math.min(10, this.monster?.level || 1))
   }
 
   createContinueButton() {
@@ -340,11 +343,10 @@ export default class WinScene extends Phaser.Scene {
       this.player.addGold(this.goldReward)
       if (this.tile?.id) this.player.completeTile(this.tile.id)
       this.player.saveLoadout()
-      if (this.shouldShowUpgradeScreen()) {
-        this.scene.start('UpgradeScene', { player: this.player, returnScene: 'MapScene', mapIndex: this.mapIndex ?? 0 })
-      } else {
-        this.scene.start('MapScene', { player: this.player, mapIndex: this.mapIndex ?? 0 })
-      }
+      const column = this.battleRewardColumn()
+      const luck = this.player.getStatValue('luck') || 0
+      const tier = this.player.rollBattleRewardTier(column, luck)
+      this.scene.start('UpgradeScene', { player: this.player, returnScene: 'MapScene', mapIndex: this.mapIndex ?? 0, tier })
     }, 180, 44, 0x27ae60, 0x2ecc71)
   }
 
