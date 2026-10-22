@@ -3,14 +3,15 @@ import Player, { getUpgradeCost } from '../entities/Player.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 import { CHARMS, CHARM_TYPES } from '../data/charms.js'
 import { ALL_SOCKET_CHARMS } from '../data/socketCharms.js'
-import { ALL_ACTIONS, getAbilityRarityColor } from '../data/actions.js'
+import { getAbilityRarityColor } from '../data/actions.js'
 import { ITEMS } from '../data/items.js'
 import AbilityTooltip from '../ui/AbilityTooltip.js'
 
 /**
  * Shop / Smith scene.
  * Offers weapon/shield upgrades plus a randomized stock of hero charms,
- * sword/shield socket charms, abilities, and consumable items.
+ * sword/shield socket charms, and consumable items. (Ability stock was
+ * removed in the upgrade-card cutover — abilities now come from cards.)
  */
 
 const RARITY_WEIGHTS = [
@@ -198,7 +199,6 @@ export default class ShopScene extends Phaser.Scene {
     const stock = []
     const ownedCharms = new Set(this.player.loadout.ownedCharmIds || [])
     const ownedSocketCharms = new Set(this.player.loadout.ownedSocketCharmIds || [])
-    const knownActions = new Set(this.player.loadout.knownActionIds || [])
 
     // 1-2 hero charms
     const heroPool = shuffle(CHARMS.filter(
@@ -232,21 +232,8 @@ export default class ShopScene extends Phaser.Scene {
       })
     }
 
-    // 2-5 abilities
-    const abilityPool = shuffle(ALL_ACTIONS.filter(
-      a => a.id !== 'use_item' && (!knownActions.has(a.id) || a.singleUse)
-    ))
-    for (let i = 0; i < Math.min(randomInt(2, 5), abilityPool.length); i++) {
-      const action = abilityPool[i]
-      const rarity = action.rarity || pickRarity()
-      const range = RARITY_WEIGHTS.find(r => r.rarity === rarity) || RARITY_WEIGHTS[0]
-      stock.push({
-        type: 'ability',
-        data: action,
-        price: randomInt(range.min, range.max),
-        qty: 1,
-      })
-    }
+    // Ability stock was removed in the upgrade-card cutover (D10): abilities
+    // come from upgrade cards now, never from the gold shop.
 
     // Health potions, 1-5
     const potionCount = randomInt(1, 5)
@@ -375,16 +362,6 @@ export default class ShopScene extends Phaser.Scene {
           description: charm.description || '',
         }
       }
-      case 'ability': {
-        const action = entry.data
-        return {
-          name: action.name,
-          type: action.type || 'ability',
-          rarity: action.rarity || 'common',
-          staminaCost: action.staminaCost,
-          description: action.description || '',
-        }
-      }
       case 'item': {
         const item = entry.data
         return {
@@ -414,7 +391,6 @@ export default class ShopScene extends Phaser.Scene {
     switch (entry.type) {
       case 'heroCharm': return entry.data.name
       case 'socketCharm': return entry.data.name
-      case 'ability': return entry.data.name
       case 'item': return entry.data.name
       default: return '???'
     }
@@ -441,12 +417,6 @@ export default class ShopScene extends Phaser.Scene {
         this.player.addSocketCharm(entry.data.id)
         ok = true
         message = `Acquired ${entry.data.name}!`
-        break
-      case 'ability':
-        this.player.loadout.gold -= entry.price
-        this.player.learnAbility(entry.data.id)
-        ok = true
-        message = `Learned ${entry.data.name}!`
         break
       case 'item':
         this.player.loadout.gold -= entry.price

@@ -21,6 +21,14 @@ export const ROLL_PRICES = {
   gold: { common: 50, uncommon: 100, rare: 180, epic: 250 },
 }
 
+// Battle-drop card-screen tier anchors (revised D4), interpolated by map
+// column 0-10 in rollBattleRewardTier(). Luck shifts a few points off the
+// two lowest tiers onto rare/epic.
+export const BATTLE_TIER_COL0 = { common: 70, uncommon: 22, rare: 7, epic: 1 }
+export const BATTLE_TIER_COL10 = { common: 25, uncommon: 38, rare: 28, epic: 9 }
+export const LUCK_SHIFT_MAX = 10
+export const LUCK_SHIFT_REFERENCE = 50
+
 // Kanji tier multipliers (D11): green is the default/absent tier.
 export const KANJI_TIER_MULTIPLIERS = { green: 1, blue: 1.15, purple: 1.3, silver: 1.5 }
 const KANJI_TIER_LADDER = ['green', 'blue', 'purple', 'silver']
@@ -260,7 +268,6 @@ export default class Player extends Character {
       staminaFlatBonus: 0,
       activeSlotBonus: 0,
       weaponProfileOverride: null,
-      activeRoll: null,
       kanjiTiers: {},
       gold: 0,
       inventory: {},
@@ -836,7 +843,7 @@ export default class Player extends Character {
         if (typeof loadout.staminaFlatBonus !== 'number') loadout.staminaFlatBonus = 0
         if (typeof loadout.activeSlotBonus !== 'number') loadout.activeSlotBonus = 0
         if (loadout.weaponProfileOverride === undefined) loadout.weaponProfileOverride = null
-        if (loadout.activeRoll === undefined) loadout.activeRoll = null
+        delete loadout.activeRoll
         if (!loadout.kanjiTiers || typeof loadout.kanjiTiers !== 'object') loadout.kanjiTiers = {}
         if (!loadout.rollInventory || typeof loadout.rollInventory !== 'object') {
           loadout.rollInventory = { common: 0, uncommon: 0, rare: 0, epic: 0 }
@@ -1673,7 +1680,6 @@ export default class Player extends Character {
       staminaFlatBonus: 0,
       activeSlotBonus: 0,
       weaponProfileOverride: null,
-      activeRoll: null,
       kanjiTiers: {},
       gold: meta.startingGoldBonus || 0,
       inventory: {},
@@ -1943,35 +1949,45 @@ export default class Player extends Character {
     return { ok: true, tier, price, currency }
   }
 
-  // Activate a roll (D8: one active at a time; replacing returns the old one
-  // to the inventory). Pass null to deactivate (also returns to inventory).
-  setActiveRoll(tier) {
-    if (tier !== null && !ROLL_TIERS.includes(tier)) {
-      return { ok: false, reason: 'Unknown roll tier.' }
-    }
+  // Trigger a roll (D12): consumes one roll from the inventory and opens its
+  // card screen immediately. Returns { ok } or { ok: false, reason }.
+  useRoll(tier) {
+    if (!ROLL_TIERS.includes(tier)) return { ok: false, reason: 'Unknown roll tier.' }
     const inventory = this.loadout.rollInventory || { common: 0, uncommon: 0, rare: 0, epic: 0 }
-    if (tier !== null && (inventory[tier] || 0) <= 0) {
-      return { ok: false, reason: 'No rolls of that tier in inventory.' }
-    }
-    const previous = this.loadout.activeRoll ?? null
-    if (previous && inventory[previous] !== undefined) {
-      inventory[previous] = (inventory[previous] || 0) + 1
-    }
-    if (tier !== null) {
-      inventory[tier] -= 1
-    }
-    this.loadout.activeRoll = tier
+    if ((inventory[tier] || 0) <= 0) return { ok: false, reason: 'No rolls of that tier in inventory.' }
+    inventory[tier] -= 1
     this.saveLoadout()
-    return { ok: true, activeRoll: tier, returned: previous }
+    return { ok: true, tier }
   }
 
-  // Consume the active roll when a reward screen generates (D7). Returns the
-  // active tier, or 'common' when none was active.
-  consumeActiveRoll() {
-    const tier = this.loadout.activeRoll || 'common'
-    this.loadout.activeRoll = null
-    this.saveLoadout()
-    return tier
+  // Tier of a battle-drop 3-card screen (revised D4): weights improve with
+  // map column (0-10) and luck. Interpolation between the column anchors:
+  //   col 0:  { common 70, uncommon 22, rare 7,  epic 1 }
+  //   col 10: { common 25, uncommon 38, rare 28, epic 9 }
+  // Luck then moves up to LUCK_SHIFT_MAX points from common/uncommon onto
+  // rare/epic (scaled by luck / LUCK_SHIFT_REFERENCE).
+  rollBattleRewardTier(column, luck = 0) {
+    const t = Math.max(0, Math.min(1, (column || 0) / 10))
+    const weights = {
+      common: BATTLE_TIER_COL0.common + (BATTLE_TIER_COL10.common - BATTLE_TIER_COL0.common) * t,
+      uncommon: BATTLE_TIER_COL0.uncommon + (BATTLE_TIER_COL10.uncommon - BATTLE_TIER_COL0.uncommon) * t,
+      rare: BATTLE_TIER_COL0.rare + (BATTLE_TIER_COL10.rare - BATTLE_TIER_COL0.rare) * t,
+      epic: BATTLE_TIER_COL0.epic + (BATTLE_TIER_COL10.epic - BATTLE_TIER_COL0.epic) * t,
+    }
+    const shift = Math.min(LUCK_SHIFT_MAX, Math.max(0, luck) / LUCK_SHIFT_REFERENCE * LUCK_SHIFT_MAX)
+    weights.common = Math.max(0, weights.common - shift * 0.6)
+    weights.uncommon = Math.max(0, weights.uncommon - shift * 0.4)
+    weights.rare += shift * 0.6
+    weights.epic += shift * 0.4
+
+    let total = 0
+    for (const tier of ROLL_TIERS) total += weights[tier]
+    let roll = Math.random() * total
+    for (const tier of ROLL_TIERS) {
+      roll -= weights[tier]
+      if (roll < 0) return tier
+    }
+    return 'common'
   }
 
   rollNormalBattleEssence() {

@@ -1666,7 +1666,9 @@ export default class LoadoutScene extends Phaser.Scene {
     stats.forEach((stat, i) => {
       const y = startY + i * rowH
       const baseVal = this.player.baseStats[stat.key]
-      const alloc = this.player.loadout.statAllocations[stat.key] || 0
+      // Stat allocations are cut over (Phase 4); the stats tab UI stays until
+      // Phase 5, so read the legacy key defensively.
+      const alloc = this.player.loadout.statAllocations?.[stat.key] || 0
       const charmBonus = this.player.getCharmEffects()[stat.key] || 0
       const total = baseVal + alloc
 
@@ -1708,11 +1710,14 @@ export default class LoadoutScene extends Phaser.Scene {
 
       // + button
       const plusBtn = this.createMiniButton(420, 26, '+', 0x27ae60, () => {
-        if (this.player.loadout.statPoints <= 0) {
+        // Stat points are cut over (Phase 4): the button stays visible until
+        // Phase 5 but there is never anything to spend.
+        if (!(this.player.loadout.statPoints > 0)) {
           this.showToast('No stat points available')
           return
         }
         this.player.loadout.statPoints--
+        if (!this.player.loadout.statAllocations) this.player.loadout.statAllocations = {}
         this.player.loadout.statAllocations[stat.key]++
         // Apply immediately to player stat
         this.player.baseStats[stat.key]++
@@ -1737,11 +1742,12 @@ export default class LoadoutScene extends Phaser.Scene {
     })
 
     // Stat points remaining
+    const pointsLeft = this.player.loadout.statPoints || 0
     this.tabContent.add(
-      this.add.text(690, 500, `Stat Points: ${this.player.loadout.statPoints}`, {
+      this.add.text(690, 500, `Stat Points: ${pointsLeft}`, {
         ...FONTS.default,
         fontSize: '16px',
-        color: this.player.loadout.statPoints > 0 ? '#f1c40f' : '#7f8c8d',
+        color: pointsLeft > 0 ? '#f1c40f' : '#7f8c8d',
       }).setOrigin(0.5)
     )
   }
@@ -1823,18 +1829,21 @@ export default class LoadoutScene extends Phaser.Scene {
     this.refreshRollSelector()
   }
 
-  // Tap a tier to activate/replace it (the replaced roll returns to the
-  // inventory); tap the active tier to deactivate it (also returns).
-  // Kept side-effect-light so the inventory math is testable headless.
+  // Tap a tier chip to TRIGGER the roll (D12): one roll is consumed from the
+  // inventory and the 3-card screen opens immediately at that tier. Empty
+  // inventory -> toast pointing at the shops. Kept side-effect-light so the
+  // flow is testable headless.
   applyRollTap(tier) {
     const player = this.player
-    if (player.loadout.activeRoll === tier) {
-      const res = player.setActiveRoll(null)
-      return res.ok ? { action: 'deactivated', tier } : { action: 'failed', reason: res.reason }
-    }
-    const res = player.setActiveRoll(tier)
+    const res = player.useRoll(tier)
     if (!res.ok) return { action: 'failed', reason: res.reason }
-    return { action: res.returned ? 'replaced' : 'activated', tier, returned: res.returned || null }
+    this.scene.start('UpgradeScene', {
+      player,
+      tier,
+      returnScene: this.mode === 'map' ? 'LoadoutScene' : (this.returnScene || 'BattleScene'),
+      returnData: { player, mode: this.mode, tile: this.tile, mapIndex: this.mapIndex },
+    })
+    return { action: 'triggered', tier }
   }
 
   refreshRollSelector() {
@@ -1843,9 +1852,8 @@ export default class LoadoutScene extends Phaser.Scene {
     container.removeAll(true)
 
     const inventory = this.player.loadout.rollInventory || {}
-    const active = this.player.loadout.activeRoll
 
-    container.add(this.add.text(40, 482, 'Reward Roll (next reward):', {
+    container.add(this.add.text(40, 482, 'Rolls (tap to use):', {
       ...FONTS.default,
       fontSize: '12px',
       color: '#95a5a6',
@@ -1856,17 +1864,13 @@ export default class LoadoutScene extends Phaser.Scene {
     const y = 504
     for (const tier of tiers) {
       const count = inventory[tier] || 0
-      const isActive = active === tier
       const label = `${tier[0].toUpperCase()}${tier.slice(1)} ×${count}`
-      const color = isActive ? 0xf1c40f : count > 0 ? 0x2c3e50 : 0x1a1a2e
+      const color = count > 0 ? 0x2c3e50 : 0x1a1a2e
       const btn = this.createMiniButton(0, y, label, color, () => this.onRollChipTapped(tier))
       const w = btn.hitArea.width
       btn.container.setX(x + w / 2)
       x += w + 8
-      if (isActive) {
-        btn.text.setColor('#1a1a2e')
-        btn.text.setFontStyle('bold')
-      } else if (count === 0) {
+      if (count === 0) {
         btn.text.setColor('#566573')
       }
       container.add(btn.container)
@@ -1875,11 +1879,9 @@ export default class LoadoutScene extends Phaser.Scene {
 
   onRollChipTapped(tier) {
     const result = this.applyRollTap(tier)
-    this.refreshRollSelector()
     if (result.action === 'failed') {
-      this.showToast(result.reason || 'Cannot set roll')
-    } else if (result.action === 'replaced' && result.returned) {
-      this.showToast(`Roll replaced (returned ${result.returned})`)
+      this.refreshRollSelector()
+      this.showToast(`No ${tier} rolls — buy at the home or rest camp.`)
     }
   }
 

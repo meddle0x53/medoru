@@ -1,6 +1,8 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
-import Player, { getUpgradeCost } from '../entities/Player.js'
+import Player, { getUpgradeCost, ROLL_PRICES } from '../entities/Player.js'
 import { setupHighDPIWorld } from '../highDpi.js'
+
+const ROLL_TIERS = ['common', 'uncommon', 'rare', 'epic']
 
 /**
  * Rest Camp scene — recover HP or spend gold to upgrade one piece of equipment.
@@ -79,10 +81,50 @@ export default class RestScene extends Phaser.Scene {
   }
 
   createButtons() {
-    this.weaponBtn = this.createButton(GAME_CONFIG.width * 0.25, 230, 'Upgrade Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
-    this.shieldBtn = this.createButton(GAME_CONFIG.width * 0.75, 230, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
-    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 320, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
-    this.createButton(GAME_CONFIG.width / 2, 400, 'Leave', () => this.completeTile(), 0x7f8c8d)
+    this.weaponBtn = this.createButton(GAME_CONFIG.width * 0.25, 220, 'Upgrade Weapon', () => this.onUpgradeWeapon(), 0x2980b9)
+    this.shieldBtn = this.createButton(GAME_CONFIG.width * 0.75, 220, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
+    this.restBtn = this.createButton(GAME_CONFIG.width / 2, 300, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
+    this.createRollButtons()
+    this.createButton(GAME_CONFIG.width / 2, 480, 'Leave', () => this.completeTile(), 0x7f8c8d)
+  }
+
+  // Gold-bought rolls share the inventory with scales-bought rolls. Buying
+  // one counts as the visit's single action, exactly like resting or
+  // upgrading equipment (one-action-per-visit rule).
+  createRollButtons() {
+    this.add.text(GAME_CONFIG.width / 2, 348, 'Buy a roll (counts as your action):', {
+      ...FONTS.default,
+      fontSize: '13px',
+      color: '#95a5a6',
+    }).setOrigin(0.5)
+
+    this.rollBtns = ROLL_TIERS.map((tier, i) => {
+      const owned = this.player.loadout.rollInventory?.[tier] || 0
+      const price = ROLL_PRICES.gold[tier]
+      const x = GAME_CONFIG.width / 2 + (i - 1.5) * 140
+      const btn = this.createButton(x, 385, `${tier} ×${owned}\n${price}G`, () => this.onBuyRoll(tier), 0x8e44ad)
+      btn.tier = tier
+      return btn
+    })
+  }
+
+  onBuyRoll(tier) {
+    if (this.actionTaken) {
+      this.showToast('You already took an action here.')
+      return
+    }
+    const result = this.player.buyRoll(tier, 'gold')
+    if (!result.ok) {
+      this.showToast(result.reason)
+      return
+    }
+    // Buying only stores the roll (D12/Alt 2); it is triggered later from
+    // the Prepare/Loadout roll chips.
+    this.showToast(`${tier[0].toUpperCase()}${tier.slice(1)} Roll acquired! Trigger it from Prepare whenever you want your cards.`)
+    this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
+    const btn = (this.rollBtns || []).find(b => b.tier === tier)
+    if (btn) btn.text.setText(`${tier} ×${this.player.loadout.rollInventory?.[tier] || 0}\n${ROLL_PRICES.gold[tier]}G`)
+    this.disableActionButtons()
   }
 
   createButton(x, y, label, onClick, color = 0x2980b9) {
@@ -108,7 +150,7 @@ export default class RestScene extends Phaser.Scene {
   disableActionButtons() {
     if (this.actionTaken) return
     this.actionTaken = true
-    ;[this.restBtn, this.weaponBtn, this.shieldBtn].forEach((btn) => {
+    ;[this.restBtn, this.weaponBtn, this.shieldBtn, ...(this.rollBtns || [])].forEach((btn) => {
       if (!btn) return
       btn.bg.removeInteractive()
       btn.bg.setFillStyle(0x555555)
