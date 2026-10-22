@@ -11803,7 +11803,7 @@ msgstr "Ниво на умения"
 #: lib/medoru_web/live/users_live/index.html.heex:57
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} selected"
-msgstr ""
+msgstr "Избрани: %{count}"
 
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:290
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:290
@@ -19275,8 +19275,8 @@ msgstr "Циан"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "5 points, but a mistake also costs 5 coins."
-msgstr "5 точки, но грешка струва и 5 монети."
+msgid "5 points, but a mistake costs 5 coins — or, with no coins, 1 life and 1 hint charge; with no hint charges either, 2 lives."
+msgstr "5 точки, но грешка струва 5 монети — а без монети, 1 живот и 1 жълт ход; ако няма и жълти ходове — 2 живота."
 
 
 #: lib/medoru_web/live/kanji_master_live.ex
@@ -19293,6 +19293,51 @@ msgstr "Без подобрение"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Momo"
 msgstr "Момо"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kaki"
+msgstr "Каки"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Toki"
+msgstr "Токи"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Fuji"
+msgstr "Фуджи"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Fuji (wisteria)"
+msgstr "Фуджи (градински чемшир)"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "60% chance of 3 points on a correct draw; a mistake has a 30% chance of costing 3 points."
+msgstr "60% шанс за 3 точки при правилно изчертаване; грешка има 30% шанс да струва 3 точки."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Toki (ibis pink)"
+msgstr "Токи (щраусово розово)"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "5 points when drawn correctly, but a mistake costs 4 points."
+msgstr "5 точки при правилно изчертаване, но грешка струва 4 точки."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kaki (persimmon)"
+msgstr "Каки (кайсиево)"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "2 points when drawn correctly, but a mistake costs 1 point."
+msgstr "2 точки при правилно изчертаване, но грешка струва 1 точка."
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19423,6 +19468,16 @@ msgstr "Капан"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
+msgid "Fluorescent"
+msgstr "Флуоресцентно"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "on a stroke with an upgrade: 80% chance a wrong draw doubles the upgrade's penalty, 20% chance a correct draw doubles its reward."
+msgstr "върху ход с подобрение: 80% шанс грешката да удвои наказанието на подобрението, 20% шанс правилното изчертаване да удвои наградата му."
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
 msgid "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
 msgstr "50% шанс за +1 живот при правилна черта; 50% шанс да загубите 3 допълнителни живота при грешна."
 
@@ -19465,3 +19520,48 @@ msgstr "Канджито, на което се провалихте, е:"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View it and practice →"
 msgstr "Вижте го и го тренирайте →"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Select page"
+msgstr "Избери страницата"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Delete selected"
+msgstr "Изтрий избраните"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure you want to delete %{count} selected words?"
+msgstr "Наистина ли искате да изтриете %{count} избрани думи?"
+
+#: lib/medoru_web/live/admin/word_live/index.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Deleted %{count} words."
+msgstr "Изтрити %{count} думи."
+
+#: lib/medoru_web/live/admin/word_live/index.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to delete some words. They may be in use."
+msgstr "Неуспешно изтриване на някои думи. Възможно е да се използват."
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Select %{word}"
+msgstr "Избери %{word}"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Usage frequency score (lower = more common)"
+msgstr "Оценка на честотата (по-ниска = по-употребявано)"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Sort by:"
+msgstr "Сортирай по:"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Date Added"
+msgstr "Дата на добавяне"

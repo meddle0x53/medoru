@@ -798,6 +798,26 @@ defmodule Medoru.Content do
     include_mature = Keyword.get(opts, :include_mature, true)
     learning_language = Keyword.get(opts, :learning_language)
 
+    sort_field =
+      case Keyword.get(opts, :sort_by, :usage_frequency) do
+        field
+        when field in [
+               :text,
+               :reading,
+               :meaning,
+               :difficulty,
+               :word_type,
+               :inserted_at,
+               :usage_frequency
+             ] ->
+          field
+
+        _ ->
+          :usage_frequency
+      end
+
+    sort_dir = if Keyword.get(opts, :sort_order, :asc) == :desc, do: :desc, else: :asc
+
     search = if search, do: String.trim(search), else: search
 
     if search && search != "" do
@@ -846,6 +866,8 @@ defmodule Medoru.Content do
       total_count = length(words)
       total_pages = max(ceil(total_count / per_page), 1)
       offset = (page - 1) * per_page
+
+      words = sort_words(words, sort_field, sort_dir)
 
       paginated_words =
         words
@@ -914,7 +936,7 @@ defmodule Medoru.Content do
       # Get words with sorting
       words =
         query
-        |> order_by([w], asc: w.usage_frequency)
+        |> order_by([w], [{^sort_dir, field(w, ^sort_field)}])
         |> limit(^per_page)
         |> offset(^offset)
         |> Repo.all()
@@ -927,6 +949,25 @@ defmodule Medoru.Content do
         per_page: per_page
       }
     end
+  end
+
+  # Sorts an in-memory word list by a whitelisted field. Nil values always go
+  # last; direction only applies to non-nil values.
+  defp sort_words(words, field, dir) do
+    comparator = fn a, b ->
+      av = Map.get(a, field)
+      bv = Map.get(b, field)
+
+      cond do
+        is_nil(av) and is_nil(bv) -> true
+        is_nil(av) -> false
+        is_nil(bv) -> true
+        dir == :desc -> av >= bv
+        true -> av <= bv
+      end
+    end
+
+    Enum.sort(words, comparator)
   end
 
   defp learned_word_ids_query(user_id, "english") do
@@ -1528,6 +1569,34 @@ defmodule Medoru.Content do
   """
   def delete_word(%Word{} = word) do
     Repo.delete(word)
+  end
+
+  @doc """
+  Deletes multiple words in a single transaction.
+
+  Returns `{:ok, count}` with the number of deleted words, or
+  `{:error, %Ecto.Changeset{}}` for the first word that could not be
+  deleted (the whole transaction is rolled back).
+
+  ## Examples
+
+      iex> delete_words([word_id1, word_id2])
+      {:ok, 2}
+
+  """
+  def delete_words(ids) when is_list(ids) do
+    words = Repo.all(from w in Word, where: w.id in ^ids)
+
+    Repo.transaction(fn ->
+      Enum.each(words, fn word ->
+        case Repo.delete(word) do
+          {:ok, _} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+      length(words)
+    end)
   end
 
   @doc """

@@ -633,7 +633,10 @@ const UPGRADE_COLORS = {
   orange: '#f97316',
   silver: '#c0c0c0',
   cyan: '#06b6d4',
-  momo: '#f9a8d4'
+  momo: '#f9a8d4',
+  kaki: '#f35336',
+  toki: '#f5a27d',
+  fuji: '#8b81c3'
 }
 
 const MAX_UPGRADE_INDEX = 12
@@ -666,7 +669,8 @@ const DEBUFF_COLORS = {
   suppressed: '#15803d',
   black: '#000000',
   brightred: '#ff1f1f',
-  trap: '#be185d'
+  trap: '#be185d',
+  fluor: '#ccff00'
 }
 
 // Page/label accent color per level — matches the km-level-* border colors.
@@ -899,7 +903,7 @@ const KanjiMaster = {
     const debuffs = {}
     for (const idx of indices.slice(0, Math.min(count, indices.length))) {
       const effects = ['black', 'brightred', 'hidden', 'trap']
-      if (this.state.upgrades[idx]) effects.push('suppressed')
+      if (this.state.upgrades[idx]) effects.push('suppressed', 'fluor')
       debuffs[idx] = effects[Math.floor(Math.random() * effects.length)]
     }
     return debuffs
@@ -1185,6 +1189,10 @@ const KanjiMaster = {
     // Black strokes score 0; suppressed strokes keep their upgrade's LOSE
     // effects but lose its WIN effects. Both skip the upgrade win logic.
     const winSuppressed = debuff === 'black' || debuff === 'suppressed'
+    // Fluorescent boss debuff: on an upgraded stroke, 20% chance the
+    // upgrade's WIN effect is doubled (+10 toki, +2 lives silver, ...).
+    const fluorWinDouble =
+      !winSuppressed && debuff === 'fluor' && upgrade && Math.random() < 0.2
     let gained = debuff === 'black' ? 0 : 1
 
     if (!winSuppressed) {
@@ -1192,18 +1200,24 @@ const KanjiMaster = {
       if (upgrade === 'purple') gained = Math.random() < 0.5 ? 3 : 1
       if (upgrade === 'orange') gained = 5
       if (upgrade === 'cyan') gained = 5
+      if (upgrade === 'kaki') gained = 2
+      if (upgrade === 'toki') gained = 5
+      if (upgrade === 'fuji' && Math.random() < 0.6) gained = 3
       if (upgrade === 'silver' && Math.random() < 0.1) {
-        this.state.lives += 1
+        this.state.lives += fluorWinDouble ? 2 : 1
       }
       if (upgrade === 'momo' && Math.random() < 0.2) {
         // Jackpot: bonus currencies on top of the normal 1 point.
-        this.state.lives += 1
-        this.state.coins += 5
-        this.state.hints += 5
+        this.state.lives += fluorWinDouble ? 2 : 1
+        this.state.coins += fluorWinDouble ? 10 : 5
+        this.state.hints += fluorWinDouble ? 10 : 5
         this.animate('km-lives', 'km-anim-bump')
         this.animate('km-coins', 'km-anim-bump')
         this.animate('km-hints', 'km-anim-bump')
-        this.floatScore('+1♥ +5🪙 +5', '#f9a8d4')
+        this.floatScore(
+          fluorWinDouble ? '+2♥ +10🪙 +10' : '+1♥ +5🪙 +5',
+          '#f9a8d4'
+        )
       }
     }
     if (debuff === 'trap' && Math.random() < 0.5) {
@@ -1213,12 +1227,19 @@ const KanjiMaster = {
       this.floatScore('+1♥', DEBUFF_COLORS.trap)
     }
 
-    this.state.score += gained
+    this.state.score += gained * (fluorWinDouble ? 2 : 1)
     current.strokeIndex += 1
     this.logExpectedStroke()
     this.updateHud()
     this.animate('km-score', 'km-anim-bump')
-    this.floatScore(`+${gained}`, upgrade && !winSuppressed ? '#f97316' : '#22c55e')
+    this.floatScore(
+      `+${gained * (fluorWinDouble ? 2 : 1)}`,
+      fluorWinDouble
+        ? DEBUFF_COLORS.fluor
+        : upgrade && !winSuppressed
+          ? '#f97316'
+          : '#22c55e'
+    )
     if (upgrade === 'silver' && !winSuppressed) this.animate('km-lives', 'km-anim-bump')
     this.redraw()
 
@@ -1276,16 +1297,59 @@ const KanjiMaster = {
     const debuff = current.debuffs ? current.debuffs[i + 1] : null
     this.state.mistakes += 1
 
+    // Fluorescent boss debuff: on an upgraded stroke, 80% chance the
+    // upgrade's WRONG effects hit twice as hard.
+    const fluorWrongDouble = debuff === 'fluor' && upgrade && Math.random() < 0.8
+    const fluorTimes = fluorWrongDouble ? 2 : 1
+
     // Life loss always happens: cycle 1 = 1 life, cycle 2 = 2, ... Orange
     // and momo add +1. Yellow strokes are hint charges only — they never
     // prevent the loss. The bright-red boss debuff costs +1 extra on top of
     // all that.
     let loss = this.state.cycle
-    if (upgrade === 'orange') loss = this.state.cycle + 1
-    if (upgrade === 'momo') loss = this.state.cycle + 1
+    if (upgrade === 'orange') loss = this.state.cycle + fluorTimes
+    if (upgrade === 'momo') loss = this.state.cycle + fluorTimes
     if (debuff === 'brightred') loss += 1
-    if (upgrade === 'cyan') this.state.coins = Math.max(0, this.state.coins - 5)
-    if (upgrade === 'momo') this.state.coins = Math.max(0, this.state.coins - 5)
+    // Cyan: a mistake costs 5 coins; with no coins it costs 1 extra life
+    // plus 1 hint charge, and with no hint charges either, 2 extra lives.
+    if (upgrade === 'cyan') {
+      for (let n = 0; n < fluorTimes; n++) {
+        if (this.state.coins >= 5) {
+          this.state.coins -= 5
+        } else if (this.state.hints > 0) {
+          this.state.hints -= 1
+          loss += 1
+          this.cyanHintPenalty = true
+        } else {
+          loss += 2
+        }
+      }
+    }
+    if (upgrade === 'momo')
+      this.state.coins = Math.max(0, this.state.coins - 5 * fluorTimes)
+    // Kaki: a mistake also costs 1 point (floored at 0).
+    if (upgrade === 'kaki' && this.state.score > 0) {
+      const penalty = Math.min(fluorTimes, this.state.score)
+      this.state.score -= penalty
+      this.floatScore(`-${penalty}`, UPGRADE_COLORS.kaki)
+      this.animate('km-score', 'km-anim-hit')
+    }
+    // Toki: a mistake costs 4 points (floored at 0).
+    if (upgrade === 'toki' && this.state.score > 0) {
+      const penalty = Math.min(4 * fluorTimes, this.state.score)
+      this.state.score -= penalty
+      this.floatScore(`-${penalty}`, UPGRADE_COLORS.toki)
+      this.animate('km-score', 'km-anim-hit')
+    }
+    // Fuji: 30% chance a mistake costs 3 points (floored at 0).
+    for (let n = 0; n < fluorTimes; n++) {
+      if (upgrade === 'fuji' && this.state.score > 0 && Math.random() < 0.3) {
+        const penalty = Math.min(3, this.state.score)
+        this.state.score -= penalty
+        this.floatScore(`-${penalty}`, UPGRADE_COLORS.fuji)
+        this.animate('km-score', 'km-anim-hit')
+      }
+    }
 
     this.state.lives -= loss
 
@@ -1329,7 +1393,13 @@ const KanjiMaster = {
 
     this.updateHud()
     this.animate('km-lives', 'km-anim-hit')
-    if (upgrade === 'cyan') this.animate('km-coins', 'km-anim-hit')
+    if (upgrade === 'cyan') {
+      this.animate('km-coins', 'km-anim-hit')
+      if (this.cyanHintPenalty) {
+        this.cyanHintPenalty = false
+        this.animate('km-hints', 'km-anim-hit')
+      }
+    }
     if (upgrade === 'momo') this.animate('km-coins', 'km-anim-hit')
 
     if (this.state.lives <= 0) {
@@ -1419,10 +1489,13 @@ const KanjiMaster = {
   },
 
   bindHelp() {
-    const btn = document.getElementById('km-help-btn')
     const overlay = document.getElementById('km-help-overlay')
     const close = document.getElementById('km-help-close')
-    if (btn && overlay) btn.addEventListener('click', () => overlay.classList.remove('hidden'))
+    // Both the HUD button and the shop header button open the same overlay.
+    ;['km-help-btn', 'km-help-btn-shop'].forEach((id) => {
+      const btn = document.getElementById(id)
+      if (btn && overlay) btn.addEventListener('click', () => overlay.classList.remove('hidden'))
+    })
     if (close && overlay) close.addEventListener('click', () => overlay.classList.add('hidden'))
   },
 

@@ -14,6 +14,14 @@ defmodule MedoruWeb.Admin.WordLiveTest do
   end
 
   describe "Word list" do
+    # True when first_word appears before second_word in the rendered list.
+    defp word_order(html, first_word, second_word) do
+      case {:binary.match(html, first_word), :binary.match(html, second_word)} do
+        {{pos1, _len1}, {pos2, _len2}} -> pos1 < pos2
+        _ -> false
+      end
+    end
+
     test "shows star icon for mature words", %{conn: conn} do
       word_fixture(%{text: "本", reading: "ほん", meaning: "book", mature: true})
       word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat", mature: false})
@@ -23,6 +31,124 @@ defmodule MedoruWeb.Admin.WordLiveTest do
       assert html =~ "本"
       assert html =~ "hero-star-solid"
       assert html =~ "猫"
+    end
+
+    test "select mode shows checkboxes and a selection bar", %{conn: conn} do
+      word_fixture(%{text: "本", reading: "ほん", meaning: "book"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words")
+      refute render(view) =~ "Delete selected"
+
+      html =
+        view
+        |> element("#select-mode-btn")
+        |> render_click()
+
+      assert html =~ "Delete selected"
+      assert html =~ "Select page"
+      assert html =~ "0 selected"
+      assert html =~ "checkbox"
+    end
+
+    test "toggle_select and select_page update the selection", %{conn: conn} do
+      word1 = word_fixture(%{text: "本", reading: "ほん", meaning: "book"})
+      _word2 = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words")
+
+      view
+      |> element("#select-mode-btn")
+      |> render_click()
+
+      html =
+        view
+        |> element("table input[phx-click='toggle_select'][phx-value-id='#{word1.id}']")
+        |> render_click()
+
+      assert html =~ "1 selected"
+
+      html =
+        view
+        |> element("button[phx-click='select_page']")
+        |> render_click()
+
+      assert html =~ "2 selected"
+
+      # Clicking again deselects the whole page.
+      html =
+        view
+        |> element("button[phx-click='select_page']")
+        |> render_click()
+
+      assert html =~ "0 selected"
+
+      # Exiting select mode hides the bar.
+      html =
+        view
+        |> element("#select-mode-btn")
+        |> render_click()
+
+      refute html =~ "Delete selected"
+    end
+
+    test "sorts by the selected column via the sort event", %{conn: conn} do
+      word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat", usage_frequency: 10})
+      word_fixture(%{text: "本", reading: "ほん", meaning: "book", usage_frequency: 500})
+
+      {:ok, view, html} = live(conn, ~p"/admin/words")
+
+      # Default: most common first (ascending frequency).
+      assert word_order(html, "猫", "本")
+
+      html =
+        view
+        |> element("form[phx-change='sort']")
+        |> render_change(%{"sort_by" => "text"})
+
+      assert html =~ "↑"
+      assert word_order(html, "本", "猫")
+    end
+
+    test "sort params from the URL are applied", %{conn: conn} do
+      word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat", usage_frequency: 10})
+      word_fixture(%{text: "本", reading: "ほん", meaning: "book", usage_frequency: 500})
+
+      {:ok, _view, html} = live(conn, ~p"/admin/words?sort_by=usage_frequency&sort_order=desc")
+
+      assert word_order(html, "本", "猫")
+    end
+
+    test "delete_selected removes the words and flashes the count", %{conn: conn} do
+      word1 = word_fixture(%{text: "本", reading: "ほん", meaning: "book"})
+      word2 = word_fixture(%{text: "猫", reading: "ねこ", meaning: "cat"})
+      word3 = word_fixture(%{text: "犬", reading: "いぬ", meaning: "dog"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin/words")
+
+      view
+      |> element("#select-mode-btn")
+      |> render_click()
+
+      view
+      |> element("table input[phx-click='toggle_select'][phx-value-id='#{word1.id}']")
+      |> render_click()
+
+      view
+      |> element("table input[phx-click='toggle_select'][phx-value-id='#{word2.id}']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='delete_selected']")
+        |> render_click()
+
+      assert html =~ "Deleted 2 words."
+      assert render(view) =~ "犬"
+      refute render(view) =~ "Delete selected"
+
+      assert Medoru.Repo.get(Medoru.Content.Word, word1.id) == nil
+      assert Medoru.Repo.get(Medoru.Content.Word, word2.id) == nil
+      assert Medoru.Repo.get(Medoru.Content.Word, word3.id) != nil
     end
   end
 

@@ -302,7 +302,10 @@ defmodule MedoruWeb.KanjiMasterLive do
               "orange" => gettext("Orange"),
               "silver" => gettext("Silver"),
               "cyan" => gettext("Cyan"),
-              "momo" => gettext("Momo")
+              "momo" => gettext("Momo"),
+              "kaki" => gettext("Kaki"),
+              "toki" => gettext("Toki"),
+              "fuji" => gettext("Fuji")
             })
           }
         >
@@ -382,14 +385,24 @@ defmodule MedoruWeb.KanjiMasterLive do
               <div class="bg-base-100 rounded-2xl shadow-xl border border-base-300 p-4 sm:p-6 w-full max-w-sm">
                 <div class="flex items-center justify-between mb-1">
                   <h3 class="text-lg font-bold text-base-content">{gettext("Shop")}</h3>
-                  <button
-                    id="km-status-btn-shop"
-                    type="button"
-                    class="btn btn-ghost btn-xs"
-                    title={gettext("Upgrade status")}
-                  >
-                    <.icon name="hero-queue-list" class="w-4 h-4" />
-                  </button>
+                  <div class="flex items-center gap-1">
+                    <button
+                      id="km-status-btn-shop"
+                      type="button"
+                      class="btn btn-ghost btn-xs"
+                      title={gettext("Upgrade status")}
+                    >
+                      <.icon name="hero-queue-list" class="w-4 h-4" />
+                    </button>
+                    <button
+                      id="km-help-btn-shop"
+                      type="button"
+                      class="btn btn-ghost btn-xs"
+                      title={gettext("How to play")}
+                    >
+                      <.icon name="hero-question-mark-circle" class="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <p class="text-sm text-secondary mb-4">
                   {gettext("Coins")}: <span id="km-shop-coins" class="font-bold text-warning"></span>
@@ -555,7 +568,7 @@ defmodule MedoruWeb.KanjiMasterLive do
           <%!-- Help overlay: rules and currency meanings (toggled by the hook) --%>
           <div
             id="km-help-overlay"
-            class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-300/80 p-4"
+            class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-base-300/80 p-4"
           >
             <div class="bg-base-100 rounded-2xl shadow-xl border border-base-300 p-4 sm:p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
               <h3 class="text-lg font-bold text-base-content mb-3">{gettext("How to play")}</h3>
@@ -626,12 +639,28 @@ defmodule MedoruWeb.KanjiMasterLive do
                 </li>
                 <li>
                   <span class="font-bold" style="color: #06b6d4">{gettext("Cyan")}</span>
-                  — {gettext("5 points, but a mistake also costs 5 coins.")}
+                  — {gettext(
+                    "5 points, but a mistake costs 5 coins — or, with no coins, 1 life and 1 hint charge; with no hint charges either, 2 lives."
+                  )}
                 </li>
                 <li>
                   <span class="font-bold" style="color: #f9a8d4">{gettext("Pink (momo)")}</span>
                   — {gettext(
                     "20% jackpot on a correct draw (+1 life, +5 coins, +5 yellow strokes); a mistake costs +1 life, 5 coins, and 2 yellow-stroke charges."
+                  )}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #f35336">{gettext("Kaki (persimmon)")}</span>
+                  — {gettext("2 points when drawn correctly, but a mistake costs 1 point.")}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #f5a27d">{gettext("Toki (ibis pink)")}</span>
+                  — {gettext("5 points when drawn correctly, but a mistake costs 4 points.")}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #8b81c3">{gettext("Fuji (wisteria)")}</span>
+                  — {gettext(
+                    "60% chance of 3 points on a correct draw; a mistake has a 30% chance of costing 3 points."
                   )}
                 </li>
               </ul>
@@ -664,6 +693,12 @@ defmodule MedoruWeb.KanjiMasterLive do
                   <span class="font-bold" style="color: #be185d">{gettext("Trap")}</span>
                   — {gettext(
                     "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
+                  )}
+                </li>
+                <li>
+                  <span class="font-bold" style="color: #ccff00">{gettext("Fluorescent")}</span>
+                  — {gettext(
+                    "on a stroke with an upgrade: 80% chance a wrong draw doubles the upgrade's penalty, 20% chance a correct draw doubles its reward."
                   )}
                 </li>
               </ul>

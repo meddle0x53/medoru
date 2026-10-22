@@ -11798,7 +11798,7 @@ msgstr "難易度"
 #: lib/medoru_web/live/users_live/index.html.heex:57
 #, elixir-autogen, elixir-format, fuzzy
 msgid "%{count} selected"
-msgstr ""
+msgstr "%{count}件選択中"
 
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:290
 #: lib/medoru_web/live/teacher/words_falling_game_live/form.html.heex:290
@@ -19268,8 +19268,8 @@ msgstr "シアン"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
-msgid "5 points, but a mistake also costs 5 coins."
-msgstr "5ポイント、ただし間違えるとコインも5枚失います。"
+msgid "5 points, but a mistake costs 5 coins — or, with no coins, 1 life and 1 hint charge; with no hint charges either, 2 lives."
+msgstr "5ポイント、ただし間違えるとコイン5枚。コインがない場合はライフ1つとヒント1回、ヒントもない場合はライフ2つ失います。"
 
 
 #: lib/medoru_web/live/kanji_master_live.ex
@@ -19286,6 +19286,51 @@ msgstr "アップグレードなし"
 #, elixir-autogen, elixir-format, fuzzy
 msgid "Momo"
 msgstr "もも"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kaki"
+msgstr "かき"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Toki"
+msgstr "とき"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Fuji"
+msgstr "ふじ"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Fuji (wisteria)"
+msgstr "ふじ色（藤色）"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "60% chance of 3 points on a correct draw; a mistake has a 30% chance of costing 3 points."
+msgstr "正しく書けば60%で3ポイント、間違えると30%で3ポイント失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Toki (ibis pink)"
+msgstr "とき色（トキ色）"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "5 points when drawn correctly, but a mistake costs 4 points."
+msgstr "正しく書けば5ポイント、間違えると4ポイント失います。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Kaki (persimmon)"
+msgstr "かき色（柿色）"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "2 points when drawn correctly, but a mistake costs 1 point."
+msgstr "正しく書けば2ポイント、間違えると1ポイント失います。"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
@@ -19416,6 +19461,16 @@ msgstr "罠"
 
 #: lib/medoru_web/live/kanji_master_live.ex
 #, elixir-autogen, elixir-format, fuzzy
+msgid "Fluorescent"
+msgstr "蛍光色"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "on a stroke with an upgrade: 80% chance a wrong draw doubles the upgrade's penalty, 20% chance a correct draw doubles its reward."
+msgstr "アップグレード付きの画に対し：間違えた場合80%でペナルティが2倍、正しく書けた場合20%で報酬が2倍になります。"
+
+#: lib/medoru_web/live/kanji_master_live.ex
+#, elixir-autogen, elixir-format, fuzzy
 msgid "50% chance of +1 life on a correct draw; 50% chance of 3 extra lives lost on a wrong draw."
 msgstr "正しく書くと50%でライフ+1。間違えると50%でライフを3追加で失います。"
 
@@ -19458,3 +19513,48 @@ msgstr "失敗した漢字は："
 #, elixir-autogen, elixir-format, fuzzy
 msgid "View it and practice →"
 msgstr "表示して練習する →"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Select page"
+msgstr "ページを選択"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Delete selected"
+msgstr "選択した語を削除"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Are you sure you want to delete %{count} selected words?"
+msgstr "選択した%{count}語を削除してもよろしいですか？"
+
+#: lib/medoru_web/live/admin/word_live/index.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Deleted %{count} words."
+msgstr "%{count}語を削除しました。"
+
+#: lib/medoru_web/live/admin/word_live/index.ex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Failed to delete some words. They may be in use."
+msgstr "一部の単語を削除できませんでした。使用中の可能性があります。"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Select %{word}"
+msgstr "%{word}を選択"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Usage frequency score (lower = more common)"
+msgstr "使用頻度スコア（低いほど一般的）"
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Sort by:"
+msgstr "並べ替え："
+
+#: lib/medoru_web/live/admin/word_live/index/index.html.heex
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Date Added"
+msgstr "追加日"

@@ -13,13 +13,68 @@
           {gettext("Manage vocabulary words. Total: %{count}", count: @total_count)}
         </p>
       </div>
-      <.link
-        navigate={~p"/admin/words/new"}
-        class="btn btn-primary w-full sm:w-auto min-h-[44px] touch-target"
-      >
-        <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Add Word")}
-      </.link>
+      <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <button
+          id="select-mode-btn"
+          type="button"
+          phx-click="toggle_select_mode"
+          class={[
+            "btn w-full sm:w-auto min-h-[44px] touch-target",
+            if(@select_mode, do: "btn-active btn-secondary", else: "btn-outline btn-secondary")
+          ]}
+        >
+          <.icon name="hero-check-square" class="w-5 h-5 mr-2" /> {gettext("Select")}
+        </button>
+        <.link
+          navigate={~p"/admin/words/new"}
+          class="btn btn-primary w-full sm:w-auto min-h-[44px] touch-target"
+        >
+          <.icon name="hero-plus" class="w-5 h-5 mr-2" /> {gettext("Add Word")}
+        </.link>
+      </div>
     </div>
+
+    <%!-- Selection action bar --%>
+    <%= if @select_mode do %>
+      <div class="sticky top-2 z-30 mb-4">
+        <div class="card bg-secondary text-secondary-content shadow-lg border border-secondary">
+          <div class="card-body p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <span class="font-bold">
+              {gettext("%{count} selected", count: MapSet.size(@selected))}
+            </span>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                phx-click="select_page"
+                class="btn btn-sm btn-ghost text-secondary-content"
+              >
+                {gettext("Select page")}
+              </button>
+              <button
+                type="button"
+                phx-click="delete_selected"
+                disabled={MapSet.size(@selected) == 0}
+                data-confirm={
+                  gettext("Are you sure you want to delete %{count} selected words?",
+                    count: MapSet.size(@selected)
+                  )
+                }
+                class="btn btn-sm btn-error"
+              >
+                <.icon name="hero-trash" class="w-4 h-4 mr-1" /> {gettext("Delete selected")}
+              </button>
+              <button
+                type="button"
+                phx-click="toggle_select_mode"
+                class="btn btn-sm btn-ghost text-secondary-content"
+              >
+                {gettext("Cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
 
     <%!-- Filters --%>
     <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
@@ -93,6 +148,41 @@
               <% end %>
             </div>
           </.form>
+
+          <%!-- Sort --%>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-sm font-medium text-base-content/70 shrink-0">
+              {gettext("Sort by:")}
+            </span>
+            <form phx-change="sort" class="w-full sm:w-auto">
+              <select
+                name="sort_by"
+                class="select select-bordered select-sm w-full sm:w-auto min-h-[40px] text-base"
+              >
+                <option value="usage_frequency" selected={@sort_by == :usage_frequency}>
+                  📈 {gettext("Most Common First")} {sort_indicator(assigns, :usage_frequency)}
+                </option>
+                <option value="difficulty" selected={@sort_by == :difficulty}>
+                  📊 {gettext("JLPT Level (Easiest First)")} {sort_indicator(assigns, :difficulty)}
+                </option>
+                <option value="text" selected={@sort_by == :text}>
+                  🔤 {gettext("Kanji (A-Z)")} {sort_indicator(assigns, :text)}
+                </option>
+                <option value="reading" selected={@sort_by == :reading}>
+                  🗣️ {gettext("Reading (A-Z)")} {sort_indicator(assigns, :reading)}
+                </option>
+                <option value="word_type" selected={@sort_by == :word_type}>
+                  📝 {gettext("Type (A-Z)")} {sort_indicator(assigns, :word_type)}
+                </option>
+                <option value="meaning" selected={@sort_by == :meaning}>
+                  🇺🇸 {gettext("Meaning (A-Z)")} {sort_indicator(assigns, :meaning)}
+                </option>
+                <option value="inserted_at" selected={@sort_by == :inserted_at}>
+                  🕒 {gettext("Date Added")} {sort_indicator(assigns, :inserted_at)}
+                </option>
+              </select>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -104,17 +194,36 @@
         <table class="table table-zebra w-full">
           <thead>
             <tr class="bg-base-200/50">
+              <%= if @select_mode do %>
+                <th class="w-10"></th>
+              <% end %>
               <th class="text-base-content/70">{gettext("Word")}</th>
               <th class="text-base-content/70">{gettext("Reading")}</th>
               <th class="text-base-content/70">{gettext("Meaning")}</th>
               <th class="text-base-content/70">{gettext("Level")}</th>
+              <th class="text-base-content/70">{gettext("Freq")}</th>
               <th class="text-base-content/70">{gettext("Trans")}</th>
               <th class="text-base-content/70 text-right">{gettext("Actions")}</th>
             </tr>
           </thead>
           <tbody>
             <%= for word <- @words do %>
-              <tr class="hover:bg-base-200/50">
+              <tr class={[
+                "hover:bg-base-200/50",
+                MapSet.member?(@selected, word.id) && "bg-secondary/20"
+              ]}>
+                <%= if @select_mode do %>
+                  <td>
+                    <input
+                      type="checkbox"
+                      phx-click="toggle_select"
+                      phx-value-id={word.id}
+                      checked={MapSet.member?(@selected, word.id)}
+                      class="checkbox checkbox-sm checkbox-secondary"
+                      aria-label={gettext("Select %{word}", word: word.text)}
+                    />
+                  </td>
+                <% end %>
                 <td>
                   <div class="flex items-center gap-2">
                     <span class="text-xl font-medium">{word.text}</span>
@@ -136,6 +245,9 @@
                     N{word.difficulty}
                   </span>
                 </td>
+                <td class="text-base-content/70">
+                  {word.usage_frequency}
+                </td>
                 <td>
                   <div class="flex gap-1">
                     <%= if get_in(word.translations, ["bg", "meaning"]) do %>
@@ -147,24 +259,26 @@
                   </div>
                 </td>
                 <td class="text-right">
-                  <div class="flex items-center justify-end gap-1">
-                    <.link
-                      navigate={~p"/admin/words/#{word.id}/edit"}
-                      class="btn btn-ghost btn-sm"
-                      title={gettext("Edit")}
-                    >
-                      <.icon name="hero-pencil-square" class="w-4 h-4" />
-                    </.link>
-                    <button
-                      phx-click="delete"
-                      phx-value-id={word.id}
-                      data-confirm={gettext("Are you sure you want to delete this word?")}
-                      class="btn btn-ghost btn-sm text-error"
-                      title={gettext("Delete")}
-                    >
-                      <.icon name="hero-trash" class="w-4 h-4" />
-                    </button>
-                  </div>
+                  <%= if !@select_mode do %>
+                    <div class="flex items-center justify-end gap-1">
+                      <.link
+                        navigate={~p"/admin/words/#{word.id}/edit"}
+                        class="btn btn-ghost btn-sm"
+                        title={gettext("Edit")}
+                      >
+                        <.icon name="hero-pencil-square" class="w-4 h-4" />
+                      </.link>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={word.id}
+                        data-confirm={gettext("Are you sure you want to delete this word?")}
+                        class="btn btn-ghost btn-sm text-error"
+                        title={gettext("Delete")}
+                      >
+                        <.icon name="hero-trash" class="w-4 h-4" />
+                      </button>
+                    </div>
+                  <% end %>
                 </td>
               </tr>
             <% end %>
@@ -175,8 +289,21 @@
       <%!-- Mobile Cards --%>
       <div class="md:hidden divide-y divide-base-200">
         <%= for word <- @words do %>
-          <div class="p-4 hover:bg-base-200/50">
+          <div class={[
+            "p-4 hover:bg-base-200/50",
+            MapSet.member?(@selected, word.id) && "bg-secondary/20"
+          ]}>
             <div class="flex items-start justify-between gap-3">
+              <%= if @select_mode do %>
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select"
+                  phx-value-id={word.id}
+                  checked={MapSet.member?(@selected, word.id)}
+                  class="checkbox checkbox-sm checkbox-secondary mt-1 shrink-0"
+                  aria-label={gettext("Select %{word}", word: word.text)}
+                />
+              <% end %>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1 flex-wrap">
                   <span class="text-xl font-medium font-japanese">{word.text}</span>
@@ -187,6 +314,12 @@
                   <% end %>
                   <span class={["badge badge-sm", difficulty_badge_color(word.difficulty)]}>
                     N{word.difficulty}
+                  </span>
+                  <span
+                    class="badge badge-sm badge-ghost"
+                    title={gettext("Usage frequency score (lower = more common)")}
+                  >
+                    f:{word.usage_frequency}
                   </span>
                 </div>
                 <p class="text-sm text-base-content/70 font-japanese">{word.reading}</p>
@@ -201,20 +334,22 @@
                 </div>
               </div>
               <div class="flex flex-row sm:flex-col gap-2">
-                <.link
-                  navigate={~p"/admin/words/#{word.id}/edit"}
-                  class="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] touch-target"
-                >
-                  <.icon name="hero-pencil-square" class="w-5 h-5" />
-                </.link>
-                <button
-                  phx-click="delete"
-                  phx-value-id={word.id}
-                  data-confirm={gettext("Are you sure you want to delete this word?")}
-                  class="btn btn-ghost btn-sm text-error min-h-[44px] min-w-[44px] touch-target"
-                >
-                  <.icon name="hero-trash" class="w-5 h-5" />
-                </button>
+                <%= if !@select_mode do %>
+                  <.link
+                    navigate={~p"/admin/words/#{word.id}/edit"}
+                    class="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] touch-target"
+                  >
+                    <.icon name="hero-pencil-square" class="w-5 h-5" />
+                  </.link>
+                  <button
+                    phx-click="delete"
+                    phx-value-id={word.id}
+                    data-confirm={gettext("Are you sure you want to delete this word?")}
+                    class="btn btn-ghost btn-sm text-error min-h-[44px] min-w-[44px] touch-target"
+                  >
+                    <.icon name="hero-trash" class="w-5 h-5" />
+                  </button>
+                <% end %>
               </div>
             </div>
           </div>
@@ -240,7 +375,7 @@
             navigate={
               if @page > 1,
                 do:
-                  ~p"/admin/words?#{%{page: @page - 1, difficulty: @difficulty_filter, search: @search}}",
+                  ~p"/admin/words?#{%{page: @page - 1, difficulty: @difficulty_filter, search: @search, sort_by: @sort_by, sort_order: @sort_order}}",
                 else: "#"
             }
             class={[
@@ -254,7 +389,7 @@
             <%= if abs(page_num - @page) <= 2 or page_num == 1 or page_num == @total_pages do %>
               <.link
                 navigate={
-                  ~p"/admin/words?#{%{page: page_num, difficulty: @difficulty_filter, search: @search}}"
+                  ~p"/admin/words?#{%{page: page_num, difficulty: @difficulty_filter, search: @search, sort_by: @sort_by, sort_order: @sort_order}}"
                 }
                 class={[
                   "join-item btn w-11 h-11 min-w-[44px] max-w-[44px] p-0 touch-target",
@@ -269,7 +404,7 @@
             navigate={
               if @page < @total_pages,
                 do:
-                  ~p"/admin/words?#{%{page: @page + 1, difficulty: @difficulty_filter, search: @search}}",
+                  ~p"/admin/words?#{%{page: @page + 1, difficulty: @difficulty_filter, search: @search, sort_by: @sort_by, sort_order: @sort_order}}",
                 else: "#"
             }
             class={[
